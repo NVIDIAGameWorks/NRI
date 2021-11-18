@@ -106,7 +106,6 @@ void CommandBufferD3D11::SetDebugName(const char* name)
 
 Result CommandBufferD3D11::Begin(const DescriptorPool* descriptorPool)
 {
-    m_BindingState.ResetResources();
     m_SamplePositionsState.Reset();
     m_CommandList = nullptr;
     m_CurrentFrameBuffer = nullptr;
@@ -127,6 +126,8 @@ Result CommandBufferD3D11::End()
 {
     HRESULT hr = m_Context->FinishCommandList(FALSE, &m_CommandList);
     RETURN_ON_BAD_HRESULT(m_DeviceImpl.GetLog(), hr, "ID3D11DeviceContext::FinishCommandList() - FAILED!");
+
+    m_BindingState.UnbindAndReset(m_Context);
 
     return Result::SUCCESS;
 }
@@ -264,8 +265,6 @@ void CommandBufferD3D11::SetIndexBuffer(const Buffer& buffer, uint64_t offset, I
 
 void CommandBufferD3D11::SetPipelineLayout(const PipelineLayout& pipelineLayout)
 {
-    m_BindingState.ResetStorages();
-
     PipelineLayoutD3D11* pipelineLayoutD3D11 = (PipelineLayoutD3D11*)&pipelineLayout;
     pipelineLayoutD3D11->Bind(m_Context);
 
@@ -439,7 +438,7 @@ void CommandBufferD3D11::PipelineBarrier(const TransitionBarrierDesc* transition
     constexpr AccessBits RESOURCE_MASK = AccessBits::SHADER_RESOURCE;
     constexpr BarrierDependency NO_WFI = (BarrierDependency)999;
 
-    if (!transitionBarriers || transitionBarriers->textureNum == 0 || transitionBarriers->bufferNum == 0)
+    if (!transitionBarriers || (transitionBarriers->textureNum == 0 && transitionBarriers->bufferNum == 0))
         return;
 
     BarrierDependency result = NO_WFI;
@@ -450,12 +449,6 @@ void CommandBufferD3D11::PipelineBarrier(const TransitionBarrierDesc* transition
 
         if ((textureDesc.prevAccess & STORAGE_MASK) && (textureDesc.nextAccess & STORAGE_MASK))
             result = dependency;
-
-        if ((textureDesc.prevAccess & RESOURCE_MASK) && (textureDesc.nextAccess & ANY_WRITE_MASK))
-        {
-            const SubresourceInfo& subresourceInfo = *(SubresourceInfo*)&textureDesc;
-            m_BindingState.UnbindSubresource(m_Context, subresourceInfo);
-        }
     }
 
     for (uint32_t i = 0; i < transitionBarriers->bufferNum && result == NO_WFI; i++)
@@ -464,14 +457,6 @@ void CommandBufferD3D11::PipelineBarrier(const TransitionBarrierDesc* transition
 
         if ((bufferDesc.prevAccess & STORAGE_MASK) && (bufferDesc.nextAccess & STORAGE_MASK))
             result = dependency;
-
-        if ((bufferDesc.prevAccess & RESOURCE_MASK) && (bufferDesc.nextAccess & ANY_WRITE_MASK))
-        {
-            SubresourceInfo subresourceInfo;
-            subresourceInfo.Initialize(bufferDesc.buffer);
-
-            m_BindingState.UnbindSubresource(m_Context, subresourceInfo);
-        }
     }
 
     if (result != NO_WFI)
