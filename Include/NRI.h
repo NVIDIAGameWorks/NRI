@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
+Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
 
 NVIDIA CORPORATION and its licensors retain all intellectual property
 and proprietary rights in and to this software, related documentation
@@ -16,8 +16,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include <cstddef>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 75
-#define NRI_VERSION_DATE "12 November 2021"
+#define NRI_VERSION_MINOR 76
+#define NRI_VERSION_DATE "7 December 2021"
 #define NRI_INTERFACE( name ) #name, sizeof(name)
 
 #if _WIN32

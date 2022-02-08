@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
+Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
 
 NVIDIA CORPORATION and its licensors retain all intellectual property
 and proprietary rights in and to this software, related documentation
@@ -84,10 +84,10 @@ namespace nri
         float displayPrimaryGreen[2];
         float displayPrimaryBlue[2];
         float whitePoint[2];
-        float maxLuminance;
-        float minLuminance;
-        float maxContentLightLevel;
-        float maxFrameAverageLightLevel;
+        float luminanceMax;
+        float luminanceMin;
+        float contentLightLevelMax;
+        float frameAverageLightLevelMax;
     };
 
     struct SwapChainInterface

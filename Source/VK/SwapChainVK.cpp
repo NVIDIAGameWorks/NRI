@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
+Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
 
 NVIDIA CORPORATION and its licensors retain all intellectual property
 and proprietary rights in and to this software, related documentation
@@ -294,10 +294,10 @@ inline Result SwapChainVK::SetHdrMetadata(const HdrMetadata& hdrMetadata)
         {hdrMetadata.displayPrimaryGreen[0], hdrMetadata.displayPrimaryGreen[1]},
         {hdrMetadata.displayPrimaryBlue[0], hdrMetadata.displayPrimaryBlue[1]},
         {hdrMetadata.whitePoint[0], hdrMetadata.whitePoint[1]},
-        hdrMetadata.maxLuminance,
-        hdrMetadata.minLuminance,
-        hdrMetadata.maxContentLightLevel,
-        hdrMetadata.maxFrameAverageLightLevel
+        hdrMetadata.luminanceMax,
+        hdrMetadata.luminanceMin,
+        hdrMetadata.contentLightLevelMax,
+        hdrMetadata.frameAverageLightLevelMax
     };
 
     vk.SetHdrMetadataEXT(m_Device, 1, &m_Handle, &data);

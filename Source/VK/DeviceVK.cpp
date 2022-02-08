@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
+Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
 
 NVIDIA CORPORATION and its licensors retain all intellectual property
 and proprietary rights in and to this software, related documentation
@@ -1388,97 +1388,112 @@ void DeviceVK::SetDeviceLimits(bool enableValidation)
     m_DeviceDesc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_DeviceDesc.nriVersionMinor = NRI_VERSION_MINOR;
 
-    m_DeviceDesc.maxViewports = limits.maxViewports;
+    m_DeviceDesc.viewportMaxNum = limits.maxViewports;
+    m_DeviceDesc.viewportSubPixelBits = limits.viewportSubPixelBits;
     m_DeviceDesc.viewportBoundsRange[0] = int32_t(limits.viewportBoundsRange[0]);
     m_DeviceDesc.viewportBoundsRange[1] = int32_t(limits.viewportBoundsRange[1]);
-    m_DeviceDesc.viewportSubPixelBits = limits.viewportSubPixelBits;
-    m_DeviceDesc.maxFrameBufferSize = std::min(limits.maxFramebufferWidth, limits.maxFramebufferHeight);
-    m_DeviceDesc.maxFrameBufferLayers = limits.maxFramebufferLayers;
-    m_DeviceDesc.maxColorAttachments = limits.maxColorAttachments;
-    m_DeviceDesc.maxFrameBufferColorSampleCount = GetMaxSampleCount(limits.framebufferColorSampleCounts);
-    m_DeviceDesc.maxFrameBufferDepthSampleCount = GetMaxSampleCount(limits.framebufferDepthSampleCounts);
-    m_DeviceDesc.maxFrameBufferStencilSampleCount = GetMaxSampleCount(limits.framebufferStencilSampleCounts);
-    m_DeviceDesc.maxFrameBufferNoAttachmentsSampleCount = GetMaxSampleCount(limits.framebufferNoAttachmentsSampleCounts);
-    m_DeviceDesc.maxTextureColorSampleCount = GetMaxSampleCount(limits.sampledImageColorSampleCounts);
-    m_DeviceDesc.maxTextureIntegerSampleCount = GetMaxSampleCount(limits.sampledImageIntegerSampleCounts);
-    m_DeviceDesc.maxTextureDepthSampleCount = GetMaxSampleCount(limits.sampledImageDepthSampleCounts);
-    m_DeviceDesc.maxTextureStencilSampleCount = GetMaxSampleCount(limits.sampledImageStencilSampleCounts);
-    m_DeviceDesc.maxStorageTextureSampleCount = GetMaxSampleCount(limits.storageImageSampleCounts);
-    m_DeviceDesc.maxTexture1DSize = limits.maxImageDimension1D;
-    m_DeviceDesc.maxTexture2DSize = limits.maxImageDimension2D;
-    m_DeviceDesc.maxTexture3DSize = limits.maxImageDimension3D;
-    m_DeviceDesc.maxTextureArraySize = limits.maxImageArrayLayers;
-    m_DeviceDesc.maxTexelBufferElements = limits.maxTexelBufferElements;
-    m_DeviceDesc.maxConstantBufferRange = limits.maxUniformBufferRange;
-    m_DeviceDesc.maxStorageBufferRange = limits.maxStorageBufferRange;
-    m_DeviceDesc.maxPushConstantsSize = limits.maxPushConstantsSize;
-    m_DeviceDesc.maxMemoryAllocationCount = limits.maxMemoryAllocationCount;
-    m_DeviceDesc.maxSamplerAllocationCount = limits.maxSamplerAllocationCount;
+
+    m_DeviceDesc.frameBufferMaxDim = std::min(limits.maxFramebufferWidth, limits.maxFramebufferHeight);
+    m_DeviceDesc.frameBufferLayerMaxNum = limits.maxFramebufferLayers;
+    m_DeviceDesc.framebufferColorAttachmentMaxNum = limits.maxColorAttachments;
+
+    m_DeviceDesc.frameBufferColorSampleMaxNum = GetMaxSampleCount(limits.framebufferColorSampleCounts);
+    m_DeviceDesc.frameBufferDepthSampleMaxNum = GetMaxSampleCount(limits.framebufferDepthSampleCounts);
+    m_DeviceDesc.frameBufferStencilSampleMaxNum = GetMaxSampleCount(limits.framebufferStencilSampleCounts);
+    m_DeviceDesc.frameBufferNoAttachmentsSampleMaxNum = GetMaxSampleCount(limits.framebufferNoAttachmentsSampleCounts);
+    m_DeviceDesc.textureColorSampleMaxNum = GetMaxSampleCount(limits.sampledImageColorSampleCounts);
+    m_DeviceDesc.textureIntegerSampleMaxNum = GetMaxSampleCount(limits.sampledImageIntegerSampleCounts);
+    m_DeviceDesc.textureDepthSampleMaxNum = GetMaxSampleCount(limits.sampledImageDepthSampleCounts);
+    m_DeviceDesc.textureStencilSampleMaxNum = GetMaxSampleCount(limits.sampledImageStencilSampleCounts);
+    m_DeviceDesc.storageTextureSampleMaxNum = GetMaxSampleCount(limits.storageImageSampleCounts);
+
+    m_DeviceDesc.texture1DMaxDim = limits.maxImageDimension1D;
+    m_DeviceDesc.texture2DMaxDim = limits.maxImageDimension2D;
+    m_DeviceDesc.texture3DMaxDim = limits.maxImageDimension3D;
+    m_DeviceDesc.textureArrayMaxDim = limits.maxImageArrayLayers;
+    m_DeviceDesc.texelBufferMaxDim = limits.maxTexelBufferElements;
+
+    m_DeviceDesc.memoryAllocationMaxNum = limits.maxMemoryAllocationCount;
+    m_DeviceDesc.samplerAllocationMaxNum = limits.maxSamplerAllocationCount;
+    m_DeviceDesc.uploadBufferTextureRowAlignment = 1;
+    m_DeviceDesc.uploadBufferTextureSliceAlignment = 1;
+    m_DeviceDesc.typedBufferOffsetAlignment = (uint32_t)limits.minTexelBufferOffsetAlignment;
+    m_DeviceDesc.constantBufferOffsetAlignment = (uint32_t)limits.minUniformBufferOffsetAlignment;
+    m_DeviceDesc.constantBufferMaxRange = limits.maxUniformBufferRange;
+    m_DeviceDesc.storageBufferOffsetAlignment = (uint32_t)limits.minStorageBufferOffsetAlignment;
+    m_DeviceDesc.storageBufferMaxRange = limits.maxStorageBufferRange;
+    m_DeviceDesc.pushConstantsMaxSize = limits.maxPushConstantsSize;
+    m_DeviceDesc.bufferMaxSize = std::numeric_limits<uint64_t>::max();
     m_DeviceDesc.bufferTextureGranularity = (uint32_t)limits.bufferImageGranularity;
-    m_DeviceDesc.maxBoundDescriptorSets = limits.maxBoundDescriptorSets;
-    m_DeviceDesc.maxPerStageDescriptorSamplers = limits.maxPerStageDescriptorSamplers;
-    m_DeviceDesc.maxPerStageDescriptorConstantBuffers = limits.maxPerStageDescriptorUniformBuffers;
-    m_DeviceDesc.maxPerStageDescriptorStorageBuffers = limits.maxPerStageDescriptorStorageBuffers;
-    m_DeviceDesc.maxPerStageDescriptorTextures = limits.maxPerStageDescriptorSampledImages;
-    m_DeviceDesc.maxPerStageDescriptorStorageTextures = limits.maxPerStageDescriptorStorageImages;
-    m_DeviceDesc.maxPerStageResources = limits.maxPerStageResources;
-    m_DeviceDesc.maxDescriptorSetSamplers = limits.maxDescriptorSetSamplers;
-    m_DeviceDesc.maxDescriptorSetConstantBuffers = limits.maxDescriptorSetUniformBuffers;
-    m_DeviceDesc.maxDescriptorSetStorageBuffers = limits.maxDescriptorSetStorageBuffers;
-    m_DeviceDesc.maxDescriptorSetTextures = limits.maxDescriptorSetSampledImages;
-    m_DeviceDesc.maxDescriptorSetStorageTextures = limits.maxDescriptorSetStorageImages;
-    m_DeviceDesc.maxVertexAttributes = limits.maxVertexInputAttributes;
-    m_DeviceDesc.maxVertexStreams = limits.maxVertexInputBindings;
-    m_DeviceDesc.maxVertexOutputComponents = limits.maxVertexOutputComponents;
-    m_DeviceDesc.maxTessGenerationLevel = (float)limits.maxTessellationGenerationLevel;
-    m_DeviceDesc.maxTessPatchSize = limits.maxTessellationPatchSize;
-    m_DeviceDesc.maxTessControlPerVertexInputComponents = limits.maxTessellationControlPerVertexInputComponents;
-    m_DeviceDesc.maxTessControlPerVertexOutputComponents = limits.maxTessellationControlPerVertexOutputComponents;
-    m_DeviceDesc.maxTessControlPerPatchOutputComponents = limits.maxTessellationControlPerPatchOutputComponents;
-    m_DeviceDesc.maxTessControlTotalOutputComponents = limits.maxTessellationControlTotalOutputComponents;
-    m_DeviceDesc.maxTessEvaluationInputComponents = limits.maxTessellationEvaluationInputComponents;
-    m_DeviceDesc.maxTessEvaluationOutputComponents = limits.maxTessellationEvaluationOutputComponents;
-    m_DeviceDesc.maxGeometryShaderInvocations = limits.maxGeometryShaderInvocations;
-    m_DeviceDesc.maxGeometryInputComponents = limits.maxGeometryInputComponents;
-    m_DeviceDesc.maxGeometryOutputComponents = limits.maxGeometryOutputComponents;
-    m_DeviceDesc.maxGeometryOutputVertices = limits.maxGeometryOutputVertices;
-    m_DeviceDesc.maxGeometryTotalOutputComponents = limits.maxGeometryTotalOutputComponents;
-    m_DeviceDesc.maxFragmentInputComponents = limits.maxFragmentInputComponents;
-    m_DeviceDesc.maxFragmentOutputAttachments = limits.maxFragmentOutputAttachments;
-    m_DeviceDesc.maxFragmentDualSrcAttachments = limits.maxFragmentDualSrcAttachments;
-    m_DeviceDesc.maxFragmentCombinedOutputResources = limits.maxFragmentCombinedOutputResources;
-    m_DeviceDesc.maxComputeSharedMemorySize = limits.maxComputeSharedMemorySize;
-    m_DeviceDesc.maxComputeWorkGroupCount[0] = limits.maxComputeWorkGroupCount[0];
-    m_DeviceDesc.maxComputeWorkGroupCount[1] = limits.maxComputeWorkGroupCount[1];
-    m_DeviceDesc.maxComputeWorkGroupCount[2] = limits.maxComputeWorkGroupCount[2];
-    m_DeviceDesc.maxComputeWorkGroupInvocations = limits.maxComputeWorkGroupInvocations;
-    m_DeviceDesc.maxComputeWorkGroupSize[0] = limits.maxComputeWorkGroupSize[0];
-    m_DeviceDesc.maxComputeWorkGroupSize[1] = limits.maxComputeWorkGroupSize[1];
-    m_DeviceDesc.maxComputeWorkGroupSize[2] = limits.maxComputeWorkGroupSize[2];
+
+    m_DeviceDesc.boundDescriptorSetMaxNum = limits.maxBoundDescriptorSets;
+    m_DeviceDesc.perStageDescriptorSamplerMaxNum = limits.maxPerStageDescriptorSamplers;
+    m_DeviceDesc.perStageDescriptorConstantBufferMaxNum = limits.maxPerStageDescriptorUniformBuffers;
+    m_DeviceDesc.perStageDescriptorStorageBufferMaxNum = limits.maxPerStageDescriptorStorageBuffers;
+    m_DeviceDesc.perStageDescriptorTextureMaxNum = limits.maxPerStageDescriptorSampledImages;
+    m_DeviceDesc.perStageDescriptorStorageTextureMaxNum = limits.maxPerStageDescriptorStorageImages;
+    m_DeviceDesc.perStageResourceMaxNum = limits.maxPerStageResources;
+
+    m_DeviceDesc.descriptorSetSamplerMaxNum = limits.maxDescriptorSetSamplers;
+    m_DeviceDesc.descriptorSetConstantBufferMaxNum = limits.maxDescriptorSetUniformBuffers;
+    m_DeviceDesc.descriptorSetStorageBufferMaxNum = limits.maxDescriptorSetStorageBuffers;
+    m_DeviceDesc.descriptorSetTextureMaxNum = limits.maxDescriptorSetSampledImages;
+    m_DeviceDesc.descriptorSetStorageTextureMaxNum = limits.maxDescriptorSetStorageImages;
+
+    m_DeviceDesc.vertexShaderAttributeMaxNum = limits.maxVertexInputAttributes;
+    m_DeviceDesc.vertexShaderStreamMaxNum = limits.maxVertexInputBindings;
+    m_DeviceDesc.vertexShaderOutputComponentMaxNum = limits.maxVertexOutputComponents;
+
+    m_DeviceDesc.tessControlShaderGenerationMaxLevel = (float)limits.maxTessellationGenerationLevel;
+    m_DeviceDesc.tessControlShaderPatchPointMaxNum = limits.maxTessellationPatchSize;
+    m_DeviceDesc.tessControlShaderPerVertexInputComponentMaxNum = limits.maxTessellationControlPerVertexInputComponents;
+    m_DeviceDesc.tessControlShaderPerVertexOutputComponentMaxNum = limits.maxTessellationControlPerVertexOutputComponents;
+    m_DeviceDesc.tessControlShaderPerPatchOutputComponentMaxNum = limits.maxTessellationControlPerPatchOutputComponents;
+    m_DeviceDesc.tessControlShaderTotalOutputComponentMaxNum = limits.maxTessellationControlTotalOutputComponents;
+
+    m_DeviceDesc.tessEvaluationShaderInputComponentMaxNum = limits.maxTessellationEvaluationInputComponents;
+    m_DeviceDesc.tessEvaluationShaderOutputComponentMaxNum = limits.maxTessellationEvaluationOutputComponents;
+
+    m_DeviceDesc.geometryShaderInvocationMaxNum = limits.maxGeometryShaderInvocations;
+    m_DeviceDesc.geometryShaderInputComponentMaxNum = limits.maxGeometryInputComponents;
+    m_DeviceDesc.geometryShaderOutputComponentMaxNum = limits.maxGeometryOutputComponents;
+    m_DeviceDesc.geometryShaderOutputVertexMaxNum = limits.maxGeometryOutputVertices;
+    m_DeviceDesc.geometryShaderTotalOutputComponentMaxNum = limits.maxGeometryTotalOutputComponents;
+
+    m_DeviceDesc.fragmentShaderInputComponentMaxNum = limits.maxFragmentInputComponents;
+    m_DeviceDesc.fragmentShaderOutputAttachmentMaxNum = limits.maxFragmentOutputAttachments;
+    m_DeviceDesc.fragmentShaderDualSourceAttachmentMaxNum = limits.maxFragmentDualSrcAttachments;
+    m_DeviceDesc.fragmentShaderCombinedOutputResourceMaxNum = limits.maxFragmentCombinedOutputResources;
+
+    m_DeviceDesc.computeShaderSharedMemoryMaxSize = limits.maxComputeSharedMemorySize;
+    m_DeviceDesc.computeShaderWorkGroupMaxNum[0] = limits.maxComputeWorkGroupCount[0];
+    m_DeviceDesc.computeShaderWorkGroupMaxNum[1] = limits.maxComputeWorkGroupCount[1];
+    m_DeviceDesc.computeShaderWorkGroupMaxNum[2] = limits.maxComputeWorkGroupCount[2];
+    m_DeviceDesc.computeShaderWorkGroupInvocationMaxNum = limits.maxComputeWorkGroupInvocations;
+    m_DeviceDesc.computeShaderWorkGroupMaxDim[0] = limits.maxComputeWorkGroupSize[0];
+    m_DeviceDesc.computeShaderWorkGroupMaxDim[1] = limits.maxComputeWorkGroupSize[1];
+    m_DeviceDesc.computeShaderWorkGroupMaxDim[2] = limits.maxComputeWorkGroupSize[2];
+
     m_DeviceDesc.subPixelPrecisionBits = limits.subPixelPrecisionBits;
     m_DeviceDesc.subTexelPrecisionBits = limits.subTexelPrecisionBits;
     m_DeviceDesc.mipmapPrecisionBits = limits.mipmapPrecisionBits;
     m_DeviceDesc.drawIndexedIndex16ValueMax = std::min<uint32_t>(std::numeric_limits<uint16_t>::max(), limits.maxDrawIndexedIndexValue);
     m_DeviceDesc.drawIndexedIndex32ValueMax = limits.maxDrawIndexedIndexValue;
-    m_DeviceDesc.maxDrawIndirectCount = limits.maxDrawIndirectCount;
+    m_DeviceDesc.drawIndirectMaxNum = limits.maxDrawIndirectCount;
     m_DeviceDesc.samplerLodBiasMin = -limits.maxSamplerLodBias;
     m_DeviceDesc.samplerLodBiasMax = limits.maxSamplerLodBias;
     m_DeviceDesc.samplerAnisotropyMax = limits.maxSamplerAnisotropy;
-    m_DeviceDesc.uploadBufferTextureRowAlignment = 1;
-    m_DeviceDesc.uploadBufferTextureSliceAlignment = 1;
-    m_DeviceDesc.typedBufferOffsetAlignment = (uint32_t)limits.minTexelBufferOffsetAlignment;
-    m_DeviceDesc.constantBufferOffsetAlignment = (uint32_t)limits.minUniformBufferOffsetAlignment;
-    m_DeviceDesc.storageBufferOffsetAlignment = (uint32_t)limits.minStorageBufferOffsetAlignment;
-    m_DeviceDesc.minTexelOffset = limits.minTexelOffset;
-    m_DeviceDesc.maxTexelOffset = limits.maxTexelOffset;
-    m_DeviceDesc.minTexelGatherOffset = limits.minTexelGatherOffset;
-    m_DeviceDesc.maxTexelGatherOffset = limits.maxTexelGatherOffset;
-    m_DeviceDesc.timestampFrequencyHz = uint64_t( 1e9f / limits.timestampPeriod + 0.5f );
-    m_DeviceDesc.maxClipDistances = limits.maxClipDistances;
-    m_DeviceDesc.maxCullDistances = limits.maxCullDistances;
-    m_DeviceDesc.maxCombinedClipAndCullDistances = limits.maxCombinedClipAndCullDistances;
-    m_DeviceDesc.maxBufferSize = std::numeric_limits<uint64_t>::max();
+    m_DeviceDesc.texelOffsetMin = limits.minTexelOffset;
+    m_DeviceDesc.texelOffsetMax = limits.maxTexelOffset;
+    m_DeviceDesc.texelGatherOffsetMin = limits.minTexelGatherOffset;
+    m_DeviceDesc.texelGatherOffsetMax = limits.maxTexelGatherOffset;
+    m_DeviceDesc.clipDistanceMaxNum = limits.maxClipDistances;
+    m_DeviceDesc.cullDistanceMaxNum = limits.maxCullDistances;
+    m_DeviceDesc.combinedClipAndCullDistanceMaxNum = limits.maxCombinedClipAndCullDistances;
     m_DeviceDesc.conservativeRasterTier = conservativeRasterTier;
+    m_DeviceDesc.timestampFrequencyHz = uint64_t( 1e9 / double(limits.timestampPeriod) + 0.5 );
+    m_DeviceDesc.phyiscalDeviceGroupSize = (uint32_t)m_PhysicalDevices.size();
+
     m_DeviceDesc.isAPIValidationEnabled = enableValidation;
     m_DeviceDesc.isTextureFilterMinMaxSupported = m_IsMinMaxFilterExtSupported;
     m_DeviceDesc.isLogicOpSupported = features.logicOp;
@@ -1489,7 +1504,7 @@ void DeviceVK::SetDeviceLimits(bool enableValidation)
     m_DeviceDesc.isCopyQueueTimestampSupported = copyQueueTimestampValidBits == 64;
     m_DeviceDesc.isRegisterAliasingSupported = true;
     m_DeviceDesc.isSubsetAllocationSupported = m_IsSubsetAllocationSupported;
-    m_DeviceDesc.phyiscalDeviceGroupSize = (uint32_t)m_PhysicalDevices.size();
+    m_DeviceDesc.isFloat16Supported = m_IsFP16Supported;
 }
 
 bool DeviceVK::FilterDeviceExtensions(Vector<const char*>& extensions)
@@ -1585,6 +1600,7 @@ void DeviceVK::CheckSupportedDeviceExtensions(const Vector<const char*>& extensi
     m_IsConservativeRasterExtSupported = IsExtensionInList(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, extensions);
     m_IsMeshShaderExtSupported = IsExtensionInList(VK_NV_MESH_SHADER_EXTENSION_NAME, extensions);
     m_IsHDRExtSupported = IsExtensionInList(VK_EXT_HDR_METADATA_EXTENSION_NAME, extensions);
+    m_IsFP16Supported = IsExtensionInList(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME, extensions);
 
     m_IsRayTracingExtSupported = m_IsDescriptorIndexingExtSupported;
     m_IsRayTracingExtSupported = m_IsRayTracingExtSupported && IsExtensionInList(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME, extensions);
@@ -1621,6 +1637,7 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     extensions.push_back(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
     extensions.push_back(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
     extensions.push_back(VK_EXT_HDR_METADATA_EXTENSION_NAME);
+    extensions.push_back(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
 
     FilterDeviceExtensions(extensions);
 
@@ -1648,6 +1665,9 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures =
         { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR };
 
+    VkPhysicalDeviceFloat16Int8FeaturesKHR float16Int8Features =
+        { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR };
+
     deviceFeatures2.pNext = &bufferDeviceAddressFeatures;
 
     if (m_IsDescriptorIndexingExtSupported)
@@ -1674,6 +1694,12 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
         deviceFeatures2.pNext = &rayTracingFeatures;
         accelerationStructureFeatures.pNext = deviceFeatures2.pNext;
         deviceFeatures2.pNext = &accelerationStructureFeatures;
+    }
+
+    if (m_IsFP16Supported)
+    {
+        float16Int8Features.pNext = deviceFeatures2.pNext;
+        deviceFeatures2.pNext = &float16Int8Features;
     }
 
     m_VK.GetPhysicalDeviceFeatures2(m_PhysicalDevices.front(), &deviceFeatures2);
@@ -1719,6 +1745,8 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     RETURN_ON_FAILURE(GetLog(), result == VK_SUCCESS, GetReturnCode(result), "Can't create a device: "
         "vkCreateDevice returned %d.", (int32_t)result);
 
+    m_IsFP16Supported = float16Int8Features.shaderFloat16 != VK_FALSE;
+
     return Result::SUCCESS;
 }
 
@@ -1758,7 +1786,7 @@ void DeviceVK::RetrieveRayTracingInfo()
     m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevices.front(), &props);
 
     m_DeviceDesc.rayTracingShaderGroupIdentifierSize = m_RayTracingDeviceProperties.shaderGroupHandleSize;
-    m_DeviceDesc.rayTracingMaxRecursionDepth = m_RayTracingDeviceProperties.maxRayRecursionDepth;
+    m_DeviceDesc.rayTracingShaderRecursionMaxDepth = m_RayTracingDeviceProperties.maxRayRecursionDepth;
     m_DeviceDesc.rayTracingGeometryObjectMaxNum = (uint32_t)accelerationStructureProperties.maxGeometryCount;
     m_DeviceDesc.rayTracingShaderTableAligment = m_RayTracingDeviceProperties.shaderGroupBaseAlignment;
     m_DeviceDesc.rayTracingShaderTableMaxStride = m_RayTracingDeviceProperties.maxShaderGroupStride;
@@ -1779,21 +1807,21 @@ void DeviceVK::RetrieveMeshShaderInfo()
 
     m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevices.front(), &props);
 
-    m_DeviceDesc.maxMeshTasksCount = meshShaderProperties.maxDrawMeshTasksCount;
-    m_DeviceDesc.maxTaskWorkGroupInvocations = meshShaderProperties.maxTaskWorkGroupInvocations;
-    m_DeviceDesc.maxTaskWorkGroupSize[0] = meshShaderProperties.maxTaskWorkGroupSize[0];
-    m_DeviceDesc.maxTaskWorkGroupSize[1] = meshShaderProperties.maxTaskWorkGroupSize[1];
-    m_DeviceDesc.maxTaskWorkGroupSize[2] = meshShaderProperties.maxTaskWorkGroupSize[2];
-    m_DeviceDesc.maxTaskTotalMemorySize = meshShaderProperties.maxTaskTotalMemorySize;
-    m_DeviceDesc.maxTaskOutputCount = meshShaderProperties.maxTaskOutputCount;
-    m_DeviceDesc.maxMeshWorkGroupInvocations = meshShaderProperties.maxMeshWorkGroupInvocations;
-    m_DeviceDesc.maxMeshWorkGroupSize[0] = meshShaderProperties.maxMeshWorkGroupSize[0];
-    m_DeviceDesc.maxMeshWorkGroupSize[1] = meshShaderProperties.maxMeshWorkGroupSize[1];
-    m_DeviceDesc.maxMeshWorkGroupSize[2] = meshShaderProperties.maxMeshWorkGroupSize[2];
-    m_DeviceDesc.maxMeshTotalMemorySize = meshShaderProperties.maxMeshTotalMemorySize;
-    m_DeviceDesc.maxMeshOutputVertices = meshShaderProperties.maxMeshOutputVertices;
-    m_DeviceDesc.maxMeshOutputPrimitives = meshShaderProperties.maxMeshOutputPrimitives;
-    m_DeviceDesc.maxMeshMultiviewViewCount = meshShaderProperties.maxMeshMultiviewViewCount;
+    m_DeviceDesc.meshTaskMaxNum = meshShaderProperties.maxDrawMeshTasksCount;
+    m_DeviceDesc.meshTaskWorkGroupInvocationMaxNum = meshShaderProperties.maxTaskWorkGroupInvocations;
+    m_DeviceDesc.meshTaskWorkGroupMaxDim[0] = meshShaderProperties.maxTaskWorkGroupSize[0];
+    m_DeviceDesc.meshTaskWorkGroupMaxDim[1] = meshShaderProperties.maxTaskWorkGroupSize[1];
+    m_DeviceDesc.meshTaskWorkGroupMaxDim[2] = meshShaderProperties.maxTaskWorkGroupSize[2];
+    m_DeviceDesc.meshTaskTotalMemoryMaxSize = meshShaderProperties.maxTaskTotalMemorySize;
+    m_DeviceDesc.meshTaskOutputMaxNum = meshShaderProperties.maxTaskOutputCount;
+    m_DeviceDesc.meshWorkGroupInvocationMaxNum = meshShaderProperties.maxMeshWorkGroupInvocations;
+    m_DeviceDesc.meshWorkGroupMaxDim[0] = meshShaderProperties.maxMeshWorkGroupSize[0];
+    m_DeviceDesc.meshWorkGroupMaxDim[1] = meshShaderProperties.maxMeshWorkGroupSize[1];
+    m_DeviceDesc.meshWorkGroupMaxDim[2] = meshShaderProperties.maxMeshWorkGroupSize[2];
+    m_DeviceDesc.meshTotalMemoryMaxSize = meshShaderProperties.maxMeshTotalMemorySize;
+    m_DeviceDesc.meshOutputVertexMaxNum = meshShaderProperties.maxMeshOutputVertices;
+    m_DeviceDesc.meshOutputPrimitiveMaxNum = meshShaderProperties.maxMeshOutputPrimitives;
+    m_DeviceDesc.meshMultiviewViewMaxNum = meshShaderProperties.maxMeshMultiviewViewCount;
     m_DeviceDesc.meshOutputPerVertexGranularity = meshShaderProperties.meshOutputPerVertexGranularity;
     m_DeviceDesc.meshOutputPerPrimitiveGranularity = meshShaderProperties.meshOutputPerPrimitiveGranularity;
 }
