@@ -84,13 +84,14 @@ private:
 #if _DEBUG
     #define CHECK(log, condition, format, ...) \
         if ( !(condition) ) \
-            (log).ReportMessage(nri::Message::TYPE_ERROR, format, ##__VA_ARGS__);
+            (log).ReportMessage(nri::Message::TYPE_ERROR, format, ##__VA_ARGS__)
 #else
-    #define CHECK(log, condition, format, ...) (void*)0;
+    #define CHECK(log, condition, format, ...) \
+        ((void)sizeof((void)(condition), 0))
 #endif
 
 constexpr void ReturnVoid() {}
-template<typename T> constexpr void MaybeUnused([[maybe_unused]] const T& arg) {}
+template<typename... Args> constexpr void MaybeUnused([[maybe_unused]] const Args&... args) {}
 
 //==============================================================================================================================
 

@@ -41,7 +41,7 @@ constexpr uint64_t Hash( const char* name )
     return *name != 0 ? *name ^ ( 33 * Hash(name + 1) ) : 5381;
 }
 
-Result NRI_CALL nri::GetInterface(const Device& device, const char* interfaceName, size_t interfaceSize, void* interfacePtr)
+NRI_API Result NRI_CALL nri::GetInterface(const Device& device, const char* interfaceName, size_t interfaceSize, void* interfacePtr)
 {
     const uint64_t hash = Hash(interfaceName);
     size_t realInterfaceSize = size_t(-1);
@@ -135,7 +135,7 @@ constexpr PhysicalDeviceType GetPhysicalDeviceType(VkPhysicalDeviceType physical
     if (name == nullptr) \
         return Result::UNSUPPORTED;
 
-Result NRI_CALL nri::GetPhysicalDevices(PhysicalDeviceGroup* physicalDeviceGroups, uint32_t& physicalDeviceGroupNum)
+NRI_API Result NRI_CALL nri::GetPhysicalDevices(PhysicalDeviceGroup* physicalDeviceGroups, uint32_t& physicalDeviceGroupNum)
 {
     Library* loader = LoadSharedLibrary(VULKAN_LOADER_NAME);
     if (loader == nullptr)
@@ -227,8 +227,9 @@ Result NRI_CALL nri::GetPhysicalDevices(PhysicalDeviceGroup* physicalDeviceGroup
         group.luid = *(uint64_t*)&deviceIDProperties.deviceLUID[0];
         group.physicalDeviceGroupSize = deviceGroupProperties[i].physicalDeviceCount;
 
-        const size_t descriptionLength = std::min(strlen(properties.deviceName), (size_t)GetCountOf(group.description));
+        const size_t descriptionLength = (size_t)GetCountOf(group.description) - 1;
         strncpy(group.description, properties.deviceName, descriptionLength);
+        group.description[descriptionLength] = '\0';
 
         group.dedicatedVideoMemoryMB = 0;
         for (uint32_t k = 0; k < memoryProperties.memoryHeapCount; k++)
@@ -391,6 +392,8 @@ NRI_API Format NRI_CALL nri::GetFormatVK(uint32_t vkFormat)
 
 NRI_API Format NRI_CALL nri::GetFormatDXGI(uint32_t dxgiFormat)
 {
+    MaybeUnused(dxgiFormat);
+
     #if (NRI_USE_D3D11 == 1 || NRI_USE_D3D12 == 1)
         return ::GetFormatDXGI(dxgiFormat);
     #else

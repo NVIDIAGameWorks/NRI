@@ -63,13 +63,6 @@ source_group("" FILES ${NRI_D3D12_SOURCE})
 source_group("" FILES ${NRI_VK_SOURCE})
 source_group("" FILES ${NRI_VALIDATION_SOURCE})
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    # -Wmissing-braces
-    # warning: suggest braces around initialization of subobject [-Wmissing-braces]
-    # D:\git\nri\Source\D3D12\CommandBufferD3D12.cpp(344,75) initialization of anonymous union
-    add_compile_options(-Wno-switch -Wno-missing-braces)
-endif()
-
 if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     set(NRI_IS_SUBMODULE OFF)
 else()
@@ -203,9 +196,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE ${NRI_COMPILE_DEFINITIONS})
 set_property(TARGET ${PROJECT_NAME} PROPERTY FOLDER "${NRI_PROJECT_FOLDER}")
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
-if (NRI_STATIC_LIBRARY)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC "NRI_API=extern \"C\"")
-else()
+if (NOT NRI_STATIC_LIBRARY)
     if(WIN32)
         target_compile_definitions(${PROJECT_NAME} PRIVATE "NRI_API=extern \"C\" __declspec(dllexport)")
     else()
@@ -223,3 +214,19 @@ if (NOT ${NRI_OUTPUT_BIN_PATH} STREQUAL "")
     set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${NRI_OUTPUT_BIN_PATH}/$<CONFIG>")
     set_target_properties(${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${NRI_OUTPUT_BIN_PATH}/$<CONFIG>")
 endif()
+
+# warning level 4 and all warnings as errors (with some exceptions)
+if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" OR ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+    set(NRI_COMPILE_OPTIONS -Wextra -Werror -Wno-missing-braces -Wno-unknown-pragmas -Wno-switch -Wno-missing-field-initializers -Wno-deprecated-copy-with-user-provided-copy -Wno-deprecated-copy)
+elseif (MSVC)
+    set(NRI_COMPILE_OPTIONS /W4 /WX /wd4324)
+endif()
+
+if (WIN32)
+    target_compile_options(NRI_D3D11 PRIVATE ${NRI_COMPILE_OPTIONS})
+    target_compile_options(NRI_D3D12 PRIVATE ${NRI_COMPILE_OPTIONS})
+endif()
+
+target_compile_options(NRI_VK PRIVATE ${NRI_COMPILE_OPTIONS})
+target_compile_options(NRI_Validation PRIVATE ${NRI_COMPILE_OPTIONS})
+target_compile_options(${PROJECT_NAME} PRIVATE ${NRI_COMPILE_OPTIONS})

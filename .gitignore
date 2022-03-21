@@ -14,11 +14,13 @@ Makefile
 *.vcxproj*
 *.sln
 .vs/
+*.args.json
+*.manifest
 
 # VS Code
 .vscode/
 
-# Shaders
+# shaders
 *.dxbc
 *.dxil
 *.spirv
@@ -26,25 +28,29 @@ Makefile
 *.dxil.h
 *.spirv.h
 
-# Library
-*.lib
-*.exp
-*.dll
-*.pdb
-*.so
-*.so.*
-*.a
-
 # ninja
 .ninja_deps
 .ninja_log
 build.ninja
 compile_commands.json
 *.log
+*.ninja
+
+# library
+*.lib
+*.exp
+*.dll
+*.ilk
+*.pdb
+*.so
+*.so.*
+*.manifest
 
 # external packages
-External/NVAPI
-External/AGS
+External/NVAPI/
+External/AGS/
 
-# packaged SDK
+# generated folders
+_Build/
+_Compiler/
 _NRI_SDK/

@@ -640,6 +640,8 @@ void DeviceVK::DestroyAccelerationStructure(AccelerationStructure& accelerationS
 
 Result DeviceVK::GetDisplays(Display** displays, uint32_t& displayNum)
 {
+    MaybeUnused(displays, displayNum);
+
 #if _WIN32
     if (m_Adapter == nullptr)
         return Result::UNSUPPORTED;
@@ -679,6 +681,8 @@ Result DeviceVK::GetDisplays(Display** displays, uint32_t& displayNum)
 
 Result DeviceVK::GetDisplaySize(Display& display, uint16_t& width, uint16_t& height)
 {
+    MaybeUnused(display, width, height);
+
 #if _WIN32
     if (m_Adapter == nullptr)
         return Result::UNSUPPORTED;
@@ -1037,8 +1041,9 @@ const char* GetObjectTypeName(VkObjectType objectType)
         return "VkDeferredOperationKHR";
     case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV:
         return "VkIndirectCommandsLayoutNV";
+    default:
+        return "unknown";
     }
-    return "unknown";
 }
 
 VkBool32 VKAPI_PTR DebugUtilsMessenger(
@@ -1060,7 +1065,7 @@ VkBool32 VKAPI_PTR DebugUtilsMessenger(
     if (callbackData->messageIdNumber == 738239446)
         messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
 
-    const char* type = "unknown";
+    const char* type;
     switch( messageSeverity )
     {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
@@ -1077,6 +1082,9 @@ VkBool32 VKAPI_PTR DebugUtilsMessenger(
         type = "error";
         isError = true;
         break;
+    default:
+        type = "unknown";
+        break;
     }
 
     if (!isWarning && !isError)
@@ -1091,9 +1099,8 @@ VkBool32 VKAPI_PTR DebugUtilsMessenger(
     message += " ";
     message += callbackData->pMessage;
 
-    if (strstr(callbackData->pMessage, "vkCmdCopyBufferToImage(): For optimal performance VkImage") != nullptr)
-        return VK_FALSE;
-    if (strstr(callbackData->pMessage, "vkCmdCopyImage(): For optimal performance VkImage") != nullptr)
+    // vkCmdCopyBufferToImage: For optimal performance VkImage 0x984b920000000104 layout should be VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL instead of GENERAL.
+    if (callbackData->messageIdNumber == 1303270965)
         return VK_FALSE;
 
     if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
@@ -1630,6 +1637,7 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     extensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
     extensions.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
     extensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+    extensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
     extensions.push_back(VK_NV_MESH_SHADER_EXTENSION_NAME);
     extensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
     extensions.push_back(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME);
@@ -1638,7 +1646,7 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     extensions.push_back(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
     extensions.push_back(VK_EXT_HDR_METADATA_EXTENSION_NAME);
     extensions.push_back(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
-
+    
     FilterDeviceExtensions(extensions);
 
     EraseIncompatibleExtension(extensions, VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
@@ -1665,10 +1673,19 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures =
         { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR };
 
+    VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = 
+        { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR };
+
+    VkPhysicalDevice16BitStorageFeatures storageFeatures = 
+        { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES };
+
     VkPhysicalDeviceFloat16Int8FeaturesKHR float16Int8Features =
         { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR };
 
     deviceFeatures2.pNext = &bufferDeviceAddressFeatures;
+
+    storageFeatures.pNext = deviceFeatures2.pNext;
+    deviceFeatures2.pNext = &storageFeatures;
 
     if (m_IsDescriptorIndexingExtSupported)
     {
@@ -1694,6 +1711,8 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
         deviceFeatures2.pNext = &rayTracingFeatures;
         accelerationStructureFeatures.pNext = deviceFeatures2.pNext;
         deviceFeatures2.pNext = &accelerationStructureFeatures;
+        rayQueryFeatures.pNext = deviceFeatures2.pNext;
+        deviceFeatures2.pNext = &rayQueryFeatures;
     }
 
     if (m_IsFP16Supported)
