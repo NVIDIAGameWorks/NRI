@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.15)
 
 message("Processing 'NRI'...")
 
-option(NRI_DISABLE_INTERPROCEDURAL_OPTIMIZATION "disable interprocedural optimization" OFF)
-option(NRI_DISABLE_XLIB_SUPPORT "disable xlib support" OFF)
-option(NRI_DISABLE_WAYLAND_SUPPORT "disable wayland support" OFF)
-option(NRI_STATIC_LIBRARY "build static lib" OFF)
+option(NRI_DISABLE_INTERPROCEDURAL_OPTIMIZATION "Disable interprocedural optimization" OFF)
+option(NRI_DISABLE_XLIB_SUPPORT "Disable xlib support" OFF)
+option(NRI_DISABLE_WAYLAND_SUPPORT "Disable wayland support" OFF)
+option(NRI_STATIC_LIBRARY "Build static lib" OFF)
 
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/Include/NRI.h" ver_h)
 string(REGEX MATCH "NRI_VERSION_MAJOR ([0-9]*)" _ ${ver_h})
@@ -216,8 +216,11 @@ if (NOT ${NRI_OUTPUT_BIN_PATH} STREQUAL "")
 endif()
 
 # warning level 4 and all warnings as errors (with some exceptions)
-if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" OR ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-    set(NRI_COMPILE_OPTIONS -Wextra -Werror -Wno-missing-braces -Wno-unknown-pragmas -Wno-switch -Wno-missing-field-initializers -Wno-deprecated-copy-with-user-provided-copy -Wno-deprecated-copy)
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
+    set(NRI_COMPILE_OPTIONS -Werror -Wextra -Wno-missing-braces -Wno-unknown-pragmas -Wno-switch -Wno-missing-field-initializers -Wno-deprecated-copy -Wno-deprecated-copy-with-user-provided-copy)
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    #TODO: give up due to "error: enumeral and non-enumeral type in conditional expression [-Werror=extra]" in absolutely valid code!
+    set(NRI_COMPILE_OPTIONS -Wextra -Wno-missing-braces -Wno-unknown-pragmas -Wno-switch -Wno-missing-field-initializers -Wno-deprecated-copy)
 elseif (MSVC)
     set(NRI_COMPILE_OPTIONS /W4 /WX /wd4324)
 endif()
