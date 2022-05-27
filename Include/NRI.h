@@ -8,7 +8,7 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-// Documentation: https://docs.google.com/document/d/1OidQtZnm-3grhua7Oy1WKDUzh8ExTdbO83VTAWS_nNM/
+// Documentation: ProgrammingGuide.md
 
 #pragma once
 
@@ -16,8 +16,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include <cstddef>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 79
-#define NRI_VERSION_DATE "23 March 2022"
+#define NRI_VERSION_MINOR 82
+#define NRI_VERSION_DATE "18 May 2022"
 #define NRI_INTERFACE( name ) #name, sizeof(name)
 
 #if _WIN32
