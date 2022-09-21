@@ -33,8 +33,6 @@ Result CreateDeviceVK(const DeviceCreationVulkanDesc& deviceDesc, DeviceBase*& d
 #endif
 
 DeviceBase* CreateDeviceValidation(const DeviceCreationDesc& deviceCreationDesc, DeviceBase& device);
-Format GetFormatDXGI(uint32_t dxgiFormat);
-Format GetFormatVK(uint32_t vkFormat);
 
 constexpr uint64_t Hash( const char* name )
 {
@@ -51,53 +49,56 @@ NRI_API Result NRI_CALL nri::GetInterface(const Device& device, const char* inte
     if (hash == Hash( NRI_STRINGIFY(nri::CoreInterface) ))
     {
         realInterfaceSize = sizeof(CoreInterface);
-        result = deviceBase.FillFunctionTable(*(CoreInterface*)interfacePtr);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(CoreInterface*)interfacePtr);
     }
     else if (hash == Hash( NRI_STRINGIFY(nri::SwapChainInterface) ))
     {
         realInterfaceSize = sizeof(SwapChainInterface);
-        result = deviceBase.FillFunctionTable(*(SwapChainInterface*)interfacePtr);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(SwapChainInterface*)interfacePtr);
     }
     else if (hash == Hash( NRI_STRINGIFY(nri::WrapperD3D11Interface) ))
     {
         realInterfaceSize = sizeof(WrapperD3D11Interface);
-        result = deviceBase.FillFunctionTable(*(WrapperD3D11Interface*)interfacePtr);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(WrapperD3D11Interface*)interfacePtr);
     }
     else if (hash == Hash(NRI_STRINGIFY(nri::WrapperD3D12Interface)))
     {
         realInterfaceSize = sizeof(WrapperD3D12Interface);
-        result = deviceBase.FillFunctionTable(*(WrapperD3D12Interface*)interfacePtr);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(WrapperD3D12Interface*)interfacePtr);
     }
     else if (hash == Hash( NRI_STRINGIFY(nri::WrapperVKInterface) ))
     {
         realInterfaceSize = sizeof(WrapperVKInterface);
-        result = deviceBase.FillFunctionTable(*(WrapperVKInterface*)interfacePtr);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(WrapperVKInterface*)interfacePtr);
     }
     else if (hash == Hash( NRI_STRINGIFY(nri::RayTracingInterface) ))
     {
         realInterfaceSize = sizeof(RayTracingInterface);
-        result = deviceBase.FillFunctionTable(*(RayTracingInterface*)interfacePtr);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(RayTracingInterface*)interfacePtr);
     }
     else if (hash == Hash( NRI_STRINGIFY(nri::MeshShaderInterface) ))
     {
         realInterfaceSize = sizeof(MeshShaderInterface);
-        result = deviceBase.FillFunctionTable(*(MeshShaderInterface*)interfacePtr);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(MeshShaderInterface*)interfacePtr);
     }
     else if (hash == Hash( NRI_STRINGIFY(nri::HelperInterface) ))
     {
         realInterfaceSize = sizeof(HelperInterface);
-        result = deviceBase.FillFunctionTable(*(HelperInterface*)interfacePtr);
-    }
-    else if (hash == Hash( NRI_STRINGIFY(nri::WrapperSPIRVOffsetsInterface) ))
-    {
-        realInterfaceSize = sizeof(WrapperSPIRVOffsetsInterface);
-        result = deviceBase.FillFunctionTable(*(WrapperSPIRVOffsetsInterface*)interfacePtr);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(HelperInterface*)interfacePtr);
     }
 
     if (result == Result::INVALID_ARGUMENT)
         REPORT_ERROR(deviceBase.GetLog(), "Unknown interface '%s'!", interfaceName);
-    else if (interfaceSize > realInterfaceSize)
-        REPORT_ERROR(deviceBase.GetLog(), "Interface '%s' has invalid size (%u bytes, at least %u bytes expected by the implementation)", interfaceName, interfaceSize, realInterfaceSize);
+    else if (interfaceSize != realInterfaceSize)
+        REPORT_ERROR(deviceBase.GetLog(), "Interface '%s' has invalid size = %u bytes, while %u bytes expected by the implementation", interfaceName, interfaceSize, realInterfaceSize);
     else if (result == Result::UNSUPPORTED)
         REPORT_WARNING(deviceBase.GetLog(), "Interface '%s' is not supported by the device!", interfaceName);
 
@@ -313,11 +314,16 @@ NRI_API Result NRI_CALL nri::CreateDeviceFromD3D11Device(const DeviceCreationD3D
     CheckAndSetDefaultCallbacks(deviceCreationDesc.callbackInterface);
     CheckAndSetDefaultAllocator(deviceCreationDesc.memoryAllocatorInterface);
 
+    DeviceCreationD3D11Desc tempDeviceCreationD3D11Desc = deviceCreationD3D11Desc;
+
+    CheckAndSetDefaultCallbacks(tempDeviceCreationD3D11Desc.callbackInterface);
+    CheckAndSetDefaultAllocator(tempDeviceCreationD3D11Desc.memoryAllocatorInterface);
+
     Result result = Result::UNSUPPORTED;
     DeviceBase* deviceImpl = nullptr;
 
     #if (NRI_USE_D3D11 == 1)
-        result = CreateDeviceD3D11(deviceCreationD3D11Desc, deviceImpl);
+        result = CreateDeviceD3D11(tempDeviceCreationD3D11Desc, deviceImpl);
     #endif
 
     if (result != Result::SUCCESS)
@@ -340,15 +346,15 @@ NRI_API Result NRI_CALL nri::CreateDeviceFromD3D12Device(const DeviceCreationD3D
 
     DeviceCreationD3D12Desc tempDeviceCreationD3D12Desc = deviceCreationD3D12Desc;
 
-    Result result = Result::UNSUPPORTED;
-    DeviceBase* deviceImpl = nullptr;
-
     CheckAndSetDefaultCallbacks(tempDeviceCreationD3D12Desc.callbackInterface);
     CheckAndSetDefaultAllocator(tempDeviceCreationD3D12Desc.memoryAllocatorInterface);
 
-#if (NRI_USE_D3D12 == 1)
-    result = CreateDeviceD3D12(tempDeviceCreationD3D12Desc, deviceImpl);
-#endif
+    Result result = Result::UNSUPPORTED;
+    DeviceBase* deviceImpl = nullptr;
+
+    #if (NRI_USE_D3D12 == 1)
+        result = CreateDeviceD3D12(tempDeviceCreationD3D12Desc, deviceImpl);
+    #endif
 
     if (result != Result::SUCCESS)
         return result;
@@ -361,6 +367,7 @@ NRI_API Result NRI_CALL nri::CreateDeviceFromVkDevice(const DeviceCreationVulkan
     DeviceCreationDesc deviceCreationDesc = {};
     deviceCreationDesc.callbackInterface = deviceCreationVulkanDesc.callbackInterface;
     deviceCreationDesc.memoryAllocatorInterface = deviceCreationVulkanDesc.memoryAllocatorInterface;
+    deviceCreationDesc.spirvBindingOffsets = deviceCreationVulkanDesc.spirvBindingOffsets;
     deviceCreationDesc.graphicsAPI = GraphicsAPI::VULKAN;
     deviceCreationDesc.enableNRIValidation = deviceCreationVulkanDesc.enableNRIValidation;
     deviceCreationDesc.enableAPIValidation = deviceCreationVulkanDesc.enableAPIValidation;
@@ -386,27 +393,41 @@ NRI_API Result NRI_CALL nri::CreateDeviceFromVkDevice(const DeviceCreationVulkan
     return FinalizeDeviceCreation(deviceCreationDesc, *deviceImpl, device);
 }
 
-NRI_API Format NRI_CALL nri::GetFormatVK(uint32_t vkFormat)
-{
-    #if (NRI_USE_VULKAN == 1)
-        return ::GetFormatVK(vkFormat);
-    #else
-        return nri::Format::UNKNOWN;
-    #endif
-}
-
-NRI_API Format NRI_CALL nri::GetFormatDXGI(uint32_t dxgiFormat)
-{
-    MaybeUnused(dxgiFormat);
-
-    #if (NRI_USE_D3D11 == 1 || NRI_USE_D3D12 == 1)
-        return ::GetFormatDXGI(dxgiFormat);
-    #else
-        return nri::Format::UNKNOWN;
-    #endif
-}
-
 NRI_API void NRI_CALL nri::DestroyDevice(Device& device)
 {
     ((DeviceBase&)device).Destroy();
+}
+
+NRI_API Format NRI_CALL nri::ConvertVKFormatToNRI(uint32_t vkFormat)
+{
+    return VKFormatToNRIFormat((VkFormat)vkFormat);
+}
+
+NRI_API Format NRI_CALL nri::ConvertDXGIFormatToNRI(uint32_t dxgiFormat)
+{
+    return DXGIFormatToNRIFormat(dxgiFormat);
+}
+
+NRI_API uint32_t NRI_CALL nri::ConvertNRIFormatToVK(Format format)
+{
+    MaybeUnused(format);
+
+    #if (NRI_USE_VULKAN == 1)
+        return NRIFormatToVKFormat(format);
+    #else
+        return 0;
+    #endif
+}
+
+NRI_API uint32_t NRI_CALL nri::ConvertNRIFormatToDXGI(Format format)
+{
+    MaybeUnused(format);
+
+    #if (NRI_USE_D3D11 == 1)
+        return NRIFormatToDXGIFormatD3D11(format);
+    #elif(NRI_USE_D3D12 == 1)
+        return NRIFormatToDXGIFormatD3D12(format);
+    #else
+        return 0;
+    #endif
 }
