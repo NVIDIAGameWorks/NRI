@@ -588,6 +588,11 @@ Result DeviceVK::CreateDeviceSemaphore(NRIVkFence vkFence, DeviceSemaphore*& dev
     return CreateImplementation<DeviceSemaphoreVK>(deviceSemaphore, vkFence);
 }
 
+Result DeviceVK::CreateAccelerationStructure(const AccelerationStructureVulkanDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure)
+{
+    return CreateImplementation<AccelerationStructureVK>(accelerationStructure, accelerationStructureDesc);
+}
+
 void DeviceVK::DestroyCommandAllocator(CommandAllocator& commandAllocator)
 {
     Deallocate(GetStdAllocator(), (CommandAllocatorVK*)&commandAllocator);
@@ -1085,7 +1090,11 @@ VkBool32 VKAPI_PTR DebugUtilsMessenger(
     if (callbackData->messageIdNumber == 738239446)
         messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
 
-    const char* type;
+    // VUID-RuntimeSpirv-OpImageWrite-07112
+    if (callbackData->messageIdNumber == 1842853234)
+        messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+
+    const char* type = "unknown";
     switch( messageSeverity )
     {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
@@ -1101,9 +1110,6 @@ VkBool32 VKAPI_PTR DebugUtilsMessenger(
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
         type = "error";
         isError = true;
-        break;
-    default:
-        type = "unknown";
         break;
     }
 
@@ -1146,13 +1152,9 @@ VkBool32 VKAPI_PTR DebugUtilsMessenger(
         REPORT_ERROR(device.GetLog(), "DebugUtilsMessenger: %s, %s", type, message.c_str());
     }
     else if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-    {
         REPORT_WARNING(device.GetLog(), "DebugUtilsMessenger: %s, %s", type, message.c_str());
-    }
     else
-    {
         REPORT_INFO(device.GetLog(), "DebugUtilsMessenger: %s, %s", type, message.c_str());
-    }
 
     return VK_FALSE;
 }

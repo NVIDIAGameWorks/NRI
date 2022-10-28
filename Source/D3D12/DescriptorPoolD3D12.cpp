@@ -24,8 +24,9 @@ DescriptorPoolD3D12::DescriptorPoolD3D12(DeviceD3D12& device)
 
 DescriptorPoolD3D12::~DescriptorPoolD3D12()
 {
-    for (size_t i = 0; i < m_DescriptorSetNum; i++)
-        Deallocate(m_Device.GetStdAllocator(), m_DescriptorSets[i]);
+    Reset();
+
+    m_DescriptorSets.clear();
 }
 
 Result DescriptorPoolD3D12::Create(const DescriptorPoolDesc& descriptorPoolDesc)
