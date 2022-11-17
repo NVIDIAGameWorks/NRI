@@ -309,9 +309,7 @@ void DeviceVK::FindDXGIAdapter()
 bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const
 {
     const VkMemoryPropertyFlags host = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-
-    VkMemoryPropertyFlags hostUnwantedFlags =
-        (memoryLocation == nri::MemoryLocation::HOST_READBACK) ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0;
+    const VkMemoryPropertyFlags hostUnwantedFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
     const VkMemoryPropertyFlags device = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     const VkMemoryPropertyFlags deviceUnwantedFlags = 0;
@@ -328,7 +326,7 @@ bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeM
     {
         const bool isMemoryTypeSupported = memoryTypeMask & (1 << i);
         const bool isPropSupported = (m_MemoryProps.memoryTypes[i].propertyFlags & flags) == flags;
-        const bool hasUnwantedProperties = (m_MemoryProps.memoryTypes[i].propertyFlags & unwantedFlags) == 0;
+        const bool hasUnwantedProperties = (m_MemoryProps.memoryTypes[i].propertyFlags & unwantedFlags) != 0;
 
         if (isMemoryTypeSupported && isPropSupported && !hasUnwantedProperties)
         {
