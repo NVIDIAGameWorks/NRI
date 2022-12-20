@@ -1,16 +1,9 @@
 @echo off
 
-set /P M=Do you want to delete PACKMAN repository? [y/n]
-if /I "%M%" neq "y" goto KEEP_PACKMAN
+if exist "build" rd /q /s "build"
 
-:DELETE_PACKMAN
-rd /q /s "%PM_PACKAGES_ROOT%"
-
-:KEEP_PACKMAN
-rd /q /s "_Build"
-rd /q /s "_Compiler"
-rd /q /s "_NRI_SDK"
-rd /q /s "External/AGS"
-rd /q /s "External/NVAPI"
-
-rd /q /s "build"
+if exist "_Build" rd /q /s "_Build"
+if exist "_Compiler" rd /q /s "_Compiler"
+if exist "_NRI_SDK" rd /q /s "_NRI_SDK"
+if exist "External/AGS" rd /q /s "External/AGS"
+if exist "External/NVAPI" rd /q /s "External/NVAPI"

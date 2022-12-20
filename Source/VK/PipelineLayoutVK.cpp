@@ -18,7 +18,7 @@ using namespace nri;
 PipelineLayoutVK::PipelineLayoutVK(DeviceVK& device) :
     m_RuntimeBindingInfo(device.GetStdAllocator()),
     m_DescriptorSetLayouts(device.GetStdAllocator()),
-    m_StaticSamplers(device.GetStdAllocator()),
+    m_DescriptorSetSpaces(device.GetStdAllocator()),
     m_Device(device)
 {
 }
@@ -29,13 +29,11 @@ PipelineLayoutVK::~PipelineLayoutVK()
 
     const auto allocationCallbacks = m_Device.GetAllocationCallbacks();
 
-    if (m_Handle != VK_NULL_HANDLE)
+    if (m_Handle)
         vk.DestroyPipelineLayout(m_Device, m_Handle, allocationCallbacks);
 
     for (auto& handle : m_DescriptorSetLayouts)
         vk.DestroyDescriptorSetLayout(m_Device, handle, allocationCallbacks);
-
-    m_StaticSamplers.clear();
 }
 
 Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
@@ -52,29 +50,60 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     uint32_t bindingOffsets[(uint32_t)DescriptorType::MAX_NUM] = {};
     FillBindingOffsets(pipelineLayoutDesc.ignoreGlobalSPIRVOffsets, bindingOffsets);
 
-    ReserveStaticSamplers(pipelineLayoutDesc);
+    // Create "in use" set layouts, calculate number of sets, copy "register space" for later use
+    m_DescriptorSetSpaces.resize(pipelineLayoutDesc.descriptorSetNum);
+    m_DescriptorSetLayouts.resize(pipelineLayoutDesc.descriptorSetNum);
 
-    m_DescriptorSetLayouts.reserve(pipelineLayoutDesc.descriptorSetNum);
+    uint32_t setNum = 0;
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++)
-        CreateSetLayout(pipelineLayoutDesc.descriptorSets[i], bindingOffsets);
+    {
+        m_DescriptorSetLayouts[i] = CreateSetLayout(pipelineLayoutDesc.descriptorSets[i], bindingOffsets);
+        m_DescriptorSetSpaces[i] = pipelineLayoutDesc.descriptorSets[i].registerSpace;
 
+        setNum = std::max(setNum, pipelineLayoutDesc.descriptorSets[i].registerSpace);
+    }
+    setNum++;
+
+    // Allocate temp memory for ALL "register spaces" making the entire range consecutive (thanks Vulkan API!)
+    VkDescriptorSetLayout* descriptorSetLayouts = ALLOCATE_SCRATCH(m_Device, VkDescriptorSetLayout, setNum);
+    
+    // Create "empty" set layout (needed only if "register space" indices are not consecutive)
+    if (setNum != pipelineLayoutDesc.descriptorSetNum)
+    {
+        VkDescriptorSetLayout emptyLayout = CreateSetLayout({}, bindingOffsets);
+        m_DescriptorSetLayouts.push_back(emptyLayout);
+
+        for (uint32_t i = 0; i < setNum; i++)
+            descriptorSetLayouts[i] = emptyLayout;
+    }
+
+    // Populate descriptor set layouts
+    for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++)
+    {
+        uint32_t setIndex = pipelineLayoutDesc.descriptorSets[i].registerSpace;
+        descriptorSetLayouts[setIndex] = m_DescriptorSetLayouts[i];
+    }
+
+    // Push constants
     VkPushConstantRange* pushConstantRanges = ALLOCATE_SCRATCH(m_Device, VkPushConstantRange, pipelineLayoutDesc.pushConstantNum);
     FillPushConstantRanges(pipelineLayoutDesc, pushConstantRanges);
 
+    // Create pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
-    pipelineLayoutCreateInfo.setLayoutCount = pipelineLayoutDesc.descriptorSetNum;
-    pipelineLayoutCreateInfo.pSetLayouts = m_DescriptorSetLayouts.data();
+    pipelineLayoutCreateInfo.setLayoutCount = setNum;
+    pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts;
     pipelineLayoutCreateInfo.pushConstantRangeCount = pipelineLayoutDesc.pushConstantNum;
     pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRanges;
 
     const auto& vk = m_Device.GetDispatchTable();
-
     const VkResult result = vk.CreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
+
+    // Cleanup
+    FREE_SCRATCH(m_Device, pushConstantRanges, pipelineLayoutDesc.pushConstantNum);
+    FREE_SCRATCH(m_Device, descriptorSetLayouts, setNum);
 
     RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, Result::FAILURE,
         "Can't create a pipeline layout: vkCreatePipelineLayout returned %d.", (int32_t)result);
-
-    FREE_SCRATCH(m_Device, pushConstantRanges, pipelineLayoutDesc.pushConstantNum);
 
     FillRuntimeBindingInfo(pipelineLayoutDesc, bindingOffsets);
 
@@ -106,18 +135,9 @@ void PipelineLayoutVK::FillBindingOffsets(bool ignoreGlobalSPIRVOffsets, uint32_
     bindingOffsets[(uint32_t)DescriptorType::ACCELERATION_STRUCTURE] = spirvBindingOffsets.textureOffset;
 }
 
-void PipelineLayoutVK::ReserveStaticSamplers(const PipelineLayoutDesc& pipelineLayoutDesc)
+VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets)
 {
-    uint32_t staticSamplerNum = 0;
-    for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++)
-        staticSamplerNum += pipelineLayoutDesc.descriptorSets[i].staticSamplerNum;
-
-    m_StaticSamplers.reserve(staticSamplerNum);
-}
-
-void PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets)
-{
-    uint32_t bindingMaxNum = descriptorSetDesc.dynamicConstantBufferNum + descriptorSetDesc.staticSamplerNum;
+    uint32_t bindingMaxNum = descriptorSetDesc.dynamicConstantBufferNum;
 
     for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++)
     {
@@ -132,7 +152,6 @@ void PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc& descriptorSetDes
 
     FillDescriptorBindings(descriptorSetDesc, bindingOffsets, bindings, bindingFlags);
     FillDynamicConstantBufferBindings(descriptorSetDesc, bindingOffsets, bindings, bindingFlags);
-    CreateStaticSamplersAndFillSamplerBindings(descriptorSetDesc, bindingOffsets, bindings, bindingFlags);
 
     const uint32_t bindingNum = uint32_t(bindings - bindingsBegin);
 
@@ -152,24 +171,26 @@ void PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc& descriptorSetDes
     };
 
     VkDescriptorSetLayout handle = VK_NULL_HANDLE;
-
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.CreateDescriptorSetLayout(m_Device, &info, m_Device.GetAllocationCallbacks(), &handle);
 
-    m_DescriptorSetLayouts.push_back(handle);
-
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, ReturnVoid(),
-        "Can't create the descriptor set layout: vkCreateDescriptorSetLayout returned %d.", (int32_t)result);
-
     FREE_SCRATCH(m_Device, bindingsBegin, bindingMaxNum);
     FREE_SCRATCH(m_Device, bindingFlagsBegin, bindingMaxNum);
+
+    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, 0,
+        "Can't create the descriptor set layout: vkCreateDescriptorSetLayout returned %d.", (int32_t)result);
+
+    return handle;
 }
 
 void PipelineLayoutVK::FillDescriptorBindings(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets,
     VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags) const
 {
-    constexpr VkDescriptorBindingFlagsEXT variableSizedArrayFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT |
-                VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT;
+    const VkDescriptorBindingFlagsEXT commonBindingFlags = descriptorSetDesc.bindingMask & DescriptorSetBindingBits::PARTIALLY_BOUND ?
+        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT : 0;
+
+    constexpr VkDescriptorBindingFlagsEXT variableSizedArrayFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+        VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
 
     for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++)
     {
@@ -179,7 +200,7 @@ void PipelineLayoutVK::FillDescriptorBindings(const DescriptorSetDesc& descripto
 
         if (range.isArray)
         {
-            *(bindingFlags++) = range.isDescriptorNumVariable ? variableSizedArrayFlags : 0;
+            *(bindingFlags++) = commonBindingFlags | (range.isDescriptorNumVariable ? variableSizedArrayFlags : 0);
 
             VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
             descriptorBinding = {};
@@ -192,7 +213,7 @@ void PipelineLayoutVK::FillDescriptorBindings(const DescriptorSetDesc& descripto
         {
             for (uint32_t j = 0; j < range.descriptorNum; j++)
             {
-                *(bindingFlags++) = 0;
+                *(bindingFlags++) = commonBindingFlags;
 
                 VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
                 descriptorBinding = {};
@@ -220,30 +241,6 @@ void PipelineLayoutVK::FillDynamicConstantBufferBindings(const DescriptorSetDesc
         descriptorBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         descriptorBinding.descriptorCount = 1;
         descriptorBinding.stageFlags = GetShaderStageFlags(buffer.visibility);
-    }
-}
-
-void PipelineLayoutVK::CreateStaticSamplersAndFillSamplerBindings(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets,
-    VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags)
-{
-    for (uint32_t i = 0; i < descriptorSetDesc.staticSamplerNum; i++)
-    {
-        const StaticSamplerDesc& sampler = descriptorSetDesc.staticSamplers[i];
-
-        m_StaticSamplers.emplace_back(m_Device);
-        DescriptorVK& descriptor = m_StaticSamplers.back();
-
-        descriptor.Create(sampler.samplerDesc);
-
-        *(bindingFlags++) = 0;
-
-        VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
-        descriptorBinding = {};
-        descriptorBinding.binding = sampler.registerIndex + bindingOffsets[(uint32_t)DescriptorType::SAMPLER];
-        descriptorBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-        descriptorBinding.descriptorCount = 1;
-        descriptorBinding.stageFlags = GetShaderStageFlags(sampler.visibility);
-        descriptorBinding.pImmutableSamplers = &descriptor.GetSampler();
     }
 }
 

@@ -26,8 +26,8 @@ namespace nri
         void SetDebugName(const char* name);
         void Reset();
 
-        Result AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** const descriptorSets,
-            uint32_t instanceNum, uint32_t physicalDeviceMask, uint32_t variableDescriptorNum);
+        Result AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout,
+            DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t physicalDeviceMask, uint32_t variableDescriptorNum);
 
     private:
         bool CheckDescriptorRange(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum);
@@ -37,7 +37,6 @@ namespace nri
         DescriptorPoolDesc m_Desc = {};
         uint32_t m_DescriptorSetNum = 0;
         uint32_t m_SamplerNum = 0;
-        uint32_t m_StaticSamplerNum = 0;
         uint32_t m_ConstantBufferNum = 0;
         uint32_t m_DynamicConstantBufferNum = 0;
         uint32_t m_TextureNum = 0;

@@ -185,8 +185,8 @@ void CommandBufferD3D11::ClearStorageBuffer(const ClearStorageBufferDesc& clearD
 {
     const DescriptorD3D11& descriptor = *(const DescriptorD3D11*)clearDesc.storageBuffer;
 
-    Color<uint32_t> clearValue = {clearDesc.value, clearDesc.value, clearDesc.value, clearDesc.value};
-    m_Context->ClearUnorderedAccessViewUint(descriptor, &clearValue.r);
+    Color32ui clearValue = {clearDesc.value, clearDesc.value, clearDesc.value, clearDesc.value};
+    m_Context->ClearUnorderedAccessViewUint(descriptor, &clearValue.x);
 }
 
 void CommandBufferD3D11::ClearStorageTexture(const ClearStorageTextureDesc& clearDesc)
@@ -194,9 +194,9 @@ void CommandBufferD3D11::ClearStorageTexture(const ClearStorageTextureDesc& clea
     const DescriptorD3D11& descriptor = *(const DescriptorD3D11*)clearDesc.storageTexture;
 
     if (descriptor.IsIntegerFormat())
-        m_Context->ClearUnorderedAccessViewUint(descriptor, &clearDesc.value.rgba32ui.r);
+        m_Context->ClearUnorderedAccessViewUint(descriptor, &clearDesc.value.color32ui.x);
     else
-        m_Context->ClearUnorderedAccessViewFloat(descriptor, &clearDesc.value.rgba32f.r);
+        m_Context->ClearUnorderedAccessViewFloat(descriptor, &clearDesc.value.color32f.x);
 }
 
 void CommandBufferD3D11::BeginRenderPass(const FrameBuffer& frameBuffer, RenderPassBeginFlag renderPassBeginFlag)
@@ -284,13 +284,10 @@ void CommandBufferD3D11::SetDescriptorPool(const DescriptorPool& descriptorPool)
     MaybeUnused(descriptorPool);
 }
 
-void CommandBufferD3D11::SetDescriptorSets(uint32_t baseIndex, uint32_t descriptorSetNum, const DescriptorSet* const* descriptorSets, const uint32_t* dynamicConstantBufferOffsets)
+void CommandBufferD3D11::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets)
 {
-    for (uint32_t i = 0; i < descriptorSetNum; i++)
-    {
-        const DescriptorSetD3D11& descriptorSet = *(DescriptorSetD3D11*)descriptorSets[i];
-        m_CurrentPipelineLayout->BindDescriptorSet(m_BindingState, m_Context, baseIndex++, descriptorSet, dynamicConstantBufferOffsets);
-    }
+    const DescriptorSetD3D11& descriptorSetImpl = (DescriptorSetD3D11&)descriptorSet;
+    m_CurrentPipelineLayout->BindDescriptorSet(m_BindingState, m_Context, setIndexInPipelineLayout, descriptorSetImpl, dynamicConstantBufferOffsets);
 }
 
 void CommandBufferD3D11::SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size)
@@ -432,7 +429,7 @@ void CommandBufferD3D11::PipelineBarrier(const TransitionBarrierDesc* transition
     MaybeUnused(aliasingBarriers);
 
     constexpr AccessBits STORAGE_MASK = AccessBits::SHADER_RESOURCE_STORAGE;
-    constexpr BarrierDependency NO_WFI = (BarrierDependency)999;
+    constexpr BarrierDependency NO_WFI = (BarrierDependency)(-1);
 
     if (!transitionBarriers || (transitionBarriers->textureNum == 0 && transitionBarriers->bufferNum == 0))
         return;
