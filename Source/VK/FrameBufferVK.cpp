@@ -12,7 +12,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "DescriptorVK.h"
 #include "TextureVK.h"
 #include "FrameBufferVK.h"
-#include "DeviceVK.h"
 
 using namespace nri;
 
@@ -223,7 +222,11 @@ Result FrameBufferVK::Create(const FrameBufferDesc& frameBufferDesc)
     return Result::SUCCESS;
 }
 
-inline void FrameBufferVK::SetDebugName(const char* name)
+//================================================================================================================
+// NRI
+//================================================================================================================
+
+void FrameBufferVK::SetDebugName(const char* name)
 {
     std::array<uint64_t, PHYSICAL_DEVICE_GROUP_MAX_SIZE> handles;
     for (size_t i = 0; i < handles.size(); i++)
@@ -233,5 +236,3 @@ inline void FrameBufferVK::SetDebugName(const char* name)
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)m_RenderPass, name);
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)m_RenderPassWithClear, name);
 }
-
-#include "FrameBufferVK.hpp"

@@ -8,9 +8,7 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#pragma once
-
-#pragma region [  CoreInterface  ]
+#pragma region [  Core  ]
 
 static void NRI_CALL SetQueryPoolDebugName(QueryPool& queryPool, const char* name)
 {
@@ -22,10 +20,6 @@ static uint32_t NRI_CALL GetQuerySize(const QueryPool& queryPool)
     return ((QueryPoolVK&)queryPool).GetQuerySize();
 }
 
-void FillFunctionTableQueryPoolVK(CoreInterface& coreInterface)
-{
-    coreInterface.SetQueryPoolDebugName = ::SetQueryPoolDebugName;
-    coreInterface.GetQuerySize = ::GetQuerySize;
-}
-
 #pragma endregion
+
+Define_Core_QueryPool_PartiallyFillFunctionTable(VK)

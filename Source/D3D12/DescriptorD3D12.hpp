@@ -8,16 +8,20 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#pragma region [  CoreInterface  ]
+#pragma region [  Core  ]
 
-static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name)
+static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* name)
 {
-    ((MemoryD3D11&)memory).SetDebugName(name);
+    ((DescriptorD3D12&)descriptor).SetDebugName(name);
 }
 
-void FillFunctionTableMemoryD3D11(CoreInterface& coreInterface)
+static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor, uint32_t physicalDeviceIndex)
 {
-    coreInterface.SetMemoryDebugName = ::SetMemoryDebugName;
+    MaybeUnused(physicalDeviceIndex);
+
+    return uint64_t( ((DescriptorD3D12&)descriptor).GetPointerCPU() );
 }
 
 #pragma endregion
+
+Define_Core_Descriptor_PartiallyFillFunctionTable(D3D12)

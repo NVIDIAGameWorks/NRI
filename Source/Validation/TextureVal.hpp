@@ -8,7 +8,7 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#pragma region [  CoreInterface  ]
+#pragma region [  Core  ]
 
 static void NRI_CALL SetTextureDebugName(Texture& texture, const char* name)
 {
@@ -25,11 +25,6 @@ static void NRI_CALL GetTextureMemoryInfo(const Texture& texture, MemoryLocation
     ((TextureVal&)texture).GetMemoryInfo(memoryLocation, memoryDesc);
 }
 
-void FillFunctionTableTextureVal(CoreInterface& coreInterface)
-{
-    coreInterface.SetTextureDebugName = ::SetTextureDebugName;
-    coreInterface.GetTextureNativeObject = ::GetTextureNativeObject;
-    coreInterface.GetTextureMemoryInfo = ::GetTextureMemoryInfo;
-}
-
 #pragma endregion
+
+Define_Core_Texture_PartiallyFillFunctionTable(Val)

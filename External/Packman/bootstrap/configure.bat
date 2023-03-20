@@ -1,4 +1,4 @@
-:: Copyright 2019 NVIDIA CORPORATION
+:: Copyright 2019-2023 NVIDIA CORPORATION
 ::
 :: Licensed under the Apache License, Version 2.0 (the "License");
 :: you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 :: See the License for the specific language governing permissions and
 :: limitations under the License.
 
-set PM_PACKMAN_VERSION=6.35
+set PM_PACKMAN_VERSION=7.2.1
 
 :: Specify where packman command is rooted
 set PM_INSTALL_PATH=%~dp0..
@@ -48,7 +48,7 @@ echo.
 :: that may be needed in the path
 :ENSURE_DIR
 if not exist "%PM_PACKAGES_ROOT%" (
-	echo Creating directory %PM_PACKAGES_ROOT%
+	echo Creating packman packages cache at %PM_PACKAGES_ROOT%
 	mkdir "%PM_PACKAGES_ROOT%"
 )
 if %errorlevel% neq 0 ( goto ERROR_MKDIR_PACKAGES_ROOT )
@@ -59,7 +59,7 @@ if defined PM_PYTHON_EXT (
 	goto PACKMAN
 )
 
-set PM_PYTHON_VERSION=3.7.9-windows-x86_64
+set PM_PYTHON_VERSION=3.10.5-1-windows-x86_64
 set PM_PYTHON_BASE_DIR=%PM_PACKAGES_ROOT%\python
 set PM_PYTHON_DIR=%PM_PYTHON_BASE_DIR%\%PM_PYTHON_VERSION%
 set PM_PYTHON=%PM_PYTHON_DIR%\python.exe
@@ -112,9 +112,9 @@ if defined PM_MODULE_DIR_EXT (
     set PM_MODULE_DIR=%PM_PACKAGES_ROOT%\packman-common\%PM_PACKMAN_VERSION%
 )
 
-set PM_MODULE=%PM_MODULE_DIR%\packman.py
+set PM_MODULE=%PM_MODULE_DIR%\run.py
 
-if exist "%PM_MODULE%" goto ENSURE_7ZA
+if exist "%PM_MODULE%" goto END
 
 :: Clean out broken PM_MODULE_DIR if it exists
 if exist "%PM_MODULE_DIR%" ( rd /s /q "%PM_MODULE_DIR%" > nul )
@@ -136,19 +136,6 @@ if %errorlevel% neq 0 (
 )
 
 del "%TARGET%"
-
-:ENSURE_7ZA
-set PM_7Za_VERSION=16.02.4
-set PM_7Za_PATH=%PM_PACKAGES_ROOT%\7za\%PM_7ZA_VERSION%
-if exist "%PM_7Za_PATH%" goto END
-set PM_7Za_PATH=%PM_PACKAGES_ROOT%\chk\7za\%PM_7ZA_VERSION%
-if exist "%PM_7Za_PATH%" goto END
-
-"%PM_PYTHON%" -S -s -u -E "%PM_MODULE%" pull "%PM_MODULE_DIR%\deps.packman.xml"
-if %errorlevel% neq 0 (
-    echo !!! Error fetching packman dependencies !!!
-    goto ERROR
-)
 
 goto END
 

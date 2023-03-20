@@ -8,7 +8,7 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#pragma region [  RayTracingInterface  ]
+#pragma region [  RayTracing  ]
 
 static void NRI_CALL GetAccelerationStructureMemoryInfo(const AccelerationStructure& accelerationStructure, MemoryDesc& memoryDesc)
 {
@@ -45,15 +45,6 @@ static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const Acceleration
     return ((AccelerationStructureVal&)accelerationStructure).GetNativeObject(physicalDeviceIndex);
 }
 
-void FillFunctionTableAccelarationStructureVal(RayTracingInterface& rayTracingInterface)
-{
-    rayTracingInterface.GetAccelerationStructureMemoryInfo = ::GetAccelerationStructureMemoryInfo;
-    rayTracingInterface.GetAccelerationStructureUpdateScratchBufferSize = ::GetAccelerationStructureUpdateScratchBufferSize;
-    rayTracingInterface.GetAccelerationStructureBuildScratchBufferSize = ::GetAccelerationStructureBuildScratchBufferSize;
-    rayTracingInterface.GetAccelerationStructureHandle = ::GetAccelerationStructureHandle;
-    rayTracingInterface.CreateAccelerationStructureDescriptor = ::CreateAccelerationStructureDescriptor;
-    rayTracingInterface.SetAccelerationStructureDebugName = ::SetAccelerationStructureDebugName;
-    rayTracingInterface.GetAccelerationStructureNativeObject = ::GetAccelerationStructureNativeObject;
-}
-
 #pragma endregion
+
+Define_RayTracing_AccelerationStructure_PartiallyFillFunctionTable(Val)
