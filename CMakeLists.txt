@@ -35,35 +35,6 @@ set (VERSION_MINOR ${CMAKE_MATCH_1})
 message ("NRI v${VERSION_MAJOR}.${VERSION_MINOR}")
 project (NRI LANGUAGES C CXX)
 
-# Download dependencies using Packman
-if (WIN32)
-    set (PACKMAN_EXT ".cmd")
-else ()
-    set (PACKMAN_EXT ".sh")
-endif ()
-
-if ((CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64") OR(CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64"))
-    if (WIN32)
-        set (PACKMAN_PLATFORM "windows-x86_64")
-    else ()
-        set (PACKMAN_PLATFORM "linux-x86_64")
-    endif ()
-elseif ((CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64") OR(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64"))
-    set (PACKMAN_PLATFORM "linux-aarch64")
-else ()
-    message (FATAL_ERROR "Unsupported architecture: '${CMAKE_SYSTEM_PROCESSOR}'")
-endif ()
-
-message ("Packman platform: ${PACKMAN_PLATFORM}")
-
-execute_process (COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/External/Packman/packman${PACKMAN_EXT}" pull "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.xml" -p ${PACKMAN_PLATFORM}
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    RESULT_VARIABLE PACKMAN_RESULT)
-
-if (NOT "${PACKMAN_RESULT}" STREQUAL "0")
-    message (FATAL_ERROR "Packman failed(code = ${PACKMAN_RESULT})")
-endif ()
-
 # Setup dependencies
 if (WIN32)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -75,8 +46,8 @@ if (WIN32)
     endif ()
 
     # External
-    find_library (INPUT_LIB_NVAPI NAMES nvapi64 nvapi PATHS "External/NVAPI/${NVAPI_BIN_ARCHITECTURE}" REQUIRED)
-    find_library (INPUT_LIB_AGS NAMES amd_ags_${BIN_ARCHITECTURE} PATHS "External/AGS/lib" REQUIRED)
+    find_library (INPUT_LIB_NVAPI NAMES nvapi64 nvapi PATHS "External/nvapi/${NVAPI_BIN_ARCHITECTURE}" REQUIRED)
+    find_library (INPUT_LIB_AGS NAMES amd_ags_${BIN_ARCHITECTURE} PATHS "External/amdags/ags_lib/lib" REQUIRED)
 
     # System
     if ("$ENV{WIN10_SDK_PATH}$ENV{WIN10_SDK_VERSION}" STREQUAL "")
@@ -164,10 +135,10 @@ endif ()
 if (WIN32)
     file (GLOB D3D11_SOURCE "Source/D3D11/*.cpp" "Source/D3D11/*.h" "Source/D3D11/*.hpp")
     source_group ("" FILES ${D3D11_SOURCE})
-    file (GLOB D3D11_NVAPI "External/NVAPI/*.h")
-    source_group ("External/NVAPI" FILES ${D3D11_NVAPI})
-    file (GLOB D3D11_AMDAGS "External/AGS/inc/*.h")
-    source_group ("External/AMDAGS" FILES ${D3D11_AMDAGS})
+    file (GLOB D3D11_NVAPI "External/nvapi/*.h")
+    source_group ("External/nvapi" FILES ${D3D11_NVAPI})
+    file (GLOB D3D11_AMDAGS "External/amdags/ags_lib/inc/*.h")
+    source_group ("External/amdags" FILES ${D3D11_AMDAGS})
     add_library (NRI_D3D11 STATIC ${D3D11_SOURCE} ${D3D11_NVAPI} ${D3D11_AMDAGS})
     target_include_directories (NRI_D3D11 PRIVATE "Include" "Source/Shared" "External")
     target_compile_definitions (NRI_D3D11 PRIVATE ${COMPILE_DEFINITIONS})
@@ -239,7 +210,7 @@ file (GLOB NRI_HEADERS "Include/*.h" "Include/*.hpp")
 source_group ("Include" FILES ${NRI_HEADERS})
 file (GLOB NRI_EXTENSIONS "Include/Extensions/*.h" "Include/Extensions/*.hpp")
 if (NRI_ENABLE_STREAMLINE_SUPPORT)
-    file(GLOB NRI_EXTENSIONS ${NRI_EXTENSIONS} "Include/Extensions/Optional/NRIStreamlineWrapper.h")
+    file(GLOB NRI_EXTENSIONS ${NRI_EXTENSIONS} "Include/Extensions/Optional/NRIStreamlineWrapper.h" "Include/Extensions/Optional/NRIGfxApiWrapper.h")
 endif()
 
 source_group ("Include/Extensions" FILES ${NRI_EXTENSIONS})
@@ -269,22 +240,23 @@ endif ()
 if (NRI_ENABLE_STREAMLINE_SUPPORT)
     set (SL_INCLUDE_DIRECTORY "${NRI_STREAMLINE_SDK_PATH}/include/")
     set(SL_INTERPOSER_LINK_PATH "${NRI_STREAMLINE_SDK_PATH}/lib/x64/sl.interposer.lib")
+    file (TO_CMAKE_PATH "${NRI_STREAMLINE_SDK_PATH}" NRI_STREAMLINE_SDK_CMAKE_PATH)
     if (NRI_USE_DEVELOPMENT_STREAMLINE_LIBRARY)
-        set(SL_PLUGINS_DIRECTORY "${NRI_STREAMLINE_SDK_PATH}/bin/x64/development")
+        set(SL_PLUGINS_DIRECTORY "${NRI_STREAMLINE_SDK_CMAKE_PATH}/bin/x64/development")
     else()
-        set(SL_PLUGINS_DIRECTORY "${NRI_STREAMLINE_SDK_PATH}/bin/x64")
+        set(SL_PLUGINS_DIRECTORY "${NRI_STREAMLINE_SDK_CMAKE_PATH}/bin/x64")
     endif()
 
     target_include_directories(${PROJECT_NAME} PUBLIC ${SL_INCLUDE_DIRECTORY})
     target_link_libraries (${PROJECT_NAME} PRIVATE ${SL_INTERPOSER_LINK_PATH})
-    target_compile_definitions (${PROJECT_NAME} PRIVATE SL_PLUGINS_DIRECTORY=${SL_PLUGINS_DIRECTORY})
+    target_compile_definitions (${PROJECT_NAME} PRIVATE SL_PLUGINS_DIRECTORY=${SL_PLUGINS_DIRECTORY} NRI_GFX_API_WRAPPER_LIBRARY)
 
     file (TO_NATIVE_PATH ${GLOBAL_BIN_OUTPUT_PATH}/$<CONFIG> BIN_OUTPUT_PATH_NATIVE)
-    file (TO_NATIVE_PATH ${SL_PLUGINS_DIRECTORY} SL_PLUGINS_PATH_NATIVE)
+    file (TO_NATIVE_PATH "${SL_PLUGINS_DIRECTORY}/sl.interposer.dll" SL_INTERPOSER_CMAKE_PATH)
 
     add_custom_command (TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy ${BIN_OUTPUT_PATH_NATIVE} ${SL_PLUGINS_PATH_NATIVE}
-        COMMENT "Copying '${BIN_OUTPUT_PATH_NATIVE}' to '${SL_PLUGINS_PATH_NATIVE}'"
+        COMMAND ${CMAKE_COMMAND} -E copy ${SL_INTERPOSER_CMAKE_PATH} ${BIN_OUTPUT_PATH_NATIVE}
+        COMMENT "Copying '${SL_INTERPOSER_CMAKE_PATH}' to '${BIN_OUTPUT_PATH_NATIVE}'"
         VERBATIM
     )
 endif ()
