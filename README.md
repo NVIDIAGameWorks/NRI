@@ -1,4 +1,4 @@
-# NVIDIA Render Interface v1.97 (NRI)
+# NVIDIA Render Interface v1.98 (NRI)
 
 *NRI* is a low-level abstract render interface which currently supports three backends: D3D11, D3D12 and Vulkan. *NRI* has been designed to support all (at least major) low level features of D3D12 and Vulkan APIs, but at the same time to simplify usage and reduce the amount of code needed (especially compared with Vulkan). *NRI* is written in *C++*, but supports both *C++* and *C* interfaces.
 
@@ -41,6 +41,7 @@ Note: *Xlib* and *Wayland* can be both enabled.
 In order of complexity:
 - DeviceInfo - queries and prints out information about device groups in the system
 - Clear - minimal example of rendering using framebuffer clears only
+- CTest - very simple example of C interface usage
 - Triangle - simple textured triangle rendering
 - SceneViewer - loading & rendering of meshes with materials
 - Readback - getting data from the GPU back to the CPU
