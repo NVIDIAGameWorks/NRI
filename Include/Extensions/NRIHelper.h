@@ -12,6 +12,14 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 NRI_NAMESPACE_BEGIN
 
+NRI_STRUCT(VideoMemoryInfo)
+{
+    uint64_t budget;
+    uint64_t currentUsage;
+    uint64_t availableForReservation;
+    uint64_t currentReservation;
+};
+
 NRI_STRUCT(TextureSubresourceUploadDesc)
 {
     const void* slices;
@@ -51,15 +59,21 @@ NRI_STRUCT(ResourceGroupDesc)
 
 NRI_STRUCT(HelperInterface)
 {
-    uint32_t (NRI_CALL *CalculateAllocationNumber)(NRI_REF_NAME(Device) device, const NRI_REF_NAME(ResourceGroupDesc) resourceGroupDesc);
-    NRI_NAME(Result) (NRI_CALL *AllocateAndBindMemory)(NRI_REF_NAME(Device) device, const NRI_REF_NAME(ResourceGroupDesc) resourceGroupDesc, NRI_NAME(Memory)** allocations);
-    NRI_NAME(Result) (NRI_CALL *ChangeResourceStates)(NRI_REF_NAME(CommandQueue) commandQueue, const NRI_REF_NAME(TransitionBarrierDesc) transitionBarriers);
-    NRI_NAME(Result) (NRI_CALL *UploadData)(NRI_REF_NAME(CommandQueue) commandQueue, const NRI_NAME(TextureUploadDesc)* textureUploadDescs, uint32_t textureUploadDescNum,
+    uint32_t (NRI_CALL *CalculateAllocationNumber)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(ResourceGroupDesc) resourceGroupDesc);
+    NRI_NAME(Result) (NRI_CALL *AllocateAndBindMemory)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(ResourceGroupDesc) resourceGroupDesc, NRI_NAME(Memory)** allocations);
+    NRI_NAME(Result) (NRI_CALL *ChangeResourceStates)(NRI_NAME_REF(CommandQueue) commandQueue, const NRI_NAME_REF(TransitionBarrierDesc) transitionBarriers);
+    NRI_NAME(Result) (NRI_CALL *UploadData)(NRI_NAME_REF(CommandQueue) commandQueue, const NRI_NAME(TextureUploadDesc)* textureUploadDescs, uint32_t textureUploadDescNum,
         const NRI_NAME(BufferUploadDesc)* bufferUploadDescs, uint32_t bufferUploadDescNum);
-    NRI_NAME(Result) (NRI_CALL *WaitForIdle)(NRI_REF_NAME(CommandQueue) commandQueue);
+    NRI_NAME(Result) (NRI_CALL *WaitForIdle)(NRI_NAME_REF(CommandQueue) commandQueue);
 };
 
-static inline NRI_NAME(Format) NRI_NAME(GetSupportedDepthFormat)(const NRI_REF_NAME(CoreInterface) coreInterface, const NRI_REF_NAME(Device) device, uint32_t minBits, bool stencil)
+NRI_API bool NRI_CALL nriQueryVideoMemoryInfo(const NRI_NAME_REF(Device) device, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(VideoMemoryInfo) videoMemoryInfo);
+NRI_API NRI_NAME(Format) NRI_CALL nriConvertDXGIFormatToNRI(uint32_t dxgiFormat);
+NRI_API uint32_t NRI_CALL nriConvertNRIFormatToDXGI(NRI_NAME(Format) format);
+NRI_API NRI_NAME(Format) NRI_CALL nriConvertVKFormatToNRI(uint32_t vkFormat);
+NRI_API uint32_t NRI_CALL nriConvertNRIFormatToVK(NRI_NAME(Format) format);
+
+static inline NRI_NAME(Format) NRI_FUNC_NAME(GetSupportedDepthFormat)(const NRI_NAME_REF(CoreInterface) coreInterface, const NRI_NAME_REF(Device) device, uint32_t minBits, bool stencil)
 {
     if (stencil)
     {
@@ -92,7 +106,7 @@ static inline NRI_NAME(Format) NRI_NAME(GetSupportedDepthFormat)(const NRI_REF_N
     return NRI_ENUM_MEMBER(Format, UNKNOWN);
 }
 
-static inline NRI_NAME(TextureDesc) NRI_NAME(Texture1D)(NRI_NAME(Format) format, uint16_t width, uint16_t mipNum NRI_DEFAULT_VALUE(1), uint16_t arraySize NRI_DEFAULT_VALUE(1), NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)))
+static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture1D)(NRI_NAME(Format) format, uint16_t width, uint16_t mipNum NRI_DEFAULT_VALUE(1), uint16_t arraySize NRI_DEFAULT_VALUE(1), NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)))
 {
     NRI_NAME(TextureDesc) textureDesc = NRI_ZERO_INIT;
     textureDesc.type = NRI_ENUM_MEMBER(TextureType, TEXTURE_1D);
@@ -108,7 +122,7 @@ static inline NRI_NAME(TextureDesc) NRI_NAME(Texture1D)(NRI_NAME(Format) format,
     return textureDesc;
 }
 
-static inline NRI_NAME(TextureDesc) NRI_NAME(Texture2D)(NRI_NAME(Format) format, uint16_t width, uint16_t height, uint16_t mipNum NRI_DEFAULT_VALUE(1), uint16_t arraySize NRI_DEFAULT_VALUE(1), NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)), uint8_t sampleNum NRI_DEFAULT_VALUE(1))
+static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture2D)(NRI_NAME(Format) format, uint16_t width, uint16_t height, uint16_t mipNum NRI_DEFAULT_VALUE(1), uint16_t arraySize NRI_DEFAULT_VALUE(1), NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)), uint8_t sampleNum NRI_DEFAULT_VALUE(1))
 {
     NRI_NAME(TextureDesc) textureDesc = NRI_ZERO_INIT;
     textureDesc.type = NRI_ENUM_MEMBER(TextureType, TEXTURE_2D);
@@ -124,7 +138,7 @@ static inline NRI_NAME(TextureDesc) NRI_NAME(Texture2D)(NRI_NAME(Format) format,
     return textureDesc;
 }
 
-static inline NRI_NAME(TextureDesc) NRI_NAME(Texture3D)(NRI_NAME(Format) format, uint16_t width, uint16_t height, uint16_t depth, uint16_t mipNum NRI_DEFAULT_VALUE(1), NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)))
+static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture3D)(NRI_NAME(Format) format, uint16_t width, uint16_t height, uint16_t depth, uint16_t mipNum NRI_DEFAULT_VALUE(1), NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)))
 {
     NRI_NAME(TextureDesc) textureDesc = NRI_ZERO_INIT;
     textureDesc.type = NRI_ENUM_MEMBER(TextureType, TEXTURE_3D);
@@ -140,7 +154,7 @@ static inline NRI_NAME(TextureDesc) NRI_NAME(Texture3D)(NRI_NAME(Format) format,
     return textureDesc;
 }
 
-static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_NAME(TextureTransition)(NRI_NAME(Texture)* texture, NRI_NAME(AccessBits) prevAccess, NRI_NAME(AccessBits) nextAccess, NRI_NAME(TextureLayout) prevLayout, NRI_NAME(TextureLayout) nextLayout,
+static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_FUNC_NAME(TextureTransition)(NRI_NAME(Texture)* texture, NRI_NAME(AccessBits) prevAccess, NRI_NAME(AccessBits) nextAccess, NRI_NAME(TextureLayout) prevLayout, NRI_NAME(TextureLayout) nextLayout,
     uint16_t mipOffset NRI_DEFAULT_VALUE(0), uint16_t mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)), uint16_t arrayOffset NRI_DEFAULT_VALUE(0), uint16_t arraySize NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_ARRAY_LAYERS)))
 {
     NRI_NAME(TextureTransitionBarrierDesc) textureTransitionBarrierDesc = NRI_ZERO_INIT;
@@ -157,7 +171,7 @@ static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_NAME(TextureTransition)
     return textureTransitionBarrierDesc;
 }
 
-static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_NAME(TextureTransitionFromUnknown)(NRI_NAME(Texture)* texture, NRI_NAME(AccessBits) nextAccess, NRI_NAME(TextureLayout) nextLayout,
+static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_FUNC_NAME(TextureTransitionFromUnknown)(NRI_NAME(Texture)* texture, NRI_NAME(AccessBits) nextAccess, NRI_NAME(TextureLayout) nextLayout,
     uint16_t mipOffset NRI_DEFAULT_VALUE(0), uint16_t mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)), uint16_t arrayOffset NRI_DEFAULT_VALUE(0), uint16_t arraySize NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_ARRAY_LAYERS)))
 {
     NRI_NAME(TextureTransitionBarrierDesc) textureTransitionBarrierDesc = NRI_ZERO_INIT;
@@ -174,7 +188,7 @@ static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_NAME(TextureTransitionF
     return textureTransitionBarrierDesc;
 }
 
-static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_NAME(TextureTransitionFromState)(NRI_REF_NAME(TextureTransitionBarrierDesc) prevState, NRI_NAME(AccessBits) nextAccess, NRI_NAME(TextureLayout) nextLayout,
+static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_FUNC_NAME(TextureTransitionFromState)(NRI_NAME_REF(TextureTransitionBarrierDesc) prevState, NRI_NAME(AccessBits) nextAccess, NRI_NAME(TextureLayout) nextLayout,
     uint16_t mipOffset NRI_DEFAULT_VALUE(0), uint16_t mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)))
 {
     NRI_REF_ACCESS(prevState)->mipOffset = mipOffset;

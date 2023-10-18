@@ -30,12 +30,12 @@ NRI_FORWARD_STRUCT(Pipeline);
 NRI_FORWARD_STRUCT(QueryPool);
 NRI_FORWARD_STRUCT(Texture);
 
-static const uint16_t NRI_NAME(REMAINING_ARRAY_LAYERS) = 0;
-static const uint16_t NRI_NAME(REMAINING_MIP_LEVELS) = 0;
-static const uint16_t NRI_NAME(WHOLE_SIZE) = 0;
-static const uint32_t NRI_NAME(WHOLE_DEVICE_GROUP) = 0;
-static const bool NRI_NAME(VARIABLE_DESCRIPTOR_NUM) = true;
-static const bool NRI_NAME(DESCRIPTOR_ARRAY) = true;
+static const uint16_t NRI_CONST_NAME(REMAINING_ARRAY_LAYERS) = 0;
+static const uint16_t NRI_CONST_NAME(REMAINING_MIP_LEVELS) = 0;
+static const uint16_t NRI_CONST_NAME(WHOLE_SIZE) = 0;
+static const uint32_t NRI_CONST_NAME(WHOLE_DEVICE_GROUP) = 0;
+static const bool NRI_CONST_NAME(VARIABLE_DESCRIPTOR_NUM) = true;
+static const bool NRI_CONST_NAME(DESCRIPTOR_ARRAY) = true;
 
 typedef uint32_t NRI_NAME(MemoryType);
 
@@ -1234,11 +1234,21 @@ NRI_STRUCT(PipelineStatisticsDesc)
     uint64_t computeShaderInvocations;
 };
 
+NRI_STRUCT(AdapterDesc)
+{
+    char description[128];
+    uint64_t luid;
+    uint64_t videoMemorySize;
+    uint64_t systemMemorySize;
+    uint32_t deviceId;
+    NRI_NAME(Vendor) vendor;
+};
+
 NRI_STRUCT(DeviceDesc)
 {
     // Common
+    NRI_NAME(AdapterDesc) adapterDesc;
     NRI_NAME(GraphicsAPI) graphicsAPI;
-    NRI_NAME(Vendor) vendor;
     uint16_t nriVersionMajor;
     uint16_t nriVersionMinor;
 
