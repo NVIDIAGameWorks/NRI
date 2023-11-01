@@ -46,7 +46,7 @@ struct DescriptorPoolD3D11
     }
 
     Result AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets,
-        uint32_t instanceNum, uint32_t physicalDeviceMask, uint32_t variableDescriptorNum);
+        uint32_t instanceNum, uint32_t nodeMask, uint32_t variableDescriptorNum);
 
 private:
     DeviceD3D11& m_Device;

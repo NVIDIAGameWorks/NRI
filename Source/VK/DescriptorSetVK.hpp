@@ -15,14 +15,14 @@ static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet& descriptorSet, con
     ((DescriptorSetVK&)descriptorSet).SetDebugName(name);
 }
 
-static void NRI_CALL UpdateDescriptorRanges(DescriptorSet& descriptorSet, uint32_t physicalDeviceMask, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs)
+static void NRI_CALL UpdateDescriptorRanges(DescriptorSet& descriptorSet, uint32_t nodeMask, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs)
 {
-    ((DescriptorSetVK&)descriptorSet).UpdateDescriptorRanges(physicalDeviceMask, baseRange, rangeNum, rangeUpdateDescs);
+    ((DescriptorSetVK&)descriptorSet).UpdateDescriptorRanges(nodeMask, baseRange, rangeNum, rangeUpdateDescs);
 }
 
-static void NRI_CALL UpdateDynamicConstantBuffers(DescriptorSet& descriptorSet, uint32_t physicalDeviceMask, uint32_t baseBuffer, uint32_t bufferNum, const Descriptor* const* descriptors)
+static void NRI_CALL UpdateDynamicConstantBuffers(DescriptorSet& descriptorSet, uint32_t nodeMask, uint32_t baseBuffer, uint32_t bufferNum, const Descriptor* const* descriptors)
 {
-    ((DescriptorSetVK&)descriptorSet).UpdateDynamicConstantBuffers(physicalDeviceMask, baseBuffer, bufferNum, descriptors);
+    ((DescriptorSetVK&)descriptorSet).UpdateDynamicConstantBuffers(nodeMask, baseBuffer, bufferNum, descriptors);
 }
 
 static void NRI_CALL CopyDescriptorSet(DescriptorSet& descriptorSet, const DescriptorSetCopyDesc& descriptorSetCopyDesc)

@@ -85,10 +85,10 @@ Result CommandQueueVal::ChangeResourceStates(const TransitionBarrierDesc& transi
 Result CommandQueueVal::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum,
     const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), textureUploadDescNum == 0 || textureUploadDescs != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(&m_Device, textureUploadDescNum == 0 || textureUploadDescs != nullptr, Result::INVALID_ARGUMENT,
         "Can't upload data: 'textureUploadDescs' is invalid.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), bufferUploadDescNum == 0 || bufferUploadDescs != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(&m_Device, bufferUploadDescNum == 0 || bufferUploadDescs != nullptr, Result::INVALID_ARGUMENT,
         "Can't upload data: 'bufferUploadDescs' is invalid.");
 
     TextureUploadDesc* textureUploadDescsImpl = STACK_ALLOC(TextureUploadDesc, textureUploadDescNum);
@@ -140,15 +140,15 @@ const Command* ReadCommand(const uint8_t*& begin, const uint8_t* end)
 void CommandQueueVal::ProcessValidationCommandBeginQuery(const uint8_t*& begin, const uint8_t* end)
 {
     const ValidationCommandUseQuery* command = ReadCommand<ValidationCommandUseQuery>(begin, end);
-    CHECK(m_Device.GetLog(), command != nullptr, "ProcessValidationCommandBeginQuery() failed: can't parse command.");
-    CHECK(m_Device.GetLog(), command->queryPool != nullptr, "ProcessValidationCommandBeginQuery() failed: query pool is invalid.");
+    CHECK(&m_Device, command != nullptr, "ProcessValidationCommandBeginQuery() failed: can't parse command.");
+    CHECK(&m_Device, command->queryPool != nullptr, "ProcessValidationCommandBeginQuery() failed: query pool is invalid.");
 
     QueryPoolVal& queryPool = *(QueryPoolVal*)command->queryPool;
     const bool used = queryPool.SetQueryState(command->queryPoolOffset, true);
 
     if (used)
     {
-        REPORT_ERROR(m_Device.GetLog(), "Can't begin query: it must be reset before use. (QueryPool='%s', offset=%u)",
+        REPORT_ERROR(&m_Device, "Can't begin query: it must be reset before use. (QueryPool='%s', offset=%u)",
             queryPool.GetDebugName().c_str(), command->queryPoolOffset);
     }
 }
@@ -156,8 +156,8 @@ void CommandQueueVal::ProcessValidationCommandBeginQuery(const uint8_t*& begin, 
 void CommandQueueVal::ProcessValidationCommandEndQuery(const uint8_t*& begin, const uint8_t* end)
 {
     const ValidationCommandUseQuery* command = ReadCommand<ValidationCommandUseQuery>(begin, end);
-    CHECK(m_Device.GetLog(), command != nullptr, "ProcessValidationCommandEndQuery() failed: can't parse command.");
-    CHECK(m_Device.GetLog(), command->queryPool != nullptr, "ProcessValidationCommandEndQuery() failed: query pool is invalid.");
+    CHECK(&m_Device, command != nullptr, "ProcessValidationCommandEndQuery() failed: can't parse command.");
+    CHECK(&m_Device, command->queryPool != nullptr, "ProcessValidationCommandEndQuery() failed: query pool is invalid.");
 
     QueryPoolVal& queryPool = *(QueryPoolVal*)command->queryPool;
     const bool used = queryPool.SetQueryState(command->queryPoolOffset, true);
@@ -166,7 +166,7 @@ void CommandQueueVal::ProcessValidationCommandEndQuery(const uint8_t*& begin, co
     {
         if (used)
         {
-            REPORT_ERROR(m_Device.GetLog(), "Can't end query: it must be reset before use. (QueryPool='%s', offset=%u)",
+            REPORT_ERROR(&m_Device, "Can't end query: it must be reset before use. (QueryPool='%s', offset=%u)",
                 queryPool.GetDebugName().c_str(), command->queryPoolOffset);
         }
     }
@@ -174,7 +174,7 @@ void CommandQueueVal::ProcessValidationCommandEndQuery(const uint8_t*& begin, co
     {
         if (!used)
         {
-            REPORT_ERROR(m_Device.GetLog(), "Can't end query: it's not in active state. (QueryPool='%s', offset=%u)",
+            REPORT_ERROR(&m_Device, "Can't end query: it's not in active state. (QueryPool='%s', offset=%u)",
                 queryPool.GetDebugName().c_str(), command->queryPoolOffset);
         }
     }
@@ -183,8 +183,8 @@ void CommandQueueVal::ProcessValidationCommandEndQuery(const uint8_t*& begin, co
 void CommandQueueVal::ProcessValidationCommandResetQuery(const uint8_t*& begin, const uint8_t* end)
 {
     const ValidationCommandResetQuery* command = ReadCommand<ValidationCommandResetQuery>(begin, end);
-    CHECK(m_Device.GetLog(), command != nullptr, "ProcessValidationCommandResetQuery() failed: can't parse command.");
-    CHECK(m_Device.GetLog(), command->queryPool != nullptr, "ProcessValidationCommandResetQuery() failed: query pool is invalid.");
+    CHECK(&m_Device, command != nullptr, "ProcessValidationCommandResetQuery() failed: can't parse command.");
+    CHECK(&m_Device, command->queryPool != nullptr, "ProcessValidationCommandResetQuery() failed: query pool is invalid.");
 
     QueryPoolVal& queryPool = *(QueryPoolVal*)command->queryPool;
     queryPool.ResetQueries(command->queryPoolOffset, command->queryNum);
@@ -214,7 +214,7 @@ void CommandQueueVal::ProcessValidationCommands(const CommandBufferVal* const* c
 
             if (type == ValidationCommandType::NONE || type >= ValidationCommandType::MAX_NUM)
             {
-                REPORT_ERROR(m_Device.GetLog(), "Invalid validation command: %u", (uint32_t)type);
+                REPORT_ERROR(&m_Device, "Invalid validation command: %u", (uint32_t)type);
                 break;
             }
 
@@ -226,20 +226,20 @@ void CommandQueueVal::ProcessValidationCommands(const CommandBufferVal* const* c
 
 static bool ValidateTransitionBarrierDesc(DeviceVal& device, uint32_t i, const BufferTransitionBarrierDesc& bufferTransitionBarrierDesc)
 {
-    RETURN_ON_FAILURE(device.GetLog(), bufferTransitionBarrierDesc.buffer != nullptr, false,
+    RETURN_ON_FAILURE(&device, bufferTransitionBarrierDesc.buffer != nullptr, false,
         "Can't change resource state: 'transitionBarriers.buffers[%u].buffer' is invalid.", i);
 
     const BufferVal& bufferVal = *(BufferVal*)bufferTransitionBarrierDesc.buffer;
 
-    RETURN_ON_FAILURE(device.GetLog(), bufferVal.IsBoundToMemory(), false,
+    RETURN_ON_FAILURE(&device, bufferVal.IsBoundToMemory(), false,
         "Can't change resource state: 'transitionBarriers.buffers[%u].buffer' is not bound to memory.", i);
 
     const BufferUsageBits usageMask = bufferVal.GetDesc().usageMask;
 
-    RETURN_ON_FAILURE(device.GetLog(), IsAccessMaskSupported(usageMask, bufferTransitionBarrierDesc.prevAccess), false,
+    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(usageMask, bufferTransitionBarrierDesc.prevAccess), false,
         "Can't change resource state: 'transitionBarriers.buffers[%u].prevAccess' is not supported by usageMask of the buffer.", i);
 
-    RETURN_ON_FAILURE(device.GetLog(), IsAccessMaskSupported(usageMask, bufferTransitionBarrierDesc.nextAccess), false,
+    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(usageMask, bufferTransitionBarrierDesc.nextAccess), false,
         "Can't change resource state: 'transitionBarriers.buffers[%u].nextAccess' is not supported by usageMask of the buffer.", i);
 
     return true;
@@ -247,26 +247,26 @@ static bool ValidateTransitionBarrierDesc(DeviceVal& device, uint32_t i, const B
 
 static bool ValidateTransitionBarrierDesc(DeviceVal& device, uint32_t i, const TextureTransitionBarrierDesc& textureTransitionBarrierDesc)
 {
-    RETURN_ON_FAILURE(device.GetLog(), textureTransitionBarrierDesc.texture != nullptr, false,
+    RETURN_ON_FAILURE(&device, textureTransitionBarrierDesc.texture != nullptr, false,
         "Can't change resource state: 'transitionBarriers.textures[%u].texture' is invalid.", i);
 
     const TextureVal& textureVal = *(TextureVal*)textureTransitionBarrierDesc.texture;
 
-    RETURN_ON_FAILURE(device.GetLog(), textureVal.IsBoundToMemory(), false,
+    RETURN_ON_FAILURE(&device, textureVal.IsBoundToMemory(), false,
         "Can't change resource state: 'transitionBarriers.textures[%u].texture' is not bound to memory.", i);
 
     const TextureUsageBits usageMask = textureVal.GetDesc().usageMask;
 
-    RETURN_ON_FAILURE(device.GetLog(), IsAccessMaskSupported(usageMask, textureTransitionBarrierDesc.prevAccess), false,
+    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(usageMask, textureTransitionBarrierDesc.prevAccess), false,
         "Can't change resource state: 'transitionBarriers.textures[%u].prevAccess' is not supported by usageMask of the texture.", i);
 
-    RETURN_ON_FAILURE(device.GetLog(), IsAccessMaskSupported(usageMask, textureTransitionBarrierDesc.nextAccess), false,
+    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(usageMask, textureTransitionBarrierDesc.nextAccess), false,
         "Can't change resource state: 'transitionBarriers.textures[%u].nextAccess' is not supported by usageMask of the texture.", i);
 
-    RETURN_ON_FAILURE(device.GetLog(), IsTextureLayoutSupported(usageMask, textureTransitionBarrierDesc.prevLayout), false,
+    RETURN_ON_FAILURE(&device, IsTextureLayoutSupported(usageMask, textureTransitionBarrierDesc.prevLayout), false,
         "Can't change resource state: 'transitionBarriers.textures[%u].prevLayout' is not supported by usageMask of the texture.", i);
 
-    RETURN_ON_FAILURE(device.GetLog(), IsTextureLayoutSupported(usageMask, textureTransitionBarrierDesc.nextLayout), false,
+    RETURN_ON_FAILURE(&device, IsTextureLayoutSupported(usageMask, textureTransitionBarrierDesc.nextLayout), false,
         "Can't change resource state: 'transitionBarriers.textures[%u].nextLayout' is not supported by usageMask of the texture.", i);
 
     return true;
@@ -276,12 +276,12 @@ static bool ValidateTextureUploadDesc(DeviceVal& device, uint32_t i, const Textu
 {
     const uint32_t subresourceNum = textureUploadDesc.arraySize * textureUploadDesc.mipNum;
 
-    RETURN_ON_FAILURE(device.GetLog(), textureUploadDesc.texture != nullptr, false,
+    RETURN_ON_FAILURE(&device, textureUploadDesc.texture != nullptr, false,
         "Can't upload data: 'textureUploadDescs[%u].texture' is invalid.", i);
 
     if (subresourceNum == 0 && textureUploadDesc.subresources != nullptr)
     {
-        REPORT_WARNING(device.GetLog(), "No data to upload: the number of subresources in 'textureUploadDescs[%u]' is 0.", i);
+        REPORT_WARNING(&device, "No data to upload: the number of subresources in 'textureUploadDescs[%u]' is 0.", i);
         return true;
     }
 
@@ -290,16 +290,16 @@ static bool ValidateTextureUploadDesc(DeviceVal& device, uint32_t i, const Textu
 
     const TextureVal& textureVal = *(TextureVal*)textureUploadDesc.texture;
 
-    RETURN_ON_FAILURE(device.GetLog(), textureUploadDesc.mipNum <= textureVal.GetDesc().mipNum, false,
+    RETURN_ON_FAILURE(&device, textureUploadDesc.mipNum <= textureVal.GetDesc().mipNum, false,
         "Can't upload data: 'textureUploadDescs[%u].mipNum' is invalid.", i);
 
-    RETURN_ON_FAILURE(device.GetLog(), textureUploadDesc.arraySize <= textureVal.GetDesc().arraySize, false,
+    RETURN_ON_FAILURE(&device, textureUploadDesc.arraySize <= textureVal.GetDesc().arraySize, false,
         "Can't upload data: 'textureUploadDescs[%u].arraySize' is invalid.", i);
 
-    RETURN_ON_FAILURE(device.GetLog(), textureUploadDesc.nextLayout < TextureLayout::MAX_NUM, false,
+    RETURN_ON_FAILURE(&device, textureUploadDesc.nextLayout < TextureLayout::MAX_NUM, false,
         "Can't upload data: 'textureUploadDescs[%u].nextLayout' is invalid.", i);
 
-    RETURN_ON_FAILURE(device.GetLog(), textureVal.IsBoundToMemory(), false,
+    RETURN_ON_FAILURE(&device, textureVal.IsBoundToMemory(), false,
         "Can't upload data: 'textureUploadDescs[%u].texture' is not bound to memory.", i);
 
     for (uint32_t j = 0; j < subresourceNum; j++)
@@ -308,18 +308,18 @@ static bool ValidateTextureUploadDesc(DeviceVal& device, uint32_t i, const Textu
 
         if (subresource.sliceNum == 0)
         {
-            REPORT_WARNING(device.GetLog(), "No data to upload: the number of subresources in "
+            REPORT_WARNING(&device, "No data to upload: the number of subresources in "
                 "'textureUploadDescs[%u].subresources[%u].sliceNum' is 0.", i, j);
             continue;
         }
 
-        RETURN_ON_FAILURE(device.GetLog(), subresource.slices != nullptr, false,
+        RETURN_ON_FAILURE(&device, subresource.slices != nullptr, false,
             "Can't upload data: 'textureUploadDescs[%u].subresources[%u].slices' is invalid.", i, j);
 
-        RETURN_ON_FAILURE(device.GetLog(), subresource.rowPitch != 0, false,
+        RETURN_ON_FAILURE(&device, subresource.rowPitch != 0, false,
             "Can't upload data: 'textureUploadDescs[%u].subresources[%u].rowPitch' is 0.", i, j);
 
-        RETURN_ON_FAILURE(device.GetLog(), subresource.slicePitch != 0, false,
+        RETURN_ON_FAILURE(&device, subresource.slicePitch != 0, false,
             "Can't upload data: 'textureUploadDescs[%u].subresources[%u].slicePitch' is 0.", i, j);
     }
 
@@ -328,26 +328,26 @@ static bool ValidateTextureUploadDesc(DeviceVal& device, uint32_t i, const Textu
 
 static bool ValidateBufferUploadDesc(DeviceVal& device, uint32_t i, const BufferUploadDesc& bufferUploadDesc)
 {
-    RETURN_ON_FAILURE(device.GetLog(), bufferUploadDesc.buffer != nullptr, false,
+    RETURN_ON_FAILURE(&device, bufferUploadDesc.buffer != nullptr, false,
         "Can't upload data: 'bufferUploadDescs[%u].buffer' is invalid.", i);
 
     if (bufferUploadDesc.dataSize == 0)
     {
-        REPORT_WARNING(device.GetLog(), "No data to upload: 'bufferUploadDescs[%u].dataSize' is 0.", i);
+        REPORT_WARNING(&device, "No data to upload: 'bufferUploadDescs[%u].dataSize' is 0.", i);
         return true;
     }
 
-    RETURN_ON_FAILURE(device.GetLog(), bufferUploadDesc.data != nullptr, false,
+    RETURN_ON_FAILURE(&device, bufferUploadDesc.data != nullptr, false,
         "Can't upload data: 'bufferUploadDescs[%u].data' is invalid.", i);
 
     const BufferVal& bufferVal = *(BufferVal*)bufferUploadDesc.buffer;
 
     const uint64_t rangeEnd = bufferUploadDesc.bufferOffset + bufferUploadDesc.dataSize;
 
-    RETURN_ON_FAILURE(device.GetLog(), rangeEnd <= bufferVal.GetDesc().size, false,
+    RETURN_ON_FAILURE(&device, rangeEnd <= bufferVal.GetDesc().size, false,
         "Can't upload data: 'bufferUploadDescs[%u].bufferOffset + bufferUploadDescs[%u].dataSize' is out of bounds.", i, i);
 
-    RETURN_ON_FAILURE(device.GetLog(), bufferVal.IsBoundToMemory(), false,
+    RETURN_ON_FAILURE(&device, bufferVal.IsBoundToMemory(), false,
         "Can't upload data: 'bufferUploadDescs[%u].buffer' is not bound to memory.", i);
 
     return true;

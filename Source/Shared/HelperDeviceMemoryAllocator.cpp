@@ -93,7 +93,7 @@ Result HelperDeviceMemoryAllocator::ProcessMemoryTypeGroup(MemoryType memoryType
 
     const uint64_t allocationSize = group.memoryOffset;
 
-    const Result result = m_NRI.AllocateMemory(m_Device, WHOLE_DEVICE_GROUP, memoryType, allocationSize, memory);
+    const Result result = m_NRI.AllocateMemory(m_Device, ALL_NODES, memoryType, allocationSize, memory);
     if (result != Result::SUCCESS)
         return result;
 
@@ -115,7 +115,7 @@ Result HelperDeviceMemoryAllocator::ProcessDedicatedResources(MemoryLocation mem
 
         Memory*& memory = allocations[allocationNum];
 
-        const Result result = m_NRI.AllocateMemory(m_Device, WHOLE_DEVICE_GROUP, memoryDesc.type, memoryDesc.size, memory);
+        const Result result = m_NRI.AllocateMemory(m_Device, ALL_NODES, memoryDesc.type, memoryDesc.size, memory);
         if (result != Result::SUCCESS)
             return result;
 
@@ -129,7 +129,7 @@ Result HelperDeviceMemoryAllocator::ProcessDedicatedResources(MemoryLocation mem
 
         Memory*& memory = allocations[allocationNum];
 
-        const Result result = m_NRI.AllocateMemory(m_Device, WHOLE_DEVICE_GROUP, memoryDesc.type, memoryDesc.size, memory);
+        const Result result = m_NRI.AllocateMemory(m_Device, ALL_NODES, memoryDesc.type, memoryDesc.size, memory);
         if (result != Result::SUCCESS)
             return result;
 
@@ -201,7 +201,7 @@ void HelperDeviceMemoryAllocator::FillMemoryBindingDescs(Buffer* const* buffers,
         desc.memory = &memory;
         desc.buffer = buffers[i];
         desc.offset = bufferOffsets[i];
-        desc.physicalDeviceMask = WHOLE_DEVICE_GROUP;
+        desc.nodeMask = ALL_NODES;
 
         m_BufferBindingDescs.push_back(desc);
     }
@@ -215,7 +215,7 @@ void HelperDeviceMemoryAllocator::FillMemoryBindingDescs(Texture* const* texture
         desc.memory = &memory;
         desc.texture = textures[i];
         desc.offset = textureOffsets[i];
-        desc.physicalDeviceMask = WHOLE_DEVICE_GROUP;
+        desc.nodeMask = ALL_NODES;
 
         m_TextureBindingDescs.push_back(desc);
     }

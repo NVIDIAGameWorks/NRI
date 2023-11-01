@@ -48,16 +48,16 @@ void CommandBufferVal::SetDebugName(const char* name)
     m_CoreAPI.SetCommandBufferDebugName(m_ImplObject, name);
 }
 
-Result CommandBufferVal::Begin(const DescriptorPool* descriptorPool, uint32_t physicalDeviceIndex)
+Result CommandBufferVal::Begin(const DescriptorPool* descriptorPool, uint32_t nodeIndex)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), !m_IsRecordingStarted, Result::FAILURE,
+    RETURN_ON_FAILURE(&m_Device, !m_IsRecordingStarted, Result::FAILURE,
         "Can't begin recording of CommandBuffer: the command buffer is already in the recording state.");
 
     DescriptorPool* descriptorPoolImpl = nullptr;
     if (descriptorPool)
         descriptorPoolImpl = NRI_GET_IMPL_PTR(DescriptorPool, descriptorPool);
 
-    Result result = m_CoreAPI.BeginCommandBuffer(m_ImplObject, descriptorPoolImpl, physicalDeviceIndex);
+    Result result = m_CoreAPI.BeginCommandBuffer(m_ImplObject, descriptorPoolImpl, nodeIndex);
     if (result == Result::SUCCESS)
         m_IsRecordingStarted = true;
 
@@ -68,13 +68,13 @@ Result CommandBufferVal::Begin(const DescriptorPool* descriptorPool, uint32_t ph
 
 Result CommandBufferVal::End()
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, Result::FAILURE,
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, Result::FAILURE,
         "Can't end command buffer: the command buffer must be in the recording state.");
 
     if (m_AnnotationStack > 0)
-        REPORT_ERROR(m_Device.GetLog(), "BeginAnnotation() is called more times than EndAnnotation()");
+        REPORT_ERROR(&m_Device, "BeginAnnotation() is called more times than EndAnnotation()");
     else if (m_AnnotationStack < 0)
-        REPORT_ERROR(m_Device.GetLog(), "EndAnnotation() is called more times than BeginAnnotation()");
+        REPORT_ERROR(&m_Device, "EndAnnotation() is called more times than BeginAnnotation()");
 
     Result result = m_CoreAPI.EndCommandBuffer(m_ImplObject);
 
@@ -89,13 +89,13 @@ Result CommandBufferVal::End()
 
 void CommandBufferVal::SetViewports(const Viewport* viewports, uint32_t viewportNum)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set viewports: the command buffer must be in the recording state.");
 
     if (viewportNum == 0)
         return;
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), viewports != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, viewports != nullptr, ReturnVoid(),
         "Can't set viewports: 'viewports' is invalid.");
 
     m_CoreAPI.CmdSetViewports(m_ImplObject, viewports, viewportNum);
@@ -103,13 +103,13 @@ void CommandBufferVal::SetViewports(const Viewport* viewports, uint32_t viewport
 
 void CommandBufferVal::SetScissors(const Rect* rects, uint32_t rectNum)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set scissors: the command buffer must be in the recording state.");
 
     if (rectNum == 0)
         return;
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), rects != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, rects != nullptr, ReturnVoid(),
         "Can't set scissor rects: 'rects' is invalid.");
 
     m_CoreAPI.CmdSetScissors(m_ImplObject, rects, rectNum);
@@ -117,7 +117,7 @@ void CommandBufferVal::SetScissors(const Rect* rects, uint32_t rectNum)
 
 void CommandBufferVal::SetDepthBounds(float boundsMin, float boundsMax)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set depth bounds: the command buffer must be in the recording state.");
 
     m_CoreAPI.CmdSetDepthBounds(m_ImplObject, boundsMin, boundsMax);
@@ -125,7 +125,7 @@ void CommandBufferVal::SetDepthBounds(float boundsMin, float boundsMax)
 
 void CommandBufferVal::SetStencilReference(uint8_t reference)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set stencil reference: the command buffer must be in the recording state.");
 
     m_CoreAPI.CmdSetStencilReference(m_ImplObject, reference);
@@ -133,7 +133,7 @@ void CommandBufferVal::SetStencilReference(uint8_t reference)
 
 void CommandBufferVal::SetSamplePositions(const SamplePosition* positions, uint32_t positionNum)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set sample positions: the command buffer must be in the recording state.");
 
     m_CoreAPI.CmdSetSamplePositions(m_ImplObject, positions, positionNum);
@@ -141,10 +141,10 @@ void CommandBufferVal::SetSamplePositions(const SamplePosition* positions, uint3
 
 void CommandBufferVal::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't clear attachments: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer != nullptr, ReturnVoid(),
         "Can't clear attachments: no FrameBuffer bound.");
 
     m_CoreAPI.CmdClearAttachments(m_ImplObject, clearDescs, clearDescNum, rects, rectNum);
@@ -152,13 +152,13 @@ void CommandBufferVal::ClearAttachments(const ClearDesc* clearDescs, uint32_t cl
 
 void CommandBufferVal::ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't clear storage buffer: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't clear storage buffer: this operation is not allowed in render pass.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), clearDesc.storageBuffer != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, clearDesc.storageBuffer != nullptr, ReturnVoid(),
         "Can't clear storage buffer: 'clearDesc.storageBuffer' is invalid.");
 
     auto clearDescImpl = clearDesc;
@@ -169,13 +169,13 @@ void CommandBufferVal::ClearStorageBuffer(const ClearStorageBufferDesc& clearDes
 
 void CommandBufferVal::ClearStorageTexture(const ClearStorageTextureDesc& clearDesc)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't clear storage texture: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't clear storage texture: this operation is not allowed in render pass.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), clearDesc.storageTexture != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, clearDesc.storageTexture != nullptr, ReturnVoid(),
         "Can't clear storage texture: 'clearDesc.storageTexture' is invalid.");
 
     auto clearDescImpl = clearDesc;
@@ -186,13 +186,13 @@ void CommandBufferVal::ClearStorageTexture(const ClearStorageTextureDesc& clearD
 
 void CommandBufferVal::BeginRenderPass(const FrameBuffer& frameBuffer, RenderPassBeginFlag renderPassBeginFlag)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't begin render pass: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't begin render pass: render pass already started.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), renderPassBeginFlag < RenderPassBeginFlag::MAX_NUM, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, renderPassBeginFlag < RenderPassBeginFlag::MAX_NUM, ReturnVoid(),
         "Can't begin render pass: 'renderPassBeginFlag' is invalid.");
 
     m_FrameBuffer = &frameBuffer;
@@ -204,10 +204,10 @@ void CommandBufferVal::BeginRenderPass(const FrameBuffer& frameBuffer, RenderPas
 
 void CommandBufferVal::EndRenderPass()
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't end render pass: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer != nullptr, ReturnVoid(),
         "Can't end render pass: no render pass.");
 
     m_FrameBuffer = nullptr;
@@ -217,7 +217,7 @@ void CommandBufferVal::EndRenderPass()
 
 void CommandBufferVal::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set vertex buffers: the command buffer must be in the recording state.");
 
     Buffer** buffersImpl = STACK_ALLOC(Buffer*, bufferNum);
@@ -229,7 +229,7 @@ void CommandBufferVal::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, c
 
 void CommandBufferVal::SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set index buffers: the command buffer must be in the recording state.");
 
     Buffer* bufferImpl = NRI_GET_IMPL_REF(Buffer, &buffer);
@@ -239,7 +239,7 @@ void CommandBufferVal::SetIndexBuffer(const Buffer& buffer, uint64_t offset, Ind
 
 void CommandBufferVal::SetPipelineLayout(const PipelineLayout& pipelineLayout)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set pipeline layout: the command buffer must be in the recording state.");
 
     PipelineLayout* pipelineLayoutImpl = NRI_GET_IMPL_REF(PipelineLayout, &pipelineLayout);
@@ -249,7 +249,7 @@ void CommandBufferVal::SetPipelineLayout(const PipelineLayout& pipelineLayout)
 
 void CommandBufferVal::SetPipeline(const Pipeline& pipeline)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set pipeline: the command buffer must be in the recording state.");
 
     Pipeline* pipelineImpl = NRI_GET_IMPL_REF(Pipeline, &pipeline);
@@ -259,7 +259,7 @@ void CommandBufferVal::SetPipeline(const Pipeline& pipeline)
 
 void CommandBufferVal::SetDescriptorPool(const DescriptorPool& descriptorPool)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set descriptor pool: the command buffer must be in the recording state.");
 
     DescriptorPool* descriptorPoolImpl = NRI_GET_IMPL_REF(DescriptorPool, &descriptorPool);
@@ -269,7 +269,7 @@ void CommandBufferVal::SetDescriptorPool(const DescriptorPool& descriptorPool)
 
 void CommandBufferVal::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set descriptor sets: the command buffer must be in the recording state.");
 
     DescriptorSet* descriptorSetImpl = NRI_GET_IMPL_REF(DescriptorSet, &descriptorSet);
@@ -279,7 +279,7 @@ void CommandBufferVal::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const
 
 void CommandBufferVal::SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set constants: the command buffer must be in the recording state.");
 
     m_CoreAPI.CmdSetConstants(m_ImplObject, pushConstantIndex, data, size);
@@ -287,10 +287,10 @@ void CommandBufferVal::SetConstants(uint32_t pushConstantIndex, const void* data
 
 void CommandBufferVal::Draw(uint32_t vertexNum, uint32_t instanceNum, uint32_t baseVertex, uint32_t baseInstance)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't record draw call: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer != nullptr, ReturnVoid(),
         "Can't record draw call: this operation is allowed only inside render pass.");
 
     m_CoreAPI.CmdDraw(m_ImplObject, vertexNum, instanceNum, baseVertex, baseInstance);
@@ -298,10 +298,10 @@ void CommandBufferVal::Draw(uint32_t vertexNum, uint32_t instanceNum, uint32_t b
 
 void CommandBufferVal::DrawIndexed(uint32_t indexNum, uint32_t instanceNum, uint32_t baseIndex, uint32_t baseVertex, uint32_t baseInstance)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't record draw call: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer != nullptr, ReturnVoid(),
         "Can't record draw call: this operation is allowed only inside render pass.");
 
     m_CoreAPI.CmdDrawIndexed(m_ImplObject, indexNum, instanceNum, baseIndex, baseVertex, baseInstance);
@@ -309,10 +309,10 @@ void CommandBufferVal::DrawIndexed(uint32_t indexNum, uint32_t instanceNum, uint
 
 void CommandBufferVal::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't record draw call: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer != nullptr, ReturnVoid(),
         "Can't record draw call: this operation is allowed only inside render pass.");
 
     Buffer* bufferImpl = NRI_GET_IMPL_REF(Buffer, &buffer);
@@ -322,10 +322,10 @@ void CommandBufferVal::DrawIndirect(const Buffer& buffer, uint64_t offset, uint3
 
 void CommandBufferVal::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't record draw call: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer != nullptr, ReturnVoid(),
         "Can't record draw call: this operation is allowed only inside render pass.");
 
     Buffer* bufferImpl = NRI_GET_IMPL_REF(Buffer, &buffer);
@@ -333,13 +333,13 @@ void CommandBufferVal::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset
     m_CoreAPI.CmdDrawIndexedIndirect(m_ImplObject, *bufferImpl, offset, drawNum, stride);
 }
 
-void CommandBufferVal::CopyBuffer(Buffer& dstBuffer, uint32_t dstPhysicalDeviceIndex, uint64_t dstOffset, const Buffer& srcBuffer,
-    uint32_t srcPhysicalDeviceIndex, uint64_t srcOffset, uint64_t size)
+void CommandBufferVal::CopyBuffer(Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer,
+    uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't copy buffer: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't copy buffer: this operation is allowed only outside render pass.");
 
     if (size == WHOLE_SIZE)
@@ -349,7 +349,7 @@ void CommandBufferVal::CopyBuffer(Buffer& dstBuffer, uint32_t dstPhysicalDeviceI
 
         if (dstDesc.size != srcDesc.size)
         {
-            REPORT_WARNING(m_Device.GetLog(), "WHOLE_SIZE is used but 'dstBuffer' and 'srcBuffer' have diffenet sizes. "
+            REPORT_WARNING(&m_Device, "WHOLE_SIZE is used but 'dstBuffer' and 'srcBuffer' have diffenet sizes. "
                 "'srcDesc.size' bytes will be copied to the destination.");
             return;
         }
@@ -358,36 +358,36 @@ void CommandBufferVal::CopyBuffer(Buffer& dstBuffer, uint32_t dstPhysicalDeviceI
     Buffer* dstBufferImpl = NRI_GET_IMPL_REF(Buffer, &dstBuffer);
     Buffer* srcBufferImpl = NRI_GET_IMPL_REF(Buffer, &srcBuffer);
 
-    m_CoreAPI.CmdCopyBuffer(m_ImplObject, *dstBufferImpl, dstPhysicalDeviceIndex, dstOffset, *srcBufferImpl, srcPhysicalDeviceIndex,
+    m_CoreAPI.CmdCopyBuffer(m_ImplObject, *dstBufferImpl, dstNodeIndex, dstOffset, *srcBufferImpl, srcNodeIndex,
         srcOffset, size);
 }
 
-void CommandBufferVal::CopyTexture(Texture& dstTexture, uint32_t dstPhysicalDeviceIndex, const TextureRegionDesc* dstRegionDesc,
-    const Texture& srcTexture, uint32_t srcPhysicalDeviceIndex, const TextureRegionDesc* srcRegionDesc)
+void CommandBufferVal::CopyTexture(Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc,
+    const Texture& srcTexture, uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't copy texture: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't copy texture: this operation is allowed only outside render pass.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), (dstRegionDesc == nullptr && srcRegionDesc == nullptr) || (dstRegionDesc != nullptr && srcRegionDesc != nullptr), ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, (dstRegionDesc == nullptr && srcRegionDesc == nullptr) || (dstRegionDesc != nullptr && srcRegionDesc != nullptr), ReturnVoid(),
         "Can't copy texture: 'dstRegionDesc' and 'srcRegionDesc' must be valid pointers or be both NULL.");
 
     Texture* dstTextureImpl = NRI_GET_IMPL_REF(Texture, &dstTexture);
     Texture* srcTextureImpl = NRI_GET_IMPL_REF(Texture, &srcTexture);
 
-    m_CoreAPI.CmdCopyTexture(m_ImplObject, *dstTextureImpl, dstPhysicalDeviceIndex, dstRegionDesc, *srcTextureImpl, srcPhysicalDeviceIndex,
+    m_CoreAPI.CmdCopyTexture(m_ImplObject, *dstTextureImpl, dstNodeIndex, dstRegionDesc, *srcTextureImpl, srcNodeIndex,
         srcRegionDesc);
 }
 
 void CommandBufferVal::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer,
     const TextureDataLayoutDesc& srcDataLayoutDesc)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't upload buffer to texture: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't upload buffer to texture: this operation is allowed only outside render pass.");
 
     Texture* dstTextureImpl = NRI_GET_IMPL_REF(Texture, &dstTexture);
@@ -399,10 +399,10 @@ void CommandBufferVal::UploadBufferToTexture(Texture& dstTexture, const TextureR
 void CommandBufferVal::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture,
     const TextureRegionDesc& srcRegionDesc)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't readback texture to buffer: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't readback texture to buffer: this operation is allowed only outside render pass.");
 
     Buffer* dstBufferImpl = NRI_GET_IMPL_REF(Buffer, &dstBuffer);
@@ -413,10 +413,10 @@ void CommandBufferVal::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLay
 
 void CommandBufferVal::Dispatch(uint32_t x, uint32_t y, uint32_t z)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't record dispatch call: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't record dispatch call: this operation is allowed only outside render pass.");
 
     m_CoreAPI.CmdDispatch(m_ImplObject, x, y, z);
@@ -424,10 +424,10 @@ void CommandBufferVal::Dispatch(uint32_t x, uint32_t y, uint32_t z)
 
 void CommandBufferVal::DispatchIndirect(const Buffer& buffer, uint64_t offset)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't record dispatch call: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't record dispatch call: this operation is allowed only outside render pass.");
 
     Buffer* bufferImpl = NRI_GET_IMPL_REF(Buffer, &buffer);
@@ -437,10 +437,10 @@ void CommandBufferVal::DispatchIndirect(const Buffer& buffer, uint64_t offset)
 
 void CommandBufferVal::PipelineBarrier(const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't record pipeline barrier: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't record pipeline barrier: this operation is allowed only outside render pass.");
 
     TransitionBarrierDesc transitionBarrierImpl;
@@ -502,17 +502,17 @@ void CommandBufferVal::PipelineBarrier(const TransitionBarrierDesc* transitionBa
 
 void CommandBufferVal::BeginQuery(const QueryPool& queryPool, uint32_t offset)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't begin query: the command buffer must be in the recording state.");
 
     const QueryPoolVal& queryPoolVal = (const QueryPoolVal&)queryPool;
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), queryPoolVal.GetQueryType() != QueryType::TIMESTAMP, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, queryPoolVal.GetQueryType() != QueryType::TIMESTAMP, ReturnVoid(),
         "Can't begin query: BeginQuery() is not supported for timestamp queries.");
 
     if (!queryPoolVal.IsImported())
     {
-        RETURN_ON_FAILURE(m_Device.GetLog(), offset < queryPoolVal.GetQueryNum(), ReturnVoid(),
+        RETURN_ON_FAILURE(&m_Device, offset < queryPoolVal.GetQueryNum(), ReturnVoid(),
         "Can't begin query: the offset ('%u') is out of range.", offset);
 
         ValidationCommandUseQuery& validationCommand = AllocateValidationCommand<ValidationCommandUseQuery>();
@@ -528,14 +528,14 @@ void CommandBufferVal::BeginQuery(const QueryPool& queryPool, uint32_t offset)
 
 void CommandBufferVal::EndQuery(const QueryPool& queryPool, uint32_t offset)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't end query: the command buffer must be in the recording state.");
 
     const QueryPoolVal& queryPoolVal = (const QueryPoolVal&)queryPool;
 
     if (!queryPoolVal.IsImported())
     {
-        RETURN_ON_FAILURE(m_Device.GetLog(), offset < queryPoolVal.GetQueryNum(), ReturnVoid(),
+        RETURN_ON_FAILURE(&m_Device, offset < queryPoolVal.GetQueryNum(), ReturnVoid(),
             "Can't end query: the offset ('%u') is out of range.", offset);
 
         ValidationCommandUseQuery& validationCommand = AllocateValidationCommand<ValidationCommandUseQuery>();
@@ -551,17 +551,17 @@ void CommandBufferVal::EndQuery(const QueryPool& queryPool, uint32_t offset)
 
 void CommandBufferVal::CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't copy queries: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't copy queries: this operation is allowed only outside render pass.");
 
     const QueryPoolVal& queryPoolVal = (const QueryPoolVal&)queryPool;
 
     if (!queryPoolVal.IsImported())
     {
-        RETURN_ON_FAILURE(m_Device.GetLog(), offset + num <= queryPoolVal.GetQueryNum(), ReturnVoid(),
+        RETURN_ON_FAILURE(&m_Device, offset + num <= queryPoolVal.GetQueryNum(), ReturnVoid(),
             "Can't copy queries: offset + num ('%u') is out of range.", offset + num);
     }
 
@@ -573,17 +573,17 @@ void CommandBufferVal::CopyQueries(const QueryPool& queryPool, uint32_t offset, 
 
 void CommandBufferVal::ResetQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't reset queries: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't reset queries: this operation is allowed only outside render pass.");
 
     const QueryPoolVal& queryPoolVal = (const QueryPoolVal&)queryPool;
 
     if (!queryPoolVal.IsImported())
     {
-        RETURN_ON_FAILURE(m_Device.GetLog(), offset + num <= queryPoolVal.GetQueryNum(), ReturnVoid(),
+        RETURN_ON_FAILURE(&m_Device, offset + num <= queryPoolVal.GetQueryNum(), ReturnVoid(),
             "Can't reset queries: offset + num ('%u') is out of range.", offset + num);
 
         ValidationCommandResetQuery& validationCommand = AllocateValidationCommand<ValidationCommandResetQuery>();
@@ -600,7 +600,7 @@ void CommandBufferVal::ResetQueries(const QueryPool& queryPool, uint32_t offset,
 
 void CommandBufferVal::BeginAnnotation(const char* name)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't copy queries: the command buffer must be in the recording state.");
 
     m_AnnotationStack++;
@@ -609,7 +609,7 @@ void CommandBufferVal::BeginAnnotation(const char* name)
 
 void CommandBufferVal::EndAnnotation()
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't copy queries: the command buffer must be in the recording state.");
 
     m_CoreAPI.CmdEndAnnotation(m_ImplObject);
@@ -625,19 +625,19 @@ void CommandBufferVal::Destroy()
 void CommandBufferVal::BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset,
     AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't build TLAS: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't build TLAS: this operation is allowed only outside render pass.");
 
     BufferVal& bufferVal = (BufferVal&)buffer;
     BufferVal& scratchVal = (BufferVal&)scratch;
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), bufferOffset < bufferVal.GetDesc().size, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, bufferOffset < bufferVal.GetDesc().size, ReturnVoid(),
         "Can't update TLAS: 'bufferOffset' is out of bounds.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), scratchOffset < scratchVal.GetDesc().size, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(),
         "Can't update TLAS: 'scratchOffset' is out of bounds.");
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL_REF(AccelerationStructure, &dst);
@@ -650,18 +650,18 @@ void CommandBufferVal::BuildTopLevelAccelerationStructure(uint32_t instanceNum, 
 void CommandBufferVal::BuildBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects,
     AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't build BLAS: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't build BLAS: this operation is allowed only outside render pass.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), geometryObjects != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, geometryObjects != nullptr, ReturnVoid(),
         "Can't update BLAS: 'geometryObjects' is invalid.");
 
     BufferVal& scratchVal = (BufferVal&)scratch;
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), scratchOffset < scratchVal.GetDesc().size, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(),
         "Can't build BLAS: 'scratchOffset' is out of bounds.");
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL_REF(AccelerationStructure, &dst);
@@ -676,19 +676,19 @@ void CommandBufferVal::BuildBottomLevelAccelerationStructure(uint32_t geometryOb
 void CommandBufferVal::UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset,
     AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't update TLAS: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't update TLAS: this operation is allowed only outside render pass.");
 
     BufferVal& bufferVal = (BufferVal&)buffer;
     BufferVal& scratchVal = (BufferVal&)scratch;
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), bufferOffset < bufferVal.GetDesc().size, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, bufferOffset < bufferVal.GetDesc().size, ReturnVoid(),
         "Can't update TLAS: 'bufferOffset' is out of bounds.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), scratchOffset < scratchVal.GetDesc().size, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(),
         "Can't update TLAS: 'scratchOffset' is out of bounds.");
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL_REF(AccelerationStructure, &dst);
@@ -702,18 +702,18 @@ void CommandBufferVal::UpdateTopLevelAccelerationStructure(uint32_t instanceNum,
 void CommandBufferVal::UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects,
     AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't update BLAS: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't update BLAS: this operation is allowed only outside render pass.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), geometryObjects != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, geometryObjects != nullptr, ReturnVoid(),
         "Can't update BLAS: 'geometryObjects' is invalid.");
 
     BufferVal& scratchVal = (BufferVal&)scratch;
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), scratchOffset < scratchVal.GetDesc().size, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(),
         "Can't update BLAS: 'scratchOffset' is out of bounds.");
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL_REF(AccelerationStructure, &dst);
@@ -728,13 +728,13 @@ void CommandBufferVal::UpdateBottomLevelAccelerationStructure(uint32_t geometryO
 
 void CommandBufferVal::CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't copy AS: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't copy AS: this operation is allowed only outside render pass.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), copyMode < CopyMode::MAX_NUM, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, copyMode < CopyMode::MAX_NUM, ReturnVoid(),
         "Can't copy AS: 'copyMode' is invalid.");
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL_REF(AccelerationStructure, &dst);
@@ -745,19 +745,19 @@ void CommandBufferVal::CopyAccelerationStructure(AccelerationStructure& dst, Acc
 
 void CommandBufferVal::WriteAccelerationStructureSize(const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryOffset)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't write AS size: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't write AS size: this operation is allowed only outside render pass.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), accelerationStructures != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, accelerationStructures != nullptr, ReturnVoid(),
         "Can't write AS size: 'accelerationStructures' is invalid.");
 
     AccelerationStructure** accelerationStructureArray = STACK_ALLOC(AccelerationStructure*, accelerationStructureNum);
     for (uint32_t i = 0; i < accelerationStructureNum; i++)
     {
-        RETURN_ON_FAILURE(m_Device.GetLog(), accelerationStructures[i] != nullptr, ReturnVoid(),
+        RETURN_ON_FAILURE(&m_Device, accelerationStructures[i] != nullptr, ReturnVoid(),
             "Can't write AS size: 'accelerationStructures[%u]' is invalid.", i);
 
         accelerationStructureArray[i] = NRI_GET_IMPL_PTR(AccelerationStructure, accelerationStructures[i]);
@@ -770,30 +770,30 @@ void CommandBufferVal::WriteAccelerationStructureSize(const AccelerationStructur
 
 void CommandBufferVal::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsRecordingStarted, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't record ray tracing dispatch: the command buffer must be in the recording state.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_FrameBuffer == nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't record ray tracing dispatch: this operation is allowed only outside render pass.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), dispatchRaysDesc.raygenShader.buffer != nullptr, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.buffer != nullptr, ReturnVoid(),
         "Can't record ray tracing dispatch: 'dispatchRaysDesc.raygenShader.buffer' is invalid.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), dispatchRaysDesc.raygenShader.size != 0, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.size != 0, ReturnVoid(),
         "Can't record ray tracing dispatch: 'dispatchRaysDesc.raygenShader.size' is 0.");
 
     const uint64_t SBTAlignment = m_Device.GetDesc().rayTracingShaderTableAligment;
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), dispatchRaysDesc.raygenShader.offset % SBTAlignment == 0, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.offset % SBTAlignment == 0, ReturnVoid(),
         "Can't record ray tracing dispatch: 'dispatchRaysDesc.raygenShader.offset' is misaligned.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), dispatchRaysDesc.missShaders.offset % SBTAlignment == 0, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.missShaders.offset % SBTAlignment == 0, ReturnVoid(),
         "Can't record ray tracing dispatch: 'dispatchRaysDesc.missShaders.offset' is misaligned.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), dispatchRaysDesc.hitShaderGroups.offset % SBTAlignment == 0, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.hitShaderGroups.offset % SBTAlignment == 0, ReturnVoid(),
         "Can't record ray tracing dispatch: 'dispatchRaysDesc.hitShaderGroups.offset' is misaligned.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), dispatchRaysDesc.callableShaders.offset % SBTAlignment == 0, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.callableShaders.offset % SBTAlignment == 0, ReturnVoid(),
         "Can't record ray tracing dispatch: 'dispatchRaysDesc.callableShaders.offset' is misaligned.");
 
     auto dispatchRaysDescImpl = dispatchRaysDesc;
@@ -828,16 +828,16 @@ Command& CommandBufferVal::AllocateValidationCommand()
 
 static bool ValidateBufferTransitionBarrierDesc(const DeviceVal& device, uint32_t i, const BufferTransitionBarrierDesc& bufferTransitionBarrierDesc)
 {
-    RETURN_ON_FAILURE(device.GetLog(), bufferTransitionBarrierDesc.buffer != nullptr, false,
+    RETURN_ON_FAILURE(&device, bufferTransitionBarrierDesc.buffer != nullptr, false,
         "Can't record pipeline barrier: 'transitionBarriers->buffers[%u].buffer' is invalid.", i);
 
     const BufferVal& bufferVal = *(const BufferVal*)bufferTransitionBarrierDesc.buffer;
 
-    RETURN_ON_FAILURE(device.GetLog(), IsAccessMaskSupported(bufferVal.GetDesc().usageMask, bufferTransitionBarrierDesc.prevAccess), false,
+    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(bufferVal.GetDesc().usageMask, bufferTransitionBarrierDesc.prevAccess), false,
         "Can't record pipeline barrier: 'transitionBarriers->buffers[%u].prevAccess' is not supported by the usage mask of the buffer ('%s').",
         i, bufferVal.GetDebugName().c_str());
 
-    RETURN_ON_FAILURE(device.GetLog(), IsAccessMaskSupported(bufferVal.GetDesc().usageMask, bufferTransitionBarrierDesc.nextAccess), false,
+    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(bufferVal.GetDesc().usageMask, bufferTransitionBarrierDesc.nextAccess), false,
         "Can't record pipeline barrier: 'transitionBarriers->buffers[%u].nextAccess' is not supported by the usage mask of the buffer ('%s').",
         i, bufferVal.GetDebugName().c_str());
 
@@ -846,24 +846,24 @@ static bool ValidateBufferTransitionBarrierDesc(const DeviceVal& device, uint32_
 
 static bool ValidateTextureTransitionBarrierDesc(const DeviceVal& device, uint32_t i, const TextureTransitionBarrierDesc& textureTransitionBarrierDesc)
 {
-    RETURN_ON_FAILURE(device.GetLog(), textureTransitionBarrierDesc.texture != nullptr, false,
+    RETURN_ON_FAILURE(&device, textureTransitionBarrierDesc.texture != nullptr, false,
         "Can't record pipeline barrier: 'transitionBarriers->textures[%u].texture' is invalid.", i);
 
     const TextureVal& textureVal = *(const TextureVal*)textureTransitionBarrierDesc.texture;
 
-    RETURN_ON_FAILURE(device.GetLog(), IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.prevAccess), false,
+    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.prevAccess), false,
         "Can't record pipeline barrier: 'transitionBarriers->textures[%u].prevAccess' is not supported by the usage mask of the texture ('%s').",
         i, textureVal.GetDebugName().c_str());
 
-    RETURN_ON_FAILURE(device.GetLog(), IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.nextAccess), false,
+    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.nextAccess), false,
         "Can't record pipeline barrier: 'transitionBarriers->textures[%u].nextAccess' is not supported by the usage mask of the texture ('%s').",
         i, textureVal.GetDebugName().c_str());
 
-    RETURN_ON_FAILURE(device.GetLog(), IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.prevLayout), false,
+    RETURN_ON_FAILURE(&device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.prevLayout), false,
         "Can't record pipeline barrier: 'transitionBarriers->textures[%u].prevLayout' is not supported by the usage mask of the texture ('%s').",
         i, textureVal.GetDebugName().c_str());
 
-    RETURN_ON_FAILURE(device.GetLog(), IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.nextLayout), false,
+    RETURN_ON_FAILURE(&device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.nextLayout), false,
         "Can't record pipeline barrier: 'transitionBarriers->textures[%u].nextLayout' is not supported by the usage mask of the texture ('%s').",
         i, textureVal.GetDebugName().c_str());
 

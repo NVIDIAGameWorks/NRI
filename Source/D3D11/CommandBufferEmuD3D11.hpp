@@ -15,9 +15,9 @@ static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, con
     ((CommandBufferEmuD3D11&)commandBuffer).SetDebugName(name);
 }
 
-static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool, uint32_t physicalDeviceIndex)
+static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool, uint32_t nodeIndex)
 {
-    MaybeUnused(physicalDeviceIndex);
+    MaybeUnused(nodeIndex);
 
     return ((CommandBufferEmuD3D11&)commandBuffer).Begin(descriptorPool);
 }
@@ -167,20 +167,20 @@ static void NRI_CALL CmdClearStorageTexture(CommandBuffer& commandBuffer, const 
     ((CommandBufferEmuD3D11&)commandBuffer).ClearStorageTexture(clearDesc);
 }
 
-static void NRI_CALL CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint32_t dstPhysicalDeviceIndex, uint64_t dstOffset,
-    const Buffer& srcBuffer, uint32_t srcPhysicalDeviceIndex, uint64_t srcOffset, uint64_t size)
+static void NRI_CALL CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset,
+    const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size)
 {
-    MaybeUnused(dstPhysicalDeviceIndex);
-    MaybeUnused(srcPhysicalDeviceIndex);
+    MaybeUnused(dstNodeIndex);
+    MaybeUnused(srcNodeIndex);
 
     ((CommandBufferEmuD3D11&)commandBuffer).CopyBuffer(dstBuffer, dstOffset, srcBuffer, srcOffset, size);
 }
 
-static void NRI_CALL CmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTexture, uint32_t dstPhysicalDeviceIndex,
-    const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcPhysicalDeviceIndex, const TextureRegionDesc* srcRegionDesc)
+static void NRI_CALL CmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTexture, uint32_t dstNodeIndex,
+    const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc)
 {
-    MaybeUnused(dstPhysicalDeviceIndex);
-    MaybeUnused(srcPhysicalDeviceIndex);
+    MaybeUnused(dstNodeIndex);
+    MaybeUnused(srcNodeIndex);
 
     ((CommandBufferEmuD3D11&)commandBuffer).CopyTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
 }

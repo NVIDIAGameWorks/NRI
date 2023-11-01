@@ -276,7 +276,6 @@ namespace nri
                 textureDesc.mipNum = (uint16_t)desc.MipLevels;
                 textureDesc.arraySize = (uint16_t)desc.ArraySize;
                 textureDesc.sampleNum = 1;
-                textureDesc.physicalDeviceMask = 0x1; // unsupported in D3D11
                 break;
             }
         case D3D11_RESOURCE_DIMENSION_TEXTURE2D:
@@ -297,7 +296,6 @@ namespace nri
                 textureDesc.mipNum = (uint16_t)desc.MipLevels;
                 textureDesc.arraySize = (uint16_t)desc.ArraySize;
                 textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
-                textureDesc.physicalDeviceMask = 0x1; // unsupported in D3D11
                 break;
             }
         case D3D11_RESOURCE_DIMENSION_TEXTURE3D:
@@ -318,7 +316,6 @@ namespace nri
                 textureDesc.mipNum = (uint16_t)desc.MipLevels;
                 textureDesc.arraySize = 1;
                 textureDesc.sampleNum = 1;
-                textureDesc.physicalDeviceMask = 0x1; // unsupported in D3D11
                 break;
             }
         }
@@ -334,6 +331,5 @@ namespace nri
 
         bufferDesc.size = desc.ByteWidth;
         bufferDesc.structureStride = desc.StructureByteStride;
-        bufferDesc.physicalDeviceMask = 0x1; // unsupported in D3D11
     }
 }

@@ -92,7 +92,7 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     FREE_SCRATCH(m_Device, pushConstantRanges, pipelineLayoutDesc.pushConstantNum);
     FREE_SCRATCH(m_Device, descriptorSetLayouts, setNum);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, Result::FAILURE,
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, Result::FAILURE,
         "Can't create a pipeline layout: vkCreatePipelineLayout returned %d.", (int32_t)result);
 
     FillRuntimeBindingInfo(pipelineLayoutDesc, bindingOffsets);
@@ -162,7 +162,7 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
     FREE_SCRATCH(m_Device, bindingsBegin, bindingMaxNum);
     FREE_SCRATCH(m_Device, bindingFlagsBegin, bindingMaxNum);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, 0,
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, 0,
         "Can't create the descriptor set layout: vkCreateDescriptorSetLayout returned %d.", (int32_t)result);
 
     return handle;

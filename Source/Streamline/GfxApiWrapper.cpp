@@ -35,7 +35,7 @@ public:
 
     D3D12ApiWrapper(nri::Device const& device)
     {
-        STREAMLINE_ABORT_ON_FAILURE(nri::GetInterface(device, NRI_INTERFACE(nri::WrapperD3D12Interface), &wrapper));
+        STREAMLINE_ABORT_ON_FAILURE(nri::nriGetInterface(device, NRI_INTERFACE(nri::WrapperD3D12Interface), &wrapper));
     }
 };
 
@@ -60,7 +60,7 @@ public:
 
     D3D11ApiWrapper(nri::Device const& device)
     {
-        STREAMLINE_ABORT_ON_FAILURE(nri::GetInterface(device, NRI_INTERFACE(nri::WrapperD3D11Interface), &wrapper));
+        STREAMLINE_ABORT_ON_FAILURE(nri::nriGetInterface(device, NRI_INTERFACE(nri::WrapperD3D11Interface), &wrapper));
     }
 };
 

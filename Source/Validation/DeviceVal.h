@@ -17,7 +17,7 @@ struct CommandQueueVal;
 
 struct DeviceVal final : public DeviceBase
 {
-    DeviceVal(const Log& log, const StdAllocator<uint8_t>& stdAllocator, DeviceBase& device);
+    DeviceVal(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator, DeviceBase& device);
     ~DeviceVal();
 
     bool Create();
@@ -74,7 +74,7 @@ struct DeviceVal final : public DeviceBase
     Result GetDisplaySize(Display& display, uint16_t& width, uint16_t& height);
     void SetDebugName(const char* name);
     Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
-    Result CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t physicalDeviceMask, CommandAllocator*& commandAllocator);
+    Result CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator);
     Result CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool);
     Result CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer);
     Result CreateTexture(const TextureDesc& textureDesc, Texture*& texture);
@@ -99,7 +99,7 @@ struct DeviceVal final : public DeviceBase
     void DestroyFrameBuffer(FrameBuffer& frameBuffer);
     void DestroyQueryPool(QueryPool& queryPool);
     void DestroyFence(Fence& queueSemaphore);
-    Result AllocateMemory(uint32_t physicalDeviceMask, MemoryType memoryType, uint64_t size, Memory*& memory);
+    Result AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     void FreeMemory(Memory& memory);
@@ -110,17 +110,17 @@ struct DeviceVal final : public DeviceBase
     void DestroyAccelerationStructure(AccelerationStructure& accelerationStructure);
     FormatSupportBits GetFormatSupport(Format format) const;
 
-    Result CreateCommandQueueVK(const CommandQueueVulkanDesc& commandQueueDesc, CommandQueue*& commandQueue);
-    Result CreateCommandAllocatorVK(const CommandAllocatorVulkanDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator);
-    Result CreateCommandBufferVK(const CommandBufferVulkanDesc& commandBufferDesc, CommandBuffer*& commandBuffer);
+    Result CreateCommandQueueVK(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
+    Result CreateCommandAllocatorVK(const CommandAllocatorVKDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator);
+    Result CreateCommandBufferVK(const CommandBufferVKDesc& commandBufferDesc, CommandBuffer*& commandBuffer);
     Result CreateDescriptorPoolVK(NRIVkDescriptorPool vkDescriptorPool, DescriptorPool*& descriptorPool);
-    Result CreateBufferVK(const BufferVulkanDesc& bufferDesc, Buffer*& buffer);
-    Result CreateTextureVK(const TextureVulkanDesc& textureVulkanDesc, Texture*& texture);
-    Result CreateMemoryVK(const MemoryVulkanDesc& memoryVulkanDesc, Memory*& memory);
+    Result CreateBufferVK(const BufferVKDesc& bufferDesc, Buffer*& buffer);
+    Result CreateTextureVK(const TextureVKDesc& textureVKDesc, Texture*& texture);
+    Result CreateMemoryVK(const MemoryVKDesc& memoryVKDesc, Memory*& memory);
     Result CreateGraphicsPipelineVK(NRIVkPipeline vkPipeline, Pipeline*& pipeline);
     Result CreateComputePipelineVK(NRIVkPipeline vkPipeline, Pipeline*& pipeline);
-    Result CreateQueryPoolVK(const QueryPoolVulkanDesc& queryPoolVulkanDesc, QueryPool*& queryPool);
-    Result CreateAccelerationStructureVK(const AccelerationStructureVulkanDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
+    Result CreateQueryPoolVK(const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool);
+    Result CreateAccelerationStructureVK(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
 
     Result CreateCommandBufferD3D11(const CommandBufferD3D11Desc& commandBufferDesc, CommandBuffer*& commandBuffer);
     Result CreateBufferD3D11(const BufferD3D11Desc& bufferDesc, Buffer*& buffer);

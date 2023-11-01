@@ -43,65 +43,50 @@ typedef nri::MemoryAllocatorInterface MemoryAllocatorInterface;
 constexpr uint32_t PHYSICAL_DEVICE_GROUP_MAX_SIZE = 4;
 constexpr uint32_t COMMAND_QUEUE_TYPE_NUM = (uint32_t)nri::CommandQueueType::MAX_NUM;
 
-void CheckAndSetDefaultCallbacks(nri::CallbackInterface& callbackInterface);
+constexpr void ReturnVoid()
+{}
 
-struct Log
-{
-    Log(nri::GraphicsAPI graphicsAPI, const nri::CallbackInterface& callbackInterface);
+template<typename... Args> constexpr void MaybeUnused([[maybe_unused]] const Args&... args)
+{}
 
-    void ReportMessage(nri::Message message, const char* format, ...) const;
+constexpr uint32_t GetNodeMask(uint32_t mask)
+{ return mask == nri::ALL_NODES ? 0xff : mask; }
 
-private:
-    nri::GraphicsAPI m_GraphicsAPI;
-    nri::CallbackInterface m_CallbackInterface;
-};
+#define RETURN_ON_BAD_HRESULT(deviceBase, hr, msg) \
+    if ( FAILED(hr) ) \
+    { \
+        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, msg##" failed, result = 0x%08X!", hr); \
+        return GetResultFromHRESULT(hr); \
+    }
 
-//================================================================================================================
+#define RETURN_ON_FAILURE(deviceBase, condition, returnCode, format, ...) \
+    if ( !(condition) ) \
+    { \
+        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__); \
+        return returnCode; \
+    }
+
+#define REPORT_INFO(deviceBase, format, ...) \
+    (deviceBase)->ReportMessage(nri::Message::TYPE_INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
+
+#define REPORT_WARNING(deviceBase, format, ...) \
+    (deviceBase)->ReportMessage(nri::Message::TYPE_WARNING, __FILE__, __LINE__, format, ##__VA_ARGS__)
+
+#define REPORT_ERROR(deviceBase, format, ...) \
+    (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
+
+#if _DEBUG
+    #define CHECK(deviceBase, condition, format, ...) \
+        if ( !(condition) ) \
+            (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#else
+    #define CHECK(deviceBase, condition, format, ...) \
+        ((void)sizeof((void)(condition), 0))
+#endif
 
 #define SET_D3D_DEBUG_OBJECT_NAME(obj, name) \
     if (obj) \
         obj->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)std::strlen(name), name)
-
-#define RETURN_ON_BAD_HRESULT(log, hr, msg) \
-    if ( FAILED(hr) ) \
-    { \
-        (log).ReportMessage(nri::Message::TYPE_ERROR, msg##" failed, result = 0x%08X!", hr); \
-        return GetResultFromHRESULT(hr); \
-    }
-
-#define RETURN_ON_FAILURE(log, condition, returnCode, format, ...) \
-    if ( !(condition) ) \
-    { \
-        (log).ReportMessage(nri::Message::TYPE_ERROR, format, ##__VA_ARGS__); \
-        return returnCode; \
-    }
-
-#define REPORT_INFO(log, format, ...) \
-    (log).ReportMessage(nri::Message::TYPE_INFO, format, ##__VA_ARGS__)
-
-#define REPORT_WARNING(log, format, ...) \
-    (log).ReportMessage(nri::Message::TYPE_WARNING, format, ##__VA_ARGS__)
-
-#define REPORT_ERROR(log, format, ...) \
-    (log).ReportMessage(nri::Message::TYPE_ERROR, format, ##__VA_ARGS__)
-
-#if _DEBUG
-    #define CHECK(log, condition, format, ...) \
-        if ( !(condition) ) \
-            (log).ReportMessage(nri::Message::TYPE_ERROR, format, ##__VA_ARGS__)
-#else
-    #define CHECK(log, condition, format, ...) \
-        ((void)sizeof((void)(condition), 0))
-#endif
-
-constexpr void ReturnVoid() {}
-template<typename... Args> constexpr void MaybeUnused([[maybe_unused]] const Args&... args) {}
-
-//================================================================================================================
-
-void ConvertCharToWchar(const char* in, wchar_t* out, size_t outLen);
-void ConvertWcharToChar(const wchar_t* in, char* out, size_t outLen);
-nri::Result GetResultFromHRESULT(long result);
 
 inline nri::Vendor GetVendorFromID(uint32_t vendorID)
 {
@@ -115,8 +100,28 @@ inline nri::Vendor GetVendorFromID(uint32_t vendorID)
     return nri::Vendor::UNKNOWN;
 }
 
-//================================================================================================================
+void CheckAndSetDefaultCallbacks(nri::CallbackInterface& callbackInterface);
+void ConvertCharToWchar(const char* in, wchar_t* out, size_t outLen);
+void ConvertWcharToChar(const wchar_t* in, char* out, size_t outLen);
+nri::Result GetResultFromHRESULT(long result);
 
+uint32_t GetTexelBlockWidth(nri::Format format);
+uint32_t GetTexelBlockSize(nri::Format format);
+
+nri::Format DXGIFormatToNRIFormat(uint32_t dxgiFormat);
+nri::Format VKFormatToNRIFormat(uint32_t vkFormat);
+
+uint32_t NRIFormatToDXGIFormatD3D11(nri::Format format);
+uint32_t NRIFormatToDXGIFormatD3D12(nri::Format format);
+uint32_t NRIFormatToVKFormat(nri::Format format);
+
+struct Library;
+Library* LoadSharedLibrary(const char* path);
+void* GetSharedLibraryFunction(Library& library, const char* name);
+void UnloadSharedLibrary(Library& library);
+extern const char* VULKAN_LOADER_NAME;
+
+//================================================================================================================
 // TODO: This code is Windows/D3D specific, so it's probably better to move it into a separate header
 #ifdef _WIN32
 
@@ -126,7 +131,7 @@ struct IUnknown;
 template<typename T>
 struct ComPtr
 {
-    ComPtr(T* lComPtr = nullptr) : m_ComPtr(lComPtr)
+    inline ComPtr(T* lComPtr = nullptr) : m_ComPtr(lComPtr)
     {
         static_assert(std::is_base_of<IUnknown, T>::value, "T needs to be IUnknown based");
 
@@ -134,7 +139,7 @@ struct ComPtr
             m_ComPtr->AddRef();
     }
 
-    ComPtr(const ComPtr<T>& lComPtrObj)
+    inline ComPtr(const ComPtr<T>& lComPtrObj)
     {
         static_assert(std::is_base_of<IUnknown, T>::value, "T needs to be IUnknown based");
 
@@ -144,13 +149,13 @@ struct ComPtr
             m_ComPtr->AddRef();
     }
 
-    ComPtr(ComPtr<T>&& lComPtrObj)
+    inline ComPtr(ComPtr<T>&& lComPtrObj)
     {
         m_ComPtr = lComPtrObj.m_ComPtr;
         lComPtrObj.m_ComPtr = nullptr;
     }
 
-    T* operator=(T* lComPtr)
+    inline T* operator=(T* lComPtr)
     {
         if (m_ComPtr)
             m_ComPtr->Release();
@@ -163,7 +168,7 @@ struct ComPtr
         return m_ComPtr;
     }
 
-    T* operator=(const ComPtr<T>& lComPtrObj)
+    inline T* operator=(const ComPtr<T>& lComPtrObj)
     {
         if (m_ComPtr)
             m_ComPtr->Release();
@@ -176,7 +181,7 @@ struct ComPtr
         return m_ComPtr;
     }
 
-    ~ComPtr()
+    inline ~ComPtr()
     {
         if (m_ComPtr)
         {
@@ -185,56 +190,40 @@ struct ComPtr
         }
     }
 
-    operator T*() const
+    inline T** operator&()
     {
-        return m_ComPtr;
-    }
-
-    T* GetInterface() const
-    {
-        return m_ComPtr;
-    }
-
-    T& operator*() const
-    {
-        return *m_ComPtr;
-    }
-
-    T** operator&()
-    {
-        //The assert on operator& usually indicates a bug. Could be a potential memory leak.
+        // The assert on operator& usually indicates a bug. Could be a potential memory leak.
         // If this really what is needed, however, use GetInterface() explicitly.
         assert(m_ComPtr == nullptr);
         return &m_ComPtr;
     }
 
-    T* operator->() const
-    {
-        return m_ComPtr;
-    }
+    inline operator T*() const
+    { return m_ComPtr; }
 
-    bool operator!() const
-    {
-        return (nullptr == m_ComPtr);
-    }
+    inline T* GetInterface() const
+    { return m_ComPtr; }
 
-    bool operator<(T* lComPtr) const
-    {
-        return m_ComPtr < lComPtr;
-    }
+    inline T& operator*() const
+    { return *m_ComPtr; }
 
-    bool operator!=(T* lComPtr) const
-    {
-        return !operator==(lComPtr);
-    }
+    inline T* operator->() const
+    { return m_ComPtr; }
 
-    bool operator==(T* lComPtr) const
-    {
-        return m_ComPtr == lComPtr;
-    }
+    inline bool operator!() const
+    { return (nullptr == m_ComPtr); }
+
+    inline bool operator<(T* lComPtr) const
+    { return m_ComPtr < lComPtr; }
+
+    inline bool operator!=(T* lComPtr) const
+    { return !operator==(lComPtr); }
+
+    inline bool operator==(T* lComPtr) const
+    { return m_ComPtr == lComPtr; }
 
 protected:
-    T * m_ComPtr;
+    T* m_ComPtr;
 };
 
 constexpr nri::FormatSupportBits COMMON_SUPPORT =
@@ -346,38 +335,3 @@ constexpr nri::FormatSupportBits D3D_FORMAT_SUPPORT_TABLE[] = {
 static_assert(GetCountOf(D3D_FORMAT_SUPPORT_TABLE) == (size_t)nri::Format::MAX_NUM, "some format is missing");
 
 #endif
-
-template<typename T>
-nri::Result ValidateFunctionTable(const Log& log, const T& table)
-{
-    const void* const* const begin = (void**)&table;
-    const void* const* const end = (void**)(&table + 1);
-    for (const void* const* current = begin; current != end; current++)
-    {
-        if (*current == nullptr)
-        {
-            REPORT_ERROR(log, "Invalid function table: function #%u is NULL!", uint32_t(current - begin));
-            return nri::Result::FAILURE;
-        }
-    }
-    return nri::Result::SUCCESS;
-}
-
-uint32_t GetTexelBlockWidth(nri::Format format);
-uint32_t GetTexelBlockSize(nri::Format format);
-
-nri::Format DXGIFormatToNRIFormat(uint32_t dxgiFormat);
-nri::Format VKFormatToNRIFormat(uint32_t vkFormat);
-
-uint32_t NRIFormatToDXGIFormatD3D11(nri::Format format);
-uint32_t NRIFormatToDXGIFormatD3D12(nri::Format format);
-uint32_t NRIFormatToVKFormat(nri::Format format);
-
-constexpr uint32_t GetPhysicalDeviceGroupMask(uint32_t mask)
-{ return mask == nri::WHOLE_DEVICE_GROUP ? 0xff : mask; }
-
-struct Library;
-Library* LoadSharedLibrary(const char* path);
-void* GetSharedLibraryFunction(Library& library, const char* name);
-void UnloadSharedLibrary(Library& library);
-extern const char* VULKAN_LOADER_NAME;

@@ -45,21 +45,21 @@ void MemoryVal::ReportBoundResources()
     for (size_t i = 0; i < m_Buffers.size(); i++)
     {
         BufferVal& buffer = *m_Buffers[i];
-        REPORT_ERROR(m_Device.GetLog(), "Buffer (%p '%s') is still bound to the memory.",
+        REPORT_ERROR(&m_Device, "Buffer (%p '%s') is still bound to the memory.",
             &buffer, buffer.GetDebugName().c_str());
     }
 
     for (size_t i = 0; i < m_Textures.size(); i++)
     {
         TextureVal& texture = *m_Textures[i];
-        REPORT_ERROR(m_Device.GetLog(), "Texture (%p '%s') is still bound to the memory.",
+        REPORT_ERROR(&m_Device, "Texture (%p '%s') is still bound to the memory.",
             &texture, texture.GetDebugName().c_str());
     }
 
     for (size_t i = 0; i < m_AccelerationStructures.size(); i++)
     {
         AccelerationStructureVal& accelerationStructure = *m_AccelerationStructures[i];
-        REPORT_ERROR(m_Device.GetLog(), "AccelerationStructure (%p '%s') is still bound to the memory.",
+        REPORT_ERROR(&m_Device, "AccelerationStructure (%p '%s') is still bound to the memory.",
             &accelerationStructure, accelerationStructure.GetDebugName().c_str());
     }
 }
@@ -92,7 +92,7 @@ void MemoryVal::UnbindBuffer(BufferVal& buffer)
     const auto it = std::find(m_Buffers.begin(), m_Buffers.end(), &buffer);
     if (it == m_Buffers.end())
     {
-        REPORT_ERROR(m_Device.GetLog(), "Unexpected error: Can't find the buffer in the list of bound resources.");
+        REPORT_ERROR(&m_Device, "Unexpected error: Can't find the buffer in the list of bound resources.");
         return;
     }
 
@@ -106,7 +106,7 @@ void MemoryVal::UnbindTexture(TextureVal& texture)
     const auto it = std::find(m_Textures.begin(), m_Textures.end(), &texture);
     if (it == m_Textures.end())
     {
-        REPORT_ERROR(m_Device.GetLog(), "Unexpected error: Can't find the texture in the list of bound resources.");
+        REPORT_ERROR(&m_Device, "Unexpected error: Can't find the texture in the list of bound resources.");
         return;
     }
 
@@ -120,7 +120,7 @@ void MemoryVal::UnbindAccelerationStructure(AccelerationStructureVal& accelerati
     const auto it = std::find(m_AccelerationStructures.begin(), m_AccelerationStructures.end(), &accelerationStructure);
     if (it == m_AccelerationStructures.end())
     {
-        REPORT_ERROR(m_Device.GetLog(), "Unexpected error: Can't find the acceleration structure in the list of bound resources.");
+        REPORT_ERROR(&m_Device, "Unexpected error: Can't find the acceleration structure in the list of bound resources.");
         return;
     }
 

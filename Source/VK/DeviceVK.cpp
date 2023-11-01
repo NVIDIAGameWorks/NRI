@@ -36,10 +36,8 @@ using namespace nri;
 
 Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device)
 {
-    Log log(GraphicsAPI::VULKAN, deviceCreationDesc.callbackInterface);
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
-
-    DeviceVK* implementation = Allocate<DeviceVK>(allocator, log, allocator);
+    DeviceVK* implementation = Allocate<DeviceVK>(allocator, deviceCreationDesc.callbackInterface, allocator);
 
     const Result res = implementation->Create(deviceCreationDesc);
 
@@ -53,12 +51,10 @@ Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*&
     return res;
 }
 
-Result CreateDeviceVK(const DeviceCreationVulkanDesc& deviceCreationDesc, DeviceBase*& device)
+Result CreateDeviceVK(const DeviceCreationVKDesc& deviceCreationDesc, DeviceBase*& device)
 {
-    Log log(GraphicsAPI::VULKAN, deviceCreationDesc.callbackInterface);
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
-
-    DeviceVK* implementation = Allocate<DeviceVK>(allocator, log, allocator);
+    DeviceVK* implementation = Allocate<DeviceVK>(allocator, deviceCreationDesc.callbackInterface, allocator);
     const Result res = implementation->Create(deviceCreationDesc);
 
     if (res == Result::SUCCESS)
@@ -144,14 +140,12 @@ Result DeviceVK::CreateImplementation(Interface*& entity, const Args&... args)
     return result;
 }
 
-DeviceVK::DeviceVK(const Log& log, const StdAllocator<uint8_t>& stdAllocator) :
-    DeviceBase(log, stdAllocator),
+DeviceVK::DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator) :
+    DeviceBase(callbacks, stdAllocator),
     m_PhysicalDevices(GetStdAllocator()),
     m_PhysicalDeviceIndices(GetStdAllocator()),
     m_ConcurrentSharingModeQueueIndices(GetStdAllocator())
 {
-    if (FillFunctionTable(m_CoreInterface) != Result::SUCCESS)
-        REPORT_ERROR(GetLog(), "Failed to get 'CoreInterface' interface in DeviceVK().");
 }
 
 DeviceVK::~DeviceVK()
@@ -197,7 +191,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc)
     m_Loader = LoadSharedLibrary(VULKAN_LOADER_NAME);
     if (!m_Loader)
     {
-        REPORT_ERROR(GetLog(), "Failed to load Vulkan loader: '%s'.", VULKAN_LOADER_NAME);
+        REPORT_ERROR(this, "Failed to load Vulkan loader: '%s'.", VULKAN_LOADER_NAME);
         return Result::UNSUPPORTED;
     }
 
@@ -230,7 +224,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc)
     if (res != Result::SUCCESS)
         return res;
 
-    const uint32_t groupSize = m_Desc.physicalDeviceNum;
+    const uint32_t groupSize = m_Desc.nodeNum;
     m_PhysicalDeviceIndices.resize(groupSize * groupSize);
     const auto begin = m_PhysicalDeviceIndices.begin();
     for (uint32_t i = 0; i < groupSize; i++)
@@ -246,11 +240,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc)
 
     ComPtr<IDXGIFactory4> dxgiFactory;
     HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
-    RETURN_ON_BAD_HRESULT(GetLog(), hr, "CreateDXGIFactory2()");
+    RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
 
     LUID luid = *(LUID*)&deviceIDProps.deviceLUID[0];
     hr = dxgiFactory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&m_Adapter));
-    RETURN_ON_BAD_HRESULT(GetLog(), hr, "IDXGIFactory4::EnumAdapterByLuid()");
+    RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
 #endif
 
     // Finalize
@@ -260,23 +254,23 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc)
     if (deviceCreationDesc.enableAPIValidation)
         ReportDeviceGroupInfo();
 
-    return res;
+    return FillFunctionTable(m_CoreInterface);
 }
 
-Result DeviceVK::Create(const DeviceCreationVulkanDesc& deviceCreationVulkanDesc)
+Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
 {
     m_OwnsNativeObjects = false;
-    m_SPIRVBindingOffsets = deviceCreationVulkanDesc.spirvBindingOffsets;
+    m_SPIRVBindingOffsets = deviceCreationVKDesc.spirvBindingOffsets;
 
     // TODO: physical device indices?
-    const VkPhysicalDevice* physicalDevices = (VkPhysicalDevice*)deviceCreationVulkanDesc.vkPhysicalDevices;
-    m_PhysicalDevices.insert(m_PhysicalDevices.begin(), physicalDevices, physicalDevices + deviceCreationVulkanDesc.deviceGroupSize);
+    const VkPhysicalDevice* physicalDevices = (VkPhysicalDevice*)deviceCreationVKDesc.vkPhysicalDevices;
+    m_PhysicalDevices.insert(m_PhysicalDevices.begin(), physicalDevices, physicalDevices + deviceCreationVKDesc.deviceGroupSize);
 
-    const char* loaderPath = deviceCreationVulkanDesc.vulkanLoaderPath ? deviceCreationVulkanDesc.vulkanLoaderPath : VULKAN_LOADER_NAME;
+    const char* loaderPath = deviceCreationVKDesc.vulkanLoaderPath ? deviceCreationVKDesc.vulkanLoaderPath : VULKAN_LOADER_NAME;
     m_Loader = LoadSharedLibrary(loaderPath);
     if (!m_Loader)
     {
-        REPORT_ERROR(GetLog(), "Failed to load Vulkan loader: '%s'.", loaderPath);
+        REPORT_ERROR(this, "Failed to load Vulkan loader: '%s'.", loaderPath);
         return Result::UNSUPPORTED;
     }
 
@@ -285,14 +279,14 @@ Result DeviceVK::Create(const DeviceCreationVulkanDesc& deviceCreationVulkanDesc
     if (res != Result::SUCCESS)
         return res;
 
-    m_Instance = (VkInstance)deviceCreationVulkanDesc.vkInstance;
+    m_Instance = (VkInstance)deviceCreationVKDesc.vkInstance;
 
     // Create device
     res = ResolveInstanceDispatchTable();
     if (res != Result::SUCCESS)
         return res;
 
-    m_Device = (VkDevice)deviceCreationVulkanDesc.vkDevice;
+    m_Device = (VkDevice)deviceCreationVKDesc.vkDevice;
 
     res = ResolveDispatchTable();
     if (res != Result::SUCCESS)
@@ -300,7 +294,7 @@ Result DeviceVK::Create(const DeviceCreationVulkanDesc& deviceCreationVulkanDesc
 
     m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevices.front(), &m_MemoryProps);
 
-    FillFamilyIndices(true, deviceCreationVulkanDesc.queueFamilyIndices, deviceCreationVulkanDesc.queueFamilyIndexNum);
+    FillFamilyIndices(true, deviceCreationVKDesc.queueFamilyIndices, deviceCreationVKDesc.queueFamilyIndexNum);
 
     // Instance extensions
     {
@@ -351,18 +345,18 @@ Result DeviceVK::Create(const DeviceCreationVulkanDesc& deviceCreationVulkanDesc
 
     ComPtr<IDXGIFactory4> dxgiFactory;
     HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
-    RETURN_ON_BAD_HRESULT(GetLog(), hr, "CreateDXGIFactory2()");
+    RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
 
     LUID luid = *(LUID*)&deviceIDProps.deviceLUID[0];
     hr = dxgiFactory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&m_Adapter));
-    RETURN_ON_BAD_HRESULT(GetLog(), hr, "IDXGIFactory4::EnumAdapterByLuid()");
+    RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
 #endif
 
     // Finalize
     CreateCommandQueues();
     FillDesc(false);
 
-    return res;
+    return FillFunctionTable(m_CoreInterface);
 }
 
 bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const
@@ -578,12 +572,12 @@ VkBool32 VKAPI_PTR DebugUtilsMessenger(
             message += ")";
         }
 
-        REPORT_ERROR(device.GetLog(), "DebugUtilsMessenger: %s, %s", type, message.c_str());
+        REPORT_ERROR(&device, "DebugUtilsMessenger: %s, %s", type, message.c_str());
     }
     else if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-        REPORT_WARNING(device.GetLog(), "DebugUtilsMessenger: %s, %s", type, message.c_str());
+        REPORT_WARNING(&device, "DebugUtilsMessenger: %s, %s", type, message.c_str());
     else
-        REPORT_INFO(device.GetLog(), "DebugUtilsMessenger: %s, %s", type, message.c_str());
+        REPORT_INFO(&device, "DebugUtilsMessenger: %s, %s", type, message.c_str());
 
     return VK_FALSE;
 }
@@ -641,6 +635,9 @@ Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
     #ifdef VK_USE_PLATFORM_WAYLAND_KHR
         extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
     #endif
+    #ifdef __APPLE__
+        extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    #endif
 
     if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, supportedExts))
     {
@@ -661,7 +658,11 @@ Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
     const VkInstanceCreateInfo info = {
         VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         nullptr,
+    #ifdef __APPLE__
+        (VkInstanceCreateFlags)VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
+    #else
         (VkInstanceCreateFlags)0,
+    #endif
         &appInfo,
         (uint32_t)layers.size(),
         layers.data(),
@@ -671,7 +672,7 @@ Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
 
     VkResult result = m_VK.CreateInstance(&info, m_AllocationCallbackPtr, &m_Instance);
 
-    RETURN_ON_FAILURE(GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a VkInstance: vkCreateInstance returned %d.", (int32_t)result);
 
     if (deviceCreationDesc.enableAPIValidation)
@@ -693,7 +694,7 @@ Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
 
         result = vkCreateDebugUtilsMessengerEXT(m_Instance, &createInfo, m_AllocationCallbackPtr, &m_Messenger);
 
-        RETURN_ON_FAILURE(GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+        RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result),
             "Can't create a debug utils messenger callback: vkCreateDebugUtilsMessengerEXT returned %d.", (int32_t)result);
     }
 
@@ -706,9 +707,10 @@ Result DeviceVK::FindPhysicalDeviceGroup(const AdapterDesc* adapterDesc, bool en
     m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, nullptr);
 
     VkPhysicalDeviceGroupProperties* deviceGroups = STACK_ALLOC(VkPhysicalDeviceGroupProperties, deviceGroupNum);
+    deviceGroups->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES;
     VkResult result = m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, deviceGroups);
 
-    RETURN_ON_FAILURE(GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result),
         "Can't enumerate physical devices: vkEnumeratePhysicalDevices returned %d.", (int32_t)result);
 
     VkPhysicalDeviceIDProperties idProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES };
@@ -723,15 +725,14 @@ Result DeviceVK::FindPhysicalDeviceGroup(const AdapterDesc* adapterDesc, bool en
 
         uint32_t majorVersion = VK_VERSION_MAJOR(props.properties.apiVersion);
         uint32_t minorVersion = VK_VERSION_MINOR(props.properties.apiVersion);
-        bool isSupported = majorVersion * 10 + minorVersion >= 13;
+        bool isSupported = majorVersion * 10 + minorVersion >= 12;
 
         if (adapterDesc)
         {
             const uint64_t luid = *(uint64_t*)idProps.deviceLUID;
             if (luid == adapterDesc->luid)
             {
-                RETURN_ON_FAILURE(GetLog(), isSupported, Result::UNSUPPORTED,
-                    "Can't create a device: the specified physical device does not support Vulkan 1.3.");
+                RETURN_ON_FAILURE(this, isSupported, Result::UNSUPPORTED, "Can't create a device: the specified physical device does not support Vulkan 1.2!");
                 break;
             }
         }
@@ -739,7 +740,7 @@ Result DeviceVK::FindPhysicalDeviceGroup(const AdapterDesc* adapterDesc, bool en
             break;
     }
 
-    RETURN_ON_FAILURE(GetLog(), i != deviceGroupNum, Result::UNSUPPORTED,
+    RETURN_ON_FAILURE(this, i != deviceGroupNum, Result::UNSUPPORTED,
         "Can't create a device: physical device not found.");
 
     const VkPhysicalDeviceGroupProperties& group = deviceGroups[i];
@@ -748,7 +749,7 @@ Result DeviceVK::FindPhysicalDeviceGroup(const AdapterDesc* adapterDesc, bool en
     if (group.subsetAllocation == VK_FALSE && group.physicalDeviceCount > 1)
     {
         m_IsSubsetAllocationSupported = false;
-        REPORT_WARNING(GetLog(), "The device group does not support memory allocation on a subset of the physical devices.");
+        REPORT_WARNING(this, "The device group does not support memory allocation on a subset of the physical devices.");
     }
 
     m_PhysicalDevices.insert(m_PhysicalDevices.begin(), group.physicalDevices, group.physicalDevices + group.physicalDeviceCount);
@@ -931,7 +932,7 @@ void DeviceVK::FillDesc(bool enableValidation)
     m_Desc.clipDistanceMaxNum = limits.maxClipDistances;
     m_Desc.cullDistanceMaxNum = limits.maxCullDistances;
     m_Desc.combinedClipAndCullDistanceMaxNum = limits.maxCombinedClipAndCullDistances;
-    m_Desc.physicalDeviceNum = (uint8_t)m_PhysicalDevices.size();
+    m_Desc.nodeNum = (uint8_t)m_PhysicalDevices.size();
 
     m_Desc.isAPIValidationEnabled = enableValidation;
     m_Desc.isTextureFilterMinMaxSupported = features12.samplerFilterMinmax;
@@ -1109,6 +1110,10 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
         m_IsMeshShaderExtSupported = true;
     }
 
+    #ifdef __APPLE__
+        desiredExts.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+    #endif
+
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR };
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR };
     VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR };
@@ -1179,7 +1184,7 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
 
     const VkResult result = m_VK.CreateDevice(m_PhysicalDevices.front(), &deviceCreateInfo, m_AllocationCallbackPtr, &m_Device);
 
-    RETURN_ON_FAILURE(GetLog(), result == VK_SUCCESS, GetReturnCode(result), "Can't create a device: "
+    RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "Can't create a device: "
         "vkCreateDevice returned %d.", (int32_t)result);
 
     return Result::SUCCESS;
@@ -1215,7 +1220,7 @@ void DeviceVK::SetDebugNameToTrivialObject(VkObjectType objectType, uint64_t han
 
     const VkResult result = m_VK.SetDebugUtilsObjectNameEXT(m_Device, &info);
 
-    RETURN_ON_FAILURE(GetLog(), result == VK_SUCCESS, ReturnVoid(),
+    RETURN_ON_FAILURE(this, result == VK_SUCCESS, ReturnVoid(),
         "Can't set a debug name to an object: vkSetDebugUtilsObjectNameEXT returned %d.", (int32_t)result);
 }
 
@@ -1238,7 +1243,7 @@ void DeviceVK::SetDebugNameToDeviceGroupObject(VkObjectType objectType, const ui
         nameWithDeviceIndex
     };
 
-    for (uint32_t i = 0; i < m_Desc.physicalDeviceNum; i++)
+    for (uint32_t i = 0; i < m_Desc.nodeNum; i++)
     {
         if (handles[i] != 0)
         {
@@ -1246,7 +1251,7 @@ void DeviceVK::SetDebugNameToDeviceGroupObject(VkObjectType objectType, const ui
             snprintf(nameWithDeviceIndex + nameLength, deviceIndexSuffixLength, " (PD%u)", i);
 
             const VkResult result = m_VK.SetDebugUtilsObjectNameEXT(m_Device, &info);
-            RETURN_ON_FAILURE(GetLog(), result == VK_SUCCESS, ReturnVoid(),
+            RETURN_ON_FAILURE(this, result == VK_SUCCESS, ReturnVoid(),
                 "Can't set a debug name to an object: vkSetDebugUtilsObjectNameEXT returned %d.", (int32_t)result);
         }
     }
@@ -1254,7 +1259,7 @@ void DeviceVK::SetDebugNameToDeviceGroupObject(VkObjectType objectType, const ui
 
 void DeviceVK::ReportDeviceGroupInfo()
 {
-    REPORT_INFO(GetLog(), "Available device memory heaps:");
+    REPORT_INFO(this, "Available device memory heaps:");
 
     for (uint32_t i = 0; i < m_MemoryProps.memoryHeapCount; i++)
     {
@@ -1266,16 +1271,16 @@ void DeviceVK::ReportDeviceGroupInfo()
 
         const double size = double(m_MemoryProps.memoryHeaps[i].size) / (1024.0 * 1024.0);
 
-        REPORT_INFO(GetLog(), "  Heap%u %.1lfMiB - %s", i, size, text.c_str());
+        REPORT_INFO(this, "  Heap%u %.1lfMiB - %s", i, size, text.c_str());
 
-        if (m_Desc.physicalDeviceNum == 1)
+        if (m_Desc.nodeNum == 1)
             continue;
 
-        for (uint32_t j = 0; j < m_Desc.physicalDeviceNum; j++)
+        for (uint32_t j = 0; j < m_Desc.nodeNum; j++)
         {
-            REPORT_INFO(GetLog(), "    PhysicalDevice%u", j);
+            REPORT_INFO(this, "    PhysicalDevice%u", j);
 
-            for (uint32_t k = 0; k < m_Desc.physicalDeviceNum; k++)
+            for (uint32_t k = 0; k < m_Desc.nodeNum; k++)
             {
                 if (j == k)
                     continue;
@@ -1293,7 +1298,7 @@ void DeviceVK::ReportDeviceGroupInfo()
                 if (flags & VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT)
                     text += "GENERIC_DST_BIT ";
 
-                REPORT_INFO(GetLog(), "      PhysicalDevice%u - %s", k, text.c_str());
+                REPORT_INFO(this, "      PhysicalDevice%u - %s", k, text.c_str());
             }
         }
     }
@@ -1306,7 +1311,7 @@ void DeviceVK::ReportDeviceGroupInfo()
     RESOLVE_OPTIONAL_DEVICE_FUNCTION(name); \
     if (!m_VK.name) \
     { \
-        REPORT_ERROR(GetLog(), "Failed to get device function: '%s'.", #name); \
+        REPORT_ERROR(this, "Failed to get device function: '%s'.", #name); \
         return Result::UNSUPPORTED; \
     }
 
@@ -1314,7 +1319,7 @@ void DeviceVK::ReportDeviceGroupInfo()
     m_VK.functionName = (PFN_vk ## functionName)m_VK.GetDeviceProcAddr(m_Device, otherName); \
     if (!m_VK.functionName) \
     { \
-        REPORT_ERROR(GetLog(), "Failed to get device function: '" otherName "'."); \
+        REPORT_ERROR(this, "Failed to get device function: '" otherName "'."); \
         return Result::UNSUPPORTED; \
     }
 
@@ -1322,7 +1327,7 @@ void DeviceVK::ReportDeviceGroupInfo()
     m_VK.name = (PFN_vk ## name)m_VK.GetInstanceProcAddr(m_Instance, "vk" #name); \
     if (!m_VK.name) \
     { \
-        REPORT_ERROR(GetLog(), "Failed to get instance function: '%s'.", #name); \
+        REPORT_ERROR(this, "Failed to get instance function: '%s'.", #name); \
         return Result::UNSUPPORTED; \
     }
 
@@ -1330,7 +1335,7 @@ void DeviceVK::ReportDeviceGroupInfo()
     m_VK.name = (PFN_vk ## name)m_VK.GetInstanceProcAddr(VK_NULL_HANDLE, "vk" #name); \
     if (!m_VK.name) \
     { \
-        REPORT_ERROR(GetLog(), "Failed to get instance function: '%s'.", #name); \
+        REPORT_ERROR(this, "Failed to get instance function: '%s'.", #name); \
         return Result::UNSUPPORTED; \
     }
 
@@ -1341,7 +1346,7 @@ Result DeviceVK::ResolvePreInstanceDispatchTable()
     m_VK.GetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)GetSharedLibraryFunction(*m_Loader, "vkGetInstanceProcAddr");
     if (!m_VK.GetInstanceProcAddr)
     {
-        REPORT_ERROR(GetLog(), "Failed to get vkGetInstanceProcAddr.");
+        REPORT_ERROR(this, "Failed to get vkGetInstanceProcAddr.");
         return Result::UNSUPPORTED;
     }
 
@@ -1562,9 +1567,9 @@ inline Result DeviceVK::GetCommandQueue(CommandQueueType commandQueueType, Comma
     return Result::SUCCESS;
 }
 
-inline Result DeviceVK::CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t physicalDeviceMask, CommandAllocator*& commandAllocator)
+inline Result DeviceVK::CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator)
 {
-    return CreateImplementation<CommandAllocatorVK>(commandAllocator, commandQueue, physicalDeviceMask);
+    return CreateImplementation<CommandAllocatorVK>(commandAllocator, commandQueue, nodeMask);
 }
 
 inline Result DeviceVK::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool)
@@ -1652,39 +1657,39 @@ inline Result DeviceVK::CreateAccelerationStructure(const AccelerationStructureD
     return CreateImplementation<AccelerationStructureVK>(accelerationStructure, accelerationStructureDesc);
 }
 
-inline Result DeviceVK::CreateCommandQueue(const CommandQueueVulkanDesc& commandQueueVulkanDesc, CommandQueue*& commandQueue)
+inline Result DeviceVK::CreateCommandQueue(const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue)
 {
-    const uint32_t commandQueueTypeIndex = (uint32_t)commandQueueVulkanDesc.commandQueueType;
+    const uint32_t commandQueueTypeIndex = (uint32_t)commandQueueVKDesc.commandQueueType;
 
     ExclusiveScope exclusiveScope(m_Lock);
 
-    const bool isFamilyIndexSame = m_FamilyIndices[commandQueueTypeIndex] == commandQueueVulkanDesc.familyIndex;
-    const bool isQueueSame = (VkQueue)m_Queues[commandQueueTypeIndex] == (VkQueue)commandQueueVulkanDesc.vkQueue;
+    const bool isFamilyIndexSame = m_FamilyIndices[commandQueueTypeIndex] == commandQueueVKDesc.familyIndex;
+    const bool isQueueSame = (VkQueue)m_Queues[commandQueueTypeIndex] == (VkQueue)commandQueueVKDesc.vkQueue;
     if (isFamilyIndexSame && isQueueSame)
     {
         commandQueue = (CommandQueue*)m_Queues[commandQueueTypeIndex];
         return Result::SUCCESS;
     }
 
-    CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVulkanDesc);
+    CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVKDesc);
 
     if (m_Queues[commandQueueTypeIndex] != nullptr)
         Deallocate(GetStdAllocator(), m_Queues[commandQueueTypeIndex]);
 
-    m_FamilyIndices[commandQueueTypeIndex] = commandQueueVulkanDesc.familyIndex;
+    m_FamilyIndices[commandQueueTypeIndex] = commandQueueVKDesc.familyIndex;
     m_Queues[commandQueueTypeIndex] = (CommandQueueVK*)commandQueue;
 
     return Result::SUCCESS;
 }
 
-inline Result DeviceVK::CreateCommandAllocator(const CommandAllocatorVulkanDesc& commandAllocatorVulkanDesc, CommandAllocator*& commandAllocator)
+inline Result DeviceVK::CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorVKDesc, CommandAllocator*& commandAllocator)
 {
-    return CreateImplementation<CommandAllocatorVK>(commandAllocator, commandAllocatorVulkanDesc);
+    return CreateImplementation<CommandAllocatorVK>(commandAllocator, commandAllocatorVKDesc);
 }
 
-inline Result DeviceVK::CreateCommandBuffer(const CommandBufferVulkanDesc& commandBufferVulkanDesc, CommandBuffer*& commandBuffer)
+inline Result DeviceVK::CreateCommandBuffer(const CommandBufferVKDesc& commandBufferVKDesc, CommandBuffer*& commandBuffer)
 {
-    return CreateImplementation<CommandBufferVK>(commandBuffer, commandBufferVulkanDesc);
+    return CreateImplementation<CommandBufferVK>(commandBuffer, commandBufferVKDesc);
 }
 
 inline Result DeviceVK::CreateDescriptorPool(NRIVkDescriptorPool vkDescriptorPool, DescriptorPool*& descriptorPool)
@@ -1692,19 +1697,19 @@ inline Result DeviceVK::CreateDescriptorPool(NRIVkDescriptorPool vkDescriptorPoo
     return CreateImplementation<DescriptorPoolVK>(descriptorPool, vkDescriptorPool);
 }
 
-inline Result DeviceVK::CreateBuffer(const BufferVulkanDesc& bufferDesc, Buffer*& buffer)
+inline Result DeviceVK::CreateBuffer(const BufferVKDesc& bufferDesc, Buffer*& buffer)
 {
     return CreateImplementation<BufferVK>(buffer, bufferDesc);
 }
 
-inline Result DeviceVK::CreateTexture(const TextureVulkanDesc& textureVulkanDesc, Texture*& texture)
+inline Result DeviceVK::CreateTexture(const TextureVKDesc& textureVKDesc, Texture*& texture)
 {
-    return CreateImplementation<TextureVK>(texture, textureVulkanDesc);
+    return CreateImplementation<TextureVK>(texture, textureVKDesc);
 }
 
-inline Result DeviceVK::CreateMemory(const MemoryVulkanDesc& memoryVulkanDesc, Memory*& memory)
+inline Result DeviceVK::CreateMemory(const MemoryVKDesc& memoryVKDesc, Memory*& memory)
 {
-    return CreateImplementation<MemoryVK>(memory, memoryVulkanDesc);
+    return CreateImplementation<MemoryVK>(memory, memoryVKDesc);
 }
 
 inline Result DeviceVK::CreateGraphicsPipeline(NRIVkPipeline vkPipeline, Pipeline*& pipeline)
@@ -1739,12 +1744,12 @@ inline Result DeviceVK::CreateComputePipeline(NRIVkPipeline vkPipeline, Pipeline
     return result;
 }
 
-inline Result DeviceVK::CreateQueryPool(const QueryPoolVulkanDesc& queryPoolVulkanDesc, QueryPool*& queryPool)
+inline Result DeviceVK::CreateQueryPool(const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool)
 {
-    return CreateImplementation<QueryPoolVK>(queryPool, queryPoolVulkanDesc);
+    return CreateImplementation<QueryPoolVK>(queryPool, queryPoolVKDesc);
 }
 
-inline Result DeviceVK::CreateAccelerationStructure(const AccelerationStructureVulkanDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure)
+inline Result DeviceVK::CreateAccelerationStructure(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure)
 {
     return CreateImplementation<AccelerationStructureVK>(accelerationStructure, accelerationStructureDesc);
 }
@@ -1859,11 +1864,11 @@ inline Result DeviceVK::GetDisplaySize(Display& display, uint16_t& width, uint16
 
     ComPtr<IDXGIOutput> output;
     HRESULT result = m_Adapter->EnumOutputs(index, &output);
-    RETURN_ON_BAD_HRESULT(GetLog(), result, "IDXGIAdapter::EnumOutputs()");
+    RETURN_ON_BAD_HRESULT(this, result, "IDXGIAdapter::EnumOutputs()");
 
     DXGI_OUTPUT_DESC outputDesc = {};
     result = output->GetDesc(&outputDesc);
-    RETURN_ON_BAD_HRESULT(GetLog(), result, "IDXGIOutput::GetDesc()");
+    RETURN_ON_BAD_HRESULT(this, result, "IDXGIOutput::GetDesc()");
 
     MONITORINFO monitorInfo = {};
     monitorInfo.cbSize = sizeof(monitorInfo);
@@ -1881,9 +1886,9 @@ inline Result DeviceVK::GetDisplaySize(Display& display, uint16_t& width, uint16
 #endif
 }
 
-inline Result DeviceVK::AllocateMemory(uint32_t physicalDeviceMask, MemoryType memoryType, uint64_t size, Memory*& memory)
+inline Result DeviceVK::AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory)
 {
-    return CreateImplementation<MemoryVK>(memory, physicalDeviceMask, memoryType, size);
+    return CreateImplementation<MemoryVK>(memory, nodeMask, memoryType, size);
 }
 
 inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum)
@@ -1891,13 +1896,13 @@ inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBi
     if (memoryBindingDescNum == 0)
         return Result::SUCCESS;
 
-    const uint32_t infoMaxNum = memoryBindingDescNum * m_Desc.physicalDeviceNum;
+    const uint32_t infoMaxNum = memoryBindingDescNum * m_Desc.nodeNum;
 
     VkBindBufferMemoryInfo* infos = STACK_ALLOC(VkBindBufferMemoryInfo, infoMaxNum);
     uint32_t infoNum = 0;
 
     VkBindBufferMemoryDeviceGroupInfo* deviceGroupInfos = nullptr;
-    if (m_Desc.physicalDeviceNum > 1)
+    if (m_Desc.nodeNum > 1)
         deviceGroupInfos = STACK_ALLOC(VkBindBufferMemoryDeviceGroupInfo, infoMaxNum);
 
     for (uint32_t i = 0; i < memoryBindingDescNum; i++)
@@ -1912,16 +1917,16 @@ inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBi
 
         const MemoryLocation memoryLocation = (MemoryLocation)memoryTypeInfo.location;
 
-        uint32_t physicalDeviceMask = GetPhysicalDeviceGroupMask(bindingDesc.physicalDeviceMask);
+        uint32_t nodeMask = GetNodeMask(bindingDesc.nodeMask);
         if (IsHostVisibleMemory(memoryLocation))
-            physicalDeviceMask = 0x1;
+            nodeMask = 0x1;
 
         if (memoryTypeInfo.isDedicated == 1)
-            memoryImpl.CreateDedicated(bufferImpl, physicalDeviceMask);
+            memoryImpl.CreateDedicated(bufferImpl, nodeMask);
 
-        for (uint32_t j = 0; j < m_Desc.physicalDeviceNum; j++)
+        for (uint32_t j = 0; j < m_Desc.nodeNum; j++)
         {
-            if ((1u << j) & physicalDeviceMask)
+            if ((1u << j) & nodeMask)
             {
                 VkBindBufferMemoryInfo& info = infos[infoNum++];
 
@@ -1939,8 +1944,8 @@ inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBi
                     VkBindBufferMemoryDeviceGroupInfo& deviceGroupInfo = deviceGroupInfos[infoNum - 1];
                     deviceGroupInfo = {};
                     deviceGroupInfo.sType = VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_DEVICE_GROUP_INFO;
-                    deviceGroupInfo.deviceIndexCount = m_Desc.physicalDeviceNum;
-                    deviceGroupInfo.pDeviceIndices = &m_PhysicalDeviceIndices[j * m_Desc.physicalDeviceNum];
+                    deviceGroupInfo.deviceIndexCount = m_Desc.nodeNum;
+                    deviceGroupInfo.pDeviceIndices = &m_PhysicalDeviceIndices[j * m_Desc.nodeNum];
                     info.pNext = &deviceGroupInfo;
                 }
             }
@@ -1951,7 +1956,7 @@ inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBi
     if (infoNum > 0)
         result = m_VK.BindBufferMemory2(m_Device, infoNum, infos);
 
-    RETURN_ON_FAILURE(GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result),
         "Can't bind a memory to a buffer: vkBindBufferMemory2 returned %d.", (int32_t)result);
 
     for (uint32_t i = 0; i < memoryBindingDescNum; i++)
@@ -1965,20 +1970,20 @@ inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBi
 
 inline Result DeviceVK::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum)
 {
-    const uint32_t infoMaxNum = memoryBindingDescNum * m_Desc.physicalDeviceNum;
+    const uint32_t infoMaxNum = memoryBindingDescNum * m_Desc.nodeNum;
 
     VkBindImageMemoryInfo* infos = STACK_ALLOC(VkBindImageMemoryInfo, infoMaxNum);
     uint32_t infoNum = 0;
 
     VkBindImageMemoryDeviceGroupInfo* deviceGroupInfos = nullptr;
-    if (m_Desc.physicalDeviceNum > 1)
+    if (m_Desc.nodeNum > 1)
         deviceGroupInfos = STACK_ALLOC(VkBindImageMemoryDeviceGroupInfo, infoMaxNum);
 
     for (uint32_t i = 0; i < memoryBindingDescNum; i++)
     {
         const TextureMemoryBindingDesc& bindingDesc = memoryBindingDescs[i];
 
-        const uint32_t physicalDeviceMask = GetPhysicalDeviceGroupMask(bindingDesc.physicalDeviceMask);
+        const uint32_t nodeMask = GetNodeMask(bindingDesc.nodeMask);
 
         MemoryVK& memoryImpl = *(MemoryVK*)bindingDesc.memory;
         TextureVK& textureImpl = *(TextureVK*)bindingDesc.texture;
@@ -1987,11 +1992,11 @@ inline Result DeviceVK::BindTextureMemory(const TextureMemoryBindingDesc* memory
         const MemoryTypeInfo& memoryTypeInfo = unpack.info;
 
         if (memoryTypeInfo.isDedicated == 1)
-            memoryImpl.CreateDedicated(textureImpl, physicalDeviceMask);
+            memoryImpl.CreateDedicated(textureImpl, nodeMask);
 
-        for (uint32_t j = 0; j < m_Desc.physicalDeviceNum; j++)
+        for (uint32_t j = 0; j < m_Desc.nodeNum; j++)
         {
-            if ((1u << j) & physicalDeviceMask)
+            if ((1u << j) & nodeMask)
             {
                 VkBindImageMemoryInfo& info = infos[infoNum++];
                 info.sType = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
@@ -2005,8 +2010,8 @@ inline Result DeviceVK::BindTextureMemory(const TextureMemoryBindingDesc* memory
                     VkBindImageMemoryDeviceGroupInfo& deviceGroupInfo = deviceGroupInfos[infoNum - 1];
                     deviceGroupInfo = {};
                     deviceGroupInfo.sType = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO;
-                    deviceGroupInfo.deviceIndexCount = m_Desc.physicalDeviceNum;
-                    deviceGroupInfo.pDeviceIndices = &m_PhysicalDeviceIndices[j * m_Desc.physicalDeviceNum];
+                    deviceGroupInfo.deviceIndexCount = m_Desc.nodeNum;
+                    deviceGroupInfo.pDeviceIndices = &m_PhysicalDeviceIndices[j * m_Desc.nodeNum];
                     info.pNext = &deviceGroupInfo;
                 }
             }
@@ -2017,7 +2022,7 @@ inline Result DeviceVK::BindTextureMemory(const TextureMemoryBindingDesc* memory
     if (infoNum > 0)
         result = m_VK.BindImageMemory2(m_Device, infoNum, infos);
 
-    RETURN_ON_FAILURE(GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result),
         "Can't bind a memory to a texture: vkBindImageMemory2 returned %d.", (int32_t)result);
 
     return Result::SUCCESS;
@@ -2040,7 +2045,7 @@ inline Result DeviceVK::BindAccelerationStructureMemory(const AccelerationStruct
         bufferMemoryBinding.buffer = (Buffer*)accelerationStructure.GetBuffer();
         bufferMemoryBinding.memory = bindingDesc.memory;
         bufferMemoryBinding.offset = bindingDesc.offset;
-        bufferMemoryBinding.physicalDeviceMask = bindingDesc.physicalDeviceMask;
+        bufferMemoryBinding.nodeMask = bindingDesc.nodeMask;
     }
 
     Result result = BindBufferMemory(infos, memoryBindingDescNum);

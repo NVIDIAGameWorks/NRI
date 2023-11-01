@@ -20,14 +20,14 @@ struct TextureVal : public DeviceObjectVal<Texture>
     TextureVal(DeviceVal& device, Texture& texture, const TextureDesc& textureDesc);
     TextureVal(DeviceVal& device, Texture& texture, const TextureD3D11Desc& textureD3D11Desc);
     TextureVal(DeviceVal& device, Texture& texture, const TextureD3D12Desc& textureD3D12Desc);
-    TextureVal(DeviceVal& device, Texture& texture, const TextureVulkanDesc& textureVulkanDesc);
+    TextureVal(DeviceVal& device, Texture& texture, const TextureVKDesc& textureVKDesc);
     ~TextureVal();
 
     inline const TextureDesc& GetDesc() const
     { return m_TextureDesc; }
 
-    inline uint64_t GetNativeObject(uint32_t physicalDeviceIndex) const
-    { return m_CoreAPI.GetTextureNativeObject(m_ImplObject, physicalDeviceIndex); }
+    inline uint64_t GetNativeObject(uint32_t nodeIndex) const
+    { return m_CoreAPI.GetTextureNativeObject(m_ImplObject, nodeIndex); }
 
     inline bool IsBoundToMemory() const
     { return m_IsBoundToMemory; }

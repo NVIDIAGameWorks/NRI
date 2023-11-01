@@ -737,7 +737,6 @@ namespace nri
         textureDesc.mipNum = desc.MipLevels;
         textureDesc.arraySize = textureDesc.type == TextureType::TEXTURE_3D ? 1 : desc.DepthOrArraySize;
         textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
-        textureDesc.physicalDeviceMask = 0x1; // unsupported in D3D12
     }
 
     void GetBufferDescD3D12(const BufferD3D12Desc& bufferD3D12Desc, BufferDesc& bufferDesc)
@@ -751,7 +750,6 @@ namespace nri
 
         bufferDesc.size = desc.Width;
         bufferDesc.structureStride = bufferD3D12Desc.structureStride;
-        bufferDesc.physicalDeviceMask = 0x1; // unsupported in D3D12
     }
 }
 

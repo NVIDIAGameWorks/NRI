@@ -57,7 +57,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc)
 
         result = vk.CreateWin32SurfaceKHR(m_Device, &win32SurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
 
-        RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
             "Can't create a surface: vkCreateWin32SurfaceKHR returned %d.", (int32_t)result);
 
         return Result::SUCCESS;
@@ -72,7 +72,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc)
 
         result = vk.CreateMetalSurfaceEXT(m_Device, &metalSurfaceCreateInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
 
-        RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
             "Can't create a surface: vkCreateMetalSurfaceEXT returned %d.", (int32_t)result);
 
         return Result::SUCCESS;
@@ -88,7 +88,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc)
 
         result = vk.CreateXlibSurfaceKHR(m_Device, &xlibSurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
 
-        RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
             "Can't create a surface: vkCreateXlibSurfaceKHR returned %d.", (int32_t)result);
 
         return Result::SUCCESS;
@@ -104,7 +104,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc)
 
         result = vk.CreateWaylandSurfaceKHR(m_Device, &waylandSurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
 
-        RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
             "Can't create a surface: vkCreateWaylandSurfaceKHR returned %d.", (int32_t)result);
 
         return Result::SUCCESS;
@@ -122,7 +122,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
     VkSemaphoreCreateInfo createInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &timelineCreateInfo, 0 };
     VkResult result = vk.CreateSemaphore((VkDevice)m_Device, &createInfo, m_Device.GetAllocationCallbacks(), &m_Semaphore);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a semaphore: vk.CreateSemaphore returned %d.", (int32_t)result);
 
     m_CommandQueue = (CommandQueueVK*)swapChainDesc.commandQueue;
@@ -136,14 +136,14 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
 
     if (supported == VK_FALSE)
     {
-        REPORT_ERROR(m_Device.GetLog(), "The specified surface is not supported by the physical device.");
+        REPORT_ERROR(&m_Device, "The specified surface is not supported by the physical device.");
         return Result::UNSUPPORTED;
     }
 
     VkSurfaceCapabilitiesKHR capabilites = {};
     result = vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(m_Device, m_Surface, &capabilites);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't get physical device surface capabilities: vkGetPhysicalDeviceSurfaceCapabilitiesKHR returned %d.", (int32_t)result);
 
     const bool isWidthValid = swapChainDesc.width >= capabilites.minImageExtent.width &&
@@ -153,20 +153,20 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
 
     if (!isWidthValid || !isHeightValid)
     {
-        REPORT_ERROR(m_Device.GetLog(), "Invalid SwapChainVK buffer size.");
+        REPORT_ERROR(&m_Device, "Invalid SwapChainVK buffer size.");
         return Result::INVALID_ARGUMENT;
     }
 
     uint32_t formatNum = 0;
     result = vk.GetPhysicalDeviceSurfaceFormatsKHR(m_Device, m_Surface, &formatNum, nullptr);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't get physical device surface formats: vkGetPhysicalDeviceSurfaceFormatsKHR returned %d.", (int32_t)result);
 
     VkSurfaceFormatKHR* surfaceFormats = STACK_ALLOC(VkSurfaceFormatKHR, formatNum);
     result = vk.GetPhysicalDeviceSurfaceFormatsKHR(m_Device, m_Surface, &formatNum, surfaceFormats);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't get physical device surface formats: vkGetPhysicalDeviceSurfaceFormatsKHR returned %d.", (int32_t)result);
 
     VkSurfaceFormatKHR surfaceFormat = {};
@@ -177,13 +177,13 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
     uint32_t presentModeNum = 0;
     result = vk.GetPhysicalDeviceSurfacePresentModesKHR(m_Device, m_Surface, &presentModeNum, nullptr);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't get supported present modes for the surface: vkGetPhysicalDeviceSurfacePresentModesKHR returned %d.", (int32_t)result);
 
     VkPresentModeKHR* presentModes = STACK_ALLOC(VkPresentModeKHR, presentModeNum);
     result = vk.GetPhysicalDeviceSurfacePresentModesKHR(m_Device, m_Surface, &presentModeNum, presentModes);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't get supported present modes for the surface: vkGetPhysicalDeviceSurfacePresentModesKHR returned %d.", (int32_t)result);
 
     // Both of these modes use v-sync for preseting, but FIFO blocks execution
@@ -195,9 +195,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
 
     if (!supported)
     {
-        REPORT_WARNING(m_Device.GetLog(),
-            "The present mode is not supported. Using the first mode from the list of supported modes. (Mode: %d)", (int32_t)desiredPresentMode);
-
+        REPORT_WARNING(&m_Device, "The present mode is not supported. Using the first mode from the list of supported modes. (Mode: %d)", (int32_t)desiredPresentMode);
         desiredPresentMode = presentModes[0];
     }
 
@@ -227,7 +225,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
 
     result = vk.CreateSwapchainKHR(m_Device, &swapchainInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a swapchain: vkCreateSwapchainKHR returned %d.", (int32_t)result);
 
     uint32_t imageNum = 0;
@@ -270,7 +268,7 @@ inline uint32_t SwapChainVK::AcquireNextTexture()
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.AcquireNextImageKHR(m_Device, m_Handle, DEFAULT_TIMEOUT, m_Semaphore, VK_NULL_HANDLE, &m_TextureIndex);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, m_TextureIndex,
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, m_TextureIndex,
         "Can't acquire the next texture of the swapchain: vkAcquireNextImageKHR returned %d.", (int32_t)result);
 
     const uint32_t waitDstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
@@ -298,7 +296,7 @@ inline Result SwapChainVK::Present()
 
     const VkResult result = vk.QueuePresentKHR(*m_CommandQueue, &info);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't present the swapchain: vkQueuePresentKHR returned %d.", (int32_t)result);
 
     return Result::SUCCESS;

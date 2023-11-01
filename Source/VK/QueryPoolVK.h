@@ -21,8 +21,8 @@ struct QueryPoolVK
         m_Device(device)
     {}
 
-    inline VkQueryPool GetHandle(uint32_t physicalDeviceIndex) const
-    { return m_Handles[physicalDeviceIndex]; }
+    inline VkQueryPool GetHandle(uint32_t nodeIndex) const
+    { return m_Handles[nodeIndex]; }
 
     inline DeviceVK& GetDevice() const
     { return m_Device; }
@@ -36,7 +36,7 @@ struct QueryPoolVK
     ~QueryPoolVK();
 
     Result Create(const QueryPoolDesc& queryPoolDesc);
-    Result Create(const QueryPoolVulkanDesc& queryPoolDesc);
+    Result Create(const QueryPoolVKDesc& queryPoolDesc);
 
     //================================================================================================================
     // NRI

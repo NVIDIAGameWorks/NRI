@@ -15,19 +15,19 @@ static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* 
     ((DescriptorVK&)descriptor).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor, uint32_t physicalDeviceIndex)
+static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor, uint32_t nodeIndex)
 {
     const DescriptorVK& d = ((DescriptorVK&)descriptor);
 
     uint64_t handle = 0;
     if (d.GetType() == DescriptorTypeVK::BUFFER_VIEW)
-        handle = (uint64_t)d.GetBufferView(physicalDeviceIndex);
+        handle = (uint64_t)d.GetBufferView(nodeIndex);
     else if (d.GetType() == DescriptorTypeVK::IMAGE_VIEW)
-        handle = (uint64_t)d.GetImageView(physicalDeviceIndex);
+        handle = (uint64_t)d.GetImageView(nodeIndex);
     else if (d.GetType() == DescriptorTypeVK::SAMPLER)
         handle = (uint64_t)d.GetSampler();
     else if (d.GetType() == DescriptorTypeVK::ACCELERATION_STRUCTURE)
-        handle = (uint64_t)d.GetAccelerationStructure(physicalDeviceIndex);
+        handle = (uint64_t)d.GetAccelerationStructure(nodeIndex);
 
     return handle;
 }

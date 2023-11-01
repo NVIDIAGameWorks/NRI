@@ -38,9 +38,9 @@ Result DescriptorPoolD3D11::Create(const DescriptorPoolDesc& descriptorPoolDesc)
 //================================================================================================================
 
 inline Result DescriptorPoolD3D11::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets,
-    uint32_t instanceNum, uint32_t physicalDeviceMask, uint32_t variableDescriptorNum)
+    uint32_t instanceNum, uint32_t nodeMask, uint32_t variableDescriptorNum)
 {
-    MaybeUnused(physicalDeviceMask); // TODO: use it
+    MaybeUnused(nodeMask);
     MaybeUnused(variableDescriptorNum); // TODO: report error if non-0?
 
     const PipelineLayoutD3D11& pipelineLayoutD3D11 = (PipelineLayoutD3D11&)pipelineLayout;

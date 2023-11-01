@@ -62,7 +62,7 @@ Result HelperDataUpload::Create()
     MemoryDesc memoryDesc = {};
     NRI.GetBufferMemoryInfo(*m_UploadBuffer, MemoryLocation::HOST_UPLOAD, memoryDesc);
 
-    result = NRI.AllocateMemory(m_Device, WHOLE_DEVICE_GROUP, memoryDesc.type, memoryDesc.size, m_UploadBufferMemory);
+    result = NRI.AllocateMemory(m_Device, ALL_NODES, memoryDesc.type, memoryDesc.size, m_UploadBufferMemory);
     if (result != Result::SUCCESS)
         return result;
 
@@ -75,12 +75,12 @@ Result HelperDataUpload::Create()
     if (result != Result::SUCCESS)
         return result;
 
-    m_CommandAllocators.resize(m_DeviceDesc.physicalDeviceNum);
-    m_CommandBuffers.resize(m_DeviceDesc.physicalDeviceNum);
+    m_CommandAllocators.resize(m_DeviceDesc.nodeNum);
+    m_CommandBuffers.resize(m_DeviceDesc.nodeNum);
 
     for (uint32_t i = 0; i < m_CommandBuffers.size(); i++)
     {
-        result = NRI.CreateCommandAllocator(m_CommandQueue, WHOLE_DEVICE_GROUP, m_CommandAllocators[i]);
+        result = NRI.CreateCommandAllocator(m_CommandQueue, ALL_NODES, m_CommandAllocators[i]);
         if (result != Result::SUCCESS)
             return result;
 
@@ -194,7 +194,7 @@ Result HelperDataUpload::EndCommandBuffersAndSubmit()
     for (uint32_t i = 0; i < m_CommandBuffers.size(); i++)
     {
         queueSubmitDesc.commandBuffers = &m_CommandBuffers[i];
-        queueSubmitDesc.physicalDeviceIndex = i;
+        queueSubmitDesc.nodeIndex = i;
 
         NRI.QueueSubmit(m_CommandQueue, queueSubmitDesc);
 

@@ -21,8 +21,8 @@ struct AccelerationStructureVK
         m_Device(device)
     {}
 
-    inline VkAccelerationStructureKHR GetHandle(uint32_t physicalDeviceIndex) const
-    { return m_Handles[physicalDeviceIndex]; }
+    inline VkAccelerationStructureKHR GetHandle(uint32_t nodeIndex) const
+    { return m_Handles[nodeIndex]; }
 
     inline DeviceVK& GetDevice() const
     { return m_Device; }
@@ -33,7 +33,7 @@ struct AccelerationStructureVK
     ~AccelerationStructureVK();
 
     Result Create(const AccelerationStructureDesc& accelerationStructureDesc);
-    Result Create(const AccelerationStructureVulkanDesc& accelerationStructureDesc);
+    Result Create(const AccelerationStructureVKDesc& accelerationStructureDesc);
     Result FinishCreation();
 
     //================================================================================================================
@@ -46,12 +46,12 @@ struct AccelerationStructureVK
     inline uint64_t GetBuildScratchBufferSize() const
     { return m_BuildScratchSize; }
 
-    inline VkDeviceAddress GetNativeHandle(uint32_t physicalDeviceIndex) const
-    { return m_DeviceAddresses[physicalDeviceIndex]; }
+    inline VkDeviceAddress GetNativeHandle(uint32_t nodeIndex) const
+    { return m_DeviceAddresses[nodeIndex]; }
 
     void SetDebugName(const char* name);
     void GetMemoryInfo(MemoryDesc& memoryDesc) const;
-    Result CreateDescriptor(uint32_t physicalDeviceMask, Descriptor*& descriptor) const;
+    Result CreateDescriptor(uint32_t nodeMask, Descriptor*& descriptor) const;
 
 private:
     void PrecreateBottomLevel(const AccelerationStructureDesc& accelerationStructureDesc);

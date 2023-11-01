@@ -27,9 +27,9 @@ D3D11Extensions::~D3D11Extensions()
     }
 }
 
-void D3D11Extensions::Create(const Log& log, nri::Vendor vendor, AGSContext* agsContext, bool isImported)
+void D3D11Extensions::Create(const nri::DeviceBase* deviceBase, nri::Vendor vendor, AGSContext* agsContext, bool isImported)
 {
-    m_Log = &log;
+    m_DeviceBase = deviceBase;
 
     switch (vendor)
     {
@@ -38,7 +38,7 @@ void D3D11Extensions::Create(const Log& log, nri::Vendor vendor, AGSContext* ags
             const NvAPI_Status status = NvAPI_Initialize();
             m_IsNvAPIAvailable = (status == NVAPI_OK);
             if (!m_IsNvAPIAvailable)
-                REPORT_ERROR(*m_Log, "Failed to initialize NvAPI: %d", (int32_t)status);
+                REPORT_ERROR(m_DeviceBase, "Failed to initialize NvAPI: %d", (int32_t)status);
         }
         break;
     case nri::Vendor::AMD:
@@ -56,7 +56,7 @@ void D3D11Extensions::Create(const Log& log, nri::Vendor vendor, AGSContext* ags
                     const AGSReturnCode result = m_AGS.Init(&m_AGSContext, nullptr, nullptr);
 
                     if (result != AGS_SUCCESS)
-                        REPORT_ERROR(*m_Log, "Failed to initialize AGS: %d", (int32_t)result);
+                        REPORT_ERROR(m_DeviceBase, "Failed to initialize AGS: %d", (int32_t)result);
                 }
 
                 if (m_AGSContext == nullptr)
@@ -95,7 +95,7 @@ bool D3D11Extensions::LoadAGS()
 
     if (i != functionArraySize)
     {
-        REPORT_ERROR(*m_Log, "Failed to get function address from 'amd_ags_x64.dll'.");
+        REPORT_ERROR(m_DeviceBase, "Failed to get function address from 'amd_ags_x64.dll'.");
         FreeLibrary(m_AGSLibrary);
         m_AGSLibrary = nullptr;
         return false;
@@ -109,12 +109,12 @@ void D3D11Extensions::BeginUAVOverlap(const VersionedContext& deferredContext) c
     if (m_IsNvAPIAvailable)
     {
         const NvAPI_Status res = NvAPI_D3D11_BeginUAVOverlap(deferredContext.ptr);
-        CHECK(*m_Log, res == NVAPI_OK, "NvAPI_D3D11_BeginUAVOverlap() - FAILED!");
+        CHECK(m_DeviceBase, res == NVAPI_OK, "NvAPI_D3D11_BeginUAVOverlap() - FAILED!");
     }
     else if (m_IsAGSAvailable)
     {
         const AGSReturnCode res = m_AGS.BeginUAVOverlap(m_AGSContext, deferredContext.ptr);
-        CHECK(*m_Log, res == AGS_SUCCESS, "agsDriverExtensionsDX11_BeginUAVOverlap() - FAILED!");
+        CHECK(m_DeviceBase, res == AGS_SUCCESS, "agsDriverExtensionsDX11_BeginUAVOverlap() - FAILED!");
     }
 }
 
@@ -123,12 +123,12 @@ void D3D11Extensions::EndUAVOverlap(const VersionedContext& deferredContext) con
     if (m_IsNvAPIAvailable)
     {
         const NvAPI_Status status = NvAPI_D3D11_EndUAVOverlap(deferredContext.ptr);
-        CHECK(*m_Log, status == NVAPI_OK, "NvAPI_D3D11_EndUAVOverlap() - FAILED!");
+        CHECK(m_DeviceBase, status == NVAPI_OK, "NvAPI_D3D11_EndUAVOverlap() - FAILED!");
     }
     else if (m_IsAGSAvailable)
     {
         const AGSReturnCode res = m_AGS.EndUAVOverlap(m_AGSContext, deferredContext.ptr);
-        CHECK(*m_Log, res == AGS_SUCCESS, "agsDriverExtensionsDX11_EndUAVOverlap() - FAILED!");
+        CHECK(m_DeviceBase, res == AGS_SUCCESS, "agsDriverExtensionsDX11_EndUAVOverlap() - FAILED!");
     }
 }
 
@@ -146,16 +146,16 @@ void D3D11Extensions::WaitForDrain(const VersionedContext& deferredContext, nri:
             flags = NVAPI_D3D_BEGIN_UAV_OVERLAP_GFX_WFI | NVAPI_D3D_BEGIN_UAV_OVERLAP_COMP_WFI;
 
         const NvAPI_Status res = NvAPI_D3D11_BeginUAVOverlapEx(deferredContext.ptr, flags);
-        CHECK(*m_Log, res == NVAPI_OK, "NvAPI_D3D11_BeginUAVOverlap() - FAILED!");
+        CHECK(m_DeviceBase, res == NVAPI_OK, "NvAPI_D3D11_BeginUAVOverlap() - FAILED!");
     }
     else if (m_IsAGSAvailable)
     {
-        REPORT_WARNING(*m_Log, "Verify that this code actually works on AMD!");
+        REPORT_WARNING(m_DeviceBase, "Verify that this code actually works on AMD!");
 
         const AGSReturnCode res1 = m_AGS.EndUAVOverlap(m_AGSContext, deferredContext.ptr);
-        CHECK(*m_Log, res1 == AGS_SUCCESS, "agsDriverExtensionsDX11_EndUAVOverlap() - FAILED!");
+        CHECK(m_DeviceBase, res1 == AGS_SUCCESS, "agsDriverExtensionsDX11_EndUAVOverlap() - FAILED!");
         const AGSReturnCode res2 = m_AGS.BeginUAVOverlap(m_AGSContext, deferredContext.ptr);
-        CHECK(*m_Log, res2 == AGS_SUCCESS, "agsDriverExtensionsDX11_BeginUAVOverlap() - FAILED!");
+        CHECK(m_DeviceBase, res2 == AGS_SUCCESS, "agsDriverExtensionsDX11_BeginUAVOverlap() - FAILED!");
     }
 }
 
@@ -166,12 +166,12 @@ void D3D11Extensions::SetDepthBounds(const VersionedContext& deferredContext, fl
     if (m_IsNvAPIAvailable)
     {
         const NvAPI_Status status = NvAPI_D3D11_SetDepthBoundsTest(deferredContext.ptr, isEnabled, minBound, maxBound);
-        CHECK(*m_Log, status == NVAPI_OK, "NvAPI_D3D11_SetDepthBoundsTest() - FAILED!");
+        CHECK(m_DeviceBase, status == NVAPI_OK, "NvAPI_D3D11_SetDepthBoundsTest() - FAILED!");
     }
     else if (m_IsAGSAvailable)
     {
         const AGSReturnCode res = m_AGS.SetDepthBounds(m_AGSContext, deferredContext.ptr, isEnabled, minBound, maxBound);
-        CHECK(*m_Log, res == AGS_SUCCESS, "agsDriverExtensionsDX11_SetDepthBounds() - FAILED!");
+        CHECK(m_DeviceBase, res == AGS_SUCCESS, "agsDriverExtensionsDX11_SetDepthBounds() - FAILED!");
     }
 }
 
@@ -180,12 +180,12 @@ void D3D11Extensions::MultiDrawIndirect(const VersionedContext& deferredContext,
     if (m_IsNvAPIAvailable)
     {
         const NvAPI_Status status = NvAPI_D3D11_MultiDrawInstancedIndirect(deferredContext.ptr, drawNum, buffer, (uint32_t)offset, stride);
-        CHECK(*m_Log, status == NVAPI_OK, "NvAPI_D3D11_MultiDrawInstancedIndirect() - FAILED!");
+        CHECK(m_DeviceBase, status == NVAPI_OK, "NvAPI_D3D11_MultiDrawInstancedIndirect() - FAILED!");
     }
     else if (m_IsAGSAvailable)
     {
         const AGSReturnCode res = m_AGS.MultiDrawInstancedIndirect(m_AGSContext, deferredContext.ptr, drawNum, buffer, (uint32_t)offset, stride);
-        CHECK(*m_Log, res == AGS_SUCCESS, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect() - FAILED!");
+        CHECK(m_DeviceBase, res == AGS_SUCCESS, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect() - FAILED!");
     }
     else
     {
@@ -202,12 +202,12 @@ void D3D11Extensions::MultiDrawIndexedIndirect(const VersionedContext& deferredC
     if (m_IsNvAPIAvailable)
     {
         const NvAPI_Status status = NvAPI_D3D11_MultiDrawIndexedInstancedIndirect(deferredContext.ptr, drawNum, buffer, (uint32_t)offset, stride);
-        CHECK(*m_Log, status == NVAPI_OK, "NvAPI_D3D11_MultiDrawInstancedIndirect() - FAILED!");
+        CHECK(m_DeviceBase, status == NVAPI_OK, "NvAPI_D3D11_MultiDrawInstancedIndirect() - FAILED!");
     }
     else if (m_IsAGSAvailable)
     {
         const AGSReturnCode res = m_AGS.MultiDrawIndexedInstancedIndirect(m_AGSContext, deferredContext.ptr, drawNum, buffer, (uint32_t)offset, stride);
-        CHECK(*m_Log, res == AGS_SUCCESS, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect() - FAILED!");
+        CHECK(m_DeviceBase, res == AGS_SUCCESS, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect() - FAILED!");
     }
     else
     {
@@ -221,7 +221,7 @@ void D3D11Extensions::MultiDrawIndexedIndirect(const VersionedContext& deferredC
 
 ID3D11Device* D3D11Extensions::CreateDeviceUsingAGS(IDXGIAdapter* adapter, const D3D_FEATURE_LEVEL* featureLevels, const size_t featureLevelNum, UINT flags)
 {
-    CHECK(*m_Log, m_IsAGSAvailable, "Can't create a device using AGS: AGS is not available.");
+    CHECK(m_DeviceBase, m_IsAGSAvailable, "Can't create a device using AGS: AGS is not available.");
 
     AGSDX11DeviceCreationParams deviceCreationParams = {};
     deviceCreationParams.pAdapter = adapter;
@@ -243,7 +243,7 @@ ID3D11Device* D3D11Extensions::CreateDeviceUsingAGS(IDXGIAdapter* adapter, const
         result = m_AGS.CreateDevice(m_AGSContext, &deviceCreationParams, &extensionsParams, &returnedParams);
     }
 
-    RETURN_ON_FAILURE(*m_Log, result == AGS_SUCCESS, nullptr, "agsDriverExtensionsDX11_CreateDevice() failed: %d", (int32_t)result);
+    RETURN_ON_FAILURE(m_DeviceBase, result == AGS_SUCCESS, nullptr, "agsDriverExtensionsDX11_CreateDevice() failed: %d", (int32_t)result);
 
     return returnedParams.pDevice;
 }

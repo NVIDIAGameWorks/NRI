@@ -155,7 +155,7 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
     pipelineStateStreamDesc.SizeInBytes = sizeof(stream);
 
     HRESULT hr = ((ID3D12Device2*)m_Device)->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState));
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D12Device::CreatePipelineState()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreatePipelineState()");
 
     m_IsGraphicsPipeline = true;
 
@@ -215,7 +215,7 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
     }
 
     HRESULT hr = ((ID3D12Device*)m_Device)->CreateGraphicsPipelineState(&graphicsPipleineStateDesc, IID_PPV_ARGS(&m_PipelineState));
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D12Device::CreateGraphicsPipelineState()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateGraphicsPipelineState()");
 
     m_IsGraphicsPipeline = true;
 
@@ -234,7 +234,7 @@ Result PipelineD3D12::Create(const ComputePipelineDesc& computePipelineDesc)
     FillShaderBytecode(computePipleineStateDesc.CS, computePipelineDesc.computeShader);
 
     HRESULT hr = ((ID3D12Device*)m_Device)->CreateComputePipelineState(&computePipleineStateDesc, IID_PPV_ARGS(&m_PipelineState));
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D12Device::CreateComputePipelineState()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateComputePipelineState()");
 
     return Result::SUCCESS;
 }
@@ -375,7 +375,7 @@ Result PipelineD3D12::Create(const RayTracingPipelineDesc& rayTracingPipelineDes
     stateObjectDesc.pSubobjects = stateSubobjectNum ? &stateSubobjects[0] : nullptr;
 
     HRESULT hr = device5->CreateStateObject(&stateObjectDesc, IID_PPV_ARGS(&m_StateObject));
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D12Device5::CreateStateObject()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device5::CreateStateObject()");
 
     m_StateObject->QueryInterface(&m_StateObjectProperties);
 

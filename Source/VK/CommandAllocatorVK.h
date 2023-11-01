@@ -29,8 +29,8 @@ struct CommandAllocatorVK
 
     ~CommandAllocatorVK();
 
-    Result Create(const CommandQueue& commandQueue, uint32_t physicalDeviceMask);
-    Result Create(const CommandAllocatorVulkanDesc& commandAllocatorDesc);
+    Result Create(const CommandQueue& commandQueue, uint32_t nodeMask);
+    Result Create(const CommandAllocatorVKDesc& commandAllocatorDesc);
 
     //================================================================================================================
     // NRI

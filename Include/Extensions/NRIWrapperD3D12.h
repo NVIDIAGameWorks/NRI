@@ -59,8 +59,8 @@ NRI_STRUCT(MemoryD3D12Desc)
 NRI_STRUCT(AccelerationStructureD3D12Desc)
 {
     ID3D12Resource* d3d12Resource;
-    uint64_t scratchDataSizeInBytes;
-    uint64_t updateScratchDataSizeInBytes;
+    uint64_t scratchDataSize;
+    uint64_t updateScratchDataSize;
 };
 
 NRI_STRUCT(WrapperD3D12Interface)

@@ -22,9 +22,9 @@ static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQ
     return ((DeviceD3D12&)device).GetCommandQueue(commandQueueType, commandQueue);
 }
 
-static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t physicalDeviceMask, CommandAllocator*& commandAllocator)
+static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator)
 {
-    MaybeUnused(physicalDeviceMask); // TODO: use it
+    MaybeUnused(nodeMask); // TODO: use it
 
     DeviceD3D12& device = ((CommandQueueD3D12&)commandQueue).GetDevice();
     return device.CreateCommandAllocator(commandQueue, commandAllocator);
@@ -164,9 +164,9 @@ static void NRI_CALL DestroyQueryPool(QueryPool& queryPool)
     device.DestroyQueryPool(queryPool);
 }
 
-static Result NRI_CALL AllocateMemory(Device& device, uint32_t physicalDeviceMask, MemoryType memoryType, uint64_t size, Memory*& memory)
+static Result NRI_CALL AllocateMemory(Device& device, uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory)
 {
-    MaybeUnused(physicalDeviceMask); // TODO: use it
+    MaybeUnused(nodeMask); // TODO: use it
 
     return ((DeviceD3D12&)device).AllocateMemory(memoryType, size, memory);
 }
@@ -275,7 +275,7 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& coreInterface) const
     Core_QueryPool_PartiallyFillFunctionTableD3D12(coreInterface);
     Core_Texture_PartiallyFillFunctionTableD3D12(coreInterface);
 
-    return ValidateFunctionTable(GetLog(), coreInterface);
+    return ValidateFunctionTable(coreInterface);
 }
 
 #pragma endregion
@@ -313,7 +313,7 @@ Result DeviceD3D12::FillFunctionTable(SwapChainInterface& swapChainInterface) co
 
     SwapChain_PartiallyFillFunctionTableD3D12(swapChainInterface);
 
-    return ValidateFunctionTable(GetLog(), swapChainInterface);
+    return ValidateFunctionTable(swapChainInterface);
 }
 
 #pragma endregion
@@ -354,7 +354,7 @@ Result DeviceD3D12::FillFunctionTable(WrapperD3D12Interface& wrapperD3D12Interfa
     wrapperD3D12Interface.CreateMemoryD3D12 = ::CreateMemory;
     wrapperD3D12Interface.CreateAccelerationStructureD3D12 = ::CreateAccelerationStructure;
 
-    return ValidateFunctionTable(GetLog(), wrapperD3D12Interface);
+    return ValidateFunctionTable(wrapperD3D12Interface);
 }
 
 #pragma endregion
@@ -400,7 +400,7 @@ Result DeviceD3D12::FillFunctionTable(RayTracingInterface& rayTracingInterface) 
     rayTracingInterface.BindAccelerationStructureMemory = ::BindAccelerationStructureMemory;
     rayTracingInterface.DestroyAccelerationStructure = ::DestroyAccelerationStructure;
 
-    return ValidateFunctionTable(GetLog(), rayTracingInterface);
+    return ValidateFunctionTable(rayTracingInterface);
 }
 
 #pragma endregion
@@ -416,7 +416,7 @@ Result DeviceD3D12::FillFunctionTable(MeshShaderInterface& meshShaderInterface) 
 
     MeshShader_CommandBuffer_PartiallyFillFunctionTableD3D12(meshShaderInterface);
 
-    return ValidateFunctionTable(GetLog(), meshShaderInterface);
+    return ValidateFunctionTable(meshShaderInterface);
 }
 
 #pragma endregion
@@ -441,7 +441,7 @@ Result DeviceD3D12::FillFunctionTable(HelperInterface& helperInterface) const
 
     Helper_CommandQueue_PartiallyFillFunctionTableD3D12(helperInterface);
 
-    return ValidateFunctionTable(GetLog(), helperInterface);
+    return ValidateFunctionTable(helperInterface);
 }
 
 #pragma endregion

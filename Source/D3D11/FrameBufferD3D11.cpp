@@ -114,6 +114,6 @@ void FrameBufferD3D11::ClearAttachments(VersionedContext& context, const ClearDe
             }
         }
         else
-            CHECK(m_Device.GetLog(), false, "add 'ClearView' emulation!");
+            CHECK(&m_Device, false, "add 'ClearView' emulation!");
     }
 }

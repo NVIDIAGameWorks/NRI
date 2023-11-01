@@ -29,9 +29,9 @@ struct AccelerationStructureVal final : public DeviceObjectVal<AccelerationStruc
     void GetMemoryInfo(MemoryDesc& memoryDesc) const;
     uint64_t GetUpdateScratchBufferSize() const;
     uint64_t GetBuildScratchBufferSize() const;
-    uint64_t GetHandle(uint32_t physicalDeviceIndex) const;
-    uint64_t GetNativeObject(uint32_t physicalDeviceIndex) const;
-    Result CreateDescriptor(uint32_t physicalDeviceIndex, Descriptor*& descriptor);
+    uint64_t GetHandle(uint32_t nodeIndex) const;
+    uint64_t GetNativeObject(uint32_t nodeIndex) const;
+    Result CreateDescriptor(uint32_t nodeIndex, Descriptor*& descriptor);
     void SetDebugName(const char* name);
 
 private:

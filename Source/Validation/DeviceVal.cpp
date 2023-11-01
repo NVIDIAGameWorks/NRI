@@ -34,8 +34,8 @@ using namespace nri;
 void ConvertGeometryObjectsVal(GeometryObject* destObjects, const GeometryObject* sourceObjects, uint32_t objectNum);
 QueryType GetQueryTypeVK(uint32_t queryTypeVK);
 
-DeviceVal::DeviceVal(const Log& log, const StdAllocator<uint8_t>& stdAllocator, DeviceBase& device) :
-    DeviceBase(log, stdAllocator),
+DeviceVal::DeviceVal(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator, DeviceBase& device) :
+    DeviceBase(callbacks, stdAllocator),
     m_Device(*(Device*)&device),
     m_Name(GetStdAllocator()),
     m_MemoryTypeMap(GetStdAllocator())
@@ -58,7 +58,7 @@ bool DeviceVal::Create()
 
     if (deviceBase.FillFunctionTable(m_CoreAPI) != Result::SUCCESS)
     {
-        REPORT_ERROR(GetLog(), "Failed to get 'CoreInterface' interface.");
+        REPORT_ERROR(this, "Failed to get 'CoreInterface' interface.");
         return false;
     }
 
@@ -81,42 +81,42 @@ void DeviceVal::RegisterMemoryType(MemoryType memoryType, MemoryLocation memoryL
 
 Result DeviceVal::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain)
 {
-    RETURN_ON_FAILURE(GetLog(), swapChainDesc.commandQueue != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, swapChainDesc.commandQueue != nullptr, Result::INVALID_ARGUMENT,
         "Can't create SwapChain: 'swapChainDesc.commandQueue' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), swapChainDesc.windowSystemType < WindowSystemType::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, swapChainDesc.windowSystemType < WindowSystemType::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create SwapChain: 'swapChainDesc.windowSystemType' is invalid.");
 
     if (swapChainDesc.windowSystemType == WindowSystemType::WINDOWS)
     {
-        RETURN_ON_FAILURE(GetLog(), swapChainDesc.window.windows.hwnd != nullptr, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, swapChainDesc.window.windows.hwnd != nullptr, Result::INVALID_ARGUMENT,
             "Can't create SwapChain: 'swapChainDesc.window.windows.hwnd' is invalid.");
     }
     else if (swapChainDesc.windowSystemType == WindowSystemType::X11)
     {
-        RETURN_ON_FAILURE(GetLog(), swapChainDesc.window.x11.dpy != nullptr, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, swapChainDesc.window.x11.dpy != nullptr, Result::INVALID_ARGUMENT,
             "Can't create SwapChain: 'swapChainDesc.window.x11.dpy' is invalid.");
-        RETURN_ON_FAILURE(GetLog(), swapChainDesc.window.x11.window != 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, swapChainDesc.window.x11.window != 0, Result::INVALID_ARGUMENT,
             "Can't create SwapChain: 'swapChainDesc.window.x11.window' is invalid.");
     }
     else if (swapChainDesc.windowSystemType == WindowSystemType::WAYLAND)
     {
-        RETURN_ON_FAILURE(GetLog(), swapChainDesc.window.wayland.display != nullptr, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, swapChainDesc.window.wayland.display != nullptr, Result::INVALID_ARGUMENT,
             "Can't create SwapChain: 'swapChainDesc.window.wayland.display' is invalid.");
-        RETURN_ON_FAILURE(GetLog(), swapChainDesc.window.wayland.surface != 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, swapChainDesc.window.wayland.surface != 0, Result::INVALID_ARGUMENT,
             "Can't create SwapChain: 'swapChainDesc.window.wayland.surface' is invalid.");
     }
 
-    RETURN_ON_FAILURE(GetLog(), swapChainDesc.width != 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, swapChainDesc.width != 0, Result::INVALID_ARGUMENT,
         "Can't create SwapChain: 'swapChainDesc.width' is 0.");
 
-    RETURN_ON_FAILURE(GetLog(), swapChainDesc.height != 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, swapChainDesc.height != 0, Result::INVALID_ARGUMENT,
         "Can't create SwapChain: 'swapChainDesc.height' is 0.");
 
-    RETURN_ON_FAILURE(GetLog(), swapChainDesc.textureNum > 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, swapChainDesc.textureNum > 0, Result::INVALID_ARGUMENT,
         "Can't create SwapChain: 'swapChainDesc.textureNum' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), swapChainDesc.format < SwapChainFormat::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, swapChainDesc.format < SwapChainFormat::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create SwapChain: 'swapChainDesc.format' is invalid.");
 
     auto swapChainDescImpl = swapChainDesc;
@@ -127,7 +127,7 @@ Result DeviceVal::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), swapChainImpl != nullptr, Result::FAILURE, "Unexpected error: 'swapChainImpl' is NULL.");
+        RETURN_ON_FAILURE(this, swapChainImpl != nullptr, Result::FAILURE, "Unexpected error: 'swapChainImpl' is NULL.");
         swapChain = (SwapChain*)Allocate<SwapChainVal>(GetStdAllocator(), *this, *swapChainImpl, swapChainDesc);
     }
 
@@ -142,7 +142,7 @@ void DeviceVal::DestroySwapChain(SwapChain& swapChain)
 
 Result DeviceVal::GetDisplays(Display** displays, uint32_t& displayNum)
 {
-    RETURN_ON_FAILURE(GetLog(), displayNum == 0 || displays != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, displayNum == 0 || displays != nullptr, Result::INVALID_ARGUMENT,
         "Can't get displays: 'displays' is invalid.");
 
     return m_SwapChainAPI.GetDisplays(m_Device, displays, displayNum);
@@ -161,12 +161,12 @@ void DeviceVal::SetDebugName(const char* name)
 
 const DeviceDesc& DeviceVal::GetDesc() const
 {
-    return m_CoreAPI.GetDeviceDesc(m_Device);
+    return ((DeviceBase&)m_Device).GetDesc();
 }
 
 Result DeviceVal::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue)
 {
-    RETURN_ON_FAILURE(GetLog(), commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't get CommandQueue: 'commandQueueType' is invalid.");
 
     CommandQueue* commandQueueImpl;
@@ -184,16 +184,16 @@ Result DeviceVal::GetCommandQueue(CommandQueueType commandQueueType, CommandQueu
     return result;
 }
 
-Result DeviceVal::CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t physicalDeviceMask, CommandAllocator*& commandAllocator)
+Result DeviceVal::CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator)
 {
     auto commandQueueImpl = NRI_GET_IMPL_REF(CommandQueue, &commandQueue);
 
     CommandAllocator* commandAllocatorImpl = nullptr;
-    const Result result = m_CoreAPI.CreateCommandAllocator(*commandQueueImpl, physicalDeviceMask, commandAllocatorImpl);
+    const Result result = m_CoreAPI.CreateCommandAllocator(*commandQueueImpl, nodeMask, commandAllocatorImpl);
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), commandAllocatorImpl != nullptr, Result::FAILURE, "Unexpected error: 'commandAllocatorImpl' is NULL.");
+        RETURN_ON_FAILURE(this, commandAllocatorImpl != nullptr, Result::FAILURE, "Unexpected error: 'commandAllocatorImpl' is NULL.");
         commandAllocator = (CommandAllocator*)Allocate<CommandAllocatorVal>(GetStdAllocator(), *this, *commandAllocatorImpl);
     }
 
@@ -207,7 +207,7 @@ Result DeviceVal::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolD
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), descriptorPoolImpl != nullptr, Result::FAILURE, "Unexpected error: 'descriptorPoolImpl' is NULL.");
+        RETURN_ON_FAILURE(this, descriptorPoolImpl != nullptr, Result::FAILURE, "Unexpected error: 'descriptorPoolImpl' is NULL.");
         descriptorPool = (DescriptorPool*)Allocate<DescriptorPoolVal>(GetStdAllocator(), *this, *descriptorPoolImpl, descriptorPoolDesc);
     }
 
@@ -216,7 +216,7 @@ Result DeviceVal::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolD
 
 Result DeviceVal::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer)
 {
-    RETURN_ON_FAILURE(GetLog(), bufferDesc.size > 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferDesc.size > 0, Result::INVALID_ARGUMENT,
         "Can't create Buffer: 'bufferDesc.size' is 0.");
 
     Buffer* bufferImpl = nullptr;
@@ -224,7 +224,7 @@ Result DeviceVal::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer)
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), bufferImpl != nullptr, Result::FAILURE, "Unexpected error: 'bufferImpl' is NULL.");
+        RETURN_ON_FAILURE(this, bufferImpl != nullptr, Result::FAILURE, "Unexpected error: 'bufferImpl' is NULL.");
         buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, *bufferImpl, bufferDesc);
     }
 
@@ -233,10 +233,10 @@ Result DeviceVal::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer)
 
 Result DeviceVal::CreateTexture(const TextureDesc& textureDesc, Texture*& texture)
 {
-    RETURN_ON_FAILURE(GetLog(), textureDesc.format > Format::UNKNOWN && textureDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureDesc.format > Format::UNKNOWN && textureDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Texture: 'textureDesc.format' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), textureDesc.sampleNum > 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureDesc.sampleNum > 0, Result::INVALID_ARGUMENT,
         "Can't create Texture: 'textureDesc.sampleNum' is invalid.");
 
     Texture* textureImpl = nullptr;
@@ -244,7 +244,7 @@ Result DeviceVal::CreateTexture(const TextureDesc& textureDesc, Texture*& textur
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), textureImpl != nullptr, Result::FAILURE, "Unexpected error: 'textureImpl' is NULL.");
+        RETURN_ON_FAILURE(this, textureImpl != nullptr, Result::FAILURE, "Unexpected error: 'textureImpl' is NULL.");
         texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl, textureDesc);
     }
 
@@ -253,22 +253,22 @@ Result DeviceVal::CreateTexture(const TextureDesc& textureDesc, Texture*& textur
 
 Result DeviceVal::CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView)
 {
-    RETURN_ON_FAILURE(GetLog(), bufferViewDesc.buffer != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferViewDesc.buffer != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'bufferViewDesc.buffer' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), bufferViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'bufferViewDesc.format' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), bufferViewDesc.viewType < BufferViewType::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferViewDesc.viewType < BufferViewType::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'bufferViewDesc.viewType' is invalid");
 
     const BufferDesc& bufferDesc = ((BufferVal*)bufferViewDesc.buffer)->GetDesc();
 
-    RETURN_ON_FAILURE(GetLog(), bufferViewDesc.offset < bufferDesc.size, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferViewDesc.offset < bufferDesc.size, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'bufferViewDesc.offset' is invalid. (bufferViewDesc.offset=%llu, bufferDesc.size=%llu)",
         bufferViewDesc.offset, bufferDesc.size);
 
-    RETURN_ON_FAILURE(GetLog(), bufferViewDesc.offset + bufferViewDesc.size <= bufferDesc.size, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferViewDesc.offset + bufferViewDesc.size <= bufferDesc.size, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'bufferViewDesc.size' is invalid. (bufferViewDesc.offset=%llu, bufferViewDesc.size=%llu, bufferDesc.size=%llu)",
         bufferViewDesc.offset, bufferViewDesc.size, bufferDesc.size);
 
@@ -280,7 +280,7 @@ Result DeviceVal::CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descrip
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), descriptorImpl != nullptr, Result::FAILURE, "Unexpected error: 'descriptorImpl' is NULL.");
+        RETURN_ON_FAILURE(this, descriptorImpl != nullptr, Result::FAILURE, "Unexpected error: 'descriptorImpl' is NULL.");
         bufferView = (Descriptor*)Allocate<DescriptorVal>(GetStdAllocator(), *this, *descriptorImpl, bufferViewDesc);
     }
 
@@ -289,32 +289,32 @@ Result DeviceVal::CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descrip
 
 Result DeviceVal::CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView)
 {
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.texture' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.format' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.viewType < Texture1DViewType::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.viewType < Texture1DViewType::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.viewType' is invalid.");
 
     const TextureDesc& textureDesc = ((TextureVal*)textureViewDesc.texture)->GetDesc();
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.mipOffset' is invalid. (textureViewDesc.mipOffset=%hu, textureDesc.mipNum=%hu)",
         textureViewDesc.mipOffset, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.mipNum' is invalid. "
         "(textureViewDesc.mipOffset=%hu, textureViewDesc.mipNum=%hu, textureDesc.mipNum=%hu)",
         textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.arrayOffset < textureDesc.arraySize, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.arrayOffset < textureDesc.arraySize, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.arrayOffset' is invalid. "
         "(textureViewDesc.arrayOffset=%hu, textureDesc.arraySize=%hu)",
         textureViewDesc.arrayOffset, textureDesc.arraySize);
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.arrayOffset + textureViewDesc.arraySize <= textureDesc.arraySize, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.arrayOffset + textureViewDesc.arraySize <= textureDesc.arraySize, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.arraySize' is invalid. "
         "(textureViewDesc.arrayOffset=%hu, textureViewDesc.arraySize=%hu, textureDesc.arraySize=%hu)",
         textureViewDesc.arrayOffset, textureViewDesc.arraySize, textureDesc.arraySize);
@@ -327,7 +327,7 @@ Result DeviceVal::CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Des
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), descriptorImpl != nullptr, Result::FAILURE, "Unexpected error: 'descriptorImpl' is NULL.");
+        RETURN_ON_FAILURE(this, descriptorImpl != nullptr, Result::FAILURE, "Unexpected error: 'descriptorImpl' is NULL.");
         textureView = (Descriptor*)Allocate<DescriptorVal>(GetStdAllocator(), *this, *descriptorImpl, textureViewDesc);
     }
 
@@ -336,33 +336,33 @@ Result DeviceVal::CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Des
 
 Result DeviceVal::CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView)
 {
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.texture' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.format' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.viewType < Texture2DViewType::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.viewType < Texture2DViewType::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.viewType' is invalid.");
 
     const TextureDesc& textureDesc = ((TextureVal*)textureViewDesc.texture)->GetDesc();
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.mipOffset' is invalid. "
         "(textureViewDesc.mipOffset=%hu, textureDesc.mipNum=%hu)",
         textureViewDesc.mipOffset, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.mipNum' is invalid. "
         "(textureViewDesc.mipOffset=%hu, textureViewDesc.mipNum=%hu, textureDesc.mipNum=%hu)",
         textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.arrayOffset < textureDesc.arraySize, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.arrayOffset < textureDesc.arraySize, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.arrayOffset' is invalid. "
         "(textureViewDesc.arrayOffset=%hu, textureDesc.arraySize=%hu)",
         textureViewDesc.arrayOffset, textureDesc.arraySize);
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.arrayOffset + textureViewDesc.arraySize <= textureDesc.arraySize, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.arrayOffset + textureViewDesc.arraySize <= textureDesc.arraySize, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.arraySize' is invalid. "
         "(textureViewDesc.arrayOffset=%hu, textureViewDesc.arraySize=%hu, textureDesc.arraySize=%hu)",
         textureViewDesc.arrayOffset, textureViewDesc.arraySize, textureDesc.arraySize);
@@ -375,7 +375,7 @@ Result DeviceVal::CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Des
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), descriptorImpl != nullptr, Result::FAILURE, "Unexpected error: 'descriptorImpl' is NULL.");
+        RETURN_ON_FAILURE(this, descriptorImpl != nullptr, Result::FAILURE, "Unexpected error: 'descriptorImpl' is NULL.");
         textureView = (Descriptor*)Allocate<DescriptorVal>(GetStdAllocator(), *this, *descriptorImpl, textureViewDesc);
     }
 
@@ -384,33 +384,33 @@ Result DeviceVal::CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Des
 
 Result DeviceVal::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView)
 {
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.texture' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.format' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.viewType < Texture3DViewType::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.viewType < Texture3DViewType::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.viewType' is invalid.");
 
     const TextureDesc& textureDesc = ((TextureVal*)textureViewDesc.texture)->GetDesc();
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.mipOffset' is invalid. "
         "(textureViewDesc.mipOffset=%hu, textureViewDesc.mipOffset=%hu)",
         textureViewDesc.mipOffset, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.mipNum' is invalid. "
         "(textureViewDesc.mipOffset=%hu, textureViewDesc.mipNum=%hu, textureDesc.mipNum=%hu)",
         textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.sliceOffset < textureDesc.size[2], Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.sliceOffset < textureDesc.size[2], Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.arrayOffset' is invalid. "
         "(textureViewDesc.sliceOffset=%hu, textureDesc.size[2]=%hu)",
         textureViewDesc.sliceOffset, textureDesc.size[2]);
 
-    RETURN_ON_FAILURE(GetLog(), textureViewDesc.sliceOffset + textureViewDesc.sliceNum <= textureDesc.size[2], Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.sliceOffset + textureViewDesc.sliceNum <= textureDesc.size[2], Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.arraySize' is invalid. "
         "(textureViewDesc.sliceOffset=%hu, textureViewDesc.sliceNum=%hu, textureDesc.size[2]=%hu)",
         textureViewDesc.sliceOffset, textureViewDesc.sliceNum, textureDesc.size[2]);
@@ -423,7 +423,7 @@ Result DeviceVal::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Des
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), descriptorImpl != nullptr, Result::FAILURE, "Unexpected error: 'descriptorImpl' is NULL.");
+        RETURN_ON_FAILURE(this, descriptorImpl != nullptr, Result::FAILURE, "Unexpected error: 'descriptorImpl' is NULL.");
         textureView = (Descriptor*)Allocate<DescriptorVal>(GetStdAllocator(), *this, *descriptorImpl, textureViewDesc);
     }
 
@@ -432,31 +432,31 @@ Result DeviceVal::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Des
 
 Result DeviceVal::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& sampler)
 {
-    RETURN_ON_FAILURE(GetLog(), samplerDesc.magnification < Filter::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, samplerDesc.magnification < Filter::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'samplerDesc.magnification' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), samplerDesc.minification < Filter::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, samplerDesc.minification < Filter::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'samplerDesc.magnification' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), samplerDesc.mip < Filter::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, samplerDesc.mip < Filter::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'samplerDesc.mip' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), samplerDesc.filterExt < FilterExt::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, samplerDesc.filterExt < FilterExt::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'samplerDesc.filterExt' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), samplerDesc.addressModes.u < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, samplerDesc.addressModes.u < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'samplerDesc.addressModes.u' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), samplerDesc.addressModes.v < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, samplerDesc.addressModes.v < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'samplerDesc.addressModes.v' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), samplerDesc.addressModes.w < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, samplerDesc.addressModes.w < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'samplerDesc.addressModes.w' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), samplerDesc.compareFunc < CompareFunc::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, samplerDesc.compareFunc < CompareFunc::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'samplerDesc.compareFunc' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), samplerDesc.borderColor < BorderColor::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, samplerDesc.borderColor < BorderColor::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'samplerDesc.borderColor' is invalid.");
 
     Descriptor* samplerImpl = nullptr;
@@ -464,7 +464,7 @@ Result DeviceVal::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& 
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), samplerImpl != nullptr, Result::FAILURE, "Unexpected error: 'samplerImpl' is NULL.");
+        RETURN_ON_FAILURE(this, samplerImpl != nullptr, Result::FAILURE, "Unexpected error: 'samplerImpl' is NULL.");
         sampler = (Descriptor*)Allocate<DescriptorVal>(GetStdAllocator(), *this, *samplerImpl);
     }
 
@@ -478,9 +478,9 @@ Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutD
     const bool isRayTracing = pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::ALL_RAY_TRACING;
     const uint32_t supportedTypes = (uint32_t)isGraphics + (uint32_t)isCompute + (uint32_t)isRayTracing;
 
-    RETURN_ON_FAILURE(GetLog(), supportedTypes > 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, supportedTypes > 0, Result::INVALID_ARGUMENT,
         "Can't create pipeline layout: 'pipelineLayoutDesc.stageMask' is 0.");
-    RETURN_ON_FAILURE(GetLog(), supportedTypes == 1, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, supportedTypes == 1, Result::INVALID_ARGUMENT,
         "Can't create pipeline layout: 'pipelineLayoutDesc.stageMask' is invalid, it can't be compatible with more than one type of pipeline.");
 
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++)
@@ -491,20 +491,20 @@ Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutD
         {
             const DescriptorRangeDesc& range = descriptorSetDesc.ranges[j];
 
-            RETURN_ON_FAILURE(GetLog(), !range.isDescriptorNumVariable || range.isArray, Result::INVALID_ARGUMENT,
+            RETURN_ON_FAILURE(this, !range.isDescriptorNumVariable || range.isArray, Result::INVALID_ARGUMENT,
                 "Can't create pipeline layout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u]' is invalid, "
                 "'isArray' can't be false if 'isDescriptorNumVariable' is true.",
                 i, j);
 
-            RETURN_ON_FAILURE(GetLog(), range.descriptorNum > 0, Result::INVALID_ARGUMENT,
+            RETURN_ON_FAILURE(this, range.descriptorNum > 0, Result::INVALID_ARGUMENT,
                 "Can't create pipeline layout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].descriptorNum' can't be 0.",
                 i, j);
 
-            RETURN_ON_FAILURE(GetLog(), range.visibility < ShaderStage::MAX_NUM, Result::INVALID_ARGUMENT,
+            RETURN_ON_FAILURE(this, range.visibility < ShaderStage::MAX_NUM, Result::INVALID_ARGUMENT,
                 "Can't create pipeline layout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].visibility' is invalid.",
                 i, j);
 
-            RETURN_ON_FAILURE(GetLog(), range.descriptorType < DescriptorType::MAX_NUM, Result::INVALID_ARGUMENT,
+            RETURN_ON_FAILURE(this, range.descriptorType < DescriptorType::MAX_NUM, Result::INVALID_ARGUMENT,
                 "Can't create pipeline layout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].descriptorType' is invalid.",
                 i, j);
 
@@ -513,7 +513,7 @@ Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutD
                 const PipelineLayoutShaderStageBits visibilityMask = PipelineLayoutShaderStageBits(1 << (uint32_t)range.visibility);
                 const uint32_t filteredVisibilityMask = visibilityMask & pipelineLayoutDesc.stageMask;
 
-                RETURN_ON_FAILURE(GetLog(), (uint32_t)visibilityMask == filteredVisibilityMask, Result::INVALID_ARGUMENT,
+                RETURN_ON_FAILURE(this, (uint32_t)visibilityMask == filteredVisibilityMask, Result::INVALID_ARGUMENT,
                     "Can't create pipeline layout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].visibility' is not "
                     "compatible with 'pipelineLayoutDesc.stageMask'.", i, j);
             }
@@ -525,7 +525,7 @@ Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutD
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), pipelineLayoutImpl != nullptr, Result::FAILURE, "Unexpected error: 'pipelineLayoutImpl' is NULL.");
+        RETURN_ON_FAILURE(this, pipelineLayoutImpl != nullptr, Result::FAILURE, "Unexpected error: 'pipelineLayoutImpl' is NULL.");
         pipelineLayout = (PipelineLayout*)Allocate<PipelineLayoutVal>(GetStdAllocator(), *this, *pipelineLayoutImpl, pipelineLayoutDesc);
     }
 
@@ -534,19 +534,19 @@ Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutD
 
 Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline)
 {
-    RETURN_ON_FAILURE(GetLog(), graphicsPipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, graphicsPipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'graphicsPipelineDesc.pipelineLayout' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), graphicsPipelineDesc.outputMerger != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, graphicsPipelineDesc.outputMerger != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'graphicsPipelineDesc.outputMerger' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), graphicsPipelineDesc.rasterization != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, graphicsPipelineDesc.rasterization != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'graphicsPipelineDesc.rasterization' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), graphicsPipelineDesc.shaderStages != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaderStages != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'graphicsPipelineDesc.shaderStages' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), graphicsPipelineDesc.shaderStageNum > 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaderStageNum > 0, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'graphicsPipelineDesc.shaderStageNum' is 0.");
 
     const ShaderDesc* vertexShader = nullptr;
@@ -557,25 +557,25 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
         if (shaderDesc->stage == ShaderStage::VERTEX)
             vertexShader = shaderDesc;
 
-        RETURN_ON_FAILURE(GetLog(), shaderDesc->bytecode != nullptr, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, shaderDesc->bytecode != nullptr, Result::INVALID_ARGUMENT,
             "Can't create Pipeline: 'graphicsPipelineDesc.shaderStages[%u].bytecode' is invalid.", i);
 
-        RETURN_ON_FAILURE(GetLog(), shaderDesc->size != 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, shaderDesc->size != 0, Result::INVALID_ARGUMENT,
             "Can't create Pipeline: 'graphicsPipelineDesc.shaderStages[%u].size' is 0.", i);
 
-        RETURN_ON_FAILURE(GetLog(), shaderDesc->stage > ShaderStage::ALL && shaderDesc->stage < ShaderStage::COMPUTE, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, shaderDesc->stage > ShaderStage::ALL && shaderDesc->stage < ShaderStage::COMPUTE, Result::INVALID_ARGUMENT,
             "Can't create Pipeline: 'graphicsPipelineDesc.shaderStages[%u].stage' is invalid.", i);
     }
 
     if (graphicsPipelineDesc.inputAssembly != nullptr)
     {
-        RETURN_ON_FAILURE(GetLog(), !graphicsPipelineDesc.inputAssembly->attributes || vertexShader, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, !graphicsPipelineDesc.inputAssembly->attributes || vertexShader, Result::INVALID_ARGUMENT,
             "Can't create Pipeline: vertex shader is not specified, but input assembly attributes provided.");
 
         const PipelineLayoutVal& pipelineLayout = *(PipelineLayoutVal*)graphicsPipelineDesc.pipelineLayout;
         const PipelineLayoutShaderStageBits stageMask = pipelineLayout.GetPipelineLayoutDesc().stageMask;
 
-        RETURN_ON_FAILURE(GetLog(), (stageMask & PipelineLayoutShaderStageBits::VERTEX) != 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, (stageMask & PipelineLayoutShaderStageBits::VERTEX) != 0, Result::INVALID_ARGUMENT,
             "Can't create Pipeline: vertex stage is not enabled in the pipeline layout.");
     }
 
@@ -587,7 +587,7 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), pipelineImpl != nullptr, Result::FAILURE, "Unexpected error: 'pipelineImpl' is NULL.");
+        RETURN_ON_FAILURE(this, pipelineImpl != nullptr, Result::FAILURE, "Unexpected error: 'pipelineImpl' is NULL.");
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetStdAllocator(), *this, *pipelineImpl, graphicsPipelineDesc);
     }
 
@@ -596,16 +596,16 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
 
 Result DeviceVal::CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline)
 {
-    RETURN_ON_FAILURE(GetLog(), computePipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, computePipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'computePipelineDesc.pipelineLayout' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), computePipelineDesc.computeShader.bytecode != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, computePipelineDesc.computeShader.bytecode != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'computePipelineDesc.computeShader.bytecode' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), computePipelineDesc.computeShader.size != 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, computePipelineDesc.computeShader.size != 0, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'computePipelineDesc.computeShader.size' is 0.");
 
-    RETURN_ON_FAILURE(GetLog(), computePipelineDesc.computeShader.stage == ShaderStage::COMPUTE, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, computePipelineDesc.computeShader.stage == ShaderStage::COMPUTE, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'computePipelineDesc.computeShader.stage' must be ShaderStage::COMPUTE.");
 
     auto computePipelineDescImpl = computePipelineDesc;
@@ -616,7 +616,7 @@ Result DeviceVal::CreatePipeline(const ComputePipelineDesc& computePipelineDesc,
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), pipelineImpl != nullptr, Result::FAILURE, "Unexpected error: 'pipelineImpl' is NULL.");
+        RETURN_ON_FAILURE(this, pipelineImpl != nullptr, Result::FAILURE, "Unexpected error: 'pipelineImpl' is NULL.");
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetStdAllocator(), *this, *pipelineImpl, computePipelineDesc);
     }
 
@@ -627,14 +627,14 @@ Result DeviceVal::CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc, Fram
 {
     if (frameBufferDesc.colorAttachmentNum > 0)
     {
-        RETURN_ON_FAILURE(GetLog(), frameBufferDesc.colorAttachments != nullptr, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, frameBufferDesc.colorAttachments != nullptr, Result::INVALID_ARGUMENT,
             "Can't create FrameBuffer: 'frameBufferDesc.colorAttachments' is invalid.");
 
         for (uint32_t i = 0; i < frameBufferDesc.colorAttachmentNum; i++)
         {
             DescriptorVal* descriptorVal = (DescriptorVal*)frameBufferDesc.colorAttachments[i];
 
-            RETURN_ON_FAILURE(GetLog(), descriptorVal->IsColorAttachment(), Result::INVALID_ARGUMENT,
+            RETURN_ON_FAILURE(this, descriptorVal->IsColorAttachment(), Result::INVALID_ARGUMENT,
                 "Can't create FrameBuffer: 'frameBufferDesc.colorAttachments[%u]' is not a color attachment descriptor.", i);
         }
     }
@@ -642,7 +642,7 @@ Result DeviceVal::CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc, Fram
     if (frameBufferDesc.depthStencilAttachment != nullptr)
     {
         DescriptorVal* descriptorVal = (DescriptorVal*)frameBufferDesc.depthStencilAttachment;
-        RETURN_ON_FAILURE(GetLog(), descriptorVal->IsDepthStencilAttachment(), Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, descriptorVal->IsDepthStencilAttachment(), Result::INVALID_ARGUMENT,
             "Can't create FrameBuffer: 'frameBufferDesc.depthStencilAttachment' is not a depth stencil attachment descriptor.");
     }
 
@@ -661,7 +661,7 @@ Result DeviceVal::CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc, Fram
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), frameBufferImpl != nullptr, Result::FAILURE, "Unexpected error: 'frameBufferImpl' is NULL!");
+        RETURN_ON_FAILURE(this, frameBufferImpl != nullptr, Result::FAILURE, "Unexpected error: 'frameBufferImpl' is NULL!");
         frameBuffer = (FrameBuffer*)Allocate<FrameBufferVal>(GetStdAllocator(), *this, *frameBufferImpl);
     }
 
@@ -670,10 +670,10 @@ Result DeviceVal::CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc, Fram
 
 Result DeviceVal::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool)
 {
-    RETURN_ON_FAILURE(GetLog(), queryPoolDesc.queryType < QueryType::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, queryPoolDesc.queryType < QueryType::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create QueryPool: 'queryPoolDesc.queryType' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), queryPoolDesc.capacity > 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, queryPoolDesc.capacity > 0, Result::INVALID_ARGUMENT,
         "Can't create QueryPool: 'queryPoolDesc.capacity' is 0.");
 
     QueryPool* queryPoolImpl = nullptr;
@@ -681,7 +681,7 @@ Result DeviceVal::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), queryPoolImpl != nullptr, Result::FAILURE, "Unexpected error: 'queryPoolImpl' is NULL!");
+        RETURN_ON_FAILURE(this, queryPoolImpl != nullptr, Result::FAILURE, "Unexpected error: 'queryPoolImpl' is NULL!");
         queryPool = (QueryPool*)Allocate<QueryPoolVal>(GetStdAllocator(), *this, *queryPoolImpl, queryPoolDesc.queryType,
             queryPoolDesc.capacity);
     }
@@ -696,7 +696,7 @@ Result DeviceVal::CreateFence(uint64_t initialValue, Fence*& fence)
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), fenceImpl != nullptr, Result::FAILURE, "Unexpected error: 'fenceImpl' is NULL!");
+        RETURN_ON_FAILURE(this, fenceImpl != nullptr, Result::FAILURE, "Unexpected error: 'fenceImpl' is NULL!");
         fence = (Fence*)Allocate<FenceVal>(GetStdAllocator(), *this, *fenceImpl);
     }
 
@@ -763,9 +763,9 @@ void DeviceVal::DestroyFence(Fence& fence)
     Deallocate(GetStdAllocator(), (FenceVal*)&fence);
 }
 
-Result DeviceVal::AllocateMemory(uint32_t physicalDeviceMask, MemoryType memoryType, uint64_t size, Memory*& memory)
+Result DeviceVal::AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory)
 {
-    RETURN_ON_FAILURE(GetLog(), size > 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, size > 0, Result::INVALID_ARGUMENT,
         "Can't allocate Memory: 'size' is 0.");
 
     std::unordered_map<MemoryType, MemoryLocation>::iterator it;
@@ -776,15 +776,15 @@ Result DeviceVal::AllocateMemory(uint32_t physicalDeviceMask, MemoryType memoryT
         end = m_MemoryTypeMap.end();
     }
 
-    RETURN_ON_FAILURE(GetLog(), it != end, Result::FAILURE,
+    RETURN_ON_FAILURE(this, it != end, Result::FAILURE,
         "Can't allocate Memory: 'memoryType' is invalid.");
 
     Memory* memoryImpl;
-    const Result result = m_CoreAPI.AllocateMemory(m_Device, physicalDeviceMask, memoryType, size, memoryImpl);
+    const Result result = m_CoreAPI.AllocateMemory(m_Device, nodeMask, memoryType, size, memoryImpl);
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), memoryImpl != nullptr, Result::FAILURE, "Unexpected error: 'memoryImpl' is NULL!");
+        RETURN_ON_FAILURE(this, memoryImpl != nullptr, Result::FAILURE, "Unexpected error: 'memoryImpl' is NULL!");
         memory = (Memory*)Allocate<MemoryVal>(GetStdAllocator(), *this, *memoryImpl, size, it->second);
     }
 
@@ -796,7 +796,7 @@ Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingD
     if (memoryBindingDescNum == 0)
         return Result::SUCCESS;
 
-    RETURN_ON_FAILURE(GetLog(), memoryBindingDescs != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, memoryBindingDescs != nullptr, Result::INVALID_ARGUMENT,
         "Can't bind memory to buffers: 'memoryBindingDescs' is invalid.");
 
     BufferMemoryBindingDesc* memoryBindingDescsImpl = STACK_ALLOC(BufferMemoryBindingDesc, memoryBindingDescNum);
@@ -806,15 +806,15 @@ Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingD
         BufferMemoryBindingDesc& destDesc = memoryBindingDescsImpl[i];
         const BufferMemoryBindingDesc& srcDesc = memoryBindingDescs[i];
 
-        RETURN_ON_FAILURE(GetLog(), srcDesc.buffer != nullptr, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, srcDesc.buffer != nullptr, Result::INVALID_ARGUMENT,
             "Can't bind memory to buffers: 'memoryBindingDescs[%u].buffer' is invalid.", i);
-        RETURN_ON_FAILURE(GetLog(), srcDesc.memory != nullptr, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, srcDesc.memory != nullptr, Result::INVALID_ARGUMENT,
             "Can't bind memory to buffers: 'memoryBindingDescs[%u].memory' is invalid.", i);
 
         MemoryVal& memory = (MemoryVal&)*srcDesc.memory;
         BufferVal& buffer = (BufferVal&)*srcDesc.buffer;
 
-        RETURN_ON_FAILURE(GetLog(), !buffer.IsBoundToMemory(), Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, !buffer.IsBoundToMemory(), Result::INVALID_ARGUMENT,
             "Can't bind memory to buffers: 'memoryBindingDescs[%u].buffer' is already bound to memory.", i);
 
         // Skip validation if memory has been created from GAPI object using a wrapper extension
@@ -824,19 +824,19 @@ Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingD
         MemoryDesc memoryDesc = {};
         buffer.GetMemoryInfo(memory.GetMemoryLocation(), memoryDesc);
 
-        RETURN_ON_FAILURE(GetLog(), !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
             "Can't bind memory to buffers: 'memoryBindingDescs[%u].offset' must be zero for dedicated allocation.", i);
 
-        RETURN_ON_FAILURE(GetLog(), memoryDesc.alignment != 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT,
             "Can't bind memory to buffers: 'memoryBindingDescs[%u].alignment' can't be zero.", i);
 
-        RETURN_ON_FAILURE(GetLog(), srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT,
             "Can't bind memory to buffers: 'memoryBindingDescs[%u].offset' is misaligned.", i);
 
         const uint64_t rangeMax = srcDesc.offset + memoryDesc.size;
         const bool memorySizeIsUnknown = memory.GetSize() == 0;
 
-        RETURN_ON_FAILURE(GetLog(), memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT,
             "Can't bind memory to buffers: 'memoryBindingDescs[%u].offset' is invalid.", i);
 
         destDesc = srcDesc;
@@ -860,7 +860,7 @@ Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingD
 
 Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum)
 {
-    RETURN_ON_FAILURE(GetLog(), memoryBindingDescs != nullptr || memoryBindingDescNum == 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, memoryBindingDescs != nullptr || memoryBindingDescNum == 0, Result::INVALID_ARGUMENT,
         "Can't bind memory to textures: 'memoryBindingDescs' is a NULL.");
 
     TextureMemoryBindingDesc* memoryBindingDescsImpl = STACK_ALLOC(TextureMemoryBindingDesc, memoryBindingDescNum);
@@ -870,15 +870,15 @@ Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindin
         TextureMemoryBindingDesc& destDesc = memoryBindingDescsImpl[i];
         const TextureMemoryBindingDesc& srcDesc = memoryBindingDescs[i];
 
-        RETURN_ON_FAILURE(GetLog(), srcDesc.texture != nullptr, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, srcDesc.texture != nullptr, Result::INVALID_ARGUMENT,
             "Can't bind memory to textures: 'memoryBindingDescs[%u].texture' is invalid.", i);
-        RETURN_ON_FAILURE(GetLog(), srcDesc.memory != nullptr, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, srcDesc.memory != nullptr, Result::INVALID_ARGUMENT,
             "Can't bind memory to textures: 'memoryBindingDescs[%u].memory' is invalid.", i);
 
         MemoryVal& memory = (MemoryVal&)*srcDesc.memory;
         TextureVal& texture = (TextureVal&)*srcDesc.texture;
 
-        RETURN_ON_FAILURE(GetLog(), !texture.IsBoundToMemory(), Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, !texture.IsBoundToMemory(), Result::INVALID_ARGUMENT,
             "Can't bind memory to textures: 'memoryBindingDescs[%u].texture' is already bound to memory.", i);
 
         // Skip validation if memory has been created from GAPI object using a wrapper extension
@@ -888,19 +888,19 @@ Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindin
         MemoryDesc memoryDesc = {};
         texture.GetMemoryInfo(memory.GetMemoryLocation(), memoryDesc);
 
-        RETURN_ON_FAILURE(GetLog(), !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
             "Can't bind memory to textures: 'memoryBindingDescs[%u].offset' must be zero for dedicated allocation.", i);
 
-        RETURN_ON_FAILURE(GetLog(), memoryDesc.alignment != 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT,
             "Can't bind memory to textures: 'memoryBindingDescs[%u].alignment' can't be zero.", i);
 
-        RETURN_ON_FAILURE(GetLog(), srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT,
             "Can't bind memory to textures: 'memoryBindingDescs[%u].offset' is misaligned.", i);
 
         const uint64_t rangeMax = srcDesc.offset + memoryDesc.size;
         const bool memorySizeIsUnknown = memory.GetSize() == 0;
 
-        RETURN_ON_FAILURE(GetLog(), memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT,
             "Can't bind memory to textures: 'memoryBindingDescs[%u].offset' is invalid.", i);
 
         destDesc = srcDesc;
@@ -929,7 +929,7 @@ void DeviceVal::FreeMemory(Memory& memory)
     if (memoryVal.HasBoundResources())
     {
         memoryVal.ReportBoundResources();
-        REPORT_ERROR(GetLog(), "Can't free Memory: some resources are still bound to the memory.");
+        REPORT_ERROR(this, "Can't free Memory: some resources are still bound to the memory.");
         return;
     }
 
@@ -944,20 +944,20 @@ FormatSupportBits DeviceVal::GetFormatSupport(Format format) const
 
 #if NRI_USE_VULKAN
 
-Result DeviceVal::CreateCommandQueueVK(const CommandQueueVulkanDesc& commandQueueVulkanDesc, CommandQueue*& commandQueue)
+Result DeviceVal::CreateCommandQueueVK(const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue)
 {
-    RETURN_ON_FAILURE(GetLog(), commandQueueVulkanDesc.vkQueue != 0, Result::INVALID_ARGUMENT,
-        "Can't create CommandQueue: 'commandQueueVulkanDesc.vkQueue' is invalid.");
+    RETURN_ON_FAILURE(this, commandQueueVKDesc.vkQueue != 0, Result::INVALID_ARGUMENT,
+        "Can't create CommandQueue: 'commandQueueVKDesc.vkQueue' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), commandQueueVulkanDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
-        "Can't create CommandQueue: 'commandQueueVulkanDesc.commandQueueType' is invalid.");
+    RETURN_ON_FAILURE(this, commandQueueVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
+        "Can't create CommandQueue: 'commandQueueVKDesc.commandQueueType' is invalid.");
 
     CommandQueue* commandQueueImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateCommandQueueVK(m_Device, commandQueueVulkanDesc, commandQueueImpl);
+    const Result result = m_WrapperVKAPI.CreateCommandQueueVK(m_Device, commandQueueVKDesc, commandQueueImpl);
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), commandQueueImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, commandQueueImpl != nullptr, Result::FAILURE,
             "Can't create CommandQueue: unexpected error.");
 
         commandQueue = (CommandQueue*)Allocate<CommandQueueVal>(GetStdAllocator(), *this, *commandQueueImpl);
@@ -966,20 +966,20 @@ Result DeviceVal::CreateCommandQueueVK(const CommandQueueVulkanDesc& commandQueu
     return result;
 }
 
-Result DeviceVal::CreateCommandAllocatorVK(const CommandAllocatorVulkanDesc& commandAllocatorVulkanDesc, CommandAllocator*& commandAllocator)
+Result DeviceVal::CreateCommandAllocatorVK(const CommandAllocatorVKDesc& commandAllocatorVKDesc, CommandAllocator*& commandAllocator)
 {
-    RETURN_ON_FAILURE(GetLog(), commandAllocatorVulkanDesc.vkCommandPool != 0, Result::INVALID_ARGUMENT,
-        "Can't create CommandAllocator: 'commandAllocatorVulkanDesc.vkCommandPool' is invalid.");
+    RETURN_ON_FAILURE(this, commandAllocatorVKDesc.vkCommandPool != 0, Result::INVALID_ARGUMENT,
+        "Can't create CommandAllocator: 'commandAllocatorVKDesc.vkCommandPool' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), commandAllocatorVulkanDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
-        "Can't create CommandAllocator: 'commandAllocatorVulkanDesc.commandQueueType' is invalid.");
+    RETURN_ON_FAILURE(this, commandAllocatorVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
+        "Can't create CommandAllocator: 'commandAllocatorVKDesc.commandQueueType' is invalid.");
 
     CommandAllocator* commandAllocatorImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateCommandAllocatorVK(m_Device, commandAllocatorVulkanDesc, commandAllocatorImpl);
+    const Result result = m_WrapperVKAPI.CreateCommandAllocatorVK(m_Device, commandAllocatorVKDesc, commandAllocatorImpl);
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), commandAllocatorImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, commandAllocatorImpl != nullptr, Result::FAILURE,
             "Can't create CommandAllocator: unexpected error.");
 
         commandAllocator = (CommandAllocator*)Allocate<CommandAllocatorVal>(GetStdAllocator(), *this, *commandAllocatorImpl);
@@ -988,20 +988,20 @@ Result DeviceVal::CreateCommandAllocatorVK(const CommandAllocatorVulkanDesc& com
     return result;
 }
 
-Result DeviceVal::CreateCommandBufferVK(const CommandBufferVulkanDesc& commandBufferVulkanDesc, CommandBuffer*& commandBuffer)
+Result DeviceVal::CreateCommandBufferVK(const CommandBufferVKDesc& commandBufferVKDesc, CommandBuffer*& commandBuffer)
 {
-    RETURN_ON_FAILURE(GetLog(), commandBufferVulkanDesc.vkCommandBuffer != 0, Result::INVALID_ARGUMENT,
-        "Can't create CommandBuffer: 'commandBufferVulkanDesc.vkCommandBuffer' is invalid.");
+    RETURN_ON_FAILURE(this, commandBufferVKDesc.vkCommandBuffer != 0, Result::INVALID_ARGUMENT,
+        "Can't create CommandBuffer: 'commandBufferVKDesc.vkCommandBuffer' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), commandBufferVulkanDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
-        "Can't create CommandBuffer: 'commandBufferVulkanDesc.commandQueueType' is invalid.");
+    RETURN_ON_FAILURE(this, commandBufferVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
+        "Can't create CommandBuffer: 'commandBufferVKDesc.commandQueueType' is invalid.");
 
     CommandBuffer* commandBufferImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateCommandBufferVK(m_Device, commandBufferVulkanDesc, commandBufferImpl);
+    const Result result = m_WrapperVKAPI.CreateCommandBufferVK(m_Device, commandBufferVKDesc, commandBufferImpl);
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), commandBufferImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, commandBufferImpl != nullptr, Result::FAILURE,
             "Can't create CommandBuffer: unexpected error.");
 
         commandBuffer = (CommandBuffer*)Allocate<CommandBufferVal>(GetStdAllocator(), *this, *commandBufferImpl, true);
@@ -1012,7 +1012,7 @@ Result DeviceVal::CreateCommandBufferVK(const CommandBufferVulkanDesc& commandBu
 
 Result DeviceVal::CreateDescriptorPoolVK(NRIVkDescriptorPool vkDescriptorPool, DescriptorPool*& descriptorPool)
 {
-    RETURN_ON_FAILURE(GetLog(), vkDescriptorPool != 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, vkDescriptorPool != 0, Result::INVALID_ARGUMENT,
         "Can't create DescriptorPool: 'vkDescriptorPool' is invalid.");
 
     DescriptorPool* descriptorPoolImpl = nullptr;
@@ -1020,7 +1020,7 @@ Result DeviceVal::CreateDescriptorPoolVK(NRIVkDescriptorPool vkDescriptorPool, D
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), descriptorPoolImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, descriptorPoolImpl != nullptr, Result::FAILURE,
             "Can't create DescriptorPool: unexpected error.");
 
         descriptorPool = (DescriptorPool*)Allocate<DescriptorPoolVal>(GetStdAllocator(), *this, *descriptorPoolImpl);
@@ -1029,15 +1029,15 @@ Result DeviceVal::CreateDescriptorPoolVK(NRIVkDescriptorPool vkDescriptorPool, D
     return result;
 }
 
-Result DeviceVal::CreateBufferVK(const BufferVulkanDesc& bufferDesc, Buffer*& buffer)
+Result DeviceVal::CreateBufferVK(const BufferVKDesc& bufferDesc, Buffer*& buffer)
 {
-    RETURN_ON_FAILURE(GetLog(), bufferDesc.vkBuffer != 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferDesc.vkBuffer != 0, Result::INVALID_ARGUMENT,
         "Can't create Buffer: 'bufferDesc.vkBuffer' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), bufferDesc.memory != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferDesc.memory != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Buffer: 'bufferDesc.memory' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), bufferDesc.bufferSize > 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferDesc.bufferSize > 0, Result::INVALID_ARGUMENT,
         "Can't create Buffer: 'bufferDesc.bufferSize' is 0.");
 
     Buffer* bufferImpl = nullptr;
@@ -1045,7 +1045,7 @@ Result DeviceVal::CreateBufferVK(const BufferVulkanDesc& bufferDesc, Buffer*& bu
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), bufferImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, bufferImpl != nullptr, Result::FAILURE,
             "Can't create Buffer: unexpected error.");
 
         buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, *bufferImpl, bufferDesc);
@@ -1054,54 +1054,54 @@ Result DeviceVal::CreateBufferVK(const BufferVulkanDesc& bufferDesc, Buffer*& bu
     return result;
 }
 
-Result DeviceVal::CreateTextureVK(const TextureVulkanDesc& textureVulkanDesc, Texture*& texture)
+Result DeviceVal::CreateTextureVK(const TextureVKDesc& textureVKDesc, Texture*& texture)
 {
-    RETURN_ON_FAILURE(GetLog(), textureVulkanDesc.vkImage != 0, Result::INVALID_ARGUMENT,
-        "Can't create Texture: 'textureVulkanDesc.vkImage' is invalid.");
+    RETURN_ON_FAILURE(this, textureVKDesc.vkImage != 0, Result::INVALID_ARGUMENT,
+        "Can't create Texture: 'textureVKDesc.vkImage' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), nriConvertVKFormatToNRI(textureVulkanDesc.vkFormat) != Format::UNKNOWN, Result::INVALID_ARGUMENT,
-        "Can't create Texture: 'textureVulkanDesc.sampleNum' is 0.");
+    RETURN_ON_FAILURE(this, nriConvertVKFormatToNRI(textureVKDesc.vkFormat) != Format::UNKNOWN, Result::INVALID_ARGUMENT,
+        "Can't create Texture: 'textureVKDesc.sampleNum' is 0.");
 
-    RETURN_ON_FAILURE(GetLog(), textureVulkanDesc.sampleNum > 0, Result::INVALID_ARGUMENT,
-        "Can't create Texture: 'textureVulkanDesc.sampleNum' is 0.");
+    RETURN_ON_FAILURE(this, textureVKDesc.sampleNum > 0, Result::INVALID_ARGUMENT,
+        "Can't create Texture: 'textureVKDesc.sampleNum' is 0.");
 
-    RETURN_ON_FAILURE(GetLog(), textureVulkanDesc.arraySize > 0, Result::INVALID_ARGUMENT,
-        "Can't create Texture: 'textureVulkanDesc.arraySize' is 0.");
+    RETURN_ON_FAILURE(this, textureVKDesc.arraySize > 0, Result::INVALID_ARGUMENT,
+        "Can't create Texture: 'textureVKDesc.arraySize' is 0.");
 
-    RETURN_ON_FAILURE(GetLog(), textureVulkanDesc.mipNum > 0, Result::INVALID_ARGUMENT,
-        "Can't create Texture: 'textureVulkanDesc.mipNum' is 0.");
+    RETURN_ON_FAILURE(this, textureVKDesc.mipNum > 0, Result::INVALID_ARGUMENT,
+        "Can't create Texture: 'textureVKDesc.mipNum' is 0.");
 
     Texture* textureImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateTextureVK(m_Device, textureVulkanDesc, textureImpl);
+    const Result result = m_WrapperVKAPI.CreateTextureVK(m_Device, textureVKDesc, textureImpl);
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), textureImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, textureImpl != nullptr, Result::FAILURE,
             "Can't create Texture: unexpected error.");
 
-        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl, textureVulkanDesc);
+        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl, textureVKDesc);
     }
 
     return result;
 }
 
-Result DeviceVal::CreateMemoryVK(const MemoryVulkanDesc& memoryVulkanDesc, Memory*& memory)
+Result DeviceVal::CreateMemoryVK(const MemoryVKDesc& memoryVKDesc, Memory*& memory)
 {
-    RETURN_ON_FAILURE(GetLog(), memoryVulkanDesc.vkDeviceMemory != 0, Result::INVALID_ARGUMENT,
-        "Can't create Memory: 'memoryVulkanDesc.vkDeviceMemory' is invalid.");
+    RETURN_ON_FAILURE(this, memoryVKDesc.vkDeviceMemory != 0, Result::INVALID_ARGUMENT,
+        "Can't create Memory: 'memoryVKDesc.vkDeviceMemory' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), memoryVulkanDesc.size > 0, Result::INVALID_ARGUMENT,
-        "Can't create Memory: 'memoryVulkanDesc.size' is 0.");
+    RETURN_ON_FAILURE(this, memoryVKDesc.size > 0, Result::INVALID_ARGUMENT,
+        "Can't create Memory: 'memoryVKDesc.size' is 0.");
 
     Memory* memoryImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateMemoryVK(m_Device, memoryVulkanDesc, memoryImpl);
+    const Result result = m_WrapperVKAPI.CreateMemoryVK(m_Device, memoryVKDesc, memoryImpl);
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), memoryImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, memoryImpl != nullptr, Result::FAILURE,
             "Can't create Memory: unexpected error.");
 
-        memory = (Memory*)Allocate<MemoryVal>(GetStdAllocator(), *this, *memoryImpl, memoryVulkanDesc.size, MemoryLocation::MAX_NUM);
+        memory = (Memory*)Allocate<MemoryVal>(GetStdAllocator(), *this, *memoryImpl, memoryVKDesc.size, MemoryLocation::MAX_NUM);
     }
 
     return result;
@@ -1109,7 +1109,7 @@ Result DeviceVal::CreateMemoryVK(const MemoryVulkanDesc& memoryVulkanDesc, Memor
 
 Result DeviceVal::CreateGraphicsPipelineVK(NRIVkPipeline vkPipeline, Pipeline*& pipeline)
 {
-    RETURN_ON_FAILURE(GetLog(), vkPipeline != 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, vkPipeline != 0, Result::INVALID_ARGUMENT,
         "Can't create graphics Pipeline: 'vkPipeline' is invalid.");
 
     Pipeline* pipelineImpl = nullptr;
@@ -1117,7 +1117,7 @@ Result DeviceVal::CreateGraphicsPipelineVK(NRIVkPipeline vkPipeline, Pipeline*& 
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), pipelineImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, pipelineImpl != nullptr, Result::FAILURE,
             "Can't create Pipeline: unexpected error.");
 
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetStdAllocator(), *this, *pipelineImpl);
@@ -1128,7 +1128,7 @@ Result DeviceVal::CreateGraphicsPipelineVK(NRIVkPipeline vkPipeline, Pipeline*& 
 
 Result DeviceVal::CreateComputePipelineVK(NRIVkPipeline vkPipeline, Pipeline*& pipeline)
 {
-    RETURN_ON_FAILURE(GetLog(), vkPipeline != 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, vkPipeline != 0, Result::INVALID_ARGUMENT,
         "Can't create compute Pipeline: 'vkPipeline' is invalid.");
 
     Pipeline* pipelineImpl = nullptr;
@@ -1136,7 +1136,7 @@ Result DeviceVal::CreateComputePipelineVK(NRIVkPipeline vkPipeline, Pipeline*& p
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), pipelineImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, pipelineImpl != nullptr, Result::FAILURE,
             "Can't create Pipeline: unexpected error.");
 
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetStdAllocator(), *this, *pipelineImpl);
@@ -1145,20 +1145,20 @@ Result DeviceVal::CreateComputePipelineVK(NRIVkPipeline vkPipeline, Pipeline*& p
     return result;
 }
 
-Result DeviceVal::CreateQueryPoolVK(const QueryPoolVulkanDesc& queryPoolVulkanDesc, QueryPool*& queryPool)
+Result DeviceVal::CreateQueryPoolVK(const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool)
 {
-    RETURN_ON_FAILURE(GetLog(), queryPoolVulkanDesc.vkQueryPool != 0, Result::INVALID_ARGUMENT,
-        "Can't create QueryPool: 'queryPoolVulkanDesc.vkQueryPool' is invalid.");
+    RETURN_ON_FAILURE(this, queryPoolVKDesc.vkQueryPool != 0, Result::INVALID_ARGUMENT,
+        "Can't create QueryPool: 'queryPoolVKDesc.vkQueryPool' is invalid.");
 
     QueryPool* queryPoolImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateQueryPoolVK(m_Device, queryPoolVulkanDesc, queryPoolImpl);
+    const Result result = m_WrapperVKAPI.CreateQueryPoolVK(m_Device, queryPoolVKDesc, queryPoolImpl);
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), queryPoolImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, queryPoolImpl != nullptr, Result::FAILURE,
             "Can't create QueryPool: unexpected error.");
 
-        const QueryType queryType = GetQueryTypeVK(queryPoolVulkanDesc.vkQueryType);
+        const QueryType queryType = GetQueryTypeVK(queryPoolVKDesc.vkQueryType);
 
         queryPool = (QueryPool*)Allocate<QueryPoolVal>(GetStdAllocator(), *this, *queryPoolImpl, queryType, 0);
     }
@@ -1166,9 +1166,9 @@ Result DeviceVal::CreateQueryPoolVK(const QueryPoolVulkanDesc& queryPoolVulkanDe
     return result;
 }
 
-Result DeviceVal::CreateAccelerationStructureVK(const AccelerationStructureVulkanDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure)
+Result DeviceVal::CreateAccelerationStructureVK(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure)
 {
-    RETURN_ON_FAILURE(GetLog(), accelerationStructureDesc.vkAccelerationStructure != 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, accelerationStructureDesc.vkAccelerationStructure != 0, Result::INVALID_ARGUMENT,
         "Can't create AccelerationStructure: 'accelerationStructureDesc.vkAccelerationStructure' is invalid.");
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
@@ -1176,7 +1176,7 @@ Result DeviceVal::CreateAccelerationStructureVK(const AccelerationStructureVulka
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), accelerationStructureImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, accelerationStructureImpl != nullptr, Result::FAILURE,
             "Can't create AccelerationStructure: unexpected error.");
 
         accelerationStructure = (AccelerationStructure*)Allocate<AccelerationStructureVal>(GetStdAllocator(), *this, *accelerationStructureImpl, true);
@@ -1191,7 +1191,7 @@ Result DeviceVal::CreateAccelerationStructureVK(const AccelerationStructureVulka
 
 Result DeviceVal::CreateCommandBufferD3D11(const CommandBufferD3D11Desc& commandBufferDesc, CommandBuffer*& commandBuffer)
 {
-    RETURN_ON_FAILURE(GetLog(), commandBufferDesc.d3d11DeviceContext != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, commandBufferDesc.d3d11DeviceContext != nullptr, Result::INVALID_ARGUMENT,
         "Can't create CommandBuffer: 'commandBufferDesc.d3d11DeviceContext' is invalid.");
 
     CommandBuffer* commandBufferImpl = nullptr;
@@ -1199,7 +1199,7 @@ Result DeviceVal::CreateCommandBufferD3D11(const CommandBufferD3D11Desc& command
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), commandBufferImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, commandBufferImpl != nullptr, Result::FAILURE,
             "Can't create CommandBuffer: unexpected error.");
 
         commandBuffer = (CommandBuffer*)Allocate<CommandBufferVal>(GetStdAllocator(), *this, *commandBufferImpl, true);
@@ -1210,7 +1210,7 @@ Result DeviceVal::CreateCommandBufferD3D11(const CommandBufferD3D11Desc& command
 
 Result DeviceVal::CreateBufferD3D11(const BufferD3D11Desc& bufferDesc, Buffer*& buffer)
 {
-    RETURN_ON_FAILURE(GetLog(), bufferDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Buffer: 'bufferDesc.d3d11Resource' is invalid.");
 
     Buffer* bufferImpl = nullptr;
@@ -1218,7 +1218,7 @@ Result DeviceVal::CreateBufferD3D11(const BufferD3D11Desc& bufferDesc, Buffer*& 
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), bufferImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, bufferImpl != nullptr, Result::FAILURE,
             "Can't create Buffer: unexpected error.");
 
         buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, *bufferImpl, bufferDesc);
@@ -1229,7 +1229,7 @@ Result DeviceVal::CreateBufferD3D11(const BufferD3D11Desc& bufferDesc, Buffer*& 
 
 Result DeviceVal::CreateTextureD3D11(const TextureD3D11Desc& textureDesc, Texture*& texture)
 {
-    RETURN_ON_FAILURE(GetLog(), textureDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Texture: 'textureDesc.d3d11Resource' is invalid.");
 
     Texture* textureImpl = nullptr;
@@ -1237,7 +1237,7 @@ Result DeviceVal::CreateTextureD3D11(const TextureD3D11Desc& textureDesc, Textur
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), textureImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, textureImpl != nullptr, Result::FAILURE,
             "Can't create Texture: unexpected error.");
 
         texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl, textureDesc);
@@ -1252,10 +1252,10 @@ Result DeviceVal::CreateTextureD3D11(const TextureD3D11Desc& textureDesc, Textur
 
 Result DeviceVal::CreateCommandBufferD3D12(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer)
 {
-    RETURN_ON_FAILURE(GetLog(), commandBufferDesc.d3d12CommandAllocator != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, commandBufferDesc.d3d12CommandAllocator != nullptr, Result::INVALID_ARGUMENT,
         "Can't create CommandBuffer: 'commandBufferDesc.d3d12CommandAllocator' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), commandBufferDesc.d3d12CommandList != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, commandBufferDesc.d3d12CommandList != nullptr, Result::INVALID_ARGUMENT,
         "Can't create CommandBuffer: 'commandBufferDesc.d3d12CommandList' is invalid.");
 
     CommandBuffer* commandBufferImpl = nullptr;
@@ -1263,7 +1263,7 @@ Result DeviceVal::CreateCommandBufferD3D12(const CommandBufferD3D12Desc& command
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), commandBufferImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, commandBufferImpl != nullptr, Result::FAILURE,
             "Can't create CommandBuffer: unexpected error.");
 
         commandBuffer = (CommandBuffer*)Allocate<CommandBufferVal>(GetStdAllocator(), *this, *commandBufferImpl, true);
@@ -1274,7 +1274,7 @@ Result DeviceVal::CreateCommandBufferD3D12(const CommandBufferD3D12Desc& command
 
 Result DeviceVal::CreateBufferD3D12(const BufferD3D12Desc& bufferDesc, Buffer*& buffer)
 {
-    RETURN_ON_FAILURE(GetLog(), bufferDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Buffer: 'bufferDesc.d3d12Resource' is invalid.");
 
     Buffer* bufferImpl = nullptr;
@@ -1282,7 +1282,7 @@ Result DeviceVal::CreateBufferD3D12(const BufferD3D12Desc& bufferDesc, Buffer*& 
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), bufferImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, bufferImpl != nullptr, Result::FAILURE,
             "Can't create Buffer: unexpected error.");
 
         buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, *bufferImpl, bufferDesc);
@@ -1293,7 +1293,7 @@ Result DeviceVal::CreateBufferD3D12(const BufferD3D12Desc& bufferDesc, Buffer*& 
 
 Result DeviceVal::CreateTextureD3D12(const TextureD3D12Desc& textureDesc, Texture*& texture)
 {
-    RETURN_ON_FAILURE(GetLog(), textureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Texture: 'textureDesc.d3d12Resource' is invalid.");
 
     Texture* textureImpl = nullptr;
@@ -1301,7 +1301,7 @@ Result DeviceVal::CreateTextureD3D12(const TextureD3D12Desc& textureDesc, Textur
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), textureImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, textureImpl != nullptr, Result::FAILURE,
             "Can't create Texture: unexpected error.");
 
         texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl, textureDesc);
@@ -1312,7 +1312,7 @@ Result DeviceVal::CreateTextureD3D12(const TextureD3D12Desc& textureDesc, Textur
 
 Result DeviceVal::CreateMemoryD3D12(const MemoryD3D12Desc& memoryDesc, Memory*& memory)
 {
-    RETURN_ON_FAILURE(GetLog(), memoryDesc.d3d12Heap != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, memoryDesc.d3d12Heap != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Memory: 'memoryDesc.d3d12Heap' is invalid.");
 
     Memory* memoryImpl = nullptr;
@@ -1322,7 +1322,7 @@ Result DeviceVal::CreateMemoryD3D12(const MemoryD3D12Desc& memoryDesc, Memory*& 
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), memoryImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, memoryImpl != nullptr, Result::FAILURE,
             "Can't create Memory: unexpected error.");
 
         memory = (Memory*)Allocate<MemoryVal>(GetStdAllocator(), *this, *memoryImpl, size, MemoryLocation::MAX_NUM);
@@ -1333,7 +1333,7 @@ Result DeviceVal::CreateMemoryD3D12(const MemoryD3D12Desc& memoryDesc, Memory*& 
 
 Result DeviceVal::CreateAccelerationStructureD3D12(const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure)
 {
-    RETURN_ON_FAILURE(GetLog(), accelerationStructureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, accelerationStructureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT,
         "Can't create AccelerationStructure: 'accelerationStructureDesc.d3d12Resource' is invalid.");
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
@@ -1341,7 +1341,7 @@ Result DeviceVal::CreateAccelerationStructureD3D12(const AccelerationStructureD3
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), accelerationStructureImpl != nullptr, Result::FAILURE,
+        RETURN_ON_FAILURE(this, accelerationStructureImpl != nullptr, Result::FAILURE,
             "Can't create AccelerationStructure: unexpected error.");
 
         accelerationStructure = (AccelerationStructure*)Allocate<AccelerationStructureVal>(GetStdAllocator(), *this, *accelerationStructureImpl, true);
@@ -1354,20 +1354,20 @@ Result DeviceVal::CreateAccelerationStructureD3D12(const AccelerationStructureD3
 
 uint32_t DeviceVal::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const
 {
-    RETURN_ON_FAILURE(GetLog(), resourceGroupDesc.memoryLocation < MemoryLocation::MAX_NUM, 0,
+    RETURN_ON_FAILURE(this, resourceGroupDesc.memoryLocation < MemoryLocation::MAX_NUM, 0,
         "Can't calculate the number of allocations: 'resourceGroupDesc.memoryLocation' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), resourceGroupDesc.bufferNum == 0 || resourceGroupDesc.buffers != nullptr, 0,
+    RETURN_ON_FAILURE(this, resourceGroupDesc.bufferNum == 0 || resourceGroupDesc.buffers != nullptr, 0,
         "Can't calculate the number of allocations: 'resourceGroupDesc.buffers' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), resourceGroupDesc.textureNum == 0 || resourceGroupDesc.textures != nullptr, 0,
+    RETURN_ON_FAILURE(this, resourceGroupDesc.textureNum == 0 || resourceGroupDesc.textures != nullptr, 0,
         "Can't calculate the number of allocations: 'resourceGroupDesc.textures' is invalid.");
 
     Buffer** buffersImpl = STACK_ALLOC(Buffer*, resourceGroupDesc.bufferNum);
 
     for (uint32_t i = 0; i < resourceGroupDesc.bufferNum; i++)
     {
-        RETURN_ON_FAILURE(GetLog(), resourceGroupDesc.buffers[i] != nullptr, 0,
+        RETURN_ON_FAILURE(this, resourceGroupDesc.buffers[i] != nullptr, 0,
             "Can't calculate the number of allocations: 'resourceGroupDesc.buffers[%u]' is invalid.", i);
 
         BufferVal& bufferVal = *(BufferVal*)resourceGroupDesc.buffers[i];
@@ -1378,7 +1378,7 @@ uint32_t DeviceVal::CalculateAllocationNumber(const ResourceGroupDesc& resourceG
 
     for (uint32_t i = 0; i < resourceGroupDesc.textureNum; i++)
     {
-        RETURN_ON_FAILURE(GetLog(), resourceGroupDesc.textures[i] != nullptr, 0,
+        RETURN_ON_FAILURE(this, resourceGroupDesc.textures[i] != nullptr, 0,
             "Can't calculate the number of allocations: 'resourceGroupDesc.textures[%u]' is invalid.", i);
 
         TextureVal& textureVal = *(TextureVal*)resourceGroupDesc.textures[i];
@@ -1394,23 +1394,23 @@ uint32_t DeviceVal::CalculateAllocationNumber(const ResourceGroupDesc& resourceG
 
 Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations)
 {
-    RETURN_ON_FAILURE(GetLog(), allocations != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, allocations != nullptr, Result::INVALID_ARGUMENT,
         "Can't allocate and bind memory: 'allocations' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), resourceGroupDesc.memoryLocation < MemoryLocation::MAX_NUM, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, resourceGroupDesc.memoryLocation < MemoryLocation::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't allocate and bind memory: 'resourceGroupDesc.memoryLocation' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), resourceGroupDesc.bufferNum == 0 || resourceGroupDesc.buffers != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, resourceGroupDesc.bufferNum == 0 || resourceGroupDesc.buffers != nullptr, Result::INVALID_ARGUMENT,
         "Can't allocate and bind memory: 'resourceGroupDesc.buffers' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), resourceGroupDesc.textureNum == 0 || resourceGroupDesc.textures != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, resourceGroupDesc.textureNum == 0 || resourceGroupDesc.textures != nullptr, Result::INVALID_ARGUMENT,
         "Can't allocate and bind memory: 'resourceGroupDesc.textures' is invalid.");
 
     Buffer** buffersImpl = STACK_ALLOC(Buffer*, resourceGroupDesc.bufferNum);
 
     for (uint32_t i = 0; i < resourceGroupDesc.bufferNum; i++)
     {
-        RETURN_ON_FAILURE(GetLog(), resourceGroupDesc.buffers[i] != nullptr, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, resourceGroupDesc.buffers[i] != nullptr, Result::INVALID_ARGUMENT,
             "Can't allocate and bind memory: 'resourceGroupDesc.buffers[%u]' is invalid.", i);
 
         BufferVal& bufferVal = *(BufferVal*)resourceGroupDesc.buffers[i];
@@ -1421,7 +1421,7 @@ Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDe
 
     for (uint32_t i = 0; i < resourceGroupDesc.textureNum; i++)
     {
-        RETURN_ON_FAILURE(GetLog(), resourceGroupDesc.textures[i] != nullptr, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, resourceGroupDesc.textures[i] != nullptr, Result::INVALID_ARGUMENT,
             "Can't allocate and bind memory: 'resourceGroupDesc.textures[%u]' is invalid.", i);
 
         TextureVal& textureVal = *(TextureVal*)resourceGroupDesc.textures[i];
@@ -1452,7 +1452,7 @@ Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDe
 
         for (uint32_t i = 0; i < allocationNum; i++)
         {
-            RETURN_ON_FAILURE(GetLog(), allocations[i] != nullptr, Result::FAILURE, "Unexpected error: 'memoryImpl' is invalid");
+            RETURN_ON_FAILURE(this, allocations[i] != nullptr, Result::FAILURE, "Unexpected error: 'memoryImpl' is invalid");
             allocations[i] = (Memory*)Allocate<MemoryVal>(GetStdAllocator(), *this, *allocations[i], 0, resourceGroupDesc.memoryLocation);
         }
     }
@@ -1462,32 +1462,32 @@ Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDe
 
 Result DeviceVal::CreateRayTracingPipeline(const RayTracingPipelineDesc& pipelineDesc, Pipeline*& pipeline)
 {
-    RETURN_ON_FAILURE(GetLog(), pipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, pipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'pipelineDesc.pipelineLayout' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), pipelineDesc.shaderLibrary != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, pipelineDesc.shaderLibrary != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'pipelineDesc.shaderLibrary' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), pipelineDesc.shaderGroupDescs != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, pipelineDesc.shaderGroupDescs != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'pipelineDesc.shaderGroupDescs' is invalid.");
 
-    RETURN_ON_FAILURE(GetLog(), pipelineDesc.shaderGroupDescNum != 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, pipelineDesc.shaderGroupDescNum != 0, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'pipelineDesc.shaderGroupDescNum' is 0.");
 
-    RETURN_ON_FAILURE(GetLog(), pipelineDesc.recursionDepthMax != 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, pipelineDesc.recursionDepthMax != 0, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'pipelineDesc.recursionDepthMax' is 0.");
 
     for (uint32_t i = 0; i < pipelineDesc.shaderLibrary->shaderNum; i++)
     {
         const ShaderDesc& shaderDesc = pipelineDesc.shaderLibrary->shaderDescs[i];
 
-        RETURN_ON_FAILURE(GetLog(), shaderDesc.bytecode != nullptr, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, shaderDesc.bytecode != nullptr, Result::INVALID_ARGUMENT,
             "Can't create Pipeline: 'pipelineDesc.shaderLibrary->shaderDescs[%u].bytecode' is invalid.", i);
 
-        RETURN_ON_FAILURE(GetLog(), shaderDesc.size != 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, shaderDesc.size != 0, Result::INVALID_ARGUMENT,
             "Can't create Pipeline: 'pipelineDesc.shaderLibrary->shaderDescs[%u].size' is 0.", i);
 
-        RETURN_ON_FAILURE(GetLog(), shaderDesc.stage > ShaderStage::COMPUTE && shaderDesc.stage < ShaderStage::MAX_NUM, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, shaderDesc.stage > ShaderStage::COMPUTE && shaderDesc.stage < ShaderStage::MAX_NUM, Result::INVALID_ARGUMENT,
             "Can't create Pipeline: 'pipelineDesc.shaderLibrary->shaderDescs[%u].stage' is invalid.", i);
     }
 
@@ -1499,7 +1499,7 @@ Result DeviceVal::CreateRayTracingPipeline(const RayTracingPipelineDesc& pipelin
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), pipelineImpl != nullptr, Result::FAILURE, "Unexpected error: 'pipelineImpl' is NULL.");
+        RETURN_ON_FAILURE(this, pipelineImpl != nullptr, Result::FAILURE, "Unexpected error: 'pipelineImpl' is NULL.");
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetStdAllocator(), *this, *pipelineImpl);
     }
 
@@ -1508,7 +1508,7 @@ Result DeviceVal::CreateRayTracingPipeline(const RayTracingPipelineDesc& pipelin
 
 Result DeviceVal::CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure)
 {
-    RETURN_ON_FAILURE(GetLog(), accelerationStructureDesc.instanceOrGeometryObjectNum != 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, accelerationStructureDesc.instanceOrGeometryObjectNum != 0, Result::INVALID_ARGUMENT,
         "Can't create AccelerationStructure: 'accelerationStructureDesc.instanceOrGeometryObjectNum' is 0.");
 
     AccelerationStructureDesc accelerationStructureDescImpl = accelerationStructureDesc;
@@ -1527,7 +1527,7 @@ Result DeviceVal::CreateAccelerationStructure(const AccelerationStructureDesc& a
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(GetLog(), accelerationStructureImpl != nullptr, Result::FAILURE, "Unexpected error: 'accelerationStructureImpl' is NULL.");
+        RETURN_ON_FAILURE(this, accelerationStructureImpl != nullptr, Result::FAILURE, "Unexpected error: 'accelerationStructureImpl' is NULL.");
         accelerationStructure = (AccelerationStructure*)Allocate<AccelerationStructureVal>(GetStdAllocator(), *this, *accelerationStructureImpl, false);
     }
 
@@ -1539,7 +1539,7 @@ Result DeviceVal::BindAccelerationStructureMemory(const AccelerationStructureMem
     if (memoryBindingDescNum == 0)
         return Result::SUCCESS;
 
-    RETURN_ON_FAILURE(GetLog(), memoryBindingDescs != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, memoryBindingDescs != nullptr, Result::INVALID_ARGUMENT,
         "Can't bind memory to acceleration structures: 'memoryBindingDescs' is invalid.");
 
     AccelerationStructureMemoryBindingDesc* memoryBindingDescsImpl = STACK_ALLOC(AccelerationStructureMemoryBindingDesc, memoryBindingDescNum);
@@ -1551,25 +1551,25 @@ Result DeviceVal::BindAccelerationStructureMemory(const AccelerationStructureMem
         MemoryVal& memory = (MemoryVal&)*srcDesc.memory;
         AccelerationStructureVal& accelerationStructure = (AccelerationStructureVal&)*srcDesc.accelerationStructure;
 
-        RETURN_ON_FAILURE(GetLog(), !accelerationStructure.IsBoundToMemory(), Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, !accelerationStructure.IsBoundToMemory(), Result::INVALID_ARGUMENT,
             "Can't bind memory to acceleration structures: 'memoryBindingDescs[%u].accelerationStructure' is already bound to memory.", i);
 
         MemoryDesc memoryDesc = {};
         accelerationStructure.GetMemoryInfo(memoryDesc);
 
-        RETURN_ON_FAILURE(GetLog(), !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
             "Can't bind memory to acceleration structures: 'memoryBindingDescs[%u].offset' must be zero for dedicated allocation.", i);
 
-        RETURN_ON_FAILURE(GetLog(), memoryDesc.alignment != 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT,
             "Can't bind memory to acceleration structures: 'memoryBindingDescs[%u].alignment' can't be zero.", i);
 
-        RETURN_ON_FAILURE(GetLog(), srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT,
             "Can't bind memory to acceleration structures: 'memoryBindingDescs[%u].offset' is misaligned.", i);
 
         const uint64_t rangeMax = srcDesc.offset + memoryDesc.size;
         const bool memorySizeIsUnknown = memory.GetSize() == 0;
 
-        RETURN_ON_FAILURE(GetLog(), memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT,
             "Can't bind memory to acceleration structures: 'memoryBindingDescs[%u].offset' is invalid.", i);
 
         destDesc = srcDesc;
@@ -1603,10 +1603,8 @@ void DeviceVal::Destroy()
 
 DeviceBase* CreateDeviceValidation(const DeviceCreationDesc& deviceCreationDesc, DeviceBase& device)
 {
-    Log log(deviceCreationDesc.graphicsAPI, deviceCreationDesc.callbackInterface);
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
-
-    DeviceVal* deviceVal = Allocate<DeviceVal>(allocator, log, allocator, device);
+    DeviceVal* deviceVal = Allocate<DeviceVal>(allocator, deviceCreationDesc.callbackInterface, allocator, device);
 
     if (!deviceVal->Create())
     {

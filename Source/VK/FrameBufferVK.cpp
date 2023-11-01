@@ -130,7 +130,7 @@ Result FrameBufferVK::CreateRenderPass(const FrameBufferDesc& frameBufferDesc)
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.CreateRenderPass(m_Device, &renderPassInfo, m_Device.GetAllocationCallbacks(), &m_RenderPassWithClear);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a render pass: vkCreateRenderPass returned %d.", (int32_t)result);
 
     for (uint32_t i = 0; i < m_AttachmentNum; i++)
@@ -141,7 +141,7 @@ Result FrameBufferVK::CreateRenderPass(const FrameBufferDesc& frameBufferDesc)
 
     result = vk.CreateRenderPass(m_Device, &renderPassInfo, m_Device.GetAllocationCallbacks(), &m_RenderPass);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a render pass: vkCreateRenderPass returned %d.", (int32_t)result);
 
     return Result::SUCCESS;
@@ -195,11 +195,11 @@ Result FrameBufferVK::Create(const FrameBufferDesc& frameBufferDesc)
 
     const auto& vk = m_Device.GetDispatchTable();
 
-    const uint32_t physicalDeviceMask = GetPhysicalDeviceGroupMask(frameBufferDesc.physicalDeviceMask);
+    const uint32_t nodeMask = GetNodeMask(frameBufferDesc.nodeMask);
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
         {
             for (uint32_t j = 0; j < frameBufferDesc.colorAttachmentNum; j++)
             {
@@ -214,7 +214,7 @@ Result FrameBufferVK::Create(const FrameBufferDesc& frameBufferDesc)
             }
 
             const VkResult res = vk.CreateFramebuffer(m_Device, &framebufferInfo, m_Device.GetAllocationCallbacks(), &m_Handles[i]);
-            RETURN_ON_FAILURE(m_Device.GetLog(), res == VK_SUCCESS, GetReturnCode(res),
+            RETURN_ON_FAILURE(&m_Device, res == VK_SUCCESS, GetReturnCode(res),
                 "Can't create a frame buffer: vkCreateFramebuffer returned %d.", (int32_t)res);
         }
     }

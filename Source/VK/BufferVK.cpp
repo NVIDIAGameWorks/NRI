@@ -54,15 +54,15 @@ Result BufferVK::Create(const BufferDesc& bufferDesc)
 
     const auto& vk = m_Device.GetDispatchTable();
 
-    const uint32_t physicalDeviceMask = GetPhysicalDeviceGroupMask(bufferDesc.physicalDeviceMask);
+    const uint32_t nodeMask = GetNodeMask(bufferDesc.nodeMask);
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
         {
             const VkResult result = vk.CreateBuffer(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handles[i]);
 
-            RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+            RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
                 "Can't create a buffer: vkCreateBuffer returned %d.", (int32_t)result);
         }
     }
@@ -70,21 +70,21 @@ Result BufferVK::Create(const BufferDesc& bufferDesc)
     return Result::SUCCESS;
 }
 
-Result BufferVK::Create(const BufferVulkanDesc& bufferDesc)
+Result BufferVK::Create(const BufferVKDesc& bufferDesc)
 {
     m_OwnsNativeObjects = false;
     m_Memory = (MemoryVK*)bufferDesc.memory;
     m_MappedMemoryOffset = bufferDesc.memoryOffset;
     m_Size = bufferDesc.bufferSize;
 
-    uint32_t physicalDeviceMask = GetPhysicalDeviceGroupMask(bufferDesc.physicalDeviceMask);
+    uint32_t nodeMask = GetNodeMask(bufferDesc.nodeMask);
 
     if (m_Memory != nullptr)
-        physicalDeviceMask = 0x1;
+        nodeMask = 0x1;
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
         {
             m_Handles[i] = (VkBuffer)bufferDesc.vkBuffer;
             m_DeviceAddresses[i] = (VkDeviceAddress)bufferDesc.deviceAddress;
@@ -175,7 +175,7 @@ void BufferVK::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDe
 
     MemoryTypeUnpack unpack = {};
     const bool found = m_Device.GetMemoryType(memoryLocation, requirements.memoryRequirements.memoryTypeBits, unpack.info);
-    CHECK(m_Device.GetLog(), found, "Can't find suitable memory type: %d", requirements.memoryRequirements.memoryTypeBits);
+    CHECK(&m_Device, found, "Can't find suitable memory type: %d", requirements.memoryRequirements.memoryTypeBits);
 
     unpack.info.isDedicated = dedicatedRequirements.requiresDedicatedAllocation;
 
@@ -184,7 +184,7 @@ void BufferVK::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDe
 
 inline void* BufferVK::Map(uint64_t offset, uint64_t size)
 {
-    CHECK(m_Device.GetLog(), m_Memory != nullptr, "The buffer does not support memory mapping.");
+    CHECK(&m_Device, m_Memory != nullptr, "The buffer does not support memory mapping.");
 
     m_MappedRangeOffset = offset;
     m_MappedRangeSize = size;

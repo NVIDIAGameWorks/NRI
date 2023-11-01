@@ -17,7 +17,7 @@ struct CommandQueueD3D11;
 
 struct DeviceD3D11 final : public DeviceBase
 {
-    DeviceD3D11(const Log& log, StdAllocator<uint8_t>& stdAllocator);
+    DeviceD3D11(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator);
     ~DeviceD3D11();
 
     inline const VersionedDevice& GetDevice() const

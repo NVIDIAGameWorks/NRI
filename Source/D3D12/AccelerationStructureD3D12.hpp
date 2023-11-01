@@ -10,9 +10,9 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma region [  RayTracing  ]
 
-static Result NRI_CALL CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, uint32_t physicalDeviceIndex, Descriptor*& descriptor)
+static Result NRI_CALL CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex, Descriptor*& descriptor)
 {
-    MaybeUnused(physicalDeviceIndex); // TODO: use it
+    MaybeUnused(nodeIndex); // TODO: use it
 
     return ((AccelerationStructureD3D12&)accelerationStructure).CreateDescriptor(descriptor);
 }
@@ -32,9 +32,9 @@ static uint64_t NRI_CALL GetAccelerationStructureBuildScratchBufferSize(const Ac
     return ((AccelerationStructureD3D12&)accelerationStructure).GetBuildScratchBufferSize();
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure, uint32_t physicalDeviceIndex)
+static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex)
 {
-    MaybeUnused(physicalDeviceIndex); // TODO: use it
+    MaybeUnused(nodeIndex); // TODO: use it
 
     return ((AccelerationStructureD3D12&)accelerationStructure).GetHandle();
 }
@@ -44,9 +44,9 @@ static void NRI_CALL SetAccelerationStructureDebugName(AccelerationStructure& ac
     ((AccelerationStructureD3D12&)accelerationStructure).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const AccelerationStructure& accelerationStructure, uint32_t physicalDeviceIndex)
+static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex)
 {
-    MaybeUnused(physicalDeviceIndex); // TODO: use it
+    MaybeUnused(nodeIndex); // TODO: use it
 
     return uint64_t((ID3D12Resource*)((AccelerationStructureD3D12&)accelerationStructure));
 }

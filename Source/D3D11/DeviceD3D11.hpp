@@ -22,9 +22,9 @@ static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQ
     return ((DeviceD3D11&)device).GetCommandQueue(commandQueueType, commandQueue);
 }
 
-static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t physicalDeviceMask, CommandAllocator*& commandAllocator)
+static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator)
 {
-    MaybeUnused(physicalDeviceMask);
+    MaybeUnused(nodeMask);
 
     DeviceD3D11& device = ((CommandQueueD3D11&)commandQueue).GetDevice();
     return device.CreateCommandAllocator(commandQueue, commandAllocator);
@@ -164,9 +164,9 @@ static void NRI_CALL DestroyFence(Fence& fence)
     device.DestroyFence(fence);
 }
 
-static Result NRI_CALL AllocateMemory(Device& device, uint32_t physicalDeviceMask, MemoryType memoryType, uint64_t size, Memory*& memory)
+static Result NRI_CALL AllocateMemory(Device& device, uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory)
 {
-    MaybeUnused(physicalDeviceMask); // TODO: use it
+    MaybeUnused(nodeMask);
 
     return ((DeviceD3D11&)device).AllocateMemory(memoryType, size, memory);
 }
@@ -281,7 +281,7 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& coreInterface) const
     else
         Core_CommandBuffer_PartiallyFillFunctionTableD3D11(coreInterface);
 
-    return ValidateFunctionTable(GetLog(), coreInterface);
+    return ValidateFunctionTable(coreInterface);
 }
 
 #pragma endregion
@@ -319,7 +319,7 @@ Result DeviceD3D11::FillFunctionTable(SwapChainInterface& swapChainInterface) co
 
     SwapChain_PartiallyFillFunctionTableD3D11(swapChainInterface);
 
-    return ValidateFunctionTable(GetLog(), swapChainInterface);
+    return ValidateFunctionTable(swapChainInterface);
 }
 
 #pragma endregion
@@ -376,7 +376,7 @@ Result DeviceD3D11::FillFunctionTable(WrapperD3D11Interface& wrapperD3D11Interfa
     wrapperD3D11Interface.CreateTextureD3D11 = ::CreateTexture;
     wrapperD3D11Interface.CreateBufferD3D11 = ::CreateBuffer;
 
-    return ValidateFunctionTable(GetLog(), wrapperD3D11Interface);
+    return ValidateFunctionTable(wrapperD3D11Interface);
 }
 
 #pragma endregion
@@ -401,7 +401,7 @@ Result DeviceD3D11::FillFunctionTable(HelperInterface& helperInterface) const
 
     Helper_CommandQueue_PartiallyFillFunctionTableD3D11(helperInterface);
 
-    return ValidateFunctionTable(GetLog(), helperInterface);
+    return ValidateFunctionTable(helperInterface);
 }
 
 #pragma endregion

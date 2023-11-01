@@ -25,10 +25,10 @@ static uint64_t NRI_CALL GetAccelerationStructureBuildScratchBufferSize(const Ac
     return ((AccelerationStructureVK&)accelerationStructure).GetBuildScratchBufferSize();
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure, uint32_t physicalDeviceIndex)
+static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex)
 {
     static_assert(sizeof(uint64_t) == sizeof(VkDeviceAddress), "type mismatch");
-    return (uint64_t)((AccelerationStructureVK&)accelerationStructure).GetNativeHandle(physicalDeviceIndex);
+    return (uint64_t)((AccelerationStructureVK&)accelerationStructure).GetNativeHandle(nodeIndex);
 }
 
 static void NRI_CALL SetAccelerationStructureDebugName(AccelerationStructure& accelerationStructure, const char* name)
@@ -36,14 +36,14 @@ static void NRI_CALL SetAccelerationStructureDebugName(AccelerationStructure& ac
     ((AccelerationStructureVK&)accelerationStructure).SetDebugName(name);
 }
 
-static Result NRI_CALL CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, uint32_t physicalDeviceIndex, Descriptor*& descriptor)
+static Result NRI_CALL CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex, Descriptor*& descriptor)
 {
-    return ((AccelerationStructureVK&)accelerationStructure).CreateDescriptor(physicalDeviceIndex, descriptor);
+    return ((AccelerationStructureVK&)accelerationStructure).CreateDescriptor(nodeIndex, descriptor);
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const AccelerationStructure& accelerationStructure, uint32_t physicalDeviceIndex)
+static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex)
 {
-    return uint64_t(((AccelerationStructureVK&)accelerationStructure).GetHandle(physicalDeviceIndex));
+    return uint64_t(((AccelerationStructureVK&)accelerationStructure).GetHandle(nodeIndex));
 }
 
 #pragma endregion

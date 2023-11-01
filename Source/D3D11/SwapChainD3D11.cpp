@@ -65,7 +65,7 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
 
     ComPtr<IDXGIFactory2> dxgiFactory2;
     HRESULT hr = m_Device.GetAdapter()->GetParent(IID_PPV_ARGS(&dxgiFactory2));
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "IDXGIObject::GetParent()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGIObject::GetParent()");
 
     m_IsTearingAllowed = false;
     ComPtr<IDXGIFactory5> dxgiFactory5;
@@ -100,31 +100,31 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
         desc.Scaling = DXGI_SCALING_STRETCH;
         hr = dxgiFactory2->CreateSwapChainForHwnd(m_Device.GetDevice().ptr, hwnd, &desc, nullptr, nullptr, &swapChain);
     }
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "IDXGIFactory2::CreateSwapChainForHwnd()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGIFactory2::CreateSwapChainForHwnd()");
 
     hr = dxgiFactory2->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "IDXGIFactory::MakeWindowAssociation()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGIFactory::MakeWindowAssociation()");
 
     hr = swapChain->QueryInterface(__uuidof(IDXGISwapChain4), (void**)&m_SwapChain.ptr);
     m_SwapChain.version = 4;
     if (FAILED(hr))
     {
-        REPORT_WARNING(m_Device.GetLog(), "QueryInterface(IDXGISwapChain4) - FAILED!");
+        REPORT_WARNING(&m_Device, "QueryInterface(IDXGISwapChain4) - FAILED!");
         hr = m_Device.GetDevice()->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&m_SwapChain.ptr);
         m_SwapChain.version = 3;
         if (FAILED(hr))
         {
-            REPORT_WARNING(m_Device.GetLog(), "QueryInterface(IDXGISwapChain3) - FAILED!");
+            REPORT_WARNING(&m_Device, "QueryInterface(IDXGISwapChain3) - FAILED!");
             hr = m_Device.GetDevice()->QueryInterface(__uuidof(IDXGISwapChain2), (void**)&m_SwapChain.ptr);
             m_SwapChain.version = 2;
             if (FAILED(hr))
             {
-                REPORT_WARNING(m_Device.GetLog(), "QueryInterface(IDXGISwapChain2) - FAILED!");
+                REPORT_WARNING(&m_Device, "QueryInterface(IDXGISwapChain2) - FAILED!");
                 hr = m_Device.GetDevice()->QueryInterface(__uuidof(IDXGISwapChain1), (void**)&m_SwapChain.ptr);
                 m_SwapChain.version = 1;
                 if (FAILED(hr))
                 {
-                    REPORT_WARNING(m_Device.GetLog(), "QueryInterface(IDXGISwapChain1) - FAILED!");
+                    REPORT_WARNING(&m_Device, "QueryInterface(IDXGISwapChain1) - FAILED!");
                     m_SwapChain.ptr = (IDXGISwapChain4*)swapChain.GetInterface();
                     m_SwapChain.version = 0;
                 }
@@ -144,17 +144,17 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
             hr = m_SwapChain->SetColorSpace1(colorSpace);
 
         if (FAILED(hr))
-           REPORT_WARNING(m_Device.GetLog(), "IDXGISwapChain3::SetColorSpace1() - FAILED!");
+           REPORT_WARNING(&m_Device, "IDXGISwapChain3::SetColorSpace1() - FAILED!");
     }
     else
-        REPORT_ERROR(m_Device.GetLog(), "IDXGISwapChain3::SetColorSpace1() is not supported by the OS!");
+        REPORT_ERROR(&m_Device, "IDXGISwapChain3::SetColorSpace1() is not supported by the OS!");
 
     if (m_SwapChain.version >= 1)
     {
         DXGI_RGBA color = {};
         hr = m_SwapChain->SetBackgroundColor(&color);
         if (FAILED(hr))
-            REPORT_WARNING(m_Device.GetLog(), "IDXGISwapChain1::SetBackgroundColor() - FAILED!");
+            REPORT_WARNING(&m_Device, "IDXGISwapChain1::SetBackgroundColor() - FAILED!");
     }
 
     if (swapChainDesc.display != nullptr)
@@ -162,15 +162,15 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
         ComPtr<IDXGIOutput> output;
         if (!m_Device.GetOutput(swapChainDesc.display, output))
         {
-            REPORT_ERROR(m_Device.GetLog(), "Failed to get IDXGIOutput for the specified display.");
+            REPORT_ERROR(&m_Device, "Failed to get IDXGIOutput for the specified display.");
             return Result::UNSUPPORTED;
         }
 
         hr = m_SwapChain->SetFullscreenState(TRUE, output);
-        RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "IDXGISwapChain::SetFullscreenState()");
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::SetFullscreenState()");
 
         hr = m_SwapChain->ResizeBuffers(desc.BufferCount, desc.Width, desc.Height, desc.Format, desc.Flags);
-        RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "IDXGISwapChain::ResizeBuffers()");
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::ResizeBuffers()");
 
         m_IsTearingAllowed = false;
         m_IsFullscreenEnabled = true;
@@ -198,7 +198,7 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
     {
         ComPtr<ID3D11Texture2D> textureNative;
         hr = m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&textureNative));
-        RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "IDXGISwapChain::GetBuffer()");
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::GetBuffer()");
 
         TextureD3D11Desc textureDesc = {};
         textureDesc.d3d11Resource = textureNative;
@@ -245,7 +245,7 @@ inline Result SwapChainD3D11::Present()
     UINT flags = (!m_SwapChainDesc.verticalSyncInterval && m_IsTearingAllowed) ? DXGI_PRESENT_ALLOW_TEARING : 0;
 
     HRESULT result = m_SwapChain->Present(m_SwapChainDesc.verticalSyncInterval, flags);
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), result, "IDXGISwapChain::Present()");
+    RETURN_ON_BAD_HRESULT(&m_Device, result, "IDXGISwapChain::Present()");
 
     return Result::SUCCESS;
 }
@@ -270,7 +270,7 @@ inline Result SwapChainD3D11::SetHdrMetadata(const HdrMetadata& hdrMetadata)
     data.MaxFrameAverageLightLevel = uint16_t(hdrMetadata.frameAverageLightLevelMax);
 
     HRESULT hr = m_SwapChain->SetHDRMetaData(DXGI_HDR_METADATA_TYPE_HDR10, sizeof(DXGI_HDR_METADATA_HDR10), &data);
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "IDXGISwapChain4::SetHDRMetaData()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain4::SetHDRMetaData()");
 
     return Result::SUCCESS;
 }

@@ -80,7 +80,7 @@ Result BufferD3D11::Create(const MemoryD3D11& memory)
         desc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
 
     HRESULT hr = m_Device.GetDevice()->CreateBuffer(&desc, nullptr, &m_Buffer);
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D11Device::CreateBuffer()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateBuffer()");
 
     uint32_t priority = memory.GetResidencyPriority(m_Desc.size);
     if (priority != 0)
@@ -155,7 +155,7 @@ void* BufferD3D11::Map(MapType mapType, uint64_t offset)
     HRESULT hr = m_Device.GetImmediateContext()->Map(m_Buffer, 0, map, 0, &mappedData);
     if (FAILED(hr))
     {
-        REPORT_ERROR(m_Device.GetLog(), "ID3D11DeviceContext::Map() - FAILED!");
+        REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
         return nullptr;
     }
 
@@ -181,7 +181,7 @@ void BufferD3D11::FinalizeQueries()
         m_Device.GetImmediateContext()->Unmap(m_Buffer, 0);
     }
     else
-        REPORT_ERROR(m_Device.GetLog(), "ID3D11DeviceContext::Map() - FAILED!");
+        REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
 
     m_QueryRange.pool = nullptr;
 }
@@ -197,7 +197,7 @@ void BufferD3D11::FinalizeReadback()
     HRESULT hr = m_Device.GetImmediateContext()->Map(*m_ReadbackTexture, 0, D3D11_MAP_READ, 0, &srcData);
     if (FAILED(hr))
     {
-        REPORT_ERROR(m_Device.GetLog(), "ID3D11DeviceContext::Map() - FAILED!");
+        REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
         return;
     }
 
@@ -206,7 +206,7 @@ void BufferD3D11::FinalizeReadback()
     if (FAILED(hr))
     {
         m_Device.GetImmediateContext()->Unmap(*m_ReadbackTexture, 0);
-        REPORT_ERROR(m_Device.GetLog(), "ID3D11DeviceContext::Map() - FAILED!");
+        REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
         return;
     }
 

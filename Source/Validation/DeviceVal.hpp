@@ -22,9 +22,9 @@ static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQ
     return ((DeviceVal&)device).GetCommandQueue(commandQueueType, commandQueue);
 }
 
-static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t physicalDeviceMask, CommandAllocator*& commandAllocator)
+static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator)
 {
-    return GetDeviceVal(commandQueue).CreateCommandAllocator(commandQueue, physicalDeviceMask, commandAllocator);
+    return GetDeviceVal(commandQueue).CreateCommandAllocator(commandQueue, nodeMask, commandAllocator);
 }
 
 static Result NRI_CALL CreateDescriptorPool(Device& device, const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool)
@@ -46,7 +46,7 @@ static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, De
 {
     DeviceVal& device = GetDeviceVal(*bufferViewDesc.buffer);
 
-    RETURN_ON_FAILURE(device.GetLog(), bufferViewDesc.buffer != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(&device, bufferViewDesc.buffer != nullptr, Result::INVALID_ARGUMENT,
         "Can't create a buffer view: the buffer is nullptr.");
 
     return device.CreateDescriptor(bufferViewDesc, bufferView);
@@ -56,7 +56,7 @@ static Result NRI_CALL CreateTexture1DView(const Texture1DViewDesc& textureViewD
 {
     DeviceVal& device = GetDeviceVal(*textureViewDesc.texture);
 
-    RETURN_ON_FAILURE(device.GetLog(), textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(&device, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT,
         "Can't create a texture view: the texture is nullptr.");
 
     return device.CreateDescriptor(textureViewDesc, textureView);
@@ -66,7 +66,7 @@ static Result NRI_CALL CreateTexture2DView(const Texture2DViewDesc& textureViewD
 {
     DeviceVal& device = GetDeviceVal(*textureViewDesc.texture);
 
-    RETURN_ON_FAILURE(device.GetLog(), textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(&device, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT,
         "Can't create a texture view: the texture is nullptr.");
 
     return device.CreateDescriptor(textureViewDesc, textureView);
@@ -76,7 +76,7 @@ static Result NRI_CALL CreateTexture3DView(const Texture3DViewDesc& textureViewD
 {
     DeviceVal& device = GetDeviceVal(*textureViewDesc.texture);
 
-    RETURN_ON_FAILURE(device.GetLog(), textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(&device, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT,
         "Can't create a texture view: the texture is nullptr.");
 
     return device.CreateDescriptor(textureViewDesc, textureView);
@@ -167,9 +167,9 @@ static void NRI_CALL DestroyFence(Fence& fence)
     GetDeviceVal(fence).DestroyFence(fence);
 }
 
-static Result NRI_CALL AllocateMemory(Device& device, uint32_t physicalDeviceMask, MemoryType memoryType, uint64_t size, Memory*& memory)
+static Result NRI_CALL AllocateMemory(Device& device, uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory)
 {
-    return ((DeviceVal&)device).AllocateMemory(physicalDeviceMask, memoryType, size, memory);
+    return ((DeviceVal&)device).AllocateMemory(nodeMask, memoryType, size, memory);
 }
 
 static Result NRI_CALL BindBufferMemory(Device& device, const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum)
@@ -275,7 +275,7 @@ Result DeviceVal::FillFunctionTable(CoreInterface& coreInterface) const
     Core_QueryPool_PartiallyFillFunctionTableVal(coreInterface);
     Core_Texture_PartiallyFillFunctionTableVal(coreInterface);
 
-    return ValidateFunctionTable(GetLog(), coreInterface);
+    return ValidateFunctionTable(coreInterface);
 }
 
 #pragma endregion
@@ -315,7 +315,7 @@ Result DeviceVal::FillFunctionTable(SwapChainInterface& swapChainInterface) cons
 
     SwapChain_PartiallyFillFunctionTableVal(swapChainInterface);
 
-    return ValidateFunctionTable(GetLog(), swapChainInterface);
+    return ValidateFunctionTable(swapChainInterface);
 }
 
 #pragma endregion
@@ -349,7 +349,7 @@ Result DeviceVal::FillFunctionTable(WrapperD3D11Interface& wrapperD3D11Interface
     wrapperD3D11Interface.CreateBufferD3D11 = ::CreateBufferD3D11;
     wrapperD3D11Interface.CreateTextureD3D11 = ::CreateTextureD3D11;
 
-    return ValidateFunctionTable(GetLog(), wrapperD3D11Interface);
+    return ValidateFunctionTable(wrapperD3D11Interface);
 #else
     MaybeUnused(wrapperD3D11Interface);
 
@@ -400,7 +400,7 @@ Result DeviceVal::FillFunctionTable(WrapperD3D12Interface& wrapperD3D12Interface
     wrapperD3D12Interface.CreateMemoryD3D12 = ::CreateMemoryD3D12;
     wrapperD3D12Interface.CreateAccelerationStructureD3D12 = ::CreateAccelerationStructureD3D12;
 
-    return ValidateFunctionTable(GetLog(), wrapperD3D12Interface);
+    return ValidateFunctionTable(wrapperD3D12Interface);
 
 #else
     MaybeUnused(wrapperD3D12Interface);
@@ -415,19 +415,19 @@ Result DeviceVal::FillFunctionTable(WrapperD3D12Interface& wrapperD3D12Interface
 
 #if NRI_USE_VULKAN
 
-static Result NRI_CALL CreateCommandQueueVK(Device& device, const CommandQueueVulkanDesc& commandQueueVulkanDesc, CommandQueue*& commandQueue)
+static Result NRI_CALL CreateCommandQueueVK(Device& device, const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue)
 {
-    return ((DeviceVal&)device).CreateCommandQueueVK(commandQueueVulkanDesc, commandQueue);
+    return ((DeviceVal&)device).CreateCommandQueueVK(commandQueueVKDesc, commandQueue);
 }
 
-static Result NRI_CALL CreateCommandAllocatorVK(Device& device, const CommandAllocatorVulkanDesc& commandAllocatorVulkanDesc, CommandAllocator*& commandAllocator)
+static Result NRI_CALL CreateCommandAllocatorVK(Device& device, const CommandAllocatorVKDesc& commandAllocatorVKDesc, CommandAllocator*& commandAllocator)
 {
-    return ((DeviceVal&)device).CreateCommandAllocatorVK(commandAllocatorVulkanDesc, commandAllocator);
+    return ((DeviceVal&)device).CreateCommandAllocatorVK(commandAllocatorVKDesc, commandAllocator);
 }
 
-static Result NRI_CALL CreateCommandBufferVK(Device& device, const CommandBufferVulkanDesc& commandBufferVulkanDesc, CommandBuffer*& commandBuffer)
+static Result NRI_CALL CreateCommandBufferVK(Device& device, const CommandBufferVKDesc& commandBufferVKDesc, CommandBuffer*& commandBuffer)
 {
-    return ((DeviceVal&)device).CreateCommandBufferVK(commandBufferVulkanDesc, commandBuffer);
+    return ((DeviceVal&)device).CreateCommandBufferVK(commandBufferVKDesc, commandBuffer);
 }
 
 static Result NRI_CALL CreateDescriptorPoolVK(Device& device, NRIVkDescriptorPool vkDescriptorPool, DescriptorPool*& descriptorPool)
@@ -435,19 +435,19 @@ static Result NRI_CALL CreateDescriptorPoolVK(Device& device, NRIVkDescriptorPoo
     return ((DeviceVal&)device).CreateDescriptorPoolVK(vkDescriptorPool, descriptorPool);
 }
 
-static Result NRI_CALL CreateBufferVK(Device& device, const BufferVulkanDesc& bufferVulkanDesc, Buffer*& buffer)
+static Result NRI_CALL CreateBufferVK(Device& device, const BufferVKDesc& bufferVKDesc, Buffer*& buffer)
 {
-    return ((DeviceVal&)device).CreateBufferVK(bufferVulkanDesc, buffer);
+    return ((DeviceVal&)device).CreateBufferVK(bufferVKDesc, buffer);
 }
 
-static Result NRI_CALL CreateTextureVK(Device& device, const TextureVulkanDesc& textureVulkanDesc, Texture*& texture)
+static Result NRI_CALL CreateTextureVK(Device& device, const TextureVKDesc& textureVKDesc, Texture*& texture)
 {
-    return ((DeviceVal&)device).CreateTextureVK(textureVulkanDesc, texture);
+    return ((DeviceVal&)device).CreateTextureVK(textureVKDesc, texture);
 }
 
-static Result NRI_CALL CreateMemoryVK(Device& device, const MemoryVulkanDesc& memoryVulkanDesc, Memory*& memory)
+static Result NRI_CALL CreateMemoryVK(Device& device, const MemoryVKDesc& memoryVKDesc, Memory*& memory)
 {
-    return ((DeviceVal&)device).CreateMemoryVK(memoryVulkanDesc, memory);
+    return ((DeviceVal&)device).CreateMemoryVK(memoryVKDesc, memory);
 }
 
 static Result NRI_CALL CreateGraphicsPipelineVK(Device& device, NRIVkPipeline vkPipeline, Pipeline*& pipeline)
@@ -460,12 +460,12 @@ static Result NRI_CALL CreateComputePipelineVK(Device& device, NRIVkPipeline vkP
     return ((DeviceVal&)device).CreateComputePipelineVK(vkPipeline, pipeline);
 }
 
-static Result NRI_CALL CreateQueryPoolVK(Device& device, const QueryPoolVulkanDesc& queryPoolVulkanDesc, QueryPool*& queryPool)
+static Result NRI_CALL CreateQueryPoolVK(Device& device, const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool)
 {
-    return ((DeviceVal&)device).CreateQueryPoolVK(queryPoolVulkanDesc, queryPool);
+    return ((DeviceVal&)device).CreateQueryPoolVK(queryPoolVKDesc, queryPool);
 }
 
-static Result NRI_CALL CreateAccelerationStructureVK(Device& device, const AccelerationStructureVulkanDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure)
+static Result NRI_CALL CreateAccelerationStructureVK(Device& device, const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure)
 {
     return ((DeviceVal&)device).CreateAccelerationStructureVK(accelerationStructureDesc, accelerationStructure);
 }
@@ -513,7 +513,7 @@ Result DeviceVal::FillFunctionTable(WrapperVKInterface& wrapperVKInterface) cons
     wrapperVKInterface.GetVkGetDeviceProcAddr = ::GetVkGetDeviceProcAddr;
     wrapperVKInterface.GetVkGetInstanceProcAddr = ::GetVkGetInstanceProcAddr;
 
-    return ValidateFunctionTable(GetLog(), wrapperVKInterface);
+    return ValidateFunctionTable(wrapperVKInterface);
 #else
     MaybeUnused(wrapperVKInterface);
 
@@ -562,7 +562,7 @@ Result DeviceVal::FillFunctionTable(RayTracingInterface& rayTracingInterface) co
     RayTracing_AccelerationStructure_PartiallyFillFunctionTableVal(rayTracingInterface);
     FillFunctionTablePipelineVal(rayTracingInterface);
 
-    return ValidateFunctionTable(GetLog(), rayTracingInterface);
+    return ValidateFunctionTable(rayTracingInterface);
 }
 
 #pragma endregion
@@ -578,7 +578,7 @@ Result DeviceVal::FillFunctionTable(MeshShaderInterface& meshShaderInterface) co
 
     MeshShader_CommandBuffer_PartiallyFillFunctionTableVal(meshShaderInterface);
 
-    return ValidateFunctionTable(GetLog(), meshShaderInterface);
+    return ValidateFunctionTable(meshShaderInterface);
 }
 
 #pragma endregion
@@ -603,7 +603,7 @@ Result DeviceVal::FillFunctionTable(HelperInterface& helperInterface) const
 
     Helper_CommandQueue_PartiallyFillFunctionTableVal(helperInterface);
 
-    return ValidateFunctionTable(GetLog(), helperInterface);
+    return ValidateFunctionTable(helperInterface);
 }
 
 #pragma endregion

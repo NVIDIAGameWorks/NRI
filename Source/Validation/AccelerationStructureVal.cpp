@@ -49,30 +49,30 @@ uint64_t AccelerationStructureVal::GetBuildScratchBufferSize() const
     return m_RayTracingAPI.GetAccelerationStructureBuildScratchBufferSize(m_ImplObject);
 }
 
-uint64_t AccelerationStructureVal::GetHandle(uint32_t physicalDeviceIndex) const
+uint64_t AccelerationStructureVal::GetHandle(uint32_t nodeIndex) const
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), IsBoundToMemory(), 0,
+    RETURN_ON_FAILURE(&m_Device, IsBoundToMemory(), 0,
         "Can't get AccelerationStructure handle: AccelerationStructure is not bound to memory.");
 
-    return m_RayTracingAPI.GetAccelerationStructureHandle(m_ImplObject, physicalDeviceIndex);
+    return m_RayTracingAPI.GetAccelerationStructureHandle(m_ImplObject, nodeIndex);
 }
 
-uint64_t AccelerationStructureVal::GetNativeObject(uint32_t physicalDeviceIndex) const
+uint64_t AccelerationStructureVal::GetNativeObject(uint32_t nodeIndex) const
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), IsBoundToMemory(), 0,
+    RETURN_ON_FAILURE(&m_Device, IsBoundToMemory(), 0,
         "Can't get AccelerationStructure native object: AccelerationStructure is not bound to memory.");
 
-    return m_RayTracingAPI.GetAccelerationStructureNativeObject(m_ImplObject, physicalDeviceIndex);
+    return m_RayTracingAPI.GetAccelerationStructureNativeObject(m_ImplObject, nodeIndex);
 }
 
-Result AccelerationStructureVal::CreateDescriptor(uint32_t physicalDeviceIndex, Descriptor*& descriptor)
+Result AccelerationStructureVal::CreateDescriptor(uint32_t nodeIndex, Descriptor*& descriptor)
 {
     Descriptor* descriptorImpl = nullptr;
-    const Result result = m_RayTracingAPI.CreateAccelerationStructureDescriptor(m_ImplObject, physicalDeviceIndex, descriptorImpl);
+    const Result result = m_RayTracingAPI.CreateAccelerationStructureDescriptor(m_ImplObject, nodeIndex, descriptorImpl);
 
     if (result == Result::SUCCESS)
     {
-        RETURN_ON_FAILURE(m_Device.GetLog(), descriptorImpl != nullptr, Result::FAILURE, "Unexpected error: 'descriptorImpl' is nullptr.");
+        RETURN_ON_FAILURE(&m_Device, descriptorImpl != nullptr, Result::FAILURE, "Unexpected error: 'descriptorImpl' is nullptr.");
         descriptor = (Descriptor*)Allocate<DescriptorVal>(m_Device.GetStdAllocator(), m_Device, *descriptorImpl, ResourceType::ACCELERATION_STRUCTURE);
     }
 

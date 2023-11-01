@@ -18,7 +18,7 @@ Result FenceD3D11::Create(uint64_t initialValue)
     if (m_Device.GetDevice().version >= 5)
     {
         HRESULT hr = m_Device.GetDevice()->CreateFence(initialValue, D3D11_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence));
-        RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D11Device5::CreateFence()");
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device5::CreateFence()");
     }
     else
     {
@@ -26,7 +26,7 @@ Result FenceD3D11::Create(uint64_t initialValue)
         queryDesc.Query = D3D11_QUERY_EVENT;
 
         HRESULT hr = m_Device.GetDevice()->CreateQuery(&queryDesc, &m_Query);
-        RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D11Device::CreateQuery()");
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateQuery()");
     }
 
     m_Value = initialValue;
@@ -53,7 +53,7 @@ inline void FenceD3D11::QueueSignal(CommandQueueD3D11& commandQueue, uint64_t va
     if (m_Fence)
     {
         HRESULT hr = m_Device.GetImmediateContext()->Signal(m_Fence, value);
-        CHECK(m_Device.GetLog(), hr == S_OK, "D3D11DeviceContext4::Signal() - FAILED!");
+        CHECK(&m_Device, hr == S_OK, "D3D11DeviceContext4::Signal() - FAILED!");
     }
     else
     {
@@ -69,7 +69,7 @@ inline void FenceD3D11::QueueWait(CommandQueueD3D11& commandQueue, uint64_t valu
     if (m_Fence)
     {
         HRESULT hr = m_Device.GetImmediateContext()->Wait(m_Fence, value);
-        CHECK(m_Device.GetLog(), hr == S_OK, "D3D11DeviceContext4::Wait() - FAILED!");
+        CHECK(&m_Device, hr == S_OK, "D3D11DeviceContext4::Wait() - FAILED!");
     }
 }
 
@@ -87,7 +87,7 @@ inline void FenceD3D11::Wait(uint64_t value)
         while (hr == S_FALSE)
             hr = m_Device.GetImmediateContext()->GetData(m_Query, nullptr, 0, 0);
 
-        CHECK(m_Device.GetLog(), hr == S_OK, "D3D11DeviceContext::GetData() - FAILED!");
+        CHECK(&m_Device, hr == S_OK, "D3D11DeviceContext::GetData() - FAILED!");
     }
 }
 

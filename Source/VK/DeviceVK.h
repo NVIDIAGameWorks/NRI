@@ -44,7 +44,7 @@ struct DeviceVK final : public DeviceBase
     { return m_CoreInterface; }
 
     inline uint32_t GetPhysicalDeviceGroupSize() const
-    { return m_Desc.physicalDeviceNum; }
+    { return m_Desc.nodeNum; }
 
     inline bool IsDescriptorIndexingExtSupported() const
     { return m_IsDescriptorIndexingSupported; }
@@ -61,10 +61,10 @@ struct DeviceVK final : public DeviceBase
     inline const Vector<uint32_t>& GetConcurrentSharingModeQueueIndices() const
     { return m_ConcurrentSharingModeQueueIndices; }
 
-    DeviceVK(const Log& log, const StdAllocator<uint8_t>& stdAllocator);
+    DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator);
     ~DeviceVK();
 
-    Result Create(const DeviceCreationVulkanDesc& deviceCreationVulkanDesc);
+    Result Create(const DeviceCreationVKDesc& deviceCreationVKDesc);
     Result Create(const DeviceCreationDesc& deviceCreationDesc);
     bool GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const;
     bool GetMemoryType(uint32_t index, MemoryTypeInfo& memoryTypeInfo) const;
@@ -77,7 +77,7 @@ struct DeviceVK final : public DeviceBase
 
     void SetDebugName(const char* name);        
     Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
-    Result CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t physicalDeviceMask, CommandAllocator*& commandAllocator);
+    Result CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator);
     Result CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool);
     Result CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer);
     Result CreateTexture(const TextureDesc& textureDesc, Texture*& texture);
@@ -95,17 +95,17 @@ struct DeviceVK final : public DeviceBase
     Result CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain);
     Result CreatePipeline(const RayTracingPipelineDesc& rayTracingPipelineDesc, Pipeline*& pipeline);
     Result CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
-    Result CreateCommandQueue(const CommandQueueVulkanDesc& commandQueueDesc, CommandQueue*& commandQueue);
-    Result CreateCommandAllocator(const CommandAllocatorVulkanDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator);
-    Result CreateCommandBuffer(const CommandBufferVulkanDesc& commandBufferDesc, CommandBuffer*& commandBuffer);
+    Result CreateCommandQueue(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
+    Result CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator);
+    Result CreateCommandBuffer(const CommandBufferVKDesc& commandBufferDesc, CommandBuffer*& commandBuffer);
     Result CreateDescriptorPool(NRIVkDescriptorPool vkDescriptorPool, DescriptorPool*& descriptorPool);
-    Result CreateBuffer(const BufferVulkanDesc& bufferDesc, Buffer*& buffer);
-    Result CreateTexture(const TextureVulkanDesc& textureVulkanDesc, Texture*& texture);
-    Result CreateMemory(const MemoryVulkanDesc& memoryVulkanDesc, Memory*& memory);
+    Result CreateBuffer(const BufferVKDesc& bufferDesc, Buffer*& buffer);
+    Result CreateTexture(const TextureVKDesc& textureVKDesc, Texture*& texture);
+    Result CreateMemory(const MemoryVKDesc& memoryVKDesc, Memory*& memory);
     Result CreateGraphicsPipeline(NRIVkPipeline vkPipeline, Pipeline*& pipeline);
     Result CreateComputePipeline(NRIVkPipeline vkPipeline, Pipeline*& pipeline);
-    Result CreateQueryPool(const QueryPoolVulkanDesc& queryPoolVulkanDesc, QueryPool*& queryPool);
-    Result CreateAccelerationStructure(const AccelerationStructureVulkanDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
+    Result CreateQueryPool(const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool);
+    Result CreateAccelerationStructure(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
     void DestroyCommandAllocator(CommandAllocator& commandAllocator);
     void DestroyDescriptorPool(DescriptorPool& descriptorPool);
     void DestroyBuffer(Buffer& buffer);
@@ -120,7 +120,7 @@ struct DeviceVK final : public DeviceBase
     void DestroyAccelerationStructure(AccelerationStructure& accelerationStructure);
     Result GetDisplays(Display** displays, uint32_t& displayNum);
     Result GetDisplaySize(Display& display, uint16_t& width, uint16_t& height);
-    Result AllocateMemory(uint32_t physicalDeviceMask, MemoryType memoryType, uint64_t size, Memory*& memory);
+    Result AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);

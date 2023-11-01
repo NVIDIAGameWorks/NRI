@@ -102,7 +102,7 @@ Result PipelineLayoutD3D11::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
 
         // Dynamic constant buffers
         if (set.dynamicConstantBufferNum && m_Device.GetDevice().version == 0)
-            REPORT_ERROR(m_Device.GetLog(), "Dynamic constant buffers with non-zero offsets require DX11.1+");
+            REPORT_ERROR(&m_Device, "Dynamic constant buffers with non-zero offsets require DX11.1+");
 
         for (uint32_t j = 0; j < set.dynamicConstantBufferNum; j++)
         {
@@ -142,8 +142,7 @@ Result PipelineLayoutD3D11::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
 
         desc.ByteWidth = Align(pushConstant.size, 16);
         HRESULT hr = m_Device.GetDevice()->CreateBuffer(&desc, nullptr, &cb.buffer);
-        if (FAILED(hr))
-            REPORT_ERROR(m_Device.GetLog(), "Can't create a constant buffer for push constants! ID3D11Device::CreateBuffer() - FAILED!");
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateBuffer()");
 
         m_ConstantBuffers.push_back(cb);
     }

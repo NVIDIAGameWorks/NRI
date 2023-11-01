@@ -36,14 +36,14 @@ struct CommandBufferVK
     ~CommandBufferVK();
 
     void Create(VkCommandPool commandPool, VkCommandBuffer commandBuffer, CommandQueueType type);
-    Result Create(const CommandBufferVulkanDesc& commandBufferDesc);
+    Result Create(const CommandBufferVKDesc& commandBufferDesc);
 
     //================================================================================================================
     // NRI
     //================================================================================================================
 
     void SetDebugName(const char* name);
-    Result Begin(const DescriptorPool* descriptorPool, uint32_t physicalDeviceIndex);
+    Result Begin(const DescriptorPool* descriptorPool, uint32_t nodeIndex);
     Result End();
 
     void SetPipeline(const Pipeline& pipeline);
@@ -79,11 +79,11 @@ struct CommandBufferVK
 
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);
 
-    void CopyBuffer(Buffer& dstBuffer, uint32_t dstPhysicalDeviceIndex, uint64_t dstOffset, const Buffer& srcBuffer,
-        uint32_t srcPhysicalDeviceIndex, uint64_t srcOffset, uint64_t size);
+    void CopyBuffer(Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer,
+        uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size);
 
-    void CopyTexture(Texture& dstTexture, uint32_t dstPhysicalDeviceIndex, const TextureRegionDesc* dstRegionDesc,
-        const Texture& srcTexture, uint32_t srcPhysicalDeviceIndex, const TextureRegionDesc* srcRegionDesc);
+    void CopyTexture(Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc,
+        const Texture& srcTexture, uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc);
 
     void UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer,
         const TextureDataLayoutDesc& srcDataLayoutDesc);
@@ -121,7 +121,7 @@ private:
     void FillAliasingImageBarriers(const AliasingBarrierDesc& aliasing, Barriers& barriers) const;
     void FillTransitionBufferBarriers(const TransitionBarrierDesc& transitions, Barriers& barriers) const;
     void FillTransitionImageBarriers(const TransitionBarrierDesc& transitions, Barriers& barriers) const;
-    void CopyWholeTexture(const TextureVK& dstTexture, uint32_t dstPhysicalDeviceIndex, const TextureVK& srcTexture, uint32_t srcPhysicalDeviceIndex);
+    void CopyWholeTexture(const TextureVK& dstTexture, uint32_t dstNodeIndex, const TextureVK& srcTexture, uint32_t srcNodeIndex);
 
 private:
     VkCommandBuffer m_Handle = VK_NULL_HANDLE;

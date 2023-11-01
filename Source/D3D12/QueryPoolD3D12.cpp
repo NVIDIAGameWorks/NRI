@@ -32,7 +32,7 @@ Result QueryPoolD3D12::Create(const QueryPoolDesc& queryPoolDesc)
     desc.NodeMask = NRI_TEMP_NODE_MASK;
 
     HRESULT hr = ((ID3D12Device*)m_Device)->CreateQueryHeap(&desc, IID_PPV_ARGS(&m_QueryHeap));
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D12Device::CreateQueryHeap()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateQueryHeap()");
 
     return Result::SUCCESS;
 }
@@ -57,7 +57,7 @@ Result QueryPoolD3D12::CreateReadbackBuffer(const QueryPoolDesc& queryPoolDesc)
     HRESULT hr = ((ID3D12Device*)m_Device)->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &resourceDesc,
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_ReadbackBuffer));
 
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D12Device::CreateCommittedResource()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateCommittedResource()");
 
     return Result::SUCCESS;
 }

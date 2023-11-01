@@ -26,8 +26,8 @@ struct FrameBufferVK
     inline DeviceVK& GetDevice() const
     { return m_Device; }
 
-    inline VkFramebuffer GetHandle(uint32_t physicalDeviceIndex) const
-    { return m_Handles[physicalDeviceIndex]; }
+    inline VkFramebuffer GetHandle(uint32_t nodeIndex) const
+    { return m_Handles[nodeIndex]; }
 
     inline VkRenderPass GetRenderPass(RenderPassBeginFlag renderPassBeginFlag) const
     { return (renderPassBeginFlag == RenderPassBeginFlag::SKIP_FRAME_BUFFER_CLEAR) ? m_RenderPass : m_RenderPassWithClear; }

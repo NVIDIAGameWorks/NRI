@@ -15,9 +15,9 @@ static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name)
     ((BufferD3D12&)buffer).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer, uint32_t physicalDeviceIndex)
+static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer, uint32_t nodeIndex)
 {
-    MaybeUnused(physicalDeviceIndex);
+    MaybeUnused(nodeIndex);
 
     return uint64_t((ID3D12Resource*)((BufferD3D12&)buffer));
 }

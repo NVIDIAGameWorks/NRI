@@ -171,7 +171,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
         break;
     };
 
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D11Device::CreateXxxView()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateXxxView()");
 
     m_IsIntegerFormat = formatInfo.isInteger;
     m_SubresourceInfo.Initialize(textureViewDesc.texture, textureViewDesc.mipOffset, textureViewDesc.mipNum, textureViewDesc.arrayOffset, textureViewDesc.arraySize);
@@ -350,7 +350,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
         break;
     };
 
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D11Device::CreateXxxView()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateXxxView()");
 
     m_IsIntegerFormat = formatInfo.isInteger;
     m_SubresourceInfo.Initialize(textureViewDesc.texture, textureViewDesc.mipOffset, textureViewDesc.mipNum, textureViewDesc.arrayOffset, textureViewDesc.arraySize);
@@ -415,7 +415,7 @@ Result DescriptorD3D11::Create(const Texture3DViewDesc& textureViewDesc)
         break;
     };
 
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D11Device::CreateXxxView()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateXxxView()");
 
     m_IsIntegerFormat = formatInfo.isInteger;
     m_SubresourceInfo.Initialize(textureViewDesc.texture, textureViewDesc.mipOffset, textureViewDesc.mipNum, textureViewDesc.sliceOffset, textureViewDesc.sliceNum);
@@ -437,7 +437,7 @@ Result DescriptorD3D11::Create(const BufferViewDesc& bufferViewDesc)
         format = Format::RGBA32_SFLOAT;
 
         if (bufferViewDesc.offset != 0 && m_Device.GetDevice().version == 0)
-            REPORT_ERROR(m_Device.GetLog(), "Constant buffers with non-zero offsets require 11.1+ feature level!");
+            REPORT_ERROR(&m_Device, "Constant buffers with non-zero offsets require 11.1+ feature level!");
     }
     else if (stride)
         format = Format::UNKNOWN;
@@ -488,7 +488,7 @@ Result DescriptorD3D11::Create(const BufferViewDesc& bufferViewDesc)
         break;
     };
 
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D11Device::CreateXxxView()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateXxxView()");
 
     m_IsIntegerFormat = formatInfo.isInteger;
     m_SubresourceInfo.Initialize(bufferViewDesc.buffer);
@@ -525,8 +525,7 @@ Result DescriptorD3D11::Create(const SamplerDesc& samplerDesc)
     }
 
     HRESULT hr = m_Device.GetDevice()->CreateSamplerState(&desc, (ID3D11SamplerState**)&m_Descriptor);
-    if (FAILED(hr))
-        REPORT_ERROR(m_Device.GetLog(), "ID3D11Device::CreateSamplerState() - FAILED!");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateSamplerState()");
 
     m_Type = DescriptorTypeDX11::SAMPLER;
 

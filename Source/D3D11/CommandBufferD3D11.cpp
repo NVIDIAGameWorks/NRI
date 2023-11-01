@@ -48,7 +48,7 @@ Result CommandBufferD3D11::Create(ID3D11DeviceContext* precreatedContext)
     if (!precreatedContext)
     {
         hr = m_Device.GetDevice()->CreateDeferredContext(0, &context);
-        RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D11Device::CreateDeferredContext()");
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateDeferredContext()");
     }
 
     // Release inherited interfaces from the immediate context
@@ -60,22 +60,22 @@ Result CommandBufferD3D11::Create(ID3D11DeviceContext* precreatedContext)
     m_DeferredContext.ext = m_Device.GetDevice().ext;
     if (FAILED(hr))
     {
-        REPORT_WARNING(m_Device.GetLog(), "QueryInterface(ID3D11DeviceContext4) - FAILED!");
+        REPORT_WARNING(&m_Device, "QueryInterface(ID3D11DeviceContext4) - FAILED!");
         hr = context->QueryInterface(__uuidof(ID3D11DeviceContext3), (void**)&m_DeferredContext.ptr);
         m_DeferredContext.version = 3;
         if (FAILED(hr))
         {
-            REPORT_WARNING(m_Device.GetLog(), "QueryInterface(ID3D11DeviceContext3) - FAILED!");
+            REPORT_WARNING(&m_Device, "QueryInterface(ID3D11DeviceContext3) - FAILED!");
             hr = context->QueryInterface(__uuidof(ID3D11DeviceContext2), (void**)&m_DeferredContext.ptr);
             m_DeferredContext.version = 2;
             if (FAILED(hr))
             {
-                REPORT_WARNING(m_Device.GetLog(), "QueryInterface(ID3D11DeviceContext2) - FAILED!");
+                REPORT_WARNING(&m_Device, "QueryInterface(ID3D11DeviceContext2) - FAILED!");
                 hr = context->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&m_DeferredContext.ptr);
                 m_DeferredContext.version = 1;
                 if (FAILED(hr))
                 {
-                    REPORT_WARNING(m_Device.GetLog(), "QueryInterface(ID3D11DeviceContext1) - FAILED!");
+                    REPORT_WARNING(&m_Device, "QueryInterface(ID3D11DeviceContext1) - FAILED!");
                     m_DeferredContext.ptr = (ID3D11DeviceContext4*)context.GetInterface();
                     m_DeferredContext.version = 0;
                 }
@@ -84,7 +84,7 @@ Result CommandBufferD3D11::Create(ID3D11DeviceContext* precreatedContext)
     }
 
     hr = m_DeferredContext->QueryInterface(IID_PPV_ARGS(&m_Annotation));
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "QueryInterface(ID3DUserDefinedAnnotation)");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "QueryInterface(ID3DUserDefinedAnnotation)");
 
     m_DeferredContext.ext->BeginUAVOverlap(m_DeferredContext);
 
@@ -131,7 +131,7 @@ Result CommandBufferD3D11::Begin(const DescriptorPool* descriptorPool)
 Result CommandBufferD3D11::End()
 {
     HRESULT hr = m_DeferredContext->FinishCommandList(FALSE, &m_CommandList);
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D11DeviceContext::FinishCommandList()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11DeviceContext::FinishCommandList()");
 
     m_BindingState.UnbindAndReset(m_DeferredContext);
 
@@ -402,7 +402,7 @@ void CommandBufferD3D11::UploadBufferToTexture(Texture& dstTexture, const Textur
 
 void CommandBufferD3D11::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc)
 {
-    CHECK(m_Device.GetLog(), dstDataLayoutDesc.offset == 0, "D3D11 implementation currently supports copying a texture region to a buffer only with offset = 0!");
+    CHECK(&m_Device, dstDataLayoutDesc.offset == 0, "D3D11 implementation currently supports copying a texture region to a buffer only with offset = 0!");
 
     BufferD3D11& dst = (BufferD3D11&)dstBuffer;
     TextureD3D11& src = (TextureD3D11&)srcTexture;

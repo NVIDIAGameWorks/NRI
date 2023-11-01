@@ -79,15 +79,15 @@ Result TextureVK::Create(const TextureDesc& textureDesc)
 
     const auto& vk = m_Device.GetDispatchTable();
 
-    uint32_t physicalDeviceMask = (textureDesc.physicalDeviceMask == WHOLE_DEVICE_GROUP) ? 0xff : textureDesc.physicalDeviceMask;
+    uint32_t nodeMask = GetNodeMask(textureDesc.nodeMask);
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
         {
             const VkResult result = vk.CreateImage(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handles[i]);
 
-            RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+            RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
                 "Can't create a texture: vkCreateImage returned %d.", (int32_t)result);
         }
     }
@@ -95,7 +95,7 @@ Result TextureVK::Create(const TextureDesc& textureDesc)
     return Result::SUCCESS;
 }
 
-Result TextureVK::Create(const TextureVulkanDesc& textureDesc)
+Result TextureVK::Create(const TextureVKDesc& textureDesc)
 {
     m_OwnsNativeObjects = false;
     m_Extent = { textureDesc.size[0], textureDesc.size[1], textureDesc.size[2] };
@@ -107,11 +107,11 @@ Result TextureVK::Create(const TextureVulkanDesc& textureDesc)
     m_SampleCount = (VkSampleCountFlagBits)textureDesc.sampleNum;
 
     const VkImage handle = (VkImage)textureDesc.vkImage;
-    const uint32_t physicalDeviceMask = GetPhysicalDeviceGroupMask(textureDesc.physicalDeviceMask);
+    const uint32_t nodeMask = GetNodeMask(textureDesc.nodeMask);
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
             m_Handles[i] = handle;
     }
 
@@ -165,7 +165,7 @@ void TextureVK::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryD
 
     MemoryTypeUnpack unpack = {};
     const bool found = m_Device.GetMemoryType(memoryLocation, requirements.memoryRequirements.memoryTypeBits, unpack.info);
-    CHECK(m_Device.GetLog(), found, "Can't find suitable memory type: %d", requirements.memoryRequirements.memoryTypeBits);
+    CHECK(&m_Device, found, "Can't find suitable memory type: %d", requirements.memoryRequirements.memoryTypeBits);
 
     unpack.info.isDedicated = dedicatedRequirements.requiresDedicatedAllocation;
 

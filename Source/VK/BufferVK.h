@@ -22,11 +22,11 @@ struct BufferVK
         m_Device(device)
     {}
 
-    inline VkBuffer GetHandle(uint32_t physicalDeviceIndex) const
-    { return m_Handles[physicalDeviceIndex]; }
+    inline VkBuffer GetHandle(uint32_t nodeIndex) const
+    { return m_Handles[nodeIndex]; }
 
-    inline VkDeviceAddress GetDeviceAddress(uint32_t physicalDeviceIndex) const
-    { return m_DeviceAddresses[physicalDeviceIndex]; }
+    inline VkDeviceAddress GetDeviceAddress(uint32_t nodeIndex) const
+    { return m_DeviceAddresses[nodeIndex]; }
 
     inline DeviceVK& GetDevice() const
     { return m_Device; }
@@ -37,7 +37,7 @@ struct BufferVK
     ~BufferVK();
 
     Result Create(const BufferDesc& bufferDesc);
-    Result Create(const BufferVulkanDesc& bufferDesc);
+    Result Create(const BufferVKDesc& bufferDesc);
     void SetHostMemory(MemoryVK& memory, uint64_t memoryOffset);
     void ReadDeviceAddress();
 
@@ -62,11 +62,11 @@ private:
     bool m_OwnsNativeObjects = false;
 };
 
-inline VkDeviceAddress GetBufferDeviceAddress(const Buffer* buffer, uint32_t physicalDeviceIndex)
+inline VkDeviceAddress GetBufferDeviceAddress(const Buffer* buffer, uint32_t nodeIndex)
 {
     const BufferVK* bufferVK = (const BufferVK*)buffer;
 
-    return bufferVK != nullptr ? bufferVK->GetDeviceAddress(physicalDeviceIndex) : 0;
+    return bufferVK != nullptr ? bufferVK->GetDeviceAddress(nodeIndex) : 0;
 }
 
 }

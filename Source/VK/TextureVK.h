@@ -21,8 +21,8 @@ struct TextureVK
         m_Device(device)
     {}
 
-    inline VkImage GetHandle(uint32_t physicalDeviceIndex) const
-    { return m_Handles[physicalDeviceIndex]; }
+    inline VkImage GetHandle(uint32_t nodeIndex) const
+    { return m_Handles[nodeIndex]; }
 
     inline DeviceVK& GetDevice() const
     { return m_Device; }
@@ -71,7 +71,7 @@ struct TextureVK
 
     void Create(VkImage handle, VkImageAspectFlags aspectFlags, VkImageType imageType, const VkExtent3D& extent, Format format);
     Result Create(const TextureDesc& textureDesc);
-    Result Create(const TextureVulkanDesc& textureDesc);
+    Result Create(const TextureVKDesc& textureDesc);
 
     //================================================================================================================
     // NRI

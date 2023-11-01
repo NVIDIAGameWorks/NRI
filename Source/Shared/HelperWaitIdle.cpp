@@ -22,9 +22,9 @@ Result HelperWaitIdle::WaitIdle()
     if (!m_Fence)
         return Result::FAILURE;
 
-    const uint32_t physicalDeviceNum = NRI.GetDeviceDesc(m_Device).physicalDeviceNum;
+    const uint32_t nodeNum = NRI.GetDeviceDesc(m_Device).nodeNum;
 
-    for (uint32_t i = 0; i < physicalDeviceNum; i++)
+    for (uint32_t i = 0; i < nodeNum; i++)
     {
         NRI.QueueSignal(m_CommandQueue, *m_Fence, 1);
         NRI.Wait(*m_Fence, 1);

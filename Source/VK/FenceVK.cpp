@@ -29,7 +29,7 @@ Result FenceVK::Create(uint64_t initialValue)
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.CreateSemaphore((VkDevice)m_Device, &createInfo, m_Device.GetAllocationCallbacks(), &m_Fence);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a semaphore: vk.CreateSemaphore returned %d.", (int32_t)result);
 
     return Result::SUCCESS;

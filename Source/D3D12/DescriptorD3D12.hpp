@@ -15,9 +15,9 @@ static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* 
     ((DescriptorD3D12&)descriptor).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor, uint32_t physicalDeviceIndex)
+static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor, uint32_t nodeIndex)
 {
-    MaybeUnused(physicalDeviceIndex);
+    MaybeUnused(nodeIndex);
 
     return uint64_t( ((DescriptorD3D12&)descriptor).GetPointerCPU() );
 }

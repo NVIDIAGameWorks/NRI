@@ -43,15 +43,15 @@ Result QueryPoolVK::Create(const QueryPoolDesc& queryPoolDesc)
 
     const auto& vk = m_Device.GetDispatchTable();
 
-    const uint32_t physicalDeviceMask = (queryPoolDesc.physicalDeviceMask == WHOLE_DEVICE_GROUP) ? 0xff : queryPoolDesc.physicalDeviceMask;
+    const uint32_t nodeMask = GetNodeMask(queryPoolDesc.nodeMask);
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
         {
             const VkResult result = vk.CreateQueryPool(m_Device, &poolInfo, m_Device.GetAllocationCallbacks(), &m_Handles[i]);
 
-            RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+            RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
                 "Can't create a query pool: vkCreateQueryPool returned %d.", (int32_t)result);
         }
     }
@@ -61,17 +61,17 @@ Result QueryPoolVK::Create(const QueryPoolDesc& queryPoolDesc)
     return Result::SUCCESS;
 }
 
-Result QueryPoolVK::Create(const QueryPoolVulkanDesc& queryPoolDesc)
+Result QueryPoolVK::Create(const QueryPoolVKDesc& queryPoolDesc)
 {
     m_OwnsNativeObjects = false;
     m_Type = (VkQueryType)queryPoolDesc.vkQueryType;
 
     const VkQueryPool handle = (VkQueryPool)queryPoolDesc.vkQueryPool;
-    const uint32_t physicalDeviceMask = GetPhysicalDeviceGroupMask(queryPoolDesc.physicalDeviceMask);
+    const uint32_t nodeMask = GetNodeMask(queryPoolDesc.nodeMask);
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
             m_Handles[i] = handle;
     }
 
@@ -106,7 +106,7 @@ inline uint32_t QueryPoolVK::GetQuerySize() const
     case VK_QUERY_TYPE_PIPELINE_STATISTICS:
         return highestBitInPipelineStatsBits * sizeof(uint64_t);
     default:
-        CHECK(m_Device.GetLog(), false, "unexpected query type in GetQuerySize: %u", (uint32_t)m_Type);
+        CHECK(&m_Device, false, "unexpected query type in GetQuerySize: %u", (uint32_t)m_Type);
         return 0;
     }
 }

@@ -87,7 +87,7 @@ NRI_STRUCT(SwapChainDesc)
     uint16_t textureNum;
     NRI_NAME(SwapChainFormat) format;
     uint32_t verticalSyncInterval;
-    uint32_t physicalDeviceIndex;
+    uint32_t nodeIndex;
     NRI_NAME(Display)* display;
 };
 

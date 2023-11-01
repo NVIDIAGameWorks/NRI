@@ -14,7 +14,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-Result CommandQueueVK::Create(const CommandQueueVulkanDesc& commandQueueDesc)
+Result CommandQueueVK::Create(const CommandQueueVKDesc& commandQueueDesc)
 {
     m_Handle = (VkQueue)commandQueueDesc.vkQueue;
     m_FamilyIndex = commandQueueDesc.familyIndex;
@@ -57,7 +57,7 @@ inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc)
     if (m_Device.GetPhysicalDeviceGroupSize() > 1)
     {
         for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++)
-            commandBufferDeviceMasks[i] = 1u << queueSubmitDesc.physicalDeviceIndex;
+            commandBufferDeviceMasks[i] = 1u << queueSubmitDesc.nodeIndex;
 
         deviceGroupInfo = {
             VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,
@@ -76,7 +76,7 @@ inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc)
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.QueueSubmit(m_Handle, 1, &submission, VK_NULL_HANDLE);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(),
         "Can't submit work to a command queue: vkQueueSubmit returned %d.", (int32_t)result);
 }
 
@@ -101,7 +101,7 @@ inline Result CommandQueueVK::WaitForIdle()
 
     VkResult result = vk.QueueWaitIdle(m_Handle);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't wait for idle: vkQueueWaitIdle returned %d.", (int32_t)result);
 
     return Result::SUCCESS;

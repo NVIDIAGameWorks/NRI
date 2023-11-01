@@ -48,7 +48,7 @@ constexpr uint32_t DESCRIPTORS_BATCH_SIZE = 1024;
 
 struct DeviceD3D12 final : public DeviceBase
 {
-    DeviceD3D12(const Log& log, StdAllocator<uint8_t>& stdAllocator);
+    DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator);
     ~DeviceD3D12();
 
     inline operator ID3D12Device*() const

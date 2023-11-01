@@ -47,7 +47,7 @@ void CommandBufferVK::Create(VkCommandPool commandPool, VkCommandBuffer commandB
     m_Type = type;
 }
 
-Result CommandBufferVK::Create(const CommandBufferVulkanDesc& commandBufferDesc)
+Result CommandBufferVK::Create(const CommandBufferVKDesc& commandBufferDesc)
 {
     m_CommandPool = VK_NULL_HANDLE;
     m_Handle = (VkCommandBuffer)commandBufferDesc.vkCommandBuffer;
@@ -65,11 +65,11 @@ inline void CommandBufferVK::SetDebugName(const char* name)
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)m_Handle, name);
 }
 
-inline Result CommandBufferVK::Begin(const DescriptorPool* descriptorPool, uint32_t physicalDeviceIndex)
+inline Result CommandBufferVK::Begin(const DescriptorPool* descriptorPool, uint32_t nodeIndex)
 {
     MaybeUnused(descriptorPool);
 
-    m_PhysicalDeviceIndex = physicalDeviceIndex;
+    m_PhysicalDeviceIndex = nodeIndex;
 
     VkCommandBufferBeginInfo info = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -84,7 +84,7 @@ inline Result CommandBufferVK::Begin(const DescriptorPool* descriptorPool, uint3
         deviceGroupInfo = {
             VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO,
             nullptr,
-            1u << physicalDeviceIndex
+            1u << nodeIndex
         };
 
         info.pNext = &deviceGroupInfo;
@@ -93,7 +93,7 @@ inline Result CommandBufferVK::Begin(const DescriptorPool* descriptorPool, uint3
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.BeginCommandBuffer(m_Handle, &info);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't begin a command buffer: vkBeginCommandBuffer returned %d.", (int32_t)result);
 
     if (m_Type == CommandQueueType::GRAPHICS)
@@ -113,7 +113,7 @@ inline Result CommandBufferVK::End()
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.EndCommandBuffer(m_Handle);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't end a command buffer: vkEndCommandBuffer returned %d.", (int32_t)result);
 
     return Result::SUCCESS;
@@ -160,7 +160,7 @@ inline void CommandBufferVK::SetSamplePositions(const SamplePosition* positions,
     MaybeUnused(positions);
     MaybeUnused(positionNum);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), false, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, false, ReturnVoid(),
         "CommandBufferVK::SetSamplePositions() is not implemented.");
 }
 
@@ -376,8 +376,8 @@ inline void CommandBufferVK::DrawIndexedIndirect(const Buffer& buffer, uint64_t 
     vk.CmdDrawIndexedIndirect(m_Handle, bufferHandle, offset, drawNum, (uint32_t)stride);
 }
 
-inline void CommandBufferVK::CopyBuffer(Buffer& dstBuffer, uint32_t dstPhysicalDeviceIndex, uint64_t dstOffset, const Buffer& srcBuffer,
-    uint32_t srcPhysicalDeviceIndex, uint64_t srcOffset, uint64_t size)
+inline void CommandBufferVK::CopyBuffer(Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer,
+    uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size)
 {
     const BufferVK& srcBufferImpl = (const BufferVK&)srcBuffer;
     const BufferVK& dstBufferImpl = (const BufferVK&)dstBuffer;
@@ -389,18 +389,18 @@ inline void CommandBufferVK::CopyBuffer(Buffer& dstBuffer, uint32_t dstPhysicalD
     };
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyBuffer(m_Handle, srcBufferImpl.GetHandle(srcPhysicalDeviceIndex), dstBufferImpl.GetHandle(dstPhysicalDeviceIndex), 1, &region);
+    vk.CmdCopyBuffer(m_Handle, srcBufferImpl.GetHandle(srcNodeIndex), dstBufferImpl.GetHandle(dstNodeIndex), 1, &region);
 }
 
-inline void CommandBufferVK::CopyTexture(Texture& dstTexture, uint32_t dstPhysicalDeviceIndex, const TextureRegionDesc* dstRegionDesc,
-    const Texture& srcTexture, uint32_t srcPhysicalDeviceIndex, const TextureRegionDesc* srcRegionDesc)
+inline void CommandBufferVK::CopyTexture(Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc,
+    const Texture& srcTexture, uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc)
 {
     const TextureVK& srcTextureImpl = (const TextureVK&)srcTexture;
     const TextureVK& dstTextureImpl = (const TextureVK&)dstTexture;
 
     if (srcRegionDesc == nullptr && dstRegionDesc == nullptr)
     {
-        CopyWholeTexture(dstTextureImpl, dstPhysicalDeviceIndex, srcTextureImpl, srcPhysicalDeviceIndex);
+        CopyWholeTexture(dstTextureImpl, dstNodeIndex, srcTextureImpl, srcNodeIndex);
         return;
     }
 
@@ -468,8 +468,8 @@ inline void CommandBufferVK::CopyTexture(Texture& dstTexture, uint32_t dstPhysic
     }
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyImage(m_Handle, srcTextureImpl.GetHandle(dstPhysicalDeviceIndex), VK_IMAGE_LAYOUT_GENERAL,
-        dstTextureImpl.GetHandle(srcPhysicalDeviceIndex), VK_IMAGE_LAYOUT_GENERAL, 1, &region);
+    vk.CmdCopyImage(m_Handle, srcTextureImpl.GetHandle(dstNodeIndex), VK_IMAGE_LAYOUT_GENERAL,
+        dstTextureImpl.GetHandle(srcNodeIndex), VK_IMAGE_LAYOUT_GENERAL, 1, &region);
 }
 
 inline void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc)
@@ -765,7 +765,7 @@ inline void CommandBufferVK::FillTransitionImageBarriers(const TransitionBarrier
     }
 }
 
-inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, uint32_t dstPhysicalDeviceIndex, const TextureVK& srcTexture, uint32_t srcPhysicalDeviceIndex)
+inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, uint32_t dstNodeIndex, const TextureVK& srcTexture, uint32_t srcNodeIndex)
 {
     VkImageCopy* regions = STACK_ALLOC(VkImageCopy, dstTexture.GetMipNum());
 
@@ -792,8 +792,8 @@ inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, uint3
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdCopyImage(m_Handle,
-        srcTexture.GetHandle(srcPhysicalDeviceIndex), VK_IMAGE_LAYOUT_GENERAL,
-        dstTexture.GetHandle(dstPhysicalDeviceIndex), VK_IMAGE_LAYOUT_GENERAL,
+        srcTexture.GetHandle(srcNodeIndex), VK_IMAGE_LAYOUT_GENERAL,
+        dstTexture.GetHandle(dstNodeIndex), VK_IMAGE_LAYOUT_GENERAL,
         dstTexture.GetMipNum(), regions);
 }
 

@@ -49,7 +49,7 @@ bool DescriptorPoolVal::CheckDescriptorRange(const DescriptorRangeDesc& rangeDes
 
     if (descriptorNum > rangeDesc.descriptorNum)
     {
-        REPORT_ERROR(m_Device.GetLog(), "variableDescriptorNum (%u) is greater than DescriptorRangeDesc::descriptorNum (%u).",
+        REPORT_ERROR(&m_Device, "variableDescriptorNum (%u) is greater than DescriptorRangeDesc::descriptorNum (%u).",
             variableDescriptorNum, rangeDesc.descriptorNum);
 
         return false;
@@ -76,7 +76,7 @@ bool DescriptorPoolVal::CheckDescriptorRange(const DescriptorRangeDesc& rangeDes
     case DescriptorType::ACCELERATION_STRUCTURE:
         return m_AccelerationStructureNum + descriptorNum <= m_Desc.accelerationStructureMaxNum;
     default:
-        REPORT_ERROR(m_Device.GetLog(), "Unknown descriptor range type: %u", (uint32_t)rangeDesc.descriptorType);
+        REPORT_ERROR(&m_Device, "Unknown descriptor range type: %u", (uint32_t)rangeDesc.descriptorType);
         return false;
     }
 }
@@ -115,26 +115,26 @@ void DescriptorPoolVal::IncrementDescriptorNum(const DescriptorRangeDesc& rangeD
         m_AccelerationStructureNum += descriptorNum;
         return;
     default:
-        REPORT_ERROR(m_Device.GetLog(), "Unknown descriptor range type: %u", (uint32_t)rangeDesc.descriptorType);
+        REPORT_ERROR(&m_Device, "Unknown descriptor range type: %u", (uint32_t)rangeDesc.descriptorType);
         return;
     }
 }
 
 Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets,
-    uint32_t instanceNum, uint32_t physicalDeviceMask, uint32_t variableDescriptorNum)
+    uint32_t instanceNum, uint32_t nodeMask, uint32_t variableDescriptorNum)
 {
     const PipelineLayoutVal& pipelineLayoutVal = (const PipelineLayoutVal&)pipelineLayout;
     const PipelineLayoutDesc& pipelineLayoutDesc = pipelineLayoutVal.GetPipelineLayoutDesc();
 
     if (!m_SkipValidation)
     {
-        RETURN_ON_FAILURE(m_Device.GetLog(), instanceNum != 0, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(&m_Device, instanceNum != 0, Result::INVALID_ARGUMENT,
             "Can't allocate DescriptorSet: 'instanceNum' is 0.");
 
-        RETURN_ON_FAILURE(m_Device.GetLog(), m_DescriptorSetNum + instanceNum <= m_Desc.descriptorSetMaxNum, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(&m_Device, m_DescriptorSetNum + instanceNum <= m_Desc.descriptorSetMaxNum, Result::INVALID_ARGUMENT,
             "Can't allocate DescriptorSet: the maximum number of descriptor sets exceeded.");
 
-        RETURN_ON_FAILURE(m_Device.GetLog(), setIndexInPipelineLayout < pipelineLayoutDesc.descriptorSetNum, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(&m_Device, setIndexInPipelineLayout < pipelineLayoutDesc.descriptorSetNum, Result::INVALID_ARGUMENT,
             "Can't allocate DescriptorSet: 'setIndexInPipelineLayout' is invalid.");
 
         const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[setIndexInPipelineLayout];
@@ -144,20 +144,20 @@ Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineL
             const DescriptorRangeDesc& rangeDesc = descriptorSetDesc.ranges[i];
             bool enoughDescriptors = CheckDescriptorRange(rangeDesc, variableDescriptorNum);
 
-            RETURN_ON_FAILURE(m_Device.GetLog(), enoughDescriptors, Result::INVALID_ARGUMENT,
+            RETURN_ON_FAILURE(&m_Device, enoughDescriptors, Result::INVALID_ARGUMENT,
                 "Can't allocate DescriptorSet: the maximum number of descriptors exceeded ('%s').", GetDescriptorTypeName(rangeDesc.descriptorType));
         }
 
         bool enoughDescriptors = m_DynamicConstantBufferNum + descriptorSetDesc.dynamicConstantBufferNum <= m_Desc.dynamicConstantBufferMaxNum;
 
-        RETURN_ON_FAILURE(m_Device.GetLog(), enoughDescriptors, Result::INVALID_ARGUMENT,
+        RETURN_ON_FAILURE(&m_Device, enoughDescriptors, Result::INVALID_ARGUMENT,
             "Can't allocate DescriptorSet: the maximum number of descriptors exceeded ('DYNAMIC_CONSTANT_BUFFER').");
     }
 
     PipelineLayout* pipelineLayoutImpl = NRI_GET_IMPL_REF(PipelineLayout, &pipelineLayout);
 
     Result result = m_CoreAPI.AllocateDescriptorSets(m_ImplObject, *pipelineLayoutImpl, setIndexInPipelineLayout, descriptorSets, instanceNum,
-        physicalDeviceMask, variableDescriptorNum);
+        nodeMask, variableDescriptorNum);
 
     if (result != Result::SUCCESS)
         return result;

@@ -42,24 +42,24 @@ TextureVal::TextureVal(DeviceVal& device, Texture& texture, const TextureD3D12De
 }
 #endif
 
-TextureVal::TextureVal(DeviceVal& device, Texture& texture, const TextureVulkanDesc& textureVulkanDesc) :
+TextureVal::TextureVal(DeviceVal& device, Texture& texture, const TextureVKDesc& textureVKDesc) :
     DeviceObjectVal(device, texture)
 {
     m_TextureDesc = {};
-    m_TextureDesc.type = GetTextureTypeVK(textureVulkanDesc.vkImageType);
-    m_TextureDesc.format = nriConvertVKFormatToNRI(textureVulkanDesc.vkFormat);
+    m_TextureDesc.type = GetTextureTypeVK(textureVKDesc.vkImageType);
+    m_TextureDesc.format = nriConvertVKFormatToNRI(textureVKDesc.vkFormat);
 
     static_assert(sizeof(TextureUsageBits) == sizeof(uint16_t), "Unexpected TextureUsageBits sizeof");
     m_TextureDesc.usageMask = (TextureUsageBits)0xffff;
 
-    m_TextureDesc.size[0] = textureVulkanDesc.size[0];
-    m_TextureDesc.size[1] = textureVulkanDesc.size[1];
-    m_TextureDesc.size[2] = textureVulkanDesc.size[2];
+    m_TextureDesc.size[0] = textureVKDesc.size[0];
+    m_TextureDesc.size[1] = textureVKDesc.size[1];
+    m_TextureDesc.size[2] = textureVKDesc.size[2];
 
-    m_TextureDesc.mipNum = textureVulkanDesc.mipNum;
-    m_TextureDesc.arraySize = textureVulkanDesc.arraySize;
-    m_TextureDesc.sampleNum = textureVulkanDesc.sampleNum;
-    m_TextureDesc.physicalDeviceMask = textureVulkanDesc.physicalDeviceMask;
+    m_TextureDesc.mipNum = textureVKDesc.mipNum;
+    m_TextureDesc.arraySize = textureVKDesc.arraySize;
+    m_TextureDesc.sampleNum = textureVKDesc.sampleNum;
+    m_TextureDesc.nodeMask = textureVKDesc.nodeMask;
 }
 
 TextureVal::~TextureVal()

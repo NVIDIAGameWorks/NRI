@@ -15,9 +15,9 @@ static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* 
     ((DescriptorVal&)descriptor).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor, uint32_t physicalDeviceIndex)
+static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor, uint32_t nodeIndex)
 {
-    return ((DescriptorVal&)descriptor).GetNativeObject(physicalDeviceIndex);
+    return ((DescriptorVal&)descriptor).GetNativeObject(nodeIndex);
 }
 
 #pragma endregion

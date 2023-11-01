@@ -69,7 +69,7 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset)
             IID_PPV_ARGS(&m_Texture)
         );
 
-        RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D12Device::CreateCommittedResource()");
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateCommittedResource()");
     }
     else
     {
@@ -82,7 +82,7 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset)
             IID_PPV_ARGS(&m_Texture)
         );
 
-        RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D12Device::CreatePlacedResource()");
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreatePlacedResource()");
     }
 
     return Result::SUCCESS;

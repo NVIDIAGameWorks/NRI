@@ -15,9 +15,9 @@ static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, con
     ((CommandBufferVK&)commandBuffer).SetDebugName(name);
 }
 
-static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool, uint32_t physicalDeviceIndex)
+static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool, uint32_t nodeIndex)
 {
-    return ((CommandBufferVK&)commandBuffer).Begin(descriptorPool, physicalDeviceIndex);
+    return ((CommandBufferVK&)commandBuffer).Begin(descriptorPool, nodeIndex);
 }
 
 static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer)
@@ -177,19 +177,19 @@ static void NRI_CALL CmdClearStorageTexture(CommandBuffer& commandBuffer, const 
     ((CommandBufferVK&)commandBuffer).ClearStorageTexture(clearDesc);
 }
 
-static void NRI_CALL CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint32_t dstPhysicalDeviceIndex,
-    uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcPhysicalDeviceIndex, uint64_t srcOffset, uint64_t size)
+static void NRI_CALL CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint32_t dstNodeIndex,
+    uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size)
 {
-    // TODO: use dstPhysicalDeviceIndex and srcPhysicalDeviceIndex
-    ((CommandBufferVK&)commandBuffer).CopyBuffer(dstBuffer, dstPhysicalDeviceIndex, dstOffset, srcBuffer, srcPhysicalDeviceIndex, srcOffset, size);
+    // TODO: use dstNodeIndex and srcNodeIndex
+    ((CommandBufferVK&)commandBuffer).CopyBuffer(dstBuffer, dstNodeIndex, dstOffset, srcBuffer, srcNodeIndex, srcOffset, size);
 }
 
-static void NRI_CALL CmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTexture, uint32_t dstPhysicalDeviceIndex,
-    const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcPhysicalDeviceIndex,
+static void NRI_CALL CmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTexture, uint32_t dstNodeIndex,
+    const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcNodeIndex,
     const TextureRegionDesc* srcRegionDesc)
 {
-    // TODO: use dstPhysicalDeviceIndex and srcPhysicalDeviceIndex
-    ((CommandBufferVK&)commandBuffer).CopyTexture(dstTexture, dstPhysicalDeviceIndex, dstRegionDesc, srcTexture, srcPhysicalDeviceIndex, srcRegionDesc);
+    // TODO: use dstNodeIndex and srcNodeIndex
+    ((CommandBufferVK&)commandBuffer).CopyTexture(dstTexture, dstNodeIndex, dstRegionDesc, srcTexture, srcNodeIndex, srcRegionDesc);
 }
 
 static void NRI_CALL CmdUploadBufferToTexture(CommandBuffer& commandBuffer, Texture& dstTexture,

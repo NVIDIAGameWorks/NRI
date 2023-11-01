@@ -33,7 +33,7 @@ NRI_STRUCT(MemoryAllocatorInterface)
 
 NRI_STRUCT(CallbackInterface)
 {
-    void (*MessageCallback)(void* userArg, const char* message, NRI_NAME(Message) messageType);
+    void (*MessageCallback)(NRI_NAME(Message) messageType, const char* file, uint32_t line, const char* message, void* userArg);
     void (*AbortExecution)(void* userArg);
     void* userArg;
 };

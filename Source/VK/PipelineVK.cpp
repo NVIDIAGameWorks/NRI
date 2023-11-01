@@ -108,7 +108,7 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult vkResult = vk.CreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), vkResult == VK_SUCCESS, GetReturnCode(vkResult),
+    RETURN_ON_FAILURE(&m_Device, vkResult == VK_SUCCESS, GetReturnCode(vkResult),
         "Can't create a graphics pipeline: vkCreateGraphicsPipelines returned %d.", (int32_t)vkResult);
 
     for (size_t i = 0; i < graphicsPipelineDesc.shaderStageNum; i++)
@@ -136,7 +136,7 @@ Result PipelineVK::Create(const ComputePipelineDesc& computePipelineDesc)
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.CreateShaderModule(m_Device, &moduleInfo, m_Device.GetAllocationCallbacks(), &module);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a compute pipeline: vkCreateShaderModule returned %d.", (int32_t)result);
 
     VkPipelineShaderStageCreateInfo stage = {
@@ -161,7 +161,7 @@ Result PipelineVK::Create(const ComputePipelineDesc& computePipelineDesc)
 
     result = vk.CreateComputePipelines(m_Device, VK_NULL_HANDLE, 1, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a compute pipeline: vkCreateComputePipelines returned %d.", (int32_t)result);
 
     vk.DestroyShaderModule(m_Device, module, m_Device.GetAllocationCallbacks());
@@ -260,7 +260,7 @@ Result PipelineVK::Create(const RayTracingPipelineDesc& rayTracingPipelineDesc)
     const VkResult vkResult = vk.CreateRayTracingPipelinesKHR(m_Device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &createInfo,
         m_Device.GetAllocationCallbacks(), &m_Handle);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), vkResult == VK_SUCCESS, GetReturnCode(vkResult),
+    RETURN_ON_FAILURE(&m_Device, vkResult == VK_SUCCESS, GetReturnCode(vkResult),
         "Can't create a ray tracing pipeline: vkCreateRayTracingPipelinesKHR returned %d.", (int32_t)vkResult);
 
     for (size_t i = 0; i < stageNum; i++)
@@ -301,7 +301,7 @@ Result PipelineVK::SetupShaderStage(VkPipelineShaderStageCreateInfo& stage, cons
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.CreateShaderModule(m_Device, &moduleInfo, m_Device.GetAllocationCallbacks(), &module);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a graphics shader module: vkCreateShaderModule returned %d.", (int32_t)result);
 
     *(modules++) = module;
@@ -598,7 +598,7 @@ Result PipelineVK::CreateRenderPass(const OutputMergerDesc* outputMerger, const 
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.CreateRenderPass(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_RenderPass);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a render pass for a pipeline: vkCreateRenderPass returned %d.", (int32_t)result);
 
     return Result::SUCCESS;
@@ -633,7 +633,7 @@ inline Result PipelineVK::WriteShaderGroupIdentifiers(uint32_t baseShaderGroupIn
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.GetRayTracingShaderGroupHandlesKHR(m_Device, m_Handle, baseShaderGroupIndex, shaderGroupNum, dataSize, buffer);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't get shader group identifiers: vkGetRayTracingShaderGroupHandlesKHR returned %d.", (int32_t)result);
 
     return Result::SUCCESS;

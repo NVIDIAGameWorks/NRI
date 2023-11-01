@@ -8,7 +8,7 @@ HelperResourceStateChange::HelperResourceStateChange(const CoreInterface& NRI, D
     m_CommandQueue(commandQueue),
     m_HelperWaitIdle(NRI, device, commandQueue)
 {
-    if (NRI.CreateCommandAllocator(commandQueue, WHOLE_DEVICE_GROUP, m_CommandAllocator) == Result::SUCCESS)
+    if (NRI.CreateCommandAllocator(commandQueue, ALL_NODES, m_CommandAllocator) == Result::SUCCESS)
         NRI.CreateCommandBuffer(*m_CommandAllocator, m_CommandBuffer);
 }
 
@@ -28,9 +28,9 @@ Result HelperResourceStateChange::ChangeStates(const TransitionBarrierDesc& tran
     if (m_CommandBuffer == nullptr)
         return Result::FAILURE;
 
-    const uint32_t physicalDeviceNum = NRI.GetDeviceDesc(m_Device).physicalDeviceNum;
+    const uint32_t nodeNum = NRI.GetDeviceDesc(m_Device).nodeNum;
 
-    for (uint32_t i = 0; i < physicalDeviceNum; i++)
+    for (uint32_t i = 0; i < nodeNum; i++)
     {
         NRI.BeginCommandBuffer(*m_CommandBuffer, nullptr, i);
         {
@@ -39,7 +39,7 @@ Result HelperResourceStateChange::ChangeStates(const TransitionBarrierDesc& tran
         NRI.EndCommandBuffer(*m_CommandBuffer);
 
         QueueSubmitDesc queueSubmitDesc = {};
-        queueSubmitDesc.physicalDeviceIndex = i;
+        queueSubmitDesc.nodeIndex = i;
         queueSubmitDesc.commandBufferNum = 1;
         queueSubmitDesc.commandBuffers = &m_CommandBuffer;
 

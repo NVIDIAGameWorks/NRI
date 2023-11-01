@@ -28,15 +28,13 @@ Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, Devi
 
 #if NRI_USE_VULKAN
 Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
-Result CreateDeviceVK(const DeviceCreationVulkanDesc& deviceDesc, DeviceBase*& device);
+Result CreateDeviceVK(const DeviceCreationVKDesc& deviceDesc, DeviceBase*& device);
 #endif
 
 DeviceBase* CreateDeviceValidation(const DeviceCreationDesc& deviceCreationDesc, DeviceBase& device);
 
 constexpr uint64_t Hash( const char* name )
-{
-    return *name != 0 ? *name ^ ( 33 * Hash(name + 1) ) : 5381;
-}
+{ return *name != 0 ? *name ^ ( 33 * Hash(name + 1) ) : 5381; }
 
 NRI_API Result NRI_CALL nriGetInterface(const Device& device, const char* interfaceName, size_t interfaceSize, void* interfacePtr)
 {
@@ -95,11 +93,11 @@ NRI_API Result NRI_CALL nriGetInterface(const Device& device, const char* interf
     }
 
     if (result == Result::INVALID_ARGUMENT)
-        REPORT_ERROR(deviceBase.GetLog(), "Unknown interface '%s'!", interfaceName);
+        REPORT_ERROR(&deviceBase, "Unknown interface '%s'!", interfaceName);
     else if (interfaceSize != realInterfaceSize)
-        REPORT_ERROR(deviceBase.GetLog(), "Interface '%s' has invalid size = %u bytes, while %u bytes expected by the implementation", interfaceName, interfaceSize, realInterfaceSize);
+        REPORT_ERROR(&deviceBase, "Interface '%s' has invalid size = %u bytes, while %u bytes expected by the implementation", interfaceName, interfaceSize, realInterfaceSize);
     else if (result == Result::UNSUPPORTED)
-        REPORT_WARNING(deviceBase.GetLog(), "Interface '%s' is not supported by the device!", interfaceName);
+        REPORT_WARNING(&deviceBase, "Interface '%s' is not supported by the device!", interfaceName);
 
     return result;
 }
@@ -213,28 +211,28 @@ NRI_API Result NRI_CALL nriCreateDeviceFromD3D12Device(const DeviceCreationD3D12
     return FinalizeDeviceCreation(deviceCreationDesc, *deviceImpl, device);
 }
 
-NRI_API Result NRI_CALL nriCreateDeviceFromVkDevice(const DeviceCreationVulkanDesc& deviceCreationVulkanDesc, Device*& device)
+NRI_API Result NRI_CALL nriCreateDeviceFromVkDevice(const DeviceCreationVKDesc& deviceCreationVKDesc, Device*& device)
 {
     DeviceCreationDesc deviceCreationDesc = {};
-    deviceCreationDesc.callbackInterface = deviceCreationVulkanDesc.callbackInterface;
-    deviceCreationDesc.memoryAllocatorInterface = deviceCreationVulkanDesc.memoryAllocatorInterface;
-    deviceCreationDesc.spirvBindingOffsets = deviceCreationVulkanDesc.spirvBindingOffsets;
+    deviceCreationDesc.callbackInterface = deviceCreationVKDesc.callbackInterface;
+    deviceCreationDesc.memoryAllocatorInterface = deviceCreationVKDesc.memoryAllocatorInterface;
+    deviceCreationDesc.spirvBindingOffsets = deviceCreationVKDesc.spirvBindingOffsets;
     deviceCreationDesc.graphicsAPI = GraphicsAPI::VULKAN;
-    deviceCreationDesc.enableNRIValidation = deviceCreationVulkanDesc.enableNRIValidation;
+    deviceCreationDesc.enableNRIValidation = deviceCreationVKDesc.enableNRIValidation;
 
     CheckAndSetDefaultCallbacks(deviceCreationDesc.callbackInterface);
     CheckAndSetDefaultAllocator(deviceCreationDesc.memoryAllocatorInterface);
 
-    DeviceCreationVulkanDesc tempDeviceCreationVulkanDesc = deviceCreationVulkanDesc;
+    DeviceCreationVKDesc tempDeviceCreationVKDesc = deviceCreationVKDesc;
 
-    CheckAndSetDefaultCallbacks(tempDeviceCreationVulkanDesc.callbackInterface);
-    CheckAndSetDefaultAllocator(tempDeviceCreationVulkanDesc.memoryAllocatorInterface);
+    CheckAndSetDefaultCallbacks(tempDeviceCreationVKDesc.callbackInterface);
+    CheckAndSetDefaultAllocator(tempDeviceCreationVKDesc.memoryAllocatorInterface);
 
     Result result = Result::UNSUPPORTED;
     DeviceBase* deviceImpl = nullptr;
 
     #if (NRI_USE_VULKAN == 1)
-        result = CreateDeviceVK(tempDeviceCreationVulkanDesc, deviceImpl);
+        result = CreateDeviceVK(tempDeviceCreationVKDesc, deviceImpl);
     #endif
 
     if (result != Result::SUCCESS)
@@ -427,6 +425,18 @@ NRI_API Result NRI_CALL nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t
     VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
+
+#ifdef __APPLE__
+    std::array<const char*, 2> instanceExtensions = 
+    {
+        "VK_KHR_get_physical_device_properties2",
+        VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME
+    };
+
+    instanceCreateInfo.enabledExtensionCount = (uint32_t)instanceExtensions.size();
+    instanceCreateInfo.ppEnabledExtensionNames = instanceExtensions.data();
+    instanceCreateInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#endif
 
     VkInstance instance = VK_NULL_HANDLE;
     VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);

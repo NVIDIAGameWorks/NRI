@@ -131,18 +131,18 @@ Result DescriptorVK::CreateTextureView(const T& textureViewDesc)
 
     const auto& vk = m_Device.GetDispatchTable();
 
-    const uint32_t physicalDeviceMask = GetPhysicalDeviceGroupMask(textureViewDesc.physicalDeviceMask);
+    const uint32_t nodeMask = GetNodeMask(textureViewDesc.nodeMask);
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
         {
             m_TextureDesc.handles[i] = texture.GetHandle(i);
             imageViewCreateInfo.image = texture.GetHandle(i);
 
             const VkResult result = vk.CreateImageView(m_Device, &imageViewCreateInfo, m_Device.GetAllocationCallbacks(), &m_ImageViews[i]);
 
-            RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+            RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
                 "Can't create a texture view: vkCreateImageView returned %d.", (int32_t)result);
         }
     }
@@ -159,11 +159,11 @@ Result DescriptorVK::Create(const BufferViewDesc& bufferViewDesc)
     m_BufferDesc.offset = bufferViewDesc.offset;
     m_BufferDesc.size = (bufferViewDesc.size == WHOLE_SIZE) ? VK_WHOLE_SIZE : bufferViewDesc.size;
 
-    const uint32_t physicalDeviceMask = GetPhysicalDeviceGroupMask(bufferViewDesc.physicalDeviceMask);
+    const uint32_t nodeMask = GetNodeMask(bufferViewDesc.nodeMask);
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
             m_BufferDesc.handles[i] = buffer.GetHandle(i);
     }
 
@@ -184,13 +184,13 @@ Result DescriptorVK::Create(const BufferViewDesc& bufferViewDesc)
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
         {
             info.buffer = buffer.GetHandle(i);
 
             const VkResult result = vk.CreateBufferView(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_BufferViews[i]);
 
-            RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+            RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
                 "Can't create a buffer view: vkCreateBufferView returned %d.", (int32_t)result);
         }
     }
@@ -241,21 +241,21 @@ Result DescriptorVK::Create(const SamplerDesc& samplerDesc)
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.CreateSampler(m_Device, &samplerInfo, m_Device.GetAllocationCallbacks(), &m_Sampler);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a sampler: vkCreateSampler returned %d.", (int32_t)result);
 
     return Result::SUCCESS;
 }
 
-Result DescriptorVK::Create(const VkAccelerationStructureKHR* accelerationStructures, uint32_t physicalDeviceMask)
+Result DescriptorVK::Create(const VkAccelerationStructureKHR* accelerationStructures, uint32_t nodeMask)
 {
     m_Type = DescriptorTypeVK::ACCELERATION_STRUCTURE;
 
-    physicalDeviceMask = GetPhysicalDeviceGroupMask(physicalDeviceMask);
+    nodeMask = GetNodeMask(nodeMask);
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
             m_AccelerationStructures[i] = accelerationStructures[i];
     }
 
@@ -295,7 +295,7 @@ inline void DescriptorVK::SetDebugName(const char* name)
         break;
 
     default:
-        CHECK(m_Device.GetLog(), false, "unexpected descriptor type in SetDebugName: %u", (uint32_t)m_Type);
+        CHECK(&m_Device, false, "unexpected descriptor type in SetDebugName: %u", (uint32_t)m_Type);
         break;
     }
 }

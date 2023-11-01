@@ -10,6 +10,7 @@ Supported APIs:
 Supported platforms:
 - Windows
 - Linux
+- Apple
 
 Supported CPU architectures:
 - x86
@@ -21,15 +22,18 @@ NRI can be used as a *shared* or *static* library.
 
 | C++                   | C                     |
 |-----------------------|-----------------------|
-| `nri::`               | `nri_`                |
+| `nri::Interface`      | `NriInterface`        |
+| `nri::Enum::MEMBER`   | `NriEnum_MEMBER`      |
+| `nri::CONST`          | `NRI_CONST`           |
+| `nri::nriFunction`    | `nriFunction`         |
+| `nri::Function`       | `nriFunction`         |
 | Reference `&`         | Pointer `*`           |
-| `nri::EnumClass::Name`| `NRI_ENUM_CLASS_NAME` |
 
 ## Objects
 
 Analogues from the graphics APIs:
 
-| NRI               | D3D12             | Vulkan                     |
+| NRI               | D3D12             | VK                         |
 |-------------------|-------------------|----------------------------|
 | Device            | Device            | Device                     |
 | Command Buffer    | Command List      | Command Buffer             |
@@ -85,15 +89,15 @@ To start using NRI, the application needs to create a device. The NRI device can
 2. to create an NRI driver without wrapping
     * use a device creation extension (`NRIDeviceCreation.h`)
 
-## Creating device using vulkan wrapping extension
+## Creating device using Vulkan wrapping extension
 
 `NRIWrapperVK.h` contains the following function:
 
 ```cpp
-Result CreateDevice(const DeviceCreationVulkanDesc& deviceDesc, Device*& device)
+Result nriCreateDevice(const DeviceCreationVKDesc& deviceDesc, Device*& device)
 ```
 
-The application must specify the following members of `DeviceCreationVulkanDesc`:
+The application must specify the following members of `DeviceCreationVKDesc`:
 * `deviceDesc.vkInstance`
   * VkInstance handle
 * `deviceDesc.vkDevice`
@@ -107,7 +111,7 @@ The application must specify the following members of `DeviceCreationVulkanDesc`
 * `deviceDesc.queueFamilyIndexNum`
   * The number of queue family indices
 
-Other members of `DeviceCreationVulkanDesc` can be filled with zeros.
+Other members of `DeviceCreationVKDesc` can be filled with zeros.
 
 NRI library contains implementation of the `CreateDevice()` function.
 
@@ -116,22 +120,22 @@ NRI library contains implementation of the `CreateDevice()` function.
 `NRIDeviceCreation.h` contains the following functions:
 
 ```cpp
-Result GetPhysicalDevices(PhysicalDeviceGroup* physicalDeviceGroups, uint32_t& physicalDeviceGroupNum)
+Result nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t& adapterDescNum)
 ```
 
-The function allows the application to enumerate available physical devices.
+The function allows the application to enumerate available adapters.
 
 Valid usage:
-* To get the number of physical devices, the application can call the function with physicalDeviceGroupNum set to 0
+* To get the number of adapters, the application can call the function with `adapterDescNum = 0`
 
 Multithreading:
 * No synchronization required
 
 ```cpp
-Result CreateDevice(const DeviceCreationDesc& deviceCreationDesc, Device*& device)
+Result nriCreateDevice(const DeviceCreationDesc& deviceCreationDesc, Device*& device)
 ```
-* `deviceCreationDesc.physicalDeviceGroup`
-  * implementation will choose the first physical device if the value is nullptr
+* `deviceCreationDesc.adapter`
+  * implementation will choose the first adapter if the value is nullptr
 * `deviceCreationDesc.graphicsAPI`
   * controls which implementation will be used (D3D11, D3D12, VK)
 
@@ -146,7 +150,7 @@ Multithreading:
 An NRI device must be explicitly destroyed to free memory and graphics API objects. NRI does not destroy D3D/VK objects passed to NRI via Wrapping Extension.
 
 ```cpp
-void DestroyDevice(Device& device)
+void nriDestroyDevice(Device& device)
 ```
 
 Valid usage:
@@ -160,15 +164,15 @@ Multithreading:
 To get NRI interface, the application can use the following function:
 
 ```cpp
-Result GetInterface(const Device& device, const char* interfaceName, size_t interfaceSize, void* interfacePtr)
+Result nriGetInterface(const Device& device, const char* interfaceName, size_t interfaceSize, void* interfacePtr)
 ```
 * `interfaceName`
-  * The name of the interface C++ struct with "nri::" prefix
+  * The name of the interface C++ struct with `nri::` prefix
 
 `NRI.h` defines a macro which can be used to get an interface name and interface size from a structure name:
 
 ```cpp
-nri::GetInterface(*m_Device, NRI_INTERFACE(nri::CoreInterface), (nri::CoreInterface*)&NRI)
+nri::nriGetInterface(*m_Device, NRI_INTERFACE(nri::CoreInterface), (nri::CoreInterface*)&NRI)
 ```
 
 # Core Interface
@@ -193,11 +197,11 @@ Multithreading:
 * No synchronization required
 
 ```cpp
-Result CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t physicalDeviceMask, CommandAllocator*& commandAllocator)
+Result CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator)
 ```
 
 Valid usage:
-* physicalDeviceMask can be set to 0 (WHOLE_DEVICE_GROUP) to create a command allocator which can be used with all physical devices in the device group
+* nodeMask can be set to 0 (ALL_NODES) to create a command allocator which can be used with all physical devices in the device group
 
 Multithreading:
 * No synchronization required
@@ -208,7 +212,7 @@ Result CreateDescriptorPool(Device& device, const DescriptorPoolDesc& descriptor
 
 Creates a descriptor pool which can be used to allocate descriptor sets.
 
-If descriptorPoolDesc.physicalDeviceMask is set to 0 or has more than one bit set and the device group consists of more than one physical device, the maximum number of descriptors in the descriptor pool is multiplied by the number of physical devices.
+If descriptorPoolDesc.nodeMask is set to 0 or has more than one bit set and the device group consists of more than one physical device, the maximum number of descriptors in the descriptor pool is multiplied by the number of physical devices.
 
 Valid usage:
 * The function may fail if the maximum number of descriptors exceeds the maximum size of D3D12 descriptor heap
@@ -465,7 +469,7 @@ Multithreading:
 * Access to commandBuffer must be externally synchronized
 
 ```cpp
-Result AllocateMemory(Device& device, uint32_t physicalDeviceMask, MemoryType memoryType, uint64_t size, Memory*& memory)
+Result AllocateMemory(Device& device, uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory)
 ```
 
 Valid usage:
@@ -501,7 +505,7 @@ Multithreading:
 * Access to memory must be externally synchronized
 
 ```cpp
-Result BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool, uint32_t physicalDeviceIndex)
+Result BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool, uint32_t nodeIndex)
 ```
 
 Multithreading:
@@ -751,7 +755,7 @@ Multithreading:
 * Access to commandBuffer must be externally synchronized
 
 ```cpp
-void CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint32_t dstPhysicalDeviceIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcPhysicalDeviceIndex, uint64_t srcOffset, uint64_t size)
+void CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size)
 ```
 
 Valid usage:
@@ -761,7 +765,7 @@ Multithreading:
 * Access to commandBuffer must be externally synchronized
 
 ```cpp
-void CmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTexture, uint32_t dstPhysicalDeviceIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcPhysicalDeviceIndex, const TextureRegionDesc* srcRegionDesc)
+void CmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc)
 ```
 
 Valid usage:
@@ -836,14 +840,14 @@ Multithreading:
 * No synchronization required
 
 ```cpp
-void UpdateDescriptorRanges(DescriptorSet& descriptorSet, uint32_t physicalDeviceMask, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs)
+void UpdateDescriptorRanges(DescriptorSet& descriptorSet, uint32_t nodeMask, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs)
 ```
 
 Multithreading:
 * Access to descriptorSet must be externally synchronized
 
 ```cpp
-void UpdateDynamicConstantBuffers(DescriptorSet& descriptorSet, uint32_t physicalDeviceMask, uint32_t baseBuffer, uint32_t bufferNum, const Descriptor* const* descriptors)
+void UpdateDynamicConstantBuffers(DescriptorSet& descriptorSet, uint32_t nodeMask, uint32_t baseBuffer, uint32_t bufferNum, const Descriptor* const* descriptors)
 ```
 
 Multithreading:
@@ -857,7 +861,7 @@ Multithreading:
 * Access to descriptorSet must be externally synchronized* Access to descriptorSetCopyDesc.srcDescriptorSet must be externally synchronized
 
 ```cpp
-Result AllocateDescriptorSets(DescriptorPool& descriptorPool, const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** const descriptorSets, uint32_t instanceNum, uint32_t physicalDeviceMask, uint32_t variableDescriptorNum)
+Result AllocateDescriptorSets(DescriptorPool& descriptorPool, const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** const descriptorSets, uint32_t instanceNum, uint32_t nodeMask, uint32_t variableDescriptorNum)
 ```
 * `pipelineLayout`
   * The pipeline layout which describes shader resource binding
@@ -1138,7 +1142,7 @@ Multithreading:
 * Access to the acceleration structure instances must be externally synchronized* Access to the memory instances must be externally synchronized
 
 ```cpp
-Result CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, uint32_t physicalDeviceMask, Descriptor*& descriptor)
+Result CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, uint32_t nodeMask, Descriptor*& descriptor)
 ```
 
 Multithreading:
@@ -1180,7 +1184,7 @@ Multithreading:
 * No synchronization required
 
 ```cpp
-uint64_t GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure, uint32_t physicalDeviceIndex)
+uint64_t GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex)
 ```
 
 Multithreading:

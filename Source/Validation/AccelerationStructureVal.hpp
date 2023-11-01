@@ -25,14 +25,14 @@ static uint64_t NRI_CALL GetAccelerationStructureBuildScratchBufferSize(const Ac
     return ((const AccelerationStructureVal&)accelerationStructure).GetBuildScratchBufferSize();
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure, uint32_t physicalDeviceIndex)
+static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex)
 {
-    return ((const AccelerationStructureVal&)accelerationStructure).GetHandle(physicalDeviceIndex);
+    return ((const AccelerationStructureVal&)accelerationStructure).GetHandle(nodeIndex);
 }
 
-static Result NRI_CALL CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, uint32_t physicalDeviceIndex, Descriptor*& descriptor)
+static Result NRI_CALL CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex, Descriptor*& descriptor)
 {
-    return ((AccelerationStructureVal&)accelerationStructure).CreateDescriptor(physicalDeviceIndex, descriptor);
+    return ((AccelerationStructureVal&)accelerationStructure).CreateDescriptor(nodeIndex, descriptor);
 }
 
 static void NRI_CALL SetAccelerationStructureDebugName(AccelerationStructure& accelerationStructure, const char* name)
@@ -40,9 +40,9 @@ static void NRI_CALL SetAccelerationStructureDebugName(AccelerationStructure& ac
     ((AccelerationStructureVal&)accelerationStructure).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const AccelerationStructure& accelerationStructure, uint32_t physicalDeviceIndex)
+static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex)
 {
-    return ((AccelerationStructureVal&)accelerationStructure).GetNativeObject(physicalDeviceIndex);
+    return ((AccelerationStructureVal&)accelerationStructure).GetNativeObject(nodeIndex);
 }
 
 #pragma endregion

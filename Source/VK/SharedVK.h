@@ -14,6 +14,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "DeviceBase.h"
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_beta.h>
 #undef CreateSemaphore
 
 #include "DispatchTable.h"
@@ -37,8 +38,8 @@ union MemoryTypeUnpack
 };
 
 template< typename HandleType, typename ImplType, typename NRIType >
-constexpr HandleType GetVulkanHandle(NRIType* object, uint32_t physicalDeviceIndex)
-{ return (object != nullptr) ? (*(ImplType*)object).GetHandle(physicalDeviceIndex) : HandleType(VK_NULL_HANDLE); }
+constexpr HandleType GetVulkanHandle(NRIType* object, uint32_t nodeIndex)
+{ return (object != nullptr) ? (*(ImplType*)object).GetHandle(nodeIndex) : HandleType(VK_NULL_HANDLE); }
 
 constexpr bool IsHostVisibleMemory(nri::MemoryLocation location)
 { return location > nri::MemoryLocation::DEVICE; }

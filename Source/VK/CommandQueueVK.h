@@ -40,7 +40,7 @@ struct CommandQueueVK
     inline CommandQueueType GetType() const
     { return m_Type; }
 
-    Result Create(const CommandQueueVulkanDesc& commandQueueDesc);
+    Result Create(const CommandQueueVKDesc& commandQueueDesc);
 
     //================================================================================================================
     // NRI

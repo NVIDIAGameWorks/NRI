@@ -22,8 +22,8 @@ struct DescriptorSetVK
         m_Device(device)
     {}
 
-    inline VkDescriptorSet GetHandle(uint32_t physicalDeviceIndex) const
-    { return m_Handles[physicalDeviceIndex]; }
+    inline VkDescriptorSet GetHandle(uint32_t nodeIndex) const
+    { return m_Handles[nodeIndex]; }
 
     inline DeviceVK& GetDevice() const
     { return m_Device; }
@@ -31,15 +31,15 @@ struct DescriptorSetVK
     inline uint32_t GetDynamicConstantBufferNum() const
     { return m_DynamicConstantBufferNum; }
 
-    void Create(const VkDescriptorSet* handles, uint32_t physicalDeviceMask, const DescriptorSetDesc& setDesc);
+    void Create(const VkDescriptorSet* handles, uint32_t nodeMask, const DescriptorSetDesc& setDesc);
 
     //================================================================================================================
     // NRI
     //================================================================================================================
 
     void SetDebugName(const char* name);
-    void UpdateDescriptorRanges(uint32_t physicalDeviceMask, uint32_t rangeOffset, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs);
-    void UpdateDynamicConstantBuffers(uint32_t physicalDeviceMask, uint32_t bufferOffset, uint32_t descriptorNum, const Descriptor* const* descriptors);
+    void UpdateDescriptorRanges(uint32_t nodeMask, uint32_t rangeOffset, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs);
+    void UpdateDynamicConstantBuffers(uint32_t nodeMask, uint32_t bufferOffset, uint32_t descriptorNum, const Descriptor* const* descriptors);
     void Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc);
 
 private:

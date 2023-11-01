@@ -32,7 +32,7 @@ struct D3D11Extensions
     constexpr bool IsNvAPIAvailable() const;
     constexpr bool IsAGSAvailable() const;
 
-    void Create(const Log& log, nri::Vendor vendor, AGSContext* agsContext, bool isImported);
+    void Create(const nri::DeviceBase* deviceBase, nri::Vendor vendor, AGSContext* agsContext, bool isImported);
     void BeginUAVOverlap(const VersionedContext& deferredContext) const;
     void EndUAVOverlap(const VersionedContext& deferredContext) const;
     void WaitForDrain(const VersionedContext& deferredContext, nri::BarrierDependency dependency) const;
@@ -45,7 +45,7 @@ struct D3D11Extensions
 private:
     bool LoadAGS();
 
-    const Log* m_Log = nullptr;
+    const nri::DeviceBase* m_DeviceBase = nullptr;
     bool m_IsNvAPIAvailable = false;
     bool m_IsAGSAvailable = false;
     AGSContext* m_AGSContext = nullptr;

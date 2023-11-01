@@ -41,7 +41,7 @@ private:
     uint8_t* m_Memory;
 };
 
-static bool WriteTextures(uint32_t physicalDeviceIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update,
+static bool WriteTextures(uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update,
     uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab)
 {
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
@@ -52,7 +52,7 @@ static bool WriteTextures(uint32_t physicalDeviceIndex, const DescriptorRangeDes
     {
         const DescriptorVK& descriptorImpl = *(DescriptorVK*)update.descriptors[descriptorOffset + i];
 
-        infoArray[i].imageView = descriptorImpl.GetImageView(physicalDeviceIndex);
+        infoArray[i].imageView = descriptorImpl.GetImageView(nodeIndex);
         infoArray[i].imageLayout = descriptorImpl.GetImageLayout();
         infoArray[i].sampler = VK_NULL_HANDLE;
     }
@@ -65,7 +65,7 @@ static bool WriteTextures(uint32_t physicalDeviceIndex, const DescriptorRangeDes
     return itemNumForWriting == totalItemNum;
 }
 
-static bool WriteTypedBuffers(uint32_t physicalDeviceIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update,
+static bool WriteTypedBuffers(uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update,
     uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab)
 {
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
@@ -75,7 +75,7 @@ static bool WriteTypedBuffers(uint32_t physicalDeviceIndex, const DescriptorRang
     for (uint32_t i = 0; i < itemNumForWriting; i++)
     {
         const DescriptorVK& descriptorImpl = *(DescriptorVK*)update.descriptors[descriptorOffset + i];
-        viewArray[i] = descriptorImpl.GetBufferView(physicalDeviceIndex);
+        viewArray[i] = descriptorImpl.GetBufferView(nodeIndex);
     }
 
     write.descriptorType = GetDescriptorType(rangeDesc.descriptorType);
@@ -86,7 +86,7 @@ static bool WriteTypedBuffers(uint32_t physicalDeviceIndex, const DescriptorRang
     return itemNumForWriting == totalItemNum;
 }
 
-static bool WriteBuffers(uint32_t physicalDeviceIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update,
+static bool WriteBuffers(uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update,
     uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab)
 {
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
@@ -96,7 +96,7 @@ static bool WriteBuffers(uint32_t physicalDeviceIndex, const DescriptorRangeDesc
     for (uint32_t i = 0; i < itemNumForWriting; i++)
     {
         const DescriptorVK& descriptor = *(DescriptorVK*)update.descriptors[descriptorOffset + i];
-        descriptor.GetBufferInfo(physicalDeviceIndex, infoArray[i]);
+        descriptor.GetBufferInfo(nodeIndex, infoArray[i]);
     }
 
     write.descriptorType = GetDescriptorType(rangeDesc.descriptorType);
@@ -107,11 +107,11 @@ static bool WriteBuffers(uint32_t physicalDeviceIndex, const DescriptorRangeDesc
     return itemNumForWriting == totalItemNum;
 }
 
-static bool WriteSamplers(uint32_t physicalDeviceIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update,
+static bool WriteSamplers(uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update,
     uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab)
 {
     MaybeUnused(rangeDesc);
-    MaybeUnused(physicalDeviceIndex);
+    MaybeUnused(nodeIndex);
 
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
     uint32_t itemNumForWriting = totalItemNum;
@@ -133,7 +133,7 @@ static bool WriteSamplers(uint32_t physicalDeviceIndex, const DescriptorRangeDes
     return itemNumForWriting == totalItemNum;
 }
 
-static bool WriteAccelerationStructures(uint32_t physicalDeviceIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update,
+static bool WriteAccelerationStructures(uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update,
     uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab)
 {
     MaybeUnused(rangeDesc);
@@ -157,7 +157,7 @@ static bool WriteAccelerationStructures(uint32_t physicalDeviceIndex, const Desc
     for (uint32_t i = 0; i < itemNumForWriting; i++)
     {
         const DescriptorVK& descriptorImpl = *(DescriptorVK*)update.descriptors[descriptorOffset + i];
-        handles[i] = descriptorImpl.GetAccelerationStructure(physicalDeviceIndex);
+        handles[i] = descriptorImpl.GetAccelerationStructure(nodeIndex);
     }
 
     write.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
@@ -168,7 +168,7 @@ static bool WriteAccelerationStructures(uint32_t physicalDeviceIndex, const Desc
     return itemNumForWriting == totalItemNum;
 }
 
-typedef bool(*WriteDescriptorsFunc)(uint32_t physicalDeviceIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update,
+typedef bool(*WriteDescriptorsFunc)(uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update,
     uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab);
 
 constexpr std::array<WriteDescriptorsFunc, (uint32_t)DescriptorType::MAX_NUM> WRITE_FUNCS =
@@ -184,7 +184,7 @@ constexpr std::array<WriteDescriptorsFunc, (uint32_t)DescriptorType::MAX_NUM> WR
     (WriteDescriptorsFunc)&WriteAccelerationStructures,     // ACCELERATION_STRUCTURE
 };
 
-void DescriptorSetVK::Create(const VkDescriptorSet* handles, uint32_t physicalDeviceMask, const DescriptorSetDesc& setDesc)
+void DescriptorSetVK::Create(const VkDescriptorSet* handles, uint32_t nodeMask, const DescriptorSetDesc& setDesc)
 {
     m_SetDesc = &setDesc;
     m_DynamicConstantBufferNum = setDesc.dynamicConstantBufferNum;
@@ -192,7 +192,7 @@ void DescriptorSetVK::Create(const VkDescriptorSet* handles, uint32_t physicalDe
     uint32_t handleIndex = 0;
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
             m_Handles[i] = handles[handleIndex++];
     }
 }
@@ -210,7 +210,7 @@ inline void DescriptorSetVK::SetDebugName(const char* name)
     m_Device.SetDebugNameToDeviceGroupObject(VK_OBJECT_TYPE_DESCRIPTOR_SET, handles.data(), name);
 }
 
-inline void DescriptorSetVK::UpdateDescriptorRanges(uint32_t physicalDeviceMask, uint32_t rangeOffset, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs)
+inline void DescriptorSetVK::UpdateDescriptorRanges(uint32_t nodeMask, uint32_t rangeOffset, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs)
 {
     constexpr uint32_t writesPerIteration = 1024;
     uint32_t writeMaxNum = std::min<uint32_t>(writesPerIteration, rangeNum);
@@ -222,11 +222,11 @@ inline void DescriptorSetVK::UpdateDescriptorRanges(uint32_t physicalDeviceMask,
 
     const auto& vk = m_Device.GetDispatchTable();
 
-    physicalDeviceMask = GetPhysicalDeviceGroupMask(physicalDeviceMask);
+    nodeMask = GetNodeMask(nodeMask);
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if (!((1 << i) & physicalDeviceMask))
+        if (!((1 << i) & nodeMask))
             continue;
 
         uint32_t j = 0;
@@ -266,7 +266,7 @@ inline void DescriptorSetVK::UpdateDescriptorRanges(uint32_t physicalDeviceMask,
     }
 }
 
-inline void DescriptorSetVK::UpdateDynamicConstantBuffers(uint32_t physicalDeviceMask, uint32_t bufferOffset, uint32_t descriptorNum, const Descriptor* const* descriptors)
+inline void DescriptorSetVK::UpdateDynamicConstantBuffers(uint32_t nodeMask, uint32_t bufferOffset, uint32_t descriptorNum, const Descriptor* const* descriptors)
 {
     const uint32_t descriptorMaxNum = descriptorNum * m_Device.GetPhysicalDeviceGroupSize();
 
@@ -274,11 +274,11 @@ inline void DescriptorSetVK::UpdateDynamicConstantBuffers(uint32_t physicalDevic
     VkDescriptorBufferInfo* infos = STACK_ALLOC(VkDescriptorBufferInfo, descriptorMaxNum);
     uint32_t writeNum = 0;
 
-    physicalDeviceMask = GetPhysicalDeviceGroupMask(physicalDeviceMask);
+    nodeMask = GetNodeMask(nodeMask);
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if (!((1 << i) & physicalDeviceMask))
+        if (!((1 << i) & nodeMask))
             continue;
 
         for (uint32_t j = 0; j < descriptorNum; j++)
@@ -317,11 +317,11 @@ inline void DescriptorSetVK::Copy(const DescriptorSetCopyDesc& descriptorSetCopy
 
     const DescriptorSetVK& srcSetImpl = *(const DescriptorSetVK*)descriptorSetCopyDesc.srcDescriptorSet;
 
-    const uint32_t physicalDeviceMask = GetPhysicalDeviceGroupMask(descriptorSetCopyDesc.physicalDeviceMask);
+    const uint32_t nodeMask = GetNodeMask(descriptorSetCopyDesc.nodeMask);
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if (!((1 << i) & physicalDeviceMask))
+        if (!((1 << i) & nodeMask))
             continue;
 
         for (uint32_t j = 0; j < descriptorSetCopyDesc.rangeNum; j++)

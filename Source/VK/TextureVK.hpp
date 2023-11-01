@@ -15,9 +15,9 @@ static void NRI_CALL SetTextureDebugName(Texture& texture, const char* name)
     ((TextureVK&)texture).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetTextureNativeObject(const Texture& texture, uint32_t physicalDeviceIndex)
+static uint64_t NRI_CALL GetTextureNativeObject(const Texture& texture, uint32_t nodeIndex)
 {
-    return uint64_t( ((TextureVK&)texture).GetHandle(physicalDeviceIndex) );
+    return uint64_t( ((TextureVK&)texture).GetHandle(nodeIndex) );
 }
 
 static void NRI_CALL GetTextureMemoryInfo(const Texture& texture, MemoryLocation memoryLocation, MemoryDesc& memoryDesc)

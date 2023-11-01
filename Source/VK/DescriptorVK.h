@@ -53,23 +53,23 @@ struct DescriptorVK
     inline DeviceVK& GetDevice() const
     { return m_Device; }
 
-    inline VkBufferView GetBufferView(uint32_t physicalDeviceIndex) const
-    { return m_BufferViews[physicalDeviceIndex]; }
+    inline VkBufferView GetBufferView(uint32_t nodeIndex) const
+    { return m_BufferViews[nodeIndex]; }
 
-    inline VkImageView GetImageView(uint32_t physicalDeviceIndex) const
-    { return m_ImageViews[physicalDeviceIndex]; }
+    inline VkImageView GetImageView(uint32_t nodeIndex) const
+    { return m_ImageViews[nodeIndex]; }
 
     inline const VkSampler& GetSampler() const
     { return m_Sampler; }
 
-    inline VkAccelerationStructureKHR GetAccelerationStructure(uint32_t physicalDeviceIndex) const
-    { return m_AccelerationStructures[physicalDeviceIndex]; }
+    inline VkAccelerationStructureKHR GetAccelerationStructure(uint32_t nodeIndex) const
+    { return m_AccelerationStructures[nodeIndex]; }
 
-    inline VkBuffer GetBuffer(uint32_t physicalDeviceIndex) const
-    { return m_BufferDesc.handles[physicalDeviceIndex]; }
+    inline VkBuffer GetBuffer(uint32_t nodeIndex) const
+    { return m_BufferDesc.handles[nodeIndex]; }
 
-    inline VkImage GetImage(uint32_t physicalDeviceIndex) const
-    { return m_TextureDesc.handles[physicalDeviceIndex]; }
+    inline VkImage GetImage(uint32_t nodeIndex) const
+    { return m_TextureDesc.handles[nodeIndex]; }
 
     inline const TextureVK& GetTexture() const
     { return *m_TextureDesc.texture; }
@@ -89,9 +89,9 @@ struct DescriptorVK
     inline const DescriptorBufferDesc& GetBufferDesc() const
     { return m_BufferDesc; }
 
-    inline void GetBufferInfo(uint32_t physicalDeviceIndex, VkDescriptorBufferInfo& info) const
+    inline void GetBufferInfo(uint32_t nodeIndex, VkDescriptorBufferInfo& info) const
     {
-        info.buffer = m_BufferDesc.handles[physicalDeviceIndex];
+        info.buffer = m_BufferDesc.handles[nodeIndex];
         info.offset = m_BufferDesc.offset;
         info.range = m_BufferDesc.size;
     }
@@ -112,7 +112,7 @@ struct DescriptorVK
     Result Create(const Texture2DViewDesc& textureViewDesc);
     Result Create(const Texture3DViewDesc& textureViewDesc);
     Result Create(const SamplerDesc& samplerDesc);
-    Result Create(const VkAccelerationStructureKHR* accelerationStructures, uint32_t physicalDeviceMask);
+    Result Create(const VkAccelerationStructureKHR* accelerationStructures, uint32_t nodeMask);
 
     //================================================================================================================
     // NRI

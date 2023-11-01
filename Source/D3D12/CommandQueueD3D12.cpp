@@ -25,7 +25,7 @@ Result CommandQueueD3D12::Create(CommandQueueType queueType)
     commandQueueDesc.Type = GetCommandListType(queueType);
 
     HRESULT hr = ((ID3D12Device*)m_Device)->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&m_CommandQueue));
-    RETURN_ON_BAD_HRESULT(m_Device.GetLog(), hr, "ID3D12Device::CreateCommandQueue()");
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateCommandQueue()");
 
     m_CommandListType = commandQueueDesc.Type;
 

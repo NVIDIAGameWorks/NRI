@@ -9,6 +9,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
 #include "SharedExternal.h"
+#include "DeviceBase.h"
 
 #include <cstdarg>
 
@@ -32,33 +33,38 @@ constexpr std::array<const char*, uint32_t(nri::GraphicsAPI::VULKAN) + 1> GRAPHI
     "VULKAN"
 };
 
-Log::Log(nri::GraphicsAPI graphicsAPI, const nri::CallbackInterface& callbackInterface) :
-    m_GraphicsAPI(graphicsAPI),
-    m_CallbackInterface(callbackInterface)
+void nri::DeviceBase::ReportMessage(nri::Message messageType, const char* file, uint32_t line, const char* format, ...) const
 {
-}
+    const nri::DeviceDesc& desc = GetDesc();
 
-void Log::ReportMessage(nri::Message message, const char* format, ...) const
-{
-    const char* messageTypeName = MESSAGE_TYPE_NAME[(size_t)message];
-    const char* graphicsAPIName = GRAPHICS_API_NAME[(size_t)m_GraphicsAPI];
+    const char* messageTypeName = MESSAGE_TYPE_NAME[(size_t)messageType];
+    const char* graphicsAPIName = GRAPHICS_API_NAME[(size_t)desc.graphicsAPI];
 
-    char buffer[4096];
-    int written = snprintf(buffer, GetCountOf(buffer), "[nri(%s)::%s] -- ", graphicsAPIName, messageTypeName);
+#ifdef _WIN32
+    #define FILE_SEPARATOR '\\'
+#else
+    #define FILE_SEPARATOR '/'
+#endif
+
+    const char* temp = strrchr(file, FILE_SEPARATOR);
+    file = temp ? temp + 1 : file;
+
+    char message[4096];
+    int written = snprintf(message, GetCountOf(message), "NRI::%s(%s:%u) - %s::%s - ", messageTypeName, file, line, graphicsAPIName, desc.adapterDesc.description);
 
     va_list	argptr;
     va_start(argptr, format);
-    written += vsnprintf(buffer + written, GetCountOf(buffer) - written, format, argptr);
+    written += vsnprintf(message + written, GetCountOf(message) - written, format, argptr);
     va_end(argptr);
 
-    const int end = std::min(written, (int)GetCountOf(buffer) - 2);
-    buffer[end] = '\n';
-    buffer[end + 1] = '\0';
+    const int end = std::min(written, (int)GetCountOf(message) - 2);
+    message[end] = '\n';
+    message[end + 1] = '\0';
 
-    if (m_CallbackInterface.MessageCallback != nullptr)
-        m_CallbackInterface.MessageCallback(m_CallbackInterface.userArg, buffer, message);
+    if (m_CallbackInterface.MessageCallback)
+        m_CallbackInterface.MessageCallback(messageType, file, line, message, m_CallbackInterface.userArg);
 
-    if (message == nri::Message::TYPE_ERROR && m_CallbackInterface.AbortExecution != nullptr)
+    if (messageType == nri::Message::TYPE_ERROR && m_CallbackInterface.AbortExecution != nullptr)
         m_CallbackInterface.AbortExecution(m_CallbackInterface.userArg);
 }
 
@@ -694,10 +700,12 @@ nri::Format VKFormatToNRIFormat(uint32_t format)
     return nri::Format::UNKNOWN;
 }
 
-static void MessageCallback(void* userArg, const char* message, nri::Message messageType)
+static void MessageCallback(nri::Message messageType, const char* file, uint32_t line, const char* message, void* userArg)
 {
-    MaybeUnused(userArg);
     MaybeUnused(messageType);
+    MaybeUnused(file);
+    MaybeUnused(line);
+    MaybeUnused(userArg);
 
     fprintf(stderr, "%s", message);
 #ifdef _WIN32

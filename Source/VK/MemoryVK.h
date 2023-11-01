@@ -23,8 +23,8 @@ struct MemoryVK
         m_Device(device)
     {}
 
-    inline VkDeviceMemory GetHandle(uint32_t physicalDeviceIndex) const
-    { return m_Handles[physicalDeviceIndex]; }
+    inline VkDeviceMemory GetHandle(uint32_t nodeIndex) const
+    { return m_Handles[nodeIndex]; }
 
     inline DeviceVK& GetDevice() const
     { return m_Device; }
@@ -32,15 +32,15 @@ struct MemoryVK
     inline MemoryType GetType() const
     { return m_Type; }
 
-    inline uint8_t* GetMappedMemory(uint32_t physicalDeviceIndex) const
-    { return m_MappedMemory[physicalDeviceIndex]; }
+    inline uint8_t* GetMappedMemory(uint32_t nodeIndex) const
+    { return m_MappedMemory[nodeIndex]; }
 
     ~MemoryVK();
 
-    Result Create(uint32_t physicalDeviceMask, const MemoryType memoryType, uint64_t size);
-    Result Create(const MemoryVulkanDesc& memoryDesc);
-    Result CreateDedicated(BufferVK& buffer, uint32_t physicalDeviceMask);
-    Result CreateDedicated(TextureVK& texture, uint32_t physicalDeviceMask);
+    Result Create(uint32_t nodeMask, const MemoryType memoryType, uint64_t size);
+    Result Create(const MemoryVKDesc& memoryDesc);
+    Result CreateDedicated(BufferVK& buffer, uint32_t nodeMask);
+    Result CreateDedicated(TextureVK& texture, uint32_t nodeMask);
 
     //================================================================================================================
     // NRI

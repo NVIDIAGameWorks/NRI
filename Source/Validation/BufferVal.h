@@ -20,14 +20,14 @@ struct BufferVal final : public DeviceObjectVal<Buffer>
     BufferVal(DeviceVal& device, Buffer& buffer, const BufferDesc& bufferDesc);
     BufferVal(DeviceVal& device, Buffer& buffer, const BufferD3D11Desc& bufferD3D11Desc);
     BufferVal(DeviceVal& device, Buffer& buffer, const BufferD3D12Desc& bufferD3D12Desc);
-    BufferVal(DeviceVal& device, Buffer& buffer, const BufferVulkanDesc& bufferVulkanDesc);
+    BufferVal(DeviceVal& device, Buffer& buffer, const BufferVKDesc& bufferVKDesc);
     ~BufferVal();
 
     inline const BufferDesc& GetDesc() const
     { return m_BufferDesc; }
 
-    inline uint64_t GetNativeObject(uint32_t physicalDeviceIndex) const
-    { return m_CoreAPI.GetBufferNativeObject(m_ImplObject, physicalDeviceIndex); }
+    inline uint64_t GetNativeObject(uint32_t nodeIndex) const
+    { return m_CoreAPI.GetBufferNativeObject(m_ImplObject, nodeIndex); }
 
     inline bool IsBoundToMemory() const
     { return m_IsBoundToMemory; }

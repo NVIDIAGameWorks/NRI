@@ -33,7 +33,7 @@ NRI_FORWARD_STRUCT(Texture);
 static const uint16_t NRI_CONST_NAME(REMAINING_ARRAY_LAYERS) = 0;
 static const uint16_t NRI_CONST_NAME(REMAINING_MIP_LEVELS) = 0;
 static const uint16_t NRI_CONST_NAME(WHOLE_SIZE) = 0;
-static const uint32_t NRI_CONST_NAME(WHOLE_DEVICE_GROUP) = 0;
+static const uint32_t NRI_CONST_NAME(ALL_NODES) = 0;
 static const bool NRI_CONST_NAME(VARIABLE_DESCRIPTOR_NUM) = true;
 static const bool NRI_CONST_NAME(DESCRIPTOR_ARRAY) = true;
 
@@ -806,7 +806,7 @@ NRI_STRUCT(QueueSubmitDesc)
 {
     const NRI_NAME(CommandBuffer)* const* commandBuffers;
     uint32_t commandBufferNum;
-    uint32_t physicalDeviceIndex;
+    uint32_t nodeIndex;
 };
 
 NRI_STRUCT(BufferMemoryBindingDesc)
@@ -814,7 +814,7 @@ NRI_STRUCT(BufferMemoryBindingDesc)
     NRI_NAME(Memory)* memory;
     NRI_NAME(Buffer)* buffer;
     uint64_t offset;
-    uint32_t physicalDeviceMask;
+    uint32_t nodeMask;
 };
 
 NRI_STRUCT(TextureMemoryBindingDesc)
@@ -822,7 +822,7 @@ NRI_STRUCT(TextureMemoryBindingDesc)
     NRI_NAME(Memory)* memory;
     NRI_NAME(Texture)* texture;
     uint64_t offset;
-    uint32_t physicalDeviceMask;
+    uint32_t nodeMask;
 };
 
 NRI_STRUCT(MemoryDesc)
@@ -865,7 +865,7 @@ NRI_STRUCT(TextureDesc)
     uint16_t mipNum;
     uint16_t arraySize;
     uint8_t sampleNum;
-    uint32_t physicalDeviceMask;
+    uint32_t nodeMask;
 };
 
 NRI_STRUCT(BufferDesc)
@@ -873,7 +873,7 @@ NRI_STRUCT(BufferDesc)
     uint64_t size;
     uint32_t structureStride;
     NRI_NAME(BufferUsageBits) usageMask;
-    uint32_t physicalDeviceMask;
+    uint32_t nodeMask;
 };
 
 NRI_STRUCT(Texture1DViewDesc)
@@ -885,7 +885,7 @@ NRI_STRUCT(Texture1DViewDesc)
     uint16_t mipNum;
     uint16_t arrayOffset;
     uint16_t arraySize;
-    uint32_t physicalDeviceMask;
+    uint32_t nodeMask;
     NRI_NAME(ResourceViewBits) flags;
 };
 
@@ -898,7 +898,7 @@ NRI_STRUCT(Texture2DViewDesc)
     uint16_t mipNum;
     uint16_t arrayOffset;
     uint16_t arraySize;
-    uint32_t physicalDeviceMask;
+    uint32_t nodeMask;
     NRI_NAME(ResourceViewBits) flags;
 };
 
@@ -911,7 +911,7 @@ NRI_STRUCT(Texture3DViewDesc)
     uint16_t mipNum;
     uint16_t sliceOffset;
     uint16_t sliceNum;
-    uint32_t physicalDeviceMask;
+    uint32_t nodeMask;
     NRI_NAME(ResourceViewBits) flags;
 };
 
@@ -922,12 +922,11 @@ NRI_STRUCT(BufferViewDesc)
     NRI_NAME(Format) format;
     uint64_t offset;
     uint64_t size;
-    uint32_t physicalDeviceMask;
+    uint32_t nodeMask;
 };
 
 NRI_STRUCT(DescriptorPoolDesc)
 {
-    uint32_t physicalDeviceMask;
     uint32_t descriptorSetMaxNum;
     uint32_t samplerMaxNum;
     uint32_t constantBufferMaxNum;
@@ -939,6 +938,7 @@ NRI_STRUCT(DescriptorPoolDesc)
     uint32_t structuredBufferMaxNum;
     uint32_t storageStructuredBufferMaxNum;
     uint32_t accelerationStructureMaxNum;
+    uint32_t nodeMask;
 };
 
 NRI_STRUCT(TextureTransitionBarrierDesc)
@@ -1034,7 +1034,7 @@ NRI_STRUCT(DescriptorSetCopyDesc)
     uint32_t baseSrcDynamicConstantBuffer;
     uint32_t baseDstDynamicConstantBuffer;
     uint32_t dynamicConstantBufferNum;
-    uint32_t physicalDeviceMask;
+    uint32_t nodeMask;
 };
 
 NRI_STRUCT(PushConstantDesc)
@@ -1206,7 +1206,7 @@ NRI_STRUCT(FrameBufferDesc)
     const NRI_NAME(ClearValueDesc)* colorClearValues;
     const NRI_NAME(ClearValueDesc)* depthStencilClearValue;
     uint32_t colorAttachmentNum;
-    uint32_t physicalDeviceMask;
+    uint32_t nodeMask;
     uint16_t size[2];
     uint16_t layerNum;
 };
@@ -1216,7 +1216,7 @@ NRI_STRUCT(QueryPoolDesc)
     NRI_NAME(QueryType) queryType;
     uint32_t capacity;
     NRI_NAME(PipelineStatsBits) pipelineStatsMask;
-    uint32_t physicalDeviceMask;
+    uint32_t nodeMask;
 };
 
 NRI_STRUCT(PipelineStatisticsDesc)
@@ -1385,7 +1385,9 @@ NRI_STRUCT(DeviceDesc)
     uint32_t cullDistanceMaxNum;
     uint32_t combinedClipAndCullDistanceMaxNum;
     uint8_t conservativeRasterTier;
-    uint8_t physicalDeviceNum;
+
+    // mGPU
+    uint8_t nodeNum;
 
     // Features support
     bool isAPIValidationEnabled;

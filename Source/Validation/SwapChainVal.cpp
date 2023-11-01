@@ -51,7 +51,6 @@ inline Texture* const* SwapChainVal::GetTextures(uint32_t& textureNum, Format& f
     textureDesc.mipNum = 1;
     textureDesc.arraySize = 1;
     textureDesc.sampleNum = 1;
-    textureDesc.physicalDeviceMask = 0;
 
     m_Textures.resize(textureNum);
     for (uint32_t i = 0; i < textureNum; i++)

@@ -27,8 +27,8 @@ AccelerationStructureD3D12::~AccelerationStructureD3D12()
 
 Result AccelerationStructureD3D12::Create(const AccelerationStructureD3D12Desc& accelerationStructureDesc)
 {
-    m_PrebuildInfo.ScratchDataSizeInBytes = accelerationStructureDesc.scratchDataSizeInBytes;
-    m_PrebuildInfo.UpdateScratchDataSizeInBytes = accelerationStructureDesc.updateScratchDataSizeInBytes;
+    m_PrebuildInfo.ScratchDataSizeInBytes = accelerationStructureDesc.scratchDataSize;
+    m_PrebuildInfo.UpdateScratchDataSizeInBytes = accelerationStructureDesc.updateScratchDataSize;
 
     BufferD3D12Desc bufferDesc = {};
     bufferDesc.d3d12Resource = (ID3D12Resource*)accelerationStructureDesc.d3d12Resource;

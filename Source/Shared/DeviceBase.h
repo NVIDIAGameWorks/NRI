@@ -14,16 +14,32 @@ namespace nri
 {
     struct DeviceBase
     {
-        inline DeviceBase(const Log& log, const StdAllocator<uint8_t>& stdAllocator) :
-            m_Log(log),
-            m_StdAllocator(stdAllocator)
+        inline DeviceBase(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator) :
+            m_CallbackInterface(callbacks)
+            , m_StdAllocator(stdAllocator)
         {}
-
-        inline const Log& GetLog() const
-        { return m_Log; }
 
         inline StdAllocator<uint8_t>& GetStdAllocator()
         { return m_StdAllocator; }
+
+        void ReportMessage(nri::Message messageType, const char* file, uint32_t line, const char* format, ...) const;
+
+        template<typename T>
+        nri::Result ValidateFunctionTable(const T& table) const
+        {
+            const void* const* const begin = (void**)&table;
+            const void* const* const end = (void**)(&table + 1);
+            for (const void* const* current = begin; current != end; current++)
+            {
+                if (*current == nullptr)
+                {
+                    REPORT_ERROR(this, "Invalid function table: function #%u is NULL!", uint32_t(current - begin));
+                    return nri::Result::FAILURE;
+                }
+            }
+
+            return nri::Result::SUCCESS;
+        }
 
         virtual ~DeviceBase() {}
         virtual const DeviceDesc& GetDesc() const = 0;
@@ -38,7 +54,7 @@ namespace nri
         virtual Result FillFunctionTable(HelperInterface& table) const { table = {}; return Result::UNSUPPORTED; }
 
     protected:
-        Log m_Log;
+        nri::CallbackInterface m_CallbackInterface = {};
         StdAllocator<uint8_t> m_StdAllocator;
     };
 }

@@ -13,7 +13,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-void nri::ConvertGeometryObjectSizesVK(uint32_t physicalDeviceIndex, VkAccelerationStructureGeometryKHR* destObjects, uint32_t* primitiveNums,
+void nri::ConvertGeometryObjectSizesVK(uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, uint32_t* primitiveNums,
     const GeometryObject* sourceObjects, uint32_t objectNum)
 {
     for (uint32_t i = 0; i < objectNum; i++)
@@ -26,7 +26,7 @@ void nri::ConvertGeometryObjectSizesVK(uint32_t physicalDeviceIndex, VkAccelerat
         const uint32_t boxNum = geometrySrc.boxes.boxNum;
         primitiveNums[i] = geometrySrc.type == GeometryType::TRIANGLES ? triangleNum : boxNum;
 
-        const VkDeviceAddress transform = GetBufferDeviceAddress(geometrySrc.triangles.transformBuffer, physicalDeviceIndex) +
+        const VkDeviceAddress transform = GetBufferDeviceAddress(geometrySrc.triangles.transformBuffer, nodeIndex) +
             geometrySrc.triangles.transformOffset;
 
         VkAccelerationStructureGeometryKHR& geometryDst = destObjects[i];
@@ -44,7 +44,7 @@ void nri::ConvertGeometryObjectSizesVK(uint32_t physicalDeviceIndex, VkAccelerat
     }
 }
 
-void nri::ConvertGeometryObjectsVK(uint32_t physicalDeviceIndex, VkAccelerationStructureGeometryKHR* destObjects,
+void nri::ConvertGeometryObjectsVK(uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects,
     VkAccelerationStructureBuildRangeInfoKHR* ranges, const GeometryObject* sourceObjects, uint32_t objectNum)
 {
     for (uint32_t i = 0; i < objectNum; i++)
@@ -59,16 +59,16 @@ void nri::ConvertGeometryObjectsVK(uint32_t physicalDeviceIndex, VkAccelerationS
         ranges[i] = {};
         ranges[i].primitiveCount = geometrySrc.type == GeometryType::TRIANGLES ? triangleNum : boxNum;
 
-        const VkDeviceAddress aabbs = GetBufferDeviceAddress(geometrySrc.boxes.buffer, physicalDeviceIndex) +
+        const VkDeviceAddress aabbs = GetBufferDeviceAddress(geometrySrc.boxes.buffer, nodeIndex) +
             geometrySrc.boxes.offset;
 
-        const VkDeviceAddress vertices = GetBufferDeviceAddress(geometrySrc.triangles.vertexBuffer, physicalDeviceIndex) +
+        const VkDeviceAddress vertices = GetBufferDeviceAddress(geometrySrc.triangles.vertexBuffer, nodeIndex) +
             geometrySrc.triangles.vertexOffset;
 
-        const VkDeviceAddress indices = GetBufferDeviceAddress(geometrySrc.triangles.indexBuffer, physicalDeviceIndex) +
+        const VkDeviceAddress indices = GetBufferDeviceAddress(geometrySrc.triangles.indexBuffer, nodeIndex) +
             geometrySrc.triangles.indexOffset;
 
-        const VkDeviceAddress transform = GetBufferDeviceAddress(geometrySrc.triangles.transformBuffer, physicalDeviceIndex) +
+        const VkDeviceAddress transform = GetBufferDeviceAddress(geometrySrc.triangles.transformBuffer, nodeIndex) +
             geometrySrc.triangles.transformOffset;
 
         VkAccelerationStructureGeometryKHR& geometryDst = destObjects[i];

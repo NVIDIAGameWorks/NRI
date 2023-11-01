@@ -36,10 +36,9 @@ extern bool RequiresDedicatedAllocation(MemoryType memoryType);
 
 Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device)
 {
-    Log log(GraphicsAPI::D3D12, deviceCreationDesc.callbackInterface);
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
 
-    DeviceD3D12* implementation = Allocate<DeviceD3D12>(allocator, log, allocator);
+    DeviceD3D12* implementation = Allocate<DeviceD3D12>(allocator, deviceCreationDesc.callbackInterface, allocator);
     const nri::Result result = implementation->Create(deviceCreationDesc);
     if (result != nri::Result::SUCCESS)
     {
@@ -54,10 +53,9 @@ Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBas
 
 Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, DeviceBase*& device)
 {
-    Log log(GraphicsAPI::D3D12, deviceCreationDesc.callbackInterface);
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
 
-    DeviceD3D12* implementation = Allocate<DeviceD3D12>(allocator, log, allocator);
+    DeviceD3D12* implementation = Allocate<DeviceD3D12>(allocator, deviceCreationDesc.callbackInterface, allocator);
     const Result res = implementation->Create(deviceCreationDesc);
 
     if (res == Result::SUCCESS)
@@ -70,17 +68,14 @@ Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, Devi
     return res;
 }
 
-DeviceD3D12::DeviceD3D12(const Log& log, StdAllocator<uint8_t>& stdAllocator)
-    : DeviceBase(log, stdAllocator)
+DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator)
+    : DeviceBase(callbacks, stdAllocator)
     , m_DescriptorHeaps(GetStdAllocator())
     , m_FreeDescriptors(GetStdAllocator())
     , m_DrawCommandSignatures(GetStdAllocator())
     , m_DrawIndexedCommandSignatures(GetStdAllocator())
 {
     m_FreeDescriptors.resize(DESCRIPTOR_HEAP_TYPE_NUM, Vector<DescriptorHandle>(GetStdAllocator()));
-
-    if (FillFunctionTable(m_CoreInterface) != Result::SUCCESS)
-        REPORT_ERROR(GetLog(), "Failed to get 'CoreInterface' interface in DeviceD3D12().");
 }
 
 DeviceD3D12::~DeviceD3D12()
@@ -127,10 +122,10 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
 
     ComPtr<IDXGIFactory4> dxgiFactory;
     HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
-    RETURN_ON_BAD_HRESULT(GetLog(), hr, "CreateDXGIFactory2()");
+    RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
 
     hr = dxgiFactory->EnumAdapterByLuid(m_Device->GetAdapterLuid(), IID_PPV_ARGS(&m_Adapter));
-    RETURN_ON_BAD_HRESULT(GetLog(), hr, "IDXGIFactory4::EnumAdapterByLuid()");
+    RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
 
     if (deviceCreationDesc.d3d12GraphicsQueue)
         CreateCommandQueue(deviceCreationDesc.d3d12GraphicsQueue, m_CommandQueues[(uint32_t)CommandQueueType::GRAPHICS]);
@@ -156,11 +151,11 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
     commandSignatureDesc.ByteStride = 12;
 
     hr = m_Device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&m_DispatchCommandSignature));
-    RETURN_ON_BAD_HRESULT(GetLog(), hr, "ID3D12Device::CreateCommandSignature()");
+    RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateCommandSignature()");
 
     FillDesc(false);
 
-    return Result::SUCCESS;
+    return FillFunctionTable(m_CoreInterface);
 }
 
 Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
@@ -177,22 +172,22 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
 
     ComPtr<IDXGIFactory4> dxgiFactory;
     HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
-    RETURN_ON_BAD_HRESULT(GetLog(), hr, "CreateDXGIFactory2()");
+    RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
 
     if (deviceCreationDesc.adapterDesc)
     {
         LUID luid = *(LUID*)&deviceCreationDesc.adapterDesc->luid;
         hr = dxgiFactory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&m_Adapter));
-        RETURN_ON_BAD_HRESULT(GetLog(), hr, "IDXGIFactory4::EnumAdapterByLuid()");
+        RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
     }
     else
     {
         hr = dxgiFactory->EnumAdapters(0, &m_Adapter);
-        RETURN_ON_BAD_HRESULT(GetLog(), hr, "IDXGIFactory4::EnumAdapters()");
+        RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapters()");
     }
 
     hr = D3D12CreateDevice(m_Adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_Device));
-    RETURN_ON_BAD_HRESULT(GetLog(), hr, "D3D12CreateDevice()");
+    RETURN_ON_BAD_HRESULT(this, hr, "D3D12CreateDevice()");
 
     // TODO: this code is currently needed to disable known false-positive errors reported by the debug layer
     if (deviceCreationDesc.enableAPIValidation)
@@ -235,11 +230,11 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
     commandSignatureDesc.ByteStride = 12;
 
     hr = m_Device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&m_DispatchCommandSignature));
-    RETURN_ON_BAD_HRESULT(GetLog(), hr, "ID3D12Device::CreateCommandSignature()");
+    RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateCommandSignature()");
 
     FillDesc(deviceCreationDesc.enableAPIValidation);
 
-    return Result::SUCCESS;
+    return FillFunctionTable(m_CoreInterface);
 }
 
 Result DeviceD3D12::CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type)
@@ -254,7 +249,7 @@ Result DeviceD3D12::CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYP
     ComPtr<ID3D12DescriptorHeap> descriptorHeap;
     D3D12_DESCRIPTOR_HEAP_DESC desc = {type, DESCRIPTORS_BATCH_SIZE, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, NRI_TEMP_NODE_MASK};
     HRESULT hr = ((ID3D12Device*)m_Device)->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap));
-    RETURN_ON_BAD_HRESULT(GetLog(), hr, "ID3D12Device::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_FLAG_NONE)");
+    RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateDescriptorHeap()");
 
     DescriptorHeapDesc descriptorHeapDesc = {};
     descriptorHeapDesc.descriptorHeap = descriptorHeap;
@@ -322,7 +317,7 @@ ID3D12CommandSignature* DeviceD3D12::CreateCommandSignature(D3D12_INDIRECT_ARGUM
     ID3D12CommandSignature* commandSignature = nullptr;
     HRESULT hr = m_Device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&commandSignature));
     if (FAILED(hr))
-        REPORT_ERROR(GetLog(), "ID3D12Device::CreateCommandSignature() failed, result = 0x%08X!", hr);
+        REPORT_ERROR(this, "ID3D12Device::CreateCommandSignature() failed, result = 0x%08X!", hr);
 
     return commandSignature;
 }
@@ -402,14 +397,11 @@ void DeviceD3D12::FillDesc(bool enableValidation)
 
     CommandQueue* commandQueue = nullptr;
     const Result result = GetCommandQueue(CommandQueueType::GRAPHICS, commandQueue);
-
     if (result == Result::SUCCESS)
     {
         ID3D12CommandQueue* commandQueueD3D12 = *(CommandQueueD3D12*)commandQueue;
         commandQueueD3D12->GetTimestampFrequency(&timestampFrequency);
     }
-    else
-        REPORT_ERROR(GetLog(), "Failed to get command queue to update device desc, result: %d.", (int32_t)result);
 
     DXGI_ADAPTER_DESC desc = {};
     HRESULT hr = m_Adapter->GetDesc(&desc);
@@ -540,7 +532,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     m_Desc.cullDistanceMaxNum = D3D12_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.combinedClipAndCullDistanceMaxNum = D3D12_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.conservativeRasterTier = (uint8_t)options.ConservativeRasterizationTier;
-    m_Desc.physicalDeviceNum = (uint8_t)m_Device->GetNodeCount();
+    m_Desc.nodeNum = (uint8_t)m_Device->GetNodeCount();
 
     m_Desc.isAPIValidationEnabled = enableValidation;
     m_Desc.isTextureFilterMinMaxSupported = levels.MaxSupportedFeatureLevel >= D3D_FEATURE_LEVEL_11_1 ? true : false;
@@ -628,11 +620,11 @@ inline Result DeviceD3D12::GetDisplaySize(Display& display, uint16_t& width, uin
 
     ComPtr<IDXGIOutput> output;
     HRESULT result = m_Adapter->EnumOutputs(index, &output);
-    RETURN_ON_BAD_HRESULT(GetLog(), result, "IDXGIAdapter::EnumOutputs()");
+    RETURN_ON_BAD_HRESULT(this, result, "IDXGIAdapter::EnumOutputs()");
 
     DXGI_OUTPUT_DESC outputDesc = {};
     result = output->GetDesc(&outputDesc);
-    RETURN_ON_BAD_HRESULT(GetLog(), result, "IDXGIOutput::GetDesc()");
+    RETURN_ON_BAD_HRESULT(this, result, "IDXGIOutput::GetDesc()");
 
     MONITORINFO monitorInfo = {};
     monitorInfo.cbSize = sizeof(monitorInfo);
@@ -652,7 +644,6 @@ inline Result DeviceD3D12::GetCommandQueue(CommandQueueType commandQueueType, Co
     ExclusiveScope lock(m_QueueLock);
 
     uint32_t queueIndex = (uint32_t)commandQueueType;
-
     if (m_CommandQueues[queueIndex])
     {
         commandQueue = (CommandQueue*)m_CommandQueues[queueIndex];
@@ -660,15 +651,10 @@ inline Result DeviceD3D12::GetCommandQueue(CommandQueueType commandQueueType, Co
     }
 
     Result result = CreateCommandQueue(commandQueueType, commandQueue);
-    if (result != Result::SUCCESS)
-    {
-        REPORT_ERROR(GetLog(), "Device::GetCommandQueue() failed.");
-        return result;
-    }
+    if (result == Result::SUCCESS)
+        m_CommandQueues[queueIndex] = (CommandQueueD3D12*)commandQueue;
 
-    m_CommandQueues[queueIndex] = (CommandQueueD3D12*)commandQueue;
-
-    return Result::SUCCESS;
+    return result;
 }
 
 inline Result DeviceD3D12::CreateCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue)

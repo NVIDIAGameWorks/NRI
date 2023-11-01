@@ -50,11 +50,11 @@ Result DescriptorPoolVK::Create(const DescriptorPoolDesc& descriptorPoolDesc)
     for (uint32_t i = 0; i < GetCountOf(descriptorPoolSizeArray); i++)
         descriptorPoolSizeArray[i].type = (VkDescriptorType)i;
 
-    const uint32_t physicalDeviceMask = GetPhysicalDeviceGroupMask(descriptorPoolDesc.physicalDeviceMask);
+    const uint32_t nodeMask = GetNodeMask(descriptorPoolDesc.nodeMask);
 
-    uint32_t physicalDeviceNum = 0;
+    uint32_t nodeNum = 0;
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
-        physicalDeviceNum += ((1 << i) & physicalDeviceMask) != 0 ? 1 : 0;
+        nodeNum += ((1 << i) & nodeMask) != 0 ? 1 : 0;
 
     uint32_t poolSizeCount = 0;
 
@@ -69,20 +69,20 @@ Result DescriptorPoolVK::Create(const DescriptorPoolDesc& descriptorPoolDesc)
     AddDescriptorPoolSize(descriptorPoolSizeArray, poolSizeCount, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, descriptorPoolDesc.accelerationStructureMaxNum);
 
     for (uint32_t i = 0; i < poolSizeCount; i++)
-        descriptorPoolSizeArray[i].descriptorCount *= physicalDeviceNum;
+        descriptorPoolSizeArray[i].descriptorCount *= nodeNum;
 
     const VkDescriptorPoolCreateInfo info = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         nullptr,
         VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-        descriptorPoolDesc.descriptorSetMaxNum * physicalDeviceNum,
+        descriptorPoolDesc.descriptorSetMaxNum * nodeNum,
         poolSizeCount,
         descriptorPoolSizeArray
     };
 
     const VkResult result = vk.CreateDescriptorPool(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a descriptor pool: vkCreateDescriptorPool returned %d.", (int32_t)result);
 
     return Result::SUCCESS;
@@ -106,7 +106,7 @@ inline void DescriptorPoolVK::SetDebugName(const char* name)
 }
 
 inline Result DescriptorPoolVK::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets,
-    uint32_t numberOfCopies, uint32_t physicalDeviceMask, uint32_t variableDescriptorNum)
+    uint32_t numberOfCopies, uint32_t nodeMask, uint32_t variableDescriptorNum)
 {
     const PipelineLayoutVK& pipelineLayoutVK = (const PipelineLayoutVK&)pipelineLayout;
 
@@ -143,13 +143,13 @@ inline Result DescriptorPoolVK::AllocateDescriptorSets(const PipelineLayout& pip
     variableDescriptorCountInfo.descriptorSetCount = 1;
     variableDescriptorCountInfo.pDescriptorCounts = &variableDescriptorNum;
 
-    physicalDeviceMask = GetPhysicalDeviceGroupMask(physicalDeviceMask);
+    nodeMask = GetNodeMask(nodeMask);
 
     std::array<VkDescriptorSetLayout, PHYSICAL_DEVICE_GROUP_MAX_SIZE> setLayoutArray = {};
     uint32_t phyicalDeviceNum = 0;
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & physicalDeviceMask)
+        if ((1 << i) & nodeMask)
             setLayoutArray[phyicalDeviceNum++] = setLayout;
     }
 
@@ -169,10 +169,10 @@ inline Result DescriptorPoolVK::AllocateDescriptorSets(const PipelineLayout& pip
     for (uint32_t i = 0; i < numberOfCopies && result == VK_SUCCESS; i++)
     {
         result = vk.AllocateDescriptorSets(m_Device, &info, handles.data());
-        ((DescriptorSetVK*)descriptorSets[i])->Create(handles.data(), physicalDeviceMask, setDesc);
+        ((DescriptorSetVK*)descriptorSets[i])->Create(handles.data(), nodeMask, setDesc);
     }
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't allocate descriptor sets: vkAllocateDescriptorSets returned %d.", (int32_t)result);
 
     return Result::SUCCESS;
@@ -185,7 +185,7 @@ inline void DescriptorPoolVK::Reset()
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.ResetDescriptorPool(m_Device, m_Handle, (VkDescriptorPoolResetFlags)0);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(),
         "Can't reset a descriptor pool: vkResetDescriptorPool returned %d.", (int32_t)result);
 }
 

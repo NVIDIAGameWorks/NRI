@@ -39,12 +39,12 @@ BufferVal::BufferVal(DeviceVal& device, Buffer& buffer, const BufferD3D12Desc& b
 }
 #endif
 
-BufferVal::BufferVal(DeviceVal& device, Buffer& buffer, const BufferVulkanDesc& bufferVulkanDesc) :
+BufferVal::BufferVal(DeviceVal& device, Buffer& buffer, const BufferVKDesc& bufferVKDesc) :
     DeviceObjectVal(device, buffer)
 {
     m_BufferDesc = {};
-    m_BufferDesc.physicalDeviceMask = bufferVulkanDesc.physicalDeviceMask;
-    m_BufferDesc.size = bufferVulkanDesc.bufferSize;
+    m_BufferDesc.nodeMask = bufferVKDesc.nodeMask;
+    m_BufferDesc.size = bufferVKDesc.bufferSize;
 
     static_assert(sizeof(BufferUsageBits) == sizeof(uint16_t), "unexpected BufferUsageBits sizeof");
     m_BufferDesc.usageMask = (BufferUsageBits)0xffff;
@@ -70,10 +70,10 @@ void BufferVal::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryD
 
 void* BufferVal::Map(uint64_t offset, uint64_t size)
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsBoundToMemory, nullptr,
+    RETURN_ON_FAILURE(&m_Device, m_IsBoundToMemory, nullptr,
         "Can't map Buffer: Buffer is not bound to memory.");
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), !m_IsMapped, nullptr,
+    RETURN_ON_FAILURE(&m_Device, !m_IsMapped, nullptr,
         "Can't map Buffer: the buffer is already mapped.");
 
     m_IsMapped = true;
@@ -83,7 +83,7 @@ void* BufferVal::Map(uint64_t offset, uint64_t size)
 
 void BufferVal::Unmap()
 {
-    RETURN_ON_FAILURE(m_Device.GetLog(), m_IsMapped, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, m_IsMapped, ReturnVoid(),
         "Can't unmap Buffer: the buffer is not mapped.");
 
     m_IsMapped = false;

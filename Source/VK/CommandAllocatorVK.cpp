@@ -22,9 +22,9 @@ CommandAllocatorVK::~CommandAllocatorVK()
         vk.DestroyCommandPool(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
 }
 
-Result CommandAllocatorVK::Create(const CommandQueue& commandQueue, uint32_t physicalDeviceMask)
+Result CommandAllocatorVK::Create(const CommandQueue& commandQueue, uint32_t nodeMask)
 {
-    MaybeUnused(physicalDeviceMask); // TODO: use it
+    MaybeUnused(nodeMask); // TODO: use it
 
     m_OwnsNativeObjects = true;
     const CommandQueueVK& commandQueueImpl = (CommandQueueVK&)commandQueue;
@@ -41,13 +41,13 @@ Result CommandAllocatorVK::Create(const CommandQueue& commandQueue, uint32_t phy
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.CreateCommandPool(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a command pool: vkCreateCommandPool returned %d.", (int32_t)result);
 
     return Result::SUCCESS;
 }
 
-Result CommandAllocatorVK::Create(const CommandAllocatorVulkanDesc& commandAllocatorDesc)
+Result CommandAllocatorVK::Create(const CommandAllocatorVKDesc& commandAllocatorDesc)
 {
     m_OwnsNativeObjects = false;
     m_Handle = (VkCommandPool)commandAllocatorDesc.vkCommandPool;
@@ -80,7 +80,7 @@ inline Result CommandAllocatorVK::CreateCommandBuffer(CommandBuffer*& commandBuf
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.AllocateCommandBuffers(m_Device, &info, &commandBufferHandle);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, GetReturnCode(result),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create the command buffer: vkAllocateCommandBuffers returned %d.", (int32_t)result);
 
     CommandBufferVK* commandBufferImpl = Allocate<CommandBufferVK>(m_Device.GetStdAllocator(), m_Device);
@@ -96,7 +96,7 @@ inline void CommandAllocatorVK::Reset()
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.ResetCommandPool(m_Device, m_Handle, (VkCommandPoolResetFlags)0);
 
-    RETURN_ON_FAILURE(m_Device.GetLog(), result == VK_SUCCESS, ReturnVoid(),
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(),
         "Can't reset a command pool. vkResetCommandPool returned %d.", (int32_t)result);
 }
 
