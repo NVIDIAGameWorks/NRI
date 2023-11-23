@@ -90,11 +90,11 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc)
             const VertexAttributeDesc& attrIn = ia.attributes[i];
             const VertexStreamDesc& stream = ia.streams[attrIn.streamIndex];
             D3D11_INPUT_ELEMENT_DESC& attrOut = inputElements[i];
-            const FormatInfo& formatInfo = GetFormatInfo(attrIn.format);
+            const DxgiFormat& dxgiFormat = GetDxgiFormat(attrIn.format);
 
             attrOut.SemanticName = attrIn.d3d.semanticName;
             attrOut.SemanticIndex = attrIn.d3d.semanticIndex;
-            attrOut.Format = formatInfo.typed;
+            attrOut.Format = dxgiFormat.typed;
             attrOut.InputSlot = stream.bindingSlot;
             attrOut.AlignedByteOffset = attrIn.offset;
             attrOut.InstanceDataStepRate = stream.stepRate == VertexStreamStepRate::PER_VERTEX ? 0 : 1;

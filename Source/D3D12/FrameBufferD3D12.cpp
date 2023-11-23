@@ -14,8 +14,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-extern void ConvertRects(D3D12_RECT* rectsD3D12, const Rect* rects, uint32_t rectNum);
-
 Result FrameBufferD3D12::Create(const FrameBufferDesc& frameBufferDesc)
 {
     if (frameBufferDesc.colorAttachmentNum)

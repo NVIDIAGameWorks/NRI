@@ -35,8 +35,8 @@ struct DescriptorD3D12
     inline D3D12_GPU_VIRTUAL_ADDRESS GetBufferLocation() const
     { return m_BufferLocation; }
 
-    inline bool IsFloatingPointUAV() const
-    { return m_IsFloatingPointFormatUAV; }
+    inline bool IsIntegerFormat() const
+    { return m_IsIntegerFormat; }
 
     inline DeviceD3D12& GetDevice() const
     { return m_Device; }
@@ -69,7 +69,7 @@ private:
     DescriptorHandle m_Handle = {};
     DescriptorPointerCPU m_DescriptorPointerCPU = {};
     D3D12_DESCRIPTOR_HEAP_TYPE m_HeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    bool m_IsFloatingPointFormatUAV = false;
+    bool m_IsIntegerFormat = false;
 };
 
 }

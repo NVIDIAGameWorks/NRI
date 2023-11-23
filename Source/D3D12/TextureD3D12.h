@@ -29,21 +29,20 @@ struct TextureD3D12
     inline ~TextureD3D12()
     {}
 
-    inline operator ID3D12Resource*() const
-    { return m_Texture.GetInterface(); }
-
-    inline const D3D12_RESOURCE_DESC& GetTextureDesc() const
-    { return m_TextureDesc; }
-
     inline DeviceD3D12& GetDevice() const
     { return m_Device; }
 
+    inline const TextureDesc& GetDesc() const
+    { return m_Desc; }
+
+    inline operator ID3D12Resource*() const
+    { return m_Texture.GetInterface(); }
+
     inline uint32_t GetSubresourceIndex(uint32_t arrayOffset, uint32_t mipOffset) const
-    { return arrayOffset * m_TextureDesc.MipLevels + mipOffset; }
+    { return arrayOffset * m_Desc.mipNum + mipOffset; }
 
     Result Create(const TextureDesc& textureDesc);
     Result Create(const TextureD3D12Desc& textureDesc);
-    void Initialize(ID3D12Resource* resource);
     Result BindMemory(const MemoryD3D12* memory, uint64_t offset);
     uint16_t GetSize(uint32_t dim, uint32_t mipOffset = 0) const;
 
@@ -58,9 +57,8 @@ struct TextureD3D12
 
 private:
     DeviceD3D12& m_Device;
-    D3D12_RESOURCE_DESC m_TextureDesc = {};
+    TextureDesc m_Desc = {};
     ComPtr<ID3D12Resource> m_Texture;
-    Format m_Format = Format::UNKNOWN;
 };
 
 }

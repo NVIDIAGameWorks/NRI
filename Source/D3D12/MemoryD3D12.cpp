@@ -13,10 +13,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-extern D3D12_HEAP_TYPE GetHeapType(MemoryType memoryType);
-extern D3D12_HEAP_FLAGS GetHeapFlags(MemoryType memoryType);
-extern bool RequiresDedicatedAllocation(MemoryType memoryType);
-
 Result MemoryD3D12::Create(const MemoryType memoryType, uint64_t size)
 {
     D3D12_HEAP_DESC heapDesc = {};

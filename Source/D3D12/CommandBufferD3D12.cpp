@@ -24,12 +24,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-extern D3D12_RESOURCE_STATES GetResourceStates(AccessBits accessMask, D3D12_COMMAND_LIST_TYPE commandListType);
-extern void ConvertRects(D3D12_RECT* rectsD3D12, const Rect* rects, uint32_t rectNum);
-extern D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits accelerationStructureBuildFlags);
-extern void ConvertGeometryDescs(D3D12_RAYTRACING_GEOMETRY_DESC* geometryDescs, const GeometryObject* geometryObjects, uint32_t geometryObjectNum);
-extern D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE GetCopyMode(CopyMode copyMode);
-
 Result CommandBufferD3D12::Create(D3D12_COMMAND_LIST_TYPE commandListType, ID3D12CommandAllocator* commandAllocator)
 {
     ComPtr<ID3D12GraphicsCommandList> graphicsCommandList;
@@ -111,8 +105,8 @@ inline Result CommandBufferD3D12::End()
 
 inline void CommandBufferD3D12::SetViewports(const Viewport* viewports, uint32_t viewportNum)
 {
-    static_assert(offsetof(Viewport, offset) == 0, "Unsupported viewport data layout.");
-    static_assert(offsetof(Viewport, size) == 8, "Unsupported viewport data layout.");
+    static_assert(offsetof(Viewport, x) == 0, "Unsupported viewport data layout.");
+    static_assert(offsetof(Viewport, width) == 8, "Unsupported viewport data layout.");
     static_assert(offsetof(Viewport, depthRangeMin) == 16, "Unsupported viewport data layout.");
     static_assert(offsetof(Viewport, depthRangeMax) == 20, "Unsupported viewport data layout.");
 
@@ -174,23 +168,23 @@ inline void CommandBufferD3D12::ClearStorageTexture(const ClearStorageTextureDes
     DescriptorSetD3D12* descriptorSet = m_DescriptorSets[clearDesc.setIndexInPipelineLayout];
     DescriptorD3D12* resourceView = (DescriptorD3D12*)clearDesc.storageTexture;
 
-    if (resourceView->IsFloatingPointUAV())
-    {
-        m_GraphicsCommandList->ClearUnorderedAccessViewFloat(
-        { descriptorSet->GetPointerGPU(clearDesc.rangeIndex, clearDesc.offsetInRange) },
-        { resourceView->GetPointerCPU() },
-            *resourceView,
-            &clearDesc.value.color32f.x,
-            0,
-            nullptr);
-    }
-    else
+    if (resourceView->IsIntegerFormat())
     {
         m_GraphicsCommandList->ClearUnorderedAccessViewUint(
         { descriptorSet->GetPointerGPU(clearDesc.rangeIndex, clearDesc.offsetInRange) },
         { resourceView->GetPointerCPU() },
             *resourceView,
             &clearDesc.value.color32ui.x,
+            0,
+            nullptr);
+    }
+    else
+    {
+        m_GraphicsCommandList->ClearUnorderedAccessViewFloat(
+        { descriptorSet->GetPointerGPU(clearDesc.rangeIndex, clearDesc.offsetInRange) },
+        { resourceView->GetPointerCPU() },
+            *resourceView,
+            &clearDesc.value.color32f.x,
             0,
             nullptr);
     }
@@ -339,54 +333,47 @@ inline void CommandBufferD3D12::CopyTexture(Texture& dstTexture, const TextureRe
         D3D12_TEXTURE_COPY_LOCATION srcTextureCopyLocation = {
             srcTextureD3D12, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, srcTextureD3D12.GetSubresourceIndex(srcRegion->arrayOffset, srcRegion->mipOffset) };
 
-        const uint16_t(&offset)[3] = srcRegion->offset;
         const uint16_t size[3] = {
-            srcRegion->size[0] == WHOLE_SIZE ? srcTextureD3D12.GetSize(0, srcRegion->mipOffset) : srcRegion->size[0],
-            srcRegion->size[1] == WHOLE_SIZE ? srcTextureD3D12.GetSize(1, srcRegion->mipOffset) : srcRegion->size[1],
-            srcRegion->size[2] == WHOLE_SIZE ? srcTextureD3D12.GetSize(2, srcRegion->mipOffset) : srcRegion->size[2]
+            srcRegion->width == WHOLE_SIZE ? srcTextureD3D12.GetSize(0, srcRegion->mipOffset) : srcRegion->width,
+            srcRegion->height == WHOLE_SIZE ? srcTextureD3D12.GetSize(1, srcRegion->mipOffset) : srcRegion->height,
+            srcRegion->depth == WHOLE_SIZE ? srcTextureD3D12.GetSize(2, srcRegion->mipOffset) : srcRegion->depth
         };
-        D3D12_BOX box = { offset[0], offset[1], offset[2], uint16_t(offset[0] + size[0]), uint16_t(offset[1] + size[1]), uint16_t(offset[2] + size[2]) };
+        D3D12_BOX box = { srcRegion->x, srcRegion->y, srcRegion->z, uint16_t(srcRegion->x + size[0]), uint16_t(srcRegion->y + size[1]), uint16_t(srcRegion->z + size[2]) };
 
-        const uint16_t(&dstOffset)[3] = dstRegion->offset;
-
-        m_GraphicsCommandList->CopyTextureRegion(&dstTextureCopyLocation, dstOffset[0], dstOffset[1], dstOffset[2],
-            &srcTextureCopyLocation, &box);
+        m_GraphicsCommandList->CopyTextureRegion(&dstTextureCopyLocation, dstRegion->x, dstRegion->y, dstRegion->z, &srcTextureCopyLocation, &box);
     }
 }
 
 inline void CommandBufferD3D12::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc)
 {
     TextureD3D12& dstTextureD3D12 = (TextureD3D12&)dstTexture;
-    const D3D12_RESOURCE_DESC& textureDesc = dstTextureD3D12.GetTextureDesc();
     D3D12_TEXTURE_COPY_LOCATION dstTextureCopyLocation = {
         dstTextureD3D12, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, dstTextureD3D12.GetSubresourceIndex(dstRegionDesc.arrayOffset, dstRegionDesc.mipOffset) };
 
     const uint16_t size[3] = {
-        dstRegionDesc.size[0] == WHOLE_SIZE ? dstTextureD3D12.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.size[0],
-        dstRegionDesc.size[1] == WHOLE_SIZE ? dstTextureD3D12.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.size[1],
-        dstRegionDesc.size[2] == WHOLE_SIZE ? dstTextureD3D12.GetSize(2, dstRegionDesc.mipOffset) : dstRegionDesc.size[2]
+        dstRegionDesc.width == WHOLE_SIZE ? dstTextureD3D12.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.width,
+        dstRegionDesc.height == WHOLE_SIZE ? dstTextureD3D12.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.height,
+        dstRegionDesc.depth == WHOLE_SIZE ? dstTextureD3D12.GetSize(2, dstRegionDesc.mipOffset) : dstRegionDesc.depth
     };
 
     D3D12_TEXTURE_COPY_LOCATION srcTextureCopyLocation;
     srcTextureCopyLocation.pResource = (BufferD3D12&)srcBuffer;
     srcTextureCopyLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
     srcTextureCopyLocation.PlacedFootprint.Offset = srcDataLayoutDesc.offset;
-    srcTextureCopyLocation.PlacedFootprint.Footprint.Format = textureDesc.Format;
+    srcTextureCopyLocation.PlacedFootprint.Footprint.Format = GetDxgiFormat(dstTextureD3D12.GetDesc().format).typeless;
     srcTextureCopyLocation.PlacedFootprint.Footprint.Width = size[0];
     srcTextureCopyLocation.PlacedFootprint.Footprint.Height = size[1];
     srcTextureCopyLocation.PlacedFootprint.Footprint.Depth = size[2];
     srcTextureCopyLocation.PlacedFootprint.Footprint.RowPitch = srcDataLayoutDesc.rowPitch;
 
-    const uint16_t(&offset)[3] = dstRegionDesc.offset;
-    D3D12_BOX box = { offset[0], offset[1], offset[2], uint16_t(offset[0] + size[0]), uint16_t(offset[1] + size[1]), uint16_t(offset[2] + size[2]) };
+    D3D12_BOX box = { dstRegionDesc.x, dstRegionDesc.y, dstRegionDesc.z, uint16_t(dstRegionDesc.x + size[0]), uint16_t(dstRegionDesc.y + size[1]), uint16_t(dstRegionDesc.z + size[2]) };
 
-    m_GraphicsCommandList->CopyTextureRegion(&dstTextureCopyLocation, offset[0], offset[1], offset[2], &srcTextureCopyLocation, &box);
+    m_GraphicsCommandList->CopyTextureRegion(&dstTextureCopyLocation, dstRegionDesc.x, dstRegionDesc.y, dstRegionDesc.z, &srcTextureCopyLocation, &box);
 }
 
 inline void CommandBufferD3D12::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc)
 {
     TextureD3D12& srcTextureD3D12 = (TextureD3D12&)srcTexture;
-    const D3D12_RESOURCE_DESC& textureDesc = srcTextureD3D12.GetTextureDesc();
     D3D12_TEXTURE_COPY_LOCATION srcTextureCopyLocation = {
         srcTextureD3D12, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, srcTextureD3D12.GetSubresourceIndex(srcRegionDesc.arrayOffset, srcRegionDesc.mipOffset) };
 
@@ -394,19 +381,18 @@ inline void CommandBufferD3D12::ReadbackTextureToBuffer(Buffer& dstBuffer, Textu
     dstTextureCopyLocation.pResource = (BufferD3D12&)dstBuffer;
     dstTextureCopyLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
     dstTextureCopyLocation.PlacedFootprint.Offset = dstDataLayoutDesc.offset;
-    dstTextureCopyLocation.PlacedFootprint.Footprint.Format = textureDesc.Format;
-    dstTextureCopyLocation.PlacedFootprint.Footprint.Width = srcRegionDesc.size[0];
-    dstTextureCopyLocation.PlacedFootprint.Footprint.Height = srcRegionDesc.size[1];
-    dstTextureCopyLocation.PlacedFootprint.Footprint.Depth = srcRegionDesc.size[2];
+    dstTextureCopyLocation.PlacedFootprint.Footprint.Format = GetDxgiFormat(srcTextureD3D12.GetDesc().format).typeless;
+    dstTextureCopyLocation.PlacedFootprint.Footprint.Width = srcRegionDesc.width;
+    dstTextureCopyLocation.PlacedFootprint.Footprint.Height = srcRegionDesc.height;
+    dstTextureCopyLocation.PlacedFootprint.Footprint.Depth = srcRegionDesc.depth;
     dstTextureCopyLocation.PlacedFootprint.Footprint.RowPitch = dstDataLayoutDesc.rowPitch;
 
-    const uint16_t(&offset)[3] = srcRegionDesc.offset;
     const uint16_t size[3] = {
-        srcRegionDesc.size[0] == WHOLE_SIZE ? srcTextureD3D12.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.size[0],
-        srcRegionDesc.size[1] == WHOLE_SIZE ? srcTextureD3D12.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.size[1],
-        srcRegionDesc.size[2] == WHOLE_SIZE ? srcTextureD3D12.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.size[2]
+        srcRegionDesc.width == WHOLE_SIZE ? srcTextureD3D12.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width,
+        srcRegionDesc.height == WHOLE_SIZE ? srcTextureD3D12.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.height,
+        srcRegionDesc.depth == WHOLE_SIZE ? srcTextureD3D12.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.depth
     };
-    D3D12_BOX box = { offset[0], offset[1], offset[2], uint16_t(offset[0] + size[0]), uint16_t(offset[1] + size[1]), uint16_t(offset[2] + size[2]) };
+    D3D12_BOX box = { srcRegionDesc.x, srcRegionDesc.y, srcRegionDesc.z, uint16_t(srcRegionDesc.x + size[0]), uint16_t(srcRegionDesc.y + size[1]), uint16_t(srcRegionDesc.z + size[2]) };
 
     m_GraphicsCommandList->CopyTextureRegion(&dstTextureCopyLocation, 0, 0, 0, &srcTextureCopyLocation, &box);
 }
@@ -433,8 +419,9 @@ inline void CommandBufferD3D12::PipelineBarrier(const TransitionBarrierDesc* tra
         {
             const auto& barrierDesc = transitionBarriers->textures[i];
             const TextureD3D12& texture = *(TextureD3D12*)barrierDesc.texture;
-            const uint32_t arraySize = barrierDesc.arraySize == REMAINING_ARRAY_LAYERS ? texture.GetTextureDesc().DepthOrArraySize : barrierDesc.arraySize;
-            const uint32_t mipNum = barrierDesc.mipNum == REMAINING_MIP_LEVELS ? texture.GetTextureDesc().MipLevels : barrierDesc.mipNum;
+            const TextureDesc& textureDesc = texture.GetDesc();
+            const uint32_t arraySize = barrierDesc.arraySize == REMAINING_ARRAY_LAYERS ? textureDesc.arraySize : barrierDesc.arraySize;
+            const uint32_t mipNum = barrierDesc.mipNum == REMAINING_MIP_LEVELS ? textureDesc.mipNum : barrierDesc.mipNum;
             if (barrierDesc.arrayOffset == 0 &&
                 barrierDesc.arraySize == REMAINING_ARRAY_LAYERS &&
                 barrierDesc.mipOffset == 0 &&
@@ -469,8 +456,9 @@ inline void CommandBufferD3D12::PipelineBarrier(const TransitionBarrierDesc* tra
         {
             const auto& barrierDesc = transitionBarriers->textures[i];
             const TextureD3D12& texture = *(TextureD3D12*)barrierDesc.texture;
-            const uint32_t arraySize = barrierDesc.arraySize == REMAINING_ARRAY_LAYERS ? texture.GetTextureDesc().DepthOrArraySize : barrierDesc.arraySize;
-            const uint32_t mipNum = barrierDesc.mipNum == REMAINING_MIP_LEVELS ? texture.GetTextureDesc().MipLevels : barrierDesc.mipNum;
+            const TextureDesc& textureDesc = texture.GetDesc();
+            const uint32_t arraySize = barrierDesc.arraySize == REMAINING_ARRAY_LAYERS ? textureDesc.arraySize : barrierDesc.arraySize;
+            const uint32_t mipNum = barrierDesc.mipNum == REMAINING_MIP_LEVELS ? textureDesc.mipNum : barrierDesc.mipNum;
             if (barrierDesc.arrayOffset == 0 &&
                 barrierDesc.arraySize == REMAINING_ARRAY_LAYERS &&
                 barrierDesc.mipOffset == 0 &&

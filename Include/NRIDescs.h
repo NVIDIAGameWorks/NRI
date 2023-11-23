@@ -33,6 +33,7 @@ NRI_FORWARD_STRUCT(Texture);
 static const uint16_t NRI_CONST_NAME(REMAINING_ARRAY_LAYERS) = 0;
 static const uint16_t NRI_CONST_NAME(REMAINING_MIP_LEVELS) = 0;
 static const uint16_t NRI_CONST_NAME(WHOLE_SIZE) = 0;
+static const uint16_t NRI_CONST_NAME(ALL_SAMPLES) = (uint16_t)(-1);
 static const uint32_t NRI_CONST_NAME(ALL_NODES) = 0;
 static const bool NRI_CONST_NAME(VARIABLE_DESCRIPTOR_NUM) = true;
 static const bool NRI_CONST_NAME(DESCRIPTOR_ARRAY) = true;
@@ -719,16 +720,18 @@ NRI_ENUM_BITS
 
 NRI_STRUCT(Rect)
 {
-    int32_t left;
-    int32_t top;
+    int32_t x;
+    int32_t y;
     uint32_t width;
     uint32_t height;
 };
 
 NRI_STRUCT(Viewport)
 {
-    float offset[2];
-    float size[2];
+    float x;
+    float y;
+    float width;
+    float height;
     float depthRangeMin;
     float depthRangeMax;
 };
@@ -789,8 +792,12 @@ NRI_STRUCT(ClearStorageTextureDesc)
 
 NRI_STRUCT(TextureRegionDesc)
 {
-    uint16_t offset[3];
-    uint16_t size[3];
+    uint16_t x;
+    uint16_t y;
+    uint16_t z;
+    uint16_t width;
+    uint16_t height;
+    uint16_t depth;
     uint16_t mipOffset;
     uint16_t arrayOffset;
 };
@@ -861,7 +868,9 @@ NRI_STRUCT(TextureDesc)
     NRI_NAME(TextureType) type;
     NRI_NAME(TextureUsageBits) usageMask;
     NRI_NAME(Format) format;
-    uint16_t size[3];
+    uint16_t width;
+    uint16_t height;
+    uint16_t depth;
     uint16_t mipNum;
     uint16_t arraySize;
     uint8_t sampleNum;
@@ -1207,7 +1216,8 @@ NRI_STRUCT(FrameBufferDesc)
     const NRI_NAME(ClearValueDesc)* depthStencilClearValue;
     uint32_t colorAttachmentNum;
     uint32_t nodeMask;
-    uint16_t size[2];
+    uint16_t width;
+    uint16_t height;
     uint16_t layerNum;
 };
 

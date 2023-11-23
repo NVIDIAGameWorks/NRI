@@ -11,6 +11,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "SharedD3D11.h"
 #include "D3D11Extensions.h"
 
+using namespace nri;
+
 D3D11Extensions::~D3D11Extensions()
 {
     if (m_IsNvAPIAvailable)

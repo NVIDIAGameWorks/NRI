@@ -91,42 +91,14 @@ Result BufferD3D11::Create(const MemoryD3D11& memory)
 
 Result BufferD3D11::Create(const BufferD3D11Desc& bufferDesc)
 {
-    ID3D11Resource* resource = (ID3D11Resource*)bufferDesc.d3d11Resource;
-    if (!resource)
+    if (!GetBufferDesc(bufferDesc, m_Desc))
         return Result::INVALID_ARGUMENT;
 
-    D3D11_RESOURCE_DIMENSION type;
-    resource->GetType(&type);
-
-    if (type != D3D11_RESOURCE_DIMENSION_BUFFER)
-        return Result::INVALID_ARGUMENT;
-
-    ID3D11Buffer* buffer = (ID3D11Buffer*)resource;
+    ID3D11Buffer* buffer = (ID3D11Buffer*)bufferDesc.d3d11Resource;
     m_Buffer = buffer;
 
     D3D11_BUFFER_DESC desc = {};
     buffer->GetDesc(&desc);
-
-    m_Desc.size = desc.ByteWidth;
-    m_Desc.structureStride = desc.StructureByteStride;
-
-    if (desc.BindFlags & D3D11_BIND_VERTEX_BUFFER)
-        m_Desc.usageMask |= BufferUsageBits::VERTEX_BUFFER;
-
-    if (desc.BindFlags & D3D11_BIND_INDEX_BUFFER)
-        m_Desc.usageMask |= BufferUsageBits::INDEX_BUFFER;
-
-    if (desc.BindFlags & D3D11_BIND_CONSTANT_BUFFER)
-        m_Desc.usageMask |= BufferUsageBits::CONSTANT_BUFFER;
-
-    if (desc.BindFlags & D3D11_BIND_SHADER_RESOURCE)
-        m_Desc.usageMask |= BufferUsageBits::SHADER_RESOURCE;
-
-    if (desc.BindFlags & D3D11_BIND_UNORDERED_ACCESS)
-        m_Desc.usageMask |= BufferUsageBits::SHADER_RESOURCE_STORAGE;
-
-    if (desc.MiscFlags & D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS)
-        m_Desc.usageMask |= BufferUsageBits::ARGUMENT_BUFFER;
 
     if (desc.Usage == D3D11_USAGE_STAGING)
         m_Type = desc.CPUAccessFlags == (D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE) ? BufferType::UPLOAD : BufferType::READBACK;
@@ -210,8 +182,8 @@ void BufferD3D11::FinalizeReadback()
         return;
     }
 
-    const uint32_t d = m_ReadbackTexture->GetDesc().size[2];
-    const uint32_t h = m_ReadbackTexture->GetDesc().size[1];
+    const uint32_t d = m_ReadbackTexture->GetDesc().depth;
+    const uint32_t h = m_ReadbackTexture->GetDesc().height;
     const uint8_t* src = (uint8_t*)srcData.pData;
     uint8_t* dst = (uint8_t*)dstData.pData;
     for (uint32_t i = 0; i < d; i++)
@@ -238,9 +210,9 @@ TextureD3D11& BufferD3D11::RecreateReadbackTexture(const TextureD3D11& srcTextur
     {
         const TextureDesc& curr = m_ReadbackTexture->GetDesc();
         isChanged = curr.format != srcTexture.GetDesc().format ||
-            curr.size[0] != srcRegionDesc.size[0] ||
-            curr.size[1] != srcRegionDesc.size[1] ||
-            curr.size[2] != srcRegionDesc.size[2];
+            curr.width != srcRegionDesc.width ||
+            curr.height != srcRegionDesc.height ||
+            curr.depth != srcRegionDesc.depth;
     }
 
     if (isChanged)
@@ -250,14 +222,14 @@ TextureD3D11& BufferD3D11::RecreateReadbackTexture(const TextureD3D11& srcTextur
         textureDesc.sampleNum = 1;
         textureDesc.arraySize = 1;
         textureDesc.format = srcTexture.GetDesc().format;
-        textureDesc.size[0] = srcRegionDesc.size[0];
-        textureDesc.size[1] = srcRegionDesc.size[1];
-        textureDesc.size[2] = srcRegionDesc.size[2];
+        textureDesc.width = srcRegionDesc.width;
+        textureDesc.height = srcRegionDesc.height;
+        textureDesc.depth = srcRegionDesc.depth;
 
         textureDesc.type = TextureType::TEXTURE_2D;
-        if (srcRegionDesc.size[2] > 1)
+        if (srcRegionDesc.depth > 1)
             textureDesc.type = TextureType::TEXTURE_3D;
-        else if (srcRegionDesc.size[1] == 1)
+        else if (srcRegionDesc.height == 1)
             textureDesc.type = TextureType::TEXTURE_1D;
 
         if (m_ReadbackTexture)

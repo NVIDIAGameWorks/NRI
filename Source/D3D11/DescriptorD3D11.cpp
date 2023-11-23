@@ -66,13 +66,14 @@ D3D11_FILTER GetFilterAnisotropic(FilterExt filterExt, bool useComparison)
 Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
 {
     const TextureD3D11& texture = *(TextureD3D11*)textureViewDesc.texture;
-    const FormatInfo& formatInfo = GetFormatInfo(textureViewDesc.format);
-    HRESULT hr = E_INVALIDARG;
+    const DxgiFormat& dxgiFormat = GetDxgiFormat(textureViewDesc.format);
+    const FormatInfo& formatInfo = GetFormatProps(textureViewDesc.format);
 
     const TextureDesc& textureDesc = texture.GetDesc();
     uint32_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
     uint32_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
 
+    HRESULT hr = E_INVALIDARG;
     switch (textureViewDesc.viewType)
     {
     case Texture1DViewType::SHADER_RESOURCE_1D:
@@ -82,7 +83,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
             srv.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1D;
             srv.Texture1D.MostDetailedMip = textureViewDesc.mipOffset;
             srv.Texture1D.MipLevels = remainingMipLevels;
-            srv.Format = formatInfo.typed;
+            srv.Format = dxgiFormat.typed;
 
             hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
@@ -98,7 +99,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
             srv.Texture1DArray.MipLevels = remainingMipLevels;
             srv.Texture1DArray.FirstArraySlice = textureViewDesc.arrayOffset;
             srv.Texture1DArray.ArraySize = remainingArrayLayers;
-            srv.Format = formatInfo.typed;
+            srv.Format = dxgiFormat.typed;
 
             hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
@@ -111,7 +112,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
 
             uav.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE1D;
             uav.Texture1D.MipSlice = textureViewDesc.mipOffset;
-            uav.Format = formatInfo.typed;
+            uav.Format = dxgiFormat.typed;
 
             hr = m_Device.GetDevice()->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
 
@@ -126,7 +127,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
             uav.Texture1DArray.MipSlice = textureViewDesc.mipOffset;
             uav.Texture1DArray.FirstArraySlice = textureViewDesc.arrayOffset;
             uav.Texture1DArray.ArraySize = remainingArrayLayers;
-            uav.Format = formatInfo.typed;
+            uav.Format = dxgiFormat.typed;
 
             hr = m_Device.GetDevice()->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
 
@@ -141,7 +142,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
             rtv.Texture1DArray.MipSlice = textureViewDesc.mipOffset;
             rtv.Texture1DArray.FirstArraySlice = textureViewDesc.arrayOffset;
             rtv.Texture1DArray.ArraySize = remainingArrayLayers;
-            rtv.Format = formatInfo.typed;
+            rtv.Format = dxgiFormat.typed;
 
             hr = m_Device.GetDevice()->CreateRenderTargetView(texture, &rtv, (ID3D11RenderTargetView**)&m_Descriptor);
 
@@ -156,7 +157,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
             dsv.Texture1DArray.MipSlice = textureViewDesc.mipOffset;
             dsv.Texture1DArray.FirstArraySlice = textureViewDesc.arrayOffset;
             dsv.Texture1DArray.ArraySize = remainingArrayLayers;
-            dsv.Format = formatInfo.typed;
+            dsv.Format = dxgiFormat.typed;
 
             if (textureViewDesc.flags & ResourceViewBits::READONLY_DEPTH)
                 dsv.Flags |= D3D11_DSV_READ_ONLY_DEPTH;
@@ -183,13 +184,14 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
 {
     const TextureD3D11& texture = *(TextureD3D11*)textureViewDesc.texture;
     const TextureDesc& desc = texture.GetDesc();
-    const FormatInfo& formatInfo = GetFormatInfo(textureViewDesc.format);
-    HRESULT hr = E_INVALIDARG;
+    const DxgiFormat& dxgiFormat = GetDxgiFormat(textureViewDesc.format);
+    const FormatInfo& formatInfo = GetFormatProps(textureViewDesc.format);
 
     const TextureDesc& textureDesc = texture.GetDesc();
     uint32_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
     uint32_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
 
+    HRESULT hr = E_INVALIDARG;
     switch (textureViewDesc.viewType)
     {
     case Texture2DViewType::SHADER_RESOURCE_2D:
@@ -204,7 +206,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
                 srv.Texture2D.MostDetailedMip = textureViewDesc.mipOffset;
                 srv.Texture2D.MipLevels = remainingMipLevels;
             }
-            srv.Format = GetShaderFormatForDepth(formatInfo.typed);
+            srv.Format = GetShaderFormatForDepth(dxgiFormat.typed);
 
             hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
@@ -229,7 +231,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
                 srv.Texture2DArray.FirstArraySlice = textureViewDesc.arrayOffset;
                 srv.Texture2DArray.ArraySize = remainingArrayLayers;
             }
-            srv.Format = GetShaderFormatForDepth(formatInfo.typed);
+            srv.Format = GetShaderFormatForDepth(dxgiFormat.typed);
 
             hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
@@ -243,7 +245,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
             srv.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
             srv.TextureCube.MostDetailedMip = textureViewDesc.mipOffset;
             srv.TextureCube.MipLevels = remainingMipLevels;
-            srv.Format = formatInfo.typed;
+            srv.Format = dxgiFormat.typed;
 
             hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
@@ -259,7 +261,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
             srv.TextureCubeArray.MipLevels = remainingMipLevels;
             srv.TextureCubeArray.First2DArrayFace = textureViewDesc.arrayOffset;
             srv.TextureCubeArray.NumCubes = textureViewDesc.arraySize / 6;
-            srv.Format = GetShaderFormatForDepth(formatInfo.typed);
+            srv.Format = GetShaderFormatForDepth(dxgiFormat.typed);
 
             hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
@@ -272,7 +274,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
 
             uav.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
             uav.Texture2D.MipSlice = textureViewDesc.mipOffset;
-            uav.Format = GetShaderFormatForDepth(formatInfo.typed);
+            uav.Format = GetShaderFormatForDepth(dxgiFormat.typed);
 
             hr = m_Device.GetDevice()->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
 
@@ -287,7 +289,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
             uav.Texture2DArray.MipSlice = textureViewDesc.mipOffset;
             uav.Texture2DArray.FirstArraySlice = textureViewDesc.arrayOffset;
             uav.Texture2DArray.ArraySize = remainingArrayLayers;
-            uav.Format = GetShaderFormatForDepth(formatInfo.typed);
+            uav.Format = GetShaderFormatForDepth(dxgiFormat.typed);
 
             hr = m_Device.GetDevice()->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
 
@@ -311,7 +313,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
                 rtv.Texture2DArray.FirstArraySlice = textureViewDesc.arrayOffset;
                 rtv.Texture2DArray.ArraySize = remainingArrayLayers;
             }
-            rtv.Format = formatInfo.typed;
+            rtv.Format = dxgiFormat.typed;
 
             hr = m_Device.GetDevice()->CreateRenderTargetView(texture, &rtv, (ID3D11RenderTargetView**)&m_Descriptor);
 
@@ -335,7 +337,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
                 dsv.Texture2DArray.FirstArraySlice = textureViewDesc.arrayOffset;
                 dsv.Texture2DArray.ArraySize = remainingArrayLayers;
             }
-            dsv.Format = formatInfo.typed;
+            dsv.Format = dxgiFormat.typed;
 
             if (textureViewDesc.flags & ResourceViewBits::READONLY_DEPTH)
                 dsv.Flags |= D3D11_DSV_READ_ONLY_DEPTH;
@@ -361,12 +363,13 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
 Result DescriptorD3D11::Create(const Texture3DViewDesc& textureViewDesc)
 {
     const TextureD3D11& texture = *(TextureD3D11*)textureViewDesc.texture;
-    const FormatInfo& formatInfo = GetFormatInfo(textureViewDesc.format);
-    HRESULT hr = E_INVALIDARG;
+    const DxgiFormat& dxgiFormat = GetDxgiFormat(textureViewDesc.format);
+    const FormatInfo& formatInfo = GetFormatProps(textureViewDesc.format);
 
     const TextureDesc& textureDesc = texture.GetDesc();
     uint32_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
 
+    HRESULT hr = E_INVALIDARG;
     switch (textureViewDesc.viewType)
     {
     case Texture3DViewType::SHADER_RESOURCE_3D:
@@ -376,7 +379,7 @@ Result DescriptorD3D11::Create(const Texture3DViewDesc& textureViewDesc)
             srv.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
             srv.Texture3D.MostDetailedMip = textureViewDesc.mipOffset;
             srv.Texture3D.MipLevels = remainingMipLevels;
-            srv.Format = formatInfo.typed;
+            srv.Format = dxgiFormat.typed;
 
             hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
@@ -391,7 +394,7 @@ Result DescriptorD3D11::Create(const Texture3DViewDesc& textureViewDesc)
             uav.Texture3D.MipSlice = textureViewDesc.mipOffset;
             uav.Texture3D.FirstWSlice = textureViewDesc.sliceOffset;
             uav.Texture3D.WSize = textureViewDesc.sliceNum;
-            uav.Format = formatInfo.typed;
+            uav.Format = dxgiFormat.typed;
 
             hr = m_Device.GetDevice()->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
 
@@ -406,7 +409,7 @@ Result DescriptorD3D11::Create(const Texture3DViewDesc& textureViewDesc)
             rtv.Texture3D.MipSlice = textureViewDesc.mipOffset;
             rtv.Texture3D.FirstWSlice = textureViewDesc.sliceOffset;
             rtv.Texture3D.WSize = textureViewDesc.sliceNum;
-            rtv.Format = formatInfo.typed;
+            rtv.Format = dxgiFormat.typed;
 
             hr = m_Device.GetDevice()->CreateRenderTargetView(texture, &rtv, (ID3D11RenderTargetView**)&m_Descriptor);
 
@@ -442,7 +445,8 @@ Result DescriptorD3D11::Create(const BufferViewDesc& bufferViewDesc)
     else if (stride)
         format = Format::UNKNOWN;
 
-    const FormatInfo& formatInfo = GetFormatInfo(format);
+    const DxgiFormat& dxgiFormat = GetDxgiFormat(format);
+    const FormatInfo& formatInfo = GetFormatProps(format);
     if (!stride )
         stride = formatInfo.stride;
 
@@ -462,7 +466,7 @@ Result DescriptorD3D11::Create(const BufferViewDesc& bufferViewDesc)
         {
             D3D11_SHADER_RESOURCE_VIEW_DESC srv = {};
 
-            srv.Format = formatInfo.typed;
+            srv.Format = dxgiFormat.typed;
             srv.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
             srv.Buffer.FirstElement = m_ElementOffset;
             srv.Buffer.NumElements = m_ElementNum;
@@ -476,7 +480,7 @@ Result DescriptorD3D11::Create(const BufferViewDesc& bufferViewDesc)
         {
             D3D11_UNORDERED_ACCESS_VIEW_DESC uav = {};
 
-            uav.Format = formatInfo.typed;
+            uav.Format = dxgiFormat.typed;
             uav.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
             uav.Buffer.FirstElement = m_ElementOffset;
             uav.Buffer.NumElements = m_ElementNum;

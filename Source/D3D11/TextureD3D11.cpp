@@ -14,50 +14,17 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-static inline uint16_t GetMaxMipNum(uint16_t w, uint16_t h, uint16_t d)
-{
-    uint16_t mipNum = 1;
-
-    while (w > 1 || h > 1 || d > 1)
-    {
-        if (w > 1)
-            w >>= 1;
-
-        if (h > 1)
-            h >>= 1;
-
-        if (d > 1)
-            d >>= 1;
-
-        mipNum++;
-    }
-
-    return mipNum;
-}
-
-TextureD3D11::TextureD3D11(DeviceD3D11& device, const TextureDesc& textureDesc) :
-    m_Device(device)
-    , m_Desc(textureDesc)
-{
-    uint16_t mipNum = GetMaxMipNum(m_Desc.size[0], m_Desc.size[1], m_Desc.size[2]);
-    m_Desc.mipNum = std::min(m_Desc.mipNum, mipNum);
-}
-
 Result TextureD3D11::Create(const MemoryD3D11* memory)
 {
-    HRESULT hr = E_INVALIDARG;
-    const FormatInfo& formatInfo = GetFormatInfo(m_Desc.format);
-    uint32_t bindFlags = 0;
+    const DxgiFormat& dxgiFormat = GetDxgiFormat(m_Desc.format);
 
+    uint32_t bindFlags = 0;
     if (m_Desc.usageMask & TextureUsageBits::SHADER_RESOURCE)
         bindFlags |= D3D11_BIND_SHADER_RESOURCE;
-
     if (m_Desc.usageMask & TextureUsageBits::SHADER_RESOURCE_STORAGE)
         bindFlags |= D3D11_BIND_UNORDERED_ACCESS;
-
     if (m_Desc.usageMask & TextureUsageBits::COLOR_ATTACHMENT)
         bindFlags |= D3D11_BIND_RENDER_TARGET;
-
     if (m_Desc.usageMask & TextureUsageBits::DEPTH_STENCIL_ATTACHMENT)
         bindFlags |= D3D11_BIND_DEPTH_STENCIL;
 
@@ -69,14 +36,14 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
         cpuAccessFlags = 0;
     }
 
+    HRESULT hr = E_INVALIDARG;
     if (m_Desc.type == TextureType::TEXTURE_1D)
     {
         D3D11_TEXTURE1D_DESC desc = {};
-
-        desc.Width = m_Desc.size[0];
+        desc.Width = m_Desc.width;
         desc.MipLevels = m_Desc.mipNum;
         desc.ArraySize = m_Desc.arraySize;
-        desc.Format = formatInfo.typeless;
+        desc.Format = dxgiFormat.typeless;
         desc.Usage = usage;
         desc.BindFlags = bindFlags;
         desc.CPUAccessFlags = cpuAccessFlags;
@@ -86,12 +53,11 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
     else if (m_Desc.type == TextureType::TEXTURE_3D)
     {
         D3D11_TEXTURE3D_DESC desc = {};
-
-        desc.Width = m_Desc.size[0];
-        desc.Height = m_Desc.size[1];
-        desc.Depth = m_Desc.size[2];
+        desc.Width = m_Desc.width;
+        desc.Height = m_Desc.height;
+        desc.Depth = m_Desc.depth;
         desc.MipLevels = m_Desc.mipNum;
-        desc.Format = formatInfo.typeless;
+        desc.Format = dxgiFormat.typeless;
         desc.Usage = usage;
         desc.BindFlags = bindFlags;
         desc.CPUAccessFlags = cpuAccessFlags;
@@ -101,12 +67,11 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
     else
     {
         D3D11_TEXTURE2D_DESC desc = {};
-
-        desc.Width = m_Desc.size[0];
-        desc.Height = m_Desc.size[1];
+        desc.Width = m_Desc.width;
+        desc.Height = m_Desc.height;
         desc.MipLevels = m_Desc.mipNum;
         desc.ArraySize = m_Desc.arraySize;
-        desc.Format = formatInfo.typeless;
+        desc.Format = dxgiFormat.typeless;
         desc.SampleDesc.Count = m_Desc.sampleNum;
         desc.Usage = usage;
         desc.BindFlags = bindFlags;
@@ -130,80 +95,10 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
 
 Result TextureD3D11::Create(const TextureD3D11Desc& textureDesc)
 {
-    ID3D11Resource* resource = (ID3D11Resource*)textureDesc.d3d11Resource;
-    if (!resource)
+    if (!GetTextureDesc(textureDesc, m_Desc))
         return Result::INVALID_ARGUMENT;
 
-    D3D11_RESOURCE_DIMENSION type;
-    resource->GetType(&type);
-
-    if ((uint32_t)type < D3D11_RESOURCE_DIMENSION_TEXTURE1D)
-        return Result::INVALID_ARGUMENT;
-
-    uint32_t bindFlags = 0;
-    if (type == D3D11_RESOURCE_DIMENSION_TEXTURE1D)
-    {
-        ID3D11Texture1D* texture = (ID3D11Texture1D*)resource;
-        D3D11_TEXTURE1D_DESC desc = {};
-        texture->GetDesc(&desc);
-
-        m_Desc.size[0] = (uint16_t)desc.Width;
-        m_Desc.size[1] = 1;
-        m_Desc.size[2] = 1;
-        m_Desc.mipNum = (uint16_t)desc.MipLevels;
-        m_Desc.arraySize = (uint16_t)desc.ArraySize;
-        m_Desc.sampleNum = 1;
-        m_Desc.type = TextureType::TEXTURE_1D;
-        m_Desc.format = DXGIFormatToNRIFormat(desc.Format);
-
-        bindFlags = desc.BindFlags;
-    }
-    else if (type == D3D11_RESOURCE_DIMENSION_TEXTURE2D)
-    {
-        ID3D11Texture2D* texture = (ID3D11Texture2D*)resource;
-        D3D11_TEXTURE2D_DESC desc = {};
-        texture->GetDesc(&desc);
-
-        m_Desc.size[0] = (uint16_t)desc.Width;
-        m_Desc.size[1] = (uint16_t)desc.Height;
-        m_Desc.size[2] = 1;
-        m_Desc.mipNum = (uint16_t)desc.MipLevels;
-        m_Desc.arraySize = (uint16_t)desc.ArraySize;
-        m_Desc.sampleNum = (uint8_t)desc.SampleDesc.Count;
-        m_Desc.type = TextureType::TEXTURE_2D;
-        m_Desc.format = DXGIFormatToNRIFormat(desc.Format);
-
-        bindFlags = desc.BindFlags;
-    }
-    else if (type == D3D11_RESOURCE_DIMENSION_TEXTURE3D)
-    {
-        ID3D11Texture3D* texture = (ID3D11Texture3D*)resource;
-        D3D11_TEXTURE3D_DESC desc = {};
-        texture->GetDesc(&desc);
-
-        m_Desc.size[0] = (uint16_t)desc.Width;
-        m_Desc.size[1] = (uint16_t)desc.Height;
-        m_Desc.size[2] = (uint16_t)desc.Depth;
-        m_Desc.mipNum = (uint16_t)desc.MipLevels;
-        m_Desc.arraySize = 1;
-        m_Desc.sampleNum = 1;
-        m_Desc.type = TextureType::TEXTURE_3D;
-        m_Desc.format = DXGIFormatToNRIFormat(desc.Format);
-
-        bindFlags = desc.BindFlags;
-    }
-
-    m_Desc.usageMask = TextureUsageBits::NONE;
-    if (bindFlags & D3D11_BIND_RENDER_TARGET)
-        m_Desc.usageMask |= TextureUsageBits::COLOR_ATTACHMENT;
-    if (bindFlags & D3D11_BIND_DEPTH_STENCIL)
-        m_Desc.usageMask |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
-    if (bindFlags & D3D11_BIND_SHADER_RESOURCE)
-        m_Desc.usageMask |= TextureUsageBits::SHADER_RESOURCE;
-    if (bindFlags & D3D11_BIND_UNORDERED_ACCESS)
-        m_Desc.usageMask |= TextureUsageBits::SHADER_RESOURCE_STORAGE;
-
-    m_Texture = resource;
+    m_Texture = (ID3D11Resource*)textureDesc.d3d11Resource;
 
     return Result::SUCCESS;
 }
@@ -249,7 +144,7 @@ uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, uint
         mipNum--;
     }
 
-    const FormatInfo& formatInfo = GetFormatInfo(m_Desc.format);
+    const FormatInfo& formatInfo = GetFormatProps(m_Desc.format);
     size *= formatInfo.stride;
 
     if (!isCustom)
@@ -259,6 +154,22 @@ uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, uint
     }
 
     return size;
+}
+
+uint16_t TextureD3D11::GetSize(uint32_t dimension, uint32_t mipOffset) const
+{
+    assert(dimension < 3);
+
+    uint16_t dim = m_Desc.depth;
+    if (dimension == 0)
+        dim = m_Desc.width;
+    else if (dimension == 1)
+        dim = m_Desc.height;
+
+    dim = (uint16_t)std::max(dim >> mipOffset, 1);
+    dim = Align(dim, dimension < 2 ? (uint16_t)GetFormatProps(m_Desc.format).blockWidth : 1);
+
+    return dim;
 }
 
 //================================================================================================================

@@ -18,7 +18,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 using namespace nri;
 
 TextureType GetTextureTypeVK(uint32_t vkImageType);
-TextureType GetTextureTypeD3D12(void* d3d12Resource);
 
 TextureVal::TextureVal(DeviceVal& device, Texture& texture, const TextureDesc& textureDesc) :
     DeviceObjectVal(device, texture),
@@ -30,7 +29,7 @@ TextureVal::TextureVal(DeviceVal& device, Texture& texture, const TextureDesc& t
 TextureVal::TextureVal(DeviceVal& device, Texture& texture, const TextureD3D11Desc& textureD3D11Desc) :
     DeviceObjectVal(device, texture)
 {
-    GetTextureDescD3D11(textureD3D11Desc, m_TextureDesc);
+    GetTextureDesc(textureD3D11Desc, m_TextureDesc);
 }
 #endif
 
@@ -38,24 +37,19 @@ TextureVal::TextureVal(DeviceVal& device, Texture& texture, const TextureD3D11De
 TextureVal::TextureVal(DeviceVal& device, Texture& texture, const TextureD3D12Desc& textureD3D12Desc) :
     DeviceObjectVal(device, texture)
 {
-    GetTextureDescD3D12(textureD3D12Desc, m_TextureDesc);
+    GetTextureDesc(textureD3D12Desc, m_TextureDesc);
 }
 #endif
 
 TextureVal::TextureVal(DeviceVal& device, Texture& texture, const TextureVKDesc& textureVKDesc) :
     DeviceObjectVal(device, texture)
 {
-    m_TextureDesc = {};
     m_TextureDesc.type = GetTextureTypeVK(textureVKDesc.vkImageType);
+    m_TextureDesc.usageMask = (TextureUsageBits)(-1);
     m_TextureDesc.format = nriConvertVKFormatToNRI(textureVKDesc.vkFormat);
-
-    static_assert(sizeof(TextureUsageBits) == sizeof(uint16_t), "Unexpected TextureUsageBits sizeof");
-    m_TextureDesc.usageMask = (TextureUsageBits)0xffff;
-
-    m_TextureDesc.size[0] = textureVKDesc.size[0];
-    m_TextureDesc.size[1] = textureVKDesc.size[1];
-    m_TextureDesc.size[2] = textureVKDesc.size[2];
-
+    m_TextureDesc.width = textureVKDesc.width;
+    m_TextureDesc.height = textureVKDesc.height;
+    m_TextureDesc.depth = textureVKDesc.depth;
     m_TextureDesc.mipNum = textureVKDesc.mipNum;
     m_TextureDesc.arraySize = textureVKDesc.arraySize;
     m_TextureDesc.sampleNum = textureVKDesc.sampleNum;

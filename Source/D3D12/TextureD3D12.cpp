@@ -14,56 +14,55 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-extern D3D12_RESOURCE_DIMENSION GetResourceDimension(TextureType textureType);
-extern DXGI_FORMAT GetTypelessFormat(Format format);
-extern D3D12_RESOURCE_FLAGS GetTextureFlags(TextureUsageBits textureUsageMask);
+static D3D12_RESOURCE_DESC GetResourceDesc(const TextureDesc& textureDesc)
+{
+    uint16_t blockWidth = (uint16_t)GetFormatProps(textureDesc.format).blockWidth;
+
+    D3D12_RESOURCE_DESC desc = {};
+    desc.Dimension = GetResourceDimension(textureDesc.type);
+    desc.Alignment = textureDesc.sampleNum > 1 ? 0 : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+    desc.Width = Align(textureDesc.width, blockWidth);
+    desc.Height = Align(textureDesc.height, blockWidth);
+    desc.DepthOrArraySize = textureDesc.type == TextureType::TEXTURE_3D ? textureDesc.depth : textureDesc.arraySize;
+    desc.MipLevels = textureDesc.mipNum;
+    desc.Format = GetDxgiFormat(textureDesc.format).typeless;
+    desc.SampleDesc.Count = textureDesc.sampleNum;
+    desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    desc.Flags = GetTextureFlags(textureDesc.usageMask);
+
+    return desc;
+}
 
 Result TextureD3D12::Create(const TextureDesc& textureDesc)
 {
-    uint16_t blockWidth = (uint16_t)GetTexelBlockWidth(textureDesc.format);
-
-    m_TextureDesc.Dimension = GetResourceDimension(textureDesc.type);
-    m_TextureDesc.Alignment = textureDesc.sampleNum > 1 ? 0 : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-    m_TextureDesc.Width = Align(textureDesc.size[0], blockWidth);
-    m_TextureDesc.Height = Align(textureDesc.size[1], blockWidth);
-    m_TextureDesc.DepthOrArraySize = textureDesc.type == TextureType::TEXTURE_3D ? textureDesc.size[2] : textureDesc.arraySize;
-    m_TextureDesc.MipLevels = textureDesc.mipNum;
-    m_TextureDesc.Format = GetTypelessFormat(textureDesc.format);
-    m_TextureDesc.SampleDesc.Count = textureDesc.sampleNum;
-    m_TextureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    m_TextureDesc.Flags = GetTextureFlags(textureDesc.usageMask);
-
-    m_Format = textureDesc.format;
+    m_Desc = textureDesc;
 
     return Result::SUCCESS;
 }
 
 Result TextureD3D12::Create(const TextureD3D12Desc& textureDesc)
 {
-    Initialize((ID3D12Resource*)textureDesc.d3d12Resource);
+    if (!GetTextureDesc(textureDesc, m_Desc))
+        return Result::INVALID_ARGUMENT;
+
+    m_Texture = textureDesc.d3d12Resource;
 
     return Result::SUCCESS;
 }
 
-void TextureD3D12::Initialize(ID3D12Resource* resource)
-{
-    m_Texture = resource;
-    m_TextureDesc = resource->GetDesc();
-    m_Format = DXGIFormatToNRIFormat((uint32_t)m_TextureDesc.Format);
-}
-
 Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset)
 {
+    D3D12_RESOURCE_DESC desc = GetResourceDesc(m_Desc);
     const D3D12_HEAP_DESC& heapDesc = memory->GetHeapDesc();
-    D3D12_CLEAR_VALUE clearValue = { GetDXGIFormat(m_Format) };
-    bool isRenderableSurface = m_TextureDesc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+    D3D12_CLEAR_VALUE clearValue = { GetDxgiFormat(m_Desc.format).typed };
+    bool isRenderableSurface = desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
     if (memory->RequiresDedicatedAllocation())
     {
         HRESULT hr = ((ID3D12Device*)m_Device)->CreateCommittedResource(
             &heapDesc.Properties,
             D3D12_HEAP_FLAG_CREATE_NOT_ZEROED,
-            &m_TextureDesc,
+            &desc,
             D3D12_RESOURCE_STATE_COMMON,
             isRenderableSurface ? &clearValue : nullptr,
             IID_PPV_ARGS(&m_Texture)
@@ -76,7 +75,7 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset)
         HRESULT hr = ((ID3D12Device*)m_Device)->CreatePlacedResource(
             *memory,
             offset,
-            &m_TextureDesc,
+            &desc,
             D3D12_RESOURCE_STATE_COMMON,
             isRenderableSurface ? &clearValue : nullptr,
             IID_PPV_ARGS(&m_Texture)
@@ -92,18 +91,18 @@ uint16_t TextureD3D12::GetSize(uint32_t dimension, uint32_t mipOffset) const
 {
     assert(dimension < 3);
 
-    uint16_t size;
+    uint16_t dim;
     if (dimension == 0)
-        size = (uint16_t)m_TextureDesc.Width;
+        dim = (uint16_t)m_Desc.width;
     else if (dimension == 1)
-        size = (uint16_t)m_TextureDesc.Height;
+        dim = (uint16_t)m_Desc.height;
     else
-        size = (uint16_t)m_TextureDesc.DepthOrArraySize;
+        dim = (uint16_t)m_Desc.depth;
 
-    size = (uint16_t)std::max(size >> mipOffset, 1);
-    size = Align(size, dimension < 2 ? (uint16_t)GetTexelBlockWidth(m_Format) : 1);
+    dim = (uint16_t)std::max(dim >> mipOffset, 1);
+    dim = Align(dim, dimension < 2 ? (uint16_t)GetFormatProps(m_Desc.format).blockWidth : 1);
 
-    return size;
+    return dim;
 }
 
 //================================================================================================================
@@ -112,7 +111,8 @@ uint16_t TextureD3D12::GetSize(uint32_t dimension, uint32_t mipOffset) const
 
 inline void TextureD3D12::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const
 {
-    m_Device.GetMemoryInfo(memoryLocation, m_TextureDesc, memoryDesc);
+    D3D12_RESOURCE_DESC desc = GetResourceDesc(m_Desc);
+    m_Device.GetMemoryInfo(memoryLocation, desc, memoryDesc);
 }
 
 #include "TextureD3D12.hpp"

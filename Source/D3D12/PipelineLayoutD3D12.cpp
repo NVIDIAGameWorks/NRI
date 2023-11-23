@@ -13,13 +13,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-extern D3D12_SHADER_VISIBILITY GetShaderVisibility(ShaderStage shaderStage);
-extern D3D12_DESCRIPTOR_RANGE_TYPE GetDescriptorRangesType(DescriptorType descriptorType);
-extern D3D12_COMPARISON_FUNC GetComparisonFunc(CompareFunc compareFunc);
-extern D3D12_FILTER GetFilterIsotropic(Filter mip, Filter magnification, Filter minification, FilterExt filterExt, bool useComparison);
-extern D3D12_FILTER GetFilterAnisotropic(FilterExt filterExt, bool useComparison);
-extern D3D12_TEXTURE_ADDRESS_MODE GetAddressMode(AddressMode addressMode);
-
 D3D12_ROOT_SIGNATURE_FLAGS GetRootSignatureStageFlags(const PipelineLayoutDesc& pipelineLayoutDesc, const DeviceD3D12& device)
 {
     D3D12_ROOT_SIGNATURE_FLAGS flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;

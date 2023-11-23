@@ -102,7 +102,7 @@ void FrameBufferD3D11::ClearAttachments(VersionedContext& context, const ClearDe
         for (uint32_t i = 0; i < rectNum; i++)
         {
             const Rect& rect = rects[i];
-            winRect[i] = { rect.left, rect.top, (LONG)(rect.left + rect.width), (LONG)(rect.top + rect.height) };
+            winRect[i] = { rect.x, rect.y, (LONG)(rect.x + rect.width), (LONG)(rect.y + rect.height) };
         }
 
         if (context.version >= 1)

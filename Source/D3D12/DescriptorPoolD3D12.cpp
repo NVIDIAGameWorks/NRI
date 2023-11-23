@@ -14,8 +14,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-extern D3D12_DESCRIPTOR_HEAP_TYPE GetDescriptorHeapType(DescriptorType descriptorType);
-
 Result DescriptorPoolD3D12::Create(const DescriptorPoolDesc& descriptorPoolDesc)
 {
     uint32_t descriptorHeapSize[DescriptorHeapType::MAX_NUM] = {};

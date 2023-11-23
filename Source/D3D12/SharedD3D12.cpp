@@ -19,7 +19,7 @@ constexpr std::array<D3D12_COMMAND_LIST_TYPE, (uint32_t)CommandQueueType::MAX_NU
     D3D12_COMMAND_LIST_TYPE_COPY                // COPY
 };
 
-D3D12_COMMAND_LIST_TYPE GetCommandListType(CommandQueueType commandQueueType)
+D3D12_COMMAND_LIST_TYPE nri::GetCommandListType(CommandQueueType commandQueueType)
 {
     return COMMAND_LIST_TYPES[(uint32_t)commandQueueType];
 }
@@ -31,12 +31,12 @@ constexpr std::array<D3D12_HEAP_TYPE, (uint32_t)MemoryLocation::MAX_NUM> HEAP_TY
     D3D12_HEAP_TYPE_READBACK                    // HOST_READBACK
 };
 
-MemoryType GetMemoryType(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags)
+MemoryType nri::GetMemoryType(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags)
 {
     return ((uint32_t)heapFlags) | ((uint32_t)heapType << 16);
 }
 
-MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc)
+MemoryType nri::GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc)
 {
     D3D12_HEAP_TYPE heapType = HEAP_TYPES[(uint32_t)memoryLocation];
     D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE;
@@ -52,17 +52,17 @@ MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DES
     return GetMemoryType(heapType, heapFlags);
 }
 
-D3D12_HEAP_TYPE GetHeapType(MemoryType memoryType)
+D3D12_HEAP_TYPE nri::GetHeapType(MemoryType memoryType)
 {
     return (D3D12_HEAP_TYPE)(memoryType >> 16);
 }
 
-D3D12_HEAP_FLAGS GetHeapFlags(MemoryType memoryType)
+D3D12_HEAP_FLAGS nri::GetHeapFlags(MemoryType memoryType)
 {
     return (D3D12_HEAP_FLAGS)(memoryType & 0xffff);
 }
 
-bool RequiresDedicatedAllocation(MemoryType memoryType)
+bool nri::RequiresDedicatedAllocation(MemoryType memoryType)
 {
     D3D12_HEAP_FLAGS heapFlags = GetHeapFlags(memoryType);
 
@@ -72,7 +72,7 @@ bool RequiresDedicatedAllocation(MemoryType memoryType)
     return false;
 }
 
-D3D12_RESOURCE_STATES GetResourceStates(AccessBits accessMask, D3D12_COMMAND_LIST_TYPE commandListType)
+D3D12_RESOURCE_STATES nri::GetResourceStates(AccessBits accessMask, D3D12_COMMAND_LIST_TYPE commandListType)
 {
     D3D12_RESOURCE_STATES resourceStates = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON; // TODO: PS resource and/or non-PS resource?
 
@@ -108,7 +108,7 @@ D3D12_RESOURCE_STATES GetResourceStates(AccessBits accessMask, D3D12_COMMAND_LIS
     return resourceStates;
 }
 
-D3D12_RESOURCE_FLAGS GetBufferFlags(BufferUsageBits bufferUsageMask)
+D3D12_RESOURCE_FLAGS nri::GetBufferFlags(BufferUsageBits bufferUsageMask)
 {
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
@@ -118,7 +118,7 @@ D3D12_RESOURCE_FLAGS GetBufferFlags(BufferUsageBits bufferUsageMask)
     return flags;
 };
 
-D3D12_RESOURCE_FLAGS GetTextureFlags(TextureUsageBits textureUsageMask)
+D3D12_RESOURCE_FLAGS nri::GetTextureFlags(TextureUsageBits textureUsageMask)
 {
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
@@ -139,7 +139,7 @@ D3D12_RESOURCE_FLAGS GetTextureFlags(TextureUsageBits textureUsageMask)
     return flags;
 };
 
-D3D12_RESOURCE_DIMENSION GetResourceDimension(TextureType textureType)
+D3D12_RESOURCE_DIMENSION nri::GetResourceDimension(TextureType textureType)
 {
     if (textureType == TextureType::TEXTURE_1D)
         return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
@@ -163,12 +163,12 @@ constexpr std::array<D3D12_DESCRIPTOR_RANGE_TYPE, (uint32_t)DescriptorType::MAX_
     D3D12_DESCRIPTOR_RANGE_TYPE_SRV             // ACCELERATION_STRUCTURE
 };
 
-D3D12_DESCRIPTOR_RANGE_TYPE GetDescriptorRangesType(DescriptorType descriptorType)
+D3D12_DESCRIPTOR_RANGE_TYPE nri::GetDescriptorRangesType(DescriptorType descriptorType)
 {
     return DESCRIPTOR_RANGE_TYPES[(uint32_t)descriptorType];
 }
 
-D3D12_DESCRIPTOR_HEAP_TYPE GetDescriptorHeapType(DescriptorType descriptorType)
+D3D12_DESCRIPTOR_HEAP_TYPE nri::GetDescriptorHeapType(DescriptorType descriptorType)
 {
     return descriptorType == DescriptorType::SAMPLER ? D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER : D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 }
@@ -191,7 +191,7 @@ constexpr std::array<D3D12_SHADER_VISIBILITY, (uint32_t)ShaderStage::MAX_NUM> SH
     D3D12_SHADER_VISIBILITY_MESH                // MESH_EVALUATION
 };
 
-D3D12_SHADER_VISIBILITY GetShaderVisibility(ShaderStage shaderStage)
+D3D12_SHADER_VISIBILITY nri::GetShaderVisibility(ShaderStage shaderStage)
 {
     return SHADER_STAGES[(uint32_t)shaderStage];
 }
@@ -209,7 +209,7 @@ constexpr std::array<D3D12_PRIMITIVE_TOPOLOGY_TYPE, (uint32_t)Topology::MAX_NUM>
     D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH         // PATCH_LIST
 };
 
-D3D12_PRIMITIVE_TOPOLOGY_TYPE GetPrimitiveTopologyType(Topology topology)
+D3D12_PRIMITIVE_TOPOLOGY_TYPE nri::GetPrimitiveTopologyType(Topology topology)
 {
     return PRIMITIVE_TOPOLOGY_TYPES[(uint32_t)topology];
 }
@@ -226,7 +226,7 @@ constexpr std::array<D3D_PRIMITIVE_TOPOLOGY, 9> PRIMITIVE_TOPOLOGIES = {
     D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ    // TRIANGLE_STRIP_WITH_ADJACENCY
 };
 
-D3D_PRIMITIVE_TOPOLOGY GetPrimitiveTopology(Topology topology, uint8_t tessControlPointNum)
+D3D_PRIMITIVE_TOPOLOGY nri::GetPrimitiveTopology(Topology topology, uint8_t tessControlPointNum)
 {
     if (topology == Topology::PATCH_LIST)
         return (D3D_PRIMITIVE_TOPOLOGY)((uint8_t)D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ + tessControlPointNum);
@@ -239,7 +239,7 @@ constexpr std::array<D3D12_FILL_MODE, (uint32_t)FillMode::MAX_NUM> FILL_MODES = 
     D3D12_FILL_MODE_WIREFRAME                   // WIREFRAME
 };
 
-D3D12_FILL_MODE GetFillMode(FillMode fillMode)
+D3D12_FILL_MODE nri::GetFillMode(FillMode fillMode)
 {
     return FILL_MODES[(uint32_t)fillMode];
 }
@@ -250,12 +250,12 @@ constexpr std::array<D3D12_CULL_MODE, (uint32_t)CullMode::MAX_NUM> CULL_MODES = 
     D3D12_CULL_MODE_BACK                        // BACK
 };
 
-D3D12_CULL_MODE GetCullMode(CullMode cullMode)
+D3D12_CULL_MODE nri::GetCullMode(CullMode cullMode)
 {
     return CULL_MODES[(uint32_t)cullMode];
 }
 
-UINT8 GetRenderTargetWriteMask(ColorWriteBits colorWriteMask)
+UINT8 nri::GetRenderTargetWriteMask(ColorWriteBits colorWriteMask)
 {
     return colorWriteMask & ColorWriteBits::RGBA;
 }
@@ -272,7 +272,7 @@ constexpr std::array<D3D12_COMPARISON_FUNC, (uint32_t)CompareFunc::MAX_NUM> COMP
     D3D12_COMPARISON_FUNC_NOT_EQUAL             // NOT_EQUAL
 };
 
-D3D12_COMPARISON_FUNC GetComparisonFunc(CompareFunc compareFunc)
+D3D12_COMPARISON_FUNC nri::GetComparisonFunc(CompareFunc compareFunc)
 {
     return COMPARISON_FUNCS[(uint32_t)compareFunc];
 }
@@ -288,7 +288,7 @@ constexpr std::array<D3D12_STENCIL_OP, (uint32_t)StencilFunc::MAX_NUM> STENCIL_O
     D3D12_STENCIL_OP_DECR                       // DECREMENT_AND_WRAP
 };
 
-D3D12_STENCIL_OP GetStencilOp(StencilFunc stencilFunc)
+D3D12_STENCIL_OP nri::GetStencilOp(StencilFunc stencilFunc)
 {
     return STENCIL_OPS[(uint32_t)stencilFunc];
 }
@@ -312,7 +312,7 @@ constexpr std::array<D3D12_LOGIC_OP, (uint32_t)LogicFunc::MAX_NUM> LOGIC_OPS = {
     D3D12_LOGIC_OP_SET                          // SET
 };
 
-D3D12_LOGIC_OP GetLogicOp(LogicFunc logicFunc)
+D3D12_LOGIC_OP nri::GetLogicOp(LogicFunc logicFunc)
 {
     return LOGIC_OPS[(uint32_t)logicFunc];
 }
@@ -340,7 +340,7 @@ constexpr std::array<D3D12_BLEND, (uint32_t)BlendFactor::MAX_NUM> BLENDS =
     D3D12_BLEND_INV_SRC1_ALPHA                  // ONE_MINUS_SRC1_ALPHA
 };
 
-D3D12_BLEND GetBlend(BlendFactor blendFactor)
+D3D12_BLEND nri::GetBlend(BlendFactor blendFactor)
 {
     return BLENDS[(uint32_t)blendFactor];
 }
@@ -354,7 +354,7 @@ constexpr std::array<D3D12_BLEND_OP, (uint32_t)BlendFunc::MAX_NUM> BLEND_OPS =
     D3D12_BLEND_OP_MAX                          // MAX
 };
 
-D3D12_BLEND_OP GetBlendOp(BlendFunc blendFunc)
+D3D12_BLEND_OP nri::GetBlendOp(BlendFunc blendFunc)
 {
     return BLEND_OPS[(uint32_t)blendFunc];
 }
@@ -366,12 +366,12 @@ constexpr std::array<D3D12_TEXTURE_ADDRESS_MODE, (uint32_t)AddressMode::MAX_NUM>
     D3D12_TEXTURE_ADDRESS_MODE_BORDER           // CLAMP_TO_BORDER
 };
 
-D3D12_TEXTURE_ADDRESS_MODE GetAddressMode(AddressMode addressMode)
+D3D12_TEXTURE_ADDRESS_MODE nri::GetAddressMode(AddressMode addressMode)
 {
     return TEXTURE_ADDRESS_MODES[(uint32_t)addressMode];
 }
 
-D3D12_FILTER GetFilterIsotropic(Filter mip, Filter magnification, Filter minification, FilterExt filterExt, bool useComparison)
+D3D12_FILTER nri::GetFilterIsotropic(Filter mip, Filter magnification, Filter minification, FilterExt filterExt, bool useComparison)
 {
     uint32_t combinedMask = 0;
     combinedMask |= mip == Filter::LINEAR ? 0x1 : 0;
@@ -388,7 +388,7 @@ D3D12_FILTER GetFilterIsotropic(Filter mip, Filter magnification, Filter minific
     return (D3D12_FILTER)combinedMask;
 }
 
-D3D12_FILTER GetFilterAnisotropic(FilterExt filterExt, bool useComparison)
+D3D12_FILTER nri::GetFilterAnisotropic(FilterExt filterExt, bool useComparison)
 {
     if (filterExt == FilterExt::MIN)
         return D3D12_FILTER_MINIMUM_ANISOTROPIC;
@@ -407,7 +407,7 @@ constexpr std::array<D3D12_QUERY_TYPE, (uint32_t)QueryType::MAX_NUM> QUERY_TYPES
     (D3D12_QUERY_TYPE)-1                                // ACCELERATION_STRUCTURE_COMPACTED_SIZE
 };
 
-D3D12_QUERY_TYPE GetQueryType(QueryType queryType)
+D3D12_QUERY_TYPE nri::GetQueryType(QueryType queryType)
 {
     return QUERY_TYPES[(uint32_t)queryType];
 }
@@ -421,12 +421,12 @@ constexpr std::array<D3D12_QUERY_HEAP_TYPE, (uint32_t)QueryType::MAX_NUM> QUERY_
     (D3D12_QUERY_HEAP_TYPE)-1                           // ACCELERATION_STRUCTURE_COMPACTED_SIZE
 };
 
-D3D12_QUERY_HEAP_TYPE GetQueryHeapType(QueryType queryType)
+D3D12_QUERY_HEAP_TYPE nri::GetQueryHeapType(QueryType queryType)
 {
     return QUERY_HEAP_TYPES[(uint32_t)queryType];
 }
 
-uint32_t GetQueryElementSize(D3D12_QUERY_TYPE queryType)
+uint32_t nri::GetQueryElementSize(D3D12_QUERY_TYPE queryType)
 {
     if (queryType == D3D12_QUERY_TYPE_TIMESTAMP)
         return sizeof(uint64_t);
@@ -438,254 +438,18 @@ uint32_t GetQueryElementSize(D3D12_QUERY_TYPE queryType)
     return 0;
 }
 
-void ConvertRects(D3D12_RECT* rectsD3D12, const Rect* rects, uint32_t rectNum)
+void nri::ConvertRects(D3D12_RECT* rectsD3D12, const Rect* rects, uint32_t rectNum)
 {
     for (uint32_t i = 0; i < rectNum; i++)
     {
-        rectsD3D12[i].left = rects[i].left;
-        rectsD3D12[i].top = rects[i].top;
-        rectsD3D12[i].right = rects[i].left + rects[i].width;
-        rectsD3D12[i].bottom = rects[i].top + rects[i].height;
+        rectsD3D12[i].left = rects[i].x;
+        rectsD3D12[i].top = rects[i].y;
+        rectsD3D12[i].right = rects[i].x + rects[i].width;
+        rectsD3D12[i].bottom = rects[i].y + rects[i].height;
     }
 }
 
-constexpr std::array<DXGI_FORMAT, (uint32_t)Format::MAX_NUM> DXGI_FORMATS = {
-    DXGI_FORMAT_UNKNOWN,                                // UNKNOWN
-    DXGI_FORMAT_R8_UNORM,                               // R8_UNORM,
-    DXGI_FORMAT_R8_SNORM,                               // R8_SNORM,
-    DXGI_FORMAT_R8_UINT,                                // R8_UINT,
-    DXGI_FORMAT_R8_SINT,                                // R8_SINT,
-    DXGI_FORMAT_R8G8_UNORM,                             // RG8_UNORM,
-    DXGI_FORMAT_R8G8_SNORM,                             // RG8_SNORM,
-    DXGI_FORMAT_R8G8_UINT,                              // RG8_UINT,
-    DXGI_FORMAT_R8G8_SINT,                              // RG8_SINT,
-    DXGI_FORMAT_B8G8R8A8_UNORM,                         // BGRA8_UNORM,
-    DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,                    // BGRA8_SRGB,
-    DXGI_FORMAT_R8G8B8A8_UNORM,                         // RGBA8_UNORM,
-    DXGI_FORMAT_R8G8B8A8_SNORM,                         // RGBA8_SNORM,
-    DXGI_FORMAT_R8G8B8A8_UINT,                          // RGBA8_UINT,
-    DXGI_FORMAT_R8G8B8A8_SINT,                          // RGBA8_SINT,
-    DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,                    // RGBA8_SRGB,
-    DXGI_FORMAT_R16_UNORM,                              // R16_UNORM,
-    DXGI_FORMAT_R16_SNORM,                              // R16_SNORM,
-    DXGI_FORMAT_R16_UINT,                               // R16_UINT,
-    DXGI_FORMAT_R16_SINT,                               // R16_SINT,
-    DXGI_FORMAT_R16_FLOAT,                              // R16_SFLOAT,
-    DXGI_FORMAT_R16G16_UNORM,                           // RG16_UNORM,
-    DXGI_FORMAT_R16G16_SNORM,                           // RG16_SNORM,
-    DXGI_FORMAT_R16G16_UINT,                            // RG16_UINT,
-    DXGI_FORMAT_R16G16_SINT,                            // RG16_SINT,
-    DXGI_FORMAT_R16G16_FLOAT,                           // RG16_SFLOAT,
-    DXGI_FORMAT_R16G16B16A16_UNORM,                     // RGBA16_UNORM,
-    DXGI_FORMAT_R16G16B16A16_SNORM,                     // RGBA16_SNORM,
-    DXGI_FORMAT_R16G16B16A16_UINT,                      // RGBA16_UINT,
-    DXGI_FORMAT_R16G16B16A16_SINT,                      // RGBA16_SINT,
-    DXGI_FORMAT_R16G16B16A16_FLOAT,                     // RGBA16_SFLOAT,
-    DXGI_FORMAT_R32_UINT,                               // R32_UINT,
-    DXGI_FORMAT_R32_SINT,                               // R32_SINT,
-    DXGI_FORMAT_R32_FLOAT,                              // R32_SFLOAT,
-    DXGI_FORMAT_R32G32_UINT,                            // RG32_UINT,
-    DXGI_FORMAT_R32G32_SINT,                            // RG32_SINT,
-    DXGI_FORMAT_R32G32_FLOAT,                           // RG32_SFLOAT,
-    DXGI_FORMAT_R32G32B32_UINT,                         // RGB32_UINT,
-    DXGI_FORMAT_R32G32B32_SINT,                         // RGB32_SINT,
-    DXGI_FORMAT_R32G32B32_FLOAT,                        // RGB32_SFLOAT,
-    DXGI_FORMAT_R32G32B32A32_UINT,                      // RGBA32_UINT,
-    DXGI_FORMAT_R32G32B32A32_SINT,                      // RGBA32_SINT,
-    DXGI_FORMAT_R32G32B32A32_FLOAT,                     // RGBA32_SFLOAT,
-    DXGI_FORMAT_R10G10B10A2_UNORM,                      // R10_G10_B10_A2_UNORM,
-    DXGI_FORMAT_R10G10B10A2_UINT,                       // R10_G10_B10_A2_UINT,
-    DXGI_FORMAT_R11G11B10_FLOAT,                        // R11_G11_B10_UFLOAT,
-    DXGI_FORMAT_R9G9B9E5_SHAREDEXP,                     // R9_G9_B9_E5_UFLOAT,
-    DXGI_FORMAT_BC1_UNORM,                              // BC1_RGBA_UNORM,
-    DXGI_FORMAT_BC1_UNORM_SRGB,                         // BC1_RGBA_SRGB,
-    DXGI_FORMAT_BC2_UNORM,                              // BC2_RGBA_UNORM,
-    DXGI_FORMAT_BC2_UNORM_SRGB,                         // BC2_RGBA_SRGB,
-    DXGI_FORMAT_BC3_UNORM,                              // BC3_RGBA_UNORM,
-    DXGI_FORMAT_BC3_UNORM_SRGB,                         // BC3_RGBA_SRGB,
-    DXGI_FORMAT_BC4_UNORM,                              // BC4_R_UNORM,
-    DXGI_FORMAT_BC4_SNORM,                              // BC4_R_SNORM,
-    DXGI_FORMAT_BC5_UNORM,                              // BC5_RG_UNORM,
-    DXGI_FORMAT_BC5_SNORM,                              // BC5_RG_SNORM,
-    DXGI_FORMAT_BC6H_UF16,                              // BC6H_RGB_UFLOAT,
-    DXGI_FORMAT_BC6H_SF16,                              // BC6H_RGB_SFLOAT,
-    DXGI_FORMAT_BC7_UNORM,                              // BC7_RGBA_UNORM,
-    DXGI_FORMAT_BC7_UNORM_SRGB,                         // BC7_RGBA_SRGB,
-    DXGI_FORMAT_D16_UNORM,                              // D16_UNORM,
-    DXGI_FORMAT_D24_UNORM_S8_UINT,                      // D24_UNORM_S8_UINT,
-    DXGI_FORMAT_D32_FLOAT,                              // D32_SFLOAT,
-    DXGI_FORMAT_D32_FLOAT_S8X24_UINT,                   // D32_SFLOAT_S8_UINT_X24_TYPELESS,
-    DXGI_FORMAT_R24_UNORM_X8_TYPELESS,                  // D24_UNORM_X8_TYPELESS,
-    DXGI_FORMAT_X24_TYPELESS_G8_UINT,                   // X24_TYPLESS_S8_UINT,
-    DXGI_FORMAT_X32_TYPELESS_G8X24_UINT,                // X32_TYPLESS_S8_UINT_X24_TYPELESS,
-    DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS                // D32_SFLOAT_X8_TYPLESS_X24_TYPELESS,
-};
-
-DXGI_FORMAT GetDXGIFormat(Format format)
-{
-    return DXGI_FORMATS[(uint32_t)format];
-}
-
-uint32_t NRIFormatToDXGIFormatD3D12(Format format)
-{
-    return (uint32_t)GetDXGIFormat(format);
-}
-
-constexpr std::array<DXGI_FORMAT, (uint32_t)Format::MAX_NUM> DXGI_TYPELESS_FORMATS = {
-    DXGI_FORMAT_UNKNOWN,                                    // UNKNOWN
-    DXGI_FORMAT_R8_TYPELESS,                                // R8_UNORM,
-    DXGI_FORMAT_R8_TYPELESS,                                // R8_SNORM,
-    DXGI_FORMAT_R8_TYPELESS,                                // R8_UINT,
-    DXGI_FORMAT_R8_TYPELESS,                                // R8_SINT,
-    DXGI_FORMAT_R8G8_TYPELESS,                              // RG8_UNORM,
-    DXGI_FORMAT_R8G8_TYPELESS,                              // RG8_SNORM,
-    DXGI_FORMAT_R8G8_TYPELESS,                              // RG8_UINT,
-    DXGI_FORMAT_R8G8_TYPELESS,                              // RG8_SINT,
-    DXGI_FORMAT_B8G8R8A8_TYPELESS,                          // BGRA8_UNORM,
-    DXGI_FORMAT_B8G8R8A8_TYPELESS,                          // BGRA8_SRGB,
-    DXGI_FORMAT_R8G8B8A8_TYPELESS,                          // RGBA8_UNORM,
-    DXGI_FORMAT_R8G8B8A8_TYPELESS,                          // RGBA8_SNORM,
-    DXGI_FORMAT_R8G8B8A8_TYPELESS,                          // RGBA8_UINT,
-    DXGI_FORMAT_R8G8B8A8_TYPELESS,                          // RGBA8_SINT,
-    DXGI_FORMAT_R8G8B8A8_TYPELESS,                          // RGBA8_SRGB,
-    DXGI_FORMAT_R16_TYPELESS,                               // R16_UNORM,
-    DXGI_FORMAT_R16_TYPELESS,                               // R16_SNORM,
-    DXGI_FORMAT_R16_TYPELESS,                               // R16_UINT,
-    DXGI_FORMAT_R16_TYPELESS,                               // R16_SINT,
-    DXGI_FORMAT_R16_TYPELESS,                               // R16_SFLOAT,
-    DXGI_FORMAT_R16G16_TYPELESS,                            // RG16_UNORM,
-    DXGI_FORMAT_R16G16_TYPELESS,                            // RG16_SNORM,
-    DXGI_FORMAT_R16G16_TYPELESS,                            // RG16_UINT,
-    DXGI_FORMAT_R16G16_TYPELESS,                            // RG16_SINT,
-    DXGI_FORMAT_R16G16_TYPELESS,                            // RG16_SFLOAT,
-    DXGI_FORMAT_R16G16B16A16_TYPELESS,                      // RGBA16_UNORM,
-    DXGI_FORMAT_R16G16B16A16_TYPELESS,                      // RGBA16_SNORM,
-    DXGI_FORMAT_R16G16B16A16_TYPELESS,                      // RGBA16_UINT,
-    DXGI_FORMAT_R16G16B16A16_TYPELESS,                      // RGBA16_SINT,
-    DXGI_FORMAT_R16G16B16A16_TYPELESS,                      // RGBA16_SFLOAT,
-    DXGI_FORMAT_R32_TYPELESS,                               // R32_UINT,
-    DXGI_FORMAT_R32_TYPELESS,                               // R32_SINT,
-    DXGI_FORMAT_R32_TYPELESS,                               // R32_SFLOAT,
-    DXGI_FORMAT_R32G32_TYPELESS,                            // RG32_UINT,
-    DXGI_FORMAT_R32G32_TYPELESS,                            // RG32_SINT,
-    DXGI_FORMAT_R32G32_TYPELESS,                            // RG32_SFLOAT,
-    DXGI_FORMAT_R32G32B32_TYPELESS,                         // RGB32_UINT,
-    DXGI_FORMAT_R32G32B32_TYPELESS,                         // RGB32_SINT,
-    DXGI_FORMAT_R32G32B32_TYPELESS,                         // RGB32_SFLOAT,
-    DXGI_FORMAT_R32G32B32A32_TYPELESS,                      // RGBA32_UINT,
-    DXGI_FORMAT_R32G32B32A32_TYPELESS,                      // RGBA32_SINT,
-    DXGI_FORMAT_R32G32B32A32_TYPELESS,                      // RGBA32_SFLOAT,
-    DXGI_FORMAT_R10G10B10A2_TYPELESS,                       // R10_G10_B10_A2_UNORM,
-    DXGI_FORMAT_R10G10B10A2_TYPELESS,                       // R10_G10_B10_A2_UINT,
-    DXGI_FORMAT_R11G11B10_FLOAT,                            // R11_G11_B10_UFLOAT,
-    DXGI_FORMAT_R9G9B9E5_SHAREDEXP,                         // R9_G9_B9_E5_UFLOAT,
-    DXGI_FORMAT_BC1_TYPELESS,                               // BC1_RGBA_UNORM,
-    DXGI_FORMAT_BC1_TYPELESS,                               // BC1_RGBA_SRGB,
-    DXGI_FORMAT_BC2_TYPELESS,                               // BC2_RGBA_UNORM,
-    DXGI_FORMAT_BC2_TYPELESS,                               // BC2_RGBA_SRGB,
-    DXGI_FORMAT_BC3_TYPELESS,                               // BC3_RGBA_UNORM,
-    DXGI_FORMAT_BC3_TYPELESS,                               // BC3_RGBA_SRGB,
-    DXGI_FORMAT_BC4_TYPELESS,                               // BC4_R_UNORM,
-    DXGI_FORMAT_BC4_TYPELESS,                               // BC4_R_SNORM,
-    DXGI_FORMAT_BC5_TYPELESS,                               // BC5_RG_UNORM,
-    DXGI_FORMAT_BC5_TYPELESS,                               // BC5_RG_SNORM,
-    DXGI_FORMAT_BC6H_TYPELESS,                              // BC6H_RGB_UFLOAT,
-    DXGI_FORMAT_BC6H_TYPELESS,                              // BC6H_RGB_SFLOAT,
-    DXGI_FORMAT_BC7_TYPELESS,                               // BC7_RGBA_UNORM,
-    DXGI_FORMAT_BC7_TYPELESS,                               // BC7_RGBA_SRGB,
-    DXGI_FORMAT_R16_TYPELESS,                               // D16_UNORM,
-    DXGI_FORMAT_R24G8_TYPELESS,                             // D24_UNORM_S8_UINT,
-    DXGI_FORMAT_R32_TYPELESS,                               // D32_SFLOAT,
-    DXGI_FORMAT_R32G8X24_TYPELESS,                          // D32_SFLOAT_S8_UINT_X24_TYPELESS,
-    DXGI_FORMAT_R24G8_TYPELESS,                             // D24_UNORM_X8_TYPELESS,
-    DXGI_FORMAT_R24G8_TYPELESS,                             // X24_TYPLESS_S8_UINT,
-    DXGI_FORMAT_R32G8X24_TYPELESS,                          // X32_TYPLESS_S8_UINT_X24_TYPELESS,
-    DXGI_FORMAT_R32G8X24_TYPELESS                           // D32_SFLOAT_X8_TYPLESS_X24_TYPELESS,
-};
-
-DXGI_FORMAT GetTypelessFormat(Format format)
-{
-    return DXGI_TYPELESS_FORMATS[(uint32_t)format];
-}
-
-constexpr std::array<bool, (uint32_t)Format::MAX_NUM> FP_FORMATS = {
-    false,  // UNKNOWN
-    true,   // R8_UNORM,
-    true,   // R8_SNORM,
-    false,  // R8_UINT,
-    false,  // R8_SINT,
-    true,   // RG8_UNORM,
-    true,   // RG8_SNORM,
-    false,  // RG8_UINT,
-    false,  // RG8_SINT,
-    true,   // BGRA8_UNORM,
-    true,   // BGRA8_SRGB,
-    true,   // RGBA8_UNORM,
-    true,   // RGBA8_SNORM,
-    false,  // RGBA8_UINT,
-    false,  // RGBA8_SINT,
-    true,   // RGBA8_SRGB,
-    true,   // R16_UNORM,
-    true,   // R16_SNORM,
-    false,  // R16_UINT,
-    false,  // R16_SINT,
-    true,   // R16_SFLOAT,
-    true,   // RG16_UNORM,
-    true,   // RG16_SNORM,
-    false,  // RG16_UINT,
-    false,  // RG16_SINT,
-    true,   // RG16_SFLOAT,
-    true,   // RGBA16_UNORM,
-    true,   // RGBA16_SNORM,
-    false,  // RGBA16_UINT,
-    false,  // RGBA16_SINT,
-    true,   // RGBA16_SFLOAT,
-    false,  // R32_UINT,
-    false,  // R32_SINT,
-    true,   // R32_SFLOAT,
-    false,  // RG32_UINT,
-    false,  // RG32_SINT,
-    true,   // RG32_SFLOAT,
-    false,  // RGB32_UINT,
-    false,  // RGB32_SINT,
-    true,   // RGB32_SFLOAT,
-    false,  // RGBA32_UINT,
-    false,  // RGBA32_SINT,
-    true,   // RGBA32_SFLOAT,
-    true,   // R10_G10_B10_A2_UNORM,
-    false,  // R10_G10_B10_A2_UINT,
-    true,   // R11_G11_B10_UFLOAT,
-    true,   // R9_G9_B9_E5_UFLOAT,
-    false,  // BC1_RGBA_UNORM,
-    false,  // BC1_RGBA_SRGB,
-    false,  // BC2_RGBA_UNORM,
-    false,  // BC2_RGBA_SRGB,
-    false,  // BC3_RGBA_UNORM,
-    false,  // BC3_RGBA_SRGB,
-    false,  // BC4_R_UNORM,
-    false,  // BC4_R_SNORM,
-    false,  // BC5_RG_UNORM,
-    false,  // BC5_RG_SNORM,
-    false,  // BC6H_RGB_UFLOAT,
-    false,  // BC6H_RGB_SFLOAT,
-    false,  // BC7_RGBA_UNORM,
-    false,  // BC7_RGBA_SRGB,
-    true,   // D16_UNORM,
-    true,   // D24_UNORM_S8_UINT,
-    true,   // D32_SFLOAT,
-    true,   // D32_SFLOAT_S8_UINT_X24_TYPELESS,
-    true,   // D24_UNORM_X8_TYPELESS,
-    false,  // X24_TYPLESS_S8_UINT,
-    false,  // X32_TYPLESS_S8_UINT_X24_TYPELESS,
-    true    // D32_SFLOAT_X8_TYPLESS_X24_TYPELESS,
-};
-
-bool IsFloatingPointFormat(Format format)
-{
-    return FP_FORMATS[(uint32_t)format];
-}
-
-DXGI_FORMAT GetShaderFormatForDepth(DXGI_FORMAT format)
+DXGI_FORMAT nri::GetShaderFormatForDepth(DXGI_FORMAT format)
 {
     switch (format)
     {
@@ -702,58 +466,70 @@ DXGI_FORMAT GetShaderFormatForDepth(DXGI_FORMAT format)
     }
 }
 
-constexpr TextureType TEXTURE_TYPE_TABLE[] = {
-    TextureType::MAX_NUM,     // D3D12_RESOURCE_DIMENSION_UNKNOWN = 0,
-    TextureType::MAX_NUM,     // D3D12_RESOURCE_DIMENSION_BUFFER = 1,
-    TextureType::TEXTURE_1D,  // D3D12_RESOURCE_DIMENSION_TEXTURE1D = 2,
-    TextureType::TEXTURE_2D,  // D3D12_RESOURCE_DIMENSION_TEXTURE2D = 3,
-    TextureType::TEXTURE_3D,  // D3D12_RESOURCE_DIMENSION_TEXTURE3D = 4
-};
-static_assert(D3D12_RESOURCE_DIMENSION_TEXTURE1D == 2, "unexpected value");
-static_assert(D3D12_RESOURCE_DIMENSION_TEXTURE2D == 3, "unexpected value");
-static_assert(D3D12_RESOURCE_DIMENSION_TEXTURE3D == 4, "unexpected value");
-
-namespace nri
+uint64_t nri::GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc)
 {
-    uint64_t GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc)
-    {
-        return memoryD3D12Desc.d3d12Heap->GetDesc().SizeInBytes;
-    }
-
-    void GetTextureDescD3D12(const TextureD3D12Desc& textureD3D12Desc, TextureDesc& textureDesc)
-    {
-        const D3D12_RESOURCE_DESC desc = textureD3D12Desc.d3d12Resource->GetDesc();
-
-        textureDesc = {};
-        textureDesc.type = TEXTURE_TYPE_TABLE[desc.Dimension];
-
-        textureDesc.usageMask = TextureUsageBits(-1);
-        static_assert(sizeof(TextureUsageBits) == sizeof(uint16_t), "invalid sizeof");
-
-        textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
-        textureDesc.size[0] = (uint16_t)desc.Width;
-        textureDesc.size[1] = (uint16_t)desc.Height;
-        textureDesc.size[2] = textureDesc.type == TextureType::TEXTURE_3D ? desc.DepthOrArraySize : 1;
-        textureDesc.mipNum = desc.MipLevels;
-        textureDesc.arraySize = textureDesc.type == TextureType::TEXTURE_3D ? 1 : desc.DepthOrArraySize;
-        textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
-    }
-
-    void GetBufferDescD3D12(const BufferD3D12Desc& bufferD3D12Desc, BufferDesc& bufferDesc)
-    {
-        const D3D12_RESOURCE_DESC desc = bufferD3D12Desc.d3d12Resource->GetDesc();
-
-        bufferDesc = {};
-
-        bufferDesc.usageMask = BufferUsageBits(-1);
-        static_assert(sizeof(BufferUsageBits) == sizeof(uint16_t), "invalid sizeof");
-
-        bufferDesc.size = desc.Width;
-        bufferDesc.structureStride = bufferD3D12Desc.structureStride;
-    }
+    return memoryD3D12Desc.d3d12Heap->GetDesc().SizeInBytes;
 }
 
-D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE GetAccelerationStructureType(AccelerationStructureType accelerationStructureType)
+bool nri::GetTextureDesc(const TextureD3D12Desc& textureD3D12Desc, TextureDesc& textureDesc)
+{
+    textureDesc = {};
+
+    ID3D12Resource* resource = textureD3D12Desc.d3d12Resource;
+    if (!resource)
+        return false;
+
+    D3D12_RESOURCE_DESC desc = resource->GetDesc();
+    if (desc.Dimension < D3D12_RESOURCE_DIMENSION_TEXTURE1D)
+        return false;
+
+    textureDesc.type = (TextureType)(desc.Dimension - D3D12_RESOURCE_DIMENSION_TEXTURE1D);
+    textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
+    textureDesc.width = (uint16_t)desc.Width;
+    textureDesc.height = (uint16_t)desc.Height;
+    textureDesc.depth = textureDesc.type == TextureType::TEXTURE_3D ? desc.DepthOrArraySize : 1;
+    textureDesc.mipNum = desc.MipLevels;
+    textureDesc.arraySize = textureDesc.type == TextureType::TEXTURE_3D ? 1 : desc.DepthOrArraySize;
+    textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
+    textureDesc.nodeMask = ALL_NODES; // TODO: not in D3D12_RESOURCE_DESC...
+
+    if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+        textureDesc.usageMask |= TextureUsageBits::COLOR_ATTACHMENT;
+    if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
+        textureDesc.usageMask |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
+    if (!(desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
+        textureDesc.usageMask |= TextureUsageBits::SHADER_RESOURCE;
+    if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+        textureDesc.usageMask |= TextureUsageBits::SHADER_RESOURCE_STORAGE;
+
+    return true;
+}
+
+bool nri::GetBufferDesc(const BufferD3D12Desc& bufferD3D12Desc, BufferDesc& bufferDesc)
+{
+    bufferDesc = {};
+
+    ID3D12Resource* resource = bufferD3D12Desc.d3d12Resource;
+    if (!resource)
+        return false;
+
+    D3D12_RESOURCE_DESC desc = resource->GetDesc();
+    if (desc.Dimension < D3D12_RESOURCE_DIMENSION_TEXTURE1D)
+        return false;
+
+    bufferDesc.size = desc.Width;
+    bufferDesc.structureStride = bufferD3D12Desc.structureStride;
+    bufferDesc.nodeMask = ALL_NODES; // TODO: not in D3D12_RESOURCE_DESC...
+
+    if (!(desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
+        bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE;
+    if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+        bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE_STORAGE;
+
+    return true;
+}
+
+D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE nri::GetAccelerationStructureType(AccelerationStructureType accelerationStructureType)
 {
     static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL == (uint32_t)AccelerationStructureType::TOP_LEVEL, "Unsupported AccelerationStructureType.");
     static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL == (uint32_t)AccelerationStructureType::BOTTOM_LEVEL, "Unsupported AccelerationStructureType.");
@@ -761,7 +537,7 @@ D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE GetAccelerationStructureType(Accele
     return (D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE)accelerationStructureType;
 }
 
-D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits accelerationStructureBuildFlags)
+D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS nri::GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits accelerationStructureBuildFlags)
 {
     static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE == (uint32_t)AccelerationStructureBuildBits::ALLOW_UPDATE, "Unsupported AccelerationStructureBuildBits.");
     static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION == (uint32_t)AccelerationStructureBuildBits::ALLOW_COMPACTION, "Unsupported AccelerationStructureBuildBits.");
@@ -788,7 +564,7 @@ D3D12_RAYTRACING_GEOMETRY_FLAGS GetGeometryFlags(BottomLevelGeometryBits geometr
     return (D3D12_RAYTRACING_GEOMETRY_FLAGS)geometryFlagMask;
 }
 
-void ConvertGeometryDescs(D3D12_RAYTRACING_GEOMETRY_DESC* geometryDescs, const GeometryObject* geometryObjects, uint32_t geometryObjectNum)
+void nri::ConvertGeometryDescs(D3D12_RAYTRACING_GEOMETRY_DESC* geometryDescs, const GeometryObject* geometryObjects, uint32_t geometryObjectNum)
 {
     for (uint32_t i = 0; i < geometryObjectNum; i++)
     {
@@ -800,7 +576,7 @@ void ConvertGeometryDescs(D3D12_RAYTRACING_GEOMETRY_DESC* geometryDescs, const G
             const Triangles& triangles = geometryObjects[i].triangles;
             geometryDescs[i].Triangles.Transform3x4 = triangles.transformBuffer ? ((BufferD3D12*)triangles.transformBuffer)->GetPointerGPU() + triangles.transformOffset : 0;
             geometryDescs[i].Triangles.IndexFormat = triangles.indexType == IndexType::UINT16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
-            geometryDescs[i].Triangles.VertexFormat = GetDXGIFormat(triangles.vertexFormat);
+            geometryDescs[i].Triangles.VertexFormat = GetDxgiFormat(triangles.vertexFormat).typed;
             geometryDescs[i].Triangles.IndexCount = triangles.indexNum;
             geometryDescs[i].Triangles.VertexCount = triangles.vertexNum;
             geometryDescs[i].Triangles.IndexBuffer = triangles.indexBuffer ? ((BufferD3D12*)triangles.indexBuffer)->GetPointerGPU() + triangles.indexOffset : 0;
@@ -817,7 +593,7 @@ void ConvertGeometryDescs(D3D12_RAYTRACING_GEOMETRY_DESC* geometryDescs, const G
     }
 }
 
-D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE GetCopyMode(CopyMode copyMode)
+D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE nri::GetCopyMode(CopyMode copyMode)
 {
     static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE_CLONE == (uint32_t)CopyMode::CLONE, "Unsupported CopyMode.");
     static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE_COMPACT == (uint32_t)CopyMode::COMPACT, "Unsupported CopyMode.");

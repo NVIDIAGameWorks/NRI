@@ -27,7 +27,7 @@ BufferVal::BufferVal(DeviceVal& device, Buffer& buffer, const BufferDesc& buffer
 BufferVal::BufferVal(DeviceVal& device, Buffer& buffer, const BufferD3D11Desc& bufferD3D11Desc) :
     DeviceObjectVal(device, buffer)
 {
-    GetBufferDescD3D11(bufferD3D11Desc, m_BufferDesc);
+    GetBufferDesc(bufferD3D11Desc, m_BufferDesc);
 }
 #endif
 
@@ -35,7 +35,7 @@ BufferVal::BufferVal(DeviceVal& device, Buffer& buffer, const BufferD3D11Desc& b
 BufferVal::BufferVal(DeviceVal& device, Buffer& buffer, const BufferD3D12Desc& bufferD3D12Desc) :
     DeviceObjectVal(device, buffer)
 {
-    GetBufferDescD3D12(bufferD3D12Desc, m_BufferDesc);
+    GetBufferDesc(bufferD3D12Desc, m_BufferDesc);
 }
 #endif
 

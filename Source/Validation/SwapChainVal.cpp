@@ -45,9 +45,9 @@ inline Texture* const* SwapChainVal::GetTextures(uint32_t& textureNum, Format& f
     textureDesc.type = TextureType::TEXTURE_2D;
     textureDesc.usageMask = TextureUsageBits::SHADER_RESOURCE | TextureUsageBits::COLOR_ATTACHMENT;
     textureDesc.format = format;
-    textureDesc.size[0] = m_SwapChainDesc.width;
-    textureDesc.size[1] = m_SwapChainDesc.height;
-    textureDesc.size[2] = 1;
+    textureDesc.width = m_SwapChainDesc.width;
+    textureDesc.height = m_SwapChainDesc.height;
+    textureDesc.depth = 1;
     textureDesc.mipNum = 1;
     textureDesc.arraySize = 1;
     textureDesc.sampleNum = 1;

@@ -28,59 +28,35 @@ TextureVK::~TextureVK()
     }
 }
 
-void TextureVK::Create(VkImage handle, VkImageAspectFlags aspectFlags, VkImageType imageType, const VkExtent3D& extent, Format format)
-{
-    m_OwnsNativeObjects = false;
-    m_TextureType = GetTextureType(imageType);
-    m_Handles[0] = handle;
-    m_ImageAspectFlags = aspectFlags;
-    m_Extent = extent;
-    m_MipNum = 1;
-    m_ArraySize = 1;
-    m_Format = format;
-    m_SampleCount = VK_SAMPLE_COUNT_1_BIT;
-}
-
 Result TextureVK::Create(const TextureDesc& textureDesc)
 {
     m_OwnsNativeObjects = true;
-    m_TextureType = textureDesc.type;
-    m_Extent = { textureDesc.size[0], textureDesc.size[1], textureDesc.size[2] };
-    m_MipNum = textureDesc.mipNum;
-    m_ArraySize = textureDesc.arraySize;
-    m_Format = textureDesc.format;
-    m_SampleCount = ::GetSampleCount(textureDesc.sampleNum);
+    m_ImageAspectFlags = ::GetImageAspectFlags(textureDesc.format);
+    m_Desc = textureDesc;
 
     const VkImageType imageType = ::GetImageType(textureDesc.type);
-
-    const VkSharingMode sharingMode =
-        m_Device.IsConcurrentSharingModeEnabledForImages() ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
-
+    const VkSharingMode sharingMode = m_Device.IsConcurrentSharingModeEnabledForImages() ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
     const Vector<uint32_t>& queueIndices = m_Device.GetConcurrentSharingModeQueueIndices();
+    uint32_t nodeMask = GetNodeMask(textureDesc.nodeMask);
 
     VkImageCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     info.imageType = imageType;
-    info.format = ::GetVkFormat(m_Format);
-    info.extent.width = textureDesc.size[0];
-    info.extent.height = textureDesc.size[1];
-    info.extent.depth = textureDesc.size[2];
+    info.format = ::GetVkFormat(textureDesc.format);
+    info.extent.width = textureDesc.width;
+    info.extent.height = textureDesc.height;
+    info.extent.depth = textureDesc.depth;
     info.mipLevels = textureDesc.mipNum;
     info.arrayLayers = textureDesc.arraySize;
-    info.samples = m_SampleCount;
+    info.samples = ::GetSampleCount(textureDesc.sampleNum);
     info.tiling = VK_IMAGE_TILING_OPTIMAL;
     info.usage = GetImageUsageFlags(textureDesc.usageMask);
     info.sharingMode = sharingMode;
     info.queueFamilyIndexCount = (uint32_t)queueIndices.size();
     info.pQueueFamilyIndices = queueIndices.data();
-    info.flags = GetImageCreateFlags(m_Format);
-
-    m_ImageAspectFlags = ::GetImageAspectFlags(textureDesc.format);
+    info.flags = GetImageCreateFlags(textureDesc.format);
 
     const auto& vk = m_Device.GetDispatchTable();
-
-    uint32_t nodeMask = GetNodeMask(textureDesc.nodeMask);
-
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
         if ((1 << i) & nodeMask)
@@ -97,14 +73,21 @@ Result TextureVK::Create(const TextureDesc& textureDesc)
 
 Result TextureVK::Create(const TextureVKDesc& textureDesc)
 {
+    if (!textureDesc.vkImage)
+        return Result::INVALID_ARGUMENT;
+
     m_OwnsNativeObjects = false;
-    m_Extent = { textureDesc.size[0], textureDesc.size[1], textureDesc.size[2] };
-    m_MipNum = textureDesc.mipNum;
-    m_ArraySize = textureDesc.arraySize;
-    m_Format = VKFormatToNRIFormat((VkFormat)textureDesc.vkFormat);
     m_ImageAspectFlags = (VkImageAspectFlags)textureDesc.vkImageAspectFlags;
-    m_TextureType = GetTextureType((VkImageType)textureDesc.vkImageType);
-    m_SampleCount = (VkSampleCountFlagBits)textureDesc.sampleNum;
+    m_Desc.type = GetTextureType((VkImageType)textureDesc.vkImageType);
+    // TODO: m_Desc.usageMask
+    m_Desc.format = VKFormatToNRIFormat((VkFormat)textureDesc.vkFormat);
+    m_Desc.width = textureDesc.width;
+    m_Desc.height = textureDesc.height;
+    m_Desc.depth = textureDesc.depth;
+    m_Desc.mipNum = textureDesc.mipNum;
+    m_Desc.arraySize = textureDesc.arraySize;
+    m_Desc.sampleNum = textureDesc.sampleNum;
+    m_Desc.nodeMask = textureDesc.nodeMask;
 
     const VkImage handle = (VkImage)textureDesc.vkImage;
     const uint32_t nodeMask = GetNodeMask(textureDesc.nodeMask);
@@ -116,6 +99,24 @@ Result TextureVK::Create(const TextureVKDesc& textureDesc)
     }
 
     return Result::SUCCESS;
+}
+
+uint16_t TextureVK::GetSize(uint32_t dimension, uint32_t mipOffset) const
+{
+    assert(dimension < 3);
+
+    uint16_t dim = m_Desc.depth;
+    if (dimension == 0)
+        dim = m_Desc.width;
+    else if (dimension == 1)
+        dim = m_Desc.height;
+        
+    dim = (uint16_t)std::max(dim >> mipOffset, 1);
+
+    // TODO: VK doesn't require manual alignment, but probably we should use it here and during texture creation
+    //dim = Align(dim, dimension < 2 ? (uint16_t)GetFormatProps(m_Desc.format).blockWidth : 1);
+
+    return dim;
 }
 
 //================================================================================================================

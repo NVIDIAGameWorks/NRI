@@ -22,11 +22,19 @@ struct TextureD3D11
         m_Device(device)
     {}
 
+    TextureD3D11(DeviceD3D11& device, const TextureDesc& textureDesc) :
+        m_Device(device)
+        , m_Desc(textureDesc)
+    {}
+
     inline ~TextureD3D11()
     {}
 
     inline DeviceD3D11& GetDevice() const
     { return m_Device; }
+
+    inline const TextureDesc& GetDesc() const
+    { return m_Desc; }
 
     inline operator ID3D11Resource*() const
     { return m_Texture; }
@@ -40,29 +48,13 @@ struct TextureD3D11
     inline operator ID3D11Texture3D*() const
     { return (ID3D11Texture3D*)m_Texture.GetInterface(); }
 
-    inline const TextureDesc& GetDesc() const
-    { return m_Desc; }
-
     inline uint32_t GetSubresourceIndex(const TextureRegionDesc& regionDesc) const
     { return regionDesc.mipOffset + regionDesc.arrayOffset * m_Desc.mipNum; }
 
-    inline uint16_t GetSize(uint32_t dimension, uint32_t mipOffset = 0) const
-    {
-        assert(dimension < 3);
-
-        uint16_t size = m_Desc.size[dimension];
-        size = (uint16_t)std::max(size >> mipOffset, 1);
-        size = Align(size, dimension < 2 ? (uint16_t)GetTexelBlockWidth(m_Desc.format) : 1);
-
-        return size;
-    }
-
-    TextureD3D11(DeviceD3D11& device, const TextureDesc& textureDesc);
-
     Result Create(const MemoryD3D11* memory);
     Result Create(const TextureD3D11Desc& textureDesc);
-
     uint32_t GetMipmappedSize(uint32_t w = 0, uint32_t h = 0, uint32_t d = 0, uint32_t mipOffset = 0, uint32_t mipNum = 0) const;
+    uint16_t GetSize(uint32_t dimension, uint32_t mipOffset = 0) const;
 
     //================================================================================================================
     // NRI

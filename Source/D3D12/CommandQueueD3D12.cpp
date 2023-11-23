@@ -14,8 +14,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-extern D3D12_COMMAND_LIST_TYPE GetCommandListType(CommandQueueType commandQueueType);
-
 Result CommandQueueD3D12::Create(CommandQueueType queueType)
 {
     D3D12_COMMAND_QUEUE_DESC commandQueueDesc = {};

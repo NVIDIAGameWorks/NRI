@@ -156,8 +156,8 @@ Result FrameBufferVK::Create(const FrameBufferDesc& frameBufferDesc)
         descriptor = (DescriptorVK*)frameBufferDesc.depthStencilAttachment;
 
     m_RenderArea = {};
-    m_RenderArea.extent.width = frameBufferDesc.size[0];
-    m_RenderArea.extent.height = frameBufferDesc.size[1];
+    m_RenderArea.extent.width = frameBufferDesc.width;
+    m_RenderArea.extent.height = frameBufferDesc.height;
     m_LayerNum = frameBufferDesc.layerNum;
     m_AttachmentNum = frameBufferDesc.colorAttachmentNum + (frameBufferDesc.depthStencilAttachment ? 1 : 0);
 

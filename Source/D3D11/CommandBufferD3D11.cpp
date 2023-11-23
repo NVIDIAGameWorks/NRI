@@ -150,7 +150,7 @@ void CommandBufferD3D11::SetScissors(const Rect* rects, uint32_t rectNum)
     for (uint32_t i = 0; i < rectNum; i++)
     {
         const Rect& rect = rects[i];
-        winRect[i] = { rect.left, rect.top, (LONG)(rect.left + rect.width), (LONG)(rect.top + rect.height) };
+        winRect[i] = { rect.x, rect.y, (LONG)(rect.x + rect.width), (LONG)(rect.y + rect.height) };
     }
 
     if (!m_CurrentPipeline || !m_CurrentPipeline->IsRasterizerDiscarded())
@@ -359,12 +359,12 @@ void CommandBufferD3D11::CopyTexture(Texture& dstTexture, const TextureRegionDes
     else
     {
         D3D11_BOX srcBox = {};
-        srcBox.left = srcRegionDesc->offset[0];
-        srcBox.top = srcRegionDesc->offset[1];
-        srcBox.front = srcRegionDesc->offset[2];
-        srcBox.right = srcRegionDesc->size[0] == WHOLE_SIZE ? src.GetSize(0, srcRegionDesc->mipOffset) : srcRegionDesc->size[0];
-        srcBox.bottom = srcRegionDesc->size[1] == WHOLE_SIZE ? src.GetSize(1, srcRegionDesc->mipOffset) : srcRegionDesc->size[1];
-        srcBox.back = srcRegionDesc->size[2] == WHOLE_SIZE ? src.GetSize(2, srcRegionDesc->mipOffset) : srcRegionDesc->size[2];
+        srcBox.left = srcRegionDesc->x;
+        srcBox.top = srcRegionDesc->y;
+        srcBox.front = srcRegionDesc->z;
+        srcBox.right = srcRegionDesc->width == WHOLE_SIZE ? src.GetSize(0, srcRegionDesc->mipOffset) : srcRegionDesc->width;
+        srcBox.bottom = srcRegionDesc->height == WHOLE_SIZE ? src.GetSize(1, srcRegionDesc->mipOffset) : srcRegionDesc->height;
+        srcBox.back = srcRegionDesc->depth == WHOLE_SIZE ? src.GetSize(2, srcRegionDesc->mipOffset) : srcRegionDesc->depth;
         srcBox.right += srcBox.left;
         srcBox.bottom += srcBox.top;
         srcBox.back += srcBox.front;
@@ -372,8 +372,7 @@ void CommandBufferD3D11::CopyTexture(Texture& dstTexture, const TextureRegionDes
         uint32_t dstSubresource = dst.GetSubresourceIndex(*dstRegionDesc);
         uint32_t srcSubresource = src.GetSubresourceIndex(*srcRegionDesc);
 
-        m_DeferredContext->CopySubresourceRegion(dst, dstSubresource, dstRegionDesc->offset[0], dstRegionDesc->offset[1],
-            dstRegionDesc->offset[2], src, srcSubresource, &srcBox);
+        m_DeferredContext->CopySubresourceRegion(dst, dstSubresource, dstRegionDesc->x, dstRegionDesc->y, dstRegionDesc->z, src, srcSubresource, &srcBox);
     }
 }
 
@@ -383,12 +382,12 @@ void CommandBufferD3D11::UploadBufferToTexture(Texture& dstTexture, const Textur
     TextureD3D11& dst = (TextureD3D11&)dstTexture;
 
     D3D11_BOX dstBox = {};
-    dstBox.left = dstRegionDesc.offset[0];
-    dstBox.top = dstRegionDesc.offset[1];
-    dstBox.front = dstRegionDesc.offset[2];
-    dstBox.right = dstRegionDesc.size[0] == WHOLE_SIZE ? dst.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.size[0];
-    dstBox.bottom = dstRegionDesc.size[1] == WHOLE_SIZE ? dst.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.size[1];
-    dstBox.back = dstRegionDesc.size[2] == WHOLE_SIZE ? dst.GetSize(2, dstRegionDesc.mipOffset) : dstRegionDesc.size[2];
+    dstBox.left = dstRegionDesc.x;
+    dstBox.top = dstRegionDesc.y;
+    dstBox.front = dstRegionDesc.z;
+    dstBox.right = dstRegionDesc.width == WHOLE_SIZE ? dst.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.width;
+    dstBox.bottom = dstRegionDesc.height == WHOLE_SIZE ? dst.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.height;
+    dstBox.back = dstRegionDesc.depth == WHOLE_SIZE ? dst.GetSize(2, dstRegionDesc.mipOffset) : dstRegionDesc.depth;
     dstBox.right += dstBox.left;
     dstBox.bottom += dstBox.top;
     dstBox.back += dstBox.front;
@@ -412,9 +411,9 @@ void CommandBufferD3D11::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataL
     TextureRegionDesc dstRegionDesc = {};
     dstRegionDesc.mipOffset = srcRegionDesc.mipOffset;
     dstRegionDesc.arrayOffset = srcRegionDesc.arrayOffset;
-    dstRegionDesc.size[0] = srcRegionDesc.size[0] == WHOLE_SIZE ? src.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.size[0];
-    dstRegionDesc.size[1] = srcRegionDesc.size[1] == WHOLE_SIZE ? src.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.size[1];
-    dstRegionDesc.size[2] = srcRegionDesc.size[2] == WHOLE_SIZE ? src.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.size[2];
+    dstRegionDesc.width = srcRegionDesc.width == WHOLE_SIZE ? src.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width;
+    dstRegionDesc.height = srcRegionDesc.height == WHOLE_SIZE ? src.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.height;
+    dstRegionDesc.depth = srcRegionDesc.depth == WHOLE_SIZE ? src.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.depth;
 
     CopyTexture((Texture&)dstTemp, &dstRegionDesc, srcTexture, &srcRegionDesc);
 }

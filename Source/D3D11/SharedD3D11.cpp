@@ -10,105 +10,9 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "SharedD3D11.h"
 
-constexpr std::array<FormatInfo, (size_t)nri::Format::MAX_NUM> FORMAT_INFO_TABLE =
-{{
-    {DXGI_FORMAT_UNKNOWN,                       DXGI_FORMAT_UNKNOWN,                         0,                     false}, // UNKNOWN,
+using namespace nri;
 
-    {DXGI_FORMAT_R8_TYPELESS,                   DXGI_FORMAT_R8_UNORM,                        sizeof(uint8_t),       false}, // R8_UNORM,
-    {DXGI_FORMAT_R8_TYPELESS,                   DXGI_FORMAT_R8_SNORM,                        sizeof(int8_t),        false}, // R8_SNORM,
-    {DXGI_FORMAT_R8_TYPELESS,                   DXGI_FORMAT_R8_UINT,                         sizeof(uint8_t),       true},  // R8_UINT,
-    {DXGI_FORMAT_R8_TYPELESS,                   DXGI_FORMAT_R8_SINT,                         sizeof(int8_t),        true},  // R8_SINT,
-
-    {DXGI_FORMAT_R8G8_TYPELESS,                 DXGI_FORMAT_R8G8_UNORM,                      sizeof(uint8_t) * 2,   false}, // RG8_UNORM,
-    {DXGI_FORMAT_R8G8_TYPELESS,                 DXGI_FORMAT_R8G8_SNORM,                      sizeof(int8_t) * 2,    false}, // RG8_SNORM,
-    {DXGI_FORMAT_R8G8_TYPELESS,                 DXGI_FORMAT_R8G8_UINT,                       sizeof(uint8_t) * 2,   true},  // RG8_UINT,
-    {DXGI_FORMAT_R8G8_TYPELESS,                 DXGI_FORMAT_R8G8_SINT,                       sizeof(int8_t) * 2,    true},  // RG8_SINT,
-
-    {DXGI_FORMAT_B8G8R8A8_TYPELESS,             DXGI_FORMAT_B8G8R8A8_UNORM,                  sizeof(uint8_t) * 4,   false}, // BGRA8_UNORM,
-    {DXGI_FORMAT_B8G8R8A8_TYPELESS,             DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,             sizeof(uint8_t) * 4,   false}, // BGRA8_SRGB,
-
-    {DXGI_FORMAT_R8G8B8A8_TYPELESS,             DXGI_FORMAT_R8G8B8A8_UNORM,                  sizeof(uint8_t) * 4,   false}, // RGBA8_UNORM,
-    {DXGI_FORMAT_R8G8B8A8_TYPELESS,             DXGI_FORMAT_R8G8B8A8_SNORM,                  sizeof(int8_t) * 4,    false}, // RGBA8_SNORM,
-    {DXGI_FORMAT_R8G8B8A8_TYPELESS,             DXGI_FORMAT_R8G8B8A8_UINT,                   sizeof(uint8_t) * 4,   true},  // RGBA8_UINT,
-    {DXGI_FORMAT_R8G8B8A8_TYPELESS,             DXGI_FORMAT_R8G8B8A8_SINT,                   sizeof(int8_t) * 4,    true},  // RGBA8_SINT,
-    {DXGI_FORMAT_R8G8B8A8_TYPELESS,             DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,             sizeof(uint8_t) * 4,   false}, // RGBA8_SRGB,
-
-    {DXGI_FORMAT_R16_TYPELESS,                  DXGI_FORMAT_R16_UNORM,                       sizeof(uint16_t),      false}, // R16_UNORM,
-    {DXGI_FORMAT_R16_TYPELESS,                  DXGI_FORMAT_R16_SNORM,                       sizeof(int16_t),       false}, // R16_SNORM,
-    {DXGI_FORMAT_R16_TYPELESS,                  DXGI_FORMAT_R16_UINT,                        sizeof(uint16_t),      true},  // R16_UINT,
-    {DXGI_FORMAT_R16_TYPELESS,                  DXGI_FORMAT_R16_SINT,                        sizeof(int16_t),       true},  // R16_SINT,
-    {DXGI_FORMAT_R16_TYPELESS,                  DXGI_FORMAT_R16_FLOAT,                       sizeof(uint16_t),      false}, // R16_SFLOAT,
-
-    {DXGI_FORMAT_R16G16_TYPELESS,               DXGI_FORMAT_R16G16_UNORM,                    sizeof(uint16_t) * 2,  false}, // RG16_UNORM,
-    {DXGI_FORMAT_R16G16_TYPELESS,               DXGI_FORMAT_R16G16_SNORM,                    sizeof(int16_t) * 2,   false}, // RG16_SNORM,
-    {DXGI_FORMAT_R16G16_TYPELESS,               DXGI_FORMAT_R16G16_UINT,                     sizeof(uint16_t) * 2,  true},  // RG16_UINT,
-    {DXGI_FORMAT_R16G16_TYPELESS,               DXGI_FORMAT_R16G16_SINT,                     sizeof(int16_t) * 2,   true},  // RG16_SINT,
-    {DXGI_FORMAT_R16G16_TYPELESS,               DXGI_FORMAT_R16G16_FLOAT,                    sizeof(uint16_t) * 2,  false}, // RG16_SFLOAT,
-
-    {DXGI_FORMAT_R16G16B16A16_TYPELESS,         DXGI_FORMAT_R16G16B16A16_UNORM,              sizeof(uint16_t) * 4,  false}, // RGBA16_UNORM,
-    {DXGI_FORMAT_R16G16B16A16_TYPELESS,         DXGI_FORMAT_R16G16B16A16_SNORM,              sizeof(int16_t) * 4,   false}, // RGBA16_SNORM,
-    {DXGI_FORMAT_R16G16B16A16_TYPELESS,         DXGI_FORMAT_R16G16B16A16_UINT,               sizeof(uint16_t) * 4,  true},  // RGBA16_UINT,
-    {DXGI_FORMAT_R16G16B16A16_TYPELESS,         DXGI_FORMAT_R16G16B16A16_SINT,               sizeof(int16_t) * 4,   true},  // RGBA16_SINT,
-    {DXGI_FORMAT_R16G16B16A16_TYPELESS,         DXGI_FORMAT_R16G16B16A16_FLOAT,              sizeof(uint16_t) * 4,  false}, // RGBA16_SFLOAT,
-
-    {DXGI_FORMAT_R32_TYPELESS,                  DXGI_FORMAT_R32_UINT,                        sizeof(uint32_t),      true},  // R32_UINT,
-    {DXGI_FORMAT_R32_TYPELESS,                  DXGI_FORMAT_R32_SINT,                        sizeof(int32_t),       true},  // R32_SINT,
-    {DXGI_FORMAT_R32_TYPELESS,                  DXGI_FORMAT_R32_FLOAT,                       sizeof(float),         false}, // R32_SFLOAT,
-
-    {DXGI_FORMAT_R32G32_TYPELESS,               DXGI_FORMAT_R32G32_UINT,                     sizeof(uint32_t) * 2,  true},  // RG32_UINT,
-    {DXGI_FORMAT_R32G32_TYPELESS,               DXGI_FORMAT_R32G32_SINT,                     sizeof(int32_t) * 2,   true},  // RG32_SINT,
-    {DXGI_FORMAT_R32G32_TYPELESS,               DXGI_FORMAT_R32G32_FLOAT,                    sizeof(float) * 2,     false}, // RG32_SFLOAT,
-
-    {DXGI_FORMAT_R32G32B32_TYPELESS,            DXGI_FORMAT_R32G32B32_UINT,                  sizeof(uint32_t) * 3,  true},  // RGB32_UINT,
-    {DXGI_FORMAT_R32G32B32_TYPELESS,            DXGI_FORMAT_R32G32B32_SINT,                  sizeof(int32_t) * 3,   true},  // RGB32_SINT,
-    {DXGI_FORMAT_R32G32B32_TYPELESS,            DXGI_FORMAT_R32G32B32_FLOAT,                 sizeof(float) * 3,     false}, // RGB32_SFLOAT,
-
-    {DXGI_FORMAT_R32G32B32A32_TYPELESS,         DXGI_FORMAT_R32G32B32A32_UINT,               sizeof(uint32_t) * 4,  true},  // RGBA32_UINT,
-    {DXGI_FORMAT_R32G32B32A32_TYPELESS,         DXGI_FORMAT_R32G32B32A32_SINT,               sizeof(int32_t) * 4,   true},  // RGBA32_SINT,
-    {DXGI_FORMAT_R32G32B32A32_TYPELESS,         DXGI_FORMAT_R32G32B32A32_FLOAT,              sizeof(float) * 4,     false}, // RGBA32_SFLOAT,
-
-    {DXGI_FORMAT_R10G10B10A2_TYPELESS,          DXGI_FORMAT_R10G10B10A2_UNORM,               sizeof(uint32_t),      false}, // R10_G10_B10_A2_UNORM,
-    {DXGI_FORMAT_R10G10B10A2_TYPELESS,          DXGI_FORMAT_R10G10B10A2_UINT,                sizeof(uint32_t),      true},  // R10_G10_B10_A2_UINT,
-    {DXGI_FORMAT_R11G11B10_FLOAT,               DXGI_FORMAT_R11G11B10_FLOAT,                 sizeof(uint32_t),      false}, // R11_G11_B10_UFLOAT,
-    {DXGI_FORMAT_R9G9B9E5_SHAREDEXP,            DXGI_FORMAT_R9G9B9E5_SHAREDEXP,              sizeof(uint32_t),      false}, // R9_G9_B9_E5_UFLOAT,
-
-    {DXGI_FORMAT_BC1_TYPELESS,                  DXGI_FORMAT_BC1_UNORM,                       8,                     false}, // BC1_RGBA_UNORM,
-    {DXGI_FORMAT_BC1_TYPELESS,                  DXGI_FORMAT_BC1_UNORM_SRGB,                  8,                     false}, // BC1_RGBA_SRGB,
-    {DXGI_FORMAT_BC2_TYPELESS,                  DXGI_FORMAT_BC2_UNORM,                       16,                    false}, // BC2_RGBA_UNORM,
-    {DXGI_FORMAT_BC2_TYPELESS,                  DXGI_FORMAT_BC2_UNORM_SRGB,                  16,                    false}, // BC2_RGBA_SRGB,
-    {DXGI_FORMAT_BC3_TYPELESS,                  DXGI_FORMAT_BC3_UNORM,                       16,                    false}, // BC3_RGBA_UNORM,
-    {DXGI_FORMAT_BC3_TYPELESS,                  DXGI_FORMAT_BC3_UNORM_SRGB,                  16,                    false}, // BC3_RGBA_SRGB,
-    {DXGI_FORMAT_BC4_TYPELESS,                  DXGI_FORMAT_BC4_UNORM,                       8,                     false}, // BC4_R_UNORM,
-    {DXGI_FORMAT_BC4_TYPELESS,                  DXGI_FORMAT_BC4_SNORM,                       8,                     false}, // BC4_R_SNORM,
-    {DXGI_FORMAT_BC5_TYPELESS,                  DXGI_FORMAT_BC5_UNORM,                       16,                    false}, // BC5_RG_UNORM,
-    {DXGI_FORMAT_BC5_TYPELESS,                  DXGI_FORMAT_BC5_SNORM,                       16,                    false}, // BC5_RG_SNORM,
-    {DXGI_FORMAT_BC6H_TYPELESS,                 DXGI_FORMAT_BC6H_UF16,                       16,                    false}, // BC6H_RGB_UFLOAT,
-    {DXGI_FORMAT_BC6H_TYPELESS,                 DXGI_FORMAT_BC6H_SF16,                       16,                    false}, // BC6H_RGB_SFLOAT,
-    {DXGI_FORMAT_BC7_TYPELESS,                  DXGI_FORMAT_BC7_UNORM,                       16,                    false}, // BC7_RGBA_UNORM,
-    {DXGI_FORMAT_BC7_TYPELESS,                  DXGI_FORMAT_BC7_UNORM_SRGB,                  16,                    false}, // BC7_RGBA_SRGB,
-
-    {DXGI_FORMAT_R16_TYPELESS,                  DXGI_FORMAT_D16_UNORM,                       sizeof(uint16_t),      false}, // D16_UNORM,
-    {DXGI_FORMAT_R24G8_TYPELESS,                DXGI_FORMAT_D24_UNORM_S8_UINT,               sizeof(uint32_t),      false}, // D24_UNORM_S8_UINT,
-    {DXGI_FORMAT_R32_TYPELESS,                  DXGI_FORMAT_D32_FLOAT,                       sizeof(uint32_t),      false}, // D32_SFLOAT,
-    {DXGI_FORMAT_R32G8X24_TYPELESS,             DXGI_FORMAT_D32_FLOAT_S8X24_UINT,            sizeof(uint64_t),      false}, // D32_SFLOAT_S8_UINT_X24,
-
-    {DXGI_FORMAT_R24G8_TYPELESS,                DXGI_FORMAT_R24_UNORM_X8_TYPELESS,           sizeof(uint32_t),      false}, // R24_UNORM_X8,
-    {DXGI_FORMAT_R24G8_TYPELESS,                DXGI_FORMAT_X24_TYPELESS_G8_UINT,            sizeof(uint32_t),      false}, // X24_R8_UINT,
-    {DXGI_FORMAT_R32G8X24_TYPELESS,             DXGI_FORMAT_X32_TYPELESS_G8X24_UINT,         sizeof(uint64_t),      false}, // X32_R8_UINT_X24,
-    {DXGI_FORMAT_R32G8X24_TYPELESS,             DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS,        sizeof(uint64_t),      false}, // R32_SFLOAT_X8_X24,
-}};
-
-const FormatInfo& GetFormatInfo(nri::Format format)
-{
-    return FORMAT_INFO_TABLE[(size_t)format];
-}
-
-uint32_t NRIFormatToDXGIFormatD3D11(nri::Format format)
-{
-    return (uint32_t)FORMAT_INFO_TABLE[(size_t)format].typed;
-}
-
-constexpr std::array<D3D11_LOGIC_OP, (size_t)nri::LogicFunc::MAX_NUM> LOGIC_FUNC_TABLE =
+constexpr std::array<D3D11_LOGIC_OP, (size_t)LogicFunc::MAX_NUM> LOGIC_FUNC_TABLE =
 {
     D3D11_LOGIC_OP_CLEAR,                               // NONE,
     D3D11_LOGIC_OP_CLEAR,                               // CLEAR,
@@ -128,12 +32,12 @@ constexpr std::array<D3D11_LOGIC_OP, (size_t)nri::LogicFunc::MAX_NUM> LOGIC_FUNC
     D3D11_LOGIC_OP_SET                                  // SET
 };
 
-D3D11_LOGIC_OP GetD3D11LogicOpFromLogicFunc(nri::LogicFunc logicalFunc)
+D3D11_LOGIC_OP nri::GetD3D11LogicOpFromLogicFunc(LogicFunc logicalFunc)
 {
     return LOGIC_FUNC_TABLE[(size_t)logicalFunc];
 }
 
-constexpr std::array<D3D11_BLEND_OP, (size_t)nri::BlendFunc::MAX_NUM> BLEND_FUNC_TABLE =
+constexpr std::array<D3D11_BLEND_OP, (size_t)BlendFunc::MAX_NUM> BLEND_FUNC_TABLE =
 {
     D3D11_BLEND_OP_ADD,                                 // ADD,
     D3D11_BLEND_OP_SUBTRACT,                            // SUBTRACT,
@@ -142,12 +46,12 @@ constexpr std::array<D3D11_BLEND_OP, (size_t)nri::BlendFunc::MAX_NUM> BLEND_FUNC
     D3D11_BLEND_OP_MAX                                  // MAX
 };
 
-D3D11_BLEND_OP GetD3D11BlendOpFromBlendFunc(nri::BlendFunc blendFunc)
+D3D11_BLEND_OP nri::GetD3D11BlendOpFromBlendFunc(BlendFunc blendFunc)
 {
     return BLEND_FUNC_TABLE[(size_t)blendFunc];
 }
 
-constexpr std::array<D3D11_BLEND, (size_t)nri::BlendFactor::MAX_NUM> BLEND_FACTOR_TABLE =
+constexpr std::array<D3D11_BLEND, (size_t)BlendFactor::MAX_NUM> BLEND_FACTOR_TABLE =
 {
     D3D11_BLEND_ZERO,                                   // ZERO,
     D3D11_BLEND_ONE,                                    // ONE,
@@ -170,12 +74,12 @@ constexpr std::array<D3D11_BLEND, (size_t)nri::BlendFactor::MAX_NUM> BLEND_FACTO
     D3D11_BLEND_INV_SRC1_ALPHA                          // ONE_MINUS_SRC1_ALPHA,
 };
 
-D3D11_BLEND GetD3D11BlendFromBlendFactor(nri::BlendFactor blendFactor)
+D3D11_BLEND nri::GetD3D11BlendFromBlendFactor(BlendFactor blendFactor)
 {
     return BLEND_FACTOR_TABLE[(size_t)blendFactor];
 }
 
-constexpr std::array<D3D11_STENCIL_OP, (size_t)nri::StencilFunc::MAX_NUM> STENCIL_FUNC_TABLE =
+constexpr std::array<D3D11_STENCIL_OP, (size_t)StencilFunc::MAX_NUM> STENCIL_FUNC_TABLE =
 {
     D3D11_STENCIL_OP_KEEP,                              // KEEP,
     D3D11_STENCIL_OP_ZERO,                              // ZERO,
@@ -187,12 +91,12 @@ constexpr std::array<D3D11_STENCIL_OP, (size_t)nri::StencilFunc::MAX_NUM> STENCI
     D3D11_STENCIL_OP_DECR                               // DECREMENT_AND_WRAP
 };
 
-D3D11_STENCIL_OP GetD3D11StencilOpFromStencilFunc(nri::StencilFunc stencilFunc)
+D3D11_STENCIL_OP nri::GetD3D11StencilOpFromStencilFunc(StencilFunc stencilFunc)
 {
     return STENCIL_FUNC_TABLE[(size_t)stencilFunc];
 }
 
-constexpr std::array<D3D11_COMPARISON_FUNC, (size_t)nri::CompareFunc::MAX_NUM> COMPARE_FUNC_TABLE =
+constexpr std::array<D3D11_COMPARISON_FUNC, (size_t)CompareFunc::MAX_NUM> COMPARE_FUNC_TABLE =
 {
     D3D11_COMPARISON_ALWAYS,                            // NONE,
     D3D11_COMPARISON_ALWAYS,                            // ALWAYS,
@@ -204,24 +108,24 @@ constexpr std::array<D3D11_COMPARISON_FUNC, (size_t)nri::CompareFunc::MAX_NUM> C
     D3D11_COMPARISON_GREATER                            // GREATER
 };
 
-D3D11_COMPARISON_FUNC GetD3D11ComparisonFuncFromCompareFunc(nri::CompareFunc compareFunc)
+D3D11_COMPARISON_FUNC nri::GetD3D11ComparisonFuncFromCompareFunc(CompareFunc compareFunc)
 {
     return COMPARE_FUNC_TABLE[(size_t)compareFunc];
 }
 
-constexpr std::array<D3D11_CULL_MODE, (size_t)nri::CullMode::MAX_NUM> CULL_MODE_TABLE =
+constexpr std::array<D3D11_CULL_MODE, (size_t)CullMode::MAX_NUM> CULL_MODE_TABLE =
 {
     D3D11_CULL_NONE,                                    // NONE,
     D3D11_CULL_FRONT,                                   // FRONT,
     D3D11_CULL_BACK                                     // BACK
 };
 
-D3D11_CULL_MODE GetD3D11CullModeFromCullMode(nri::CullMode cullMode)
+D3D11_CULL_MODE nri::GetD3D11CullModeFromCullMode(CullMode cullMode)
 {
     return CULL_MODE_TABLE[(size_t)cullMode];
 }
 
-constexpr std::array<uint32_t, (size_t)nri::Topology::MAX_NUM> TOPOLOGY_TABLE =
+constexpr std::array<uint32_t, (size_t)Topology::MAX_NUM> TOPOLOGY_TABLE =
 {
     D3D11_PRIMITIVE_TOPOLOGY_POINTLIST,                  // POINT_LIST,
     D3D11_PRIMITIVE_TOPOLOGY_LINELIST,                   // LINE_LIST,
@@ -235,7 +139,7 @@ constexpr std::array<uint32_t, (size_t)nri::Topology::MAX_NUM> TOPOLOGY_TABLE =
     D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST   // PATCH_LIST
 };
 
-D3D11_PRIMITIVE_TOPOLOGY GetD3D11TopologyFromTopology(nri::Topology topology, uint32_t patchPoints)
+D3D11_PRIMITIVE_TOPOLOGY nri::GetD3D11TopologyFromTopology(Topology topology, uint32_t patchPoints)
 {
     uint32_t res = TOPOLOGY_TABLE[(size_t)topology];
 
@@ -245,91 +149,118 @@ D3D11_PRIMITIVE_TOPOLOGY GetD3D11TopologyFromTopology(nri::Topology topology, ui
     return (D3D11_PRIMITIVE_TOPOLOGY)res;
 }
 
-//================================================================================================================
-
-namespace nri
+bool nri::GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& textureDesc)
 {
-    void GetTextureDescD3D11(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& textureDesc)
+    textureDesc = {};
+
+    ID3D11Resource* resource = textureD3D11Desc.d3d11Resource;
+    if (!resource)
+        return false;
+
+    D3D11_RESOURCE_DIMENSION type;
+    resource->GetType(&type);
+
+    if (type < D3D11_RESOURCE_DIMENSION_TEXTURE1D)
+        return false;
+
+    uint32_t bindFlags = 0;
+    if (type == D3D11_RESOURCE_DIMENSION_TEXTURE1D)
     {
-        D3D11_RESOURCE_DIMENSION dimension;
-        textureD3D11Desc.d3d11Resource->GetType(&dimension);
+        ID3D11Texture1D* texture = (ID3D11Texture1D*)resource;
+        D3D11_TEXTURE1D_DESC desc = {};
+        texture->GetDesc(&desc);
 
-        switch(dimension)
-        {
-        case D3D11_RESOURCE_DIMENSION_BUFFER:
-            break;
-        case D3D11_RESOURCE_DIMENSION_TEXTURE1D:
-            {
-                D3D11_TEXTURE1D_DESC desc = {};
-                ((ID3D11Texture1D*)textureD3D11Desc.d3d11Resource)->GetDesc(&desc);
+        textureDesc.width = (uint16_t)desc.Width;
+        textureDesc.height = 1;
+        textureDesc.depth = 1;
+        textureDesc.mipNum = (uint16_t)desc.MipLevels;
+        textureDesc.arraySize = (uint16_t)desc.ArraySize;
+        textureDesc.sampleNum = 1;
+        textureDesc.type = TextureType::TEXTURE_1D;
+        textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
 
-                textureDesc = {};
-                textureDesc.type = TextureType::TEXTURE_1D;
+        bindFlags = desc.BindFlags;
+    }
+    else if (type == D3D11_RESOURCE_DIMENSION_TEXTURE2D)
+    {
+        ID3D11Texture2D* texture = (ID3D11Texture2D*)resource;
+        D3D11_TEXTURE2D_DESC desc = {};
+        texture->GetDesc(&desc);
 
-                textureDesc.usageMask = (TextureUsageBits)0xffff;
-                static_assert(sizeof(TextureUsageBits) == sizeof(uint16_t), "invalid sizeof");
+        textureDesc.width = (uint16_t)desc.Width;
+        textureDesc.height = (uint16_t)desc.Height;
+        textureDesc.depth = 1;
+        textureDesc.mipNum = (uint16_t)desc.MipLevels;
+        textureDesc.arraySize = (uint16_t)desc.ArraySize;
+        textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
+        textureDesc.type = TextureType::TEXTURE_2D;
+        textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
 
-                textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
-                textureDesc.size[0] = (uint16_t)desc.Width;
-                textureDesc.size[1] = 1;
-                textureDesc.size[2] = 1;
-                textureDesc.mipNum = (uint16_t)desc.MipLevels;
-                textureDesc.arraySize = (uint16_t)desc.ArraySize;
-                textureDesc.sampleNum = 1;
-                break;
-            }
-        case D3D11_RESOURCE_DIMENSION_TEXTURE2D:
-            {
-                D3D11_TEXTURE2D_DESC desc = {};
-                ((ID3D11Texture2D*)textureD3D11Desc.d3d11Resource)->GetDesc(&desc);
+        bindFlags = desc.BindFlags;
+    }
+    else if (type == D3D11_RESOURCE_DIMENSION_TEXTURE3D)
+    {
+        ID3D11Texture3D* texture = (ID3D11Texture3D*)resource;
+        D3D11_TEXTURE3D_DESC desc = {};
+        texture->GetDesc(&desc);
 
-                textureDesc = {};
-                textureDesc.type = TextureType::TEXTURE_2D;
+        textureDesc.width = (uint16_t)desc.Width;
+        textureDesc.height = (uint16_t)desc.Height;
+        textureDesc.depth = (uint16_t)desc.Depth;
+        textureDesc.mipNum = (uint16_t)desc.MipLevels;
+        textureDesc.arraySize = 1;
+        textureDesc.sampleNum = 1;
+        textureDesc.type = TextureType::TEXTURE_3D;
+        textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
 
-                textureDesc.usageMask = (TextureUsageBits)0xffff;
-                static_assert(sizeof(TextureUsageBits) == sizeof(uint16_t), "invalid sizeof");
-
-                textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
-                textureDesc.size[0] = (uint16_t)desc.Width;
-                textureDesc.size[1] = (uint16_t)desc.Height;
-                textureDesc.size[2] = 1;
-                textureDesc.mipNum = (uint16_t)desc.MipLevels;
-                textureDesc.arraySize = (uint16_t)desc.ArraySize;
-                textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
-                break;
-            }
-        case D3D11_RESOURCE_DIMENSION_TEXTURE3D:
-            {
-                D3D11_TEXTURE3D_DESC desc = {};
-                ((ID3D11Texture3D*)textureD3D11Desc.d3d11Resource)->GetDesc(&desc);
-
-                textureDesc = {};
-                textureDesc.type = TextureType::TEXTURE_3D;
-
-                textureDesc.usageMask = (TextureUsageBits)0xffff;
-                static_assert(sizeof(TextureUsageBits) == sizeof(uint16_t), "invalid sizeof");
-
-                textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
-                textureDesc.size[0] = (uint16_t)desc.Width;
-                textureDesc.size[1] = (uint16_t)desc.Height;
-                textureDesc.size[2] = (uint16_t)desc.Depth;
-                textureDesc.mipNum = (uint16_t)desc.MipLevels;
-                textureDesc.arraySize = 1;
-                textureDesc.sampleNum = 1;
-                break;
-            }
-        }
+        bindFlags = desc.BindFlags;
     }
 
-    void GetBufferDescD3D11(const nri::BufferD3D11Desc& bufferD3D11Desc, nri::BufferDesc& bufferDesc)
-    {
-        D3D11_BUFFER_DESC desc = {};
-        ((ID3D11Buffer*)bufferD3D11Desc.d3d11Resource)->GetDesc(&desc);
+    if (bindFlags & D3D11_BIND_RENDER_TARGET)
+        textureDesc.usageMask |= TextureUsageBits::COLOR_ATTACHMENT;
+    if (bindFlags & D3D11_BIND_DEPTH_STENCIL)
+        textureDesc.usageMask |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
+    if (bindFlags & D3D11_BIND_SHADER_RESOURCE)
+        textureDesc.usageMask |= TextureUsageBits::SHADER_RESOURCE;
+    if (bindFlags & D3D11_BIND_UNORDERED_ACCESS)
+        textureDesc.usageMask |= TextureUsageBits::SHADER_RESOURCE_STORAGE;
 
-        bufferDesc.usageMask = (BufferUsageBits)0xffff;
-        static_assert(sizeof(BufferUsageBits) == sizeof(uint16_t), "invalid sizeof");
+    return true;
+}
 
-        bufferDesc.size = desc.ByteWidth;
-        bufferDesc.structureStride = desc.StructureByteStride;
-    }
+bool nri::GetBufferDesc(const BufferD3D11Desc& bufferD3D11Desc, BufferDesc& bufferDesc)
+{
+    bufferDesc = {};
+
+    ID3D11Resource* resource = bufferD3D11Desc.d3d11Resource;
+    if (!resource)
+        return false;
+
+    D3D11_RESOURCE_DIMENSION type;
+    resource->GetType(&type);
+
+    if (type != D3D11_RESOURCE_DIMENSION_BUFFER)
+        return false;
+
+    ID3D11Buffer* buffer = (ID3D11Buffer*)resource;
+    D3D11_BUFFER_DESC desc = {};
+    buffer->GetDesc(&desc);
+
+    bufferDesc.size = desc.ByteWidth;
+    bufferDesc.structureStride = desc.StructureByteStride;
+
+    if (desc.BindFlags & D3D11_BIND_VERTEX_BUFFER)
+        bufferDesc.usageMask |= BufferUsageBits::VERTEX_BUFFER;
+    if (desc.BindFlags & D3D11_BIND_INDEX_BUFFER)
+        bufferDesc.usageMask |= BufferUsageBits::INDEX_BUFFER;
+    if (desc.BindFlags & D3D11_BIND_CONSTANT_BUFFER)
+        bufferDesc.usageMask |= BufferUsageBits::CONSTANT_BUFFER;
+    if (desc.BindFlags & D3D11_BIND_SHADER_RESOURCE)
+        bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE;
+    if (desc.BindFlags & D3D11_BIND_UNORDERED_ACCESS)
+        bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE_STORAGE;
+    if (desc.MiscFlags & D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS)
+        bufferDesc.usageMask |= BufferUsageBits::ARGUMENT_BUFFER;
+
+    return true;
 }

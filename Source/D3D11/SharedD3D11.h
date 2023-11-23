@@ -17,6 +17,13 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #define NULL_TEXTURE_REGION_DESC 0xFFFF
 
+struct AGSContext;
+
+namespace nri
+{
+
+struct D3D11Extensions;
+
 enum class BufferType
 {
     DEVICE,
@@ -49,25 +56,15 @@ enum class DescriptorTypeDX11 : uint8_t
     DYNAMIC_CONSTANT
 };
 
-struct FormatInfo
-{
-    DXGI_FORMAT typeless;
-    DXGI_FORMAT typed;
-    uint32_t stride;
-    bool isInteger;
-};
-
-const FormatInfo& GetFormatInfo(nri::Format format);
-D3D11_PRIMITIVE_TOPOLOGY GetD3D11TopologyFromTopology(nri::Topology topology, uint32_t patchPoints);
-D3D11_CULL_MODE GetD3D11CullModeFromCullMode(nri::CullMode cullMode);
-D3D11_COMPARISON_FUNC GetD3D11ComparisonFuncFromCompareFunc(nri::CompareFunc compareFunc);
-D3D11_STENCIL_OP GetD3D11StencilOpFromStencilFunc(nri::StencilFunc stencilFunc);
-D3D11_BLEND_OP GetD3D11BlendOpFromBlendFunc(nri::BlendFunc blendFunc);
-D3D11_BLEND GetD3D11BlendFromBlendFactor(nri::BlendFactor blendFactor);
-D3D11_LOGIC_OP GetD3D11LogicOpFromLogicFunc(nri::LogicFunc logicalFunc);
-
-struct AGSContext;
-struct D3D11Extensions;
+D3D11_PRIMITIVE_TOPOLOGY GetD3D11TopologyFromTopology(Topology topology, uint32_t patchPoints);
+D3D11_CULL_MODE GetD3D11CullModeFromCullMode(CullMode cullMode);
+D3D11_COMPARISON_FUNC GetD3D11ComparisonFuncFromCompareFunc(CompareFunc compareFunc);
+D3D11_STENCIL_OP GetD3D11StencilOpFromStencilFunc(StencilFunc stencilFunc);
+D3D11_BLEND_OP GetD3D11BlendOpFromBlendFunc(BlendFunc blendFunc);
+D3D11_BLEND GetD3D11BlendFromBlendFactor(BlendFactor blendFactor);
+D3D11_LOGIC_OP GetD3D11LogicOpFromLogicFunc(LogicFunc logicalFunc);
+bool GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& textureDesc);
+bool GetBufferDesc(const BufferD3D11Desc& bufferD3D11Desc, BufferDesc& bufferDesc);
 
 struct VersionedDevice
 {
@@ -242,17 +239,14 @@ struct BindingState
     }
 };
 
-namespace nri
+struct CommandBufferHelper
 {
-    struct CommandBufferHelper
-    {
-        virtual ~CommandBufferHelper() {}
-        virtual Result Create(ID3D11DeviceContext* precreatedContext) = 0;
-        virtual void Submit() = 0;
-        virtual ID3D11DeviceContext* GetNativeObject() const = 0;
-        virtual StdAllocator<uint8_t>& GetStdAllocator() const = 0;
-    };
-}
+    virtual ~CommandBufferHelper() {}
+    virtual Result Create(ID3D11DeviceContext* precreatedContext) = 0;
+    virtual void Submit() = 0;
+    virtual ID3D11DeviceContext* GetNativeObject() const = 0;
+    virtual StdAllocator<uint8_t>& GetStdAllocator() const = 0;
+};
 
 static inline uint64_t ComputeHash(const void* key, uint32_t len)
 {
@@ -266,7 +260,7 @@ static inline uint64_t ComputeHash(const void* key, uint32_t len)
 
 struct SamplePositionsState
 {
-    std::array<nri::SamplePosition, 16> positions;
+    std::array<SamplePosition, 16> positions;
     uint64_t positionHash;
     uint32_t positionNum;
 
@@ -277,15 +271,17 @@ struct SamplePositionsState
         positionHash = 0;
     }
 
-    inline void Set(const nri::SamplePosition* samplePositions, uint32_t samplePositionNum)
+    inline void Set(const SamplePosition* samplePositions, uint32_t samplePositionNum)
     {
-        const uint32_t size = sizeof(nri::SamplePosition) * samplePositionNum;
+        const uint32_t size = sizeof(SamplePosition) * samplePositionNum;
 
         memcpy(&positions, samplePositions, size);
         positionHash = ComputeHash(samplePositions, size);
         positionNum = samplePositionNum;
     }
 };
+
+}
 
 #include "D3D11Extensions.h"
 #include "DeviceD3D11.h"

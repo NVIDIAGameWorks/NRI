@@ -86,7 +86,9 @@ NRI_STRUCT(TextureVKDesc)
     uint32_t vkFormat;
     uint32_t vkImageAspectFlags;
     uint32_t vkImageType;
-    uint16_t size[3];
+    uint16_t width;
+    uint16_t height;
+    uint16_t depth;
     uint16_t mipNum;
     uint16_t arraySize;
     uint8_t sampleNum;

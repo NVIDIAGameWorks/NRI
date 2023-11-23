@@ -13,10 +13,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-extern D3D12_QUERY_TYPE GetQueryType(QueryType queryType);
-extern D3D12_QUERY_HEAP_TYPE GetQueryHeapType(QueryType queryType);
-extern uint32_t GetQueryElementSize(D3D12_QUERY_TYPE queryType);
-
 Result QueryPoolD3D12::Create(const QueryPoolDesc& queryPoolDesc)
 {
     m_QueryType = GetQueryType(queryPoolDesc.queryType);

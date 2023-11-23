@@ -14,8 +14,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-extern D3D12_RESOURCE_FLAGS GetBufferFlags(BufferUsageBits bufferUsageMask);
-
 Result BufferD3D12::Create(const BufferDesc& bufferDesc)
 {
     m_BufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;

@@ -31,9 +31,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-extern MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc);
-extern bool RequiresDedicatedAllocation(MemoryType memoryType);
-
 Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device)
 {
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);

@@ -416,15 +416,15 @@ inline void CommandBufferVK::CopyTexture(Texture& dstTexture, uint32_t dstNodeIn
         };
 
         region.srcOffset = {
-            (int32_t)srcRegionDesc->offset[0],
-            (int32_t)srcRegionDesc->offset[1],
-            (int32_t)srcRegionDesc->offset[2]
+            (int32_t)srcRegionDesc->x,
+            (int32_t)srcRegionDesc->y,
+            (int32_t)srcRegionDesc->z
         };
 
         region.extent = {
-            (srcRegionDesc->size[0] == WHOLE_SIZE) ? srcTextureImpl.GetSize(0, srcRegionDesc->mipOffset) : srcRegionDesc->size[0],
-            (srcRegionDesc->size[1] == WHOLE_SIZE) ? srcTextureImpl.GetSize(1, srcRegionDesc->mipOffset) : srcRegionDesc->size[1],
-            (srcRegionDesc->size[2] == WHOLE_SIZE) ? srcTextureImpl.GetSize(2, srcRegionDesc->mipOffset) : srcRegionDesc->size[2]
+            (srcRegionDesc->width == WHOLE_SIZE) ? srcTextureImpl.GetSize(0, srcRegionDesc->mipOffset) : srcRegionDesc->width,
+            (srcRegionDesc->height == WHOLE_SIZE) ? srcTextureImpl.GetSize(1, srcRegionDesc->mipOffset) : srcRegionDesc->height,
+            (srcRegionDesc->depth == WHOLE_SIZE) ? srcTextureImpl.GetSize(2, srcRegionDesc->mipOffset) : srcRegionDesc->depth
         };
     }
     else
@@ -450,9 +450,9 @@ inline void CommandBufferVK::CopyTexture(Texture& dstTexture, uint32_t dstNodeIn
         };
 
         region.dstOffset = {
-            (int32_t)dstRegionDesc->offset[0],
-            (int32_t)dstRegionDesc->offset[1],
-            (int32_t)dstRegionDesc->offset[2]
+            (int32_t)dstRegionDesc->x,
+            (int32_t)dstRegionDesc->y,
+            (int32_t)dstRegionDesc->z
         };
     }
     else
@@ -477,11 +477,11 @@ inline void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, const Te
     const BufferVK& srcBufferImpl = (const BufferVK&)srcBuffer;
     const TextureVK& dstTextureImpl = (const TextureVK&)dstTexture;
 
-    const uint32_t rowBlockNum = srcDataLayoutDesc.rowPitch / GetTexelBlockSize(dstTextureImpl.GetFormat());
-    const uint32_t bufferRowLength = rowBlockNum * GetTexelBlockWidth(dstTextureImpl.GetFormat());
+    const uint32_t rowBlockNum = srcDataLayoutDesc.rowPitch / GetFormatProps(dstTextureImpl.GetFormat()).stride;
+    const uint32_t bufferRowLength = rowBlockNum * GetFormatProps(dstTextureImpl.GetFormat()).blockWidth;
 
     const uint32_t sliceRowNum = srcDataLayoutDesc.slicePitch / srcDataLayoutDesc.rowPitch;
-    const uint32_t bufferImageHeight = sliceRowNum * GetTexelBlockWidth(dstTextureImpl.GetFormat());
+    const uint32_t bufferImageHeight = sliceRowNum * GetFormatProps(dstTextureImpl.GetFormat()).blockWidth;
 
     const VkBufferImageCopy region = {
         srcDataLayoutDesc.offset,
@@ -494,14 +494,14 @@ inline void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, const Te
             1
         },
         VkOffset3D{
-            dstRegionDesc.offset[0],
-            dstRegionDesc.offset[1],
-            dstRegionDesc.offset[2]
+            dstRegionDesc.x,
+            dstRegionDesc.y,
+            dstRegionDesc.z
         },
         VkExtent3D{
-            (dstRegionDesc.size[0] == WHOLE_SIZE) ? dstTextureImpl.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.size[0],
-            (dstRegionDesc.size[1] == WHOLE_SIZE) ? dstTextureImpl.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.size[1],
-            (dstRegionDesc.size[2] == WHOLE_SIZE) ? dstTextureImpl.GetSize(2, dstRegionDesc.mipOffset) : dstRegionDesc.size[2]
+            (dstRegionDesc.width == WHOLE_SIZE) ? dstTextureImpl.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.width,
+            (dstRegionDesc.height == WHOLE_SIZE) ? dstTextureImpl.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.height,
+            (dstRegionDesc.depth == WHOLE_SIZE) ? dstTextureImpl.GetSize(2, dstRegionDesc.mipOffset) : dstRegionDesc.depth
         }
     };
 
@@ -514,11 +514,11 @@ inline void CommandBufferVK::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureD
     const TextureVK& srcTextureImpl = (const TextureVK&)srcTexture;
     const BufferVK& dstBufferImpl = (const BufferVK&)dstBuffer;
 
-    const uint32_t rowBlockNum = dstDataLayoutDesc.rowPitch / GetTexelBlockSize(srcTextureImpl.GetFormat());
-    const uint32_t bufferRowLength = rowBlockNum * GetTexelBlockWidth(srcTextureImpl.GetFormat());
+    const uint32_t rowBlockNum = dstDataLayoutDesc.rowPitch / GetFormatProps(srcTextureImpl.GetFormat()).stride;
+    const uint32_t bufferRowLength = rowBlockNum * GetFormatProps(srcTextureImpl.GetFormat()).blockWidth;
 
     const uint32_t sliceRowNum = dstDataLayoutDesc.slicePitch / dstDataLayoutDesc.rowPitch;
-    const uint32_t bufferImageHeight = sliceRowNum * GetTexelBlockWidth(srcTextureImpl.GetFormat());
+    const uint32_t bufferImageHeight = sliceRowNum * GetFormatProps(srcTextureImpl.GetFormat()).blockWidth;
 
     const VkBufferImageCopy region = {
         dstDataLayoutDesc.offset,
@@ -531,14 +531,14 @@ inline void CommandBufferVK::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureD
             1
         },
         VkOffset3D{
-            srcRegionDesc.offset[0],
-            srcRegionDesc.offset[1],
-            srcRegionDesc.offset[2]
+            srcRegionDesc.x,
+            srcRegionDesc.y,
+            srcRegionDesc.z
         },
         VkExtent3D{
-            (srcRegionDesc.size[0] == WHOLE_SIZE) ? srcTextureImpl.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.size[0],
-            (srcRegionDesc.size[1] == WHOLE_SIZE) ? srcTextureImpl.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.size[1],
-            (srcRegionDesc.size[2] == WHOLE_SIZE) ? srcTextureImpl.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.size[2]
+            (srcRegionDesc.width == WHOLE_SIZE) ? srcTextureImpl.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width,
+            (srcRegionDesc.height == WHOLE_SIZE) ? srcTextureImpl.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.height,
+            (srcRegionDesc.depth == WHOLE_SIZE) ? srcTextureImpl.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.depth
         }
     };
 

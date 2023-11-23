@@ -40,6 +40,12 @@ typedef nri::MemoryAllocatorInterface MemoryAllocatorInterface;
 #include "HelperDataUpload.h"
 #include "HelperResourceStateChange.h"
 
+#ifdef _WIN32
+    #include <dxgiformat.h>
+#else
+    typedef uint32_t DXGI_FORMAT;
+#endif
+
 constexpr uint32_t PHYSICAL_DEVICE_GROUP_MAX_SIZE = 4;
 constexpr uint32_t COMMAND_QUEUE_TYPE_NUM = (uint32_t)nri::CommandQueueType::MAX_NUM;
 
@@ -100,19 +106,31 @@ inline nri::Vendor GetVendorFromID(uint32_t vendorID)
     return nri::Vendor::UNKNOWN;
 }
 
+struct DxgiFormat
+{
+    DXGI_FORMAT typeless;
+    DXGI_FORMAT typed;
+};
+
+struct FormatInfo
+{
+    uint16_t stride;
+    uint8_t blockWidth;
+    bool isInteger;
+};
+
+const DxgiFormat& GetDxgiFormat(nri::Format format);
+const FormatInfo& GetFormatProps(nri::Format format);
+
 void CheckAndSetDefaultCallbacks(nri::CallbackInterface& callbackInterface);
 void ConvertCharToWchar(const char* in, wchar_t* out, size_t outLen);
 void ConvertWcharToChar(const wchar_t* in, char* out, size_t outLen);
 nri::Result GetResultFromHRESULT(long result);
 
-uint32_t GetTexelBlockWidth(nri::Format format);
-uint32_t GetTexelBlockSize(nri::Format format);
-
 nri::Format DXGIFormatToNRIFormat(uint32_t dxgiFormat);
 nri::Format VKFormatToNRIFormat(uint32_t vkFormat);
 
-uint32_t NRIFormatToDXGIFormatD3D11(nri::Format format);
-uint32_t NRIFormatToDXGIFormatD3D12(nri::Format format);
+uint32_t NRIFormatToDXGIFormat(nri::Format format);
 uint32_t NRIFormatToVKFormat(nri::Format format);
 
 struct Library;

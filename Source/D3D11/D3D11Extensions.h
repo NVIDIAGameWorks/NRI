@@ -12,6 +12,9 @@ typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_MultiDrawIndexedInstancedInd
 typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_SetDepthBounds)(AGSContext* agsContext, ID3D11DeviceContext* dxContext, bool enabled, float minDepth, float maxDepth);
 typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_MultiDrawInstancedIndirect)(AGSContext* agsContext, ID3D11DeviceContext* dxContext, unsigned int drawCount, ID3D11Buffer* pBufferForArgs, unsigned int alignedByteOffsetForArgs, unsigned int byteStrideForArgs);
 
+namespace nri
+{
+
 struct AGSFunctionTable
 {
     PFN_agsInit Init;
@@ -28,9 +31,14 @@ struct D3D11Extensions
 {
     ~D3D11Extensions();
 
-    constexpr bool IsAvailable() const;
-    constexpr bool IsNvAPIAvailable() const;
-    constexpr bool IsAGSAvailable() const;
+    inline bool IsAvailable() const
+    { return m_IsNvAPIAvailable || m_IsAGSAvailable; }
+
+    inline bool IsNvAPIAvailable() const
+    { return m_IsNvAPIAvailable; }
+
+    inline bool IsAGSAvailable() const
+    { return m_IsAGSAvailable; }
 
     void Create(const nri::DeviceBase* deviceBase, nri::Vendor vendor, AGSContext* agsContext, bool isImported);
     void BeginUAVOverlap(const VersionedContext& deferredContext) const;
@@ -54,16 +62,4 @@ private:
     bool m_IsImported = false;
 };
 
-constexpr bool D3D11Extensions::IsAvailable() const
-{
-    return m_IsNvAPIAvailable || m_IsAGSAvailable;
-}
-
-constexpr bool D3D11Extensions::IsNvAPIAvailable() const
-{
-    return m_IsNvAPIAvailable;
-}
-constexpr bool D3D11Extensions::IsAGSAvailable() const
-{
-    return m_IsAGSAvailable;
 }

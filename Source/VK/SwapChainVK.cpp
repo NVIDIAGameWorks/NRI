@@ -237,9 +237,22 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
     m_Textures.resize(imageNum);
     for (uint32_t i = 0; i < imageNum; i++)
     {
+        TextureVKDesc desc = {};
+        desc.vkImage = (NRIVkImage)imageHandles[i];
+        desc.vkFormat = NRIFormatToVKFormat(m_Format);
+        desc.vkImageAspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+        desc.vkImageType = VK_IMAGE_TYPE_2D;
+        desc.width = (uint16_t)swapchainInfo.imageExtent.width;
+        desc.height = (uint16_t)swapchainInfo.imageExtent.height;
+        desc.depth = 1;
+        desc.mipNum = 1;
+        desc.arraySize = 1;
+        desc.sampleNum = 1;
+        desc.nodeMask = 1; // TODO: or ALL_NODES?
+
         TextureVK* texture = Allocate<TextureVK>(m_Device.GetStdAllocator(), m_Device);
-        const VkExtent3D extent = { swapchainInfo.imageExtent.width, swapchainInfo.imageExtent.height, 1 };
-        texture->Create(imageHandles[i], VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_TYPE_2D, extent, m_Format);
+        texture->Create(desc);
+
         m_Textures[i] = texture;
     }
 

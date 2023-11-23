@@ -271,10 +271,8 @@ NRI_API uint32_t NRI_CALL nriConvertNRIFormatToDXGI(Format format)
 {
     MaybeUnused(format);
 
-    #if (NRI_USE_D3D11 == 1)
-        return NRIFormatToDXGIFormatD3D11(format);
-    #elif(NRI_USE_D3D12 == 1)
-        return NRIFormatToDXGIFormatD3D12(format);
+    #if (NRI_USE_D3D11 == 1 || NRI_USE_D3D12 == 1)
+        return NRIFormatToDXGIFormat(format);
     #else
         return 0;
     #endif

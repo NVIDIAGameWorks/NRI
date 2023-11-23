@@ -216,8 +216,8 @@ Result DeviceVal::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolD
 
 Result DeviceVal::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer)
 {
-    RETURN_ON_FAILURE(this, bufferDesc.size > 0, Result::INVALID_ARGUMENT,
-        "Can't create Buffer: 'bufferDesc.size' is 0.");
+    RETURN_ON_FAILURE(this, bufferDesc.size != 0, Result::INVALID_ARGUMENT,
+        "Can't create Buffer: 'bufferDesc.size' can't be 0.");
 
     Buffer* bufferImpl = nullptr;
     const Result result = m_CoreAPI.CreateBuffer(m_Device, bufferDesc, bufferImpl);
@@ -231,13 +231,53 @@ Result DeviceVal::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer)
     return result;
 }
 
+static inline uint16_t GetMaxMipNum(uint16_t w, uint16_t h, uint16_t d)
+{
+    uint16_t mipNum = 1;
+
+    while (w > 1 || h > 1 || d > 1)
+    {
+        if (w > 1)
+            w >>= 1;
+
+        if (h > 1)
+            h >>= 1;
+
+        if (d > 1)
+            d >>= 1;
+
+        mipNum++;
+    }
+
+    return mipNum;
+}
+
 Result DeviceVal::CreateTexture(const TextureDesc& textureDesc, Texture*& texture)
 {
     RETURN_ON_FAILURE(this, textureDesc.format > Format::UNKNOWN && textureDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
         "Can't create Texture: 'textureDesc.format' is invalid.");
 
-    RETURN_ON_FAILURE(this, textureDesc.sampleNum > 0, Result::INVALID_ARGUMENT,
-        "Can't create Texture: 'textureDesc.sampleNum' is invalid.");
+    RETURN_ON_FAILURE(this, textureDesc.width != 0, Result::INVALID_ARGUMENT,
+        "Can't create Texture: 'textureDesc.width' can't be 0.");
+
+    RETURN_ON_FAILURE(this, textureDesc.height != 0, Result::INVALID_ARGUMENT,
+        "Can't create Texture: 'textureDesc.height' can't be 0.");
+
+    RETURN_ON_FAILURE(this, textureDesc.depth != 0, Result::INVALID_ARGUMENT,
+        "Can't create Texture: 'textureDesc.depth' can't be 0.");
+
+    RETURN_ON_FAILURE(this, textureDesc.mipNum != 0, Result::INVALID_ARGUMENT,
+        "Can't create Texture: 'textureDesc.mipNum' can't be 0.");
+
+    uint16_t maxMipNum = GetMaxMipNum(textureDesc.width, textureDesc.height, textureDesc.depth);
+    RETURN_ON_FAILURE(this, textureDesc.mipNum <= maxMipNum, Result::INVALID_ARGUMENT,
+        "Can't create Texture: 'textureDesc.mipNum = %u' can't be > %u.", textureDesc.mipNum, maxMipNum);
+
+    RETURN_ON_FAILURE(this, textureDesc.arraySize != 0, Result::INVALID_ARGUMENT,
+        "Can't create Texture: 'textureDesc.arraySize' can't be 0.");
+
+    RETURN_ON_FAILURE(this, textureDesc.sampleNum != 0, Result::INVALID_ARGUMENT,
+        "Can't create Texture: 'textureDesc.sampleNum' can't be 0.");
 
     Texture* textureImpl = nullptr;
     const Result result = m_CoreAPI.CreateTexture(m_Device, textureDesc, textureImpl);
@@ -405,15 +445,15 @@ Result DeviceVal::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Des
         "(textureViewDesc.mipOffset=%hu, textureViewDesc.mipNum=%hu, textureDesc.mipNum=%hu)",
         textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(this, textureViewDesc.sliceOffset < textureDesc.size[2], Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.sliceOffset < textureDesc.depth, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.arrayOffset' is invalid. "
-        "(textureViewDesc.sliceOffset=%hu, textureDesc.size[2]=%hu)",
-        textureViewDesc.sliceOffset, textureDesc.size[2]);
+        "(textureViewDesc.sliceOffset=%hu, textureDesc.depth=%hu)",
+        textureViewDesc.sliceOffset, textureDesc.depth);
 
-    RETURN_ON_FAILURE(this, textureViewDesc.sliceOffset + textureViewDesc.sliceNum <= textureDesc.size[2], Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.sliceOffset + textureViewDesc.sliceNum <= textureDesc.depth, Result::INVALID_ARGUMENT,
         "Can't create Descriptor: 'textureViewDesc.arraySize' is invalid. "
-        "(textureViewDesc.sliceOffset=%hu, textureViewDesc.sliceNum=%hu, textureDesc.size[2]=%hu)",
-        textureViewDesc.sliceOffset, textureViewDesc.sliceNum, textureDesc.size[2]);
+        "(textureViewDesc.sliceOffset=%hu, textureViewDesc.sliceNum=%hu, textureDesc.depth=%hu)",
+        textureViewDesc.sliceOffset, textureViewDesc.sliceNum, textureDesc.depth);
 
     auto textureViewDescImpl = textureViewDesc;
     textureViewDescImpl.texture = NRI_GET_IMPL_PTR(Texture, textureViewDesc.texture);
@@ -549,6 +589,9 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
     RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaderStageNum > 0, Result::INVALID_ARGUMENT,
         "Can't create Pipeline: 'graphicsPipelineDesc.shaderStageNum' is 0.");
 
+    if (graphicsPipelineDesc.rasterization->sampleMask == 0)
+        ReportMessage(Message::TYPE_WARNING, __FILE__, __LINE__, "rasterization->sampleMask = 0: is it intentional?");
+
     const ShaderDesc* vertexShader = nullptr;
     for (uint32_t i = 0; i < graphicsPipelineDesc.shaderStageNum; i++)
     {
@@ -567,6 +610,13 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
             "Can't create Pipeline: 'graphicsPipelineDesc.shaderStages[%u].stage' is invalid.", i);
     }
 
+    for (uint32_t i = 0; i < graphicsPipelineDesc.outputMerger->colorNum; i++)
+    {
+        const ColorAttachmentDesc* color = graphicsPipelineDesc.outputMerger->color + i;
+        RETURN_ON_FAILURE(this, color->format > Format::UNKNOWN && color->format < Format::BC1_RGBA_UNORM, Result::INVALID_ARGUMENT,
+            "Can't create Pipeline: 'graphicsPipelineDesc.outputMerger->color[%u].format = %u' is invalid.", i, color->format);
+    }
+
     if (graphicsPipelineDesc.inputAssembly != nullptr)
     {
         RETURN_ON_FAILURE(this, !graphicsPipelineDesc.inputAssembly->attributes || vertexShader, Result::INVALID_ARGUMENT,
@@ -577,6 +627,15 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
 
         RETURN_ON_FAILURE(this, (stageMask & PipelineLayoutShaderStageBits::VERTEX) != 0, Result::INVALID_ARGUMENT,
             "Can't create Pipeline: vertex stage is not enabled in the pipeline layout.");
+
+        for (uint32_t i = 0; i < graphicsPipelineDesc.inputAssembly->attributeNum; i++)
+        {
+            const VertexAttributeDesc* attribute = graphicsPipelineDesc.inputAssembly->attributes + i;
+            uint32_t size = GetFormatProps(attribute->format).stride;
+            uint32_t stride = graphicsPipelineDesc.inputAssembly->streams[attribute->streamIndex].stride;
+            RETURN_ON_FAILURE(this, attribute->offset + size <= stride, Result::INVALID_ARGUMENT,
+                "Can't create Pipeline: 'graphicsPipelineDesc.inputAssembly->attributes[%u]' is out of bounds of 'graphicsPipelineDesc.inputAssembly->streams[%u]' (stride = %u).", i, attribute->streamIndex, stride);
+        }
     }
 
     auto graphicsPipelineDescImpl = graphicsPipelineDesc;

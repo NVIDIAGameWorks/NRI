@@ -48,9 +48,9 @@ struct TextureVal : public DeviceObjectVal<Texture>
     void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
 private:
+    TextureDesc m_TextureDesc = {};
     MemoryVal* m_Memory = nullptr;
     bool m_IsBoundToMemory = false;
-    TextureDesc m_TextureDesc = {};
 };
 
 }

@@ -14,8 +14,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-extern D3D12_DESCRIPTOR_HEAP_TYPE GetDescriptorHeapType(DescriptorType descriptorType);
-
 DescriptorSetD3D12::DescriptorSetD3D12(DeviceD3D12& device, DescriptorPoolD3D12& descriptorPoolD3D12, const DescriptorSetMapping& descriptorSetMapping, uint16_t dynamicConstantBufferNum)
     : m_Device(device)
     , m_DescriptorPoolD3D12(descriptorPoolD3D12)
