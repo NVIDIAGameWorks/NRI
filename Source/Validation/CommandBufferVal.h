@@ -21,7 +21,7 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer>
     { return m_ValidationCommands; }
 
     inline void* GetNativeObject() const
-    { return m_CoreAPI.GetCommandBufferNativeObject(m_ImplObject); }
+    { return GetCoreInterface().GetCommandBufferNativeObject(GetImpl()); }
 
     //================================================================================================================
     // NRI

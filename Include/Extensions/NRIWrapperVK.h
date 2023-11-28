@@ -70,13 +70,20 @@ NRI_STRUCT(CommandBufferVKDesc)
     NRI_NAME(CommandQueueType) commandQueueType;
 };
 
+NRI_STRUCT(DescriptorPoolVKDesc)
+{
+    NRIVkDescriptorPool vkDescriptorPool;
+    uint32_t descriptorSetMaxNum;
+};
+
 NRI_STRUCT(BufferVKDesc)
 {
     NRIVkBuffer vkBuffer;
     NRI_NAME(Memory)* memory;
-    uint64_t bufferSize;
+    uint64_t size;
     uint64_t memoryOffset;
     uint64_t deviceAddress;
+    uint32_t structureStride;
     uint32_t nodeMask;
 };
 
@@ -86,11 +93,11 @@ NRI_STRUCT(TextureVKDesc)
     uint32_t vkFormat;
     uint32_t vkImageAspectFlags;
     uint32_t vkImageType;
-    uint16_t width;
-    uint16_t height;
-    uint16_t depth;
-    uint16_t mipNum;
-    uint16_t arraySize;
+    Dim_t width;
+    Dim_t height;
+    Dim_t depth;
+    Mip_t mipNum;
+    Dim_t arraySize;
     uint8_t sampleNum;
     uint32_t nodeMask;
 };
@@ -123,7 +130,7 @@ NRI_STRUCT(WrapperVKInterface)
     NRI_NAME(Result) (NRI_CALL *CreateCommandQueueVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(CommandQueueVKDesc) commandQueueVKDesc, NRI_NAME_REF(CommandQueue*) commandQueue);
     NRI_NAME(Result) (NRI_CALL *CreateCommandAllocatorVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(CommandAllocatorVKDesc) commandAllocatorVKDesc, NRI_NAME_REF(CommandAllocator*) commandAllocator);
     NRI_NAME(Result) (NRI_CALL *CreateCommandBufferVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(CommandBufferVKDesc) commandBufferVKDesc, NRI_NAME_REF(CommandBuffer*) commandBuffer);
-    NRI_NAME(Result) (NRI_CALL *CreateDescriptorPoolVK)(NRI_NAME_REF(Device) device, NRIVkDescriptorPool vkDescriptorPool, NRI_NAME_REF(DescriptorPool*) descriptorPool);
+    NRI_NAME(Result) (NRI_CALL *CreateDescriptorPoolVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(DescriptorPoolVKDesc) descriptorPoolVKDesc, NRI_NAME_REF(DescriptorPool*) descriptorPool);
     NRI_NAME(Result) (NRI_CALL *CreateBufferVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(BufferVKDesc) bufferVKDesc, NRI_NAME_REF(Buffer*) buffer);
     NRI_NAME(Result) (NRI_CALL *CreateTextureVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(TextureVKDesc) textureVKDesc, NRI_NAME_REF(Texture*) texture);
     NRI_NAME(Result) (NRI_CALL *CreateMemoryVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(MemoryVKDesc) memoryVKDesc, NRI_NAME_REF(Memory*) memory);

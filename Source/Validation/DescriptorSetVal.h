@@ -15,10 +15,18 @@ namespace nri
 
 struct DescriptorSetVal : public DeviceObjectVal<DescriptorSet>
 {
-    DescriptorSetVal(DeviceVal& device, DescriptorSet& descriptorSet, const DescriptorSetDesc& descriptorSetDesc);
+    DescriptorSetVal::DescriptorSetVal(DeviceVal& device) :
+        DeviceObjectVal(device)
+    {}
 
     inline const DescriptorSetDesc& GetDesc() const
-    { return m_Desc; }
+    { return *m_Desc; }
+
+    inline void SetImpl(DescriptorSet* impl, const DescriptorSetDesc* desc)
+    {
+        m_Impl = impl;
+        m_Desc = desc;
+    }
 
     //================================================================================================================
     // NRI
@@ -29,7 +37,7 @@ struct DescriptorSetVal : public DeviceObjectVal<DescriptorSet>
     void Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc);
 
 private:
-    const DescriptorSetDesc& m_Desc;
+    const DescriptorSetDesc* m_Desc = nullptr;
 };
 
 }

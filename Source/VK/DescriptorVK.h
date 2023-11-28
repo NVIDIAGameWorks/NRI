@@ -36,12 +36,12 @@ struct DescriptorTextureDesc
 {
     std::array<VkImage, PHYSICAL_DEVICE_GROUP_MAX_SIZE> handles;
     const TextureVK* texture;
-    VkImageLayout imageLayout;
-    uint32_t imageMipOffset;
-    uint32_t imageMipNum;
-    uint32_t imageArrayOffset;
-    uint32_t imageArraySize;
-    VkImageAspectFlags imageAspectFlags;
+    VkImageLayout layout;
+    VkImageAspectFlags aspectFlags;
+    Dim_t arrayOffset;
+    Dim_t arraySize;
+    Mip_t mipOffset;
+    Mip_t mipNum;
 };
 
 struct DescriptorVK
@@ -81,7 +81,7 @@ struct DescriptorVK
     { return m_Format; }
 
     inline VkImageLayout GetImageLayout() const
-    { return m_TextureDesc.imageLayout; }
+    { return m_TextureDesc.layout; }
 
     inline const DescriptorTextureDesc& GetTextureDesc() const
     { return m_TextureDesc; }
@@ -98,11 +98,11 @@ struct DescriptorVK
 
     inline void GetImageSubresourceRange(VkImageSubresourceRange& range) const
     {
-        range.aspectMask = m_TextureDesc.imageAspectFlags;
-        range.baseMipLevel = m_TextureDesc.imageMipOffset;
-        range.levelCount = m_TextureDesc.imageMipNum;
-        range.baseArrayLayer = m_TextureDesc.imageArrayOffset;
-        range.layerCount = m_TextureDesc.imageArraySize;
+        range.aspectMask = m_TextureDesc.aspectFlags;
+        range.baseMipLevel = m_TextureDesc.mipOffset;
+        range.levelCount = m_TextureDesc.mipNum;
+        range.baseArrayLayer = m_TextureDesc.arrayOffset;
+        range.layerCount = m_TextureDesc.arraySize;
     }
 
     ~DescriptorVK();

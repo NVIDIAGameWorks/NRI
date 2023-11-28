@@ -112,8 +112,8 @@ Result HelperDataUpload::UploadTextures(const TextureUploadDesc* textureUploadDe
         return result;
 
     uint32_t i = 0;
-    uint16_t arrayOffset = 0;
-    uint16_t mipOffset = 0;
+    Dim_t arrayOffset = 0;
+    Mip_t mipOffset = 0;
 
     while (i < textureDataDescNum)
     {
@@ -210,7 +210,7 @@ Result HelperDataUpload::EndCommandBuffersAndSubmit()
     return Result::SUCCESS;
 }
 
-bool HelperDataUpload::CopyTextureContent(const TextureUploadDesc& textureUploadDesc, uint16_t& arrayOffset, uint16_t& mipOffset, bool& isCapacityInsufficient)
+bool HelperDataUpload::CopyTextureContent(const TextureUploadDesc& textureUploadDesc, Dim_t& arrayOffset, Mip_t& mipOffset, bool& isCapacityInsufficient)
 {
     if (textureUploadDesc.subresources == nullptr)
         return true;

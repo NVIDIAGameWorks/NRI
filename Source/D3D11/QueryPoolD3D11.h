@@ -19,7 +19,7 @@ struct QueryPoolD3D11
 {
     inline QueryPoolD3D11(DeviceD3D11& device) :
         m_Device(device)
-        , m_Pool(device.GetStdAllocator())
+        , m_QueryPool(device.GetStdAllocator())
     {}
 
     inline ~QueryPoolD3D11()
@@ -42,7 +42,7 @@ struct QueryPoolD3D11
 
 private:
     DeviceD3D11& m_Device;
-    Vector<ComPtr<ID3D11Query>> m_Pool;
+    Vector<ComPtr<ID3D11Query>> m_QueryPool;
     QueryType m_Type = QueryType::MAX_NUM;
 };
 

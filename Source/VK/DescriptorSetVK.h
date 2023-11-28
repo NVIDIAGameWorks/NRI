@@ -25,9 +25,6 @@ struct DescriptorSetVK
     inline VkDescriptorSet GetHandle(uint32_t nodeIndex) const
     { return m_Handles[nodeIndex]; }
 
-    inline DeviceVK& GetDevice() const
-    { return m_Device; }
-
     inline uint32_t GetDynamicConstantBufferNum() const
     { return m_DynamicConstantBufferNum; }
 
@@ -45,7 +42,7 @@ struct DescriptorSetVK
 private:
     DeviceVK& m_Device;
     std::array<VkDescriptorSet, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_Handles = {};
-    const DescriptorSetDesc* m_SetDesc = nullptr;
+    const DescriptorSetDesc* m_Desc = nullptr;
     uint32_t m_DynamicConstantBufferNum = 0;
 };
 

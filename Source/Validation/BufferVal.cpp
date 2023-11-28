@@ -17,39 +17,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-BufferVal::BufferVal(DeviceVal& device, Buffer& buffer, const BufferDesc& bufferDesc) :
-    DeviceObjectVal(device, buffer),
-    m_BufferDesc(bufferDesc)
-{
-}
-
-#if NRI_USE_D3D11
-BufferVal::BufferVal(DeviceVal& device, Buffer& buffer, const BufferD3D11Desc& bufferD3D11Desc) :
-    DeviceObjectVal(device, buffer)
-{
-    GetBufferDesc(bufferD3D11Desc, m_BufferDesc);
-}
-#endif
-
-#if NRI_USE_D3D12
-BufferVal::BufferVal(DeviceVal& device, Buffer& buffer, const BufferD3D12Desc& bufferD3D12Desc) :
-    DeviceObjectVal(device, buffer)
-{
-    GetBufferDesc(bufferD3D12Desc, m_BufferDesc);
-}
-#endif
-
-BufferVal::BufferVal(DeviceVal& device, Buffer& buffer, const BufferVKDesc& bufferVKDesc) :
-    DeviceObjectVal(device, buffer)
-{
-    m_BufferDesc = {};
-    m_BufferDesc.nodeMask = bufferVKDesc.nodeMask;
-    m_BufferDesc.size = bufferVKDesc.bufferSize;
-
-    static_assert(sizeof(BufferUsageBits) == sizeof(uint16_t), "unexpected BufferUsageBits sizeof");
-    m_BufferDesc.usageMask = (BufferUsageBits)0xffff;
-}
-
 BufferVal::~BufferVal()
 {
     if (m_Memory != nullptr)
@@ -59,12 +26,12 @@ BufferVal::~BufferVal()
 void BufferVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_CoreAPI.SetBufferDebugName(m_ImplObject, name);
+    GetCoreInterface().SetBufferDebugName(GetImpl(), name);
 }
 
 void BufferVal::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const
 {
-    m_CoreAPI.GetBufferMemoryInfo(m_ImplObject, memoryLocation, memoryDesc);
+    GetCoreInterface().GetBufferMemoryInfo(GetImpl(), memoryLocation, memoryDesc);
     m_Device.RegisterMemoryType(memoryDesc.type, memoryLocation);
 }
 
@@ -78,7 +45,7 @@ void* BufferVal::Map(uint64_t offset, uint64_t size)
 
     m_IsMapped = true;
 
-    return m_CoreAPI.MapBuffer(m_ImplObject, offset, size);
+    return GetCoreInterface().MapBuffer(GetImpl(), offset, size);
 }
 
 void BufferVal::Unmap()
@@ -88,7 +55,7 @@ void BufferVal::Unmap()
 
     m_IsMapped = false;
 
-    m_CoreAPI.UnmapBuffer(m_ImplObject);
+    GetCoreInterface().UnmapBuffer(GetImpl());
 }
 
 #include "BufferVal.hpp"

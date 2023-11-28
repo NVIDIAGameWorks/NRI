@@ -26,14 +26,13 @@ struct DescriptorSetD3D11
 {
     inline DescriptorSetD3D11(DeviceD3D11& device) :
         m_Ranges(device.GetStdAllocator())
-        , m_DynamicConstantBuffers(device.GetStdAllocator())
     {}
 
     inline const DescriptorD3D11* GetDescriptor(uint32_t i) const
     { return m_Descriptors[i]; }
 
     inline uint32_t GetDynamicConstantBufferNum() const
-    { return (uint32_t)m_DynamicConstantBuffers.size(); }
+    { return m_DynamicConstantBuffersNum; }
 
     uint32_t Initialize(const PipelineLayoutD3D11& pipelineLayout, uint32_t setIndexInPipelineLayout, const DescriptorD3D11** descriptors);
 
@@ -49,9 +48,9 @@ struct DescriptorSetD3D11
     void Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc);
 
 private:
-    const DescriptorD3D11** m_Descriptors = nullptr;
     Vector<OffsetNum> m_Ranges;
-    Vector<OffsetNum> m_DynamicConstantBuffers;
+    const DescriptorD3D11** m_Descriptors = nullptr;
+    uint32_t m_DynamicConstantBuffersNum = 0;
 };
 
 }

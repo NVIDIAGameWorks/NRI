@@ -87,20 +87,20 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset)
     return Result::SUCCESS;
 }
 
-uint16_t TextureD3D12::GetSize(uint32_t dimension, uint32_t mipOffset) const
+Dim_t TextureD3D12::GetSize(Dim_t dimensionIndex, Mip_t mip) const
 {
-    assert(dimension < 3);
+    assert(dimensionIndex < 3);
 
-    uint16_t dim;
-    if (dimension == 0)
-        dim = (uint16_t)m_Desc.width;
-    else if (dimension == 1)
-        dim = (uint16_t)m_Desc.height;
+    Dim_t dim;
+    if (dimensionIndex == 0)
+        dim = m_Desc.width;
+    else if (dimensionIndex == 1)
+        dim = m_Desc.height;
     else
-        dim = (uint16_t)m_Desc.depth;
+        dim = m_Desc.depth;
 
-    dim = (uint16_t)std::max(dim >> mipOffset, 1);
-    dim = Align(dim, dimension < 2 ? (uint16_t)GetFormatProps(m_Desc.format).blockWidth : 1);
+    dim = (Dim_t)std::max(dim >> mip, 1);
+    dim = Align(dim, dimensionIndex < 2 ? GetFormatProps(m_Desc.format).blockWidth : 1);
 
     return dim;
 }

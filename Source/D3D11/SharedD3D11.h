@@ -15,14 +15,14 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "SharedExternal.h"
 #include "DeviceBase.h"
 
-#define NULL_TEXTURE_REGION_DESC 0xFFFF
-
 struct AGSContext;
 
 namespace nri
 {
 
 struct D3D11Extensions;
+
+constexpr Mip_t NULL_TEXTURE_REGION_DESC = Mip_t(-1);
 
 enum class BufferType
 {
@@ -134,7 +134,7 @@ struct SubresourceInfo
     const void* resource = nullptr;
     uint64_t data = 0;
 
-    inline void Initialize(const void* tex, uint16_t mipOffset, uint16_t mipNum, uint16_t arrayOffset, uint16_t arraySize)
+    inline void Initialize(const void* tex, Mip_t mipOffset, Mip_t mipNum, Dim_t arrayOffset, Dim_t arraySize)
     {
         resource = tex;
         data = (uint64_t(arraySize) << 48) | (uint64_t(arrayOffset) << 32) | (uint64_t(mipNum) << 16) | uint64_t(mipOffset);

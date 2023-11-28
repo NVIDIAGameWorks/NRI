@@ -13,13 +13,10 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 namespace nri
 {
 
-struct DescriptorSetVal;
-
 struct DescriptorPoolVal : public DeviceObjectVal<DescriptorPool>
 {
-    DescriptorPoolVal(DeviceVal& device, DescriptorPool& descriptorPool);
+    DescriptorPoolVal(DeviceVal& device, DescriptorPool& descriptorPool, uint32_t descriptorSetMaxNum);
     DescriptorPoolVal(DeviceVal& device, DescriptorPool& descriptorPool, const DescriptorPoolDesc& descriptorPoolDesc);
-    ~DescriptorPoolVal();
 
     //================================================================================================================
     // NRI
@@ -34,9 +31,9 @@ private:
     bool CheckDescriptorRange(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum);
     void IncrementDescriptorNum(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum);
 
-    Vector<DescriptorSetVal*> m_DescriptorSets;
+    Vector<DescriptorSetVal> m_DescriptorSets;
     DescriptorPoolDesc m_Desc = {};
-    uint32_t m_DescriptorSetNum = 0;
+    uint32_t m_DescriptorSetsNum = 0;
     uint32_t m_SamplerNum = 0;
     uint32_t m_ConstantBufferNum = 0;
     uint32_t m_DynamicConstantBufferNum = 0;

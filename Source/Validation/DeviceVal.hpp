@@ -17,6 +17,16 @@ static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device)
     return ((const DeviceVal&)device).GetDesc();
 }
 
+static const BufferDesc& NRI_CALL GetBufferDesc(const Buffer& buffer)
+{
+    return ((const BufferVal&)buffer).GetDesc();
+}
+
+static const TextureDesc& NRI_CALL GetTextureDesc(const Texture& texture)
+{
+    return ((const TextureVal&)texture).GetDesc();
+}
+
 static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQueueType, CommandQueue*& commandQueue)
 {
     return ((DeviceVal&)device).GetCommandQueue(commandQueueType, commandQueue);
@@ -119,51 +129,81 @@ static Result NRI_CALL CreateFence(Device& device, uint64_t initialValue, Fence*
 
 static void NRI_CALL DestroyCommandAllocator(CommandAllocator& commandAllocator)
 {
+    if(!(&commandAllocator))
+        return;
+
     GetDeviceVal(commandAllocator).DestroyCommandAllocator(commandAllocator);
 }
 
 static void NRI_CALL DestroyDescriptorPool(DescriptorPool& descriptorPool)
 {
+    if(!(&descriptorPool))
+        return;
+
     GetDeviceVal(descriptorPool).DestroyDescriptorPool(descriptorPool);
 }
 
 static void NRI_CALL DestroyBuffer(Buffer& buffer)
 {
+    if(!(&buffer))
+        return;
+
     GetDeviceVal(buffer).DestroyBuffer(buffer);
 }
 
 static void NRI_CALL DestroyTexture(Texture& texture)
 {
+    if(!(&texture))
+        return;
+
     GetDeviceVal(texture).DestroyTexture(texture);
 }
 
 static void NRI_CALL DestroyDescriptor(Descriptor& descriptor)
 {
+    if(!(&descriptor))
+        return;
+
     GetDeviceVal(descriptor).DestroyDescriptor(descriptor);
 }
 
 static void NRI_CALL DestroyPipelineLayout(PipelineLayout& pipelineLayout)
 {
+    if(!(&pipelineLayout))
+        return;
+
     GetDeviceVal(pipelineLayout).DestroyPipelineLayout(pipelineLayout);
 }
 
 static void NRI_CALL DestroyPipeline(Pipeline& pipeline)
 {
+    if(!(&pipeline))
+        return;
+
     GetDeviceVal(pipeline).DestroyPipeline(pipeline);
 }
 
 static void NRI_CALL DestroyFrameBuffer(FrameBuffer& frameBuffer)
 {
+    if(!(&frameBuffer))
+        return;
+
     GetDeviceVal(frameBuffer).DestroyFrameBuffer(frameBuffer);
 }
 
 static void NRI_CALL DestroyQueryPool(QueryPool& queryPool)
 {
+    if(!(&queryPool))
+        return;
+
     GetDeviceVal(queryPool).DestroyQueryPool(queryPool);
 }
 
 static void NRI_CALL DestroyFence(Fence& fence)
 {
+    if(!(&fence))
+        return;
+
     GetDeviceVal(fence).DestroyFence(fence);
 }
 
@@ -184,6 +224,9 @@ static Result NRI_CALL BindTextureMemory(Device& device, const TextureMemoryBind
 
 static void NRI_CALL FreeMemory(Memory& memory)
 {
+    if(!(&memory))
+        return;
+
     GetDeviceVal(memory).FreeMemory(memory);
 }
 
@@ -226,6 +269,8 @@ Result DeviceVal::FillFunctionTable(CoreInterface& coreInterface) const
 {
     coreInterface = {};
     coreInterface.GetDeviceDesc = ::GetDeviceDesc;
+    coreInterface.GetBufferDesc = ::GetBufferDesc;
+    coreInterface.GetTextureDesc = ::GetTextureDesc;
     coreInterface.GetFormatSupport = ::GetFormatSupport;
     coreInterface.GetCommandQueue = ::GetCommandQueue;
     coreInterface.CreateCommandAllocator = ::CreateCommandAllocator;
@@ -289,6 +334,9 @@ static Result NRI_CALL CreateSwapChain(Device& device, const SwapChainDesc& swap
 
 static void NRI_CALL DestroySwapChain(SwapChain& swapChain)
 {
+    if(!(&swapChain))
+        return;
+
     GetDeviceVal(swapChain).DestroySwapChain(swapChain);
 }
 
@@ -430,9 +478,9 @@ static Result NRI_CALL CreateCommandBufferVK(Device& device, const CommandBuffer
     return ((DeviceVal&)device).CreateCommandBufferVK(commandBufferVKDesc, commandBuffer);
 }
 
-static Result NRI_CALL CreateDescriptorPoolVK(Device& device, NRIVkDescriptorPool vkDescriptorPool, DescriptorPool*& descriptorPool)
+static Result NRI_CALL CreateDescriptorPoolVK(Device& device, const DescriptorPoolVKDesc& descriptorPoolVKDesc, DescriptorPool*& descriptorPool)
 {
-    return ((DeviceVal&)device).CreateDescriptorPoolVK(vkDescriptorPool, descriptorPool);
+    return ((DeviceVal&)device).CreateDescriptorPoolVK(descriptorPoolVKDesc, descriptorPool);
 }
 
 static Result NRI_CALL CreateBufferVK(Device& device, const BufferVKDesc& bufferVKDesc, Buffer*& buffer)
@@ -542,6 +590,9 @@ static Result NRI_CALL BindAccelerationStructureMemory(Device& device, const Acc
 
 static void NRI_CALL DestroyAccelerationStructure(AccelerationStructure& accelerationStructure)
 {
+    if(!(&accelerationStructure))
+        return;
+
     GetDeviceVal(accelerationStructure).DestroyAccelerationStructure(accelerationStructure);
 }
 

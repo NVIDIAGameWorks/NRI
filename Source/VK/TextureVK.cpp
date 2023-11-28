@@ -79,7 +79,7 @@ Result TextureVK::Create(const TextureVKDesc& textureDesc)
     m_OwnsNativeObjects = false;
     m_ImageAspectFlags = (VkImageAspectFlags)textureDesc.vkImageAspectFlags;
     m_Desc.type = GetTextureType((VkImageType)textureDesc.vkImageType);
-    // TODO: m_Desc.usageMask
+    m_Desc.usageMask = (nri::TextureUsageBits)(-1); // TODO: it's not right...
     m_Desc.format = VKFormatToNRIFormat((VkFormat)textureDesc.vkFormat);
     m_Desc.width = textureDesc.width;
     m_Desc.height = textureDesc.height;
@@ -101,20 +101,20 @@ Result TextureVK::Create(const TextureVKDesc& textureDesc)
     return Result::SUCCESS;
 }
 
-uint16_t TextureVK::GetSize(uint32_t dimension, uint32_t mipOffset) const
+Dim_t TextureVK::GetSize(Dim_t dimensionIndex, Mip_t mip) const
 {
-    assert(dimension < 3);
+    assert(dimensionIndex < 3);
 
-    uint16_t dim = m_Desc.depth;
-    if (dimension == 0)
+    Dim_t dim = m_Desc.depth;
+    if (dimensionIndex == 0)
         dim = m_Desc.width;
-    else if (dimension == 1)
+    else if (dimensionIndex == 1)
         dim = m_Desc.height;
         
-    dim = (uint16_t)std::max(dim >> mipOffset, 1);
+    dim = (Dim_t)std::max(dim >> mip, 1);
 
     // TODO: VK doesn't require manual alignment, but probably we should use it here and during texture creation
-    //dim = Align(dim, dimension < 2 ? (uint16_t)GetFormatProps(m_Desc.format).blockWidth : 1);
+    //dim = Align(dim, dimension < 2 ? GetFormatProps(m_Desc.format).blockWidth : 1);
 
     return dim;
 }

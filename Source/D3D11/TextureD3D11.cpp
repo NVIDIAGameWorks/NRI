@@ -103,7 +103,7 @@ Result TextureD3D11::Create(const TextureD3D11Desc& textureDesc)
     return Result::SUCCESS;
 }
 
-uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, uint32_t mipOffset, uint32_t mipNum) const
+uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, Mip_t mipNum, Mip_t mipOffset) const
 {
     if (!mipNum)
         mipNum = m_Desc.mipNum;
@@ -144,8 +144,8 @@ uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, uint
         mipNum--;
     }
 
-    const FormatInfo& formatInfo = GetFormatProps(m_Desc.format);
-    size *= formatInfo.stride;
+    const FormatProps& formatProps = GetFormatProps(m_Desc.format);
+    size *= formatProps.stride;
 
     if (!isCustom)
     {
@@ -156,18 +156,18 @@ uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, uint
     return size;
 }
 
-uint16_t TextureD3D11::GetSize(uint32_t dimension, uint32_t mipOffset) const
+Dim_t TextureD3D11::GetSize(Dim_t dimensionIndex, Mip_t mip) const
 {
-    assert(dimension < 3);
+    assert(dimensionIndex < 3);
 
-    uint16_t dim = m_Desc.depth;
-    if (dimension == 0)
+    Dim_t dim = m_Desc.depth;
+    if (dimensionIndex == 0)
         dim = m_Desc.width;
-    else if (dimension == 1)
+    else if (dimensionIndex == 1)
         dim = m_Desc.height;
 
-    dim = (uint16_t)std::max(dim >> mipOffset, 1);
-    dim = Align(dim, dimension < 2 ? (uint16_t)GetFormatProps(m_Desc.format).blockWidth : 1);
+    dim = (Dim_t)std::max(dim >> mip, 1);
+    dim = Align(dim, dimensionIndex < 2 ? GetFormatProps(m_Desc.format).blockWidth : 1);
 
     return dim;
 }

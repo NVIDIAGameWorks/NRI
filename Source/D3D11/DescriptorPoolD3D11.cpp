@@ -27,8 +27,8 @@ Result DescriptorPoolD3D11::Create(const DescriptorPoolDesc& descriptorPoolDesc)
     descriptorNum += descriptorPoolDesc.structuredBufferMaxNum;
     descriptorNum += descriptorPoolDesc.storageStructuredBufferMaxNum;
 
-    m_Pool.resize(descriptorNum, nullptr);
-    m_Sets.resize(descriptorPoolDesc.descriptorSetMaxNum, DescriptorSetD3D11(m_Device));
+    m_DescriptorPool.resize(descriptorNum, nullptr);
+    m_DescriptorSets.resize(descriptorPoolDesc.descriptorSetMaxNum, DescriptorSetD3D11(m_Device));
 
     return Result::SUCCESS;
 }
@@ -47,13 +47,12 @@ inline Result DescriptorPoolD3D11::AllocateDescriptorSets(const PipelineLayout& 
 
     for (uint32_t i = 0; i < instanceNum; i++)
     {
-        const DescriptorD3D11** descriptors = m_Pool.data() + m_DescriptorPoolOffset;
-        DescriptorSetD3D11* descriptorSet = &m_Sets[m_DescriptorSetIndex];
+        const DescriptorD3D11** descriptors = m_DescriptorPool.data() + m_DescriptorPoolOffset;
+        DescriptorSetD3D11* descriptorSet = &m_DescriptorSets[m_DescriptorSetIndex++];
         uint32_t descriptorNum = descriptorSet->Initialize(pipelineLayoutD3D11, setIndexInPipelineLayout, descriptors);
         descriptorSets[i] = (DescriptorSet*)descriptorSet;
 
         m_DescriptorPoolOffset += descriptorNum;
-        m_DescriptorSetIndex++;
     }
 
     return Result::SUCCESS;

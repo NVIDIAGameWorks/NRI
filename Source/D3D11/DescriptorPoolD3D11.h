@@ -14,13 +14,12 @@ namespace nri
 {
 
 struct DeviceD3D11;
-struct DescriptorD3D11;
 
 struct DescriptorPoolD3D11
 {
     inline DescriptorPoolD3D11(DeviceD3D11& device) :
-        m_Sets(device.GetStdAllocator()),
-        m_Pool(device.GetStdAllocator()),
+        m_DescriptorSets(device.GetStdAllocator()),
+        m_DescriptorPool(device.GetStdAllocator()),
         m_Device(device)
     {}
 
@@ -50,8 +49,8 @@ struct DescriptorPoolD3D11
 
 private:
     DeviceD3D11& m_Device;
-    Vector<DescriptorSetD3D11> m_Sets;
-    Vector<const DescriptorD3D11*> m_Pool;
+    Vector<DescriptorSetD3D11> m_DescriptorSets;
+    Vector<const DescriptorD3D11*> m_DescriptorPool;
     uint32_t m_DescriptorPoolOffset = 0;
     uint32_t m_DescriptorSetIndex = 0;
 };

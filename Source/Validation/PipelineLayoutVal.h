@@ -27,8 +27,8 @@ struct PipelineLayoutVal : public DeviceObjectVal<PipelineLayout>
 
 private:
     PipelineLayoutDesc m_PipelineLayoutDesc;
-    Vector<DescriptorSetDesc> m_DescriptorSets;
-    Vector<PushConstantDesc> m_PushConstants;
+    Vector<DescriptorSetDesc> m_DescriptorSetDescs;
+    Vector<PushConstantDesc> m_PushConstantDescs;
     Vector<DescriptorRangeDesc> m_DescriptorRangeDescs;
     Vector<DynamicConstantBufferDesc> m_DynamicConstantBufferDescs;
 };

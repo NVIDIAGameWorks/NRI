@@ -108,7 +108,7 @@ Result CommandBufferEmuD3D11::Create(ID3D11DeviceContext* precreatedContext)
 {
     MaybeUnused(precreatedContext);
 
-    m_PushBuffer.reserve(256 * 1024);
+    m_PushBuffer.reserve(256);
 
     return Result::SUCCESS;
 }

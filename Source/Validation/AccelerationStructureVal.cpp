@@ -30,23 +30,23 @@ AccelerationStructureVal::~AccelerationStructureVal()
     if (m_Memory != nullptr)
         m_Memory->UnbindAccelerationStructure(*this);
 
-    m_RayTracingAPI.DestroyAccelerationStructure(m_ImplObject);
+    m_RayTracingAPI.DestroyAccelerationStructure(GetImpl());
 }
 
 void AccelerationStructureVal::GetMemoryInfo(MemoryDesc& memoryDesc) const
 {
-    m_RayTracingAPI.GetAccelerationStructureMemoryInfo(m_ImplObject, memoryDesc);
+    m_RayTracingAPI.GetAccelerationStructureMemoryInfo(GetImpl(), memoryDesc);
     m_Device.RegisterMemoryType(memoryDesc.type, MemoryLocation::DEVICE);
 }
 
 uint64_t AccelerationStructureVal::GetUpdateScratchBufferSize() const
 {
-    return m_RayTracingAPI.GetAccelerationStructureUpdateScratchBufferSize(m_ImplObject);
+    return m_RayTracingAPI.GetAccelerationStructureUpdateScratchBufferSize(GetImpl());
 }
 
 uint64_t AccelerationStructureVal::GetBuildScratchBufferSize() const
 {
-    return m_RayTracingAPI.GetAccelerationStructureBuildScratchBufferSize(m_ImplObject);
+    return m_RayTracingAPI.GetAccelerationStructureBuildScratchBufferSize(GetImpl());
 }
 
 uint64_t AccelerationStructureVal::GetHandle(uint32_t nodeIndex) const
@@ -54,7 +54,7 @@ uint64_t AccelerationStructureVal::GetHandle(uint32_t nodeIndex) const
     RETURN_ON_FAILURE(&m_Device, IsBoundToMemory(), 0,
         "Can't get AccelerationStructure handle: AccelerationStructure is not bound to memory.");
 
-    return m_RayTracingAPI.GetAccelerationStructureHandle(m_ImplObject, nodeIndex);
+    return m_RayTracingAPI.GetAccelerationStructureHandle(GetImpl(), nodeIndex);
 }
 
 uint64_t AccelerationStructureVal::GetNativeObject(uint32_t nodeIndex) const
@@ -62,13 +62,13 @@ uint64_t AccelerationStructureVal::GetNativeObject(uint32_t nodeIndex) const
     RETURN_ON_FAILURE(&m_Device, IsBoundToMemory(), 0,
         "Can't get AccelerationStructure native object: AccelerationStructure is not bound to memory.");
 
-    return m_RayTracingAPI.GetAccelerationStructureNativeObject(m_ImplObject, nodeIndex);
+    return m_RayTracingAPI.GetAccelerationStructureNativeObject(GetImpl(), nodeIndex);
 }
 
 Result AccelerationStructureVal::CreateDescriptor(uint32_t nodeIndex, Descriptor*& descriptor)
 {
     Descriptor* descriptorImpl = nullptr;
-    const Result result = m_RayTracingAPI.CreateAccelerationStructureDescriptor(m_ImplObject, nodeIndex, descriptorImpl);
+    const Result result = m_RayTracingAPI.CreateAccelerationStructureDescriptor(GetImpl(), nodeIndex, descriptorImpl);
 
     if (result == Result::SUCCESS)
     {
@@ -82,7 +82,7 @@ Result AccelerationStructureVal::CreateDescriptor(uint32_t nodeIndex, Descriptor
 void AccelerationStructureVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_RayTracingAPI.SetAccelerationStructureDebugName(m_ImplObject, name);
+    m_RayTracingAPI.SetAccelerationStructureDebugName(GetImpl(), name);
 }
 
 #include "AccelerationStructureVal.hpp"

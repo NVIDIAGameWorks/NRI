@@ -41,13 +41,17 @@ struct PipelineD3D12
     inline const PipelineLayoutD3D12& GetPipelineLayout() const
     { return *m_PipelineLayout; }
 
+    inline uint32_t GetIAStreamStride(uint32_t streamSlot) const
+    { return m_IAStreamStride[streamSlot]; }
+
+    inline uint8_t GetSampleNum() const
+    { return m_SampleNum; }
+
     Result Create(const GraphicsPipelineDesc& graphicsPipelineDesc);
     Result Create(const ComputePipelineDesc& computePipelineDesc);
     Result Create(const RayTracingPipelineDesc& rayTracingPipelineDesc);
 
     void Bind(ID3D12GraphicsCommandList* graphicsCommandList, D3D12_PRIMITIVE_TOPOLOGY& primitiveTopology) const;
-    uint32_t GetIAStreamStride(uint32_t streamSlot) const;
-    uint8_t GetSampleNum() const;
 
     //================================================================================================================
     // NRI
@@ -69,7 +73,7 @@ private:
 
 private:
     DeviceD3D12& m_Device;
-    std::array<uint32_t, D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT> m_IAStreamStride = {}; // TODO: optimize?
+    std::array<uint16_t, D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT> m_IAStreamStride = {}; // TODO: optimize?
     ComPtr<ID3D12PipelineState> m_PipelineState;
     ComPtr<ID3D12StateObject> m_StateObject;
     ComPtr<ID3D12StateObjectProperties> m_StateObjectProperties;

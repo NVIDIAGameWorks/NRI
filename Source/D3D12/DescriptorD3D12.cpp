@@ -20,12 +20,12 @@ Result DescriptorD3D12::Create(const BufferViewDesc& bufferViewDesc)
 {
     const BufferD3D12& buffer = *((BufferD3D12*)bufferViewDesc.buffer);
     DXGI_FORMAT format = GetDxgiFormat(bufferViewDesc.format).typed;
-    uint64_t size = bufferViewDesc.size == WHOLE_SIZE ? buffer.GetByteSize() : bufferViewDesc.size;
+    uint64_t size = bufferViewDesc.size == WHOLE_SIZE ? buffer.GetDesc().size : bufferViewDesc.size;
     uint32_t elementSize = GetFormatProps(bufferViewDesc.format).stride;
     uint64_t elementOffset;
     uint32_t elementNum;
 
-    uint32_t structureStride = buffer.GetStructureStride();
+    uint32_t structureStride = buffer.GetDesc().structureStride;
     if (structureStride) // structured buffer
     {
         elementOffset = bufferViewDesc.offset / structureStride;
@@ -84,8 +84,8 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc)
     DXGI_FORMAT format = GetDxgiFormat(textureViewDesc.format).typed;
 
     const TextureDesc& textureDesc = texture.GetDesc();
-    uint32_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
-    uint32_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
+    Mip_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
+    Dim_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
 
     switch (textureViewDesc.viewType)
     {
@@ -174,8 +174,8 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc)
     const TextureDesc& textureDesc = texture.GetDesc();
     DXGI_FORMAT format = GetDxgiFormat(textureViewDesc.format).typed;
     bool isMultisampled = textureDesc.sampleNum > 1 ? true : false;
-    uint32_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
-    uint32_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
+    Mip_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
+    Dim_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
 
     switch (textureViewDesc.viewType)
     {
@@ -309,7 +309,7 @@ Result DescriptorD3D12::Create(const Texture3DViewDesc& textureViewDesc)
     DXGI_FORMAT format = GetDxgiFormat(textureViewDesc.format).typed;
 
     const TextureDesc& textureDesc = texture.GetDesc();
-    uint32_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
+    Mip_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
 
     switch (textureViewDesc.viewType)
     {

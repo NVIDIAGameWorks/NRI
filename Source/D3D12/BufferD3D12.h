@@ -30,11 +30,8 @@ struct BufferD3D12
     inline operator ID3D12Resource*() const
     { return m_Buffer.GetInterface(); }
 
-    inline uint64_t GetByteSize() const
-    { return m_BufferDesc.Width; }
-
-    inline uint32_t GetStructureStride() const
-    { return m_StructureStride; }
+    inline const BufferDesc& GetDesc() const
+    { return m_Desc; }
 
     inline D3D12_GPU_VIRTUAL_ADDRESS GetPointerGPU() const
     { return m_Buffer->GetGPUVirtualAddress(); }
@@ -44,7 +41,6 @@ struct BufferD3D12
 
     Result Create(const BufferDesc& bufferDesc);
     Result Create(const BufferD3D12Desc& bufferDesc);
-    void Initialize(ID3D12Resource* resource);
     Result BindMemory(const MemoryD3D12* memory, uint64_t offset, bool isAccelerationStructureBuffer = false);
 
     //================================================================================================================
@@ -60,9 +56,8 @@ struct BufferD3D12
 
 private:
     DeviceD3D12& m_Device;
-    D3D12_RESOURCE_DESC m_BufferDesc = {};
-    uint32_t m_StructureStride = 0;
     ComPtr<ID3D12Resource> m_Buffer;
+    BufferDesc m_Desc = {};
 };
 
 }

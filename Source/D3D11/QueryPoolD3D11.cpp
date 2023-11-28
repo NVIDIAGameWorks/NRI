@@ -15,7 +15,7 @@ using namespace nri;
 
 Result QueryPoolD3D11::Create(const QueryPoolDesc& queryPoolDesc)
 {
-    m_Pool.reserve(queryPoolDesc.capacity);
+    m_QueryPool.reserve(queryPoolDesc.capacity);
     m_Type = queryPoolDesc.queryType;
 
     D3D11_QUERY_DESC queryDesc = {};
@@ -35,7 +35,7 @@ Result QueryPoolD3D11::Create(const QueryPoolDesc& queryPoolDesc)
         HRESULT hr = m_Device.GetDevice()->CreateQuery(&queryDesc, &query);
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateQuery()");
 
-        m_Pool.push_back(query);
+        m_QueryPool.push_back(query);
     }
 
     return Result::SUCCESS;
@@ -43,14 +43,14 @@ Result QueryPoolD3D11::Create(const QueryPoolDesc& queryPoolDesc)
 
 void QueryPoolD3D11::BeginQuery(const VersionedContext& deferredContext, uint32_t offset)
 {
-    ID3D11Query* query = m_Pool[offset];
+    ID3D11Query* query = m_QueryPool[offset];
 
     deferredContext->Begin(query);
 }
 
 void QueryPoolD3D11::EndQuery(const VersionedContext& deferredContext, uint32_t offset)
 {
-    ID3D11Query* query = m_Pool[offset];
+    ID3D11Query* query = m_QueryPool[offset];
 
     deferredContext->End(query);
 }
@@ -63,7 +63,7 @@ void QueryPoolD3D11::GetData(uint8_t* dstMemory, uint32_t offset, uint32_t num) 
 
     for (uint32_t i = offset; i < num; i++)
     {
-        ID3D11Query* query = m_Pool[i];
+        ID3D11Query* query = m_QueryPool[i];
         m_Device.GetImmediateContext()->GetData(query, dstMemory, dataSize, 0);
 
         dstMemory += dataSize;
@@ -76,7 +76,7 @@ void QueryPoolD3D11::GetData(uint8_t* dstMemory, uint32_t offset, uint32_t num) 
 
 inline void QueryPoolD3D11::SetDebugName(const char* name)
 {
-    for(ComPtr<ID3D11Query>& query : m_Pool)
+    for(ComPtr<ID3D11Query>& query : m_QueryPool)
         SET_D3D_DEBUG_OBJECT_NAME(query, name);
 }
 

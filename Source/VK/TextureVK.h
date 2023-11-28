@@ -33,20 +33,8 @@ struct TextureVK
     inline VkExtent3D GetExtent() const
     { return {m_Desc.width, m_Desc.height, m_Desc.depth}; }
 
-    inline uint16_t GetMipNum() const
-    { return m_Desc.mipNum; }
-
-    inline uint16_t GetArraySize() const
-    { return m_Desc.arraySize; }
-
-    inline Format GetFormat() const
-    { return m_Desc.format; }
-
-    inline TextureType GetType() const
-    { return m_Desc.type; }
-
-    inline VkSampleCountFlagBits GetSampleCount() const
-    { return (VkSampleCountFlagBits)m_Desc.sampleNum; }
+    inline const TextureDesc& GetDesc() const
+    { return m_Desc; }
 
     inline void ClearHandle()
     {
@@ -58,7 +46,7 @@ struct TextureVK
 
     Result Create(const TextureDesc& textureDesc);
     Result Create(const TextureVKDesc& textureDesc);
-    uint16_t GetSize(uint32_t dimension, uint32_t mipOffset) const;
+    Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const;
 
     //================================================================================================================
     // NRI

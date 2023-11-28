@@ -10,12 +10,11 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-#include "DescriptorPoolD3D12.h"
-
 namespace nri
 {
 
 struct DeviceD3D12;
+struct DescriptorPoolD3D12;
 
 struct DescriptorRangeMapping
 {
@@ -36,15 +35,12 @@ struct DescriptorSetMapping
 
 struct DescriptorSetD3D12
 {
-    inline ~DescriptorSetD3D12()
-    {}
+    DescriptorSetD3D12(DescriptorPoolD3D12& desriptorPoolD3D12);
 
-    inline DeviceD3D12& GetDevice() const
-    { return m_Device; }
-
-    DescriptorSetD3D12(DeviceD3D12& device, DescriptorPoolD3D12& desriptorPoolD3D12, const DescriptorSetMapping& descriptorSetMapping, uint16_t dynamicConstantBufferNum);
+    void Initialize(const DescriptorSetMapping* descriptorSetMapping, uint16_t dynamicConstantBufferNum);
 
     static void BuildDescriptorSetMapping(const DescriptorSetDesc& descriptorSetDesc, DescriptorSetMapping& descriptorSetMapping);
+
     DescriptorPointerCPU GetPointerCPU(uint32_t rangeIndex, uint32_t rangeOffset) const;
     DescriptorPointerGPU GetPointerGPU(uint32_t rangeIndex, uint32_t rangeOffset) const;
     DescriptorPointerGPU GetDynamicPointerGPU(uint32_t dynamicConstantBufferIndex) const;
@@ -61,10 +57,10 @@ struct DescriptorSetD3D12
     void Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc);
 
 private:
-    DeviceD3D12& m_Device;
     DescriptorPoolD3D12& m_DescriptorPoolD3D12;
-    DescriptorSetMapping m_DescriptorSetMapping;
     Vector<DescriptorPointerGPU> m_DynamicConstantBuffers;
+    std::array<uint32_t, DescriptorHeapType::MAX_NUM> m_HeapOffset = {};
+    const DescriptorSetMapping* m_DescriptorSetMapping = nullptr;
 };
 
 }

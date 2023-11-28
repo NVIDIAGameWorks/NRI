@@ -38,13 +38,13 @@ struct TextureD3D12
     inline operator ID3D12Resource*() const
     { return m_Texture.GetInterface(); }
 
-    inline uint32_t GetSubresourceIndex(uint32_t arrayOffset, uint32_t mipOffset) const
+    inline uint32_t GetSubresourceIndex(Dim_t arrayOffset, Mip_t mipOffset) const
     { return arrayOffset * m_Desc.mipNum + mipOffset; }
 
     Result Create(const TextureDesc& textureDesc);
     Result Create(const TextureD3D12Desc& textureDesc);
     Result BindMemory(const MemoryD3D12* memory, uint64_t offset);
-    uint16_t GetSize(uint32_t dim, uint32_t mipOffset = 0) const;
+    Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const;
 
     //================================================================================================================
     // NRI

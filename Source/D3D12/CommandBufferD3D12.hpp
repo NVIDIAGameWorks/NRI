@@ -204,6 +204,9 @@ static void NRI_CALL CmdResetQueries(CommandBuffer&, const QueryPool&, uint32_t,
 
 static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer)
 {
+    if(!(&commandBuffer))
+        return;
+
     CommandBufferD3D12& commandBufferImpl = (CommandBufferD3D12&)commandBuffer;
     DeviceD3D12& deviceImpl = commandBufferImpl.GetDevice();
 

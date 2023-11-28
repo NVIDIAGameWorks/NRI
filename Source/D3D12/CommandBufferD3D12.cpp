@@ -14,6 +14,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "TextureD3D12.h"
 #include "DescriptorD3D12.h"
 #include "DescriptorSetD3D12.h"
+#include "DescriptorPoolD3D12.h"
 #include "FrameBufferD3D12.h"
 #include "PipelineD3D12.h"
 #include "PipelineLayoutD3D12.h"
@@ -212,7 +213,7 @@ inline void CommandBufferD3D12::SetVertexBuffers(uint32_t baseSlot, uint32_t buf
             const BufferD3D12* buffer = (BufferD3D12*)buffers[i];
             uint64_t offset = offsets ? offsets[i] : 0;
             vertexBufferViews[i].BufferLocation = buffer->GetPointerGPU() + offset;
-            vertexBufferViews[i].SizeInBytes = (UINT)(buffer->GetByteSize() - offset);
+            vertexBufferViews[i].SizeInBytes = (UINT)(buffer->GetDesc().size - offset);
             vertexBufferViews[i].StrideInBytes = m_Pipeline->GetIAStreamStride(baseSlot + i);
         }
         else
@@ -232,7 +233,7 @@ inline void CommandBufferD3D12::SetIndexBuffer(const Buffer& buffer, uint64_t of
 
     D3D12_INDEX_BUFFER_VIEW indexBufferView;
     indexBufferView.BufferLocation = bufferD3D12.GetPointerGPU() + offset;
-    indexBufferView.SizeInBytes = (UINT)(bufferD3D12.GetByteSize() - offset);
+    indexBufferView.SizeInBytes = (UINT)(bufferD3D12.GetDesc().size - offset);
     indexBufferView.Format = indexType == IndexType::UINT16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
 
     m_GraphicsCommandList->IASetIndexBuffer(&indexBufferView);
@@ -311,7 +312,7 @@ inline void CommandBufferD3D12::DrawIndexedIndirect(const Buffer& buffer, uint64
 inline void CommandBufferD3D12::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size)
 {
     if (size == WHOLE_SIZE)
-        size = ((BufferD3D12&)srcBuffer).GetByteSize();
+        size = ((BufferD3D12&)srcBuffer).GetDesc().size;
 
     m_GraphicsCommandList->CopyBufferRegion((BufferD3D12&)dstBuffer, dstOffset, (BufferD3D12&)srcBuffer, srcOffset, size);
 }
@@ -420,8 +421,8 @@ inline void CommandBufferD3D12::PipelineBarrier(const TransitionBarrierDesc* tra
             const auto& barrierDesc = transitionBarriers->textures[i];
             const TextureD3D12& texture = *(TextureD3D12*)barrierDesc.texture;
             const TextureDesc& textureDesc = texture.GetDesc();
-            const uint32_t arraySize = barrierDesc.arraySize == REMAINING_ARRAY_LAYERS ? textureDesc.arraySize : barrierDesc.arraySize;
-            const uint32_t mipNum = barrierDesc.mipNum == REMAINING_MIP_LEVELS ? textureDesc.mipNum : barrierDesc.mipNum;
+            const Dim_t arraySize = barrierDesc.arraySize == REMAINING_ARRAY_LAYERS ? textureDesc.arraySize : barrierDesc.arraySize;
+            const Mip_t mipNum = barrierDesc.mipNum == REMAINING_MIP_LEVELS ? textureDesc.mipNum : barrierDesc.mipNum;
             if (barrierDesc.arrayOffset == 0 &&
                 barrierDesc.arraySize == REMAINING_ARRAY_LAYERS &&
                 barrierDesc.mipOffset == 0 &&
@@ -457,8 +458,8 @@ inline void CommandBufferD3D12::PipelineBarrier(const TransitionBarrierDesc* tra
             const auto& barrierDesc = transitionBarriers->textures[i];
             const TextureD3D12& texture = *(TextureD3D12*)barrierDesc.texture;
             const TextureDesc& textureDesc = texture.GetDesc();
-            const uint32_t arraySize = barrierDesc.arraySize == REMAINING_ARRAY_LAYERS ? textureDesc.arraySize : barrierDesc.arraySize;
-            const uint32_t mipNum = barrierDesc.mipNum == REMAINING_MIP_LEVELS ? textureDesc.mipNum : barrierDesc.mipNum;
+            const Dim_t arraySize = barrierDesc.arraySize == REMAINING_ARRAY_LAYERS ? textureDesc.arraySize : barrierDesc.arraySize;
+            const Mip_t mipNum = barrierDesc.mipNum == REMAINING_MIP_LEVELS ? textureDesc.mipNum : barrierDesc.mipNum;
             if (barrierDesc.arrayOffset == 0 &&
                 barrierDesc.arraySize == REMAINING_ARRAY_LAYERS &&
                 barrierDesc.mipOffset == 0 &&
@@ -468,9 +469,9 @@ inline void CommandBufferD3D12::PipelineBarrier(const TransitionBarrierDesc* tra
             }
             else
             {
-                for (uint16_t arrayOffset = barrierDesc.arrayOffset; arrayOffset < barrierDesc.arrayOffset + arraySize; arrayOffset++)
+                for (Dim_t arrayOffset = barrierDesc.arrayOffset; arrayOffset < barrierDesc.arrayOffset + arraySize; arrayOffset++)
                 {
-                    for (uint16_t mipOffset = barrierDesc.mipOffset; mipOffset < barrierDesc.mipOffset + mipNum; mipOffset++)
+                    for (Mip_t mipOffset = barrierDesc.mipOffset; mipOffset < barrierDesc.mipOffset + mipNum; mipOffset++)
                     {
                         uint32_t subresource = texture.GetSubresourceIndex(arrayOffset, mipOffset);
                         AddResourceBarrier(texture, barrierDesc.prevAccess, barrierDesc.nextAccess, *ptr++, subresource);

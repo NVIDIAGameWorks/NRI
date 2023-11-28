@@ -385,7 +385,7 @@ inline void CommandBufferVK::CopyBuffer(Buffer& dstBuffer, uint32_t dstNodeIndex
     const VkBufferCopy region = {
         srcOffset,
         dstOffset,
-        size == WHOLE_SIZE ? srcBufferImpl.GetSize() : size
+        size == WHOLE_SIZE ? srcBufferImpl.GetDesc().size : size
     };
 
     const auto& vk = m_Device.GetDispatchTable();
@@ -477,11 +477,12 @@ inline void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, const Te
     const BufferVK& srcBufferImpl = (const BufferVK&)srcBuffer;
     const TextureVK& dstTextureImpl = (const TextureVK&)dstTexture;
 
-    const uint32_t rowBlockNum = srcDataLayoutDesc.rowPitch / GetFormatProps(dstTextureImpl.GetFormat()).stride;
-    const uint32_t bufferRowLength = rowBlockNum * GetFormatProps(dstTextureImpl.GetFormat()).blockWidth;
+    const FormatProps& formatProps = GetFormatProps(dstTextureImpl.GetDesc().format);
+    const uint32_t rowBlockNum = srcDataLayoutDesc.rowPitch / formatProps.stride;
+    const uint32_t bufferRowLength = rowBlockNum * formatProps.blockWidth;
 
     const uint32_t sliceRowNum = srcDataLayoutDesc.slicePitch / srcDataLayoutDesc.rowPitch;
-    const uint32_t bufferImageHeight = sliceRowNum * GetFormatProps(dstTextureImpl.GetFormat()).blockWidth;
+    const uint32_t bufferImageHeight = sliceRowNum * formatProps.blockWidth;
 
     const VkBufferImageCopy region = {
         srcDataLayoutDesc.offset,
@@ -514,11 +515,12 @@ inline void CommandBufferVK::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureD
     const TextureVK& srcTextureImpl = (const TextureVK&)srcTexture;
     const BufferVK& dstBufferImpl = (const BufferVK&)dstBuffer;
 
-    const uint32_t rowBlockNum = dstDataLayoutDesc.rowPitch / GetFormatProps(srcTextureImpl.GetFormat()).stride;
-    const uint32_t bufferRowLength = rowBlockNum * GetFormatProps(srcTextureImpl.GetFormat()).blockWidth;
+    const FormatProps& formatProps = GetFormatProps(srcTextureImpl.GetDesc().format);
+    const uint32_t rowBlockNum = dstDataLayoutDesc.rowPitch / formatProps.stride;
+    const uint32_t bufferRowLength = rowBlockNum * formatProps.blockWidth;
 
     const uint32_t sliceRowNum = dstDataLayoutDesc.slicePitch / dstDataLayoutDesc.rowPitch;
-    const uint32_t bufferImageHeight = sliceRowNum * GetFormatProps(srcTextureImpl.GetFormat()).blockWidth;
+    const uint32_t bufferImageHeight = sliceRowNum * formatProps.blockWidth;
 
     const VkBufferImageCopy region = {
         dstDataLayoutDesc.offset,
@@ -767,22 +769,25 @@ inline void CommandBufferVK::FillTransitionImageBarriers(const TransitionBarrier
 
 inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, uint32_t dstNodeIndex, const TextureVK& srcTexture, uint32_t srcNodeIndex)
 {
-    VkImageCopy* regions = STACK_ALLOC(VkImageCopy, dstTexture.GetMipNum());
+    const TextureDesc& dstTextureDesc = dstTexture.GetDesc();
+    const TextureDesc& srcTextureDesc = srcTexture.GetDesc();
 
-    for (uint32_t i = 0; i < dstTexture.GetMipNum(); i++)
+    VkImageCopy* regions = STACK_ALLOC(VkImageCopy, dstTextureDesc.mipNum);
+
+    for (Mip_t i = 0; i < dstTextureDesc.mipNum; i++)
     {
         regions[i].srcSubresource = {
             srcTexture.GetImageAspectFlags(),
             i,
             0,
-            srcTexture.GetArraySize()
+            srcTextureDesc.arraySize
         };
 
         regions[i].dstSubresource = {
             dstTexture.GetImageAspectFlags(),
             i,
             0,
-            dstTexture.GetArraySize()
+            dstTextureDesc.arraySize
         };
 
         regions[i].dstOffset = {};
@@ -794,7 +799,7 @@ inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, uint3
     vk.CmdCopyImage(m_Handle,
         srcTexture.GetHandle(srcNodeIndex), VK_IMAGE_LAYOUT_GENERAL,
         dstTexture.GetHandle(dstNodeIndex), VK_IMAGE_LAYOUT_GENERAL,
-        dstTexture.GetMipNum(), regions);
+        dstTextureDesc.mipNum, regions);
 }
 
 inline void CommandBufferVK::BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset,

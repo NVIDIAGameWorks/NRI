@@ -391,16 +391,6 @@ void PipelineD3D12::Bind(ID3D12GraphicsCommandList* graphicsCommandList, D3D12_P
     }
 }
 
-uint32_t PipelineD3D12::GetIAStreamStride(uint32_t streamSlot) const
-{
-    return m_IAStreamStride[streamSlot];
-}
-
-uint8_t PipelineD3D12::GetSampleNum() const
-{
-    return m_SampleNum;
-}
-
 void PipelineD3D12::FillInputLayout(D3D12_INPUT_LAYOUT_DESC& inputLayoutDesc, const GraphicsPipelineDesc& graphicsPipelineDesc)
 {
     uint8_t attributeNum = graphicsPipelineDesc.inputAssembly->attributeNum;

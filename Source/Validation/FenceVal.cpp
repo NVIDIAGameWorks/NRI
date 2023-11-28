@@ -21,28 +21,28 @@ using namespace nri;
 
 inline uint64_t FenceVal::GetFenceValue() const
 {
-    return m_CoreAPI.GetFenceValue(m_ImplObject);
+    return GetCoreInterface().GetFenceValue(GetImpl());
 }
 
 inline void FenceVal::QueueSignal(CommandQueueVal& commandQueue, uint64_t value)
 {
-    m_CoreAPI.QueueSignal(commandQueue.GetImpl(), m_ImplObject, value);
+    GetCoreInterface().QueueSignal(commandQueue.GetImpl(), GetImpl(), value);
 }
 
 inline void FenceVal::QueueWait(CommandQueueVal& commandQueue, uint64_t value)
 {
-    m_CoreAPI.QueueWait(commandQueue.GetImpl(), m_ImplObject, value);
+    GetCoreInterface().QueueWait(commandQueue.GetImpl(), GetImpl(), value);
 }
 
 inline void FenceVal::Wait(uint64_t value)
 {
-    m_CoreAPI.Wait(m_ImplObject, value);
+    GetCoreInterface().Wait(GetImpl(), value);
 }
 
 inline void FenceVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_CoreAPI.SetFenceDebugName(m_ImplObject, name);
+    GetCoreInterface().SetFenceDebugName(GetImpl(), name);
 }
 
 #include "FenceVal.hpp"

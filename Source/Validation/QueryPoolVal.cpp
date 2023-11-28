@@ -31,12 +31,12 @@ QueryPoolVal::QueryPoolVal(DeviceVal& device, QueryPool& queryPool, QueryType qu
 void QueryPoolVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_CoreAPI.SetQueryPoolDebugName(m_ImplObject, name);
+    GetCoreInterface().SetQueryPoolDebugName(GetImpl(), name);
 }
 
 uint32_t QueryPoolVal::GetQuerySize() const
 {
-    return m_CoreAPI.GetQuerySize(m_ImplObject);
+    return GetCoreInterface().GetQuerySize(GetImpl());
 }
 
 bool QueryPoolVal::SetQueryState(uint32_t offset, bool state) // TODO: not inline

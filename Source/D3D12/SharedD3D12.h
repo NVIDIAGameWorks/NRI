@@ -20,6 +20,13 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 namespace nri
 {
+enum DescriptorHeapType : uint32_t
+{
+    RESOURCE = 0,
+    SAMPLER,
+    MAX_NUM
+};
+
 DXGI_FORMAT GetShaderFormatForDepth(DXGI_FORMAT format);
 
 MemoryType GetMemoryType(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags);

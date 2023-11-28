@@ -197,6 +197,9 @@ static void NRI_CALL CmdResetQueries(CommandBuffer& commandBuffer, const QueryPo
 
 static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer)
 {
+    if(!(&commandBuffer))
+        return;
+
     ((CommandBufferVal&)commandBuffer).Destroy();
 }
 

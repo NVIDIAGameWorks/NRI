@@ -98,7 +98,7 @@ struct DeviceVK final : public DeviceBase
     Result CreateCommandQueue(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
     Result CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator);
     Result CreateCommandBuffer(const CommandBufferVKDesc& commandBufferDesc, CommandBuffer*& commandBuffer);
-    Result CreateDescriptorPool(NRIVkDescriptorPool vkDescriptorPool, DescriptorPool*& descriptorPool);
+    Result CreateDescriptorPool(const DescriptorPoolVKDesc& descriptorPoolVKDesc, DescriptorPool*& descriptorPool);
     Result CreateBuffer(const BufferVKDesc& bufferDesc, Buffer*& buffer);
     Result CreateTexture(const TextureVKDesc& textureVKDesc, Texture*& texture);
     Result CreateMemory(const MemoryVKDesc& memoryVKDesc, Memory*& memory);

@@ -33,7 +33,7 @@ CommandQueueVal::CommandQueueVal(DeviceVal& device, CommandQueue& commandQueue) 
 void CommandQueueVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_CoreAPI.SetCommandQueueDebugName(m_ImplObject, name);
+    GetCoreInterface().SetCommandQueueDebugName(GetImpl(), name);
 }
 
 void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc)
@@ -45,7 +45,7 @@ void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc)
     for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++)
         ((CommandBuffer**)queueSubmitDescImpl.commandBuffers)[i] = NRI_GET_IMPL_PTR(CommandBuffer, queueSubmitDesc.commandBuffers[i]);
 
-    m_CoreAPI.QueueSubmit(m_ImplObject, queueSubmitDescImpl);
+    GetCoreInterface().QueueSubmit(GetImpl(), queueSubmitDescImpl);
 }
 
 Result CommandQueueVal::ChangeResourceStates(const TransitionBarrierDesc& transitionBarriers)
@@ -79,7 +79,7 @@ Result CommandQueueVal::ChangeResourceStates(const TransitionBarrierDesc& transi
     transitionBarriersImpl.buffers = bufferTransitionBarriers;
     transitionBarriersImpl.textures = textureTransitionBarriers;
 
-    return m_HelperAPI.ChangeResourceStates(m_ImplObject, transitionBarriersImpl);
+    return m_HelperAPI.ChangeResourceStates(GetImpl(), transitionBarriersImpl);
 }
 
 Result CommandQueueVal::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum,
@@ -117,12 +117,12 @@ Result CommandQueueVal::UploadData(const TextureUploadDesc* textureUploadDescs, 
         bufferUploadDescsImpl[i].buffer = &bufferVal->GetImpl();
     }
 
-    return m_HelperAPI.UploadData(m_ImplObject, textureUploadDescsImpl, textureUploadDescNum, bufferUploadDescsImpl, bufferUploadDescNum);
+    return m_HelperAPI.UploadData(GetImpl(), textureUploadDescsImpl, textureUploadDescNum, bufferUploadDescsImpl, bufferUploadDescNum);
 }
 
 Result CommandQueueVal::WaitForIdle()
 {
-    return m_HelperAPI.WaitForIdle(m_ImplObject);
+    return m_HelperAPI.WaitForIdle(GetImpl());
 }
 
 template<typename Command>
@@ -149,7 +149,7 @@ void CommandQueueVal::ProcessValidationCommandBeginQuery(const uint8_t*& begin, 
     if (used)
     {
         REPORT_ERROR(&m_Device, "Can't begin query: it must be reset before use. (QueryPool='%s', offset=%u)",
-            queryPool.GetDebugName().c_str(), command->queryPoolOffset);
+            queryPool.GetDebugName(), command->queryPoolOffset);
     }
 }
 
@@ -167,7 +167,7 @@ void CommandQueueVal::ProcessValidationCommandEndQuery(const uint8_t*& begin, co
         if (used)
         {
             REPORT_ERROR(&m_Device, "Can't end query: it must be reset before use. (QueryPool='%s', offset=%u)",
-                queryPool.GetDebugName().c_str(), command->queryPoolOffset);
+                queryPool.GetDebugName(), command->queryPoolOffset);
         }
     }
     else
@@ -175,7 +175,7 @@ void CommandQueueVal::ProcessValidationCommandEndQuery(const uint8_t*& begin, co
         if (!used)
         {
             REPORT_ERROR(&m_Device, "Can't end query: it's not in active state. (QueryPool='%s', offset=%u)",
-                queryPool.GetDebugName().c_str(), command->queryPoolOffset);
+                queryPool.GetDebugName(), command->queryPoolOffset);
         }
     }
 }

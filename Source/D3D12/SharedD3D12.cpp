@@ -485,11 +485,11 @@ bool nri::GetTextureDesc(const TextureD3D12Desc& textureD3D12Desc, TextureDesc& 
 
     textureDesc.type = (TextureType)(desc.Dimension - D3D12_RESOURCE_DIMENSION_TEXTURE1D);
     textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
-    textureDesc.width = (uint16_t)desc.Width;
-    textureDesc.height = (uint16_t)desc.Height;
-    textureDesc.depth = textureDesc.type == TextureType::TEXTURE_3D ? desc.DepthOrArraySize : 1;
-    textureDesc.mipNum = desc.MipLevels;
-    textureDesc.arraySize = textureDesc.type == TextureType::TEXTURE_3D ? 1 : desc.DepthOrArraySize;
+    textureDesc.width = (Dim_t)desc.Width;
+    textureDesc.height = (Dim_t)desc.Height;
+    textureDesc.depth = textureDesc.type == TextureType::TEXTURE_3D ? (Dim_t)desc.DepthOrArraySize : 1;
+    textureDesc.mipNum = (Mip_t)desc.MipLevels;
+    textureDesc.arraySize = textureDesc.type == TextureType::TEXTURE_3D ? 1 : (Dim_t)desc.DepthOrArraySize;
     textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
     textureDesc.nodeMask = ALL_NODES; // TODO: not in D3D12_RESOURCE_DESC...
 

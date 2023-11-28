@@ -13,6 +13,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "SharedD3D12.h"
 #include "CommandQueueD3D12.h"
 #include "CommandAllocatorD3D12.h"
+#include "DescriptorSetD3D12.h"
 #include "DescriptorPoolD3D12.h"
 #include "FenceD3D12.h"
 #include "FrameBufferD3D12.h"

@@ -15,9 +15,9 @@ static void NRI_CALL SetSwapChainDebugName(SwapChain& swapChain, const char* nam
     ((SwapChainD3D12&)swapChain).SetDebugName(name);
 }
 
-static Texture* const* NRI_CALL GetSwapChainTextures(const SwapChain& swapChain, uint32_t& textureNum, Format& format)
+static Texture* const* NRI_CALL GetSwapChainTextures(const SwapChain& swapChain, uint32_t& textureNum)
 {
-    return ((SwapChainD3D12&)swapChain).GetTextures(textureNum, format);
+    return ((SwapChainD3D12&)swapChain).GetTextures(textureNum);
 }
 
 static uint32_t NRI_CALL AcquireNextSwapChainTexture(SwapChain& swapChain)

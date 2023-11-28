@@ -17,17 +17,17 @@ struct MemoryVal;
 
 struct BufferVal final : public DeviceObjectVal<Buffer>
 {
-    BufferVal(DeviceVal& device, Buffer& buffer, const BufferDesc& bufferDesc);
-    BufferVal(DeviceVal& device, Buffer& buffer, const BufferD3D11Desc& bufferD3D11Desc);
-    BufferVal(DeviceVal& device, Buffer& buffer, const BufferD3D12Desc& bufferD3D12Desc);
-    BufferVal(DeviceVal& device, Buffer& buffer, const BufferVKDesc& bufferVKDesc);
+    BufferVal(DeviceVal& device, Buffer& buffer) :
+        DeviceObjectVal(device, buffer)
+    {}
+
     ~BufferVal();
 
     inline const BufferDesc& GetDesc() const
-    { return m_BufferDesc; }
+    { return GetCoreInterface().GetBufferDesc(GetImpl()); }
 
     inline uint64_t GetNativeObject(uint32_t nodeIndex) const
-    { return m_CoreAPI.GetBufferNativeObject(m_ImplObject, nodeIndex); }
+    { return GetCoreInterface().GetBufferNativeObject(GetImpl(), nodeIndex); }
 
     inline bool IsBoundToMemory() const
     { return m_IsBoundToMemory; }
@@ -51,7 +51,6 @@ struct BufferVal final : public DeviceObjectVal<Buffer>
 
 private:
     MemoryVal* m_Memory = nullptr;
-    BufferDesc m_BufferDesc = {};
     bool m_IsBoundToMemory = false;
     bool m_IsMapped = false;
 };

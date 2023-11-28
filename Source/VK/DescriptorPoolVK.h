@@ -32,7 +32,7 @@ struct DescriptorPoolVK
     ~DescriptorPoolVK();
 
     Result Create(const DescriptorPoolDesc& descriptorPoolDesc);
-    Result Create(NRIVkDescriptorPool vkDescriptorPool);
+    Result Create(const DescriptorPoolVKDesc& descriptorPoolVKDesc);
 
     //================================================================================================================
     // NRI

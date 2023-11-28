@@ -9,75 +9,50 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
 #pragma once
+
 #include "DeviceBase.h"
 #include "DeviceVal.h"
-
-#include <algorithm>
 
 namespace nri
 {
 
-struct DeviceObjectBaseVal
-{
-    DeviceObjectBaseVal(DeviceVal& device);
-
-    DeviceVal& GetDevice() const;
-
-protected:
-    DeviceVal& m_Device;
-    const CoreInterface& m_CoreAPI;
-};
-
-inline DeviceVal& DeviceObjectBaseVal::GetDevice() const
-{
-    return m_Device;
-}
-
 template< typename T >
-struct DeviceObjectVal : public DeviceObjectBaseVal
+struct DeviceObjectVal
 {
-    DeviceObjectVal(DeviceVal& device, T& object);
+    DeviceObjectVal(DeviceVal& device) :
+        m_Name(device.GetStdAllocator()),
+        m_Device(device)
+    {}
 
-    T& GetImpl() const;
-    const String& GetDebugName() const;
+    DeviceObjectVal(DeviceVal& device, T& object) :
+        m_Name(device.GetStdAllocator()),
+        m_Device(device),
+        m_Impl(&object)
+    {}
+
+    inline T& GetImpl() const
+    { return *m_Impl; }
+
+    inline const char* GetDebugName() const
+    { return m_Name.c_str(); }
+
+    inline DeviceVal& GetDevice() const
+    { return m_Device; }
+
+    inline const CoreInterface& GetCoreInterface() const
+    { return m_Device.GetCoreInterface(); }
 
 protected:
-    T& m_ImplObject;
     String m_Name;
+    DeviceVal& m_Device;
+    T* m_Impl = nullptr;
 };
-
-template< typename T >
-inline DeviceObjectVal<T>::DeviceObjectVal(DeviceVal& device, T& object) :
-    DeviceObjectBaseVal(device),
-    m_ImplObject(object),
-    m_Name(device.GetStdAllocator())
-{
-}
-
-template< typename T >
-inline T& DeviceObjectVal<T>::GetImpl() const
-{
-    return m_ImplObject;
-}
-
-template< typename T >
-const String& DeviceObjectVal<T>::GetDebugName() const
-{
-    return m_Name;
-}
 
 template< typename T >
 inline DeviceVal& GetDeviceVal(T& object)
-{
-    return ((DeviceObjectBaseVal&)object).GetDevice();
-}
+{ return ((DeviceObjectVal<T>&)object).GetDevice(); }
 
 uint64_t GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc);
-bool GetTextureDesc(const TextureD3D12Desc& textureD3D12Desc, TextureDesc& textureDesc);
-bool GetBufferDesc(const BufferD3D12Desc& bufferD3D12Desc, BufferDesc& bufferDesc);
-
-bool GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& textureDesc);
-bool GetBufferDesc(const BufferD3D11Desc& bufferD3D11Desc, BufferDesc& bufferDesc);
 
 constexpr const char* DESCRIPTOR_TYPE_NAME[] = {
     "SAMPLER",

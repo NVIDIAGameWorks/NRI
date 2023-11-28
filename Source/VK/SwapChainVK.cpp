@@ -269,10 +269,9 @@ inline void SwapChainVK::SetDebugName(const char* name)
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_SWAPCHAIN_KHR, (uint64_t)m_Handle, name);
 }
 
-inline Texture* const* SwapChainVK::GetTextures(uint32_t& textureNum, Format& format) const
+inline Texture* const* SwapChainVK::GetTextures(uint32_t& textureNum) const
 {
     textureNum = (uint32_t)m_Textures.size();
-    format = m_Format;
     return (Texture* const*)m_Textures.data();
 }
 

@@ -9,6 +9,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
 #include "SharedD3D12.h"
+#include "DescriptorSetD3D12.h"
 #include "DescriptorPoolD3D12.h"
 #include "PipelineLayoutD3D12.h"
 
@@ -46,7 +47,7 @@ Result DescriptorPoolD3D12::Create(const DescriptorPoolDesc& descriptorPoolDesc)
         }
     }
 
-    m_DescriptorSets.resize(descriptorPoolDesc.descriptorSetMaxNum);
+    m_DescriptorSets.resize(descriptorPoolDesc.descriptorSetMaxNum, DescriptorSetD3D12(*this));
 
     return Result::SUCCESS;
 }
@@ -103,23 +104,18 @@ inline Result DescriptorPoolD3D12::AllocateDescriptorSets(const PipelineLayout& 
 
     for (uint32_t i = 0; i < instanceNum; i++)
     {
-        DescriptorSetD3D12* descriptorSet = Allocate<DescriptorSetD3D12>(m_Device.GetStdAllocator(), m_Device, *this, descriptorSetMapping, dynamicConstantBufferMapping.constantNum);
-        m_DescriptorSets[m_DescriptorSetNum + i] = descriptorSet;
+        DescriptorSetD3D12* descriptorSet = &m_DescriptorSets[m_DescriptorSetNum++];
+        descriptorSet->Initialize(&descriptorSetMapping, dynamicConstantBufferMapping.constantNum);
         descriptorSets[i] = (DescriptorSet*)descriptorSet;
     }
-
-    m_DescriptorSetNum += instanceNum;
 
     return Result::SUCCESS;
 }
 
 void DescriptorPoolD3D12::Reset()
 {
-    for (uint32_t i = 0; i < DescriptorHeapType::MAX_NUM; i++)
+    for (size_t i = 0; i < m_DescriptorNum.size(); i++)
         m_DescriptorNum[i] = 0;
-
-    for (uint32_t i = 0; i < m_DescriptorSetNum; i++)
-        Deallocate(m_Device.GetStdAllocator(), m_DescriptorSets[i]);
 
     m_DescriptorSetNum = 0;
 }

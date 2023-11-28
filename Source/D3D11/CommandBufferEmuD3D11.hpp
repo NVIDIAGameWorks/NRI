@@ -206,6 +206,9 @@ static void NRI_CALL CmdResetQueries(CommandBuffer&, const QueryPool&, uint32_t,
 
 static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer)
 {
+    if(!(&commandBuffer))
+        return;
+
     CommandBufferHelper& commandBufferHelper = (CommandBufferHelper&)commandBuffer;
     Deallocate(commandBufferHelper.GetStdAllocator(), &commandBufferHelper);
 }

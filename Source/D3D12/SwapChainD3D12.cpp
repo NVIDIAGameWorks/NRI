@@ -208,10 +208,9 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
 // NRI
 //================================================================================================================
 
-inline Texture* const* SwapChainD3D12::GetTextures(uint32_t& textureNum, Format& format) const
+inline Texture* const* SwapChainD3D12::GetTextures(uint32_t& textureNum) const
 {
     textureNum = m_SwapChainDesc.textureNum;
-    format = m_Format;
 
     return (Texture**)m_Textures.data();
 }

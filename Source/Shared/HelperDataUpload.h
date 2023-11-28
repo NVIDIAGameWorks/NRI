@@ -13,7 +13,7 @@ private:
     nri::Result UploadBuffers(const nri::BufferUploadDesc* bufferDataDescs, uint32_t bufferDataDescNum);
     nri::Result BeginCommandBuffers();
     nri::Result EndCommandBuffersAndSubmit();
-    bool CopyTextureContent(const nri::TextureUploadDesc& textureDataDesc, uint16_t& arrayOffset, uint16_t& mipOffset, bool& isCapacityInsufficient);
+    bool CopyTextureContent(const nri::TextureUploadDesc& textureDataDesc, nri::Dim_t& arrayOffset, nri::Mip_t& mipOffset, bool& isCapacityInsufficient);
     void CopyTextureSubresourceContent(const nri::TextureSubresourceUploadDesc& subresource, uint64_t alignedRowPitch, uint64_t alignedSlicePitch);
     bool CopyBufferContent(const nri::BufferUploadDesc& bufferDataDesc, uint64_t& bufferContentOffset);
     template<bool isInitialTransition>

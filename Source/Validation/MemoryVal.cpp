@@ -46,21 +46,21 @@ void MemoryVal::ReportBoundResources()
     {
         BufferVal& buffer = *m_Buffers[i];
         REPORT_ERROR(&m_Device, "Buffer (%p '%s') is still bound to the memory.",
-            &buffer, buffer.GetDebugName().c_str());
+            &buffer, buffer.GetDebugName());
     }
 
     for (size_t i = 0; i < m_Textures.size(); i++)
     {
         TextureVal& texture = *m_Textures[i];
         REPORT_ERROR(&m_Device, "Texture (%p '%s') is still bound to the memory.",
-            &texture, texture.GetDebugName().c_str());
+            &texture, texture.GetDebugName());
     }
 
     for (size_t i = 0; i < m_AccelerationStructures.size(); i++)
     {
         AccelerationStructureVal& accelerationStructure = *m_AccelerationStructures[i];
         REPORT_ERROR(&m_Device, "AccelerationStructure (%p '%s') is still bound to the memory.",
-            &accelerationStructure, accelerationStructure.GetDebugName().c_str());
+            &accelerationStructure, accelerationStructure.GetDebugName());
     }
 }
 
@@ -130,5 +130,5 @@ void MemoryVal::UnbindAccelerationStructure(AccelerationStructureVal& accelerati
 void MemoryVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_CoreAPI.SetMemoryDebugName(m_ImplObject, name);
+    GetCoreInterface().SetMemoryDebugName(GetImpl(), name);
 }

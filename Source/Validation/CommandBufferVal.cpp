@@ -16,8 +16,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "BufferVal.h"
 #include "DescriptorVal.h"
-#include "DescriptorPoolVal.h"
 #include "DescriptorSetVal.h"
+#include "DescriptorPoolVal.h"
 #include "FrameBufferVal.h"
 #include "PipelineLayoutVal.h"
 #include "PipelineVal.h"
@@ -45,7 +45,7 @@ CommandBufferVal::CommandBufferVal(DeviceVal& device, CommandBuffer& commandBuff
 void CommandBufferVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_CoreAPI.SetCommandBufferDebugName(m_ImplObject, name);
+    GetCoreInterface().SetCommandBufferDebugName(GetImpl(), name);
 }
 
 Result CommandBufferVal::Begin(const DescriptorPool* descriptorPool, uint32_t nodeIndex)
@@ -57,7 +57,7 @@ Result CommandBufferVal::Begin(const DescriptorPool* descriptorPool, uint32_t no
     if (descriptorPool)
         descriptorPoolImpl = NRI_GET_IMPL_PTR(DescriptorPool, descriptorPool);
 
-    Result result = m_CoreAPI.BeginCommandBuffer(m_ImplObject, descriptorPoolImpl, nodeIndex);
+    Result result = GetCoreInterface().BeginCommandBuffer(GetImpl(), descriptorPoolImpl, nodeIndex);
     if (result == Result::SUCCESS)
         m_IsRecordingStarted = true;
 
@@ -76,7 +76,7 @@ Result CommandBufferVal::End()
     else if (m_AnnotationStack < 0)
         REPORT_ERROR(&m_Device, "EndAnnotation() is called more times than BeginAnnotation()");
 
-    Result result = m_CoreAPI.EndCommandBuffer(m_ImplObject);
+    Result result = GetCoreInterface().EndCommandBuffer(GetImpl());
 
     if (result == Result::SUCCESS)
     {
@@ -98,7 +98,7 @@ void CommandBufferVal::SetViewports(const Viewport* viewports, uint32_t viewport
     RETURN_ON_FAILURE(&m_Device, viewports != nullptr, ReturnVoid(),
         "Can't set viewports: 'viewports' is invalid.");
 
-    m_CoreAPI.CmdSetViewports(m_ImplObject, viewports, viewportNum);
+    GetCoreInterface().CmdSetViewports(GetImpl(), viewports, viewportNum);
 }
 
 void CommandBufferVal::SetScissors(const Rect* rects, uint32_t rectNum)
@@ -112,7 +112,7 @@ void CommandBufferVal::SetScissors(const Rect* rects, uint32_t rectNum)
     RETURN_ON_FAILURE(&m_Device, rects != nullptr, ReturnVoid(),
         "Can't set scissor rects: 'rects' is invalid.");
 
-    m_CoreAPI.CmdSetScissors(m_ImplObject, rects, rectNum);
+    GetCoreInterface().CmdSetScissors(GetImpl(), rects, rectNum);
 }
 
 void CommandBufferVal::SetDepthBounds(float boundsMin, float boundsMax)
@@ -120,7 +120,7 @@ void CommandBufferVal::SetDepthBounds(float boundsMin, float boundsMax)
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set depth bounds: the command buffer must be in the recording state.");
 
-    m_CoreAPI.CmdSetDepthBounds(m_ImplObject, boundsMin, boundsMax);
+    GetCoreInterface().CmdSetDepthBounds(GetImpl(), boundsMin, boundsMax);
 }
 
 void CommandBufferVal::SetStencilReference(uint8_t reference)
@@ -128,7 +128,7 @@ void CommandBufferVal::SetStencilReference(uint8_t reference)
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set stencil reference: the command buffer must be in the recording state.");
 
-    m_CoreAPI.CmdSetStencilReference(m_ImplObject, reference);
+    GetCoreInterface().CmdSetStencilReference(GetImpl(), reference);
 }
 
 void CommandBufferVal::SetSamplePositions(const SamplePosition* positions, uint32_t positionNum)
@@ -136,7 +136,7 @@ void CommandBufferVal::SetSamplePositions(const SamplePosition* positions, uint3
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set sample positions: the command buffer must be in the recording state.");
 
-    m_CoreAPI.CmdSetSamplePositions(m_ImplObject, positions, positionNum);
+    GetCoreInterface().CmdSetSamplePositions(GetImpl(), positions, positionNum);
 }
 
 void CommandBufferVal::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum)
@@ -147,7 +147,7 @@ void CommandBufferVal::ClearAttachments(const ClearDesc* clearDescs, uint32_t cl
     RETURN_ON_FAILURE(&m_Device, m_FrameBuffer != nullptr, ReturnVoid(),
         "Can't clear attachments: no FrameBuffer bound.");
 
-    m_CoreAPI.CmdClearAttachments(m_ImplObject, clearDescs, clearDescNum, rects, rectNum);
+    GetCoreInterface().CmdClearAttachments(GetImpl(), clearDescs, clearDescNum, rects, rectNum);
 }
 
 void CommandBufferVal::ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc)
@@ -164,7 +164,7 @@ void CommandBufferVal::ClearStorageBuffer(const ClearStorageBufferDesc& clearDes
     auto clearDescImpl = clearDesc;
     clearDescImpl.storageBuffer = NRI_GET_IMPL_PTR(Descriptor, clearDesc.storageBuffer);
 
-    m_CoreAPI.CmdClearStorageBuffer(m_ImplObject, clearDescImpl);
+    GetCoreInterface().CmdClearStorageBuffer(GetImpl(), clearDescImpl);
 }
 
 void CommandBufferVal::ClearStorageTexture(const ClearStorageTextureDesc& clearDesc)
@@ -181,7 +181,7 @@ void CommandBufferVal::ClearStorageTexture(const ClearStorageTextureDesc& clearD
     auto clearDescImpl = clearDesc;
     clearDescImpl.storageTexture = NRI_GET_IMPL_PTR(Descriptor, clearDesc.storageTexture);
 
-    m_CoreAPI.CmdClearStorageTexture(m_ImplObject, clearDescImpl);
+    GetCoreInterface().CmdClearStorageTexture(GetImpl(), clearDescImpl);
 }
 
 void CommandBufferVal::BeginRenderPass(const FrameBuffer& frameBuffer, RenderPassBeginFlag renderPassBeginFlag)
@@ -199,7 +199,7 @@ void CommandBufferVal::BeginRenderPass(const FrameBuffer& frameBuffer, RenderPas
 
     FrameBuffer* frameBufferImpl = NRI_GET_IMPL_REF(FrameBuffer, &frameBuffer);
 
-    m_CoreAPI.CmdBeginRenderPass(m_ImplObject, *frameBufferImpl, renderPassBeginFlag);
+    GetCoreInterface().CmdBeginRenderPass(GetImpl(), *frameBufferImpl, renderPassBeginFlag);
 }
 
 void CommandBufferVal::EndRenderPass()
@@ -212,7 +212,7 @@ void CommandBufferVal::EndRenderPass()
 
     m_FrameBuffer = nullptr;
 
-    m_CoreAPI.CmdEndRenderPass(m_ImplObject);
+    GetCoreInterface().CmdEndRenderPass(GetImpl());
 }
 
 void CommandBufferVal::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets)
@@ -224,7 +224,7 @@ void CommandBufferVal::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, c
     for (uint32_t i = 0; i < bufferNum; i++)
         buffersImpl[i] = NRI_GET_IMPL_PTR(Buffer, buffers[i]);
 
-    m_CoreAPI.CmdSetVertexBuffers(m_ImplObject, baseSlot, bufferNum, buffersImpl, offsets);
+    GetCoreInterface().CmdSetVertexBuffers(GetImpl(), baseSlot, bufferNum, buffersImpl, offsets);
 }
 
 void CommandBufferVal::SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType)
@@ -234,7 +234,7 @@ void CommandBufferVal::SetIndexBuffer(const Buffer& buffer, uint64_t offset, Ind
 
     Buffer* bufferImpl = NRI_GET_IMPL_REF(Buffer, &buffer);
 
-    m_CoreAPI.CmdSetIndexBuffer(m_ImplObject, *bufferImpl, offset, indexType);
+    GetCoreInterface().CmdSetIndexBuffer(GetImpl(), *bufferImpl, offset, indexType);
 }
 
 void CommandBufferVal::SetPipelineLayout(const PipelineLayout& pipelineLayout)
@@ -244,7 +244,7 @@ void CommandBufferVal::SetPipelineLayout(const PipelineLayout& pipelineLayout)
 
     PipelineLayout* pipelineLayoutImpl = NRI_GET_IMPL_REF(PipelineLayout, &pipelineLayout);
 
-    m_CoreAPI.CmdSetPipelineLayout(m_ImplObject, *pipelineLayoutImpl);
+    GetCoreInterface().CmdSetPipelineLayout(GetImpl(), *pipelineLayoutImpl);
 }
 
 void CommandBufferVal::SetPipeline(const Pipeline& pipeline)
@@ -254,7 +254,7 @@ void CommandBufferVal::SetPipeline(const Pipeline& pipeline)
 
     Pipeline* pipelineImpl = NRI_GET_IMPL_REF(Pipeline, &pipeline);
 
-    m_CoreAPI.CmdSetPipeline(m_ImplObject, *pipelineImpl);
+    GetCoreInterface().CmdSetPipeline(GetImpl(), *pipelineImpl);
 }
 
 void CommandBufferVal::SetDescriptorPool(const DescriptorPool& descriptorPool)
@@ -264,7 +264,7 @@ void CommandBufferVal::SetDescriptorPool(const DescriptorPool& descriptorPool)
 
     DescriptorPool* descriptorPoolImpl = NRI_GET_IMPL_REF(DescriptorPool, &descriptorPool);
 
-    m_CoreAPI.CmdSetDescriptorPool(m_ImplObject, *descriptorPoolImpl);
+    GetCoreInterface().CmdSetDescriptorPool(GetImpl(), *descriptorPoolImpl);
 }
 
 void CommandBufferVal::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets)
@@ -274,7 +274,7 @@ void CommandBufferVal::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const
 
     DescriptorSet* descriptorSetImpl = NRI_GET_IMPL_REF(DescriptorSet, &descriptorSet);
 
-    m_CoreAPI.CmdSetDescriptorSet(m_ImplObject, setIndexInPipelineLayout, *descriptorSetImpl, dynamicConstantBufferOffsets);
+    GetCoreInterface().CmdSetDescriptorSet(GetImpl(), setIndexInPipelineLayout, *descriptorSetImpl, dynamicConstantBufferOffsets);
 }
 
 void CommandBufferVal::SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size)
@@ -282,7 +282,7 @@ void CommandBufferVal::SetConstants(uint32_t pushConstantIndex, const void* data
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't set constants: the command buffer must be in the recording state.");
 
-    m_CoreAPI.CmdSetConstants(m_ImplObject, pushConstantIndex, data, size);
+    GetCoreInterface().CmdSetConstants(GetImpl(), pushConstantIndex, data, size);
 }
 
 void CommandBufferVal::Draw(uint32_t vertexNum, uint32_t instanceNum, uint32_t baseVertex, uint32_t baseInstance)
@@ -293,7 +293,7 @@ void CommandBufferVal::Draw(uint32_t vertexNum, uint32_t instanceNum, uint32_t b
     RETURN_ON_FAILURE(&m_Device, m_FrameBuffer != nullptr, ReturnVoid(),
         "Can't record draw call: this operation is allowed only inside render pass.");
 
-    m_CoreAPI.CmdDraw(m_ImplObject, vertexNum, instanceNum, baseVertex, baseInstance);
+    GetCoreInterface().CmdDraw(GetImpl(), vertexNum, instanceNum, baseVertex, baseInstance);
 }
 
 void CommandBufferVal::DrawIndexed(uint32_t indexNum, uint32_t instanceNum, uint32_t baseIndex, uint32_t baseVertex, uint32_t baseInstance)
@@ -304,7 +304,7 @@ void CommandBufferVal::DrawIndexed(uint32_t indexNum, uint32_t instanceNum, uint
     RETURN_ON_FAILURE(&m_Device, m_FrameBuffer != nullptr, ReturnVoid(),
         "Can't record draw call: this operation is allowed only inside render pass.");
 
-    m_CoreAPI.CmdDrawIndexed(m_ImplObject, indexNum, instanceNum, baseIndex, baseVertex, baseInstance);
+    GetCoreInterface().CmdDrawIndexed(GetImpl(), indexNum, instanceNum, baseIndex, baseVertex, baseInstance);
 }
 
 void CommandBufferVal::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride)
@@ -317,7 +317,7 @@ void CommandBufferVal::DrawIndirect(const Buffer& buffer, uint64_t offset, uint3
 
     Buffer* bufferImpl = NRI_GET_IMPL_REF(Buffer, &buffer);
 
-    m_CoreAPI.CmdDrawIndirect(m_ImplObject, *bufferImpl, offset, drawNum, stride);
+    GetCoreInterface().CmdDrawIndirect(GetImpl(), *bufferImpl, offset, drawNum, stride);
 }
 
 void CommandBufferVal::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride)
@@ -330,7 +330,7 @@ void CommandBufferVal::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset
 
     Buffer* bufferImpl = NRI_GET_IMPL_REF(Buffer, &buffer);
 
-    m_CoreAPI.CmdDrawIndexedIndirect(m_ImplObject, *bufferImpl, offset, drawNum, stride);
+    GetCoreInterface().CmdDrawIndexedIndirect(GetImpl(), *bufferImpl, offset, drawNum, stride);
 }
 
 void CommandBufferVal::CopyBuffer(Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer,
@@ -358,7 +358,7 @@ void CommandBufferVal::CopyBuffer(Buffer& dstBuffer, uint32_t dstNodeIndex, uint
     Buffer* dstBufferImpl = NRI_GET_IMPL_REF(Buffer, &dstBuffer);
     Buffer* srcBufferImpl = NRI_GET_IMPL_REF(Buffer, &srcBuffer);
 
-    m_CoreAPI.CmdCopyBuffer(m_ImplObject, *dstBufferImpl, dstNodeIndex, dstOffset, *srcBufferImpl, srcNodeIndex,
+    GetCoreInterface().CmdCopyBuffer(GetImpl(), *dstBufferImpl, dstNodeIndex, dstOffset, *srcBufferImpl, srcNodeIndex,
         srcOffset, size);
 }
 
@@ -377,7 +377,7 @@ void CommandBufferVal::CopyTexture(Texture& dstTexture, uint32_t dstNodeIndex, c
     Texture* dstTextureImpl = NRI_GET_IMPL_REF(Texture, &dstTexture);
     Texture* srcTextureImpl = NRI_GET_IMPL_REF(Texture, &srcTexture);
 
-    m_CoreAPI.CmdCopyTexture(m_ImplObject, *dstTextureImpl, dstNodeIndex, dstRegionDesc, *srcTextureImpl, srcNodeIndex,
+    GetCoreInterface().CmdCopyTexture(GetImpl(), *dstTextureImpl, dstNodeIndex, dstRegionDesc, *srcTextureImpl, srcNodeIndex,
         srcRegionDesc);
 }
 
@@ -393,7 +393,7 @@ void CommandBufferVal::UploadBufferToTexture(Texture& dstTexture, const TextureR
     Texture* dstTextureImpl = NRI_GET_IMPL_REF(Texture, &dstTexture);
     Buffer* srcBufferImpl = NRI_GET_IMPL_REF(Buffer, &srcBuffer);
 
-    m_CoreAPI.CmdUploadBufferToTexture(m_ImplObject, *dstTextureImpl, dstRegionDesc, *srcBufferImpl, srcDataLayoutDesc);
+    GetCoreInterface().CmdUploadBufferToTexture(GetImpl(), *dstTextureImpl, dstRegionDesc, *srcBufferImpl, srcDataLayoutDesc);
 }
 
 void CommandBufferVal::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture,
@@ -408,7 +408,7 @@ void CommandBufferVal::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLay
     Buffer* dstBufferImpl = NRI_GET_IMPL_REF(Buffer, &dstBuffer);
     Texture* srcTextureImpl = NRI_GET_IMPL_REF(Texture, &srcTexture);
 
-    m_CoreAPI.CmdReadbackTextureToBuffer(m_ImplObject, *dstBufferImpl, dstDataLayoutDesc, *srcTextureImpl, srcRegionDesc);
+    GetCoreInterface().CmdReadbackTextureToBuffer(GetImpl(), *dstBufferImpl, dstDataLayoutDesc, *srcTextureImpl, srcRegionDesc);
 }
 
 void CommandBufferVal::Dispatch(uint32_t x, uint32_t y, uint32_t z)
@@ -419,7 +419,7 @@ void CommandBufferVal::Dispatch(uint32_t x, uint32_t y, uint32_t z)
     RETURN_ON_FAILURE(&m_Device, m_FrameBuffer == nullptr, ReturnVoid(),
         "Can't record dispatch call: this operation is allowed only outside render pass.");
 
-    m_CoreAPI.CmdDispatch(m_ImplObject, x, y, z);
+    GetCoreInterface().CmdDispatch(GetImpl(), x, y, z);
 }
 
 void CommandBufferVal::DispatchIndirect(const Buffer& buffer, uint64_t offset)
@@ -432,7 +432,7 @@ void CommandBufferVal::DispatchIndirect(const Buffer& buffer, uint64_t offset)
 
     Buffer* bufferImpl = NRI_GET_IMPL_REF(Buffer, &buffer);
 
-    m_CoreAPI.CmdDispatchIndirect(m_ImplObject, *bufferImpl, offset);
+    GetCoreInterface().CmdDispatchIndirect(GetImpl(), *bufferImpl, offset);
 }
 
 void CommandBufferVal::PipelineBarrier(const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency)
@@ -497,7 +497,7 @@ void CommandBufferVal::PipelineBarrier(const TransitionBarrierDesc* transitionBa
         aliasingBarriers = &aliasingBarriersImpl;
     }
 
-    m_CoreAPI.CmdPipelineBarrier(m_ImplObject, transitionBarriers, aliasingBarriers, dependency);
+    GetCoreInterface().CmdPipelineBarrier(GetImpl(), transitionBarriers, aliasingBarriers, dependency);
 }
 
 void CommandBufferVal::BeginQuery(const QueryPool& queryPool, uint32_t offset)
@@ -523,7 +523,7 @@ void CommandBufferVal::BeginQuery(const QueryPool& queryPool, uint32_t offset)
 
     QueryPool* queryPoolImpl = NRI_GET_IMPL_REF(QueryPool, &queryPool);
 
-    m_CoreAPI.CmdBeginQuery(m_ImplObject, *queryPoolImpl, offset);
+    GetCoreInterface().CmdBeginQuery(GetImpl(), *queryPoolImpl, offset);
 }
 
 void CommandBufferVal::EndQuery(const QueryPool& queryPool, uint32_t offset)
@@ -546,7 +546,7 @@ void CommandBufferVal::EndQuery(const QueryPool& queryPool, uint32_t offset)
 
     QueryPool* queryPoolImpl = NRI_GET_IMPL_REF(QueryPool, &queryPool);
 
-    m_CoreAPI.CmdEndQuery(m_ImplObject, *queryPoolImpl, offset);
+    GetCoreInterface().CmdEndQuery(GetImpl(), *queryPoolImpl, offset);
 }
 
 void CommandBufferVal::CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset)
@@ -568,7 +568,7 @@ void CommandBufferVal::CopyQueries(const QueryPool& queryPool, uint32_t offset, 
     QueryPool* queryPoolImpl = NRI_GET_IMPL_REF(QueryPool, &queryPool);
     Buffer* dstBufferImpl = NRI_GET_IMPL_REF(Buffer, &dstBuffer);
 
-    m_CoreAPI.CmdCopyQueries(m_ImplObject, *queryPoolImpl, offset, num, *dstBufferImpl, dstOffset);
+    GetCoreInterface().CmdCopyQueries(GetImpl(), *queryPoolImpl, offset, num, *dstBufferImpl, dstOffset);
 }
 
 void CommandBufferVal::ResetQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num)
@@ -595,7 +595,7 @@ void CommandBufferVal::ResetQueries(const QueryPool& queryPool, uint32_t offset,
 
     QueryPool* queryPoolImpl = NRI_GET_IMPL_REF(QueryPool, &queryPool);
 
-    m_CoreAPI.CmdResetQueries(m_ImplObject, *queryPoolImpl, offset, num);
+    GetCoreInterface().CmdResetQueries(GetImpl(), *queryPoolImpl, offset, num);
 }
 
 void CommandBufferVal::BeginAnnotation(const char* name)
@@ -604,7 +604,7 @@ void CommandBufferVal::BeginAnnotation(const char* name)
         "Can't copy queries: the command buffer must be in the recording state.");
 
     m_AnnotationStack++;
-    m_CoreAPI.CmdBeginAnnotation(m_ImplObject, name);
+    GetCoreInterface().CmdBeginAnnotation(GetImpl(), name);
 }
 
 void CommandBufferVal::EndAnnotation()
@@ -612,13 +612,13 @@ void CommandBufferVal::EndAnnotation()
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(),
         "Can't copy queries: the command buffer must be in the recording state.");
 
-    m_CoreAPI.CmdEndAnnotation(m_ImplObject);
+    GetCoreInterface().CmdEndAnnotation(GetImpl());
     m_AnnotationStack--;
 }
 
 void CommandBufferVal::Destroy()
 {
-    m_CoreAPI.DestroyCommandBuffer(m_ImplObject);
+    GetCoreInterface().DestroyCommandBuffer(GetImpl());
     Deallocate(m_Device.GetStdAllocator(), this);
 }
 
@@ -644,7 +644,7 @@ void CommandBufferVal::BuildTopLevelAccelerationStructure(uint32_t instanceNum, 
     Buffer& scratchImpl = *NRI_GET_IMPL_REF(Buffer, &scratch);
     Buffer& bufferImpl = *NRI_GET_IMPL_REF(Buffer, &buffer);
 
-    m_RayTracingAPI.CmdBuildTopLevelAccelerationStructure(m_ImplObject, instanceNum, bufferImpl, bufferOffset, flags, dstImpl, scratchImpl, scratchOffset);
+    m_RayTracingAPI.CmdBuildTopLevelAccelerationStructure(GetImpl(), instanceNum, bufferImpl, bufferOffset, flags, dstImpl, scratchImpl, scratchOffset);
 }
 
 void CommandBufferVal::BuildBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects,
@@ -670,7 +670,7 @@ void CommandBufferVal::BuildBottomLevelAccelerationStructure(uint32_t geometryOb
     Vector<GeometryObject> objectImplArray(geometryObjectNum, m_Device.GetStdAllocator());
     ConvertGeometryObjectsVal(objectImplArray.data(), geometryObjects, geometryObjectNum);
 
-    m_RayTracingAPI.CmdBuildBottomLevelAccelerationStructure(m_ImplObject, geometryObjectNum, objectImplArray.data(), flags, dstImpl, scratchImpl, scratchOffset);
+    m_RayTracingAPI.CmdBuildBottomLevelAccelerationStructure(GetImpl(), geometryObjectNum, objectImplArray.data(), flags, dstImpl, scratchImpl, scratchOffset);
 }
 
 void CommandBufferVal::UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset,
@@ -696,7 +696,7 @@ void CommandBufferVal::UpdateTopLevelAccelerationStructure(uint32_t instanceNum,
     Buffer& scratchImpl = *NRI_GET_IMPL_REF(Buffer, &scratch);
     Buffer& bufferImpl = *NRI_GET_IMPL_REF(Buffer, &buffer);
 
-    m_RayTracingAPI.CmdUpdateTopLevelAccelerationStructure(m_ImplObject, instanceNum, bufferImpl, bufferOffset, flags, dstImpl, srcImpl, scratchImpl, scratchOffset);
+    m_RayTracingAPI.CmdUpdateTopLevelAccelerationStructure(GetImpl(), instanceNum, bufferImpl, bufferOffset, flags, dstImpl, srcImpl, scratchImpl, scratchOffset);
 }
 
 void CommandBufferVal::UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects,
@@ -723,7 +723,7 @@ void CommandBufferVal::UpdateBottomLevelAccelerationStructure(uint32_t geometryO
     Vector<GeometryObject> objectImplArray(geometryObjectNum, m_Device.GetStdAllocator());
     ConvertGeometryObjectsVal(objectImplArray.data(), geometryObjects, geometryObjectNum);
 
-    m_RayTracingAPI.CmdUpdateBottomLevelAccelerationStructure(m_ImplObject, geometryObjectNum, objectImplArray.data(), flags, dstImpl, srcImpl, scratchImpl, scratchOffset);
+    m_RayTracingAPI.CmdUpdateBottomLevelAccelerationStructure(GetImpl(), geometryObjectNum, objectImplArray.data(), flags, dstImpl, srcImpl, scratchImpl, scratchOffset);
 }
 
 void CommandBufferVal::CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode)
@@ -740,7 +740,7 @@ void CommandBufferVal::CopyAccelerationStructure(AccelerationStructure& dst, Acc
     AccelerationStructure& dstImpl = *NRI_GET_IMPL_REF(AccelerationStructure, &dst);
     AccelerationStructure& srcImpl = *NRI_GET_IMPL_REF(AccelerationStructure, &src);
 
-    m_RayTracingAPI.CmdCopyAccelerationStructure(m_ImplObject, dstImpl, srcImpl, copyMode);
+    m_RayTracingAPI.CmdCopyAccelerationStructure(GetImpl(), dstImpl, srcImpl, copyMode);
 }
 
 void CommandBufferVal::WriteAccelerationStructureSize(const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryOffset)
@@ -765,7 +765,7 @@ void CommandBufferVal::WriteAccelerationStructureSize(const AccelerationStructur
 
     QueryPool& queryPoolImpl = *NRI_GET_IMPL_REF(QueryPool, &queryPool);
 
-    m_RayTracingAPI.CmdWriteAccelerationStructureSize(m_ImplObject, accelerationStructures, accelerationStructureNum, queryPoolImpl, queryOffset);
+    m_RayTracingAPI.CmdWriteAccelerationStructureSize(GetImpl(), accelerationStructures, accelerationStructureNum, queryPoolImpl, queryOffset);
 }
 
 void CommandBufferVal::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc)
@@ -802,12 +802,12 @@ void CommandBufferVal::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc)
     dispatchRaysDescImpl.hitShaderGroups.buffer = NRI_GET_IMPL_PTR(Buffer, dispatchRaysDesc.hitShaderGroups.buffer);
     dispatchRaysDescImpl.callableShaders.buffer = NRI_GET_IMPL_PTR(Buffer, dispatchRaysDesc.callableShaders.buffer);
 
-    m_RayTracingAPI.CmdDispatchRays(m_ImplObject, dispatchRaysDescImpl);
+    m_RayTracingAPI.CmdDispatchRays(GetImpl(), dispatchRaysDescImpl);
 }
 
 void CommandBufferVal::DispatchMeshTasks(uint32_t x, uint32_t y, uint32_t z)
 {
-    m_MeshShaderAPI.CmdDispatchMeshTasks(m_ImplObject, x, y, z);
+    m_MeshShaderAPI.CmdDispatchMeshTasks(GetImpl(), x, y, z);
 }
 
 template<typename Command>
@@ -835,11 +835,11 @@ static bool ValidateBufferTransitionBarrierDesc(const DeviceVal& device, uint32_
 
     RETURN_ON_FAILURE(&device, IsAccessMaskSupported(bufferVal.GetDesc().usageMask, bufferTransitionBarrierDesc.prevAccess), false,
         "Can't record pipeline barrier: 'transitionBarriers->buffers[%u].prevAccess' is not supported by the usage mask of the buffer ('%s').",
-        i, bufferVal.GetDebugName().c_str());
+        i, bufferVal.GetDebugName());
 
     RETURN_ON_FAILURE(&device, IsAccessMaskSupported(bufferVal.GetDesc().usageMask, bufferTransitionBarrierDesc.nextAccess), false,
         "Can't record pipeline barrier: 'transitionBarriers->buffers[%u].nextAccess' is not supported by the usage mask of the buffer ('%s').",
-        i, bufferVal.GetDebugName().c_str());
+        i, bufferVal.GetDebugName());
 
     return true;
 }
@@ -853,19 +853,19 @@ static bool ValidateTextureTransitionBarrierDesc(const DeviceVal& device, uint32
 
     RETURN_ON_FAILURE(&device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.prevAccess), false,
         "Can't record pipeline barrier: 'transitionBarriers->textures[%u].prevAccess' is not supported by the usage mask of the texture ('%s').",
-        i, textureVal.GetDebugName().c_str());
+        i, textureVal.GetDebugName());
 
     RETURN_ON_FAILURE(&device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.nextAccess), false,
         "Can't record pipeline barrier: 'transitionBarriers->textures[%u].nextAccess' is not supported by the usage mask of the texture ('%s').",
-        i, textureVal.GetDebugName().c_str());
+        i, textureVal.GetDebugName());
 
     RETURN_ON_FAILURE(&device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.prevLayout), false,
         "Can't record pipeline barrier: 'transitionBarriers->textures[%u].prevLayout' is not supported by the usage mask of the texture ('%s').",
-        i, textureVal.GetDebugName().c_str());
+        i, textureVal.GetDebugName());
 
     RETURN_ON_FAILURE(&device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.nextLayout), false,
         "Can't record pipeline barrier: 'transitionBarriers->textures[%u].nextLayout' is not supported by the usage mask of the texture ('%s').",
-        i, textureVal.GetDebugName().c_str());
+        i, textureVal.GetDebugName());
 
     return true;
 }

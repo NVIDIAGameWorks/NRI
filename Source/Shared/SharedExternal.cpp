@@ -148,7 +148,7 @@ uint32_t NRIFormatToDXGIFormat(nri::Format format)
 
 #endif
 
-constexpr std::array<FormatInfo, (size_t)nri::Format::MAX_NUM> FORMAT_INFO_TABLE =
+constexpr std::array<FormatProps, (size_t)nri::Format::MAX_NUM> FORMAT_INFO_TABLE =
 {{
     {1,                      0,  false}, // UNKNOWN,
 
@@ -236,7 +236,7 @@ constexpr std::array<FormatInfo, (size_t)nri::Format::MAX_NUM> FORMAT_INFO_TABLE
     {sizeof(uint64_t),       0,  false}, // R32_SFLOAT_X8_X24,
 }};
 
-const FormatInfo& GetFormatProps(nri::Format format)
+const FormatProps& GetFormatProps(nri::Format format)
 {
     return FORMAT_INFO_TABLE[(size_t)format];
 }

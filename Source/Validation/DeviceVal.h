@@ -113,7 +113,7 @@ struct DeviceVal final : public DeviceBase
     Result CreateCommandQueueVK(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
     Result CreateCommandAllocatorVK(const CommandAllocatorVKDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator);
     Result CreateCommandBufferVK(const CommandBufferVKDesc& commandBufferDesc, CommandBuffer*& commandBuffer);
-    Result CreateDescriptorPoolVK(NRIVkDescriptorPool vkDescriptorPool, DescriptorPool*& descriptorPool);
+    Result CreateDescriptorPoolVK(const DescriptorPoolVKDesc& descriptorPoolVKDesc, DescriptorPool*& descriptorPool);
     Result CreateBufferVK(const BufferVKDesc& bufferDesc, Buffer*& buffer);
     Result CreateTextureVK(const TextureVKDesc& textureVKDesc, Texture*& texture);
     Result CreateMemoryVK(const MemoryVKDesc& memoryVKDesc, Memory*& memory);

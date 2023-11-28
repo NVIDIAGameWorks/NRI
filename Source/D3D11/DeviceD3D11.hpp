@@ -17,6 +17,16 @@ static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device)
     return ((const DeviceD3D11&)device).GetDesc();
 }
 
+static const BufferDesc& NRI_CALL GetBufferDesc(const Buffer& buffer)
+{
+    return ((const BufferD3D11&)buffer).GetDesc();
+}
+
+static const TextureDesc& NRI_CALL GetTextureDesc(const Texture& texture)
+{
+    return ((const TextureD3D11&)texture).GetDesc();
+}
+
 static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQueueType, CommandQueue*& commandQueue)
 {
     return ((DeviceD3D11&)device).GetCommandQueue(commandQueueType, commandQueue);
@@ -106,60 +116,90 @@ static Result NRI_CALL CreateFence(Device& device, uint64_t initialValue, Fence*
 
 static void NRI_CALL DestroyCommandAllocator(CommandAllocator& commandAllocator)
 {
+    if(!(&commandAllocator))
+        return;
+
     DeviceD3D11& device = ((CommandAllocatorD3D11&)commandAllocator).GetDevice();
     device.DestroyCommandAllocator(commandAllocator);
 }
 
 static void NRI_CALL DestroyDescriptorPool(DescriptorPool& descriptorPool)
 {
+    if(!(&descriptorPool))
+        return;
+
     DeviceD3D11& device = ((DescriptorPoolD3D11&)descriptorPool).GetDevice();
     device.DestroyDescriptorPool(descriptorPool);
 }
 
 static void NRI_CALL DestroyBuffer(Buffer& buffer)
 {
+    if(!(&buffer))
+        return;
+
     DeviceD3D11& device = ((BufferD3D11&)buffer).GetDevice();
     device.DestroyBuffer(buffer);
 }
 
 static void NRI_CALL DestroyTexture(Texture& texture)
 {
+    if(!(&texture))
+        return;
+
     DeviceD3D11& device = ((TextureD3D11&)texture).GetDevice();
     device.DestroyTexture(texture);
 }
 
 static void NRI_CALL DestroyDescriptor(Descriptor& descriptor)
 {
+    if(!(&descriptor))
+        return;
+
     DeviceD3D11& device = ((DescriptorD3D11&)descriptor).GetDevice();
     device.DestroyDescriptor(descriptor);
 }
 
 static void NRI_CALL DestroyPipelineLayout(PipelineLayout& pipelineLayout)
 {
+    if(!(&pipelineLayout))
+        return;
+
     DeviceD3D11& device = ((PipelineLayoutD3D11&)pipelineLayout).GetDevice();
     device.DestroyPipelineLayout(pipelineLayout);
 }
 
 static void NRI_CALL DestroyPipeline(Pipeline& pipeline)
 {
+    if(!(&pipeline))
+        return;
+
     DeviceD3D11& device = ((PipelineD3D11&)pipeline).GetDevice();
     device.DestroyPipeline(pipeline);
 }
 
 static void NRI_CALL DestroyFrameBuffer(FrameBuffer& frameBuffer)
 {
+    if(!(&frameBuffer))
+        return;
+
     DeviceD3D11& device = ((FrameBufferD3D11&)frameBuffer).GetDevice();
     device.DestroyFrameBuffer(frameBuffer);
 }
 
 static void NRI_CALL DestroyQueryPool(QueryPool& queryPool)
 {
+    if(!(&queryPool))
+        return;
+
     DeviceD3D11& device = ((QueryPoolD3D11&)queryPool).GetDevice();
     device.DestroyQueryPool(queryPool);
 }
 
 static void NRI_CALL DestroyFence(Fence& fence)
 {
+    if(!(&fence))
+        return;
+
     DeviceD3D11& device = ((FenceD3D11&)fence).GetDevice();
     device.DestroyFence(fence);
 }
@@ -183,6 +223,9 @@ static Result NRI_CALL BindTextureMemory(Device& device, const TextureMemoryBind
 
 static void NRI_CALL FreeMemory(Memory& memory)
 {
+    if(!(&memory))
+        return;
+
     DeviceD3D11& device = ((MemoryD3D11&)memory).GetDevice();
     device.FreeMemory(memory);
 }
@@ -228,6 +271,8 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& coreInterface) const
 {
     coreInterface = {};
     coreInterface.GetDeviceDesc = ::GetDeviceDesc;
+    coreInterface.GetBufferDesc = ::GetBufferDesc;
+    coreInterface.GetTextureDesc = ::GetTextureDesc;
     coreInterface.GetFormatSupport = ::GetFormatSupport;
     coreInterface.GetCommandQueue = ::GetCommandQueue;
     coreInterface.CreateCommandAllocator = ::CreateCommandAllocator;
@@ -295,6 +340,9 @@ static Result NRI_CALL CreateSwapChain(Device& device, const SwapChainDesc& swap
 
 static void NRI_CALL DestroySwapChain(SwapChain& swapChain)
 {
+    if(!(&swapChain))
+        return;
+
     DeviceD3D11& device = ((SwapChainD3D11&)swapChain).GetDevice();
     return device.DestroySwapChain(swapChain);
 }

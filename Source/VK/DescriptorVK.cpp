@@ -49,33 +49,35 @@ template<typename T>
 void FillTextureDesc(const T& textureViewDesc, DescriptorTextureDesc& descriptorTextureDesc)
 {
     const TextureVK& texture = *(const TextureVK*)textureViewDesc.texture;
+    const TextureDesc& textureDesc = texture.GetDesc();
 
-    const uint32_t mipLevelsLeft = texture.GetMipNum() - textureViewDesc.mipOffset;
-    const uint32_t arrayLayersLeft = texture.GetArraySize() - descriptorTextureDesc.imageArrayOffset;
+    const Mip_t mipLevelsLeft = textureDesc.mipNum - textureViewDesc.mipOffset;
+    const Dim_t arrayLayersLeft = textureDesc.arraySize - descriptorTextureDesc.arrayOffset;
 
     descriptorTextureDesc.texture = &texture;
-    descriptorTextureDesc.imageAspectFlags = texture.GetImageAspectFlags();
-    descriptorTextureDesc.imageMipOffset = textureViewDesc.mipOffset;
-    descriptorTextureDesc.imageMipNum = (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? mipLevelsLeft : textureViewDesc.mipNum;
-    descriptorTextureDesc.imageArrayOffset = textureViewDesc.arrayOffset;
-    descriptorTextureDesc.imageArraySize = (textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS) ? arrayLayersLeft : textureViewDesc.arraySize;
-    descriptorTextureDesc.imageLayout = GetImageLayoutForView(textureViewDesc.viewType);
+    descriptorTextureDesc.layout = GetImageLayoutForView(textureViewDesc.viewType);
+    descriptorTextureDesc.aspectFlags = texture.GetImageAspectFlags();
+    descriptorTextureDesc.arrayOffset = textureViewDesc.arrayOffset;
+    descriptorTextureDesc.arraySize = (textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS) ? arrayLayersLeft : textureViewDesc.arraySize;
+    descriptorTextureDesc.mipOffset = textureViewDesc.mipOffset;
+    descriptorTextureDesc.mipNum = (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? mipLevelsLeft : textureViewDesc.mipNum;
 }
 
 template<>
 void FillTextureDesc(const Texture3DViewDesc& textureViewDesc, DescriptorTextureDesc& descriptorTextureDesc)
 {
     const TextureVK& texture = *(const TextureVK*)textureViewDesc.texture;
+    const TextureDesc& textureDesc = texture.GetDesc();
 
-    const uint32_t mipLevelsLeft = texture.GetMipNum() - textureViewDesc.mipOffset;
+    const Mip_t mipLevelsLeft = textureDesc.mipNum - textureViewDesc.mipOffset;
 
     descriptorTextureDesc.texture = &texture;
-    descriptorTextureDesc.imageAspectFlags = texture.GetImageAspectFlags();
-    descriptorTextureDesc.imageMipOffset = textureViewDesc.mipOffset;
-    descriptorTextureDesc.imageMipNum = (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? mipLevelsLeft : textureViewDesc.mipNum;
-    descriptorTextureDesc.imageArrayOffset = 0;
-    descriptorTextureDesc.imageArraySize = 1;
-    descriptorTextureDesc.imageLayout = GetImageLayoutForView(textureViewDesc.viewType);
+    descriptorTextureDesc.layout = GetImageLayoutForView(textureViewDesc.viewType);
+    descriptorTextureDesc.aspectFlags = texture.GetImageAspectFlags();
+    descriptorTextureDesc.arrayOffset = 0;
+    descriptorTextureDesc.arraySize = 1;
+    descriptorTextureDesc.mipOffset = textureViewDesc.mipOffset;
+    descriptorTextureDesc.mipNum = (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? mipLevelsLeft : textureViewDesc.mipNum;
 }
 
 template<typename T>

@@ -46,7 +46,7 @@ void FrameBufferVK::FillDescriptionsAndFormats(const FrameBufferDesc& frameBuffe
         descriptions[i] = {
             (VkAttachmentDescriptionFlags)0,
             descriptorImpl.GetFormat(),
-            textureImpl.GetSampleCount(),
+            (VkSampleCountFlagBits)textureImpl.GetDesc().sampleNum,
             clearColor ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
             VK_ATTACHMENT_STORE_OP_STORE,
             clearColor ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
@@ -64,7 +64,7 @@ void FrameBufferVK::FillDescriptionsAndFormats(const FrameBufferDesc& frameBuffe
         descriptions[frameBufferDesc.colorAttachmentNum] = {
             (VkAttachmentDescriptionFlags)0,
             descriptorImpl.GetFormat(),
-            textureImpl.GetSampleCount(),
+            (VkSampleCountFlagBits)textureImpl.GetDesc().sampleNum,
             clearDepth ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
             VK_ATTACHMENT_STORE_OP_STORE,
             clearDepth ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
@@ -166,9 +166,9 @@ Result FrameBufferVK::Create(const FrameBufferDesc& frameBufferDesc)
         const TextureVK& texture = descriptor->GetTexture();
         const DescriptorTextureDesc& descriptorDesc = descriptor->GetTextureDesc();
 
-        m_RenderArea.extent.width = texture.GetSize(0, descriptorDesc.imageMipOffset);
-        m_RenderArea.extent.height = texture.GetSize(1, descriptorDesc.imageMipOffset);
-        m_LayerNum = descriptorDesc.imageArraySize;
+        m_RenderArea.extent.width = texture.GetSize(0, descriptorDesc.mipOffset);
+        m_RenderArea.extent.height = texture.GetSize(1, descriptorDesc.mipOffset);
+        m_LayerNum = descriptorDesc.arraySize;
     }
 
     Result result = SaveClearColors(frameBufferDesc);

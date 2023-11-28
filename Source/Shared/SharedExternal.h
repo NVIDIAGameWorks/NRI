@@ -112,7 +112,7 @@ struct DxgiFormat
     DXGI_FORMAT typed;
 };
 
-struct FormatInfo
+struct FormatProps
 {
     uint16_t stride;
     uint8_t blockWidth;
@@ -120,7 +120,7 @@ struct FormatInfo
 };
 
 const DxgiFormat& GetDxgiFormat(nri::Format format);
-const FormatInfo& GetFormatProps(nri::Format format);
+const FormatProps& GetFormatProps(nri::Format format);
 
 void CheckAndSetDefaultCallbacks(nri::CallbackInterface& callbackInterface);
 void ConvertCharToWchar(const char* in, wchar_t* out, size_t outLen);

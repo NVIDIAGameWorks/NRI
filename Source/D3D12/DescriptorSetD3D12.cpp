@@ -10,36 +10,35 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "SharedD3D12.h"
 #include "DescriptorSetD3D12.h"
+#include "DescriptorPoolD3D12.h"
 #include "DescriptorD3D12.h"
+#include "PipelineLayoutD3D12.h"
 
 using namespace nri;
 
-DescriptorSetD3D12::DescriptorSetD3D12(DeviceD3D12& device, DescriptorPoolD3D12& descriptorPoolD3D12, const DescriptorSetMapping& descriptorSetMapping, uint16_t dynamicConstantBufferNum)
-    : m_Device(device)
-    , m_DescriptorPoolD3D12(descriptorPoolD3D12)
-    , m_DescriptorSetMapping(descriptorSetMapping)
-    , m_DynamicConstantBuffers(device.GetStdAllocator())
+DescriptorSetD3D12::DescriptorSetD3D12(DescriptorPoolD3D12& desriptorPoolD3D12) :
+    m_DescriptorPoolD3D12(desriptorPoolD3D12)
+    , m_DynamicConstantBuffers(desriptorPoolD3D12.GetDevice().GetStdAllocator())
+{}
+
+void DescriptorSetD3D12::Initialize(const DescriptorSetMapping* descriptorSetMapping, uint16_t dynamicConstantBufferNum)
 {
-    uint32_t heapOffset[DescriptorHeapType::MAX_NUM] = {};
-
-    for (uint32_t i = 0; i < DescriptorHeapType::MAX_NUM; i++)
-    {
-        if (m_DescriptorSetMapping.descriptorNum[i])
-            heapOffset[i] = m_DescriptorPoolD3D12.AllocateDescriptors((DescriptorHeapType)i, m_DescriptorSetMapping.descriptorNum[i]);
-    }
-
-    for (uint32_t i = 0; i < (uint32_t)m_DescriptorSetMapping.descriptorRangeMappings.size(); i++)
-    {
-        DescriptorHeapType descriptorHeapType = m_DescriptorSetMapping.descriptorRangeMappings[i].descriptorHeapType;
-        m_DescriptorSetMapping.descriptorRangeMappings[i].heapOffset += heapOffset[descriptorHeapType];
-    }
-
     m_DynamicConstantBuffers.resize(dynamicConstantBufferNum, 0);
+    m_DescriptorSetMapping = descriptorSetMapping;
+
+    for (size_t i = 0; i < m_HeapOffset.size(); i++)
+    {
+        if (m_DescriptorSetMapping->descriptorNum[i])
+            m_HeapOffset[i] = m_DescriptorPoolD3D12.AllocateDescriptors((DescriptorHeapType)i, m_DescriptorSetMapping->descriptorNum[i]);
+        else
+            m_HeapOffset[i] = 0;
+    }
 }
 
 void DescriptorSetD3D12::BuildDescriptorSetMapping(const DescriptorSetDesc& descriptorSetDesc, DescriptorSetMapping& descriptorSetMapping)
 {
     descriptorSetMapping.descriptorRangeMappings.resize(descriptorSetDesc.rangeNum);
+
     for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++)
     {
         D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = GetDescriptorHeapType(descriptorSetDesc.ranges[i].descriptorType);
@@ -53,8 +52,9 @@ void DescriptorSetD3D12::BuildDescriptorSetMapping(const DescriptorSetDesc& desc
 
 DescriptorPointerCPU DescriptorSetD3D12::GetPointerCPU(uint32_t rangeIndex, uint32_t rangeOffset) const
 {
-    const DescriptorHeapType& descriptorHeapType = m_DescriptorSetMapping.descriptorRangeMappings[rangeIndex].descriptorHeapType;
-    uint32_t offset = m_DescriptorSetMapping.descriptorRangeMappings[rangeIndex].heapOffset + rangeOffset;
+    DescriptorHeapType descriptorHeapType = m_DescriptorSetMapping->descriptorRangeMappings[rangeIndex].descriptorHeapType;
+    uint32_t heapOffset = m_HeapOffset[descriptorHeapType];
+    uint32_t offset = m_DescriptorSetMapping->descriptorRangeMappings[rangeIndex].heapOffset + heapOffset + rangeOffset;
     DescriptorPointerCPU descriptorPointerCPU = m_DescriptorPoolD3D12.GetDescriptorPointerCPU(descriptorHeapType, offset);
 
     return descriptorPointerCPU;
@@ -62,8 +62,9 @@ DescriptorPointerCPU DescriptorSetD3D12::GetPointerCPU(uint32_t rangeIndex, uint
 
 DescriptorPointerGPU DescriptorSetD3D12::GetPointerGPU(uint32_t rangeIndex, uint32_t rangeOffset) const
 {
-    const DescriptorHeapType& descriptorHeapType = m_DescriptorSetMapping.descriptorRangeMappings[rangeIndex].descriptorHeapType;
-    uint32_t offset = m_DescriptorSetMapping.descriptorRangeMappings[rangeIndex].heapOffset + rangeOffset;
+    DescriptorHeapType descriptorHeapType = m_DescriptorSetMapping->descriptorRangeMappings[rangeIndex].descriptorHeapType;
+    uint32_t heapOffset = m_HeapOffset[descriptorHeapType];
+    uint32_t offset = m_DescriptorSetMapping->descriptorRangeMappings[rangeIndex].heapOffset + heapOffset + rangeOffset;
     DescriptorPointerGPU descriptorPointerGPU = m_DescriptorPoolD3D12.GetDescriptorPointerGPU(descriptorHeapType, offset);
 
     return descriptorPointerGPU;
@@ -82,15 +83,17 @@ inline void DescriptorSetD3D12::UpdateDescriptorRanges(uint32_t rangeOffset, uin
 {
     for (uint32_t i = 0; i < rangeNum; i++)
     {
-        const DescriptorRangeMapping& rangeMapping = m_DescriptorSetMapping.descriptorRangeMappings[rangeOffset + i];
-        const uint32_t baseOffset = rangeMapping.heapOffset + rangeUpdateDescs[i].offsetInRange;
+        const DescriptorRangeMapping& rangeMapping = m_DescriptorSetMapping->descriptorRangeMappings[rangeOffset + i];
+        uint32_t heapOffset = m_HeapOffset[rangeMapping.descriptorHeapType];
+        uint32_t baseOffset = rangeMapping.heapOffset + heapOffset + rangeUpdateDescs[i].offsetInRange;
+
         for (uint32_t j = 0; j < rangeUpdateDescs[i].descriptorNum; j++)
         {
             DescriptorPointerCPU dstPointer = m_DescriptorPoolD3D12.GetDescriptorPointerCPU(rangeMapping.descriptorHeapType, baseOffset + j);
             DescriptorPointerCPU srcPointer = ((DescriptorD3D12*)rangeUpdateDescs[i].descriptors[j])->GetPointerCPU();
             D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = (D3D12_DESCRIPTOR_HEAP_TYPE)rangeMapping.descriptorHeapType;
 
-            ((ID3D12Device*)m_Device)->CopyDescriptorsSimple(1, { dstPointer }, { srcPointer }, descriptorHeapType);
+            ((ID3D12Device*)m_DescriptorPoolD3D12.GetDevice())->CopyDescriptorsSimple(1, { dstPointer }, { srcPointer }, descriptorHeapType);
         }
     }
 }
@@ -110,10 +113,10 @@ inline void DescriptorSetD3D12::Copy(const DescriptorSetCopyDesc& descriptorSetC
         DescriptorPointerCPU dstPointer = GetPointerCPU(descriptorSetCopyDesc.baseDstRange + i, 0);
         DescriptorPointerCPU srcPointer = srcDescriptorSet->GetPointerCPU(descriptorSetCopyDesc.baseSrcRange + i, 0);
 
-        uint32_t descriptorNum = m_DescriptorSetMapping.descriptorRangeMappings[i].descriptorNum;
-        D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = (D3D12_DESCRIPTOR_HEAP_TYPE)m_DescriptorSetMapping.descriptorRangeMappings[i].descriptorHeapType;
+        uint32_t descriptorNum = m_DescriptorSetMapping->descriptorRangeMappings[i].descriptorNum;
+        D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = (D3D12_DESCRIPTOR_HEAP_TYPE)m_DescriptorSetMapping->descriptorRangeMappings[i].descriptorHeapType;
 
-        ((ID3D12Device*)m_Device)->CopyDescriptorsSimple(descriptorNum, { dstPointer }, { srcPointer }, descriptorHeapType);
+        ((ID3D12Device*)m_DescriptorPoolD3D12.GetDevice())->CopyDescriptorsSimple(descriptorNum, { dstPointer }, { srcPointer }, descriptorHeapType);
     }
 
     for (uint32_t i = 0; i < descriptorSetCopyDesc.dynamicConstantBufferNum; i++)

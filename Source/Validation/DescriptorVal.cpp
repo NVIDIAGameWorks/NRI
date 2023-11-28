@@ -125,7 +125,7 @@ DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor& descriptor) :
 void DescriptorVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_CoreAPI.SetDescriptorDebugName(m_ImplObject, name);
+    GetCoreInterface().SetDescriptorDebugName(GetImpl(), name);
 }
 
 #include "DescriptorVal.hpp"

@@ -186,7 +186,7 @@ constexpr std::array<WriteDescriptorsFunc, (uint32_t)DescriptorType::MAX_NUM> WR
 
 void DescriptorSetVK::Create(const VkDescriptorSet* handles, uint32_t nodeMask, const DescriptorSetDesc& setDesc)
 {
-    m_SetDesc = &setDesc;
+    m_Desc = &setDesc;
     m_DynamicConstantBufferNum = setDesc.dynamicConstantBufferNum;
 
     uint32_t handleIndex = 0;
@@ -241,17 +241,17 @@ inline void DescriptorSetVK::UpdateDescriptorRanges(uint32_t nodeMask, uint32_t 
             while (slabHasFreeSpace && j < rangeNum && writeNum < writeMaxNum)
             {
                 const DescriptorRangeUpdateDesc& update = rangeUpdateDescs[j];
-                const DescriptorRangeDesc& rangeDesc = m_SetDesc->ranges[rangeOffset + j];
+                const DescriptorRangeDesc& rangeDesc = m_Desc->ranges[rangeOffset + j];
 
                 const uint32_t bindingOffset = rangeDesc.isArray ? 0 : update.offsetInRange + descriptorOffset;
-                const uint32_t arrayOffset = rangeDesc.isArray ? update.offsetInRange + descriptorOffset : 0;
+                const uint32_t arrayElement = rangeDesc.isArray ? update.offsetInRange + descriptorOffset : 0;
 
                 VkWriteDescriptorSet& write = writes[writeNum++];
                 write = {};
                 write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 write.dstSet = m_Handles[i];
                 write.dstBinding = rangeDesc.baseRegisterIndex + bindingOffset;
-                write.dstArrayElement = arrayOffset;
+                write.dstArrayElement = arrayElement;
 
                 const uint32_t index = (uint32_t)rangeDesc.descriptorType;
                 slabHasFreeSpace = WRITE_FUNCS[index](i, rangeDesc, update, descriptorOffset, write, slab);
@@ -283,7 +283,7 @@ inline void DescriptorSetVK::UpdateDynamicConstantBuffers(uint32_t nodeMask, uin
 
         for (uint32_t j = 0; j < descriptorNum; j++)
         {
-            const DynamicConstantBufferDesc& bufferDesc = m_SetDesc->dynamicConstantBuffers[bufferOffset + j];
+            const DynamicConstantBufferDesc& bufferDesc = m_Desc->dynamicConstantBuffers[bufferOffset + j];
 
             VkDescriptorBufferInfo& bufferInfo = infos[writeNum];
             const DescriptorVK& descriptorImpl = *(const DescriptorVK*)descriptors[j];
@@ -326,8 +326,8 @@ inline void DescriptorSetVK::Copy(const DescriptorSetCopyDesc& descriptorSetCopy
 
         for (uint32_t j = 0; j < descriptorSetCopyDesc.rangeNum; j++)
         {
-            const DescriptorRangeDesc& srcRangeDesc = srcSetImpl.m_SetDesc->ranges[descriptorSetCopyDesc.baseSrcRange + j];
-            const DescriptorRangeDesc& dstRangeDesc = m_SetDesc->ranges[descriptorSetCopyDesc.baseDstRange + j];
+            const DescriptorRangeDesc& srcRangeDesc = srcSetImpl.m_Desc->ranges[descriptorSetCopyDesc.baseSrcRange + j];
+            const DescriptorRangeDesc& dstRangeDesc = m_Desc->ranges[descriptorSetCopyDesc.baseDstRange + j];
 
             copies[copyNum++] = {
                 VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,
@@ -345,8 +345,8 @@ inline void DescriptorSetVK::Copy(const DescriptorSetCopyDesc& descriptorSetCopy
         for (uint32_t j = 0; j < descriptorSetCopyDesc.dynamicConstantBufferNum; j++)
         {
             const uint32_t srcBufferIndex = descriptorSetCopyDesc.baseSrcDynamicConstantBuffer + j;
-            const DynamicConstantBufferDesc& srcBuffer = srcSetImpl.m_SetDesc->dynamicConstantBuffers[srcBufferIndex];
-            const DynamicConstantBufferDesc& dstBuffer = m_SetDesc->dynamicConstantBuffers[srcBufferIndex];
+            const DynamicConstantBufferDesc& srcBuffer = srcSetImpl.m_Desc->dynamicConstantBuffers[srcBufferIndex];
+            const DynamicConstantBufferDesc& dstBuffer = m_Desc->dynamicConstantBuffers[srcBufferIndex];
 
             copies[copyNum++] = {
                 VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,

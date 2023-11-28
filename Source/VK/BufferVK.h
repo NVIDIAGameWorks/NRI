@@ -31,8 +31,8 @@ struct BufferVK
     inline DeviceVK& GetDevice() const
     { return m_Device; }
 
-    inline uint64_t GetSize() const
-    { return m_Size; }
+    inline const BufferDesc& GetDesc() const
+    { return m_Desc; }
 
     ~BufferVK();
 
@@ -54,7 +54,7 @@ private:
     DeviceVK& m_Device;
     std::array<VkBuffer, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_Handles = {};
     std::array<VkDeviceAddress, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_DeviceAddresses = {};
-    uint64_t m_Size = 0;
+    BufferDesc m_Desc = {};
     MemoryVK* m_Memory = nullptr;
     uint64_t m_MappedMemoryOffset = 0;
     uint64_t m_MappedRangeOffset = 0;

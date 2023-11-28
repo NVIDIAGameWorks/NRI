@@ -30,15 +30,17 @@ NRI_FORWARD_STRUCT(Pipeline);
 NRI_FORWARD_STRUCT(QueryPool);
 NRI_FORWARD_STRUCT(Texture);
 
-static const uint16_t NRI_CONST_NAME(REMAINING_ARRAY_LAYERS) = 0;
-static const uint16_t NRI_CONST_NAME(REMAINING_MIP_LEVELS) = 0;
-static const uint16_t NRI_CONST_NAME(WHOLE_SIZE) = 0;
+typedef uint16_t NRI_NAME(Dim_t);
+typedef uint8_t NRI_NAME(Mip_t);
+typedef uint32_t NRI_NAME(MemoryType);
+
+static const NRI_NAME(Dim_t) NRI_CONST_NAME(REMAINING_ARRAY_LAYERS) = 0;
+static const NRI_NAME(Mip_t) NRI_CONST_NAME(REMAINING_MIP_LEVELS) = 0;
+static const NRI_NAME(Dim_t) NRI_CONST_NAME(WHOLE_SIZE) = 0;
 static const uint16_t NRI_CONST_NAME(ALL_SAMPLES) = (uint16_t)(-1);
 static const uint32_t NRI_CONST_NAME(ALL_NODES) = 0;
 static const bool NRI_CONST_NAME(VARIABLE_DESCRIPTOR_NUM) = true;
 static const bool NRI_CONST_NAME(DESCRIPTOR_ARRAY) = true;
-
-typedef uint32_t NRI_NAME(MemoryType);
 
 NRI_ENUM
 (
@@ -640,20 +642,20 @@ NRI_ENUM_BITS
     MESH_CONTROL                        = NRI_SET_BIT(13),
     MESH_EVALUATION                     = NRI_SET_BIT(14),
 
-    ALL_GRAPHICS                        = NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, VERTEX) |
-                                          NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, TESS_CONTROL) |
-                                          NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, TESS_EVALUATION) |
-                                          NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, GEOMETRY) |
-                                          NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, FRAGMENT) |
-                                          NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, MESH_CONTROL) |
-                                          NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, MESH_EVALUATION),
+    ALL_GRAPHICS                        = NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, VERTEX) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, TESS_CONTROL) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, TESS_EVALUATION) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, GEOMETRY) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, FRAGMENT) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, MESH_CONTROL) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, MESH_EVALUATION),
 
-    ALL_RAY_TRACING                     = NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, RAYGEN) |
-                                          NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, MISS) |
-                                          NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, INTERSECTION) |
-                                          NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, CLOSEST_HIT) |
-                                          NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, ANY_HIT) |
-                                          NRI_ENUM_MEMBER(PipelineLayoutShaderStageBits, CALLABLE)
+    ALL_RAY_TRACING                     = NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, RAYGEN) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, MISS) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, INTERSECTION) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, CLOSEST_HIT) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, ANY_HIT) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(PipelineLayoutShaderStageBits, CALLABLE)
 );
 
 NRI_ENUM_BITS
@@ -682,10 +684,12 @@ NRI_ENUM_BITS
     B                                   = NRI_SET_BIT(2),
     A                                   = NRI_SET_BIT(3),
 
-    RGBA                                = NRI_ENUM_MEMBER(ColorWriteBits, R) |
-                                          NRI_ENUM_MEMBER(ColorWriteBits, G) |
-                                          NRI_ENUM_MEMBER(ColorWriteBits, B) |
-                                          NRI_ENUM_MEMBER(ColorWriteBits, A)
+    RGB                                 = NRI_ENUM_MEMBER_UNSCOPED(ColorWriteBits, R) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(ColorWriteBits, G) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(ColorWriteBits, B),
+
+    RGBA                                = NRI_ENUM_MEMBER_UNSCOPED(ColorWriteBits, RGB) |
+                                          NRI_ENUM_MEMBER_UNSCOPED(ColorWriteBits, A)
 );
 
 NRI_ENUM_BITS
@@ -795,11 +799,11 @@ NRI_STRUCT(TextureRegionDesc)
     uint16_t x;
     uint16_t y;
     uint16_t z;
-    uint16_t width;
-    uint16_t height;
-    uint16_t depth;
-    uint16_t mipOffset;
-    uint16_t arrayOffset;
+    NRI_NAME(Dim_t) width;
+    NRI_NAME(Dim_t) height;
+    NRI_NAME(Dim_t) depth;
+    NRI_NAME(Mip_t) mipOffset;
+    NRI_NAME(Dim_t) arrayOffset;
 };
 
 NRI_STRUCT(TextureDataLayoutDesc)
@@ -868,11 +872,11 @@ NRI_STRUCT(TextureDesc)
     NRI_NAME(TextureType) type;
     NRI_NAME(TextureUsageBits) usageMask;
     NRI_NAME(Format) format;
-    uint16_t width;
-    uint16_t height;
-    uint16_t depth;
-    uint16_t mipNum;
-    uint16_t arraySize;
+    NRI_NAME(Dim_t) width;
+    NRI_NAME(Dim_t) height;
+    NRI_NAME(Dim_t) depth;
+    NRI_NAME(Mip_t) mipNum;
+    NRI_NAME(Dim_t) arraySize;
     uint8_t sampleNum;
     uint32_t nodeMask;
 };
@@ -890,10 +894,10 @@ NRI_STRUCT(Texture1DViewDesc)
     const NRI_NAME(Texture)* texture;
     NRI_NAME(Texture1DViewType) viewType;
     NRI_NAME(Format) format;
-    uint16_t mipOffset;
-    uint16_t mipNum;
-    uint16_t arrayOffset;
-    uint16_t arraySize;
+    NRI_NAME(Mip_t) mipOffset;
+    NRI_NAME(Mip_t) mipNum;
+    NRI_NAME(Dim_t) arrayOffset;
+    NRI_NAME(Dim_t) arraySize;
     uint32_t nodeMask;
     NRI_NAME(ResourceViewBits) flags;
 };
@@ -903,10 +907,10 @@ NRI_STRUCT(Texture2DViewDesc)
     const NRI_NAME(Texture)* texture;
     NRI_NAME(Texture2DViewType) viewType;
     NRI_NAME(Format) format;
-    uint16_t mipOffset;
-    uint16_t mipNum;
-    uint16_t arrayOffset;
-    uint16_t arraySize;
+    NRI_NAME(Mip_t) mipOffset;
+    NRI_NAME(Mip_t) mipNum;
+    NRI_NAME(Dim_t) arrayOffset;
+    NRI_NAME(Dim_t) arraySize;
     uint32_t nodeMask;
     NRI_NAME(ResourceViewBits) flags;
 };
@@ -916,10 +920,10 @@ NRI_STRUCT(Texture3DViewDesc)
     const NRI_NAME(Texture)* texture;
     NRI_NAME(Texture3DViewType) viewType;
     NRI_NAME(Format) format;
-    uint16_t mipOffset;
-    uint16_t mipNum;
-    uint16_t sliceOffset;
-    uint16_t sliceNum;
+    NRI_NAME(Mip_t) mipOffset;
+    NRI_NAME(Mip_t) mipNum;
+    NRI_NAME(Dim_t) sliceOffset;
+    NRI_NAME(Dim_t) sliceNum;
     uint32_t nodeMask;
     NRI_NAME(ResourceViewBits) flags;
 };
@@ -953,10 +957,10 @@ NRI_STRUCT(DescriptorPoolDesc)
 NRI_STRUCT(TextureTransitionBarrierDesc)
 {
     const NRI_NAME(Texture)* texture;
-    uint16_t mipOffset;
-    uint16_t mipNum;
-    uint16_t arrayOffset;
-    uint16_t arraySize;
+    NRI_NAME(Mip_t) mipOffset;
+    NRI_NAME(Mip_t) mipNum;
+    NRI_NAME(Dim_t) arrayOffset;
+    NRI_NAME(Dim_t) arraySize;
     NRI_NAME(AccessBits) prevAccess;
     NRI_NAME(AccessBits) nextAccess;
     NRI_NAME(TextureLayout) prevLayout;
@@ -1091,7 +1095,7 @@ NRI_STRUCT(VertexAttributeDesc)
 
 NRI_STRUCT(VertexStreamDesc)
 {
-    uint32_t stride;
+    uint16_t stride;
     uint16_t bindingSlot;
     NRI_NAME(VertexStreamStepRate) stepRate;
 };
@@ -1216,9 +1220,9 @@ NRI_STRUCT(FrameBufferDesc)
     const NRI_NAME(ClearValueDesc)* depthStencilClearValue;
     uint32_t colorAttachmentNum;
     uint32_t nodeMask;
-    uint16_t width;
-    uint16_t height;
-    uint16_t layerNum;
+    NRI_NAME(Dim_t) width;
+    NRI_NAME(Dim_t) height;
+    NRI_NAME(Dim_t) layerNum;
 };
 
 NRI_STRUCT(QueryPoolDesc)

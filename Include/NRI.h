@@ -14,8 +14,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 102
-#define NRI_VERSION_DATE "23 November 2023"
+#define NRI_VERSION_MINOR 103
+#define NRI_VERSION_DATE "27 November 2023"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -41,6 +41,8 @@ NRI_STRUCT(CoreInterface)
 {
     // Get
     const NRI_NAME_REF(DeviceDesc) (NRI_CALL *GetDeviceDesc)(const NRI_NAME_REF(Device) device);
+    const NRI_NAME_REF(BufferDesc) (NRI_CALL *GetBufferDesc)(const NRI_NAME_REF(Buffer) buffer);
+    const NRI_NAME_REF(TextureDesc) (NRI_CALL *GetTextureDesc)(const NRI_NAME_REF(Texture) texture);
     NRI_NAME(FormatSupportBits) (NRI_CALL *GetFormatSupport)(const NRI_NAME_REF(Device) device, NRI_NAME(Format) format);
     uint32_t (NRI_CALL *GetQuerySize)(const NRI_NAME_REF(QueryPool) queryPool);
     void (NRI_CALL *GetBufferMemoryInfo)(const NRI_NAME_REF(Buffer) buffer, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(MemoryDesc) memoryDesc);

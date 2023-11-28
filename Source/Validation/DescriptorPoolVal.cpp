@@ -10,18 +10,19 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "SharedExternal.h"
 #include "SharedVal.h"
-#include "DescriptorPoolVal.h"
-
 #include "DescriptorSetVal.h"
+#include "DescriptorPoolVal.h"
 #include "PipelineLayoutVal.h"
 
 using namespace nri;
 
-DescriptorPoolVal::DescriptorPoolVal(DeviceVal& device, DescriptorPool& descriptorPool) :
+DescriptorPoolVal::DescriptorPoolVal(DeviceVal& device, DescriptorPool& descriptorPool, uint32_t descriptorSetMaxNum) :
     DeviceObjectVal(device, descriptorPool),
     m_DescriptorSets(device.GetStdAllocator()),
-    m_SkipValidation(true)
+    m_SkipValidation(true) // TODO: we have to request "DescriptorPoolDesc" in "DescriptorPoolVKDesc"
 {
+    m_Desc.descriptorSetMaxNum = descriptorSetMaxNum;
+    m_DescriptorSets.resize(m_Desc.descriptorSetMaxNum, DescriptorSetVal(device));
 }
 
 DescriptorPoolVal::DescriptorPoolVal(DeviceVal& device, DescriptorPool& descriptorPool, const DescriptorPoolDesc& descriptorPoolDesc) :
@@ -29,18 +30,13 @@ DescriptorPoolVal::DescriptorPoolVal(DeviceVal& device, DescriptorPool& descript
     m_DescriptorSets(device.GetStdAllocator()),
     m_Desc(descriptorPoolDesc)
 {
-}
-
-DescriptorPoolVal::~DescriptorPoolVal()
-{
-    for (size_t i = 0; i < m_DescriptorSets.size(); i++)
-        Deallocate(m_Device.GetStdAllocator(), m_DescriptorSets[i]);
+    m_DescriptorSets.resize(m_Desc.descriptorSetMaxNum, DescriptorSetVal(device));
 }
 
 void DescriptorPoolVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_CoreAPI.SetDescriptorPoolDebugName(m_ImplObject, name);
+    GetCoreInterface().SetDescriptorPoolDebugName(GetImpl(), name);
 }
 
 bool DescriptorPoolVal::CheckDescriptorRange(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum)
@@ -126,14 +122,14 @@ Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineL
     const PipelineLayoutVal& pipelineLayoutVal = (const PipelineLayoutVal&)pipelineLayout;
     const PipelineLayoutDesc& pipelineLayoutDesc = pipelineLayoutVal.GetPipelineLayoutDesc();
 
+    RETURN_ON_FAILURE(&m_Device, instanceNum != 0, Result::INVALID_ARGUMENT,
+        "Can't allocate DescriptorSet: 'instanceNum' is 0.");
+
+    RETURN_ON_FAILURE(&m_Device, m_DescriptorSetsNum + instanceNum <= m_Desc.descriptorSetMaxNum, Result::INVALID_ARGUMENT,
+        "Can't allocate DescriptorSet: the maximum number of descriptor sets exceeded.");
+
     if (!m_SkipValidation)
     {
-        RETURN_ON_FAILURE(&m_Device, instanceNum != 0, Result::INVALID_ARGUMENT,
-            "Can't allocate DescriptorSet: 'instanceNum' is 0.");
-
-        RETURN_ON_FAILURE(&m_Device, m_DescriptorSetNum + instanceNum <= m_Desc.descriptorSetMaxNum, Result::INVALID_ARGUMENT,
-            "Can't allocate DescriptorSet: the maximum number of descriptor sets exceeded.");
-
         RETURN_ON_FAILURE(&m_Device, setIndexInPipelineLayout < pipelineLayoutDesc.descriptorSetNum, Result::INVALID_ARGUMENT,
             "Can't allocate DescriptorSet: 'setIndexInPipelineLayout' is invalid.");
 
@@ -156,7 +152,7 @@ Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineL
 
     PipelineLayout* pipelineLayoutImpl = NRI_GET_IMPL_REF(PipelineLayout, &pipelineLayout);
 
-    Result result = m_CoreAPI.AllocateDescriptorSets(m_ImplObject, *pipelineLayoutImpl, setIndexInPipelineLayout, descriptorSets, instanceNum,
+    Result result = GetCoreInterface().AllocateDescriptorSets(GetImpl(), *pipelineLayoutImpl, setIndexInPipelineLayout, descriptorSets, instanceNum,
         nodeMask, variableDescriptorNum);
 
     if (result != Result::SUCCESS)
@@ -166,7 +162,6 @@ Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineL
 
     if (!m_SkipValidation)
     {
-        m_DescriptorSetNum += instanceNum;
         m_DynamicConstantBufferNum += descriptorSetDesc.dynamicConstantBufferNum;
         for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++)
             IncrementDescriptorNum(descriptorSetDesc.ranges[i], variableDescriptorNum);
@@ -174,9 +169,9 @@ Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineL
 
     for (uint32_t i = 0; i < instanceNum; i++)
     {
-        DescriptorSetVal* descriptorSetVal = Allocate<DescriptorSetVal>(m_Device.GetStdAllocator(), m_Device, *descriptorSets[i], descriptorSetDesc);
+        DescriptorSetVal* descriptorSetVal = &m_DescriptorSets[m_DescriptorSetsNum++];
+        descriptorSetVal->SetImpl(descriptorSets[i], &descriptorSetDesc);
         descriptorSets[i] = (DescriptorSet*)descriptorSetVal;
-        m_DescriptorSets.push_back(descriptorSetVal);
     }
 
     return result;
@@ -184,11 +179,8 @@ Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineL
 
 void DescriptorPoolVal::Reset()
 {
-    for (uint32_t i = 0; i < m_DescriptorSets.size(); i++)
-        Deallocate(m_Device.GetStdAllocator(), m_DescriptorSets[i]);
-    m_DescriptorSets.clear();
+    m_DescriptorSetsNum = 0;
 
-    m_DescriptorSetNum = 0;
     m_SamplerNum = 0;
     m_ConstantBufferNum = 0;
     m_DynamicConstantBufferNum = 0;
@@ -200,7 +192,7 @@ void DescriptorPoolVal::Reset()
     m_StorageStructuredBufferNum = 0;
     m_AccelerationStructureNum = 0;
 
-    m_CoreAPI.ResetDescriptorPool(m_ImplObject);
+    GetCoreInterface().ResetDescriptorPool(GetImpl());
 }
 
 #include "DescriptorPoolVal.hpp"

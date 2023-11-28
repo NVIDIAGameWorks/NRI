@@ -8,6 +8,8 @@
     #include <stdbool.h>
 #endif
 
+#undef RGB // wingdi.h
+
 #define NRI_INTERFACE(name) #name, sizeof(name)
 #define NRI_SET_BIT(bit) (1 << (bit))
 #define NRI_EXPAND(args) args
@@ -189,6 +191,7 @@
     #define NRI_ZERO_INIT {}
 
     #define NRI_ENUM_MEMBER(name, member) name::member
+    #define NRI_ENUM_MEMBER_UNSCOPED(name, member) member
     #define NRI_ENUM_ENTRY(index, ...) NRI_VA_ARGS_AT(index, __VA_ARGS__)
     #define NRI_ENUM_EXPAND(...) NRI_SEQN(NRI_ENUM_ENTRY, NRI_NARGS(__VA_ARGS__), __VA_ARGS__)
     #define NRI_ENUM(name, type, ...) \
@@ -219,6 +222,7 @@
     #define NRI_ZERO_INIT {0}
 
     #define NRI_ENUM_MEMBER(name, member) NRI_MERGE_TOKENS(NRI_NAME_(name), member)
+    #define NRI_ENUM_MEMBER_UNSCOPED(name, member) NRI_ENUM_MEMBER(name, member)
     #define NRI_ENUM_ENTRY(index, prefix, ...) NRI_MERGE_TOKENS(prefix, NRI_VA_ARGS_AT(index, __VA_ARGS__))
     #define NRI_ENUM_EXPAND(prefix, ...) NRI_SEQN(NRI_ENUM_ENTRY, NRI_NARGS(__VA_ARGS__), prefix, __VA_ARGS__)
     #define NRI_ENUM(name, type, ...) \

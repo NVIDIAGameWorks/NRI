@@ -170,11 +170,11 @@ bool nri::GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& 
         D3D11_TEXTURE1D_DESC desc = {};
         texture->GetDesc(&desc);
 
-        textureDesc.width = (uint16_t)desc.Width;
+        textureDesc.width = (Dim_t)desc.Width;
         textureDesc.height = 1;
         textureDesc.depth = 1;
-        textureDesc.mipNum = (uint16_t)desc.MipLevels;
-        textureDesc.arraySize = (uint16_t)desc.ArraySize;
+        textureDesc.mipNum = (Mip_t)desc.MipLevels;
+        textureDesc.arraySize = (Dim_t)desc.ArraySize;
         textureDesc.sampleNum = 1;
         textureDesc.type = TextureType::TEXTURE_1D;
         textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
@@ -187,11 +187,11 @@ bool nri::GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& 
         D3D11_TEXTURE2D_DESC desc = {};
         texture->GetDesc(&desc);
 
-        textureDesc.width = (uint16_t)desc.Width;
-        textureDesc.height = (uint16_t)desc.Height;
+        textureDesc.width = (Dim_t)desc.Width;
+        textureDesc.height = (Dim_t)desc.Height;
         textureDesc.depth = 1;
-        textureDesc.mipNum = (uint16_t)desc.MipLevels;
-        textureDesc.arraySize = (uint16_t)desc.ArraySize;
+        textureDesc.mipNum = (Mip_t)desc.MipLevels;
+        textureDesc.arraySize = (Dim_t)desc.ArraySize;
         textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
         textureDesc.type = TextureType::TEXTURE_2D;
         textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
@@ -204,10 +204,10 @@ bool nri::GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& 
         D3D11_TEXTURE3D_DESC desc = {};
         texture->GetDesc(&desc);
 
-        textureDesc.width = (uint16_t)desc.Width;
-        textureDesc.height = (uint16_t)desc.Height;
-        textureDesc.depth = (uint16_t)desc.Depth;
-        textureDesc.mipNum = (uint16_t)desc.MipLevels;
+        textureDesc.width = (Dim_t)desc.Width;
+        textureDesc.height = (Dim_t)desc.Height;
+        textureDesc.depth = (Dim_t)desc.Depth;
+        textureDesc.mipNum = (Mip_t)desc.MipLevels;
         textureDesc.arraySize = 1;
         textureDesc.sampleNum = 1;
         textureDesc.type = TextureType::TEXTURE_3D;

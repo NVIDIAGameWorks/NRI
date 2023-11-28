@@ -37,11 +37,9 @@ BufferVK::~BufferVK()
 Result BufferVK::Create(const BufferDesc& bufferDesc)
 {
     m_OwnsNativeObjects = true;
-    m_Size = bufferDesc.size;
+    m_Desc = bufferDesc;
 
-    const VkSharingMode sharingMode =
-        m_Device.IsConcurrentSharingModeEnabledForBuffers() ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
-
+    const VkSharingMode sharingMode = m_Device.IsConcurrentSharingModeEnabledForBuffers() ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
     const Vector<uint32_t>& queueIndices = m_Device.GetConcurrentSharingModeQueueIndices();
 
     VkBufferCreateInfo info = {};
@@ -75,16 +73,18 @@ Result BufferVK::Create(const BufferVKDesc& bufferDesc)
     m_OwnsNativeObjects = false;
     m_Memory = (MemoryVK*)bufferDesc.memory;
     m_MappedMemoryOffset = bufferDesc.memoryOffset;
-    m_Size = bufferDesc.bufferSize;
 
-    uint32_t nodeMask = GetNodeMask(bufferDesc.nodeMask);
+    m_Desc.size = bufferDesc.size;
+    m_Desc.structureStride = bufferDesc.structureStride;
+    // TODO: m_Desc.usageMask
+    m_Desc.nodeMask = GetNodeMask(bufferDesc.nodeMask);
 
     if (m_Memory != nullptr)
-        nodeMask = 0x1;
+        m_Desc.nodeMask = 0x1;
 
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
-        if ((1 << i) & nodeMask)
+        if ((1 << i) & m_Desc.nodeMask)
         {
             m_Handles[i] = (VkBuffer)bufferDesc.vkBuffer;
             m_DeviceAddresses[i] = (VkDeviceAddress)bufferDesc.deviceAddress;
@@ -99,9 +99,8 @@ void BufferVK::SetHostMemory(MemoryVK& memory, uint64_t memoryOffset)
     m_Memory = &memory;
     m_MappedMemoryOffset = memoryOffset;
 
-    const auto& vk = m_Device.GetDispatchTable();
-
     // No need to keep more than one instance of host buffer
+    const auto& vk = m_Device.GetDispatchTable();
     for (uint32_t i = 1; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
         if (m_Handles[i] != VK_NULL_HANDLE)
@@ -116,7 +115,6 @@ void BufferVK::ReadDeviceAddress()
     bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 
     const auto& vk = m_Device.GetDispatchTable();
-
     if (!vk.GetBufferDeviceAddress)
         return;
 
@@ -190,7 +188,7 @@ inline void* BufferVK::Map(uint64_t offset, uint64_t size)
     m_MappedRangeSize = size;
 
     if (size == WHOLE_SIZE)
-        size = m_Size;
+        size = m_Desc.size;
 
     return m_Memory->GetMappedMemory(0) + m_MappedMemoryOffset + offset;
 }

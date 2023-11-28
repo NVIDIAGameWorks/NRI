@@ -46,12 +46,12 @@ PipelineVal::PipelineVal(DeviceVal& device, Pipeline& pipeline, const RayTracing
 void PipelineVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_CoreAPI.SetPipelineDebugName(m_ImplObject, name);
+    GetCoreInterface().SetPipelineDebugName(GetImpl(), name);
 }
 
 Result PipelineVal::WriteShaderGroupIdentifiers(uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer)
 {
-    return m_RayTracingAPI.WriteShaderGroupIdentifiers(m_ImplObject, baseShaderGroupIndex, shaderGroupNum, buffer);
+    return m_RayTracingAPI.WriteShaderGroupIdentifiers(GetImpl(), baseShaderGroupIndex, shaderGroupNum, buffer);
 }
 
 #include "PipelineVal.hpp"

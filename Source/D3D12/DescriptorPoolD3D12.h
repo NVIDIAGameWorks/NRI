@@ -14,14 +14,6 @@ namespace nri
 {
 
 struct DeviceD3D12;
-struct DescriptorSetD3D12;
-
-enum DescriptorHeapType : uint32_t
-{
-    RESOURCE = 0,
-    SAMPLER,
-    MAX_NUM
-};
 
 struct DescriptorPoolD3D12
 {
@@ -58,7 +50,7 @@ private:
     std::array<DescriptorHeapDesc, DescriptorHeapType::MAX_NUM> m_DescriptorHeapDescs;
     std::array<uint32_t, DescriptorHeapType::MAX_NUM> m_DescriptorNum = {};
     std::array<ID3D12DescriptorHeap*, DescriptorHeapType::MAX_NUM> m_DescriptorHeaps = {};
-    Vector<DescriptorSetD3D12*> m_DescriptorSets;
+    Vector<DescriptorSetD3D12> m_DescriptorSets;
     uint32_t m_DescriptorHeapNum = 0;
     uint32_t m_DescriptorSetNum = 0;
 };

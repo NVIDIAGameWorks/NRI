@@ -18,8 +18,8 @@ using namespace nri;
 
 PipelineLayoutVal::PipelineLayoutVal(DeviceVal& device, PipelineLayout& pipelineLayout, const PipelineLayoutDesc& pipelineLayoutDesc) :
     DeviceObjectVal(device, pipelineLayout),
-    m_DescriptorSets(device.GetStdAllocator()),
-    m_PushConstants(device.GetStdAllocator()),
+    m_DescriptorSetDescs(device.GetStdAllocator()),
+    m_PushConstantDescs(device.GetStdAllocator()),
     m_DescriptorRangeDescs(device.GetStdAllocator()),
     m_DynamicConstantBufferDescs(device.GetStdAllocator())
 {
@@ -32,10 +32,10 @@ PipelineLayoutVal::PipelineLayoutVal(DeviceVal& device, PipelineLayout& pipeline
         dynamicConstantBufferDescNum += pipelineLayoutDesc.descriptorSets[i].dynamicConstantBufferNum;
     }
 
-    m_DescriptorSets.insert(m_DescriptorSets.begin(), pipelineLayoutDesc.descriptorSets,
+    m_DescriptorSetDescs.insert(m_DescriptorSetDescs.begin(), pipelineLayoutDesc.descriptorSets,
         pipelineLayoutDesc.descriptorSets + pipelineLayoutDesc.descriptorSetNum);
 
-    m_PushConstants.insert(m_PushConstants.begin(), pipelineLayoutDesc.pushConstants,
+    m_PushConstantDescs.insert(m_PushConstantDescs.begin(), pipelineLayoutDesc.pushConstants,
         pipelineLayoutDesc.pushConstants + pipelineLayoutDesc.pushConstantNum);
 
     m_DescriptorRangeDescs.reserve(descriptorRangeDescNum);
@@ -45,8 +45,8 @@ PipelineLayoutVal::PipelineLayoutVal(DeviceVal& device, PipelineLayout& pipeline
     {
         const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[i];
 
-        m_DescriptorSets[i].ranges = m_DescriptorRangeDescs.data() + m_DescriptorRangeDescs.size();
-        m_DescriptorSets[i].dynamicConstantBuffers = m_DynamicConstantBufferDescs.data() + m_DynamicConstantBufferDescs.size();
+        m_DescriptorSetDescs[i].ranges = m_DescriptorRangeDescs.data() + m_DescriptorRangeDescs.size();
+        m_DescriptorSetDescs[i].dynamicConstantBuffers = m_DynamicConstantBufferDescs.data() + m_DynamicConstantBufferDescs.size();
 
         m_DescriptorRangeDescs.insert(m_DescriptorRangeDescs.end(), descriptorSetDesc.ranges,
             descriptorSetDesc.ranges + descriptorSetDesc.rangeNum);
@@ -57,12 +57,12 @@ PipelineLayoutVal::PipelineLayoutVal(DeviceVal& device, PipelineLayout& pipeline
 
     m_PipelineLayoutDesc = pipelineLayoutDesc;
 
-    m_PipelineLayoutDesc.descriptorSets = m_DescriptorSets.data();
-    m_PipelineLayoutDesc.pushConstants = m_PushConstants.data();
+    m_PipelineLayoutDesc.descriptorSets = m_DescriptorSetDescs.data();
+    m_PipelineLayoutDesc.pushConstants = m_PushConstantDescs.data();
 }
 
 void PipelineLayoutVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_CoreAPI.SetPipelineLayoutDebugName(m_ImplObject, name);
+    GetCoreInterface().SetPipelineLayoutDebugName(GetImpl(), name);
 }

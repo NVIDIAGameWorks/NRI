@@ -24,13 +24,13 @@ CommandAllocatorVal::CommandAllocatorVal(DeviceVal& device, CommandAllocator& co
 void CommandAllocatorVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_CoreAPI.SetCommandAllocatorDebugName(m_ImplObject, name);
+    GetCoreInterface().SetCommandAllocatorDebugName(GetImpl(), name);
 }
 
 Result CommandAllocatorVal::CreateCommandBuffer(CommandBuffer*& commandBuffer)
 {
     CommandBuffer* commandBufferImpl;
-    const Result result = m_CoreAPI.CreateCommandBuffer(m_ImplObject, commandBufferImpl);
+    const Result result = GetCoreInterface().CreateCommandBuffer(GetImpl(), commandBufferImpl);
 
     if (result == Result::SUCCESS)
     {
@@ -43,7 +43,7 @@ Result CommandAllocatorVal::CreateCommandBuffer(CommandBuffer*& commandBuffer)
 
 void CommandAllocatorVal::Reset()
 {
-    m_CoreAPI.ResetCommandAllocator(m_ImplObject);
+    GetCoreInterface().ResetCommandAllocator(GetImpl());
 }
 
 #include "CommandAllocatorVal.hpp"

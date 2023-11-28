@@ -17,17 +17,17 @@ struct MemoryVal;
 
 struct TextureVal : public DeviceObjectVal<Texture>
 {
-    TextureVal(DeviceVal& device, Texture& texture, const TextureDesc& textureDesc);
-    TextureVal(DeviceVal& device, Texture& texture, const TextureD3D11Desc& textureD3D11Desc);
-    TextureVal(DeviceVal& device, Texture& texture, const TextureD3D12Desc& textureD3D12Desc);
-    TextureVal(DeviceVal& device, Texture& texture, const TextureVKDesc& textureVKDesc);
+    TextureVal(DeviceVal& device, Texture& texture) :
+        DeviceObjectVal(device, texture)
+    {}
+
     ~TextureVal();
 
     inline const TextureDesc& GetDesc() const
-    { return m_TextureDesc; }
+    { return GetCoreInterface().GetTextureDesc(GetImpl()); }
 
     inline uint64_t GetNativeObject(uint32_t nodeIndex) const
-    { return m_CoreAPI.GetTextureNativeObject(m_ImplObject, nodeIndex); }
+    { return GetCoreInterface().GetTextureNativeObject(GetImpl(), nodeIndex); }
 
     inline bool IsBoundToMemory() const
     { return m_IsBoundToMemory; }
@@ -48,7 +48,6 @@ struct TextureVal : public DeviceObjectVal<Texture>
     void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
 private:
-    TextureDesc m_TextureDesc = {};
     MemoryVal* m_Memory = nullptr;
     bool m_IsBoundToMemory = false;
 };

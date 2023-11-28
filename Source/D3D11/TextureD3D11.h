@@ -53,8 +53,8 @@ struct TextureD3D11
 
     Result Create(const MemoryD3D11* memory);
     Result Create(const TextureD3D11Desc& textureDesc);
-    uint32_t GetMipmappedSize(uint32_t w = 0, uint32_t h = 0, uint32_t d = 0, uint32_t mipOffset = 0, uint32_t mipNum = 0) const;
-    uint16_t GetSize(uint32_t dimension, uint32_t mipOffset = 0) const;
+    uint32_t GetMipmappedSize(uint32_t w = 0, uint32_t h = 0, uint32_t d = 0, Mip_t mipNum = 0, Mip_t mipOffset = 0) const;
+    Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const;
 
     //================================================================================================================
     // NRI

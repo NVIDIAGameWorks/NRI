@@ -51,7 +51,7 @@ struct SwapChainD3D11
     inline void SetDebugName(const char* name)
     { SET_D3D_DEBUG_OBJECT_NAME(m_SwapChain.ptr, name); }
 
-    Texture* const* GetTextures(uint32_t& textureNum, Format& format) const;
+    Texture* const* GetTextures(uint32_t& textureNum) const;
     uint32_t AcquireNextTexture();
     Result Present();
     Result SetHdrMetadata(const HdrMetadata& hdrMetadata);

@@ -1692,9 +1692,9 @@ inline Result DeviceVK::CreateCommandBuffer(const CommandBufferVKDesc& commandBu
     return CreateImplementation<CommandBufferVK>(commandBuffer, commandBufferVKDesc);
 }
 
-inline Result DeviceVK::CreateDescriptorPool(NRIVkDescriptorPool vkDescriptorPool, DescriptorPool*& descriptorPool)
+inline Result DeviceVK::CreateDescriptorPool(const DescriptorPoolVKDesc& descriptorPoolVKDesc, DescriptorPool*& descriptorPool)
 {
-    return CreateImplementation<DescriptorPoolVK>(descriptorPool, vkDescriptorPool);
+    return CreateImplementation<DescriptorPoolVK>(descriptorPool, descriptorPoolVKDesc);
 }
 
 inline Result DeviceVK::CreateBuffer(const BufferVKDesc& bufferDesc, Buffer*& buffer)

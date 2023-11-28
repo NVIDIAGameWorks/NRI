@@ -24,7 +24,7 @@ struct SwapChainVal : public DeviceObjectVal<SwapChain>
     // NRI
     //================================================================================================================
     void SetDebugName(const char* name);
-    Texture* const* GetTextures(uint32_t& textureNum, Format& format) const;
+    Texture* const* GetTextures(uint32_t& textureNum) const;
     uint32_t AcquireNextTexture();
     Result Present();
     Result SetHdrMetadata(const HdrMetadata& hdrMetadata);

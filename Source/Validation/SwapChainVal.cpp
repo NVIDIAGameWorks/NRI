@@ -34,44 +34,33 @@ SwapChainVal::~SwapChainVal()
 inline void SwapChainVal::SetDebugName(const char* name)
 {
     m_Name = name;
-    m_SwapChainAPI.SetSwapChainDebugName(m_ImplObject, name);
+    m_SwapChainAPI.SetSwapChainDebugName(GetImpl(), name);
 }
 
-inline Texture* const* SwapChainVal::GetTextures(uint32_t& textureNum, Format& format) const
+inline Texture* const* SwapChainVal::GetTextures(uint32_t& textureNum) const
 {
-    Texture* const* textures = m_SwapChainAPI.GetSwapChainTextures(m_ImplObject, textureNum, format);
-
-    TextureDesc textureDesc = {};
-    textureDesc.type = TextureType::TEXTURE_2D;
-    textureDesc.usageMask = TextureUsageBits::SHADER_RESOURCE | TextureUsageBits::COLOR_ATTACHMENT;
-    textureDesc.format = format;
-    textureDesc.width = m_SwapChainDesc.width;
-    textureDesc.height = m_SwapChainDesc.height;
-    textureDesc.depth = 1;
-    textureDesc.mipNum = 1;
-    textureDesc.arraySize = 1;
-    textureDesc.sampleNum = 1;
+    Texture* const* textures = m_SwapChainAPI.GetSwapChainTextures(GetImpl(), textureNum);
 
     m_Textures.resize(textureNum);
     for (uint32_t i = 0; i < textureNum; i++)
-        m_Textures[i] = Allocate<TextureVal>(m_Device.GetStdAllocator(), m_Device, *textures[i], textureDesc);
+        m_Textures[i] = Allocate<TextureVal>(m_Device.GetStdAllocator(), m_Device, *textures[i]);
 
     return (Texture* const*)m_Textures.data();
 }
 
 inline uint32_t SwapChainVal::AcquireNextTexture()
 {
-    return m_SwapChainAPI.AcquireNextSwapChainTexture(m_ImplObject);
+    return m_SwapChainAPI.AcquireNextSwapChainTexture(GetImpl());
 }
 
 inline Result SwapChainVal::Present()
 {
-    return m_SwapChainAPI.SwapChainPresent(m_ImplObject);
+    return m_SwapChainAPI.SwapChainPresent(GetImpl());
 }
 
 inline Result SwapChainVal::SetHdrMetadata(const HdrMetadata& hdrMetadata)
 {
-    return m_SwapChainAPI.SetSwapChainHdrMetadata(m_ImplObject, hdrMetadata);
+    return m_SwapChainAPI.SetSwapChainHdrMetadata(GetImpl(), hdrMetadata);
 }
 
 #include "SwapChainVal.hpp"

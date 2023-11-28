@@ -67,11 +67,11 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
 {
     const TextureD3D11& texture = *(TextureD3D11*)textureViewDesc.texture;
     const DxgiFormat& dxgiFormat = GetDxgiFormat(textureViewDesc.format);
-    const FormatInfo& formatInfo = GetFormatProps(textureViewDesc.format);
+    const FormatProps& formatProps = GetFormatProps(textureViewDesc.format);
 
     const TextureDesc& textureDesc = texture.GetDesc();
-    uint32_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
-    uint32_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
+    Mip_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
+    Dim_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
 
     HRESULT hr = E_INVALIDARG;
     switch (textureViewDesc.viewType)
@@ -174,7 +174,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
 
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateXxxView()");
 
-    m_IsIntegerFormat = formatInfo.isInteger;
+    m_IsIntegerFormat = formatProps.isInteger;
     m_SubresourceInfo.Initialize(textureViewDesc.texture, textureViewDesc.mipOffset, textureViewDesc.mipNum, textureViewDesc.arrayOffset, textureViewDesc.arraySize);
 
     return Result::SUCCESS;
@@ -185,11 +185,11 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
     const TextureD3D11& texture = *(TextureD3D11*)textureViewDesc.texture;
     const TextureDesc& desc = texture.GetDesc();
     const DxgiFormat& dxgiFormat = GetDxgiFormat(textureViewDesc.format);
-    const FormatInfo& formatInfo = GetFormatProps(textureViewDesc.format);
+    const FormatProps& formatProps = GetFormatProps(textureViewDesc.format);
 
     const TextureDesc& textureDesc = texture.GetDesc();
-    uint32_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
-    uint32_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
+    Mip_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
+    Dim_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
 
     HRESULT hr = E_INVALIDARG;
     switch (textureViewDesc.viewType)
@@ -354,7 +354,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
 
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateXxxView()");
 
-    m_IsIntegerFormat = formatInfo.isInteger;
+    m_IsIntegerFormat = formatProps.isInteger;
     m_SubresourceInfo.Initialize(textureViewDesc.texture, textureViewDesc.mipOffset, textureViewDesc.mipNum, textureViewDesc.arrayOffset, textureViewDesc.arraySize);
 
     return Result::SUCCESS;
@@ -364,10 +364,10 @@ Result DescriptorD3D11::Create(const Texture3DViewDesc& textureViewDesc)
 {
     const TextureD3D11& texture = *(TextureD3D11*)textureViewDesc.texture;
     const DxgiFormat& dxgiFormat = GetDxgiFormat(textureViewDesc.format);
-    const FormatInfo& formatInfo = GetFormatProps(textureViewDesc.format);
+    const FormatProps& formatProps = GetFormatProps(textureViewDesc.format);
 
     const TextureDesc& textureDesc = texture.GetDesc();
-    uint32_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
+    Mip_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
 
     HRESULT hr = E_INVALIDARG;
     switch (textureViewDesc.viewType)
@@ -420,7 +420,7 @@ Result DescriptorD3D11::Create(const Texture3DViewDesc& textureViewDesc)
 
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateXxxView()");
 
-    m_IsIntegerFormat = formatInfo.isInteger;
+    m_IsIntegerFormat = formatProps.isInteger;
     m_SubresourceInfo.Initialize(textureViewDesc.texture, textureViewDesc.mipOffset, textureViewDesc.mipNum, textureViewDesc.sliceOffset, textureViewDesc.sliceNum);
 
     return Result::SUCCESS;
@@ -446,9 +446,9 @@ Result DescriptorD3D11::Create(const BufferViewDesc& bufferViewDesc)
         format = Format::UNKNOWN;
 
     const DxgiFormat& dxgiFormat = GetDxgiFormat(format);
-    const FormatInfo& formatInfo = GetFormatProps(format);
+    const FormatProps& formatProps = GetFormatProps(format);
     if (!stride )
-        stride = formatInfo.stride;
+        stride = formatProps.stride;
 
     m_ElementOffset = (uint32_t)(bufferViewDesc.offset / stride);
     m_ElementNum = (uint32_t)(size / stride);
@@ -494,7 +494,7 @@ Result DescriptorD3D11::Create(const BufferViewDesc& bufferViewDesc)
 
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateXxxView()");
 
-    m_IsIntegerFormat = formatInfo.isInteger;
+    m_IsIntegerFormat = formatProps.isInteger;
     m_SubresourceInfo.Initialize(bufferViewDesc.buffer);
 
     return Result::SUCCESS;

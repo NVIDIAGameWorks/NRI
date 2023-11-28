@@ -107,7 +107,7 @@ NRI_STRUCT(SwapChainInterface)
     NRI_NAME(Result) (NRI_CALL *CreateSwapChain)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(SwapChainDesc) swapChainDesc, NRI_NAME_REF(SwapChain*) swapChain);
     void (NRI_CALL *DestroySwapChain)(NRI_NAME_REF(SwapChain) swapChain);
     void (NRI_CALL *SetSwapChainDebugName)(NRI_NAME_REF(SwapChain) swapChain, const char* name);
-    NRI_NAME(Texture)* const* (NRI_CALL *GetSwapChainTextures)(const NRI_NAME_REF(SwapChain) swapChain, uint32_t NRI_REF textureNum, NRI_NAME_REF(Format) format);
+    NRI_NAME(Texture)* const* (NRI_CALL *GetSwapChainTextures)(const NRI_NAME_REF(SwapChain) swapChain, uint32_t NRI_REF textureNum);
     uint32_t (NRI_CALL *AcquireNextSwapChainTexture)(NRI_NAME_REF(SwapChain) swapChain);
     NRI_NAME(Result) (NRI_CALL *SwapChainPresent)(NRI_NAME_REF(SwapChain) swapChain);
     NRI_NAME(Result) (NRI_CALL *SetSwapChainHdrMetadata)(NRI_NAME_REF(SwapChain) swapChain, const NRI_NAME_REF(HdrMetadata) hdrMetadata);

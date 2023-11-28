@@ -18,6 +18,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "CommandAllocatorVal.h"
 #include "CommandBufferVal.h"
 #include "DescriptorVal.h"
+#include "DescriptorSetVal.h"
 #include "DescriptorPoolVal.h"
 #include "FenceVal.h"
 #include "FrameBufferVal.h"
@@ -225,15 +226,15 @@ Result DeviceVal::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer)
     if (result == Result::SUCCESS)
     {
         RETURN_ON_FAILURE(this, bufferImpl != nullptr, Result::FAILURE, "Unexpected error: 'bufferImpl' is NULL.");
-        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, *bufferImpl, bufferDesc);
+        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, *bufferImpl);
     }
 
     return result;
 }
 
-static inline uint16_t GetMaxMipNum(uint16_t w, uint16_t h, uint16_t d)
+static inline Mip_t GetMaxMipNum(uint16_t w, uint16_t h, uint16_t d)
 {
-    uint16_t mipNum = 1;
+    Mip_t mipNum = 1;
 
     while (w > 1 || h > 1 || d > 1)
     {
@@ -269,7 +270,7 @@ Result DeviceVal::CreateTexture(const TextureDesc& textureDesc, Texture*& textur
     RETURN_ON_FAILURE(this, textureDesc.mipNum != 0, Result::INVALID_ARGUMENT,
         "Can't create Texture: 'textureDesc.mipNum' can't be 0.");
 
-    uint16_t maxMipNum = GetMaxMipNum(textureDesc.width, textureDesc.height, textureDesc.depth);
+    Mip_t maxMipNum = GetMaxMipNum(textureDesc.width, textureDesc.height, textureDesc.depth);
     RETURN_ON_FAILURE(this, textureDesc.mipNum <= maxMipNum, Result::INVALID_ARGUMENT,
         "Can't create Texture: 'textureDesc.mipNum = %u' can't be > %u.", textureDesc.mipNum, maxMipNum);
 
@@ -285,7 +286,7 @@ Result DeviceVal::CreateTexture(const TextureDesc& textureDesc, Texture*& textur
     if (result == Result::SUCCESS)
     {
         RETURN_ON_FAILURE(this, textureImpl != nullptr, Result::FAILURE, "Unexpected error: 'textureImpl' is NULL.");
-        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl, textureDesc);
+        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl);
     }
 
     return result;
@@ -1069,20 +1070,23 @@ Result DeviceVal::CreateCommandBufferVK(const CommandBufferVKDesc& commandBuffer
     return result;
 }
 
-Result DeviceVal::CreateDescriptorPoolVK(NRIVkDescriptorPool vkDescriptorPool, DescriptorPool*& descriptorPool)
+Result DeviceVal::CreateDescriptorPoolVK(const DescriptorPoolVKDesc& descriptorPoolVKDesc, DescriptorPool*& descriptorPool)
 {
-    RETURN_ON_FAILURE(this, vkDescriptorPool != 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, descriptorPoolVKDesc.vkDescriptorPool != 0, Result::INVALID_ARGUMENT,
         "Can't create DescriptorPool: 'vkDescriptorPool' is invalid.");
 
+    RETURN_ON_FAILURE(this, descriptorPoolVKDesc.descriptorSetMaxNum != 0, Result::INVALID_ARGUMENT,
+        "Can't create DescriptorPool: 'descriptorSetMaxNum' can't be 0.");
+
     DescriptorPool* descriptorPoolImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateDescriptorPoolVK(m_Device, vkDescriptorPool, descriptorPoolImpl);
+    const Result result = m_WrapperVKAPI.CreateDescriptorPoolVK(m_Device, descriptorPoolVKDesc, descriptorPoolImpl);
 
     if (result == Result::SUCCESS)
     {
         RETURN_ON_FAILURE(this, descriptorPoolImpl != nullptr, Result::FAILURE,
             "Can't create DescriptorPool: unexpected error.");
 
-        descriptorPool = (DescriptorPool*)Allocate<DescriptorPoolVal>(GetStdAllocator(), *this, *descriptorPoolImpl);
+        descriptorPool = (DescriptorPool*)Allocate<DescriptorPoolVal>(GetStdAllocator(), *this, *descriptorPoolImpl, descriptorPoolVKDesc.descriptorSetMaxNum);
     }
 
     return result;
@@ -1096,7 +1100,7 @@ Result DeviceVal::CreateBufferVK(const BufferVKDesc& bufferDesc, Buffer*& buffer
     RETURN_ON_FAILURE(this, bufferDesc.memory != nullptr, Result::INVALID_ARGUMENT,
         "Can't create Buffer: 'bufferDesc.memory' is invalid.");
 
-    RETURN_ON_FAILURE(this, bufferDesc.bufferSize > 0, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferDesc.size > 0, Result::INVALID_ARGUMENT,
         "Can't create Buffer: 'bufferDesc.bufferSize' is 0.");
 
     Buffer* bufferImpl = nullptr;
@@ -1107,7 +1111,7 @@ Result DeviceVal::CreateBufferVK(const BufferVKDesc& bufferDesc, Buffer*& buffer
         RETURN_ON_FAILURE(this, bufferImpl != nullptr, Result::FAILURE,
             "Can't create Buffer: unexpected error.");
 
-        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, *bufferImpl, bufferDesc);
+        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, *bufferImpl);
     }
 
     return result;
@@ -1138,7 +1142,7 @@ Result DeviceVal::CreateTextureVK(const TextureVKDesc& textureVKDesc, Texture*& 
         RETURN_ON_FAILURE(this, textureImpl != nullptr, Result::FAILURE,
             "Can't create Texture: unexpected error.");
 
-        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl, textureVKDesc);
+        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl);
     }
 
     return result;
@@ -1280,7 +1284,7 @@ Result DeviceVal::CreateBufferD3D11(const BufferD3D11Desc& bufferDesc, Buffer*& 
         RETURN_ON_FAILURE(this, bufferImpl != nullptr, Result::FAILURE,
             "Can't create Buffer: unexpected error.");
 
-        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, *bufferImpl, bufferDesc);
+        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, *bufferImpl);
     }
 
     return result;
@@ -1299,7 +1303,7 @@ Result DeviceVal::CreateTextureD3D11(const TextureD3D11Desc& textureDesc, Textur
         RETURN_ON_FAILURE(this, textureImpl != nullptr, Result::FAILURE,
             "Can't create Texture: unexpected error.");
 
-        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl, textureDesc);
+        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl);
     }
 
     return result;
@@ -1344,7 +1348,7 @@ Result DeviceVal::CreateBufferD3D12(const BufferD3D12Desc& bufferDesc, Buffer*& 
         RETURN_ON_FAILURE(this, bufferImpl != nullptr, Result::FAILURE,
             "Can't create Buffer: unexpected error.");
 
-        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, *bufferImpl, bufferDesc);
+        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, *bufferImpl);
     }
 
     return result;
@@ -1363,7 +1367,7 @@ Result DeviceVal::CreateTextureD3D12(const TextureD3D12Desc& textureDesc, Textur
         RETURN_ON_FAILURE(this, textureImpl != nullptr, Result::FAILURE,
             "Can't create Texture: unexpected error.");
 
-        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl, textureDesc);
+        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, *textureImpl);
     }
 
     return result;

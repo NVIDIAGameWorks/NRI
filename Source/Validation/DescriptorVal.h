@@ -42,7 +42,7 @@ struct DescriptorVal : public DeviceObjectVal<Descriptor>
     DescriptorVal(DeviceVal& device, Descriptor& descriptor);
 
     inline uint64_t GetNativeObject(uint32_t nodeIndex) const
-    { return m_CoreAPI.GetDescriptorNativeObject(m_ImplObject, nodeIndex); }
+    { return GetCoreInterface().GetDescriptorNativeObject(GetImpl(), nodeIndex); }
 
     inline bool IsBufferView() const
     { return m_ResourceType == ResourceType::BUFFER; }

@@ -17,6 +17,16 @@ static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device)
     return ((const DeviceD3D12&)device).GetDesc();
 }
 
+static const BufferDesc& NRI_CALL GetBufferDesc(const Buffer& buffer)
+{
+    return ((const BufferD3D12&)buffer).GetDesc();
+}
+
+static const TextureDesc& NRI_CALL GetTextureDesc(const Texture& texture)
+{
+    return ((const TextureD3D12&)texture).GetDesc();
+}
+
 static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQueueType, CommandQueue*& commandQueue)
 {
     return ((DeviceD3D12&)device).GetCommandQueue(commandQueueType, commandQueue);
@@ -106,60 +116,90 @@ static Result NRI_CALL CreateQueryPool(Device& device, const QueryPoolDesc& quer
 
 static void NRI_CALL DestroyCommandAllocator(CommandAllocator& commandAllocator)
 {
+    if(!(&commandAllocator))
+        return;
+
     DeviceD3D12& device = ((CommandAllocatorD3D12&)commandAllocator).GetDevice();
     device.DestroyCommandAllocator(commandAllocator);
 }
 
 static void NRI_CALL DestroyDescriptorPool(DescriptorPool& descriptorPool)
 {
+    if(!(&descriptorPool))
+        return;
+
     DeviceD3D12& device = ((DescriptorPoolD3D12&)descriptorPool).GetDevice();
     device.DestroyDescriptorPool(descriptorPool);
 }
 
 static void NRI_CALL DestroyBuffer(Buffer& buffer)
 {
+    if(!(&buffer))
+        return;
+
     DeviceD3D12& device = ((BufferD3D12&)buffer).GetDevice();
     device.DestroyBuffer(buffer);
 }
 
 static void NRI_CALL DestroyTexture(Texture& texture)
 {
+    if(!(&texture))
+        return;
+
     DeviceD3D12& device = ((TextureD3D12&)texture).GetDevice();
     device.DestroyTexture(texture);
 }
 
 static void NRI_CALL DestroyDescriptor(Descriptor& descriptor)
 {
+    if(!(&descriptor))
+        return;
+
     DeviceD3D12& device = ((DescriptorD3D12&)descriptor).GetDevice();
     device.DestroyDescriptor(descriptor);
 }
 
 static void NRI_CALL DestroyPipelineLayout(PipelineLayout& pipelineLayout)
 {
+    if(!(&pipelineLayout))
+        return;
+
     DeviceD3D12& device = ((PipelineLayoutD3D12&)pipelineLayout).GetDevice();
     device.DestroyPipelineLayout(pipelineLayout);
 }
 
 static void NRI_CALL DestroyPipeline(Pipeline& pipeline)
 {
+    if(!(&pipeline))
+        return;
+
     DeviceD3D12& device = ((PipelineD3D12&)pipeline).GetDevice();
     device.DestroyPipeline(pipeline);
 }
 
 static void NRI_CALL DestroyFence(Fence& fence)
 {
+    if(!(&fence))
+        return;
+
     DeviceD3D12& device = ((FenceD3D12&)fence).GetDevice();
     device.DestroyFence(fence);
 }
 
 static void NRI_CALL DestroyFrameBuffer(FrameBuffer& frameBuffer)
 {
+    if(!(&frameBuffer))
+        return;
+
     DeviceD3D12& device = ((FrameBufferD3D12&)frameBuffer).GetDevice();
     device.DestroyFrameBuffer(frameBuffer);
 }
 
 static void NRI_CALL DestroyQueryPool(QueryPool& queryPool)
 {
+    if(!(&queryPool))
+        return;
+
     DeviceD3D12& device = ((QueryPoolD3D12&)queryPool).GetDevice();
     device.DestroyQueryPool(queryPool);
 }
@@ -183,6 +223,9 @@ static Result NRI_CALL BindTextureMemory(Device& device, const TextureMemoryBind
 
 static void NRI_CALL FreeMemory(Memory& memory)
 {
+    if(!(&memory))
+        return;
+
     DeviceD3D12& device = ((MemoryD3D12&)memory).GetDevice();
     device.FreeMemory(memory);
 }
@@ -226,6 +269,8 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& coreInterface) const
 {
     coreInterface = {};
     coreInterface.GetDeviceDesc = ::GetDeviceDesc;
+    coreInterface.GetBufferDesc = ::GetBufferDesc;
+    coreInterface.GetTextureDesc = ::GetTextureDesc;
     coreInterface.GetFormatSupport = ::GetFormatSupport;
     coreInterface.GetCommandQueue = ::GetCommandQueue;
     coreInterface.CreateCommandAllocator = ::CreateCommandAllocator;
@@ -289,6 +334,9 @@ static Result NRI_CALL CreateSwapChain(Device& device, const SwapChainDesc& swap
 
 static void NRI_CALL DestroySwapChain(SwapChain& swapChain)
 {
+    if(!(&swapChain))
+        return;
+
     DeviceD3D12& device = ((SwapChainD3D12&)swapChain).GetDevice();
     device.DestroySwapChain(swapChain);
 }
@@ -373,6 +421,9 @@ static Result NRI_CALL CreateAccelerationStructure(Device& device, const Acceler
 
 static void NRI_CALL DestroyAccelerationStructure(AccelerationStructure& accelerationStructure)
 {
+    if(!(&accelerationStructure))
+        return;
+
     DeviceD3D12& device = ((AccelerationStructureD3D12&)accelerationStructure).GetDevice();
     device.DestroyAccelerationStructure(accelerationStructure);
 }
