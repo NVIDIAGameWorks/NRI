@@ -63,7 +63,6 @@ struct DeviceD3D11 final : public DeviceBase
     Result CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout);
     Result CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline);
     Result CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline);
-    Result CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc, FrameBuffer*& frameBuffer);
     Result CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool);
     Result CreateFence(uint64_t initialValue, Fence*& queueSemaphore);
     void DestroyCommandAllocator(CommandAllocator& commandAllocator);
@@ -73,7 +72,6 @@ struct DeviceD3D11 final : public DeviceBase
     void DestroyDescriptor(Descriptor& descriptor);
     void DestroyPipelineLayout(PipelineLayout& pipelineLayout);
     void DestroyPipeline(Pipeline& pipeline);
-    void DestroyFrameBuffer(FrameBuffer& frameBuffer);
     void DestroyQueryPool(QueryPool& queryPool);
     void DestroyFence(Fence& fence);
     Result AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory);

@@ -65,8 +65,9 @@ inline void FenceVK::QueueSignal(CommandQueueVK& commandQueue, uint64_t value)
 
 inline void FenceVK::QueueWait(CommandQueueVK& commandQueue, uint64_t value)
 {
+    VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT; // TODO: matches D3D?
     VkTimelineSemaphoreSubmitInfo timelineInfo = { VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO, nullptr, 1, &value, 0, nullptr };
-    VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO, &timelineInfo, 1, &m_Fence, nullptr, 0, nullptr, 0, nullptr };
+    VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO, &timelineInfo, 1, &m_Fence, &waitDstStageMask, 0, nullptr, 0, nullptr };
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.QueueSubmit((VkQueue)commandQueue, 1, &submitInfo, VK_NULL_HANDLE);

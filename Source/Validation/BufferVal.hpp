@@ -8,30 +8,25 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#pragma region [  Core  ]
+#pragma region[  Core  ]
 
-static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name)
-{
+static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name) {
     ((BufferVal&)buffer).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer, uint32_t nodeIndex)
-{
+static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer, uint32_t nodeIndex) {
     return ((BufferVal&)buffer).GetNativeObject(nodeIndex);
 }
 
-static void NRI_CALL GetBufferMemoryInfo(const Buffer& buffer, MemoryLocation memoryLocation, MemoryDesc& memoryDesc)
-{
+static void NRI_CALL GetBufferMemoryInfo(const Buffer& buffer, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     ((BufferVal&)buffer).GetMemoryInfo(memoryLocation, memoryDesc);
 }
 
-static void* NRI_CALL MapBuffer(Buffer& buffer, uint64_t offset, uint64_t size)
-{
+static void* NRI_CALL MapBuffer(Buffer& buffer, uint64_t offset, uint64_t size) {
     return ((BufferVal&)buffer).Map(offset, size);
 }
 
-static void NRI_CALL UnmapBuffer(Buffer& buffer)
-{
+static void NRI_CALL UnmapBuffer(Buffer& buffer) {
     ((BufferVal&)buffer).Unmap();
 }
 

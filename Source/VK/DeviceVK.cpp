@@ -15,7 +15,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "TextureVK.h"
 #include "BufferVK.h"
 #include "DescriptorVK.h"
-#include "FrameBufferVK.h"
 #include "FenceVK.h"
 #include "SwapChainVK.h"
 #include "QueryPoolVK.h"
@@ -834,24 +833,24 @@ void DeviceVK::FillDesc(bool enableValidation)
     m_Desc.viewportBoundsRange[0] = int32_t(limits.viewportBoundsRange[0]);
     m_Desc.viewportBoundsRange[1] = int32_t(limits.viewportBoundsRange[1]);
 
-    m_Desc.frameBufferMaxDim = std::min(limits.maxFramebufferWidth, limits.maxFramebufferHeight);
-    m_Desc.frameBufferLayerMaxNum = limits.maxFramebufferLayers;
-    m_Desc.framebufferColorAttachmentMaxNum = limits.maxColorAttachments;
+    m_Desc.attachmentMaxDim = (Dim_t)std::min(limits.maxFramebufferWidth, limits.maxFramebufferHeight);
+    m_Desc.attachmentLayerMaxNum = (Dim_t)limits.maxFramebufferLayers;
+    m_Desc.colorAttachmentMaxNum = (Dim_t)limits.maxColorAttachments;
 
-    m_Desc.frameBufferColorSampleMaxNum = (uint8_t)(limits.framebufferColorSampleCounts);
-    m_Desc.frameBufferDepthSampleMaxNum = (uint8_t)(limits.framebufferDepthSampleCounts);
-    m_Desc.frameBufferStencilSampleMaxNum = (uint8_t)(limits.framebufferStencilSampleCounts);
-    m_Desc.frameBufferNoAttachmentsSampleMaxNum = (uint8_t)(limits.framebufferNoAttachmentsSampleCounts);
-    m_Desc.textureColorSampleMaxNum = (uint8_t)(limits.sampledImageColorSampleCounts);
-    m_Desc.textureIntegerSampleMaxNum = (uint8_t)(limits.sampledImageIntegerSampleCounts);
-    m_Desc.textureDepthSampleMaxNum = (uint8_t)(limits.sampledImageDepthSampleCounts);
-    m_Desc.textureStencilSampleMaxNum = (uint8_t)(limits.sampledImageStencilSampleCounts);
-    m_Desc.storageTextureSampleMaxNum = (uint8_t)(limits.storageImageSampleCounts);
+    m_Desc.colorSampleMaxNum = (Sample_t)limits.framebufferColorSampleCounts;
+    m_Desc.depthSampleMaxNum = (Sample_t)limits.framebufferDepthSampleCounts;
+    m_Desc.stencilSampleMaxNum = (Sample_t)limits.framebufferStencilSampleCounts;
+    m_Desc.zeroAttachmentsSampleMaxNum = (Sample_t)limits.framebufferNoAttachmentsSampleCounts;
+    m_Desc.textureColorSampleMaxNum = (Sample_t)limits.sampledImageColorSampleCounts;
+    m_Desc.textureIntegerSampleMaxNum = (Sample_t)limits.sampledImageIntegerSampleCounts;
+    m_Desc.textureDepthSampleMaxNum = (Sample_t)limits.sampledImageDepthSampleCounts;
+    m_Desc.textureStencilSampleMaxNum = (Sample_t)limits.sampledImageStencilSampleCounts;
+    m_Desc.storageTextureSampleMaxNum = (Sample_t)limits.storageImageSampleCounts;
 
-    m_Desc.texture1DMaxDim = limits.maxImageDimension1D;
-    m_Desc.texture2DMaxDim = limits.maxImageDimension2D;
-    m_Desc.texture3DMaxDim = limits.maxImageDimension3D;
-    m_Desc.textureArrayMaxDim = limits.maxImageArrayLayers;
+    m_Desc.texture1DMaxDim = (Dim_t)limits.maxImageDimension1D;
+    m_Desc.texture2DMaxDim = (Dim_t)limits.maxImageDimension2D;
+    m_Desc.texture3DMaxDim = (Dim_t)limits.maxImageDimension3D;
+    m_Desc.textureArrayMaxDim = (Dim_t)limits.maxImageArrayLayers;
     m_Desc.texelBufferMaxDim = limits.maxTexelBufferElements;
 
     m_Desc.memoryAllocationMaxNum = limits.maxMemoryAllocationCount;
@@ -1403,7 +1402,6 @@ Result DeviceVK::ResolveDispatchTable()
     RESOLVE_DEVICE_FUNCTION(CreateBufferView);
     RESOLVE_DEVICE_FUNCTION(CreateImageView);
     RESOLVE_DEVICE_FUNCTION(CreateSampler);
-    RESOLVE_DEVICE_FUNCTION(CreateRenderPass);
     RESOLVE_DEVICE_FUNCTION(CreateFramebuffer);
     RESOLVE_DEVICE_FUNCTION(CreateQueryPool);
     RESOLVE_DEVICE_FUNCTION(CreateCommandPool);
@@ -1421,7 +1419,6 @@ Result DeviceVK::ResolveDispatchTable()
     RESOLVE_DEVICE_FUNCTION(DestroyBufferView);
     RESOLVE_DEVICE_FUNCTION(DestroyImageView);
     RESOLVE_DEVICE_FUNCTION(DestroySampler);
-    RESOLVE_DEVICE_FUNCTION(DestroyRenderPass);
     RESOLVE_DEVICE_FUNCTION(DestroyFramebuffer);
     RESOLVE_DEVICE_FUNCTION(DestroyQueryPool);
     RESOLVE_DEVICE_FUNCTION(DestroyCommandPool);
@@ -1477,7 +1474,8 @@ Result DeviceVK::ResolveDispatchTable()
     RESOLVE_DEVICE_FUNCTION(CmdSetStencilReference);
     RESOLVE_DEVICE_FUNCTION(CmdClearAttachments);
     RESOLVE_DEVICE_FUNCTION(CmdClearColorImage);
-    RESOLVE_DEVICE_FUNCTION(CmdBeginRenderPass);
+    RESOLVE_DEVICE_FUNCTION(CmdBeginRendering);
+    RESOLVE_DEVICE_FUNCTION(CmdEndRendering);
     RESOLVE_DEVICE_FUNCTION(CmdBindVertexBuffers);
     RESOLVE_DEVICE_FUNCTION(CmdBindIndexBuffer);
     RESOLVE_DEVICE_FUNCTION(CmdBindPipeline);
@@ -1499,7 +1497,6 @@ Result DeviceVK::ResolveDispatchTable()
     RESOLVE_DEVICE_FUNCTION(CmdWriteTimestamp);
     RESOLVE_DEVICE_FUNCTION(CmdCopyQueryPoolResults);
     RESOLVE_DEVICE_FUNCTION(CmdResetQueryPool);
-    RESOLVE_DEVICE_FUNCTION(CmdEndRenderPass);
     RESOLVE_DEVICE_FUNCTION(CmdFillBuffer);
     RESOLVE_DEVICE_FUNCTION(EndCommandBuffer);
 
@@ -1625,11 +1622,6 @@ inline Result DeviceVK::CreatePipeline(const GraphicsPipelineDesc& graphicsPipel
 inline Result DeviceVK::CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline)
 {
     return CreateImplementation<PipelineVK>(pipeline, computePipelineDesc);
-}
-
-inline Result DeviceVK::CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc, FrameBuffer*& frameBuffer)
-{
-    return CreateImplementation<FrameBufferVK>(frameBuffer, frameBufferDesc);
 }
 
 inline Result DeviceVK::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool)
@@ -1787,11 +1779,6 @@ inline void DeviceVK::DestroyPipelineLayout(PipelineLayout& pipelineLayout)
 inline void DeviceVK::DestroyPipeline(Pipeline& pipeline)
 {
     Deallocate(GetStdAllocator(), (PipelineVK*)&pipeline);
-}
-
-inline void DeviceVK::DestroyFrameBuffer(FrameBuffer& frameBuffer)
-{
-    Deallocate(GetStdAllocator(), (FrameBufferVK*)&frameBuffer);
 }
 
 inline void DeviceVK::DestroyQueryPool(QueryPool& queryPool)

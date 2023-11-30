@@ -10,18 +10,16 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct CommandQueueVal;
 
-struct FenceVal : public DeviceObjectVal<Fence>
-{
-    inline FenceVal(DeviceVal& device, Fence& queueSemaphore) : DeviceObjectVal(device, queueSemaphore)
-    {}
+struct FenceVal : public DeviceObjectVal<Fence> {
+    inline FenceVal(DeviceVal& device, Fence* queueSemaphore) : DeviceObjectVal(device, queueSemaphore) {
+    }
 
-    inline ~FenceVal()
-    {}
+    inline ~FenceVal() {
+    }
 
     //================================================================================================================
     // NRI
@@ -34,4 +32,4 @@ struct FenceVal : public DeviceObjectVal<Fence>
     void SetDebugName(const char* name);
 };
 
-}
+} // namespace nri

@@ -22,21 +22,12 @@ PipelineVK::~PipelineVK()
     const auto& vk = m_Device.GetDispatchTable();
     if (m_Handle != VK_NULL_HANDLE)
         vk.DestroyPipeline(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
-
-    if (m_RenderPass != VK_NULL_HANDLE)
-        vk.DestroyRenderPass(m_Device, m_RenderPass, m_Device.GetAllocationCallbacks());
 }
 
 Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
 {
     m_OwnsNativeObjects = true;
     m_BindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-
-    const PipelineLayoutVK& pipelineLayoutVK = *(const PipelineLayoutVK*)graphicsPipelineDesc.pipelineLayout;
-
-    Result result = CreateRenderPass(graphicsPipelineDesc.outputMerger, graphicsPipelineDesc.rasterization);
-    if (result != Result::SUCCESS)
-        return result;
 
     VkPipelineVertexInputStateCreateInfo vertexInputState = {};
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {};
@@ -83,9 +74,27 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
     FillColorBlendState(graphicsPipelineDesc, colorBlendState);
     FillDynamicState(dynamicState);
 
+    const PipelineLayoutVK& pipelineLayoutVK = *(const PipelineLayoutVK*)graphicsPipelineDesc.pipelineLayout;
+
+    VkFormat* colorFormats = graphicsPipelineDesc.outputMerger ? STACK_ALLOC(VkFormat, graphicsPipelineDesc.outputMerger->colorNum) : nullptr;
+
+    VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {};
+    pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+    if (graphicsPipelineDesc.outputMerger)
+    {
+        for (uint32_t i = 0; i < graphicsPipelineDesc.outputMerger->colorNum; i++)
+            colorFormats[i] = GetVkFormat(graphicsPipelineDesc.outputMerger->color[i].format);
+
+        //pipelineRenderingCreateInfo.viewMask; // TODO
+        pipelineRenderingCreateInfo.colorAttachmentCount = graphicsPipelineDesc.outputMerger->colorNum;
+        pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats;
+        pipelineRenderingCreateInfo.depthAttachmentFormat = GetVkFormat(graphicsPipelineDesc.outputMerger->depthStencilFormat);
+        pipelineRenderingCreateInfo.stencilAttachmentFormat = GetVkFormat(graphicsPipelineDesc.outputMerger->depthStencilFormat);
+    }
+
     const VkGraphicsPipelineCreateInfo info = {
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        nullptr,
+        &pipelineRenderingCreateInfo,
         (VkPipelineCreateFlags)0,
         graphicsPipelineDesc.shaderStageNum,
         stages,
@@ -99,7 +108,7 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
         &colorBlendState,
         &dynamicState, // TODO: do we need dynamic state?
         pipelineLayoutVK,
-        m_RenderPass,
+        VK_NULL_HANDLE,
         0,
         VK_NULL_HANDLE,
         -1
@@ -416,7 +425,7 @@ void PipelineVK::FillMultisampleState(const GraphicsPipelineDesc& graphicsPipeli
         return;
 
     const RasterizationDesc& rasterization = *graphicsPipelineDesc.rasterization;
-    state.rasterizationSamples = GetSampleCount(rasterization.sampleNum);
+    state.rasterizationSamples = (VkSampleCountFlagBits)rasterization.sampleNum;
     state.sampleShadingEnable = false;
     state.minSampleShading = 0.0f;
     *const_cast<VkSampleMask*>(state.pSampleMask) = rasterization.sampleMask;
@@ -505,103 +514,6 @@ void PipelineVK::FillDynamicState(VkPipelineDynamicStateCreateInfo& state) const
 
     state.dynamicStateCount = (uint32_t)DYNAMIC_STATE.size();
     state.pDynamicStates = DYNAMIC_STATE.data();
-}
-
-Result PipelineVK::CreateRenderPass(const OutputMergerDesc* outputMerger, const RasterizationDesc* rasterizationDesc)
-{
-    bool hasDepthStencil = false;
-    uint32_t attachmentNum = 0;
-    uint32_t colorAttachmentNum = 0;
-    VkAttachmentDescription* attachmentDescs = nullptr;
-    VkAttachmentReference* colorReferences = nullptr;
-
-    if (outputMerger != nullptr)
-    {
-        hasDepthStencil = outputMerger->depthStencilFormat != Format::UNKNOWN;
-        colorAttachmentNum = outputMerger->colorNum;
-        attachmentNum = outputMerger->colorNum + (hasDepthStencil ? 1 : 0);
-        attachmentDescs = STACK_ALLOC(VkAttachmentDescription, attachmentNum);
-
-        const VkSampleCountFlagBits sampleNum = rasterizationDesc ?
-            (VkSampleCountFlagBits)rasterizationDesc->sampleNum : VK_SAMPLE_COUNT_1_BIT;
-
-        for (uint32_t i = 0; i < outputMerger->colorNum; i++)
-        {
-            attachmentDescs[i] = {
-                (VkAttachmentDescriptionFlags)0,
-                GetVkFormat(outputMerger->color[i].format),
-                sampleNum,
-                VK_ATTACHMENT_LOAD_OP_LOAD,
-                VK_ATTACHMENT_STORE_OP_STORE,
-                VK_ATTACHMENT_LOAD_OP_LOAD,
-                VK_ATTACHMENT_STORE_OP_STORE,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            };
-        }
-
-        if (hasDepthStencil)
-        {
-            attachmentDescs[outputMerger->colorNum] = {
-                (VkAttachmentDescriptionFlags)0,
-                GetVkFormat(outputMerger->depthStencilFormat),
-                sampleNum,
-                VK_ATTACHMENT_LOAD_OP_LOAD,
-                VK_ATTACHMENT_STORE_OP_STORE,
-                VK_ATTACHMENT_LOAD_OP_LOAD,
-                VK_ATTACHMENT_STORE_OP_STORE,
-                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            };
-        }
-
-        colorReferences = STACK_ALLOC(VkAttachmentReference, outputMerger->colorNum);
-        for (uint32_t i = 0; i < outputMerger->colorNum; i++)
-        {
-            colorReferences[i] = {
-                i,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-            };
-        }
-    }
-
-    const VkAttachmentReference depthReference = {
-        colorAttachmentNum,
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-    };
-
-    const VkSubpassDescription subpass = {
-        (VkSubpassDescriptionFlags)0,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        0,
-        nullptr,
-        colorAttachmentNum,
-        colorReferences,
-        nullptr,
-        hasDepthStencil ? &depthReference : nullptr,
-        0,
-        nullptr
-    };
-
-    const VkRenderPassCreateInfo info = {
-        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        nullptr,
-        (VkRenderPassCreateFlags)0,
-        attachmentNum,
-        attachmentDescs,
-        1,
-        &subpass,
-        0,
-        nullptr
-    };
-
-    const auto& vk = m_Device.GetDispatchTable();
-    const VkResult result = vk.CreateRenderPass(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_RenderPass);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-        "Can't create a render pass for a pipeline: vkCreateRenderPass returned %d.", (int32_t)result);
-
-    return Result::SUCCESS;
 }
 
 void PipelineVK::FillGroupIndices(const RayTracingPipelineDesc& rayTracingPipelineDesc, uint32_t* groupIndices)

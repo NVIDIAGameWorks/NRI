@@ -97,11 +97,6 @@ static Result NRI_CALL CreateComputePipeline(Device& device, const ComputePipeli
     return ((DeviceVK&)device).CreatePipeline(computePipelineDesc, pipeline);
 }
 
-static Result NRI_CALL CreateFrameBuffer(Device& device, const FrameBufferDesc& frameBufferDesc, FrameBuffer*& frameBuffer)
-{
-    return ((DeviceVK&)device).CreateFrameBuffer(frameBufferDesc, frameBuffer);
-}
-
 static Result NRI_CALL CreateQueryPool(Device& device, const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool)
 {
     return ((DeviceVK&)device).CreateQueryPool(queryPoolDesc, queryPool);
@@ -168,14 +163,6 @@ static void NRI_CALL DestroyPipeline(Pipeline& pipeline)
     ((PipelineVK&)pipeline).GetDevice().DestroyPipeline(pipeline);
 }
 
-static void NRI_CALL DestroyFrameBuffer(FrameBuffer& frameBuffer)
-{
-    if(!(&frameBuffer))
-        return;
-
-    ((FrameBufferVK&)frameBuffer).GetDevice().DestroyFrameBuffer(frameBuffer);
-}
-
 static void NRI_CALL DestroyQueryPool(QueryPool& queryPool)
 {
     if(!(&queryPool))
@@ -235,11 +222,6 @@ static void NRI_CALL SetPipelineLayoutDebugName(PipelineLayout& pipelineLayout, 
     ((PipelineLayoutVK&)pipelineLayout).SetDebugName(name);
 }
 
-static void NRI_CALL SetFrameBufferDebugName(FrameBuffer& frameBuffer, const char* name)
-{
-    ((FrameBufferVK&)frameBuffer).SetDebugName(name);
-}
-
 static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name)
 {
     ((MemoryVK&)memory).SetDebugName(name);
@@ -270,7 +252,6 @@ Result DeviceVK::FillFunctionTable(CoreInterface& coreInterface) const
     coreInterface.CreatePipelineLayout = ::CreatePipelineLayout;
     coreInterface.CreateGraphicsPipeline = ::CreateGraphicsPipeline;
     coreInterface.CreateComputePipeline = ::CreateComputePipeline;
-    coreInterface.CreateFrameBuffer = ::CreateFrameBuffer;
     coreInterface.CreateQueryPool = ::CreateQueryPool;
     coreInterface.CreateFence = ::CreateFence;
     coreInterface.DestroyCommandAllocator = ::DestroyCommandAllocator;
@@ -280,7 +261,6 @@ Result DeviceVK::FillFunctionTable(CoreInterface& coreInterface) const
     coreInterface.DestroyDescriptor = ::DestroyDescriptor;
     coreInterface.DestroyPipelineLayout = ::DestroyPipelineLayout;
     coreInterface.DestroyPipeline = ::DestroyPipeline;
-    coreInterface.DestroyFrameBuffer = ::DestroyFrameBuffer;
     coreInterface.DestroyQueryPool = ::DestroyQueryPool;
     coreInterface.DestroyFence = ::DestroyFence;
     coreInterface.AllocateMemory = ::AllocateMemory;
@@ -290,7 +270,6 @@ Result DeviceVK::FillFunctionTable(CoreInterface& coreInterface) const
     coreInterface.SetDeviceDebugName = ::SetDeviceDebugName;
     coreInterface.SetPipelineDebugName = ::SetPipelineDebugName;
     coreInterface.SetPipelineLayoutDebugName = ::SetPipelineLayoutDebugName;
-    coreInterface.SetFrameBufferDebugName = ::SetFrameBufferDebugName;
     coreInterface.SetMemoryDebugName = ::SetMemoryDebugName;
     coreInterface.GetDeviceNativeObject = ::GetDeviceNativeObject;
 

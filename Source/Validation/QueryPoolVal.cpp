@@ -14,29 +14,23 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-QueryPoolVal::QueryPoolVal(DeviceVal& device, QueryPool& queryPool, QueryType queryType, uint32_t queryNum) :
-    DeviceObjectVal(device, queryPool),
-    m_DeviceState(device.GetStdAllocator()),
-    m_QueryType(queryType)
-{
+QueryPoolVal::QueryPoolVal(DeviceVal& device, QueryPool* queryPool, QueryType queryType, uint32_t queryNum)
+    : DeviceObjectVal(device, queryPool), m_DeviceState(device.GetStdAllocator()), m_QueryType(queryType) {
     m_QueryNum = queryNum;
 
-    if (queryNum != 0)
-    {
+    if (queryNum != 0) {
         const size_t batchNum = std::max(queryNum >> 6, 1u);
         m_DeviceState.resize(batchNum, 0);
     }
 }
 
-void QueryPoolVal::SetDebugName(const char* name)
-{
+void QueryPoolVal::SetDebugName(const char* name) {
     m_Name = name;
-    GetCoreInterface().SetQueryPoolDebugName(GetImpl(), name);
+    GetCoreInterface().SetQueryPoolDebugName(*GetImpl(), name);
 }
 
-uint32_t QueryPoolVal::GetQuerySize() const
-{
-    return GetCoreInterface().GetQuerySize(GetImpl());
+uint32_t QueryPoolVal::GetQuerySize() const {
+    return GetCoreInterface().GetQuerySize(*GetImpl());
 }
 
 bool QueryPoolVal::SetQueryState(uint32_t offset, bool state) // TODO: not inline
@@ -52,8 +46,7 @@ bool QueryPoolVal::SetQueryState(uint32_t offset, bool state) // TODO: not inlin
     return batchValue & bitIndex;
 }
 
-void QueryPoolVal::ResetQueries(uint32_t offset, uint32_t number)
-{
+void QueryPoolVal::ResetQueries(uint32_t offset, uint32_t number) {
     for (uint32_t i = 0; i < number; i++)
         SetQueryState(offset + i, false);
 }

@@ -78,7 +78,7 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
         desc.CPUAccessFlags = cpuAccessFlags;
 
         if (m_Desc.sampleNum == 1 && desc.Width == desc.Height && (m_Desc.arraySize % 6 == 0))
-            desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+            desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE; // TODO: valid assumption?
 
         hr = m_Device.GetDevice()->CreateTexture2D(&desc, nullptr, (ID3D11Texture2D**)&m_Texture);
     }

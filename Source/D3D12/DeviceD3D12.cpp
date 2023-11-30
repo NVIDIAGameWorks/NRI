@@ -16,7 +16,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "DescriptorSetD3D12.h"
 #include "DescriptorPoolD3D12.h"
 #include "FenceD3D12.h"
-#include "FrameBufferD3D12.h"
 #include "MemoryD3D12.h"
 #include "BufferD3D12.h"
 #include "TextureD3D12.h"
@@ -422,14 +421,14 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     m_Desc.viewportBoundsRange[0] = D3D12_VIEWPORT_BOUNDS_MIN;
     m_Desc.viewportBoundsRange[1] = D3D12_VIEWPORT_BOUNDS_MAX;
 
-    m_Desc.frameBufferMaxDim = D3D12_REQ_RENDER_TO_BUFFER_WINDOW_WIDTH;
-    m_Desc.frameBufferLayerMaxNum = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
-    m_Desc.framebufferColorAttachmentMaxNum = D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT;
+    m_Desc.attachmentMaxDim = D3D12_REQ_RENDER_TO_BUFFER_WINDOW_WIDTH;
+    m_Desc.attachmentLayerMaxNum = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
+    m_Desc.colorAttachmentMaxNum = D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT;
 
-    m_Desc.frameBufferColorSampleMaxNum = D3D12_MAX_MULTISAMPLE_SAMPLE_COUNT;
-    m_Desc.frameBufferDepthSampleMaxNum = D3D12_MAX_MULTISAMPLE_SAMPLE_COUNT;
-    m_Desc.frameBufferStencilSampleMaxNum = D3D12_MAX_MULTISAMPLE_SAMPLE_COUNT;
-    m_Desc.frameBufferNoAttachmentsSampleMaxNum = D3D12_MAX_MULTISAMPLE_SAMPLE_COUNT;
+    m_Desc.colorSampleMaxNum = D3D12_MAX_MULTISAMPLE_SAMPLE_COUNT;
+    m_Desc.depthSampleMaxNum = D3D12_MAX_MULTISAMPLE_SAMPLE_COUNT;
+    m_Desc.stencilSampleMaxNum = D3D12_MAX_MULTISAMPLE_SAMPLE_COUNT;
+    m_Desc.zeroAttachmentsSampleMaxNum = D3D12_MAX_MULTISAMPLE_SAMPLE_COUNT;
     m_Desc.textureColorSampleMaxNum = D3D12_MAX_MULTISAMPLE_SAMPLE_COUNT;
     m_Desc.textureIntegerSampleMaxNum = 1;
     m_Desc.textureDepthSampleMaxNum = D3D12_MAX_MULTISAMPLE_SAMPLE_COUNT;
@@ -740,11 +739,6 @@ inline Result DeviceD3D12::CreateFence(uint64_t initialValue, Fence*& fence)
     return CreateImplementation<FenceD3D12>(fence, initialValue);
 }
 
-inline Result DeviceD3D12::CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc, FrameBuffer*& frameBuffer)
-{
-    return CreateImplementation<FrameBufferD3D12>(frameBuffer, frameBufferDesc);
-}
-
 inline Result DeviceD3D12::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool)
 {
     return CreateImplementation<QueryPoolD3D12>(queryPool, queryPoolDesc);
@@ -808,11 +802,6 @@ inline void DeviceD3D12::DestroyPipeline(Pipeline& pipeline)
 inline void DeviceD3D12::DestroyFence(Fence& fence)
 {
     Deallocate(GetStdAllocator(), (FenceD3D12*)&fence);
-}
-
-inline void DeviceD3D12::DestroyFrameBuffer(FrameBuffer& frameBuffer)
-{
-    Deallocate(GetStdAllocator(), (FrameBufferD3D12*)&frameBuffer);
 }
 
 inline void DeviceD3D12::DestroyQueryPool(QueryPool& queryPool)

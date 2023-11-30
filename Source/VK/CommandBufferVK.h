@@ -19,7 +19,6 @@ struct DeviceVK;
 struct PipelineVK;
 struct PipelineLayoutVK;
 struct TextureVK;
-struct FrameBufferVK;
 
 struct CommandBufferVK
 {
@@ -53,8 +52,8 @@ struct CommandBufferVK
     void SetDescriptorPool(const DescriptorPool& descriptorPool);
     void PipelineBarrier(const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency);
 
-    void BeginRenderPass(const FrameBuffer& frameBuffer, RenderPassBeginFlag renderPassBeginFlag);
-    void EndRenderPass();
+    void BeginRendering(const AttachmentsDesc& attachmentsDesc);
+    void EndRendering();
     void SetViewports(const Viewport* viewports, uint32_t viewportNum);
     void SetScissors(const Rect* rects, uint32_t rectNum);
     void SetDepthBounds(float boundsMin, float boundsMax);
@@ -124,16 +123,18 @@ private:
     void CopyWholeTexture(const TextureVK& dstTexture, uint32_t dstNodeIndex, const TextureVK& srcTexture, uint32_t srcNodeIndex);
 
 private:
-    VkCommandBuffer m_Handle = VK_NULL_HANDLE;
-    uint32_t m_PhysicalDeviceIndex = 0;
     DeviceVK& m_Device;
+    const PipelineVK* m_CurrentPipeline = nullptr;
+    const PipelineLayoutVK* m_CurrentPipelineLayout = nullptr;
+    VkCommandBuffer m_Handle = VK_NULL_HANDLE;
+    VkCommandPool m_CommandPool = VK_NULL_HANDLE;
     CommandQueueType m_Type = (CommandQueueType)0;
     VkPipelineBindPoint m_CurrentPipelineBindPoint = VK_PIPELINE_BIND_POINT_MAX_ENUM;
     VkPipelineLayout m_CurrentPipelineLayoutHandle = VK_NULL_HANDLE;
-    const PipelineVK* m_CurrentPipeline = nullptr;
-    const PipelineLayoutVK* m_CurrentPipelineLayout = nullptr;
-    const FrameBufferVK* m_CurrentFrameBuffer = nullptr;
-    VkCommandPool m_CommandPool = VK_NULL_HANDLE;
+    uint32_t m_PhysicalDeviceIndex = 0;
+    Dim_t m_RenderLayerNum = 0;
+    Dim_t m_RenderWidth = 0;
+    Dim_t m_RenderHeight = 0;
 };
 
 }

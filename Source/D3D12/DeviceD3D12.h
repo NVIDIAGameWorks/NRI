@@ -121,7 +121,6 @@ struct DeviceD3D12 final : public DeviceBase
     Result CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline);
     Result CreatePipeline(const RayTracingPipelineDesc& rayTracingPipelineDesc, Pipeline*& pipeline);
     Result CreateFence(uint64_t initialValue, Fence*& fence);
-    Result CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc, FrameBuffer*& frameBuffer);
     Result CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool);
     Result CreateCommandBuffer(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer);
     Result CreateBuffer(const BufferD3D12Desc& bufferDesc, Buffer*& buffer);
@@ -136,7 +135,6 @@ struct DeviceD3D12 final : public DeviceBase
     void DestroyPipelineLayout(PipelineLayout& pipelineLayout);
     void DestroyPipeline(Pipeline& pipeline);
     void DestroyFence(Fence& queueSemaphore);
-    void DestroyFrameBuffer(FrameBuffer& frameBuffer);
     void DestroyQueryPool(QueryPool& queryPool);
     Result AllocateMemory(const MemoryType memoryType, uint64_t size, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);

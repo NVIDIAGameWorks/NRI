@@ -57,14 +57,14 @@ static void NRI_CALL CmdSetConstants(CommandBuffer& commandBuffer, uint32_t push
     ((CommandBufferD3D11&)commandBuffer).SetConstants(pushConstantIndex, data, size);
 }
 
-static void NRI_CALL CmdBeginRenderPass(CommandBuffer& commandBuffer, const FrameBuffer& frameBuffer, RenderPassBeginFlag renderPassBeginFlag)
+static void NRI_CALL CmdBeginRendering(CommandBuffer& commandBuffer, const AttachmentsDesc& attachmentsDesc)
 {
-    ((CommandBufferD3D11&)commandBuffer).BeginRenderPass(frameBuffer, renderPassBeginFlag);
+    ((CommandBufferD3D11&)commandBuffer).BeginRendering(attachmentsDesc);
 }
 
-static void NRI_CALL CmdEndRenderPass(CommandBuffer& commandBuffer)
+static void NRI_CALL CmdEndRendering(CommandBuffer& commandBuffer)
 {
-    ((CommandBufferD3D11&)commandBuffer).EndRenderPass();
+    ((CommandBufferD3D11&)commandBuffer).EndRendering();
 }
 
 static void NRI_CALL CmdSetViewports(CommandBuffer& commandBuffer, const Viewport* viewports, uint32_t viewportNum)

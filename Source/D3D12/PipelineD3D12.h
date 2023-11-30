@@ -44,7 +44,7 @@ struct PipelineD3D12
     inline uint32_t GetIAStreamStride(uint32_t streamSlot) const
     { return m_IAStreamStride[streamSlot]; }
 
-    inline uint8_t GetSampleNum() const
+    inline Sample_t GetSampleNum() const
     { return m_SampleNum; }
 
     Result Create(const GraphicsPipelineDesc& graphicsPipelineDesc);
@@ -81,7 +81,7 @@ private:
     const PipelineLayoutD3D12* m_PipelineLayout = nullptr;
     D3D_PRIMITIVE_TOPOLOGY m_PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
     Color32f m_BlendFactor = {};
-    uint8_t m_SampleNum = 1;
+    Sample_t m_SampleNum = 1;
     bool m_BlendEnabled = false;
     bool m_IsGraphicsPipeline = false;
 };

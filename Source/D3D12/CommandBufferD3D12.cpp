@@ -15,7 +15,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "DescriptorD3D12.h"
 #include "DescriptorSetD3D12.h"
 #include "DescriptorPoolD3D12.h"
-#include "FrameBufferD3D12.h"
 #include "PipelineD3D12.h"
 #include "PipelineLayoutD3D12.h"
 #include "QueryPoolD3D12.h"
@@ -90,7 +89,6 @@ inline Result CommandBufferD3D12::Begin(const DescriptorPool* descriptorPool)
     m_PipelineLayout = nullptr;
     m_IsGraphicsPipelineLayout = false;
     m_Pipeline = nullptr;
-    m_FrameBuffer = nullptr;
     m_PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
     return Result::SUCCESS;
@@ -137,16 +135,42 @@ inline void CommandBufferD3D12::SetSamplePositions(const SamplePosition* positio
 {
     if (m_GraphicsCommandList1)
     {
-        uint8_t sampleNum = m_Pipeline->GetSampleNum();
+        Sample_t sampleNum = m_Pipeline->GetSampleNum();
         uint32_t pixelNum = positionNum / sampleNum;
 
+        static_assert(sizeof(D3D12_SAMPLE_POSITION) == sizeof(SamplePosition));
         m_GraphicsCommandList1->SetSamplePositions(sampleNum, pixelNum, (D3D12_SAMPLE_POSITION*)positions);
     }
 }
 
 inline void CommandBufferD3D12::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum)
 {
-    m_FrameBuffer->Clear(m_GraphicsCommandList, clearDescs, clearDescNum, rects, rectNum);
+    D3D12_RECT* rectsD3D12 = STACK_ALLOC(D3D12_RECT, rectNum);
+    ConvertRects(rectsD3D12, rects, rectNum);
+
+    for (uint32_t i = 0; i < clearDescNum; i++)
+    {
+        if (AttachmentContentType::COLOR == clearDescs[i].attachmentContentType)
+            m_GraphicsCommandList->ClearRenderTargetView(m_RenderTargets[clearDescs[i].colorAttachmentIndex], &clearDescs[i].value.color32f.x, rectNum, rectsD3D12);
+        else if (m_DepthStencil.ptr)
+        {
+            D3D12_CLEAR_FLAGS clearFlags = (D3D12_CLEAR_FLAGS)0;
+            switch (clearDescs[i].attachmentContentType)
+            {
+            case AttachmentContentType::DEPTH:
+                clearFlags = D3D12_CLEAR_FLAG_DEPTH;
+                break;
+            case AttachmentContentType::STENCIL:
+                clearFlags = D3D12_CLEAR_FLAG_STENCIL;
+                break;
+            case AttachmentContentType::DEPTH_STENCIL:
+                clearFlags = D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL;
+                break;
+            }
+
+            m_GraphicsCommandList->ClearDepthStencilView(m_DepthStencil, clearFlags, clearDescs[i].value.depthStencil.depth, clearDescs[i].value.depthStencil.stencil, rectNum, rectsD3D12);
+        }
+    }
 }
 
 inline void CommandBufferD3D12::ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc)
@@ -191,15 +215,28 @@ inline void CommandBufferD3D12::ClearStorageTexture(const ClearStorageTextureDes
     }
 }
 
-inline void CommandBufferD3D12::BeginRenderPass(const FrameBuffer& frameBuffer, RenderPassBeginFlag renderPassBeginFlag)
+inline void CommandBufferD3D12::BeginRendering(const AttachmentsDesc& attachmentsDesc)
 {
-    m_FrameBuffer = (FrameBufferD3D12*)&frameBuffer;
-    m_FrameBuffer->Bind(m_GraphicsCommandList, renderPassBeginFlag);
-}
+    m_RenderTargetNum = attachmentsDesc.colors ? attachmentsDesc.colorNum : 0;
+    
+    uint32_t i = 0;
+    for (; i < m_RenderTargetNum; i++)
+    {
+        const DescriptorD3D12& descriptor = *(DescriptorD3D12*)attachmentsDesc.colors[i];
+        m_RenderTargets[i].ptr = descriptor.GetPointerCPU();
+    }
+    for (; i < (uint32_t)m_RenderTargets.size(); i++)
+        m_RenderTargets[i].ptr = NULL;
 
-inline void CommandBufferD3D12::EndRenderPass()
-{
-    m_FrameBuffer = nullptr;
+    if (attachmentsDesc.depthStencil)
+    {
+        const DescriptorD3D12& descriptor = *(DescriptorD3D12*)attachmentsDesc.depthStencil;
+        m_DepthStencil.ptr = descriptor.GetPointerCPU();
+    }
+    else
+        m_DepthStencil.ptr = NULL;
+
+    m_GraphicsCommandList->OMSetRenderTargets(m_RenderTargetNum, m_RenderTargets.data(), FALSE, m_DepthStencil.ptr ? &m_DepthStencil : nullptr);
 }
 
 inline void CommandBufferD3D12::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets)

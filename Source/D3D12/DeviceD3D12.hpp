@@ -104,11 +104,6 @@ static Result NRI_CALL CreateFence(Device& device, uint64_t initialValue, Fence*
     return ((DeviceD3D12&)device).CreateFence(initialValue, fence);
 }
 
-static Result NRI_CALL CreateFrameBuffer(Device& device, const FrameBufferDesc& frameBufferDesc, FrameBuffer*& frameBuffer)
-{
-    return ((DeviceD3D12&)device).CreateFrameBuffer(frameBufferDesc, frameBuffer);
-}
-
 static Result NRI_CALL CreateQueryPool(Device& device, const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool)
 {
     return ((DeviceD3D12&)device).CreateQueryPool(queryPoolDesc, queryPool);
@@ -186,15 +181,6 @@ static void NRI_CALL DestroyFence(Fence& fence)
     device.DestroyFence(fence);
 }
 
-static void NRI_CALL DestroyFrameBuffer(FrameBuffer& frameBuffer)
-{
-    if(!(&frameBuffer))
-        return;
-
-    DeviceD3D12& device = ((FrameBufferD3D12&)frameBuffer).GetDevice();
-    device.DestroyFrameBuffer(frameBuffer);
-}
-
 static void NRI_CALL DestroyQueryPool(QueryPool& queryPool)
 {
     if(!(&queryPool))
@@ -250,11 +236,6 @@ static void NRI_CALL SetPipelineLayoutDebugName(PipelineLayout& pipelineLayout, 
     ((PipelineLayoutD3D12&)pipelineLayout).SetDebugName(name);
 }
 
-static void NRI_CALL SetFrameBufferDebugName(FrameBuffer& frameBuffer, const char* name)
-{
-    ((FrameBufferD3D12&)frameBuffer).SetDebugName(name);
-}
-
 static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name)
 {
     ((MemoryD3D12&)memory).SetDebugName(name);
@@ -285,7 +266,6 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& coreInterface) const
     coreInterface.CreatePipelineLayout = ::CreatePipelineLayout;
     coreInterface.CreateGraphicsPipeline = ::CreateGraphicsPipeline;
     coreInterface.CreateComputePipeline = ::CreateComputePipeline;
-    coreInterface.CreateFrameBuffer = ::CreateFrameBuffer;
     coreInterface.CreateQueryPool = ::CreateQueryPool;
     coreInterface.CreateFence = ::CreateFence;
     coreInterface.DestroyCommandAllocator = ::DestroyCommandAllocator;
@@ -296,7 +276,6 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& coreInterface) const
     coreInterface.DestroyPipelineLayout = ::DestroyPipelineLayout;
     coreInterface.DestroyPipeline = ::DestroyPipeline;
     coreInterface.DestroyFence = ::DestroyFence;
-    coreInterface.DestroyFrameBuffer = ::DestroyFrameBuffer;
     coreInterface.DestroyQueryPool = ::DestroyQueryPool;
     coreInterface.AllocateMemory = ::AllocateMemory;
     coreInterface.BindBufferMemory = ::BindBufferMemory;
@@ -305,7 +284,6 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& coreInterface) const
     coreInterface.SetDeviceDebugName = ::SetDeviceDebugName;
     coreInterface.SetPipelineDebugName = ::SetPipelineDebugName;
     coreInterface.SetPipelineLayoutDebugName = ::SetPipelineLayoutDebugName;
-    coreInterface.SetFrameBufferDebugName = ::SetFrameBufferDebugName;
     coreInterface.SetMemoryDebugName = ::SetMemoryDebugName;
     coreInterface.GetDeviceNativeObject = ::GetDeviceNativeObject;
 

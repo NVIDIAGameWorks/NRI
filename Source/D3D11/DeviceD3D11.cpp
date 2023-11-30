@@ -17,7 +17,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "DescriptorSetD3D11.h"
 #include "DescriptorPoolD3D11.h"
 #include "FenceD3D11.h"
-#include "FrameBufferD3D11.h"
 #include "MemoryD3D11.h"
 #include "PipelineLayoutD3D11.h"
 #include "PipelineD3D11.h"
@@ -331,14 +330,14 @@ void DeviceD3D11::FillDesc(bool isValidationEnabled)
     m_Desc.viewportBoundsRange[0] = D3D11_VIEWPORT_BOUNDS_MIN;
     m_Desc.viewportBoundsRange[1] = D3D11_VIEWPORT_BOUNDS_MAX;
 
-    m_Desc.frameBufferMaxDim = D3D11_REQ_RENDER_TO_BUFFER_WINDOW_WIDTH;
-    m_Desc.frameBufferLayerMaxNum = D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
-    m_Desc.framebufferColorAttachmentMaxNum = D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT;
+    m_Desc.attachmentMaxDim = D3D11_REQ_RENDER_TO_BUFFER_WINDOW_WIDTH;
+    m_Desc.attachmentLayerMaxNum = D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
+    m_Desc.colorAttachmentMaxNum = D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT;
 
-    m_Desc.frameBufferColorSampleMaxNum = D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT;
-    m_Desc.frameBufferDepthSampleMaxNum = D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT;
-    m_Desc.frameBufferStencilSampleMaxNum = D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT;
-    m_Desc.frameBufferNoAttachmentsSampleMaxNum = D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT;
+    m_Desc.colorSampleMaxNum = D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT;
+    m_Desc.depthSampleMaxNum = D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT;
+    m_Desc.stencilSampleMaxNum = D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT;
+    m_Desc.zeroAttachmentsSampleMaxNum = D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT;
     m_Desc.textureColorSampleMaxNum = D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT;
     m_Desc.textureIntegerSampleMaxNum = 1;
     m_Desc.textureDepthSampleMaxNum = D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT;
@@ -666,13 +665,6 @@ inline Result DeviceD3D11::CreatePipeline(const ComputePipelineDesc& computePipe
     return res;
 }
 
-inline Result DeviceD3D11::CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc, FrameBuffer*& frameBuffer)
-{
-    frameBuffer = (FrameBuffer*)Allocate<FrameBufferD3D11>(GetStdAllocator(), *this, frameBufferDesc);
-
-    return Result::SUCCESS;
-}
-
 inline Result DeviceD3D11::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool)
 {
     return CreateImplementationWithNonEmptyConstructor<QueryPoolD3D11>(queryPool, *this, queryPoolDesc);
@@ -727,11 +719,6 @@ inline void DeviceD3D11::DestroyPipelineLayout(PipelineLayout& pipelineLayout)
 inline void DeviceD3D11::DestroyPipeline(Pipeline& pipeline)
 {
     Deallocate(GetStdAllocator(), (PipelineD3D11*)&pipeline);
-}
-
-inline void DeviceD3D11::DestroyFrameBuffer(FrameBuffer& frameBuffer)
-{
-    Deallocate(GetStdAllocator(), (FrameBufferD3D11*)&frameBuffer);
 }
 
 inline void DeviceD3D11::DestroyQueryPool(QueryPool& queryPool)

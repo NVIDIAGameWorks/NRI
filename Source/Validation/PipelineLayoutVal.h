@@ -10,22 +10,21 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
-struct PipelineLayoutVal : public DeviceObjectVal<PipelineLayout>
-{
-    PipelineLayoutVal(DeviceVal& device, PipelineLayout& pipelineLayout, const PipelineLayoutDesc& pipelineLayoutDesc);
+struct PipelineLayoutVal : public DeviceObjectVal<PipelineLayout> {
+    PipelineLayoutVal(DeviceVal& device, PipelineLayout* pipelineLayout, const PipelineLayoutDesc& pipelineLayoutDesc);
 
-    inline const PipelineLayoutDesc& GetPipelineLayoutDesc() const
-    { return m_PipelineLayoutDesc; }
+    inline const PipelineLayoutDesc& GetPipelineLayoutDesc() const {
+        return m_PipelineLayoutDesc;
+    }
 
     //================================================================================================================
     // NRI
     //================================================================================================================
     void SetDebugName(const char* name);
 
-private:
+  private:
     PipelineLayoutDesc m_PipelineLayoutDesc;
     Vector<DescriptorSetDesc> m_DescriptorSetDescs;
     Vector<PushConstantDesc> m_PushConstantDescs;
@@ -33,4 +32,4 @@ private:
     Vector<DynamicConstantBufferDesc> m_DynamicConstantBufferDescs;
 };
 
-}
+} // namespace nri

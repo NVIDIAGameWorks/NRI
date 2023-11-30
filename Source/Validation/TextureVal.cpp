@@ -17,21 +17,18 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-TextureVal::~TextureVal()
-{
+TextureVal::~TextureVal() {
     if (m_Memory != nullptr)
         m_Memory->UnbindTexture(*this);
 }
 
-void TextureVal::SetDebugName(const char* name)
-{
+void TextureVal::SetDebugName(const char* name) {
     m_Name = name;
-    GetCoreInterface().SetTextureDebugName(GetImpl(), name);
+    GetCoreInterface().SetTextureDebugName(*GetImpl(), name);
 }
 
-void TextureVal::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const
-{
-    GetCoreInterface().GetTextureMemoryInfo(GetImpl(), memoryLocation, memoryDesc);
+void TextureVal::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
+    GetCoreInterface().GetTextureMemoryInfo(*GetImpl(), memoryLocation, memoryDesc);
     m_Device.RegisterMemoryType(memoryDesc.type, memoryLocation);
 }
 

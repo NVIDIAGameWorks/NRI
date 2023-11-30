@@ -98,7 +98,7 @@ NRI_STRUCT(TextureVKDesc)
     Dim_t depth;
     Mip_t mipNum;
     Dim_t arraySize;
-    uint8_t sampleNum;
+    Sample_t sampleNum;
     uint32_t nodeMask;
 };
 

@@ -48,7 +48,6 @@ struct PipelineVK
 
 private:
     Result SetupShaderStage(VkPipelineShaderStageCreateInfo& stage, const ShaderDesc& shaderDesc, VkShaderModule*& modules);
-    Result CreateRenderPass(const OutputMergerDesc* outputMerger, const RasterizationDesc* rasterizationDesc);
     void FillVertexInputState(const GraphicsPipelineDesc& graphicsPipelineDesc, VkPipelineVertexInputStateCreateInfo& state) const;
     void FillInputAssemblyState(const GraphicsPipelineDesc& graphicsPipelineDesc, VkPipelineInputAssemblyStateCreateInfo& state) const;
     void FillTessellationState(const GraphicsPipelineDesc& graphicsPipelineDesc, VkPipelineTessellationStateCreateInfo& state) const;
@@ -64,7 +63,6 @@ private:
     DeviceVK& m_Device;
     VkPipeline m_Handle = VK_NULL_HANDLE;
     VkPipelineBindPoint m_BindPoint = (VkPipelineBindPoint)0;
-    VkRenderPass m_RenderPass = VK_NULL_HANDLE;
     bool m_OwnsNativeObjects = false;
 };
 

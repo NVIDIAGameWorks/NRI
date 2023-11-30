@@ -10,33 +10,33 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct MemoryVal;
 
-struct BufferVal final : public DeviceObjectVal<Buffer>
-{
-    BufferVal(DeviceVal& device, Buffer& buffer) :
-        DeviceObjectVal(device, buffer)
-    {}
+struct BufferVal final : public DeviceObjectVal<Buffer> {
+    BufferVal(DeviceVal& device, Buffer* buffer) : DeviceObjectVal(device, buffer) {
+    }
 
     ~BufferVal();
 
-    inline const BufferDesc& GetDesc() const
-    { return GetCoreInterface().GetBufferDesc(GetImpl()); }
+    inline const BufferDesc& GetDesc() const {
+        return GetCoreInterface().GetBufferDesc(*GetImpl());
+    }
 
-    inline uint64_t GetNativeObject(uint32_t nodeIndex) const
-    { return GetCoreInterface().GetBufferNativeObject(GetImpl(), nodeIndex); }
+    inline uint64_t GetNativeObject(uint32_t nodeIndex) const {
+        return GetCoreInterface().GetBufferNativeObject(*GetImpl(), nodeIndex);
+    }
 
-    inline bool IsBoundToMemory() const
-    { return m_IsBoundToMemory; }
+    inline bool IsBoundToMemory() const {
+        return m_IsBoundToMemory;
+    }
 
-    inline void SetBoundToMemory()
-    { m_IsBoundToMemory = true; }
+    inline void SetBoundToMemory() {
+        m_IsBoundToMemory = true;
+    }
 
-    inline void SetBoundToMemory(MemoryVal& memory)
-    {
+    inline void SetBoundToMemory(MemoryVal& memory) {
         m_Memory = &memory;
         m_IsBoundToMemory = true;
     }
@@ -49,10 +49,10 @@ struct BufferVal final : public DeviceObjectVal<Buffer>
     void* Map(uint64_t offset, uint64_t size);
     void Unmap();
 
-private:
+  private:
     MemoryVal* m_Memory = nullptr;
     bool m_IsBoundToMemory = false;
     bool m_IsMapped = false;
 };
 
-}
+} // namespace nri

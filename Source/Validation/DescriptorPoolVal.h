@@ -10,13 +10,22 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
-struct DescriptorPoolVal : public DeviceObjectVal<DescriptorPool>
-{
-    DescriptorPoolVal(DeviceVal& device, DescriptorPool& descriptorPool, uint32_t descriptorSetMaxNum);
-    DescriptorPoolVal(DeviceVal& device, DescriptorPool& descriptorPool, const DescriptorPoolDesc& descriptorPoolDesc);
+struct DescriptorPoolVal : public DeviceObjectVal<DescriptorPool> {
+    DescriptorPoolVal(DeviceVal& device, DescriptorPool* descriptorPool, uint32_t descriptorSetMaxNum)
+        : DeviceObjectVal(device, descriptorPool),
+          m_DescriptorSets(device.GetStdAllocator()),
+          m_SkipValidation(true) // TODO: we have to request "DescriptorPoolDesc" in "DescriptorPoolVKDesc"
+    {
+        m_Desc.descriptorSetMaxNum = descriptorSetMaxNum;
+        m_DescriptorSets.resize(m_Desc.descriptorSetMaxNum, DescriptorSetVal(device));
+    }
+
+    DescriptorPoolVal(DeviceVal& device, DescriptorPool* descriptorPool, const DescriptorPoolDesc& descriptorPoolDesc)
+        : DeviceObjectVal(device, descriptorPool), m_DescriptorSets(device.GetStdAllocator()), m_Desc(descriptorPoolDesc) {
+        m_DescriptorSets.resize(m_Desc.descriptorSetMaxNum, DescriptorSetVal(device));
+    }
 
     //================================================================================================================
     // NRI
@@ -24,10 +33,12 @@ struct DescriptorPoolVal : public DeviceObjectVal<DescriptorPool>
     void SetDebugName(const char* name);
     void Reset();
 
-    Result AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout,
-        DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t nodeMask, uint32_t variableDescriptorNum);
+    Result AllocateDescriptorSets(
+        const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t nodeMask,
+        uint32_t variableDescriptorNum
+    );
 
-private:
+  private:
     bool CheckDescriptorRange(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum);
     void IncrementDescriptorNum(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum);
 
@@ -47,4 +58,4 @@ private:
     bool m_SkipValidation = false;
 };
 
-}
+} // namespace nri

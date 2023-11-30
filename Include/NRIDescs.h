@@ -23,21 +23,21 @@ NRI_FORWARD_STRUCT(Descriptor);
 NRI_FORWARD_STRUCT(DescriptorPool);
 NRI_FORWARD_STRUCT(DescriptorSet);
 NRI_FORWARD_STRUCT(Fence);
-NRI_FORWARD_STRUCT(FrameBuffer);
 NRI_FORWARD_STRUCT(Memory);
 NRI_FORWARD_STRUCT(PipelineLayout);
 NRI_FORWARD_STRUCT(Pipeline);
 NRI_FORWARD_STRUCT(QueryPool);
 NRI_FORWARD_STRUCT(Texture);
 
+typedef uint32_t NRI_NAME(MemoryType);
 typedef uint16_t NRI_NAME(Dim_t);
 typedef uint8_t NRI_NAME(Mip_t);
-typedef uint32_t NRI_NAME(MemoryType);
+typedef uint8_t NRI_NAME(Sample_t);
 
 static const NRI_NAME(Dim_t) NRI_CONST_NAME(REMAINING_ARRAY_LAYERS) = 0;
 static const NRI_NAME(Mip_t) NRI_CONST_NAME(REMAINING_MIP_LEVELS) = 0;
 static const NRI_NAME(Dim_t) NRI_CONST_NAME(WHOLE_SIZE) = 0;
-static const uint16_t NRI_CONST_NAME(ALL_SAMPLES) = (uint16_t)(-1);
+static const uint32_t NRI_CONST_NAME(ALL_SAMPLES) = (uint32_t)(-1);
 static const uint32_t NRI_CONST_NAME(ALL_NODES) = 0;
 static const bool NRI_CONST_NAME(VARIABLE_DESCRIPTOR_NUM) = true;
 static const bool NRI_CONST_NAME(DESCRIPTOR_ARRAY) = true;
@@ -556,16 +556,6 @@ NRI_ENUM
 
 NRI_ENUM
 (
-    RenderPassBeginFlag, uint8_t,
-
-    NONE,
-    SKIP_FRAME_BUFFER_CLEAR,
-
-    MAX_NUM
-);
-
-NRI_ENUM
-(
     PrimitiveRestart, uint8_t,
 
     DISABLED,
@@ -724,10 +714,10 @@ NRI_ENUM_BITS
 
 NRI_STRUCT(Rect)
 {
-    int32_t x;
-    int32_t y;
-    uint32_t width;
-    uint32_t height;
+    int16_t x;
+    int16_t y;
+    NRI_NAME(Dim_t) width;
+    NRI_NAME(Dim_t) height;
 };
 
 NRI_STRUCT(Viewport)
@@ -857,7 +847,7 @@ NRI_STRUCT(SamplerDesc)
     NRI_NAME(Filter) minification;
     NRI_NAME(Filter) mip;
     NRI_NAME(FilterExt) filterExt;
-    uint32_t anisotropy;
+    uint8_t anisotropy;
     float mipBias;
     float mipMin;
     float mipMax;
@@ -877,7 +867,7 @@ NRI_STRUCT(TextureDesc)
     NRI_NAME(Dim_t) depth;
     NRI_NAME(Mip_t) mipNum;
     NRI_NAME(Dim_t) arraySize;
-    uint8_t sampleNum;
+    NRI_NAME(Sample_t) sampleNum;
     uint32_t nodeMask;
 };
 
@@ -1125,8 +1115,8 @@ NRI_STRUCT(RasterizationDesc)
     float depthBiasSlopeFactor;
     NRI_NAME(FillMode) fillMode;
     NRI_NAME(CullMode) cullMode;
-    uint16_t sampleMask;
-    uint8_t sampleNum;
+    uint32_t sampleMask;
+    NRI_NAME(Sample_t) sampleNum;
     bool alphaToCoverage;
     bool frontCounterClockwise;
     bool depthClamp;
@@ -1212,17 +1202,11 @@ NRI_STRUCT(ComputePipelineDesc)
     NRI_NAME(ShaderDesc) computeShader;
 };
 
-NRI_STRUCT(FrameBufferDesc)
+NRI_STRUCT(AttachmentsDesc)
 {
-    const NRI_NAME(Descriptor)* const* colorAttachments;
-    const NRI_NAME(Descriptor)* depthStencilAttachment;
-    const NRI_NAME(ClearValueDesc)* colorClearValues;
-    const NRI_NAME(ClearValueDesc)* depthStencilClearValue;
-    uint32_t colorAttachmentNum;
-    uint32_t nodeMask;
-    NRI_NAME(Dim_t) width;
-    NRI_NAME(Dim_t) height;
-    NRI_NAME(Dim_t) layerNum;
+    const NRI_NAME(Descriptor)* depthStencil;
+    const NRI_NAME(Descriptor)* const* colors;
+    uint32_t colorNum;
 };
 
 NRI_STRUCT(QueryPoolDesc)
@@ -1271,27 +1255,27 @@ NRI_STRUCT(DeviceDesc)
     uint32_t viewportSubPixelBits;
     int32_t viewportBoundsRange[2];
 
-    // Framebuffer
-    uint32_t frameBufferMaxDim;
-    uint32_t frameBufferLayerMaxNum;
-    uint32_t framebufferColorAttachmentMaxNum;
+    // Attachments
+    NRI_NAME(Dim_t) attachmentMaxDim;
+    NRI_NAME(Dim_t) attachmentLayerMaxNum;
+    NRI_NAME(Dim_t) colorAttachmentMaxNum;
 
     // Multi-sampling
-    uint8_t frameBufferColorSampleMaxNum;
-    uint8_t frameBufferDepthSampleMaxNum;
-    uint8_t frameBufferStencilSampleMaxNum;
-    uint8_t frameBufferNoAttachmentsSampleMaxNum;
-    uint8_t textureColorSampleMaxNum;
-    uint8_t textureIntegerSampleMaxNum;
-    uint8_t textureDepthSampleMaxNum;
-    uint8_t textureStencilSampleMaxNum;
-    uint8_t storageTextureSampleMaxNum;
+    NRI_NAME(Sample_t) colorSampleMaxNum;
+    NRI_NAME(Sample_t) depthSampleMaxNum;
+    NRI_NAME(Sample_t) stencilSampleMaxNum;
+    NRI_NAME(Sample_t) zeroAttachmentsSampleMaxNum;
+    NRI_NAME(Sample_t) textureColorSampleMaxNum;
+    NRI_NAME(Sample_t) textureIntegerSampleMaxNum;
+    NRI_NAME(Sample_t) textureDepthSampleMaxNum;
+    NRI_NAME(Sample_t) textureStencilSampleMaxNum;
+    NRI_NAME(Sample_t) storageTextureSampleMaxNum;
 
     // Resource dimensions
-    uint32_t texture1DMaxDim;
-    uint32_t texture2DMaxDim;
-    uint32_t texture3DMaxDim;
-    uint32_t textureArrayMaxDim;
+    NRI_NAME(Dim_t) texture1DMaxDim;
+    NRI_NAME(Dim_t) texture2DMaxDim;
+    NRI_NAME(Dim_t) texture3DMaxDim;
+    NRI_NAME(Dim_t) textureArrayMaxDim;
     uint32_t texelBufferMaxDim;
 
     // Memory

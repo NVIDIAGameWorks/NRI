@@ -22,7 +22,6 @@ struct DeviceD3D12;
 struct PipelineD3D12;
 struct PipelineLayoutD3D12;
 struct DescriptorPoolD3D12;
-struct FrameBufferD3D12;
 struct DescriptorSetD3D12;
 
 struct CommandBufferD3D12
@@ -60,8 +59,8 @@ struct CommandBufferD3D12
     void ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum);
     void ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc);
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);
-    void BeginRenderPass(const FrameBuffer& frameBuffer, RenderPassBeginFlag renderPassBeginFlag);
-    void EndRenderPass();
+    void BeginRendering(const AttachmentsDesc& attachmentsDesc);
+    inline void EndRendering() {}
     void SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets);
     void SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType);
     void SetPipelineLayout(const PipelineLayout& pipelineLayout);
@@ -110,12 +109,14 @@ private:
     ComPtr<ID3D12GraphicsCommandList1> m_GraphicsCommandList1;
     ComPtr<ID3D12GraphicsCommandList4> m_GraphicsCommandList4;
     ComPtr<ID3D12GraphicsCommandList6> m_GraphicsCommandList6;
+    std::array<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> m_RenderTargets = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE m_DepthStencil = {};
     const PipelineLayoutD3D12* m_PipelineLayout = nullptr;
-    bool m_IsGraphicsPipelineLayout = false;
     PipelineD3D12* m_Pipeline = nullptr;
-    FrameBufferD3D12* m_FrameBuffer = nullptr;
     D3D12_PRIMITIVE_TOPOLOGY m_PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    std::array<DescriptorSetD3D12*, 64> m_DescriptorSets = {};
+    std::array<DescriptorSetD3D12*, 64> m_DescriptorSets = {}; // TODO: 64?
+    uint32_t m_RenderTargetNum = 0;
+    bool m_IsGraphicsPipelineLayout = false;
 };
 
 }

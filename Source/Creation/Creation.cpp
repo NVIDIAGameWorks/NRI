@@ -102,7 +102,7 @@ NRI_API Result NRI_CALL nriGetInterface(const Device& device, const char* interf
     return result;
 }
 
-template< typename T >
+template<typename T>
 Result FinalizeDeviceCreation(const T& deviceCreationDesc, DeviceBase& deviceImpl, Device*& device)
 {
     if (deviceCreationDesc.enableNRIValidation)

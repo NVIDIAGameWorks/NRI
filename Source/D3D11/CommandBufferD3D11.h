@@ -13,7 +13,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 namespace nri
 {
 
-struct FrameBufferD3D11;
 struct PipelineLayoutD3D11;
 struct PipelineD3D11;
 struct BufferD3D11;
@@ -58,8 +57,8 @@ struct CommandBufferD3D11 final : public CommandBufferHelper
     void ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum);
     void ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc);
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);
-    void BeginRenderPass(const FrameBuffer& frameBuffer, RenderPassBeginFlag renderPassBeginFlag);
-    void EndRenderPass();
+    void BeginRendering(const AttachmentsDesc& attachmentsDesc);
+    inline void EndRendering() {}
     void SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets);
     void SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType);
     void SetPipelineLayout(const PipelineLayout& pipelineLayout);
@@ -91,15 +90,17 @@ private:
     SamplePositionsState m_SamplePositionsState = {};
     ComPtr<ID3D11CommandList> m_CommandList;
     ComPtr<ID3DUserDefinedAnnotation> m_Annotation;
-    const FrameBufferD3D11* m_CurrentFrameBuffer = nullptr;
-    PipelineLayoutD3D11* m_CurrentPipelineLayout = nullptr;
-    PipelineD3D11* m_CurrentPipeline = nullptr;
-    const Buffer* m_CurrentIndexBuffer = nullptr;
-    const Buffer* m_CurrentVertexBuffer = nullptr;
-    uint64_t m_CurrentIndexBufferOffset = 0;
-    uint64_t m_CurrentVertexBufferOffset = 0;
-    uint32_t m_CurrentVertexBufferBaseSlot = 0;
-    IndexType m_CurrentIndexType = IndexType::UINT32;
+    std::array<ID3D11RenderTargetView*, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT> m_RenderTargets = {};
+    ID3D11DepthStencilView* m_DepthStencil = nullptr;
+    PipelineLayoutD3D11* m_PipelineLayout = nullptr;
+    PipelineD3D11* m_Pipeline = nullptr;
+    const Buffer* m_IndexBuffer = nullptr;
+    const Buffer* m_VertexBuffer = nullptr;
+    uint64_t m_IndexBufferOffset = 0;
+    uint64_t m_VertexBufferOffset = 0;
+    uint32_t m_VertexBufferBaseSlot = 0;
+    uint32_t m_RenderTargetNum = 0;
+    IndexType m_IndexType = IndexType::UINT32;
     float m_DepthBounds[2] = {0.0f, 1.0f};
     uint8_t m_StencilRef = 0;
 };

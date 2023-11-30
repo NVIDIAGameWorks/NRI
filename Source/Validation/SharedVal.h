@@ -13,67 +13,54 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "DeviceBase.h"
 #include "DeviceVal.h"
 
-namespace nri
-{
+namespace nri {
 
-template< typename T >
-struct DeviceObjectVal
-{
-    DeviceObjectVal(DeviceVal& device) :
-        m_Name(device.GetStdAllocator()),
-        m_Device(device)
-    {}
+template <typename T>
+struct DeviceObjectVal {
+    DeviceObjectVal(DeviceVal& device, T* object = nullptr) : m_Name(device.GetStdAllocator()), m_Device(device), m_Impl(object) {
+    }
 
-    DeviceObjectVal(DeviceVal& device, T& object) :
-        m_Name(device.GetStdAllocator()),
-        m_Device(device),
-        m_Impl(&object)
-    {}
+    inline T* GetImpl() const {
+        return m_Impl;
+    }
 
-    inline T& GetImpl() const
-    { return *m_Impl; }
+    inline const char* GetDebugName() const {
+        return m_Name.c_str();
+    }
 
-    inline const char* GetDebugName() const
-    { return m_Name.c_str(); }
+    inline DeviceVal& GetDevice() const {
+        return m_Device;
+    }
 
-    inline DeviceVal& GetDevice() const
-    { return m_Device; }
+    inline const CoreInterface& GetCoreInterface() const {
+        return m_Device.GetCoreInterface();
+    }
 
-    inline const CoreInterface& GetCoreInterface() const
-    { return m_Device.GetCoreInterface(); }
-
-protected:
+  protected:
     String m_Name;
     DeviceVal& m_Device;
     T* m_Impl = nullptr;
 };
 
-template< typename T >
-inline DeviceVal& GetDeviceVal(T& object)
-{ return ((DeviceObjectVal<T>&)object).GetDevice(); }
+#define NRI_GET_IMPL(className, object) (object ? ((className##Val*)object)->GetImpl() : nullptr)
+
+template <typename T>
+inline DeviceVal& GetDeviceVal(T& object) {
+    return ((DeviceObjectVal<T>&)object).GetDevice();
+}
 
 uint64_t GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc);
 
 constexpr const char* DESCRIPTOR_TYPE_NAME[] = {
-    "SAMPLER",
-    "CONSTANT_BUFFER",
-    "TEXTURE",
-    "STORAGE_TEXTURE",
-    "BUFFER",
-    "STORAGE_BUFFER",
-    "STRUCTURED_BUFFER",
-    "STORAGE_STRUCTURED_BUFFER",
-    "ACCELERATION_STRUCTURE"
+    "SAMPLER", "CONSTANT_BUFFER", "TEXTURE", "STORAGE_TEXTURE", "BUFFER", "STORAGE_BUFFER", "STRUCTURED_BUFFER", "STORAGE_STRUCTURED_BUFFER", "ACCELERATION_STRUCTURE",
 };
 static_assert(GetCountOf(DESCRIPTOR_TYPE_NAME) == (uint32_t)nri::DescriptorType::MAX_NUM, "descriptor type name array is out of date");
 
-constexpr const char* GetDescriptorTypeName(nri::DescriptorType descriptorType)
-{
+constexpr const char* GetDescriptorTypeName(nri::DescriptorType descriptorType) {
     return DESCRIPTOR_TYPE_NAME[(uint32_t)descriptorType];
 }
 
-constexpr bool IsAccessMaskSupported(BufferUsageBits usageMask, AccessBits accessMask)
-{
+constexpr bool IsAccessMaskSupported(BufferUsageBits usageMask, AccessBits accessMask) {
     BufferUsageBits requiredUsageMask = BufferUsageBits::NONE;
 
     if (accessMask & AccessBits::VERTEX_BUFFER)
@@ -112,8 +99,7 @@ constexpr bool IsAccessMaskSupported(BufferUsageBits usageMask, AccessBits acces
     return (uint32_t)(requiredUsageMask & usageMask) == (uint32_t)requiredUsageMask;
 }
 
-constexpr bool IsAccessMaskSupported(TextureUsageBits usageMask, AccessBits accessMask)
-{
+constexpr bool IsAccessMaskSupported(TextureUsageBits usageMask, AccessBits accessMask) {
     TextureUsageBits requiredUsageMask = TextureUsageBits::NONE;
 
     if (accessMask & AccessBits::VERTEX_BUFFER)
@@ -153,28 +139,21 @@ constexpr bool IsAccessMaskSupported(TextureUsageBits usageMask, AccessBits acce
 }
 
 constexpr std::array<TextureUsageBits, (size_t)TextureLayout::MAX_NUM> TEXTURE_USAGE_FOR_TEXTURE_LAYOUT_TABLE = {
-    TextureUsageBits::NONE, // GENERAL
-    TextureUsageBits::COLOR_ATTACHMENT, // COLOR_ATTACHMENT
+    TextureUsageBits::NONE,                     // GENERAL
+    TextureUsageBits::COLOR_ATTACHMENT,         // COLOR_ATTACHMENT
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_STENCIL
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_STENCIL_READONLY
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_READONLY
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // STENCIL_READONLY
-    TextureUsageBits::SHADER_RESOURCE, // SHADER_RESOURCE
-    TextureUsageBits::NONE, // PRESENT
-    TextureUsageBits::NONE // UNKNOWN
+    TextureUsageBits::SHADER_RESOURCE,          // SHADER_RESOURCE
+    TextureUsageBits::NONE,                     // PRESENT
+    TextureUsageBits::NONE                      // UNKNOWN
 };
 
-constexpr bool IsTextureLayoutSupported(TextureUsageBits usageMask, TextureLayout textureLayout)
-{
+constexpr bool IsTextureLayoutSupported(TextureUsageBits usageMask, TextureLayout textureLayout) {
     const TextureUsageBits requiredMask = TEXTURE_USAGE_FOR_TEXTURE_LAYOUT_TABLE[(size_t)textureLayout];
 
     return (uint32_t)(requiredMask & usageMask) == (uint32_t)requiredMask;
 }
 
-}
-
-#define NRI_GET_IMPL_PTR(className, object) \
-    ((object != nullptr) ? &((className##Val*)object)->GetImpl() : nullptr)
-
-#define NRI_GET_IMPL_REF(className, object) \
-    (&((className##Val*)object)->GetImpl())
+} // namespace nri

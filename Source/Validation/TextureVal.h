@@ -10,33 +10,33 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct MemoryVal;
 
-struct TextureVal : public DeviceObjectVal<Texture>
-{
-    TextureVal(DeviceVal& device, Texture& texture) :
-        DeviceObjectVal(device, texture)
-    {}
+struct TextureVal : public DeviceObjectVal<Texture> {
+    TextureVal(DeviceVal& device, Texture* texture) : DeviceObjectVal(device, texture) {
+    }
 
     ~TextureVal();
 
-    inline const TextureDesc& GetDesc() const
-    { return GetCoreInterface().GetTextureDesc(GetImpl()); }
+    inline const TextureDesc& GetDesc() const {
+        return GetCoreInterface().GetTextureDesc(*GetImpl());
+    }
 
-    inline uint64_t GetNativeObject(uint32_t nodeIndex) const
-    { return GetCoreInterface().GetTextureNativeObject(GetImpl(), nodeIndex); }
+    inline uint64_t GetNativeObject(uint32_t nodeIndex) const {
+        return GetCoreInterface().GetTextureNativeObject(*GetImpl(), nodeIndex);
+    }
 
-    inline bool IsBoundToMemory() const
-    { return m_IsBoundToMemory; }
+    inline bool IsBoundToMemory() const {
+        return m_IsBoundToMemory;
+    }
 
-    inline void SetBoundToMemory()
-    { m_IsBoundToMemory = true; }
+    inline void SetBoundToMemory() {
+        m_IsBoundToMemory = true;
+    }
 
-    inline void SetBoundToMemory(MemoryVal& memory)
-    {
+    inline void SetBoundToMemory(MemoryVal& memory) {
         m_Memory = &memory;
         m_IsBoundToMemory = true;
     }
@@ -47,9 +47,9 @@ struct TextureVal : public DeviceObjectVal<Texture>
     void SetDebugName(const char* name);
     void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
-private:
+  private:
     MemoryVal* m_Memory = nullptr;
     bool m_IsBoundToMemory = false;
 };
 
-}
+} // namespace nri

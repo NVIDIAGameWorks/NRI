@@ -10,18 +10,17 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
-struct PipelineVal : public DeviceObjectVal<Pipeline>
-{
-    PipelineVal(DeviceVal& device, Pipeline& pipeline);
-    PipelineVal(DeviceVal& device, Pipeline& pipeline, const GraphicsPipelineDesc& graphicsPipelineDesc);
-    PipelineVal(DeviceVal& device, Pipeline& pipeline, const ComputePipelineDesc& computePipelineDesc);
-    PipelineVal(DeviceVal& device, Pipeline& pipeline, const RayTracingPipelineDesc& rayTracingPipelineDesc);
+struct PipelineVal : public DeviceObjectVal<Pipeline> {
+    PipelineVal(DeviceVal& device, Pipeline* pipeline);
+    PipelineVal(DeviceVal& device, Pipeline* pipeline, const GraphicsPipelineDesc& graphicsPipelineDesc);
+    PipelineVal(DeviceVal& device, Pipeline* pipeline, const ComputePipelineDesc& computePipelineDesc);
+    PipelineVal(DeviceVal& device, Pipeline* pipeline, const RayTracingPipelineDesc& rayTracingPipelineDesc);
 
-    inline const PipelineLayout* GetPipelineLayout() const
-    { return m_PipelineLayout; }
+    inline const PipelineLayout* GetPipelineLayout() const {
+        return m_PipelineLayout;
+    }
 
     //================================================================================================================
     // NRI
@@ -29,9 +28,9 @@ struct PipelineVal : public DeviceObjectVal<Pipeline>
     void SetDebugName(const char* name);
     Result WriteShaderGroupIdentifiers(uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer);
 
-private:
+  private:
     const RayTracingInterface& m_RayTracingAPI;
     const PipelineLayout* m_PipelineLayout = nullptr;
 };
 
-}
+} // namespace nri

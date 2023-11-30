@@ -10,60 +10,72 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct CommandQueueVal;
 
-struct DeviceVal final : public DeviceBase
-{
+struct DeviceVal final : public DeviceBase {
     DeviceVal(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator, DeviceBase& device);
     ~DeviceVal();
 
     bool Create();
     void RegisterMemoryType(MemoryType memoryType, MemoryLocation memoryLocation);
 
-    inline const CoreInterface& GetCoreInterface() const
-    { return m_CoreAPI; }
+    inline const CoreInterface& GetCoreInterface() const {
+        return m_CoreAPI;
+    }
 
-    inline const SwapChainInterface& GetSwapChainInterface() const
-    { return m_SwapChainAPI; }
+    inline const SwapChainInterface& GetSwapChainInterface() const {
+        return m_SwapChainAPI;
+    }
 
-    inline const WrapperD3D11Interface& GetWrapperD3D11Interface() const
-    { return m_WrapperD3D11API; }
+    inline const WrapperD3D11Interface& GetWrapperD3D11Interface() const {
+        return m_WrapperD3D11API;
+    }
 
-    inline const WrapperD3D12Interface& GetWrapperD3D12Interface() const
-    { return m_WrapperD3D12API; }
+    inline const WrapperD3D12Interface& GetWrapperD3D12Interface() const {
+        return m_WrapperD3D12API;
+    }
 
-    inline const WrapperVKInterface& GetWrapperVKInterface() const
-    { return m_WrapperVKAPI; }
+    inline const WrapperVKInterface& GetWrapperVKInterface() const {
+        return m_WrapperVKAPI;
+    }
 
-    inline const RayTracingInterface& GetRayTracingInterface() const
-    { return m_RayTracingAPI; }
+    inline const RayTracingInterface& GetRayTracingInterface() const {
+        return m_RayTracingAPI;
+    }
 
-    inline const MeshShaderInterface& GetMeshShaderInterface() const
-    { return m_MeshShaderAPI; }
+    inline const MeshShaderInterface& GetMeshShaderInterface() const {
+        return m_MeshShaderAPI;
+    }
 
-    inline const HelperInterface& GetHelperInterface() const
-    { return m_HelperAPI; }
+    inline const HelperInterface& GetHelperInterface() const {
+        return m_HelperAPI;
+    }
 
-    inline void* GetNativeObject() const
-    { return m_CoreAPI.GetDeviceNativeObject(m_Device); }
+    inline void* GetNativeObject() const {
+        return m_CoreAPI.GetDeviceNativeObject(m_Device);
+    }
 
-    NRIVkPhysicalDevice GetVkPhysicalDevice() const
-    { return m_WrapperVKAPI.GetVkPhysicalDevice(m_Device); }
+    NRIVkPhysicalDevice GetVkPhysicalDevice() const {
+        return m_WrapperVKAPI.GetVkPhysicalDevice(m_Device);
+    }
 
-    NRIVkInstance GetVkInstance() const
-    { return m_WrapperVKAPI.GetVkInstance(m_Device); }
+    NRIVkInstance GetVkInstance() const {
+        return m_WrapperVKAPI.GetVkInstance(m_Device);
+    }
 
-    NRIVkProcAddress GetVkGetInstanceProcAddr() const
-    { return m_WrapperVKAPI.GetVkGetInstanceProcAddr(m_Device); }
+    NRIVkProcAddress GetVkGetInstanceProcAddr() const {
+        return m_WrapperVKAPI.GetVkGetInstanceProcAddr(m_Device);
+    }
 
-    NRIVkProcAddress GetVkGetDeviceProcAddr() const
-    { return m_WrapperVKAPI.GetVkGetDeviceProcAddr(m_Device); }
+    NRIVkProcAddress GetVkGetDeviceProcAddr() const {
+        return m_WrapperVKAPI.GetVkGetDeviceProcAddr(m_Device);
+    }
 
-    inline Lock& GetLock()
-    { return m_Lock; }
+    inline Lock& GetLock() {
+        return m_Lock;
+    }
 
     //================================================================================================================
     // NRI
@@ -86,7 +98,6 @@ struct DeviceVal final : public DeviceBase
     Result CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout);
     Result CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline);
     Result CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline);
-    Result CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc, FrameBuffer*& frameBuffer);
     Result CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool);
     Result CreateFence(uint64_t initialValue, Fence*& fence);
     void DestroyCommandAllocator(CommandAllocator& commandAllocator);
@@ -96,7 +107,6 @@ struct DeviceVal final : public DeviceBase
     void DestroyDescriptor(Descriptor& descriptor);
     void DestroyPipelineLayout(PipelineLayout& pipelineLayout);
     void DestroyPipeline(Pipeline& pipeline);
-    void DestroyFrameBuffer(FrameBuffer& frameBuffer);
     void DestroyQueryPool(QueryPool& queryPool);
     void DestroyFence(Fence& queueSemaphore);
     Result AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory);
@@ -150,7 +160,7 @@ struct DeviceVal final : public DeviceBase
     Result FillFunctionTable(MeshShaderInterface& table) const;
     Result FillFunctionTable(HelperInterface& table) const;
 
-private:
+  private:
     Device& m_Device;
     String m_Name;
     CoreInterface m_CoreAPI = {};
@@ -172,4 +182,4 @@ private:
     bool m_IsMeshShaderExtSupported = false;
 };
 
-}
+} // namespace nri

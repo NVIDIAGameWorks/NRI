@@ -10,14 +10,15 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct TextureVal;
 
-struct SwapChainVal : public DeviceObjectVal<SwapChain>
-{
-    SwapChainVal(DeviceVal& device, SwapChain& swapChain, const SwapChainDesc& swapChainDesc);
+struct SwapChainVal : public DeviceObjectVal<SwapChain> {
+    SwapChainVal(DeviceVal& device, SwapChain* swapChain, const SwapChainDesc& swapChainDesc)
+        : DeviceObjectVal(device, swapChain), m_SwapChainAPI(device.GetSwapChainInterface()), m_Textures(device.GetStdAllocator()), m_SwapChainDesc(swapChainDesc) {
+    }
+
     ~SwapChainVal();
 
     //================================================================================================================
@@ -29,10 +30,10 @@ struct SwapChainVal : public DeviceObjectVal<SwapChain>
     Result Present();
     Result SetHdrMetadata(const HdrMetadata& hdrMetadata);
 
-private:
+  private:
     const SwapChainInterface& m_SwapChainAPI;
     mutable Vector<TextureVal*> m_Textures;
     SwapChainDesc m_SwapChainDesc = {};
 };
 
-}
+} // namespace nri

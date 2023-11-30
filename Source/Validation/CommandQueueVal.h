@@ -10,14 +10,13 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct CommandBufferVal;
 
-struct CommandQueueVal : public DeviceObjectVal<CommandQueue>
-{
-    CommandQueueVal(DeviceVal& device, CommandQueue& commandQueue);
+struct CommandQueueVal : public DeviceObjectVal<CommandQueue> {
+    CommandQueueVal(DeviceVal& device, CommandQueue* commandQueue) : DeviceObjectVal(device, commandQueue), m_HelperAPI(device.GetHelperInterface()) {
+    }
 
     //================================================================================================================
     // NRI
@@ -27,10 +26,9 @@ struct CommandQueueVal : public DeviceObjectVal<CommandQueue>
 
     Result WaitForIdle();
     Result ChangeResourceStates(const TransitionBarrierDesc& transitionBarriers);
-    Result UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum,
-        const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum);
+    Result UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum);
 
-private:
+  private:
     void ProcessValidationCommands(const CommandBufferVal* const* commandBuffers, uint32_t commandBufferNum);
     void ProcessValidationCommandBeginQuery(const uint8_t*& begin, const uint8_t* end);
     void ProcessValidationCommandEndQuery(const uint8_t*& begin, const uint8_t* end);
@@ -39,4 +37,4 @@ private:
     const HelperInterface& m_HelperAPI;
 };
 
-}
+} // namespace nri

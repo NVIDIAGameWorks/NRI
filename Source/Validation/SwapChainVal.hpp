@@ -8,30 +8,25 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#pragma region [  SwapChain  ]
+#pragma region[  SwapChain  ]
 
-static void NRI_CALL SetSwapChainDebugName(SwapChain& swapChain, const char* name)
-{
+static void NRI_CALL SetSwapChainDebugName(SwapChain& swapChain, const char* name) {
     ((SwapChainVal&)swapChain).SetDebugName(name);
 }
 
-static Texture* const* NRI_CALL GetSwapChainTextures(const SwapChain& swapChain, uint32_t& textureNum)
-{
+static Texture* const* NRI_CALL GetSwapChainTextures(const SwapChain& swapChain, uint32_t& textureNum) {
     return ((SwapChainVal&)swapChain).GetTextures(textureNum);
 }
 
-static uint32_t NRI_CALL AcquireNextSwapChainTexture(SwapChain& swapChain)
-{
+static uint32_t NRI_CALL AcquireNextSwapChainTexture(SwapChain& swapChain) {
     return ((SwapChainVal&)swapChain).AcquireNextTexture();
 }
 
-static Result NRI_CALL SwapChainPresent(SwapChain& swapChain)
-{
+static Result NRI_CALL SwapChainPresent(SwapChain& swapChain) {
     return ((SwapChainVal&)swapChain).Present();
 }
 
-static Result NRI_CALL SetSwapChainHdrMetadata(SwapChain& swapChain, const HdrMetadata& hdrMetadata)
-{
+static Result NRI_CALL SetSwapChainHdrMetadata(SwapChain& swapChain, const HdrMetadata& hdrMetadata) {
     return ((SwapChainVal&)swapChain).SetHdrMetadata(hdrMetadata);
 }
 

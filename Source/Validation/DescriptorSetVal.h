@@ -10,20 +10,17 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
-struct DescriptorSetVal : public DeviceObjectVal<DescriptorSet>
-{
-    DescriptorSetVal::DescriptorSetVal(DeviceVal& device) :
-        DeviceObjectVal(device)
-    {}
+struct DescriptorSetVal : public DeviceObjectVal<DescriptorSet> {
+    DescriptorSetVal::DescriptorSetVal(DeviceVal& device) : DeviceObjectVal(device) {
+    }
 
-    inline const DescriptorSetDesc& GetDesc() const
-    { return *m_Desc; }
+    inline const DescriptorSetDesc& GetDesc() const {
+        return *m_Desc;
+    }
 
-    inline void SetImpl(DescriptorSet* impl, const DescriptorSetDesc* desc)
-    {
+    inline void SetImpl(DescriptorSet* impl, const DescriptorSetDesc* desc) {
         m_Impl = impl;
         m_Desc = desc;
     }
@@ -36,8 +33,8 @@ struct DescriptorSetVal : public DeviceObjectVal<DescriptorSet>
     void UpdateDynamicConstantBuffers(uint32_t nodeMask, uint32_t baseBuffer, uint32_t bufferNum, const Descriptor* const* descriptors);
     void Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc);
 
-private:
+  private:
     const DescriptorSetDesc* m_Desc = nullptr;
 };
 
-}
+} // namespace nri

@@ -48,7 +48,7 @@ Result TextureVK::Create(const TextureDesc& textureDesc)
     info.extent.depth = textureDesc.depth;
     info.mipLevels = textureDesc.mipNum;
     info.arrayLayers = textureDesc.arraySize;
-    info.samples = ::GetSampleCount(textureDesc.sampleNum);
+    info.samples = (VkSampleCountFlagBits)textureDesc.sampleNum;
     info.tiling = VK_IMAGE_TILING_OPTIMAL;
     info.usage = GetImageUsageFlags(textureDesc.usageMask);
     info.sharingMode = sharingMode;

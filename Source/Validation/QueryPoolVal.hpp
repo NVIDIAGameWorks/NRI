@@ -8,15 +8,13 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#pragma region [  Core  ]
+#pragma region[  Core  ]
 
-static void NRI_CALL SetQueryPoolDebugName(QueryPool& queryPool, const char* name)
-{
+static void NRI_CALL SetQueryPoolDebugName(QueryPool& queryPool, const char* name) {
     ((QueryPoolVal&)queryPool).SetDebugName(name);
 }
 
-static uint32_t NRI_CALL GetQuerySize(const QueryPool& queryPool)
-{
+static uint32_t NRI_CALL GetQuerySize(const QueryPool& queryPool) {
     return ((QueryPoolVal&)queryPool).GetQuerySize();
 }
 

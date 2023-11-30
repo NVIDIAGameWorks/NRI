@@ -13,7 +13,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "BufferD3D11.h"
 #include "DescriptorD3D11.h"
 #include "DescriptorSetD3D11.h"
-#include "FrameBufferD3D11.h"
 #include "QueryPoolD3D11.h"
 #include "PipelineLayoutD3D11.h"
 #include "PipelineD3D11.h"
@@ -114,10 +113,9 @@ Result CommandBufferD3D11::Begin(const DescriptorPool* descriptorPool)
 {
     m_SamplePositionsState.Reset();
     m_CommandList = nullptr;
-    m_CurrentFrameBuffer = nullptr;
-    m_CurrentPipeline = nullptr;
-    m_CurrentIndexBuffer = nullptr;
-    m_CurrentVertexBuffer = nullptr;
+    m_Pipeline = nullptr;
+    m_IndexBuffer = nullptr;
+    m_VertexBuffer = nullptr;
     m_StencilRef = 0;
 
     SetDepthBounds(0.0f, 1.0f);
@@ -145,16 +143,16 @@ void CommandBufferD3D11::SetViewports(const Viewport* viewports, uint32_t viewpo
 
 void CommandBufferD3D11::SetScissors(const Rect* rects, uint32_t rectNum)
 {
-    D3D11_RECT* winRect = STACK_ALLOC(D3D11_RECT, rectNum);
+    D3D11_RECT* rectsD3D = STACK_ALLOC(D3D11_RECT, rectNum);
 
     for (uint32_t i = 0; i < rectNum; i++)
     {
         const Rect& rect = rects[i];
-        winRect[i] = { rect.x, rect.y, (LONG)(rect.x + rect.width), (LONG)(rect.y + rect.height) };
+        rectsD3D[i] = { rect.x, rect.y, (LONG)(rect.x + rect.width), (LONG)(rect.y + rect.height) };
     }
 
-    if (!m_CurrentPipeline || !m_CurrentPipeline->IsRasterizerDiscarded())
-        m_DeferredContext->RSSetScissorRects(rectNum, &winRect[0]);
+    if (!m_Pipeline || !m_Pipeline->IsRasterizerDiscarded())
+        m_DeferredContext->RSSetScissorRects(rectNum, &rectsD3D[0]);
 }
 
 void CommandBufferD3D11::SetDepthBounds(float boundsMin, float boundsMax)
@@ -172,21 +170,79 @@ void CommandBufferD3D11::SetStencilReference(uint8_t reference)
 {
     m_StencilRef = reference;
 
-    if (m_CurrentPipeline)
-        m_CurrentPipeline->ChangeStencilReference(m_DeferredContext, m_StencilRef, DynamicState::BIND_AND_SET);
+    if (m_Pipeline)
+        m_Pipeline->ChangeStencilReference(m_DeferredContext, m_StencilRef, DynamicState::BIND_AND_SET);
 }
 
 void CommandBufferD3D11::SetSamplePositions(const SamplePosition* positions, uint32_t positionNum)
 {
     m_SamplePositionsState.Set(positions, positionNum);
 
-    if (m_CurrentPipeline)
-        m_CurrentPipeline->ChangeSamplePositions(m_DeferredContext, m_SamplePositionsState, DynamicState::BIND_AND_SET);
+    if (m_Pipeline)
+        m_Pipeline->ChangeSamplePositions(m_DeferredContext, m_SamplePositionsState, DynamicState::BIND_AND_SET);
 }
 
 void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum)
 {
-    m_CurrentFrameBuffer->ClearAttachments(m_DeferredContext, clearDescs, clearDescNum, rects, rectNum);
+    if (!rects || !rectNum)
+    {
+        for (uint32_t i = 0; i < clearDescNum; i++)
+        {
+            const ClearDesc& clearDesc = clearDescs[i];
+
+            switch (clearDesc.attachmentContentType)
+            {
+            case AttachmentContentType::COLOR:
+                m_DeferredContext->ClearRenderTargetView(m_RenderTargets[clearDesc.colorAttachmentIndex], &clearDesc.value.color32f.x);
+                break;
+            case AttachmentContentType::DEPTH:
+                m_DeferredContext->ClearDepthStencilView(m_DepthStencil, D3D11_CLEAR_DEPTH, clearDesc.value.depthStencil.depth, 0);
+                break;
+            case AttachmentContentType::STENCIL:
+                m_DeferredContext->ClearDepthStencilView(m_DepthStencil, D3D11_CLEAR_STENCIL, 0.0f, clearDesc.value.depthStencil.stencil);
+                break;
+            case AttachmentContentType::DEPTH_STENCIL:
+                m_DeferredContext->ClearDepthStencilView(m_DepthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDesc.value.depthStencil.depth, clearDesc.value.depthStencil.stencil);
+                break;
+            }
+        }
+    }
+    else
+    {
+        D3D11_RECT* rectsD3D = STACK_ALLOC(D3D11_RECT, rectNum);
+        for (uint32_t i = 0; i < rectNum; i++)
+        {
+            const Rect& rect = rects[i];
+            rectsD3D[i] = { rect.x, rect.y, (LONG)(rect.x + rect.width), (LONG)(rect.y + rect.height) };
+        }
+
+        if (m_DeferredContext.version >= 1)
+        {
+            // https://learn.microsoft.com/en-us/windows/win32/api/d3d11_1/nf-d3d11_1-id3d11devicecontext1-clearview
+
+            FLOAT color[4] = {};
+            for (uint32_t i = 0; i < clearDescNum; i++)
+            {
+                const ClearDesc& clearDesc = clearDescs[i];
+                switch (clearDesc.attachmentContentType)
+                {
+                case AttachmentContentType::COLOR:
+                    m_DeferredContext->ClearView(m_RenderTargets[clearDesc.colorAttachmentIndex], &clearDesc.value.color32f.x, rectsD3D, rectNum);
+                    break;
+                case AttachmentContentType::DEPTH: case AttachmentContentType::DEPTH_STENCIL:
+                    color[0] = clearDesc.value.depthStencil.depth;
+                    m_DeferredContext->ClearView(m_DepthStencil, color, rectsD3D, rectNum);
+                    break;
+                case AttachmentContentType::STENCIL:
+                    color[0] = clearDesc.value.depthStencil.stencil; // TODO: should work, no?
+                    m_DeferredContext->ClearView(m_DepthStencil, color, rectsD3D, rectNum);
+                    break;
+                }
+            }
+        }
+        else
+            CHECK(&m_Device, false, "'ClearView' emulation for 11.0 is not implemented!");
+    }
 }
 
 void CommandBufferD3D11::ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc)
@@ -207,17 +263,28 @@ void CommandBufferD3D11::ClearStorageTexture(const ClearStorageTextureDesc& clea
         m_DeferredContext->ClearUnorderedAccessViewFloat(descriptor, &clearDesc.value.color32f.x);
 }
 
-void CommandBufferD3D11::BeginRenderPass(const FrameBuffer& frameBuffer, RenderPassBeginFlag renderPassBeginFlag)
+void CommandBufferD3D11::BeginRendering(const AttachmentsDesc& attachmentsDesc)
 {
-    m_CurrentFrameBuffer = (FrameBufferD3D11*)&frameBuffer;
-    m_CurrentFrameBuffer->Bind(m_DeferredContext, renderPassBeginFlag);
-}
+    m_RenderTargetNum = attachmentsDesc.colors ? attachmentsDesc.colorNum : 0;
+    
+    uint32_t i = 0;
+    for (; i < m_RenderTargetNum; i++)
+    {
+        const DescriptorD3D11& descriptor = *(DescriptorD3D11*)attachmentsDesc.colors[i];
+        m_RenderTargets[i] = descriptor;
+    }
+    for (; i < (uint32_t)m_RenderTargets.size(); i++)
+        m_RenderTargets[i] = nullptr;
 
-void CommandBufferD3D11::EndRenderPass()
-{
-    m_DeferredContext->OMSetRenderTargets(0, nullptr, nullptr);
+    if (attachmentsDesc.depthStencil)
+    {
+        const DescriptorD3D11& descriptor = *(DescriptorD3D11*)attachmentsDesc.depthStencil;
+        m_DepthStencil = descriptor;
+    }
+    else
+        m_DepthStencil = nullptr;
 
-    m_CurrentFrameBuffer = nullptr;
+    m_DeferredContext->OMSetRenderTargets(m_RenderTargetNum, m_RenderTargets.data(), m_DepthStencil);
 }
 
 void CommandBufferD3D11::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets)
@@ -225,7 +292,7 @@ void CommandBufferD3D11::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum,
     if (!offsets)
         offsets = s_nullOffsets;
 
-    if ( m_CurrentVertexBuffer != buffers[0] || m_CurrentVertexBufferOffset != offsets[0] || m_CurrentVertexBufferBaseSlot != baseSlot || bufferNum > 1)
+    if ( m_VertexBuffer != buffers[0] || m_VertexBufferOffset != offsets[0] || m_VertexBufferBaseSlot != baseSlot || bufferNum > 1)
     {
         uint8_t* mem = STACK_ALLOC( uint8_t, bufferNum * (sizeof(ID3D11Buffer*) + sizeof(uint32_t) * 2) );
 
@@ -242,30 +309,30 @@ void CommandBufferD3D11::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum,
             const BufferD3D11& bufferD3D11 = *(BufferD3D11*)buffers[i];
             buf[i] = bufferD3D11;
 
-            strides[i] = m_CurrentPipeline->GetInputAssemblyStride(baseSlot + i);
+            strides[i] = m_Pipeline->GetInputAssemblyStride(baseSlot + i);
             offsetsUint[i] = (uint32_t)offsets[i];
         }
 
         m_DeferredContext->IASetVertexBuffers(baseSlot, bufferNum, buf, strides, offsetsUint);
 
-        m_CurrentVertexBuffer = buffers[0];
-        m_CurrentVertexBufferOffset = offsets[0];
-        m_CurrentVertexBufferBaseSlot = baseSlot;
+        m_VertexBuffer = buffers[0];
+        m_VertexBufferOffset = offsets[0];
+        m_VertexBufferBaseSlot = baseSlot;
     }
 }
 
 void CommandBufferD3D11::SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType)
 {
-    if (m_CurrentIndexBuffer != &buffer || m_CurrentIndexBufferOffset != offset || m_CurrentIndexType != indexType)
+    if (m_IndexBuffer != &buffer || m_IndexBufferOffset != offset || m_IndexType != indexType)
     {
         const BufferD3D11& bufferD3D11 = (BufferD3D11&)buffer;
         const DXGI_FORMAT format = indexType == IndexType::UINT16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
 
         m_DeferredContext->IASetIndexBuffer(bufferD3D11, format, (uint32_t)offset);
 
-        m_CurrentIndexBuffer = &buffer;
-        m_CurrentIndexBufferOffset = offset;
-        m_CurrentIndexType = indexType;
+        m_IndexBuffer = &buffer;
+        m_IndexBufferOffset = offset;
+        m_IndexType = indexType;
     }
 }
 
@@ -274,7 +341,7 @@ void CommandBufferD3D11::SetPipelineLayout(const PipelineLayout& pipelineLayout)
     PipelineLayoutD3D11* pipelineLayoutD3D11 = (PipelineLayoutD3D11*)&pipelineLayout;
     pipelineLayoutD3D11->Bind(m_DeferredContext);
 
-    m_CurrentPipelineLayout = pipelineLayoutD3D11;
+    m_PipelineLayout = pipelineLayoutD3D11;
 }
 
 void CommandBufferD3D11::SetPipeline(const Pipeline& pipeline)
@@ -282,9 +349,9 @@ void CommandBufferD3D11::SetPipeline(const Pipeline& pipeline)
     PipelineD3D11* pipelineD3D11 = (PipelineD3D11*)&pipeline;
     pipelineD3D11->ChangeSamplePositions(m_DeferredContext, m_SamplePositionsState, DynamicState::SET_ONLY);
     pipelineD3D11->ChangeStencilReference(m_DeferredContext, m_StencilRef, DynamicState::SET_ONLY);
-    pipelineD3D11->Bind(m_DeferredContext, m_CurrentPipeline);
+    pipelineD3D11->Bind(m_DeferredContext, m_Pipeline);
 
-    m_CurrentPipeline = pipelineD3D11;
+    m_Pipeline = pipelineD3D11;
 }
 
 void CommandBufferD3D11::SetDescriptorPool(const DescriptorPool& descriptorPool)
@@ -295,12 +362,12 @@ void CommandBufferD3D11::SetDescriptorPool(const DescriptorPool& descriptorPool)
 void CommandBufferD3D11::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets)
 {
     const DescriptorSetD3D11& descriptorSetImpl = (DescriptorSetD3D11&)descriptorSet;
-    m_CurrentPipelineLayout->BindDescriptorSet(m_BindingState, m_DeferredContext, setIndexInPipelineLayout, descriptorSetImpl, dynamicConstantBufferOffsets);
+    m_PipelineLayout->BindDescriptorSet(m_BindingState, m_DeferredContext, setIndexInPipelineLayout, descriptorSetImpl, dynamicConstantBufferOffsets);
 }
 
 void CommandBufferD3D11::SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size)
 {
-    m_CurrentPipelineLayout->SetConstants(m_DeferredContext, pushConstantIndex, (const Vec4*)data, size);
+    m_PipelineLayout->SetConstants(m_DeferredContext, pushConstantIndex, (const Vec4*)data, size);
 }
 
 void CommandBufferD3D11::Draw(uint32_t vertexNum, uint32_t instanceNum, uint32_t baseVertex, uint32_t baseInstance)

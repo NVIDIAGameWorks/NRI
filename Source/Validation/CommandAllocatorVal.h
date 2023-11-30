@@ -10,12 +10,11 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
-struct CommandAllocatorVal final : public DeviceObjectVal<CommandAllocator>
-{
-    CommandAllocatorVal(DeviceVal& device, CommandAllocator& commandAllocator);
+struct CommandAllocatorVal final : public DeviceObjectVal<CommandAllocator> {
+    CommandAllocatorVal(DeviceVal& device, CommandAllocator* commandAllocator) : DeviceObjectVal(device, commandAllocator) {
+    }
 
     //================================================================================================================
     // NRI
@@ -25,4 +24,4 @@ struct CommandAllocatorVal final : public DeviceObjectVal<CommandAllocator>
     void Reset();
 };
 
-}
+} // namespace nri

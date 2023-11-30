@@ -408,11 +408,6 @@ constexpr float GetDepthOffset(int32_t)
     return 0.0f; // TODO: implement correct conversion
 }
 
-constexpr VkSampleCountFlagBits GetSampleCount(uint32_t sampleNum)
-{
-    return (VkSampleCountFlagBits)sampleNum;
-}
-
 constexpr std::array<VkCompareOp, (uint32_t)CompareFunc::MAX_NUM> COMPARE_OP = {
     VK_COMPARE_OP_NEVER,            // NONE
     VK_COMPARE_OP_ALWAYS,           // ALWAYS

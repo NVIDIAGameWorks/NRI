@@ -8,15 +8,13 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#pragma region [  Core  ]
+#pragma region[  Core  ]
 
-static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* name)
-{
+static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* name) {
     ((DescriptorVal&)descriptor).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor, uint32_t nodeIndex)
-{
+static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor, uint32_t nodeIndex) {
     return ((DescriptorVal&)descriptor).GetNativeObject(nodeIndex);
 }
 

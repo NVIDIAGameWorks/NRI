@@ -46,7 +46,6 @@ Analogues from the graphics APIs:
 | Descriptor        | View / Sampler    | View / Sampler             |
 | Descriptor Set    | --                | Descriptor Set             |
 | Descriptor Pool   | Descriptor heap   | Descriptor Pool            |
-| Frame Buffer      | --                | Frame Buffer & Render Pass |
 | Pipeline Layout   | Root signature    | Pipeline Layout            |
 | Pipeline          | Pipeline          | Pipeline                   |
 
@@ -73,8 +72,6 @@ Analogues from the graphics APIs:
 `Descriptor Set` is a set of descriptors which can be accessed by a shader.
 
 `Descriptor Pool` is a pool of descriptors which allocates memory for `Descriptor Sets`.
-
-`Frame Buffer` is a state object which contains information on color attachments, depth attachments and their usage.
 
 `Pipeline Layout` is a state object which contains information on shader resources and pipeline stages.
 
@@ -324,13 +321,6 @@ Multithreading:
 * No synchronization required
 
 ```cpp
-Result CreateFrameBuffer(Device& device, const FrameBufferDesc& frameBufferDesc, FrameBuffer*& frameBuffer)
-```
-
-Multithreading:
-* No synchronization required
-
-```cpp
 Result CreateQueryPool(Device& device, const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool)
 ```
 
@@ -427,16 +417,6 @@ Valid usage:
 
 Multithreading:
 * Access to pipeline must be externally synchronized
-
-```cpp
-void DestroyFrameBuffer(FrameBuffer& frameBuffer)
-```
-
-Valid usage:
-* The application must ensure that all command buffers which use the framebuffer have completed execution
-
-Multithreading:
-* Access to frameBuffer must be externally synchronized
 
 ```cpp
 void DestroyQueryPool(QueryPool& queryPool)
@@ -571,7 +551,7 @@ Multithreading:
 * Access to commandBuffer must be externally synchronized
 
 ```cpp
-void CmdBeginRenderPass(CommandBuffer& commandBuffer, const FrameBuffer& frameBuffer, FramebufferBindFlag renderPassBeginFlag)
+void CmdBeginRendering(CommandBuffer& commandBuffer, const AttachmentsDesc& attachmentsDesc)
 ```
 
 Multithreading:
@@ -1025,13 +1005,6 @@ void SetPipelineDebugName(Pipeline& pipeline, const char* name)
 
 Multithreading:
 * Access to pipeline must be externally synchronized
-
-```cpp
-void SetFrameBufferDebugName(FrameBuffer& frameBuffer, const char* name)
-```
-
-Multithreading:
-* Access to frameBuffer must be externally synchronized
 
 ```cpp
 void SetQueryPoolDebugName(QueryPool& queryPool, const char* name)

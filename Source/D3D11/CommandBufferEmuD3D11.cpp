@@ -29,8 +29,8 @@ enum OpCode : uint32_t
     CLEAR_ATTACHMENTS,
     CLEAR_STORAGE_BUFFER,
     CLEAR_STORAGE_TEXTURE,
-    BEGIN_RENDERPASS,
-    END_RENDERPASS,
+    BEGIN_RENDERING,
+    END_RENDERING,
     BIND_VERTEX_BUFFERS,
     BIND_INDEX_BUFFER,
     BIND_PIPELINE_LAYOUT,
@@ -199,7 +199,7 @@ void CommandBufferEmuD3D11::Submit()
             break;
         case CLEAR_STORAGE_BUFFER:
             {
-                ClearStorageBufferDesc clearDesc;
+                ClearStorageBufferDesc clearDesc = {};
                 Read(m_PushBuffer, i, clearDesc);
 
                 commandBuffer.ClearStorageBuffer(clearDesc);
@@ -207,26 +207,24 @@ void CommandBufferEmuD3D11::Submit()
             break;
         case CLEAR_STORAGE_TEXTURE:
             {
-                ClearStorageTextureDesc clearDesc;
+                ClearStorageTextureDesc clearDesc = {};
                 Read(m_PushBuffer, i, clearDesc);
 
                 commandBuffer.ClearStorageTexture(clearDesc);
             }
             break;
-        case BEGIN_RENDERPASS:
+        case BEGIN_RENDERING:
             {
-                FrameBuffer* frameBuffer;
-                Read(m_PushBuffer, i, frameBuffer);
+                AttachmentsDesc attachmentsDesc = {};
+                Read(m_PushBuffer, i, attachmentsDesc.colors, attachmentsDesc.colorNum);
+                Read(m_PushBuffer, i, attachmentsDesc.depthStencil);
 
-                RenderPassBeginFlag renderPassBeginFlag;
-                Read(m_PushBuffer, i, renderPassBeginFlag);
-
-                commandBuffer.BeginRenderPass(*frameBuffer, renderPassBeginFlag);
+                commandBuffer.BeginRendering(attachmentsDesc);
             }
             break;
-        case END_RENDERPASS:
+        case END_RENDERING:
             {
-                commandBuffer.EndRenderPass();
+                commandBuffer.EndRendering();
             }
             break;
         case BIND_VERTEX_BUFFERS:
@@ -398,13 +396,13 @@ void CommandBufferEmuD3D11::Submit()
                 Texture* dstTexture;
                 Read(m_PushBuffer, i, dstTexture);
 
-                TextureRegionDesc dstRegion;
+                TextureRegionDesc dstRegion = {};
                 Read(m_PushBuffer, i, dstRegion);
 
                 Texture* srcTexture;
                 Read(m_PushBuffer, i, srcTexture);
 
-                TextureRegionDesc srcRegion;
+                TextureRegionDesc srcRegion = {};
                 Read(m_PushBuffer, i, srcRegion);
 
                 commandBuffer.CopyTexture(*dstTexture, &dstRegion, *srcTexture, &srcRegion);
@@ -415,13 +413,13 @@ void CommandBufferEmuD3D11::Submit()
                 Texture* dstTexture;
                 Read(m_PushBuffer, i, dstTexture);
 
-                TextureRegionDesc dstRegion;
+                TextureRegionDesc dstRegion = {};
                 Read(m_PushBuffer, i, dstRegion);
 
                 Buffer* srcBuffer;
                 Read(m_PushBuffer, i, srcBuffer);
 
-                TextureDataLayoutDesc srcDataLayout;
+                TextureDataLayoutDesc srcDataLayout = {};
                 Read(m_PushBuffer, i, srcDataLayout);
 
                 commandBuffer.UploadBufferToTexture(*dstTexture, dstRegion, *srcBuffer, srcDataLayout);
@@ -432,13 +430,13 @@ void CommandBufferEmuD3D11::Submit()
                 Buffer* dstBuffer;
                 Read(m_PushBuffer, i, dstBuffer);
 
-                TextureDataLayoutDesc dstDataLayout;
+                TextureDataLayoutDesc dstDataLayout = {};
                 Read(m_PushBuffer, i, dstDataLayout);
 
                 Texture* srcTexture;
                 Read(m_PushBuffer, i, srcTexture);
 
-                TextureRegionDesc srcRegion;
+                TextureRegionDesc srcRegion = {};
                 Read(m_PushBuffer, i, srcRegion);
 
                 commandBuffer.ReadbackTextureToBuffer(*dstBuffer, dstDataLayout, *srcTexture, srcRegion);
@@ -621,16 +619,16 @@ inline void CommandBufferEmuD3D11::ClearStorageTexture(const ClearStorageTexture
     Push(m_PushBuffer, clearDesc);
 }
 
-inline void CommandBufferEmuD3D11::BeginRenderPass(const FrameBuffer& frameBuffer, RenderPassBeginFlag renderPassBeginFlag)
+inline void CommandBufferEmuD3D11::BeginRendering(const AttachmentsDesc& attachmentsDesc)
 {
-    Push(m_PushBuffer, BEGIN_RENDERPASS);
-    Push(m_PushBuffer, &frameBuffer);
-    Push(m_PushBuffer, renderPassBeginFlag);
+    Push(m_PushBuffer, BEGIN_RENDERING);
+    Push(m_PushBuffer, attachmentsDesc.colors, attachmentsDesc.colorNum);
+    Push(m_PushBuffer, attachmentsDesc.depthStencil);
 }
 
-inline void CommandBufferEmuD3D11::EndRenderPass()
+inline void CommandBufferEmuD3D11::EndRendering()
 {
-    Push(m_PushBuffer, END_RENDERPASS);
+    Push(m_PushBuffer, END_RENDERING);
 }
 
 inline void CommandBufferEmuD3D11::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets)

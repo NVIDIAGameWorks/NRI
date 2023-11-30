@@ -16,7 +16,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "PipelineLayoutVK.h"
 #include "PipelineVK.h"
 #include "DescriptorSetVK.h"
-#include "FrameBufferVK.h"
 #include "CommandQueueVK.h"
 #include "QueryPoolVK.h"
 #include "AccelerationStructureVK.h"
@@ -103,7 +102,6 @@ inline Result CommandBufferVK::Begin(const DescriptorPool* descriptorPool, uint3
     m_CurrentPipelineLayoutHandle = VK_NULL_HANDLE;
     m_CurrentPipelineLayout = nullptr;
     m_CurrentPipeline = nullptr;
-    m_CurrentFrameBuffer = nullptr;
 
     return Result::SUCCESS;
 }
@@ -121,25 +119,42 @@ inline Result CommandBufferVK::End()
 
 inline void CommandBufferVK::SetViewports(const Viewport* viewports, uint32_t viewportNum)
 {
-    VkViewport* flippedViewports = STACK_ALLOC(VkViewport, viewportNum);
-
+    VkViewport* vkViewports = STACK_ALLOC(VkViewport, viewportNum);
     for (uint32_t i = 0; i < viewportNum; i++)
     {
-        const VkViewport& viewport = *(const VkViewport*)&viewports[i];
-        VkViewport& flippedViewport = flippedViewports[i];
-        flippedViewport = viewport;
-        flippedViewport.y = viewport.height - viewport.y;
-        flippedViewport.height = -viewport.height;
+        const Viewport& viewport = viewports[i];
+        VkViewport& vkViewport = vkViewports[i];
+        vkViewport.x = viewport.x;
+        vkViewport.y = viewport.y;
+        vkViewport.width = viewport.width;
+        vkViewport.height = viewport.height;
+        vkViewport.minDepth = viewport.depthRangeMin;
+        vkViewport.maxDepth = viewport.depthRangeMax;
+
+        // Flip
+        vkViewport.y = viewport.height - viewport.y;
+        vkViewport.height = -viewport.height;
     }
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdSetViewport(m_Handle, 0, viewportNum, flippedViewports);
+    vk.CmdSetViewport(m_Handle, 0, viewportNum, vkViewports);
 }
 
 inline void CommandBufferVK::SetScissors(const Rect* rects, uint32_t rectNum)
 {
+    VkRect2D* vkRects = STACK_ALLOC(VkRect2D, rectNum);
+    for (uint32_t i = 0; i < rectNum; i++)
+    {
+        const Rect& viewport = rects[i];
+        VkRect2D& vkRect = vkRects[i];
+        vkRect.offset.x = viewport.x;
+        vkRect.offset.y = viewport.y;
+        vkRect.extent.width = viewport.width;
+        vkRect.extent.height = viewport.height;
+    }
+
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdSetScissor(m_Handle, 0, rectNum, (const VkRect2D*)rects);
+    vk.CmdSetScissor(m_Handle, 0, rectNum, vkRects);
 }
 
 inline void CommandBufferVK::SetDepthBounds(float boundsMin, float boundsMax)
@@ -196,22 +211,18 @@ inline void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, uint3
         memcpy(&attachment.clearValue, &desc.value, sizeof(VkClearValue));
     }
 
-    VkClearRect* clearRects;
-
+    VkClearRect* clearRects = nullptr;
     if (rectNum == 0)
     {
         clearRects = STACK_ALLOC(VkClearRect, clearDescNum);
         rectNum = clearDescNum;
 
-        const VkRect2D& rect = m_CurrentFrameBuffer->GetRenderArea();
-        const uint32_t layerNum = m_CurrentFrameBuffer->GetLayerNum();
-
         for (uint32_t i = 0; i < clearDescNum; i++)
         {
             VkClearRect& clearRect = clearRects[i];
             clearRect.baseArrayLayer = 0;
-            clearRect.layerCount = layerNum;
-            clearRect.rect = rect;
+            clearRect.layerCount = m_RenderLayerNum;
+            clearRect.rect = {{0, 0}, {m_RenderWidth, m_RenderHeight}};
         }
     }
     else
@@ -220,10 +231,11 @@ inline void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, uint3
 
         for (uint32_t i = 0; i < rectNum; i++)
         {
+            const Rect& rect = rects[i];
             VkClearRect& clearRect = clearRects[i];
             clearRect.baseArrayLayer = 0;
             clearRect.layerCount = 1;
-            memcpy(&clearRect.rect, rects + i, sizeof(VkRect2D));
+            clearRect.rect = {{rect.x, rect.y}, {rect.width, rect.height}};
         }
     }
 
@@ -250,34 +262,99 @@ inline void CommandBufferVK::ClearStorageTexture(const ClearStorageTextureDesc& 
     vk.CmdClearColorImage(m_Handle, descriptor.GetImage(m_PhysicalDeviceIndex), VK_IMAGE_LAYOUT_GENERAL, value, 1, &range);
 }
 
-inline void CommandBufferVK::BeginRenderPass(const FrameBuffer& frameBuffer, RenderPassBeginFlag renderPassBeginFlag)
+inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDesc)
 {
-    const FrameBufferVK& frameBufferImpl = (const FrameBufferVK&)frameBuffer;
+    const DeviceDesc& deviceDesc = m_Device.GetDesc();
+    m_RenderLayerNum = deviceDesc.attachmentLayerMaxNum;
+    m_RenderWidth = deviceDesc.attachmentMaxDim;
+    m_RenderHeight = deviceDesc.attachmentMaxDim;
 
-    const uint32_t attachmentNum = frameBufferImpl.GetAttachmentNum();
-    VkClearValue* values = STACK_ALLOC(VkClearValue, attachmentNum);
-    frameBufferImpl.GetClearValues(values);
+    VkRenderingAttachmentInfo* colors = nullptr;
+    if (attachmentsDesc.colorNum)
+    {
+        colors = STACK_ALLOC(VkRenderingAttachmentInfo, attachmentsDesc.colorNum);
 
-    const VkRenderPassBeginInfo info = {
-        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        for (uint32_t i = 0; i < attachmentsDesc.colorNum; i++ )
+        {
+            const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.colors[i];
+
+            VkRenderingAttachmentInfo& color = colors[i];
+            color.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+            color.pNext = nullptr;
+            color.imageView = descriptor.GetImageView(m_PhysicalDeviceIndex);
+            color.imageLayout = descriptor.GetImageLayout();
+            color.resolveMode = VK_RESOLVE_MODE_NONE;
+            color.resolveImageView = VK_NULL_HANDLE;
+            color.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            color.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+            color.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            color.clearValue = {};
+
+            const DescriptorTextureDesc& desc = descriptor.GetTextureDesc();
+            Dim_t w = desc.texture->GetSize(0, desc.mipOffset);
+            Dim_t h = desc.texture->GetSize(1, desc.mipOffset);
+
+            m_RenderLayerNum = std::min(m_RenderLayerNum, desc.arraySize);
+            m_RenderWidth = std::min(m_RenderWidth, w);
+            m_RenderHeight = std::min(m_RenderHeight, h);
+        }
+    }
+    
+    VkRenderingAttachmentInfo depthStencil = {};
+    if (attachmentsDesc.depthStencil)
+    {
+        const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.depthStencil;
+
+        depthStencil.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        depthStencil.pNext = nullptr;
+        depthStencil.imageView = descriptor.GetImageView(m_PhysicalDeviceIndex);
+        depthStencil.imageLayout = descriptor.GetImageLayout();
+        depthStencil.resolveMode = VK_RESOLVE_MODE_NONE;
+        depthStencil.resolveImageView = VK_NULL_HANDLE;
+        depthStencil.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        depthStencil.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        depthStencil.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        depthStencil.clearValue = {};
+
+        const DescriptorTextureDesc& desc = descriptor.GetTextureDesc();
+        Dim_t w = desc.texture->GetSize(0, desc.mipOffset);
+        Dim_t h = desc.texture->GetSize(1, desc.mipOffset);
+
+        m_RenderLayerNum = std::min(m_RenderLayerNum, desc.arraySize);
+        m_RenderWidth = std::min(m_RenderWidth, w);
+        m_RenderHeight = std::min(m_RenderHeight, h);
+    }
+
+    // TODO: matches D3D behavior?
+    bool hasAttachment = attachmentsDesc.depthStencil || attachmentsDesc.colors;
+    if (!hasAttachment)
+    {
+        m_RenderLayerNum = 0;
+        m_RenderWidth = 0;
+        m_RenderHeight = 0;
+    }
+
+    VkRenderingInfo renderingInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_INFO,
         nullptr,
-        frameBufferImpl.GetRenderPass(renderPassBeginFlag),
-        frameBufferImpl.GetHandle(m_PhysicalDeviceIndex),
-        frameBufferImpl.GetRenderArea(),
-        attachmentNum,
-        values
+        0,
+        {{0, 0}, {m_RenderWidth, m_RenderHeight}},
+        m_RenderLayerNum,
+        0,
+        attachmentsDesc.colorNum,
+        colors,
+        attachmentsDesc.depthStencil ? &depthStencil : nullptr,
+        attachmentsDesc.depthStencil ? &depthStencil : nullptr
     };
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdBeginRenderPass(m_Handle, &info, VK_SUBPASS_CONTENTS_INLINE);
-
-    m_CurrentFrameBuffer = &frameBufferImpl;
+    vk.CmdBeginRendering(m_Handle, &renderingInfo);
 }
 
-inline void CommandBufferVK::EndRenderPass()
+inline void CommandBufferVK::EndRendering()
 {
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdEndRenderPass(m_Handle);
+    vk.CmdEndRendering(m_Handle);
 }
 
 inline void CommandBufferVK::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets)

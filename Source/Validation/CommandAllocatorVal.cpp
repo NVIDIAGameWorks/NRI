@@ -16,34 +16,25 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
-CommandAllocatorVal::CommandAllocatorVal(DeviceVal& device, CommandAllocator& commandAllocator) :
-    DeviceObjectVal(device, commandAllocator)
-{
-}
-
-void CommandAllocatorVal::SetDebugName(const char* name)
-{
+void CommandAllocatorVal::SetDebugName(const char* name) {
     m_Name = name;
-    GetCoreInterface().SetCommandAllocatorDebugName(GetImpl(), name);
+    GetCoreInterface().SetCommandAllocatorDebugName(*GetImpl(), name);
 }
 
-Result CommandAllocatorVal::CreateCommandBuffer(CommandBuffer*& commandBuffer)
-{
+Result CommandAllocatorVal::CreateCommandBuffer(CommandBuffer*& commandBuffer) {
     CommandBuffer* commandBufferImpl;
-    const Result result = GetCoreInterface().CreateCommandBuffer(GetImpl(), commandBufferImpl);
+    const Result result = GetCoreInterface().CreateCommandBuffer(*GetImpl(), commandBufferImpl);
 
-    if (result == Result::SUCCESS)
-    {
-        RETURN_ON_FAILURE(&m_Device, commandBufferImpl != nullptr, Result::FAILURE, "Implementation failure: 'commandBufferImpl' is NULL!");
-        commandBuffer = (CommandBuffer*)Allocate<CommandBufferVal>(m_Device.GetStdAllocator(), m_Device, *commandBufferImpl, false);
+    if (result == Result::SUCCESS) {
+        RETURN_ON_FAILURE(&m_Device, commandBufferImpl != nullptr, Result::FAILURE, "CreateCommandBuffer: 'impl' is NULL!");
+        commandBuffer = (CommandBuffer*)Allocate<CommandBufferVal>(m_Device.GetStdAllocator(), m_Device, commandBufferImpl, false);
     }
 
     return result;
 }
 
-void CommandAllocatorVal::Reset()
-{
-    GetCoreInterface().ResetCommandAllocator(GetImpl());
+void CommandAllocatorVal::Reset() {
+    GetCoreInterface().ResetCommandAllocator(*GetImpl());
 }
 
 #include "CommandAllocatorVal.hpp"

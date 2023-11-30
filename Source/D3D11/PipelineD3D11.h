@@ -82,8 +82,8 @@ private:
 
     D3D11_PRIMITIVE_TOPOLOGY m_Topology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
     Color32f m_BlendFactor = {};
-    uint16_t m_SampleMask = 0;
-    uint16_t m_StencilRef = uint16_t(-1);
+    uint32_t m_SampleMask = 0;
+    uint8_t m_StencilRef = uint8_t(-1);
     bool m_IsRasterizerDiscarded = false;
     const PipelineLayoutD3D11* m_PipelineLayout = nullptr;
 };

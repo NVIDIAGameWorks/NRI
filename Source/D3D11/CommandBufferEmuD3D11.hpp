@@ -57,14 +57,14 @@ static void NRI_CALL CmdSetConstants(CommandBuffer& commandBuffer, uint32_t push
     ((CommandBufferEmuD3D11&)commandBuffer).SetConstants(pushConstantIndex, data, size);
 }
 
-static void NRI_CALL CmdBeginRenderPass(CommandBuffer& commandBuffer, const FrameBuffer& frameBuffer, RenderPassBeginFlag renderPassBeginFlag)
+static void NRI_CALL CmdBeginRendering(CommandBuffer& commandBuffer, const AttachmentsDesc& attachmentsDesc)
 {
-    ((CommandBufferEmuD3D11&)commandBuffer).BeginRenderPass(frameBuffer, renderPassBeginFlag);
+    ((CommandBufferEmuD3D11&)commandBuffer).BeginRendering(attachmentsDesc);
 }
 
-static void NRI_CALL CmdEndRenderPass(CommandBuffer& commandBuffer)
+static void NRI_CALL CmdEndRendering(CommandBuffer& commandBuffer)
 {
-    ((CommandBufferEmuD3D11&)commandBuffer).EndRenderPass();
+    ((CommandBufferEmuD3D11&)commandBuffer).EndRendering();
 }
 
 static void NRI_CALL CmdSetViewports(CommandBuffer& commandBuffer, const Viewport* viewports, uint32_t viewportNum)
@@ -225,31 +225,32 @@ void Core_CommandBufferEmu_PartiallyFillFunctionTable(CoreInterface& coreInterfa
 {
     coreInterface.DestroyCommandBuffer = ::DestroyCommandBuffer;
     coreInterface.BeginCommandBuffer = ::BeginCommandBuffer;
-    coreInterface.EndCommandBuffer = ::EndCommandBuffer;
-    coreInterface.CmdSetPipelineLayout = ::CmdSetPipelineLayout;
-    coreInterface.CmdSetPipeline = ::CmdSetPipeline;
-    coreInterface.CmdPipelineBarrier = ::CmdPipelineBarrier;
     coreInterface.CmdSetDescriptorPool = ::CmdSetDescriptorPool;
     coreInterface.CmdSetDescriptorSet = ::CmdSetDescriptorSet;
+    coreInterface.CmdSetPipelineLayout = ::CmdSetPipelineLayout;
+    coreInterface.CmdSetPipeline = ::CmdSetPipeline;
     coreInterface.CmdSetConstants = ::CmdSetConstants;
-    coreInterface.CmdBeginRenderPass = ::CmdBeginRenderPass;
-    coreInterface.CmdEndRenderPass = ::CmdEndRenderPass;
+    coreInterface.CmdPipelineBarrier = ::CmdPipelineBarrier;
+    coreInterface.CmdBeginRendering = ::CmdBeginRendering;
+    coreInterface.CmdClearAttachments = ::CmdClearAttachments;
     coreInterface.CmdSetViewports = ::CmdSetViewports;
     coreInterface.CmdSetScissors = ::CmdSetScissors;
     coreInterface.CmdSetDepthBounds = ::CmdSetDepthBounds;
     coreInterface.CmdSetStencilReference = ::CmdSetStencilReference;
     coreInterface.CmdSetSamplePositions = ::CmdSetSamplePositions;
-    coreInterface.CmdClearAttachments = ::CmdClearAttachments;
     coreInterface.CmdSetIndexBuffer = ::CmdSetIndexBuffer;
     coreInterface.CmdSetVertexBuffers = ::CmdSetVertexBuffers;
     coreInterface.CmdDraw = ::CmdDraw;
     coreInterface.CmdDrawIndexed = ::CmdDrawIndexed;
     coreInterface.CmdDrawIndirect = ::CmdDrawIndirect;
     coreInterface.CmdDrawIndexedIndirect = ::CmdDrawIndexedIndirect;
+    coreInterface.CmdEndRendering = ::CmdEndRendering;
     coreInterface.CmdDispatch = ::CmdDispatch;
     coreInterface.CmdDispatchIndirect = ::CmdDispatchIndirect;
     coreInterface.CmdBeginQuery = ::CmdBeginQuery;
     coreInterface.CmdEndQuery = ::CmdEndQuery;
+    coreInterface.CmdCopyQueries = ::CmdCopyQueries;
+    coreInterface.CmdResetQueries = ::CmdResetQueries;
     coreInterface.CmdBeginAnnotation = ::CmdBeginAnnotation;
     coreInterface.CmdEndAnnotation = ::CmdEndAnnotation;
     coreInterface.CmdClearStorageBuffer = ::CmdClearStorageBuffer;
@@ -258,8 +259,7 @@ void Core_CommandBufferEmu_PartiallyFillFunctionTable(CoreInterface& coreInterfa
     coreInterface.CmdCopyTexture = ::CmdCopyTexture;
     coreInterface.CmdUploadBufferToTexture = ::CmdUploadBufferToTexture;
     coreInterface.CmdReadbackTextureToBuffer = ::CmdReadbackTextureToBuffer;
-    coreInterface.CmdCopyQueries = ::CmdCopyQueries;
-    coreInterface.CmdResetQueries = ::CmdResetQueries;
+    coreInterface.EndCommandBuffer = ::EndCommandBuffer;
     coreInterface.SetCommandBufferDebugName = ::SetCommandBufferDebugName;
     coreInterface.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
 }

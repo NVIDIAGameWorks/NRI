@@ -192,7 +192,7 @@ bool nri::GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& 
         textureDesc.depth = 1;
         textureDesc.mipNum = (Mip_t)desc.MipLevels;
         textureDesc.arraySize = (Dim_t)desc.ArraySize;
-        textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
+        textureDesc.sampleNum = (Sample_t)desc.SampleDesc.Count;
         textureDesc.type = TextureType::TEXTURE_2D;
         textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
 

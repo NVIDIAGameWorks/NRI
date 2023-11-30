@@ -58,7 +58,6 @@ struct DispatchTable
     VULKAN_FUNCTION(CreateBufferView);
     VULKAN_FUNCTION(CreateImageView);
     VULKAN_FUNCTION(CreateSampler);
-    VULKAN_FUNCTION(CreateRenderPass);
     VULKAN_FUNCTION(CreateFramebuffer);
     VULKAN_FUNCTION(CreateQueryPool);
     VULKAN_FUNCTION(CreateCommandPool);
@@ -76,7 +75,6 @@ struct DispatchTable
     VULKAN_FUNCTION(DestroyBufferView);
     VULKAN_FUNCTION(DestroyImageView);
     VULKAN_FUNCTION(DestroySampler);
-    VULKAN_FUNCTION(DestroyRenderPass);
     VULKAN_FUNCTION(DestroyFramebuffer);
     VULKAN_FUNCTION(DestroyQueryPool);
     VULKAN_FUNCTION(DestroyCommandPool);
@@ -121,7 +119,8 @@ struct DispatchTable
     VULKAN_FUNCTION(CmdSetStencilReference);
     VULKAN_FUNCTION(CmdClearAttachments);
     VULKAN_FUNCTION(CmdClearColorImage);
-    VULKAN_FUNCTION(CmdBeginRenderPass);
+    VULKAN_FUNCTION(CmdBeginRendering);
+    VULKAN_FUNCTION(CmdEndRendering);
     VULKAN_FUNCTION(CmdBindVertexBuffers);
     VULKAN_FUNCTION(CmdBindIndexBuffer);
     VULKAN_FUNCTION(CmdBindPipeline);
@@ -143,7 +142,6 @@ struct DispatchTable
     VULKAN_FUNCTION(CmdWriteTimestamp);
     VULKAN_FUNCTION(CmdCopyQueryPoolResults);
     VULKAN_FUNCTION(CmdResetQueryPool);
-    VULKAN_FUNCTION(CmdEndRenderPass);
     VULKAN_FUNCTION(CmdFillBuffer);
     VULKAN_FUNCTION(EndCommandBuffer);
 
