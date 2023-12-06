@@ -515,8 +515,8 @@ Result DescriptorD3D11::Create(const SamplerDesc& samplerDesc)
     desc.MinLOD = samplerDesc.mipMin;
     desc.MaxLOD = samplerDesc.mipMax;
     desc.Filter = isAnisotropy ?
-       GetFilterAnisotropic(samplerDesc.filterExt, isComparison) :
-       GetFilterIsotropic(samplerDesc.mip, samplerDesc.magnification, samplerDesc.minification, samplerDesc.filterExt, isComparison);
+       GetFilterAnisotropic(samplerDesc.filters.ext, isComparison) :
+       GetFilterIsotropic(samplerDesc.filters.mip, samplerDesc.filters.mag, samplerDesc.filters.min, samplerDesc.filters.ext, isComparison);
 
     if (samplerDesc.borderColor == BorderColor::FLOAT_OPAQUE_BLACK || samplerDesc.borderColor == BorderColor::INT_OPAQUE_BLACK)
         desc.BorderColor[3] = 1.0f;

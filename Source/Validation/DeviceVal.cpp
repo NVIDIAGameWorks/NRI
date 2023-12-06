@@ -415,10 +415,10 @@ Result DeviceVal::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Des
 }
 
 Result DeviceVal::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& sampler) {
-    RETURN_ON_FAILURE(this, samplerDesc.magnification < Filter::MAX_NUM, Result::INVALID_ARGUMENT, "CreateSampler: 'samplerDesc.magnification' is invalid");
-    RETURN_ON_FAILURE(this, samplerDesc.minification < Filter::MAX_NUM, Result::INVALID_ARGUMENT, "CreateSampler: 'samplerDesc.magnification' is invalid");
-    RETURN_ON_FAILURE(this, samplerDesc.mip < Filter::MAX_NUM, Result::INVALID_ARGUMENT, "CreateSampler: 'samplerDesc.mip' is invalid");
-    RETURN_ON_FAILURE(this, samplerDesc.filterExt < FilterExt::MAX_NUM, Result::INVALID_ARGUMENT, "CreateSampler: 'samplerDesc.filterExt' is invalid");
+    RETURN_ON_FAILURE(this, samplerDesc.filters.mag < Filter::MAX_NUM, Result::INVALID_ARGUMENT, "CreateSampler: 'samplerDesc.filters.mag' is invalid");
+    RETURN_ON_FAILURE(this, samplerDesc.filters.min < Filter::MAX_NUM, Result::INVALID_ARGUMENT, "CreateSampler: 'samplerDesc.filters.min' is invalid");
+    RETURN_ON_FAILURE(this, samplerDesc.filters.mip < Filter::MAX_NUM, Result::INVALID_ARGUMENT, "CreateSampler: 'samplerDesc.filters.mip' is invalid");
+    RETURN_ON_FAILURE(this, samplerDesc.filters.ext < FilterExt::MAX_NUM, Result::INVALID_ARGUMENT, "CreateSampler: 'samplerDesc.filters.ext' is invalid");
     RETURN_ON_FAILURE(this, samplerDesc.addressModes.u < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT, "CreateSampler: 'samplerDesc.addressModes.u' is invalid");
     RETURN_ON_FAILURE(this, samplerDesc.addressModes.v < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT, "CreateSampler: 'samplerDesc.addressModes.v' is invalid");
     RETURN_ON_FAILURE(this, samplerDesc.addressModes.w < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT, "CreateSampler: 'samplerDesc.addressModes.w' is invalid");

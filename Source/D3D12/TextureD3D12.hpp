@@ -19,6 +19,9 @@ static uint64_t NRI_CALL GetTextureNativeObject(const Texture& texture, uint32_t
 {
     MaybeUnused(nodeIndex);
 
+    if (!(&texture))
+        return 0;
+
     return uint64_t((ID3D12Resource*)((TextureD3D12&)texture));
 }
 

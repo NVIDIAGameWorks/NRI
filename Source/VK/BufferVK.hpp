@@ -17,6 +17,9 @@ static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name)
 
 static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer, uint32_t nodeIndex)
 {
+    if (!(&buffer))
+        return 0;
+
     return uint64_t( ((BufferVK&)buffer).GetHandle(nodeIndex) );
 }
 

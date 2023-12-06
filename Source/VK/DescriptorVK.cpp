@@ -223,9 +223,9 @@ Result DescriptorVK::Create(const SamplerDesc& samplerDesc)
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
         nullptr,
         (VkSamplerCreateFlags)0,
-        GetFilter(samplerDesc.magnification),
-        GetFilter(samplerDesc.minification),
-        GetSamplerMipmapMode(samplerDesc.minification),
+        GetFilter(samplerDesc.filters.mag),
+        GetFilter(samplerDesc.filters.min),
+        GetSamplerMipmapMode(samplerDesc.filters.mip),
         GetSamplerAddressMode(samplerDesc.addressModes.u),
         GetSamplerAddressMode(samplerDesc.addressModes.v),
         GetSamplerAddressMode(samplerDesc.addressModes.w),
@@ -237,7 +237,7 @@ Result DescriptorVK::Create(const SamplerDesc& samplerDesc)
         samplerDesc.mipMin,
         samplerDesc.mipMax,
         VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
-        VkBool32(samplerDesc.unnormalizedCoordinates)
+        false
     };
 
     const auto& vk = m_Device.GetDispatchTable();

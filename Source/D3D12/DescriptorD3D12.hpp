@@ -19,6 +19,9 @@ static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor,
 {
     MaybeUnused(nodeIndex);
 
+    if (!(&descriptor))
+        return 0;
+
     return uint64_t( ((DescriptorD3D12&)descriptor).GetPointerCPU() );
 }
 

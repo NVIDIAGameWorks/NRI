@@ -369,8 +369,8 @@ Result DescriptorD3D12::Create(const SamplerDesc& samplerDesc)
 
     D3D12_SAMPLER_DESC desc = {};
     desc.Filter = useAnisotropy ?
-        GetFilterAnisotropic(samplerDesc.filterExt, useComparison) :
-        GetFilterIsotropic(samplerDesc.mip, samplerDesc.magnification, samplerDesc.minification, samplerDesc.filterExt, useComparison);
+        GetFilterAnisotropic(samplerDesc.filters.ext, useComparison) :
+        GetFilterIsotropic(samplerDesc.filters.mip, samplerDesc.filters.mag, samplerDesc.filters.min, samplerDesc.filters.ext, useComparison);
     desc.AddressU = GetAddressMode(samplerDesc.addressModes.u);
     desc.AddressV = GetAddressMode(samplerDesc.addressModes.v);
     desc.AddressW = GetAddressMode(samplerDesc.addressModes.w);

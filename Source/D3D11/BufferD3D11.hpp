@@ -19,6 +19,9 @@ static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer, uint32_t no
 {
     MaybeUnused(nodeIndex);
 
+    if (!(&buffer))
+        return 0;
+
     return uint64_t((ID3D11Buffer*)((BufferD3D11&)buffer));
 }
 

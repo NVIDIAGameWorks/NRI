@@ -194,6 +194,9 @@ static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name) {
 }
 
 static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
+    if (!(&device))
+        return nullptr;
+
     return ((DeviceVal&)device).GetNativeObject();
 }
 

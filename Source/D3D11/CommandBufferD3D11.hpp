@@ -213,6 +213,9 @@ static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer)
 
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer)
 {
+    if (!(&commandBuffer))
+        return nullptr;
+
     return (CommandBufferD3D11&)commandBuffer;
 }
 

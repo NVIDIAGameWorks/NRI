@@ -225,6 +225,9 @@ static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer)
 
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer)
 {
+    if (!(&commandBuffer))
+        return nullptr;
+
     return (VkCommandBuffer)((CommandBufferVK&)commandBuffer);
 }
 

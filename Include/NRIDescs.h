@@ -745,15 +745,31 @@ NRI_STRUCT(Color32i)
     int32_t x, y, z, w;
 };
 
-NRI_STRUCT(DepthStencilClearValue)
+NRI_STRUCT(DepthStencil)
 {
     float depth;
     uint8_t stencil;
 };
 
-NRI_UNION(ClearValueDesc)
+NRI_STRUCT(SamplePosition)
 {
-    NRI_NAME(DepthStencilClearValue) depthStencil;
+    int8_t x, y;
+};
+
+NRI_STRUCT(AddressModes)
+{
+    NRI_NAME(AddressMode) u, v, w;
+};
+
+NRI_STRUCT(Filters)
+{
+    NRI_NAME(Filter) min, mag, mip;
+    NRI_NAME(FilterExt) ext;
+};
+
+NRI_UNION(ClearValue)
+{
+    NRI_NAME(DepthStencil) depthStencil;
     NRI_NAME(Color32f) color32f;
     NRI_NAME(Color32ui) color32ui;
     NRI_NAME(Color32i) color32i;
@@ -761,7 +777,7 @@ NRI_UNION(ClearValueDesc)
 
 NRI_STRUCT(ClearDesc)
 {
-    NRI_NAME(ClearValueDesc) value;
+    NRI_NAME(ClearValue) value;
     NRI_NAME(AttachmentContentType) attachmentContentType;
     uint32_t colorAttachmentIndex;
 };
@@ -778,7 +794,7 @@ NRI_STRUCT(ClearStorageBufferDesc)
 NRI_STRUCT(ClearStorageTextureDesc)
 {
     const NRI_NAME(Descriptor)* storageTexture;
-    NRI_NAME(ClearValueDesc) value;
+    NRI_NAME(ClearValue) value;
     uint32_t setIndexInPipelineLayout;
     uint32_t rangeIndex;
     uint32_t offsetInRange;
@@ -834,19 +850,9 @@ NRI_STRUCT(MemoryDesc)
     bool mustBeDedicated;
 };
 
-NRI_STRUCT(AddressModes)
-{
-    NRI_NAME(AddressMode) u;
-    NRI_NAME(AddressMode) v;
-    NRI_NAME(AddressMode) w;
-};
-
 NRI_STRUCT(SamplerDesc)
 {
-    NRI_NAME(Filter) magnification;
-    NRI_NAME(Filter) minification;
-    NRI_NAME(Filter) mip;
-    NRI_NAME(FilterExt) filterExt;
+    NRI_NAME(Filters) filters;
     uint8_t anisotropy;
     float mipBias;
     float mipMin;
@@ -854,7 +860,6 @@ NRI_STRUCT(SamplerDesc)
     NRI_NAME(AddressModes) addressModes;
     NRI_NAME(CompareFunc) compareFunc;
     NRI_NAME(BorderColor) borderColor;
-    bool unnormalizedCoordinates;
 };
 
 NRI_STRUCT(TextureDesc)
@@ -1099,12 +1104,6 @@ NRI_STRUCT(InputAssemblyDesc)
     NRI_NAME(Topology) topology;
     uint8_t tessControlPointNum;
     NRI_NAME(PrimitiveRestart) primitiveRestart;
-};
-
-NRI_STRUCT(SamplePosition)
-{
-    int8_t x;
-    int8_t y;
 };
 
 NRI_STRUCT(RasterizationDesc)
