@@ -307,6 +307,11 @@ static void NRI_CALL DestroySwapChain(SwapChain& swapChain)
     return ((SwapChainVK&)swapChain).GetDevice().DestroySwapChain(swapChain);
 }
 
+static Result NRI_CALL ResizeBuffers(SwapChain& swapChain, uint16_t width, uint16_t height)
+{
+    return ((SwapChainVK&)swapChain).ResizeBuffers(width, height);
+}
+
 static Result NRI_CALL GetDisplays(Device& device, nri::Display** displays, uint32_t& displayNum)
 {
     return ((DeviceVK&)device).GetDisplays(displays, displayNum);
@@ -322,6 +327,7 @@ Result DeviceVK::FillFunctionTable(SwapChainInterface& swapChainInterface) const
     swapChainInterface = {};
     swapChainInterface.CreateSwapChain = ::CreateSwapChain;
     swapChainInterface.DestroySwapChain = ::DestroySwapChain;
+    swapChainInterface.ResizeBuffers = ::ResizeBuffers;
     swapChainInterface.GetDisplays = ::GetDisplays;
     swapChainInterface.GetDisplaySize = ::GetDisplaySize;
 

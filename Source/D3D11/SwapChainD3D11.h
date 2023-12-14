@@ -54,6 +54,7 @@ struct SwapChainD3D11
     Texture* const* GetTextures(uint32_t& textureNum) const;
     uint32_t AcquireNextTexture();
     Result Present();
+    Result ResizeBuffers(uint16_t width, uint16_t height);
     Result SetHdrMetadata(const HdrMetadata& hdrMetadata);
 
 private:
@@ -62,6 +63,7 @@ private:
     Vector<TextureD3D11*> m_Textures;
     SwapChainDesc m_SwapChainDesc = {};
     Format m_Format = Format::UNKNOWN;
+    UINT m_Flags = 0; 
     bool m_IsTearingAllowed = false;
     bool m_IsFullscreenEnabled = false;
 };

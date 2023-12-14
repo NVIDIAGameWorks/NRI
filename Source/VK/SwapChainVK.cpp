@@ -23,10 +23,14 @@ SwapChainVK::SwapChainVK(DeviceVK& device) :
 
 SwapChainVK::~SwapChainVK()
 {
+    Destroy();
+}
+
+void nri::SwapChainVK::Destroy() 
+{
     const auto& vk = m_Device.GetDispatchTable();
 
-    for (size_t i = 0; i < m_Textures.size(); i++)
-    {
+    for (size_t i = 0; i < m_Textures.size(); i++) {
         m_Textures[i]->ClearHandle();
         Deallocate(m_Device.GetStdAllocator(), m_Textures[i]);
     }
@@ -312,6 +316,16 @@ inline Result SwapChainVK::Present()
         "Can't present the swapchain: vkQueuePresentKHR returned %d.", (int32_t)result);
 
     return Result::SUCCESS;
+}
+
+Result nri::SwapChainVK::ResizeBuffers(uint16_t width, uint16_t height) 
+{
+    m_SwapChainDesc.width = (uint16_t)width;
+    m_SwapChainDesc.height = (uint16_t)height;
+
+    // Vulkan requires to recreate swapchain when the window size changes.
+    Destroy();
+    return Create(m_SwapChainDesc);
 }
 
 inline Result SwapChainVK::SetHdrMetadata(const HdrMetadata& hdrMetadata)
