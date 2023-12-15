@@ -29,6 +29,7 @@ Result FenceD3D11::Create(uint64_t initialValue)
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateQuery()");
     }
 
+    m_Event = CreateEventA(nullptr, FALSE, FALSE, nullptr);
     m_Value = initialValue;
 
     return Result::SUCCESS;
@@ -77,9 +78,17 @@ inline void FenceD3D11::Wait(uint64_t value)
 {
     if (m_Fence)
     {
-        // TODO: "busy wait" vs "wait for event"?
-        while (m_Fence->GetCompletedValue() < value)
-            ;
+        if (m_Event == 0 || m_Event == INVALID_HANDLE_VALUE)
+        {
+            while (m_Fence->GetCompletedValue() < value)
+                ;
+        }
+        else 
+        {
+            HRESULT hr = m_Fence->SetEventOnCompletion(value, m_Event);
+            CHECK(&m_Device, hr == S_OK, "ID3D12Fence::SetEventOnCompletion() - FAILED!");
+            WaitForSingleObject(m_Event, INFINITE);
+        }
     }
     else
     {

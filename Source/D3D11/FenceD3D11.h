@@ -23,7 +23,11 @@ struct FenceD3D11
     {}
 
     inline ~FenceD3D11()
-    {}
+    {
+        if (m_Event != 0 && m_Event != INVALID_HANDLE_VALUE) {
+            CloseHandle(m_Event);
+        }
+    }
 
     inline DeviceD3D11& GetDevice() const
     { return m_Device; }
@@ -50,6 +54,7 @@ private:
     ComPtr<ID3D11Query> m_Query;
     ComPtr<ID3D11Fence> m_Fence;
     uint64_t m_Value = 0;
+    HANDLE m_Event = 0;
 };
 
 }
