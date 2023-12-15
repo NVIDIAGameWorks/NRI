@@ -35,12 +35,15 @@ struct SwapChainVK
     Texture* const* GetTextures(uint32_t& textureNum) const;
     uint32_t AcquireNextTexture();
     Result Present();
+    Result ResizeBuffers(uint16_t width, uint16_t height);
     Result SetHdrMetadata(const HdrMetadata& hdrMetadata);
 
 private:
+    void Destroy();
     Result CreateSurface(const SwapChainDesc& swapChainDesc);
 
 private:
+    SwapChainDesc m_SwapChainDesc = {};
     VkSwapchainKHR m_Handle = VK_NULL_HANDLE;
     const CommandQueueVK* m_CommandQueue = nullptr;
     uint32_t m_TextureIndex = 0;

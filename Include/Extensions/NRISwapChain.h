@@ -110,6 +110,7 @@ NRI_STRUCT(SwapChainInterface)
     NRI_NAME(Texture)* const* (NRI_CALL *GetSwapChainTextures)(const NRI_NAME_REF(SwapChain) swapChain, uint32_t NRI_REF textureNum);
     uint32_t (NRI_CALL *AcquireNextSwapChainTexture)(NRI_NAME_REF(SwapChain) swapChain);
     NRI_NAME(Result) (NRI_CALL *SwapChainPresent)(NRI_NAME_REF(SwapChain) swapChain);
+    NRI_NAME(Result) (NRI_CALL *ResizeBuffers)(NRI_NAME_REF(SwapChain) swapChain, uint16_t width, uint16_t height);
     NRI_NAME(Result) (NRI_CALL *SetSwapChainHdrMetadata)(NRI_NAME_REF(SwapChain) swapChain, const NRI_NAME_REF(HdrMetadata) hdrMetadata);
     NRI_NAME(Result) (NRI_CALL *GetDisplays)(NRI_NAME_REF(Device) device, NRI_NAME(Display)** displays, uint32_t NRI_REF displayNum);
     NRI_NAME(Result) (NRI_CALL *GetDisplaySize)(NRI_NAME_REF(Device) device, NRI_NAME_REF(Display) display, uint16_t NRI_REF width, uint16_t NRI_REF height);

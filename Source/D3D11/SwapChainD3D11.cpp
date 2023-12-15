@@ -88,7 +88,7 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
     desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     desc.SampleDesc.Count = 1;
-    desc.Flags = m_IsTearingAllowed ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+    desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT | (m_IsTearingAllowed ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0);
     desc.Scaling = DXGI_SCALING_NONE;
     desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
 
@@ -98,6 +98,7 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
     {
         // are we on Win7?
         desc.Scaling = DXGI_SCALING_STRETCH;
+        desc.Flags = m_IsTearingAllowed ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
         hr = dxgiFactory2->CreateSwapChainForHwnd(m_Device.GetDevice().ptr, hwnd, &desc, nullptr, nullptr, &swapChain);
     }
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGIFactory2::CreateSwapChainForHwnd()");
@@ -211,6 +212,7 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
         m_Textures.push_back(texture);
     }
 
+    m_Flags = desc.Flags;
     return Result::SUCCESS;
 }
 
@@ -245,6 +247,34 @@ inline Result SwapChainD3D11::Present()
 
     HRESULT result = m_SwapChain->Present(m_SwapChainDesc.verticalSyncInterval, flags);
     RETURN_ON_BAD_HRESULT(&m_Device, result, "IDXGISwapChain::Present()");
+
+    return Result::SUCCESS;
+}
+
+Result nri::SwapChainD3D11::ResizeBuffers(uint16_t width, uint16_t height) 
+{
+    for (TextureD3D11* texture : m_Textures)
+        Deallocate<TextureD3D11>(m_Device.GetStdAllocator(), texture);
+
+    HRESULT result = m_SwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, m_Flags);
+    RETURN_ON_BAD_HRESULT(&m_Device, result, "IDXGISwapChain::ResizeBuffers()");
+
+    m_Textures.resize(0);
+    for (uint32_t i = 0; i < m_SwapChainDesc.textureNum; i++) {
+        ComPtr<ID3D11Resource> textureNative;
+        result = m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&textureNative));
+        RETURN_ON_BAD_HRESULT(&m_Device, result, "IDXGISwapChain::GetBuffer()");
+
+        TextureD3D11Desc textureDesc = {};
+        textureDesc.d3d11Resource = textureNative;
+
+        TextureD3D11* texture = Allocate<TextureD3D11>(m_Device.GetStdAllocator(), m_Device);
+        const nri::Result res = texture->Create(textureDesc);
+        if (res != nri::Result::SUCCESS)
+            return res;
+
+        m_Textures.push_back(texture);
+    }
 
     return Result::SUCCESS;
 }
