@@ -51,11 +51,13 @@ inline void FenceD3D12::Wait(uint64_t value)
         while (m_Fence->GetCompletedValue() < value)
             ;
     } 
-    else
+    else if (m_Fence->GetCompletedValue() < value)
     {
         HRESULT hr = m_Fence->SetEventOnCompletion(value, m_Event);
         CHECK(&m_Device, hr == S_OK, "ID3D12Fence::SetEventOnCompletion() - FAILED!");
-        WaitForSingleObject(m_Event, INFINITE);
+
+        uint32_t result = WaitForSingleObjectEx(m_Event, DEFAULT_TIMEOUT, TRUE);
+        CHECK(&m_Device, result == WAIT_OBJECT_0, "WaitForSingleObjectEx(): failed, result = 0x%08X!", result);
     }
 }
 

@@ -48,6 +48,8 @@ typedef nri::MemoryAllocatorInterface MemoryAllocatorInterface;
 
 constexpr uint32_t PHYSICAL_DEVICE_GROUP_MAX_SIZE = 4;
 constexpr uint32_t COMMAND_QUEUE_TYPE_NUM = (uint32_t)nri::CommandQueueType::MAX_NUM;
+constexpr uint32_t DEFAULT_TIMEOUT = 5000; // 5 sec
+constexpr uint64_t VK_DEFAULT_TIMEOUT = DEFAULT_TIMEOUT * 1000000ull;
 
 constexpr void ReturnVoid()
 {}

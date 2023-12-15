@@ -252,7 +252,7 @@ inline uint32_t SwapChainD3D11::AcquireNextTexture()
     // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame
     if (m_FrameLatencyWaitableObject)
     {        
-        uint32_t result = WaitForSingleObjectEx(m_FrameLatencyWaitableObject, 500, true); // 0.5 second timeout
+        uint32_t result = WaitForSingleObjectEx(m_FrameLatencyWaitableObject, DEFAULT_TIMEOUT, TRUE);
         RETURN_ON_FAILURE(&m_Device, result == WAIT_OBJECT_0, uint32_t(-1), "WaitForSingleObjectEx(): failed, result = 0x%08X!", result);
     }
         

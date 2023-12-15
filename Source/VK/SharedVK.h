@@ -20,8 +20,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "DispatchTable.h"
 #include "ConversionVK.h"
 
-constexpr uint64_t DEFAULT_TIMEOUT = uint64_t(-1);
-
 struct MemoryTypeInfo
 {
     uint16_t memoryTypeIndex;

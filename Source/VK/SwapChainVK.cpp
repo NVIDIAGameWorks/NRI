@@ -282,7 +282,7 @@ inline Texture* const* SwapChainVK::GetTextures(uint32_t& textureNum) const
 inline uint32_t SwapChainVK::AcquireNextTexture()
 {
     const auto& vk = m_Device.GetDispatchTable();
-    const VkResult result = vk.AcquireNextImageKHR(m_Device, m_Handle, DEFAULT_TIMEOUT, m_Semaphore, VK_NULL_HANDLE, &m_TextureIndex);
+    const VkResult result = vk.AcquireNextImageKHR(m_Device, m_Handle, VK_DEFAULT_TIMEOUT, m_Semaphore, VK_NULL_HANDLE, &m_TextureIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) // TODO: find a better way, instead of returning an invalid index
         return uint32_t(-1);
 

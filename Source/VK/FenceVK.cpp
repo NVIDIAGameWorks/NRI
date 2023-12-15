@@ -78,7 +78,7 @@ inline void FenceVK::Wait(uint64_t value)
     VkSemaphoreWaitInfo waitInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO, nullptr, 0, 1, &m_Fence, &value };
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.WaitSemaphores((VkDevice)m_Device, &waitInfo, DEFAULT_TIMEOUT);
+    vk.WaitSemaphores((VkDevice)m_Device, &waitInfo, VK_DEFAULT_TIMEOUT);
 }
 
 #include "FenceVK.hpp"
