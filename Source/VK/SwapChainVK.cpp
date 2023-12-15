@@ -279,6 +279,11 @@ inline uint32_t SwapChainVK::AcquireNextTexture()
 {
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.AcquireNextImageKHR(m_Device, m_Handle, DEFAULT_TIMEOUT, m_Semaphore, VK_NULL_HANDLE, &m_TextureIndex);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        // Actually, I don't know the best way to deal with this error without changing the
+        // the function signature, so I decided to return the invalid index.
+        return (uint32_t)-1;
+    }
 
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, m_TextureIndex,
         "Can't acquire the next texture of the swapchain: vkAcquireNextImageKHR returned %d.", (int32_t)result);
@@ -307,6 +312,10 @@ inline Result SwapChainVK::Present()
     };
 
     const VkResult result = vk.QueuePresentKHR(*m_CommandQueue, &info);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        // This is fine, just restart a swapchain when this happens.
+        return GetReturnCode(result);
+    }
 
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't present the swapchain: vkQueuePresentKHR returned %d.", (int32_t)result);
