@@ -54,7 +54,7 @@ struct SwapChainD3D12
     Texture* const* GetTextures(uint32_t& textureNum) const;
     uint32_t AcquireNextTexture();
     Result Present();
-    Result ResizeBuffers(uint16_t width, uint16_t height);
+    Result ResizeBuffers(Dim_t width, Dim_t height);
     Result SetHdrMetadata(const HdrMetadata& hdrMetadata);
 
 private:
@@ -62,10 +62,11 @@ private:
     VersionedSwapChain m_SwapChain;
     Vector<TextureD3D12*> m_Textures;
     SwapChainDesc m_SwapChainDesc = {};
+    HANDLE m_FrameLatencyWaitableObject = nullptr;
     Format m_Format = Format::UNKNOWN;
     UINT m_Flags = 0; 
+    BOOL m_Fullscreen = FALSE;
     bool m_IsTearingAllowed = false;
-    bool m_IsFullscreenEnabled = false;
 };
 
 }

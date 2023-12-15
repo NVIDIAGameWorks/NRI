@@ -35,7 +35,7 @@ struct SwapChainVK
     Texture* const* GetTextures(uint32_t& textureNum) const;
     uint32_t AcquireNextTexture();
     Result Present();
-    Result ResizeBuffers(uint16_t width, uint16_t height);
+    Result ResizeBuffers(Dim_t width, Dim_t height);
     Result SetHdrMetadata(const HdrMetadata& hdrMetadata);
 
 private:

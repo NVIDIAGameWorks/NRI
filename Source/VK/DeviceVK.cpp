@@ -1838,7 +1838,7 @@ inline Result DeviceVK::GetDisplays(Display** displays, uint32_t& displayNum)
 #endif
 }
 
-inline Result DeviceVK::GetDisplaySize(Display& display, uint16_t& width, uint16_t& height)
+inline Result DeviceVK::GetDisplaySize(Display& display, Dim_t& width, Dim_t& height)
 {
     MaybeUnused(display, width, height);
 

@@ -46,13 +46,14 @@ static std::array<Format, 5> g_swapChainTextureFormat =
 
 SwapChainD3D12::~SwapChainD3D12()
 {
-    if (m_IsFullscreenEnabled)
-    {
-        BOOL fullscreen = FALSE;
-        m_SwapChain->GetFullscreenState(&fullscreen, nullptr);
-        if (fullscreen)
-            m_SwapChain->SetFullscreenState(FALSE, nullptr);
-    }
+    // Swapchain must be destroyed in windowed mode
+    BOOL fullscreen = FALSE;
+    HRESULT hr = m_SwapChain->GetFullscreenState(&fullscreen, nullptr);
+    if (SUCCEEDED(hr) && fullscreen)
+        m_SwapChain->SetFullscreenState(FALSE, nullptr);
+
+    if (m_FrameLatencyWaitableObject)
+        CloseHandle(m_FrameLatencyWaitableObject);
 
     for (TextureD3D12* texture : m_Textures)
         Deallocate<TextureD3D12>(m_Device.GetStdAllocator(), texture);
@@ -67,13 +68,19 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
     ID3D12Device* device = m_Device;
     CommandQueueD3D12& commandQueue = *(CommandQueueD3D12*)swapChainDesc.commandQueue;
 
-    ComPtr<IDXGIFactory4> dxgifactory4;
-    HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgifactory4));
+    ComPtr<IDXGIFactory2> dxgiFactory2;
+    HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory2));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "CreateDXGIFactory2()");
 
+    // Is Win7?
+    ComPtr<IDXGIFactory3> dxgiFactory3;
+    hr = m_Device.GetAdapter()->GetParent(IID_PPV_ARGS(&dxgiFactory3));
+    bool isWin7 = FAILED(hr);
+
+    // Is tearing supported?
     m_IsTearingAllowed = false;
     ComPtr<IDXGIFactory5> dxgiFactory5;
-    hr = dxgifactory4->QueryInterface(IID_PPV_ARGS(&dxgiFactory5));
+    hr = dxgiFactory2->QueryInterface(IID_PPV_ARGS(&dxgiFactory5));
     if (SUCCEEDED(hr))
     {
         uint32_t tearingSupport = 0;
@@ -81,35 +88,32 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
         m_IsTearingAllowed = (SUCCEEDED(hr) && tearingSupport) ? true : false;
     }
 
+    // Create swapchain
     DXGI_FORMAT format = g_swapChainFormat[(uint32_t)swapChainDesc.format];
     DXGI_COLOR_SPACE_TYPE colorSpace = g_colorSpace[(uint32_t)swapChainDesc.format];
 
     DXGI_SWAP_CHAIN_DESC1 desc = {};
-    desc.BufferCount = swapChainDesc.textureNum;
     desc.Width = swapChainDesc.width;
     desc.Height = swapChainDesc.height;
     desc.Format = format;
-    desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     desc.SampleDesc.Count = 1;
-    desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT | (m_IsTearingAllowed ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0);
+    desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    desc.BufferCount = swapChainDesc.textureNum;
     desc.Scaling = DXGI_SCALING_NONE;
+    desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
+    desc.Flags = isWin7 ? 0 : DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+    if (m_IsTearingAllowed)
+        desc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
     ComPtr<IDXGISwapChain1> swapChain;
-    hr = dxgifactory4->CreateSwapChainForHwnd((ID3D12CommandQueue*)commandQueue, hwnd, &desc, nullptr, nullptr, &swapChain);
-    if (FAILED(hr))
-    {
-        // are we on Win7?
-        desc.Flags = m_IsTearingAllowed ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-        desc.Scaling = DXGI_SCALING_STRETCH;
-        hr = dxgifactory4->CreateSwapChainForHwnd((ID3D12CommandQueue*)commandQueue, hwnd, &desc, nullptr, nullptr, &swapChain);
-    }
+    hr = dxgiFactory2->CreateSwapChainForHwnd((ID3D12CommandQueue*)commandQueue, hwnd, &desc, nullptr, nullptr, &swapChain);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGIFactory2::CreateSwapChainForHwnd()");
 
-    hr = dxgifactory4->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
+    hr = dxgiFactory2->MakeWindowAssociation(hwnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGIFactory::MakeWindowAssociation()");
 
+    // Query interfaces
     hr = swapChain->QueryInterface(__uuidof(IDXGISwapChain4), (void**)&m_SwapChain.ptr);
     m_SwapChain.version = 4;
     if (FAILED(hr))
@@ -137,6 +141,7 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
         }
     }
 
+    // Color space
     if (m_SwapChain.version >= 3)
     {
         UINT colorSpaceSupport = 0;
@@ -154,6 +159,7 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
     else
         REPORT_ERROR(&m_Device, "IDXGISwapChain3::SetColorSpace1() is not supported by the OS!");
 
+    // Background color
     if (m_SwapChain.version >= 1)
     {
         DXGI_RGBA color = {};
@@ -162,7 +168,8 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
             REPORT_WARNING(&m_Device, "IDXGISwapChain1::SetBackgroundColor() - FAILED!");
     }
 
-    if (swapChainDesc.display != nullptr)
+    // Fullscreen
+    if (swapChainDesc.display)
     {
         ComPtr<IDXGIOutput> output;
         if (!m_Device.GetOutput(swapChainDesc.display, output))
@@ -172,15 +179,42 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
         }
 
         hr = m_SwapChain->SetFullscreenState(TRUE, output);
-        RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::SetFullscreenState()");
+        if (SUCCEEDED(hr))
+        {
+            hr = m_SwapChain->ResizeBuffers(desc.BufferCount, desc.Width, desc.Height, desc.Format, desc.Flags);
+            RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::ResizeBuffers()");
 
-        hr = m_SwapChain->ResizeBuffers(desc.BufferCount, desc.Width, desc.Height, desc.Format, desc.Flags);
-        RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::ResizeBuffers()");
-
-        m_IsTearingAllowed = false;
-        m_IsFullscreenEnabled = true;
+            m_IsTearingAllowed = false;
+            m_Fullscreen = TRUE;
+        }
+        else
+            REPORT_WARNING(&m_Device, "IDXGISwapChain::SetFullscreenState() - FAILED!");
     }
 
+    // Maximum frame latency
+    if (isWin7)
+    {
+        ComPtr<IDXGIDevice> dxgiDevice;
+        hr = device->QueryInterface(IID_PPV_ARGS(&dxgiDevice));
+        if (SUCCEEDED(hr))
+        {
+            ComPtr<IDXGIDevice1> dxgiDevice1;
+            hr = dxgiDevice->QueryInterface(IID_PPV_ARGS(&dxgiDevice1));
+            if (SUCCEEDED(hr))
+                dxgiDevice1->SetMaximumFrameLatency(swapChainDesc.textureNum);
+        }
+    }
+    else if (m_SwapChain.version >= 2)
+    {
+        // IMPORTANT: SetMaximumFrameLatency must be called BEFORE GetFrameLatencyWaitableObject!
+        hr = m_SwapChain->SetMaximumFrameLatency(swapChainDesc.textureNum);
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain2::SetMaximumFrameLatency()");
+
+        m_FrameLatencyWaitableObject = m_SwapChain->GetFrameLatencyWaitableObject();
+    }
+
+    // Finalize
+    m_Flags = desc.Flags;
     m_Format = g_swapChainTextureFormat[(uint32_t)swapChainDesc.format];
     m_SwapChainDesc = swapChainDesc;
 
@@ -202,7 +236,6 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
         m_Textures.push_back(texture);
     }
 
-    m_Flags = desc.Flags;
     return Result::SUCCESS;
 }
 
@@ -219,25 +252,37 @@ inline Texture* const* SwapChainD3D12::GetTextures(uint32_t& textureNum) const
 
 inline uint32_t SwapChainD3D12::AcquireNextTexture()
 {
+    // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame
+    if (m_FrameLatencyWaitableObject)
+    {        
+        uint32_t result = WaitForSingleObjectEx(m_FrameLatencyWaitableObject, 500, true); // 0.5 second timeout
+        RETURN_ON_FAILURE(&m_Device, result == WAIT_OBJECT_0, uint32_t(-1), "WaitForSingleObjectEx(): failed, result = 0x%08X!", result);
+    }
+
     return m_SwapChain->GetCurrentBackBufferIndex();
 }
 
 inline Result SwapChainD3D12::Present()
 {
     BOOL fullscreen = FALSE;
-    m_SwapChain->GetFullscreenState(&fullscreen, nullptr);
-    if (fullscreen != BOOL(m_IsFullscreenEnabled))
-        return Result::SWAPCHAIN_RESIZE;
+    HRESULT hr = m_SwapChain->GetFullscreenState(&fullscreen, nullptr);
+    if (SUCCEEDED(hr))
+    {
+        bool isResized = fullscreen != m_Fullscreen;
+        m_Fullscreen = fullscreen;
+        if (isResized)
+            return Result::SWAPCHAIN_RESIZE;
+    }
 
     UINT flags = (!m_SwapChainDesc.verticalSyncInterval && m_IsTearingAllowed) ? DXGI_PRESENT_ALLOW_TEARING : 0;
 
-    const HRESULT result = m_SwapChain->Present(m_SwapChainDesc.verticalSyncInterval, flags);
-    RETURN_ON_BAD_HRESULT(&m_Device, result, "IDXGISwapChain::Present()");
+    hr = m_SwapChain->Present(m_SwapChainDesc.verticalSyncInterval, flags);
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::Present()");
 
     return Result::SUCCESS;
 }
 
-Result nri::SwapChainD3D12::ResizeBuffers(uint16_t width, uint16_t height) 
+Result nri::SwapChainD3D12::ResizeBuffers(Dim_t width, Dim_t height) 
 {
     for (TextureD3D12* texture : m_Textures)
         Deallocate<TextureD3D12>(m_Device.GetStdAllocator(), texture);

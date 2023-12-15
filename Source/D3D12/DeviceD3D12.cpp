@@ -607,7 +607,7 @@ inline Result DeviceD3D12::GetDisplays(Display** displays, uint32_t& displayNum)
     return Result::SUCCESS;
 }
 
-inline Result DeviceD3D12::GetDisplaySize(Display& display, uint16_t& width, uint16_t& height)
+inline Result DeviceD3D12::GetDisplaySize(Display& display, Dim_t& width, Dim_t& height)
 {
     Display* address = &display;
     if (!address)

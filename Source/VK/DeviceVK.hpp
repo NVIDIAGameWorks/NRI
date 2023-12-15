@@ -307,7 +307,7 @@ static void NRI_CALL DestroySwapChain(SwapChain& swapChain)
     return ((SwapChainVK&)swapChain).GetDevice().DestroySwapChain(swapChain);
 }
 
-static Result NRI_CALL ResizeBuffers(SwapChain& swapChain, uint16_t width, uint16_t height)
+static Result NRI_CALL ResizeBuffers(SwapChain& swapChain, Dim_t width, Dim_t height)
 {
     return ((SwapChainVK&)swapChain).ResizeBuffers(width, height);
 }
@@ -317,7 +317,7 @@ static Result NRI_CALL GetDisplays(Device& device, nri::Display** displays, uint
     return ((DeviceVK&)device).GetDisplays(displays, displayNum);
 }
 
-static Result NRI_CALL GetDisplaySize(Device& device, nri::Display& display, uint16_t& width, uint16_t& height)
+static Result NRI_CALL GetDisplaySize(Device& device, nri::Display& display, Dim_t& width, Dim_t& height)
 {
     return ((DeviceVK&)device).GetDisplaySize(display, width, height);
 }

@@ -117,7 +117,7 @@ struct DeviceVK final : public DeviceBase
     void DestroySwapChain(SwapChain& swapChain);
     void DestroyAccelerationStructure(AccelerationStructure& accelerationStructure);
     Result GetDisplays(Display** displays, uint32_t& displayNum);
-    Result GetDisplaySize(Display& display, uint16_t& width, uint16_t& height);
+    Result GetDisplaySize(Display& display, Dim_t& width, Dim_t& height);
     Result AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);

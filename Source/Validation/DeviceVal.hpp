@@ -273,7 +273,7 @@ static Result NRI_CALL GetDisplays(Device& device, Display** displays, uint32_t&
     return ((DeviceVal&)device).GetDisplays(displays, displayNum);
 }
 
-static Result NRI_CALL GetDisplaySize(Device& device, Display& display, uint16_t& width, uint16_t& height) {
+static Result NRI_CALL GetDisplaySize(Device& device, Display& display, Dim_t& width, Dim_t& height) {
     return ((DeviceVal&)device).GetDisplaySize(display, width, height);
 }
 

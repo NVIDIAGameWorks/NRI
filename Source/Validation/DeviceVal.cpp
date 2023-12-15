@@ -113,7 +113,7 @@ Result DeviceVal::GetDisplays(Display** displays, uint32_t& displayNum) {
     return m_SwapChainAPI.GetDisplays(m_Device, displays, displayNum);
 }
 
-Result DeviceVal::GetDisplaySize(Display& display, uint16_t& width, uint16_t& height) {
+Result DeviceVal::GetDisplaySize(Display& display, Dim_t& width, Dim_t& height) {
     return m_SwapChainAPI.GetDisplaySize(m_Device, display, width, height);
 }
 

@@ -48,7 +48,7 @@ struct DeviceD3D11 final : public DeviceBase
     Result CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain);
     void DestroySwapChain(SwapChain& swapChain);
     Result GetDisplays(Display** displays, uint32_t& displayNum);
-    Result GetDisplaySize(Display& display, uint16_t& width, uint16_t& height);
+    Result GetDisplaySize(Display& display, Dim_t& width, Dim_t& height);
 
     Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
     Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);

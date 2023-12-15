@@ -328,7 +328,7 @@ static void NRI_CALL DestroySwapChain(SwapChain& swapChain)
     return device.DestroySwapChain(swapChain);
 }
 
-static Result NRI_CALL ResizeBuffers(SwapChain& swapChain, uint16_t width, uint16_t height)
+static Result NRI_CALL ResizeBuffers(SwapChain& swapChain, Dim_t width, Dim_t height)
 {
     return ((SwapChainD3D11&)swapChain).ResizeBuffers(width, height);
 }
@@ -338,7 +338,7 @@ static Result NRI_CALL GetDisplays(Device& device, Display** displays, uint32_t&
     return ((DeviceD3D11&)device).GetDisplays(displays, displayNum);
 }
 
-static Result NRI_CALL GetDisplaySize(Device& device, Display& display, uint16_t& width, uint16_t& height)
+static Result NRI_CALL GetDisplaySize(Device& device, Display& display, Dim_t& width, Dim_t& height)
 {
     return ((DeviceD3D11&)device).GetDisplaySize(display, width, height);
 }

@@ -283,11 +283,8 @@ inline uint32_t SwapChainVK::AcquireNextTexture()
 {
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.AcquireNextImageKHR(m_Device, m_Handle, DEFAULT_TIMEOUT, m_Semaphore, VK_NULL_HANDLE, &m_TextureIndex);
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        // Actually, I don't know the best way to deal with this error without changing the
-        // the function signature, so I decided to return the invalid index.
-        return (uint32_t)-1;
-    }
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) // TODO: find a better way, instead of returning an invalid index
+        return uint32_t(-1);
 
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, m_TextureIndex,
         "Can't acquire the next texture of the swapchain: vkAcquireNextImageKHR returned %d.", (int32_t)result);
@@ -316,8 +313,9 @@ inline Result SwapChainVK::Present()
     };
 
     const VkResult result = vk.QueuePresentKHR(*m_CommandQueue, &info);
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        // This is fine, just restart a swapchain when this happens.
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        // This is fine, just restart a swapchain when this happens
         return GetReturnCode(result);
     }
 
@@ -327,13 +325,14 @@ inline Result SwapChainVK::Present()
     return Result::SUCCESS;
 }
 
-Result nri::SwapChainVK::ResizeBuffers(uint16_t width, uint16_t height) 
+Result nri::SwapChainVK::ResizeBuffers(Dim_t width, Dim_t height) 
 {
     m_SwapChainDesc.width = (uint16_t)width;
     m_SwapChainDesc.height = (uint16_t)height;
 
-    // Vulkan requires to recreate swapchain when the window size changes.
+    // Vulkan requires to recreate swapchain when the window size changes
     Destroy();
+
     return Create(m_SwapChainDesc);
 }
 
