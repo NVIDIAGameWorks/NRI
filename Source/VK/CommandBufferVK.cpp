@@ -545,8 +545,9 @@ inline void CommandBufferVK::CopyTexture(Texture& dstTexture, uint32_t dstNodeIn
     }
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyImage(m_Handle, srcTextureImpl.GetHandle(dstNodeIndex), VK_IMAGE_LAYOUT_GENERAL,
-        dstTextureImpl.GetHandle(srcNodeIndex), VK_IMAGE_LAYOUT_GENERAL, 1, &region);
+    vk.CmdCopyImage(
+        m_Handle, srcTextureImpl.GetHandle(dstNodeIndex), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        dstTextureImpl.GetHandle(srcNodeIndex), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 inline void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc)

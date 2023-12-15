@@ -144,6 +144,8 @@ constexpr std::array<TextureUsageBits, (size_t)TextureLayout::MAX_NUM> TEXTURE_U
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_STENCIL
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_STENCIL_READONLY
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_READONLY
+    TextureUsageBits::NONE,                     // COPY_SOURCE
+    TextureUsageBits::NONE,                     // COPY_DESTINATION
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // STENCIL_READONLY
     TextureUsageBits::SHADER_RESOURCE,          // SHADER_RESOURCE
     TextureUsageBits::NONE,                     // PRESENT

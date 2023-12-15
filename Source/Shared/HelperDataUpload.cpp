@@ -339,13 +339,13 @@ Result HelperDataUpload::DoTransition(const TextureUploadDesc* textureUploadDesc
                 transition.prevAccess = AccessBits::UNKNOWN;
                 transition.nextAccess = AccessBits::COPY_DESTINATION;
                 transition.prevLayout = TextureLayout::UNKNOWN;
-                transition.nextLayout = TextureLayout::GENERAL;
+                transition.nextLayout = TextureLayout::COPY_DESTINATION;
             }
             else
             {
                 transition.prevAccess = AccessBits::COPY_DESTINATION;
                 transition.nextAccess = textureDesc.nextAccess;
-                transition.prevLayout = TextureLayout::GENERAL;
+                transition.prevLayout = TextureLayout::COPY_DESTINATION;
                 transition.nextLayout = textureDesc.nextLayout;
             }
         }
