@@ -22,8 +22,12 @@ struct FenceD3D12
         m_Device(device)
     {}
 
-    inline ~FenceD3D12()
-    {}
+    inline ~FenceD3D12() 
+    {
+        if (m_Event != 0 && m_Event != INVALID_HANDLE_VALUE) {
+            CloseHandle(m_Event);
+        }
+    }
 
     inline DeviceD3D12& GetDevice() const
     { return m_Device; }
@@ -45,6 +49,7 @@ struct FenceD3D12
 private:
     DeviceD3D12& m_Device;
     ComPtr<ID3D12Fence> m_Fence;
+    HANDLE m_Event = 0;
 };
 
 }

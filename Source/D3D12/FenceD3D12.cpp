@@ -18,6 +18,7 @@ Result FenceD3D12::Create(uint64_t initialValue)
 {
     HRESULT hr = ((ID3D12Device*)m_Device)->CreateFence(initialValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateFence()");
+    m_Event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
     return Result::SUCCESS;
 }
@@ -45,9 +46,17 @@ inline void FenceD3D12::QueueWait(CommandQueueD3D12& commandQueue, uint64_t valu
 
 inline void FenceD3D12::Wait(uint64_t value)
 {
-    // TODO: "busy wait" vs "wait for event"?
-    while (m_Fence->GetCompletedValue() < value)
-        ;
+    if (m_Event == 0 || m_Event == INVALID_HANDLE_VALUE) 
+    {
+        while (m_Fence->GetCompletedValue() < value)
+            ;
+    } 
+    else
+    {
+        HRESULT hr = m_Fence->SetEventOnCompletion(value, m_Event);
+        CHECK(&m_Device, hr == S_OK, "ID3D12Fence::SetEventOnCompletion() - FAILED!");
+        WaitForSingleObject(m_Event, INFINITE);
+    }
 }
 
 #include "FenceD3D12.hpp"
