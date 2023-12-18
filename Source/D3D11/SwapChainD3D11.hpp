@@ -28,6 +28,11 @@ static Result NRI_CALL SwapChainPresent(SwapChain& swapChain)
     return ((SwapChainD3D11&)swapChain).Present();
 }
 
+static Result NRI_CALL ResizeBuffers(SwapChain& swapChain, Dim_t width, Dim_t height)
+{
+    return ((SwapChainD3D11&)swapChain).ResizeBuffers(width, height);
+}
+
 static Result NRI_CALL SetSwapChainHdrMetadata(SwapChain& swapChain, const HdrMetadata& hdrMetadata)
 {
     return ((SwapChainD3D11&)swapChain).SetHdrMetadata(hdrMetadata);

@@ -14,8 +14,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 107
-#define NRI_VERSION_DATE "15 December 2023"
+#define NRI_VERSION_MINOR 108
+#define NRI_VERSION_DATE "18 December 2023"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -50,7 +50,7 @@ NRI_STRUCT(CoreInterface)
     NRI_NAME(Result) (NRI_CALL *GetCommandQueue)(NRI_NAME_REF(Device) device, NRI_NAME(CommandQueueType) commandQueueType, NRI_NAME_REF(CommandQueue*) commandQueue);
 
     // Create
-    NRI_NAME(Result) (NRI_CALL *CreateCommandAllocator)(const NRI_NAME_REF(CommandQueue) commandQueue, uint32_t nodeMask, NRI_NAME_REF(CommandAllocator*) commandAllocator);
+    NRI_NAME(Result) (NRI_CALL *CreateCommandAllocator)(const NRI_NAME_REF(CommandQueue) commandQueue, NRI_NAME_REF(CommandAllocator*) commandAllocator);
     NRI_NAME(Result) (NRI_CALL *CreateCommandBuffer)(NRI_NAME_REF(CommandAllocator) commandAllocator, NRI_NAME_REF(CommandBuffer*) commandBuffer);
     NRI_NAME(Result) (NRI_CALL *CreateDescriptorPool)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(DescriptorPoolDesc) descriptorPoolDesc, NRI_NAME_REF(DescriptorPool*) descriptorPool);
     NRI_NAME(Result) (NRI_CALL *CreateBuffer)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(BufferDesc) bufferDesc, NRI_NAME_REF(Buffer*) buffer);

@@ -201,6 +201,7 @@ void SwapChain_PartiallyFillFunctionTable##API(SwapChainInterface& table) \
     table.GetSwapChainTextures = ::GetSwapChainTextures; \
     table.AcquireNextSwapChainTexture = ::AcquireNextSwapChainTexture; \
     table.SwapChainPresent = ::SwapChainPresent; \
+    table.ResizeBuffers = ::ResizeBuffers; \
     table.SetSwapChainHdrMetadata = ::SetSwapChainHdrMetadata; \
 }
 

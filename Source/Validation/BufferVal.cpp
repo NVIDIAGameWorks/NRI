@@ -34,8 +34,7 @@ void BufferVal::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryD
 
 void* BufferVal::Map(uint64_t offset, uint64_t size) {
     RETURN_ON_FAILURE(&m_Device, m_IsBoundToMemory, nullptr, "MapBuffer: the buffer is not bound to memory");
-
-    RETURN_ON_FAILURE(&m_Device, !m_IsMapped, nullptr, "MapBuffer: the buffer is already mapped");
+    RETURN_ON_FAILURE(&m_Device, !m_IsMapped, nullptr, "MapBuffer: the buffer is already mapped (D3D11 doesn't support nested calls)");
 
     m_IsMapped = true;
 

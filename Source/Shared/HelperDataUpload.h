@@ -21,13 +21,12 @@ private:
     template<bool isInitialTransition>
     nri::Result DoTransition(const nri::BufferUploadDesc* bufferDataDescs, uint32_t bufferDataDescNum);
 
+    Vector<nri::CommandBuffer*> m_CommandBuffers;
     const nri::CoreInterface& NRI;
-    const nri::DeviceDesc& m_DeviceDesc;
     nri::Device& m_Device;
     nri::CommandQueue& m_CommandQueue;
     nri::Fence* m_Fence = nullptr;
-    Vector<nri::CommandAllocator*> m_CommandAllocators;
-    Vector<nri::CommandBuffer*> m_CommandBuffers;
+    nri::CommandAllocator* m_CommandAllocators = nullptr;
     nri::Buffer* m_UploadBuffer = nullptr;
     nri::Memory* m_UploadBufferMemory = nullptr;
     uint8_t* m_MappedMemory = nullptr;

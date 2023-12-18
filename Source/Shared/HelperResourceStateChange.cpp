@@ -8,7 +8,7 @@ HelperResourceStateChange::HelperResourceStateChange(const CoreInterface& NRI, D
     m_CommandQueue(commandQueue),
     m_HelperWaitIdle(NRI, device, commandQueue)
 {
-    if (NRI.CreateCommandAllocator(commandQueue, ALL_NODES, m_CommandAllocator) == Result::SUCCESS)
+    if (NRI.CreateCommandAllocator(commandQueue, m_CommandAllocator) == Result::SUCCESS)
         NRI.CreateCommandBuffer(*m_CommandAllocator, m_CommandBuffer);
 }
 

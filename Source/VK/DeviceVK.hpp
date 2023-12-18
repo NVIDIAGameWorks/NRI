@@ -32,10 +32,10 @@ static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQ
     return ((DeviceVK&)device).GetCommandQueue(commandQueueType, commandQueue);
 }
 
-static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator)
+static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator)
 {
     DeviceVK& device = ((CommandQueueVK&)commandQueue).GetDevice();
-    return device.CreateCommandAllocator(commandQueue, nodeMask, commandAllocator);
+    return device.CreateCommandAllocator(commandQueue, commandAllocator);
 }
 
 static Result NRI_CALL CreateDescriptorPool(Device& device, const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool)
@@ -307,11 +307,6 @@ static void NRI_CALL DestroySwapChain(SwapChain& swapChain)
     return ((SwapChainVK&)swapChain).GetDevice().DestroySwapChain(swapChain);
 }
 
-static Result NRI_CALL ResizeBuffers(SwapChain& swapChain, Dim_t width, Dim_t height)
-{
-    return ((SwapChainVK&)swapChain).ResizeBuffers(width, height);
-}
-
 static Result NRI_CALL GetDisplays(Device& device, nri::Display** displays, uint32_t& displayNum)
 {
     return ((DeviceVK&)device).GetDisplays(displays, displayNum);
@@ -327,7 +322,6 @@ Result DeviceVK::FillFunctionTable(SwapChainInterface& swapChainInterface) const
     swapChainInterface = {};
     swapChainInterface.CreateSwapChain = ::CreateSwapChain;
     swapChainInterface.DestroySwapChain = ::DestroySwapChain;
-    swapChainInterface.ResizeBuffers = ::ResizeBuffers;
     swapChainInterface.GetDisplays = ::GetDisplays;
     swapChainInterface.GetDisplaySize = ::GetDisplaySize;
 

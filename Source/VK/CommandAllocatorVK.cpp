@@ -22,10 +22,8 @@ CommandAllocatorVK::~CommandAllocatorVK()
         vk.DestroyCommandPool(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
 }
 
-Result CommandAllocatorVK::Create(const CommandQueue& commandQueue, uint32_t nodeMask)
+Result CommandAllocatorVK::Create(const CommandQueue& commandQueue)
 {
-    MaybeUnused(nodeMask); // TODO: use it
-
     m_OwnsNativeObjects = true;
     const CommandQueueVK& commandQueueImpl = (CommandQueueVK&)commandQueue;
 

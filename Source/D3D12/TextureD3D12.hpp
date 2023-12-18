@@ -17,7 +17,7 @@ static void NRI_CALL SetTextureDebugName(Texture& texture, const char* name)
 
 static uint64_t NRI_CALL GetTextureNativeObject(const Texture& texture, uint32_t nodeIndex)
 {
-    MaybeUnused(nodeIndex);
+    MaybeUnused(nodeIndex); // TODO: use it
 
     if (!(&texture))
         return 0;

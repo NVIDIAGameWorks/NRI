@@ -32,10 +32,8 @@ static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQ
     return ((DeviceD3D12&)device).GetCommandQueue(commandQueueType, commandQueue);
 }
 
-static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator)
+static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator)
 {
-    MaybeUnused(nodeMask); // TODO: use it
-
     DeviceD3D12& device = ((CommandQueueD3D12&)commandQueue).GetDevice();
     return device.CreateCommandAllocator(commandQueue, commandAllocator);
 }
@@ -322,11 +320,6 @@ static void NRI_CALL DestroySwapChain(SwapChain& swapChain)
     device.DestroySwapChain(swapChain);
 }
 
-static Result NRI_CALL ResizeBuffers(SwapChain& swapChain, Dim_t width, Dim_t height)
-{
-    return ((SwapChainD3D12&)swapChain).ResizeBuffers(width, height);
-}
-
 static Result NRI_CALL GetDisplays(Device& device, Display** displays, uint32_t& displayNum)
 {
     return ((DeviceD3D12&)device).GetDisplays(displays, displayNum);
@@ -342,7 +335,6 @@ Result DeviceD3D12::FillFunctionTable(SwapChainInterface& swapChainInterface) co
     swapChainInterface = {};
     swapChainInterface.CreateSwapChain = ::CreateSwapChain;
     swapChainInterface.DestroySwapChain = ::DestroySwapChain;
-    swapChainInterface.ResizeBuffers = ::ResizeBuffers;
     swapChainInterface.GetDisplays = ::GetDisplays;
     swapChainInterface.GetDisplaySize = ::GetDisplaySize;
 

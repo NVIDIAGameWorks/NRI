@@ -29,7 +29,7 @@ struct CommandAllocatorVK
 
     ~CommandAllocatorVK();
 
-    Result Create(const CommandQueue& commandQueue, uint32_t nodeMask);
+    Result Create(const CommandQueue& commandQueue);
     Result Create(const CommandAllocatorVKDesc& commandAllocatorDesc);
 
     //================================================================================================================

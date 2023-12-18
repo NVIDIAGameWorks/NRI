@@ -17,7 +17,7 @@ static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, con
 
 static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool, uint32_t nodeIndex)
 {
-    MaybeUnused(nodeIndex); // TODO: use it
+    MaybeUnused(nodeIndex);
 
     return ((CommandBufferD3D11&)commandBuffer).Begin(descriptorPool);
 }

@@ -6,10 +6,8 @@ constexpr size_t BASE_UPLOAD_BUFFER_SIZE = 65536;
 
 HelperDataUpload::HelperDataUpload(const CoreInterface& NRI, Device& device, const StdAllocator<uint8_t>& stdAllocator, CommandQueue& commandQueue) :
     NRI(NRI),
-    m_DeviceDesc(NRI.GetDeviceDesc(device)),
     m_Device(device),
     m_CommandQueue(commandQueue),
-    m_CommandAllocators(stdAllocator),
     m_CommandBuffers(stdAllocator),
     m_UploadBufferSize(BASE_UPLOAD_BUFFER_SIZE)
 {
@@ -75,16 +73,16 @@ Result HelperDataUpload::Create()
     if (result != Result::SUCCESS)
         return result;
 
-    m_CommandAllocators.resize(m_DeviceDesc.nodeNum);
-    m_CommandBuffers.resize(m_DeviceDesc.nodeNum);
+    const DeviceDesc& deviceDesc = NRI.GetDeviceDesc(m_Device);
+    m_CommandBuffers.resize(deviceDesc.nodeNum);
+
+    result = NRI.CreateCommandAllocator(m_CommandQueue, m_CommandAllocators);
+    if (result != Result::SUCCESS)
+        return result;
 
     for (uint32_t i = 0; i < m_CommandBuffers.size(); i++)
     {
-        result = NRI.CreateCommandAllocator(m_CommandQueue, ALL_NODES, m_CommandAllocators[i]);
-        if (result != Result::SUCCESS)
-            return result;
-
-        result = NRI.CreateCommandBuffer(*m_CommandAllocators[i], m_CommandBuffers[i]);
+        result = NRI.CreateCommandBuffer(*m_CommandAllocators, m_CommandBuffers[i]);
         if (result != Result::SUCCESS)
             return result;
     }
@@ -97,7 +95,7 @@ void HelperDataUpload::Destroy()
     for (uint32_t i = 0; i < m_CommandBuffers.size(); i++)
     {
         NRI.DestroyCommandBuffer(*m_CommandBuffers[i]);
-        NRI.DestroyCommandAllocator(*m_CommandAllocators[i]);
+        NRI.DestroyCommandAllocator(*m_CommandAllocators);
     }
 
     NRI.DestroyFence(*m_Fence);
@@ -204,8 +202,7 @@ Result HelperDataUpload::EndCommandBuffersAndSubmit()
         m_FenceValue++;
     }
 
-    for (uint32_t i = 0; i < m_CommandAllocators.size(); i++)
-        NRI.ResetCommandAllocator(*m_CommandAllocators[i]);
+    NRI.ResetCommandAllocator(*m_CommandAllocators);
 
     return Result::SUCCESS;
 }
@@ -215,6 +212,8 @@ bool HelperDataUpload::CopyTextureContent(const TextureUploadDesc& textureUpload
     if (textureUploadDesc.subresources == nullptr)
         return true;
 
+    const DeviceDesc& deviceDesc = NRI.GetDeviceDesc(m_Device);
+
     for (; arrayOffset < textureUploadDesc.arraySize; arrayOffset++)
     {
         for (; mipOffset < textureUploadDesc.mipNum; mipOffset++)
@@ -222,8 +221,8 @@ bool HelperDataUpload::CopyTextureContent(const TextureUploadDesc& textureUpload
             const auto& subresource = textureUploadDesc.subresources[arrayOffset * textureUploadDesc.mipNum + mipOffset];
 
             const uint32_t sliceRowNum = subresource.slicePitch / subresource.rowPitch;
-            const uint32_t alignedRowPitch = Align(subresource.rowPitch, m_DeviceDesc.uploadBufferTextureRowAlignment);
-            const uint32_t alignedSlicePitch = Align(sliceRowNum * alignedRowPitch, m_DeviceDesc.uploadBufferTextureSliceAlignment);
+            const uint32_t alignedRowPitch = Align(subresource.rowPitch, deviceDesc.uploadBufferTextureRowAlignment);
+            const uint32_t alignedSlicePitch = Align(sliceRowNum * alignedRowPitch, deviceDesc.uploadBufferTextureSliceAlignment);
             const uint64_t mipLevelContentSize = uint64_t(alignedSlicePitch) * subresource.sliceNum;
             const uint64_t freeSpace = m_UploadBufferSize - m_UploadBufferOffset;
 
@@ -306,6 +305,7 @@ bool HelperDataUpload::CopyBufferContent(const BufferUploadDesc& bufferUploadDes
 
     bufferContentOffset = 0;
     m_UploadBufferOffset = Align(m_UploadBufferOffset, COPY_ALIGMENT);
+
     return true;
 }
 
@@ -316,7 +316,7 @@ Result HelperDataUpload::DoTransition(const TextureUploadDesc* textureUploadDesc
     if (result != Result::SUCCESS)
         return result;
 
-    constexpr uint32_t TEXTURES_PER_PASS = 1024;
+    constexpr uint32_t TEXTURES_PER_PASS = 256;
     TextureTransitionBarrierDesc textureTransitions[TEXTURES_PER_PASS];
 
     for (uint32_t i = 0; i < textureDataDescNum;)
@@ -368,7 +368,7 @@ Result HelperDataUpload::DoTransition(const BufferUploadDesc* bufferUploadDescs,
     if (result != Result::SUCCESS)
         return result;
 
-    constexpr uint32_t BUFFERS_PER_PASS = 1024;
+    constexpr uint32_t BUFFERS_PER_PASS = 256;
     BufferTransitionBarrierDesc bufferTransitions[BUFFERS_PER_PASS];
 
     for (uint32_t i = 0; i < bufferUploadDescNum;)

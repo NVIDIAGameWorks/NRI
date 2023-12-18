@@ -143,11 +143,11 @@ Result DeviceVal::GetCommandQueue(CommandQueueType commandQueueType, CommandQueu
     return result;
 }
 
-Result DeviceVal::CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator) {
+Result DeviceVal::CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
     auto commandQueueImpl = NRI_GET_IMPL(CommandQueue, &commandQueue);
 
     CommandAllocator* commandAllocatorImpl = nullptr;
-    const Result result = m_CoreAPI.CreateCommandAllocator(*commandQueueImpl, nodeMask, commandAllocatorImpl);
+    const Result result = m_CoreAPI.CreateCommandAllocator(*commandQueueImpl, commandAllocatorImpl);
 
     if (result == Result::SUCCESS) {
         RETURN_ON_FAILURE(this, commandAllocatorImpl != nullptr, Result::FAILURE, "CreateCommandAllocator: 'impl' is NULL");

@@ -77,7 +77,7 @@ struct DeviceVK final : public DeviceBase
 
     void SetDebugName(const char* name);        
     Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
-    Result CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator);
+    Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
     Result CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool);
     Result CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer);
     Result CreateTexture(const TextureDesc& textureDesc, Texture*& texture);

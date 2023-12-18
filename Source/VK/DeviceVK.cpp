@@ -1564,9 +1564,9 @@ inline Result DeviceVK::GetCommandQueue(CommandQueueType commandQueueType, Comma
     return Result::SUCCESS;
 }
 
-inline Result DeviceVK::CreateCommandAllocator(const CommandQueue& commandQueue, uint32_t nodeMask, CommandAllocator*& commandAllocator)
+inline Result DeviceVK::CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator)
 {
-    return CreateImplementation<CommandAllocatorVK>(commandAllocator, commandQueue, nodeMask);
+    return CreateImplementation<CommandAllocatorVK>(commandAllocator, commandQueue);
 }
 
 inline Result DeviceVK::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool)

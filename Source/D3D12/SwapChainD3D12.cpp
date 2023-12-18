@@ -99,7 +99,7 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
     desc.SampleDesc.Count = 1;
     desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     desc.BufferCount = swapChainDesc.textureNum;
-    desc.Scaling = DXGI_SCALING_NONE;
+    desc.Scaling = isWin7 ? DXGI_SCALING_STRETCH : DXGI_SCALING_NONE;
     desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
     desc.Flags = isWin7 ? 0 : DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
