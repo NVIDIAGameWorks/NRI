@@ -149,7 +149,7 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
 
     VkDescriptorSetLayoutCreateInfo info = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        m_Device.IsDescriptorIndexingExtSupported() ? &bindingFlagsInfo : nullptr,
+        m_Device.supportedFeatures.descriptorIndexing ? &bindingFlagsInfo : nullptr,
         (VkDescriptorSetLayoutCreateFlags)0,
         bindingNum,
         bindingsBegin
@@ -299,7 +299,7 @@ void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipeline
         {
             ranges[j].baseRegisterIndex += bindingOffsets[(uint32_t)descriptorSetDesc.ranges[j].descriptorType];
 
-            if (m_Device.IsDescriptorIndexingExtSupported() && descriptorSetDesc.ranges[j].isDescriptorNumVariable)
+            if (m_Device.supportedFeatures.descriptorIndexing && descriptorSetDesc.ranges[j].isDescriptorNumVariable)
                 destination.hasVariableDescriptorNum[i] = true;
         }
 

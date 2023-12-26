@@ -307,23 +307,11 @@ static void NRI_CALL DestroySwapChain(SwapChain& swapChain)
     return ((SwapChainVK&)swapChain).GetDevice().DestroySwapChain(swapChain);
 }
 
-static Result NRI_CALL GetDisplays(Device& device, nri::Display** displays, uint32_t& displayNum)
-{
-    return ((DeviceVK&)device).GetDisplays(displays, displayNum);
-}
-
-static Result NRI_CALL GetDisplaySize(Device& device, nri::Display& display, Dim_t& width, Dim_t& height)
-{
-    return ((DeviceVK&)device).GetDisplaySize(display, width, height);
-}
-
 Result DeviceVK::FillFunctionTable(SwapChainInterface& swapChainInterface) const
 {
     swapChainInterface = {};
     swapChainInterface.CreateSwapChain = ::CreateSwapChain;
     swapChainInterface.DestroySwapChain = ::DestroySwapChain;
-    swapChainInterface.GetDisplays = ::GetDisplays;
-    swapChainInterface.GetDisplaySize = ::GetDisplaySize;
 
     SwapChain_PartiallyFillFunctionTableVK(swapChainInterface);
 
@@ -462,7 +450,7 @@ void FillFunctionTablePipelineVK(RayTracingInterface& rayTracingInterface);
 
 Result DeviceVK::FillFunctionTable(RayTracingInterface& rayTracingInterface) const
 {
-    if (!m_IsRayTracingExtSupported)
+    if (!supportedFeatures.rayTracing)
         return Result::UNSUPPORTED;
 
     rayTracingInterface = {};
@@ -484,7 +472,7 @@ Result DeviceVK::FillFunctionTable(RayTracingInterface& rayTracingInterface) con
 
 Result DeviceVK::FillFunctionTable(MeshShaderInterface& meshShaderInterface) const
 {
-    if (!m_IsMeshShaderExtSupported)
+    if (!supportedFeatures.meshShader)
         return Result::UNSUPPORTED;
 
     meshShaderInterface = {};

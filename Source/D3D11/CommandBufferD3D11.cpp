@@ -93,6 +93,7 @@ Result CommandBufferD3D11::Create(ID3D11DeviceContext* precreatedContext)
 void CommandBufferD3D11::Submit()
 {
     m_Device.GetImmediateContext()->ExecuteCommandList(m_CommandList, FALSE);
+    m_CommandList = nullptr;
 }
 
 ID3D11DeviceContext* CommandBufferD3D11::GetNativeObject() const

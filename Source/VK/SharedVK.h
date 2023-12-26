@@ -14,11 +14,9 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "DeviceBase.h"
 
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_beta.h>
 #undef CreateSemaphore
 
 #include "DispatchTable.h"
-#include "ConversionVK.h"
 
 struct MemoryTypeInfo
 {
@@ -42,4 +40,14 @@ constexpr HandleType GetVulkanHandle(NRIType* object, uint32_t nodeIndex)
 constexpr bool IsHostVisibleMemory(nri::MemoryLocation location)
 { return location > nri::MemoryLocation::DEVICE; }
 
+// TODO: mostly needed for AMD?
+#if 1
+    #define IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+    #define IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+#else
+    #define IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL VK_IMAGE_LAYOUT_GENERAL
+    #define IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL VK_IMAGE_LAYOUT_GENERAL
+#endif
+
+#include "ConversionVK.h"
 #include "DeviceVK.h"

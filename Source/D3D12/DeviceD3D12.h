@@ -76,8 +76,6 @@ struct DeviceD3D12 final : public DeviceBase
     template<typename Implementation, typename Interface, typename ... Args>
     Result CreateImplementation(Interface*& entity, const Args&... args);
 
-    bool GetOutput(Display* display, ComPtr<IDXGIOutput>& output) const;
-
     Result Create(const DeviceCreationDesc& deviceCreationDesc);
     Result Create(const DeviceCreationD3D12Desc& deviceCreationDesc);
 
@@ -100,8 +98,6 @@ struct DeviceD3D12 final : public DeviceBase
 
     Result CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain);
     void DestroySwapChain(SwapChain& swapChain);
-    Result GetDisplays(Display** displays, uint32_t& displayNum);
-    Result GetDisplaySize(Display& display, Dim_t& width, Dim_t& height);
 
     Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
     Result CreateCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);

@@ -43,15 +43,15 @@ private:
     Result CreateSurface(const SwapChainDesc& swapChainDesc);
 
 private:
+    Vector<TextureVK*> m_Textures;
     SwapChainDesc m_SwapChainDesc = {};
     VkSwapchainKHR m_Handle = VK_NULL_HANDLE;
+    VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
+    VkSemaphore m_Semaphore = VK_NULL_HANDLE;
+    DeviceVK& m_Device;
     const CommandQueueVK* m_CommandQueue = nullptr;
     uint32_t m_TextureIndex = 0;
-    VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
-    Vector<TextureVK*> m_Textures;
     Format m_Format = Format::UNKNOWN;
-    DeviceVK& m_Device;
-    VkSemaphore m_Semaphore = VK_NULL_HANDLE;
 };
 
 }

@@ -42,6 +42,7 @@ struct DispatchTable
 
 #if VK_USE_PLATFORM_WIN32_KHR
     VULKAN_FUNCTION(CreateWin32SurfaceKHR);
+    VULKAN_FUNCTION(GetMemoryWin32HandlePropertiesKHR);
 #endif
 #if VK_USE_PLATFORM_METAL_EXT
     VULKAN_FUNCTION(CreateMetalSurfaceEXT);

@@ -107,16 +107,6 @@ void DeviceVal::DestroySwapChain(SwapChain& swapChain) {
     Deallocate(GetStdAllocator(), (SwapChainVal*)&swapChain);
 }
 
-Result DeviceVal::GetDisplays(Display** displays, uint32_t& displayNum) {
-    RETURN_ON_FAILURE(this, displayNum == 0 || displays != nullptr, Result::INVALID_ARGUMENT, "GetDisplays: 'displays' is NULL");
-
-    return m_SwapChainAPI.GetDisplays(m_Device, displays, displayNum);
-}
-
-Result DeviceVal::GetDisplaySize(Display& display, Dim_t& width, Dim_t& height) {
-    return m_SwapChainAPI.GetDisplaySize(m_Device, display, width, height);
-}
-
 void DeviceVal::SetDebugName(const char* name) {
     m_Name = name;
     m_CoreAPI.SetDeviceDebugName(m_Device, name);

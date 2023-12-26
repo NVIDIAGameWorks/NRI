@@ -269,14 +269,6 @@ static void NRI_CALL DestroySwapChain(SwapChain& swapChain) {
     GetDeviceVal(swapChain).DestroySwapChain(swapChain);
 }
 
-static Result NRI_CALL GetDisplays(Device& device, Display** displays, uint32_t& displayNum) {
-    return ((DeviceVal&)device).GetDisplays(displays, displayNum);
-}
-
-static Result NRI_CALL GetDisplaySize(Device& device, Display& display, Dim_t& width, Dim_t& height) {
-    return ((DeviceVal&)device).GetDisplaySize(display, width, height);
-}
-
 Result DeviceVal::FillFunctionTable(SwapChainInterface& swapChainInterface) const {
     if (!m_IsSwapChainSupported)
         return Result::UNSUPPORTED;
@@ -284,8 +276,6 @@ Result DeviceVal::FillFunctionTable(SwapChainInterface& swapChainInterface) cons
     swapChainInterface = {};
     swapChainInterface.CreateSwapChain = ::CreateSwapChain;
     swapChainInterface.DestroySwapChain = ::DestroySwapChain;
-    swapChainInterface.GetDisplays = ::GetDisplays;
-    swapChainInterface.GetDisplaySize = ::GetDisplaySize;
 
     SwapChain_PartiallyFillFunctionTableVal(swapChainInterface);
 

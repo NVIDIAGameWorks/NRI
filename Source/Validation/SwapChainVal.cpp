@@ -45,7 +45,7 @@ inline Result SwapChainVal::Present() {
     return m_SwapChainAPI.SwapChainPresent(*GetImpl());
 }
 
-Result nri::SwapChainVal::ResizeBuffers(Dim_t width, Dim_t height) {
+inline Result nri::SwapChainVal::ResizeBuffers(Dim_t width, Dim_t height) {
     return m_SwapChainAPI.ResizeBuffers(*GetImpl(), width, height);
 }
 

@@ -14,8 +14,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 108
-#define NRI_VERSION_DATE "18 December 2023"
+#define NRI_VERSION_MINOR 109
+#define NRI_VERSION_DATE "21 December 2023"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -26,7 +26,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #ifndef NRI_API
     #if NRI_STATIC_LIBRARY
         #define NRI_API
-    #elif( defined(__cplusplus) )
+    #elif defined(__cplusplus)
         #define NRI_API extern "C"
     #else
         #define NRI_API extern

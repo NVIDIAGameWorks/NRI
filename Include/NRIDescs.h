@@ -41,6 +41,7 @@ static const uint32_t NRI_CONST_NAME(ALL_SAMPLES) = (uint32_t)(-1);
 static const uint32_t NRI_CONST_NAME(ALL_NODES) = 0;
 static const bool NRI_CONST_NAME(VARIABLE_DESCRIPTOR_NUM) = true;
 static const bool NRI_CONST_NAME(DESCRIPTOR_ARRAY) = true;
+static const uint32_t NRI_CONST_NAME(OUT_OF_DATE) = (uint32_t)(-1); // VK only: swap chain is out of date
 
 NRI_ENUM
 (
@@ -52,7 +53,7 @@ NRI_ENUM
     OUT_OF_MEMORY,
     UNSUPPORTED,
     DEVICE_LOST,
-    SWAPCHAIN_RESIZE,
+    OUT_OF_DATE, // VK only: swap chain is out of date
 
     MAX_NUM
 );
@@ -201,10 +202,10 @@ NRI_ENUM
     DEPTH_STENCIL,
     DEPTH_STENCIL_READONLY,
     DEPTH_READONLY,
-    COPY_SOURCE,
-    COPY_DESTINATION,
     STENCIL_READONLY,
     SHADER_RESOURCE,
+    COPY_SOURCE,
+    COPY_DESTINATION,
     PRESENT,
     UNKNOWN,
 

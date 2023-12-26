@@ -299,7 +299,7 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
             m_RenderHeight = std::min(m_RenderHeight, h);
         }
     }
-    
+
     VkRenderingAttachmentInfo depthStencil = {};
     if (attachmentsDesc.depthStencil)
     {
@@ -545,9 +545,8 @@ inline void CommandBufferVK::CopyTexture(Texture& dstTexture, uint32_t dstNodeIn
     }
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyImage(
-        m_Handle, srcTextureImpl.GetHandle(dstNodeIndex), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        dstTextureImpl.GetHandle(srcNodeIndex), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vk.CmdCopyImage(m_Handle, srcTextureImpl.GetHandle(dstNodeIndex), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        dstTextureImpl.GetHandle(srcNodeIndex), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 inline void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc)
@@ -585,7 +584,7 @@ inline void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, const Te
     };
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyBufferToImage(m_Handle, srcBufferImpl.GetHandle(0), dstTextureImpl.GetHandle(m_PhysicalDeviceIndex), VK_IMAGE_LAYOUT_GENERAL, 1, &region);
+    vk.CmdCopyBufferToImage(m_Handle, srcBufferImpl.GetHandle(0), dstTextureImpl.GetHandle(m_PhysicalDeviceIndex), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 inline void CommandBufferVK::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc)
@@ -623,7 +622,7 @@ inline void CommandBufferVK::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureD
     };
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyImageToBuffer(m_Handle, srcTextureImpl.GetHandle(m_PhysicalDeviceIndex), VK_IMAGE_LAYOUT_GENERAL, dstBufferImpl.GetHandle(0), 1, &region);
+    vk.CmdCopyImageToBuffer(m_Handle, srcTextureImpl.GetHandle(m_PhysicalDeviceIndex), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstBufferImpl.GetHandle(0), 1, &region);
 }
 
 inline void CommandBufferVK::Dispatch(uint32_t x, uint32_t y, uint32_t z)
@@ -875,8 +874,8 @@ inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, uint3
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdCopyImage(m_Handle,
-        srcTexture.GetHandle(srcNodeIndex), VK_IMAGE_LAYOUT_GENERAL,
-        dstTexture.GetHandle(dstNodeIndex), VK_IMAGE_LAYOUT_GENERAL,
+        srcTexture.GetHandle(srcNodeIndex), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        dstTexture.GetHandle(dstNodeIndex), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         dstTextureDesc.mipNum, regions);
 }
 

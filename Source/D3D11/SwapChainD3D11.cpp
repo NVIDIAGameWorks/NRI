@@ -45,12 +45,6 @@ static std::array<Format, 5> g_swapChainTextureFormat =
 
 SwapChainD3D11::~SwapChainD3D11()
 {
-    // Swapchain must be destroyed in windowed mode
-    BOOL fullscreen = FALSE;
-    HRESULT hr = m_SwapChain->GetFullscreenState(&fullscreen, nullptr);
-    if (SUCCEEDED(hr) && fullscreen)
-        m_SwapChain->SetFullscreenState(FALSE, nullptr);
-
     if (m_FrameLatencyWaitableObject)
         CloseHandle(m_FrameLatencyWaitableObject);
 
@@ -74,14 +68,14 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
     bool isWin7 = FAILED(hr);
 
     // Is tearing supported?
-    m_IsTearingAllowed = false;
+    bool isTearingAllowed = false;
     ComPtr<IDXGIFactory5> dxgiFactory5;
     hr = dxgiFactory2->QueryInterface(IID_PPV_ARGS(&dxgiFactory5));
     if (SUCCEEDED(hr))
     {
         uint32_t tearingSupport = 0;
         hr = dxgiFactory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &tearingSupport, sizeof(tearingSupport));
-        m_IsTearingAllowed = (SUCCEEDED(hr) && tearingSupport) ? true : false;
+        isTearingAllowed = (SUCCEEDED(hr) && tearingSupport) ? true : false;
     }
 
     // Create swapchain
@@ -99,7 +93,7 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
     desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
     desc.Flags = isWin7 ? 0 : DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-    if (m_IsTearingAllowed)
+    if (isTearingAllowed)
         desc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
     ComPtr<IDXGISwapChain1> swapChain;
@@ -158,33 +152,10 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
     // Background color
     if (m_SwapChain.version >= 1)
     {
-        DXGI_RGBA color = {};
+        DXGI_RGBA color = {0.0f, 0.0f, 0.0f, 1.0f};
         hr = m_SwapChain->SetBackgroundColor(&color);
         if (FAILED(hr))
             REPORT_WARNING(&m_Device, "IDXGISwapChain1::SetBackgroundColor() - FAILED!");
-    }
-
-    // Fullscreen
-    if (swapChainDesc.display)
-    {
-        ComPtr<IDXGIOutput> output;
-        if (!m_Device.GetOutput(swapChainDesc.display, output))
-        {
-            REPORT_ERROR(&m_Device, "Failed to get IDXGIOutput for the specified display");
-            return Result::UNSUPPORTED;
-        }
-
-        hr = m_SwapChain->SetFullscreenState(TRUE, output);
-        if (SUCCEEDED(hr))
-        {
-            hr = m_SwapChain->ResizeBuffers(desc.BufferCount, desc.Width, desc.Height, desc.Format, desc.Flags);
-            RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::ResizeBuffers()");
-
-            m_IsTearingAllowed = false;
-            m_Fullscreen = TRUE;
-        }
-        else
-            REPORT_WARNING(&m_Device, "IDXGISwapChain::SetFullscreenState() - FAILED!");
     }
 
     // Maximum frame latency
@@ -212,7 +183,7 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
     // Finalize
     m_Flags = desc.Flags;
     m_Format = g_swapChainTextureFormat[(uint32_t)swapChainDesc.format];
-    m_SwapChainDesc = swapChainDesc;    
+    m_SwapChainDesc = swapChainDesc;
     m_SwapChainDesc.textureNum = 1; // In DX11 only 'bufferIndex = 0' can be used to create render targets, so set BufferCount to '1' and ignore 'desc.BufferCount'
 
     m_Textures.reserve(m_SwapChainDesc.textureNum);
@@ -251,11 +222,12 @@ inline uint32_t SwapChainD3D11::AcquireNextTexture()
 {
     // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame
     if (m_FrameLatencyWaitableObject)
-    {        
+    {
         uint32_t result = WaitForSingleObjectEx(m_FrameLatencyWaitableObject, DEFAULT_TIMEOUT, TRUE);
-        RETURN_ON_FAILURE(&m_Device, result == WAIT_OBJECT_0, uint32_t(-1), "WaitForSingleObjectEx(): failed, result = 0x%08X!", result);
+        if (result != WAIT_OBJECT_0)
+            REPORT_ERROR(&m_Device, "WaitForSingleObjectEx(): failed, result = 0x%08X!", result);
     }
-        
+
     uint32_t nextTextureIndex = 0;
     if (m_SwapChain.version >= 3)
         nextTextureIndex = m_SwapChain->GetCurrentBackBufferIndex();
@@ -265,40 +237,29 @@ inline uint32_t SwapChainD3D11::AcquireNextTexture()
 
 inline Result SwapChainD3D11::Present()
 {
-    BOOL fullscreen = FALSE;
-    HRESULT hr = m_SwapChain->GetFullscreenState(&fullscreen, nullptr);
-    if (SUCCEEDED(hr))
-    {
-        bool isResized = fullscreen != m_Fullscreen;
-        m_Fullscreen = fullscreen;
-        if (isResized)
-            return Result::SWAPCHAIN_RESIZE;
-    }
-
-    UINT flags = (!m_SwapChainDesc.verticalSyncInterval && m_IsTearingAllowed) ? DXGI_PRESENT_ALLOW_TEARING : 0;
-
+    UINT flags = (!m_SwapChainDesc.verticalSyncInterval && (m_Flags & DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING)) ? DXGI_PRESENT_ALLOW_TEARING : 0; // TODO: and not fullscreen
     HRESULT result = m_SwapChain->Present(m_SwapChainDesc.verticalSyncInterval, flags);
     RETURN_ON_BAD_HRESULT(&m_Device, result, "IDXGISwapChain::Present()");
 
     return Result::SUCCESS;
 }
 
-Result nri::SwapChainD3D11::ResizeBuffers(Dim_t width, Dim_t height) 
+inline Result nri::SwapChainD3D11::ResizeBuffers(Dim_t width, Dim_t height)
 {
     for (TextureD3D11* texture : m_Textures)
         Deallocate<TextureD3D11>(m_Device.GetStdAllocator(), texture);
+    m_Textures.clear();
 
-    HRESULT result = m_SwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, m_Flags);
-    RETURN_ON_BAD_HRESULT(&m_Device, result, "IDXGISwapChain::ResizeBuffers()");
+    HRESULT hr = m_SwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, m_Flags);
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::ResizeBuffers()");
 
-    m_Textures.resize(0);
     for (uint32_t i = 0; i < m_SwapChainDesc.textureNum; i++) {
-        ComPtr<ID3D11Resource> textureNative;
-        result = m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&textureNative));
-        RETURN_ON_BAD_HRESULT(&m_Device, result, "IDXGISwapChain::GetBuffer()");
+        ComPtr<ID3D11Resource> resource;
+        hr = m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&resource));
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::GetBuffer()");
 
         TextureD3D11Desc textureDesc = {};
-        textureDesc.d3d11Resource = textureNative;
+        textureDesc.d3d11Resource = resource;
 
         TextureD3D11* texture = Allocate<TextureD3D11>(m_Device.GetStdAllocator(), m_Device);
         const nri::Result res = texture->Create(textureDesc);

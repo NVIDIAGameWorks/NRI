@@ -304,7 +304,7 @@ Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
         m_VK.EnumerateInstanceExtensionProperties(nullptr, &extensionNum, supportedExts.data());
 
         if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, supportedExts))
-            m_IsDebugUtilsSupported = true;
+            supportedFeatures.debugUtils = true;
     }
 
     // Device extensions
@@ -316,22 +316,22 @@ Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
         m_VK.EnumerateDeviceExtensionProperties(m_PhysicalDevices.front(), nullptr, &extensionNum, supportedExts.data());
 
         if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, supportedExts))
-            m_IsRayTracingExtSupported = true;
+            supportedFeatures.rayTracing = true;
 
         if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, supportedExts))
-            m_IsSampleLocationExtSupported = true;
+            supportedFeatures.sampleLocations = true;
 
         if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, supportedExts))
-            m_IsConservativeRasterExtSupported = true;
+            supportedFeatures.conservativeRaster = true;
 
         if (IsExtensionSupported(VK_EXT_HDR_METADATA_EXTENSION_NAME, supportedExts))
-            m_IsHDRExtSupported = true;
+            supportedFeatures.hdr = true;
 
         if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts))
-            m_IsMicroMapSupported = true;
+            supportedFeatures.microMap = true;
 
         if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, supportedExts))
-            m_IsMeshShaderExtSupported = true;
+            supportedFeatures.meshShader = true;
     }
 
     // Get adapter
@@ -641,7 +641,7 @@ Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
     if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, supportedExts))
     {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        m_IsDebugUtilsSupported = true;
+        supportedFeatures.debugUtils = true;
     }
 
     const VkApplicationInfo appInfo = {
@@ -744,10 +744,10 @@ Result DeviceVK::FindPhysicalDeviceGroup(const AdapterDesc* adapterDesc, bool en
 
     const VkPhysicalDeviceGroupProperties& group = deviceGroups[i];
 
-    m_IsSubsetAllocationSupported = true;
+    supportedFeatures.subsetAllocation = true;
     if (group.subsetAllocation == VK_FALSE && group.physicalDeviceCount > 1)
     {
-        m_IsSubsetAllocationSupported = false;
+        supportedFeatures.subsetAllocation = false;
         REPORT_WARNING(this, "The device group does not support memory allocation on a subset of the physical devices.");
     }
 
@@ -786,8 +786,8 @@ void DeviceVK::FillDesc(bool enableValidation)
     VkPhysicalDeviceMemoryProperties memoryProperties = {};
     m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevices.front(), &memoryProperties);
 
-    m_IsDescriptorIndexingSupported = features12.descriptorIndexing ? true : false;
-    m_IsBufferDeviceAddressSupported = features12.bufferDeviceAddress ? true : false;
+    supportedFeatures.descriptorIndexing = features12.descriptorIndexing ? true : false;
+    supportedFeatures.bufferDeviceAddress = features12.bufferDeviceAddress ? true : false;
 
     static_assert(VK_LUID_SIZE == sizeof(uint64_t), "invalid sizeof");
 
@@ -937,16 +937,16 @@ void DeviceVK::FillDesc(bool enableValidation)
     m_Desc.isTextureFilterMinMaxSupported = features12.samplerFilterMinmax;
     m_Desc.isLogicOpSupported = features.logicOp;
     m_Desc.isDepthBoundsTestSupported = features.depthBounds;
-    m_Desc.isProgrammableSampleLocationsSupported = m_IsSampleLocationExtSupported;
+    m_Desc.isProgrammableSampleLocationsSupported = supportedFeatures.sampleLocations;
     m_Desc.isComputeQueueSupported = m_Queues[(uint32_t)CommandQueueType::COMPUTE] != nullptr;
     m_Desc.isCopyQueueSupported = m_Queues[(uint32_t)CommandQueueType::COPY] != nullptr;
     m_Desc.isCopyQueueTimestampSupported = copyQueueTimestampValidBits == 64;
     m_Desc.isRegisterAliasingSupported = true;
-    m_Desc.isSubsetAllocationSupported = m_IsSubsetAllocationSupported;
+    m_Desc.isSubsetAllocationSupported = supportedFeatures.subsetAllocation;
     m_Desc.isFloat16Supported = features12.shaderFloat16;
 
     // Conservative raster
-    if (m_IsConservativeRasterExtSupported)
+    if (supportedFeatures.conservativeRaster)
     {
         VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT };
 
@@ -963,7 +963,7 @@ void DeviceVK::FillDesc(bool enableValidation)
     }
 
     // Ray tracing
-    if (m_IsRayTracingExtSupported)
+    if (supportedFeatures.rayTracing)
     {
         VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR };
         VkPhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProperties = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR };
@@ -981,7 +981,7 @@ void DeviceVK::FillDesc(bool enableValidation)
     }
 
     // Mesh shader
-    if (!m_IsMeshShaderExtSupported)
+    if (!supportedFeatures.meshShader)
     {
         VkPhysicalDeviceMeshShaderPropertiesEXT meshShaderProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT };
 
@@ -1076,37 +1076,37 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, supportedExts))
     {
         desiredExts.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-        m_IsRayTracingExtSupported = true;
+        supportedFeatures.rayTracing = true;
     }
 
     if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, supportedExts))
     {
         desiredExts.push_back(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME);
-        m_IsSampleLocationExtSupported = true;
+        supportedFeatures.sampleLocations = true;
     }
 
     if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, supportedExts))
     {
         desiredExts.push_back(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
-        m_IsConservativeRasterExtSupported = true;
+        supportedFeatures.conservativeRaster = true;
     }
 
     if (IsExtensionSupported(VK_EXT_HDR_METADATA_EXTENSION_NAME, supportedExts))
     {
         desiredExts.push_back(VK_EXT_HDR_METADATA_EXTENSION_NAME);
-        m_IsHDRExtSupported = true;
+        supportedFeatures.hdr = true;
     }
 
     if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts))
     {
         desiredExts.push_back(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME);
-        m_IsMicroMapSupported = true;
+        supportedFeatures.microMap = true;
     }
 
     if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, supportedExts))
     {
         desiredExts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
-        m_IsMeshShaderExtSupported = true;
+        supportedFeatures.meshShader = true;
     }
 
     #ifdef __APPLE__
@@ -1127,7 +1127,7 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     features11.pNext = &features12;
     features12.pNext = &features13;
 
-    if (m_IsRayTracingExtSupported)
+    if (supportedFeatures.rayTracing)
     {
         rayTracingFeatures.pNext = features2.pNext;
         features2.pNext = &rayTracingFeatures;
@@ -1137,13 +1137,13 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
         features2.pNext = &rayQueryFeatures;
     }
 
-    if (m_IsMicroMapSupported)
+    if (supportedFeatures.microMap)
     {
         micromapFeatures.pNext = features2.pNext;
         features2.pNext = &micromapFeatures;
     }
 
-    if (m_IsMeshShaderExtSupported)
+    if (supportedFeatures.meshShader)
     {
         meshShaderFeatures.pNext = features2.pNext;
         features2.pNext = &meshShaderFeatures;
@@ -1381,6 +1381,7 @@ Result DeviceVK::ResolveInstanceDispatchTable()
 
 #if VK_USE_PLATFORM_WIN32_KHR
     RESOLVE_INSTANCE_FUNCTION(CreateWin32SurfaceKHR);
+    RESOLVE_INSTANCE_FUNCTION(GetMemoryWin32HandlePropertiesKHR);
 #endif
 #if VK_USE_PLATFORM_METAL_EXT
     RESOLVE_INSTANCE_FUNCTION(CreateMetalSurfaceEXT);
@@ -1502,20 +1503,20 @@ Result DeviceVK::ResolveDispatchTable()
 
     RESOLVE_DEVICE_FUNCTION(GetSwapchainImagesKHR);
 
-    if (m_IsDebugUtilsSupported)
+    if (supportedFeatures.debugUtils)
     {
         RESOLVE_DEVICE_FUNCTION(SetDebugUtilsObjectNameEXT);
         RESOLVE_DEVICE_FUNCTION(CmdBeginDebugUtilsLabelEXT);
         RESOLVE_DEVICE_FUNCTION(CmdEndDebugUtilsLabelEXT);
     }
 
-    if (m_IsHDRExtSupported)
+    if (supportedFeatures.hdr)
     {
         RESOLVE_OPTIONAL_DEVICE_FUNCTION(SetHdrMetadataEXT);
-        m_IsHDRExtSupported = m_VK.SetHdrMetadataEXT != nullptr;
+        supportedFeatures.hdr = m_VK.SetHdrMetadataEXT != nullptr;
     }
 
-    if (m_IsRayTracingExtSupported)
+    if (supportedFeatures.rayTracing)
     {
         RESOLVE_DEVICE_FUNCTION(CreateAccelerationStructureKHR);
         RESOLVE_DEVICE_FUNCTION(CreateRayTracingPipelinesKHR);
@@ -1530,7 +1531,7 @@ Result DeviceVK::ResolveDispatchTable()
         RESOLVE_DEVICE_FUNCTION(GetBufferDeviceAddress);
     }
 
-    if (m_IsMeshShaderExtSupported)
+    if (supportedFeatures.meshShader)
     {
         RESOLVE_DEVICE_FUNCTION(CmdDrawMeshTasksEXT);
     }
@@ -1799,78 +1800,6 @@ inline void DeviceVK::DestroySwapChain(SwapChain& swapChain)
 inline void DeviceVK::DestroyAccelerationStructure(AccelerationStructure& accelerationStructure)
 {
     Deallocate(GetStdAllocator(), (AccelerationStructureVK*)&accelerationStructure);
-}
-
-inline Result DeviceVK::GetDisplays(Display** displays, uint32_t& displayNum)
-{
-    MaybeUnused(displays, displayNum);
-
-#ifdef _WIN32
-    HRESULT result = S_OK;
-    if (displays == nullptr || displayNum == 0)
-    {
-        UINT i = 0;
-        for(; result != DXGI_ERROR_NOT_FOUND; i++)
-        {
-            ComPtr<IDXGIOutput> output;
-            result = m_Adapter->EnumOutputs(i, &output);
-        }
-
-        displayNum = i;
-        return Result::SUCCESS;
-    }
-
-    UINT i = 0;
-    for(; result != DXGI_ERROR_NOT_FOUND && i < displayNum; i++)
-    {
-        ComPtr<IDXGIOutput> output;
-        result = m_Adapter->EnumOutputs(i, &output);
-        if (result != DXGI_ERROR_NOT_FOUND)
-            displays[i] = (Display*)(size_t)(i + 1);
-    }
-
-    for(; i < displayNum; i++)
-        displays[i] = nullptr;
-
-    return Result::SUCCESS;
-#else
-    return Result::UNSUPPORTED;
-#endif
-}
-
-inline Result DeviceVK::GetDisplaySize(Display& display, Dim_t& width, Dim_t& height)
-{
-    MaybeUnused(display, width, height);
-
-#ifdef _WIN32
-    Display* address = &display;
-    if (!address)
-        return Result::UNSUPPORTED;
-
-    const uint32_t index = (*(uint32_t*)&address) - 1;
-
-    ComPtr<IDXGIOutput> output;
-    HRESULT result = m_Adapter->EnumOutputs(index, &output);
-    RETURN_ON_BAD_HRESULT(this, result, "IDXGIAdapter::EnumOutputs()");
-
-    DXGI_OUTPUT_DESC outputDesc = {};
-    result = output->GetDesc(&outputDesc);
-    RETURN_ON_BAD_HRESULT(this, result, "IDXGIOutput::GetDesc()");
-
-    MONITORINFO monitorInfo = {};
-    monitorInfo.cbSize = sizeof(monitorInfo);
-
-    if (!GetMonitorInfoA(outputDesc.Monitor, &monitorInfo))
-        return Result::UNSUPPORTED;
-
-    const RECT& rect = monitorInfo.rcMonitor;
-    width = uint16_t(rect.right - rect.left);
-    height = uint16_t(rect.bottom - rect.top);
-
-    return Result::SUCCESS;
-#else
-    return Result::UNSUPPORTED;
-#endif
 }
 
 inline Result DeviceVK::AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory)

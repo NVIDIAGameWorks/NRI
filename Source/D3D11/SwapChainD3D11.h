@@ -64,9 +64,7 @@ private:
     SwapChainDesc m_SwapChainDesc = {};
     HANDLE m_FrameLatencyWaitableObject = nullptr;
     Format m_Format = Format::UNKNOWN;
-    UINT m_Flags = 0; 
-    BOOL m_Fullscreen = FALSE;
-    bool m_IsTearingAllowed = false;
+    UINT m_Flags = 0;
 };
 
 }

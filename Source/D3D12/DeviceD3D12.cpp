@@ -101,17 +101,6 @@ Result DeviceD3D12::CreateImplementation(Interface*& entity, const Args&... args
     return result;
 }
 
-bool DeviceD3D12::GetOutput(Display* display, ComPtr<IDXGIOutput>& output) const
-{
-    if (!display)
-        return false;
-
-    const uint32_t index = (*(uint32_t*)&display) - 1;
-    HRESULT result = m_Adapter->EnumOutputs(index, &output);
-
-    return SUCCEEDED(result);
-}
-
 Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
 {
     m_SkipLiveObjectsReporting = true;
@@ -574,66 +563,6 @@ inline Result DeviceD3D12::CreateSwapChain(const SwapChainDesc& swapChainDesc, S
 inline void DeviceD3D12::DestroySwapChain(SwapChain& swapChain)
 {
     Deallocate(GetStdAllocator(), (SwapChainD3D12*)&swapChain);
-}
-
-inline Result DeviceD3D12::GetDisplays(Display** displays, uint32_t& displayNum)
-{
-    HRESULT result = S_OK;
-    if (displays == nullptr || displayNum == 0)
-    {
-        UINT i = 0;
-        for(; result != DXGI_ERROR_NOT_FOUND; i++)
-        {
-            ComPtr<IDXGIOutput> output;
-            result = m_Adapter->EnumOutputs(i, &output);
-        }
-
-        displayNum = i;
-        return Result::SUCCESS;
-    }
-
-    UINT i = 0;
-    for(; result != DXGI_ERROR_NOT_FOUND && i < displayNum; i++)
-    {
-        ComPtr<IDXGIOutput> output;
-        result = m_Adapter->EnumOutputs(i, &output);
-        if (result != DXGI_ERROR_NOT_FOUND)
-            displays[i] = (Display*)(size_t)(i + 1);
-    }
-
-    for(; i < displayNum; i++)
-        displays[i] = nullptr;
-
-    return Result::SUCCESS;
-}
-
-inline Result DeviceD3D12::GetDisplaySize(Display& display, Dim_t& width, Dim_t& height)
-{
-    Display* address = &display;
-    if (!address)
-        return Result::UNSUPPORTED;
-
-    const uint32_t index = (*(uint32_t*)&address) - 1;
-
-    ComPtr<IDXGIOutput> output;
-    HRESULT result = m_Adapter->EnumOutputs(index, &output);
-    RETURN_ON_BAD_HRESULT(this, result, "IDXGIAdapter::EnumOutputs()");
-
-    DXGI_OUTPUT_DESC outputDesc = {};
-    result = output->GetDesc(&outputDesc);
-    RETURN_ON_BAD_HRESULT(this, result, "IDXGIOutput::GetDesc()");
-
-    MONITORINFO monitorInfo = {};
-    monitorInfo.cbSize = sizeof(monitorInfo);
-
-    if (!GetMonitorInfoA(outputDesc.Monitor, &monitorInfo))
-        return Result::UNSUPPORTED;
-
-    const RECT& rect = monitorInfo.rcMonitor;
-    width = uint16_t(rect.right - rect.left);
-    height = uint16_t(rect.bottom - rect.top);
-
-    return Result::SUCCESS;
 }
 
 inline Result DeviceD3D12::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue)

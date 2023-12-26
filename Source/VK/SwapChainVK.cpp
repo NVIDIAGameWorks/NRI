@@ -26,7 +26,7 @@ SwapChainVK::~SwapChainVK()
     Destroy();
 }
 
-void nri::SwapChainVK::Destroy() 
+void nri::SwapChainVK::Destroy()
 {
     const auto& vk = m_Device.GetDispatchTable();
 
@@ -60,9 +60,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc)
         win32SurfaceInfo.hwnd = (HWND)swapChainDesc.window.windows.hwnd;
 
         result = vk.CreateWin32SurfaceKHR(m_Device, &win32SurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
-
-        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-            "Can't create a surface: vkCreateWin32SurfaceKHR returned %d.", (int32_t)result);
+        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateWin32SurfaceKHR returned %d", (int32_t)result);
 
         return Result::SUCCESS;
     }
@@ -75,9 +73,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc)
         metalSurfaceCreateInfo.pLayer = (CAMetalLayer*)swapChainDesc.window.metal.caMetalLayer;
 
         result = vk.CreateMetalSurfaceEXT(m_Device, &metalSurfaceCreateInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
-
-        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-            "Can't create a surface: vkCreateMetalSurfaceEXT returned %d.", (int32_t)result);
+        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateMetalSurfaceEXT returned %d", (int32_t)result);
 
         return Result::SUCCESS;
     }
@@ -91,9 +87,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc)
         xlibSurfaceInfo.window = (::Window)swapChainDesc.window.x11.window;
 
         result = vk.CreateXlibSurfaceKHR(m_Device, &xlibSurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
-
-        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-            "Can't create a surface: vkCreateXlibSurfaceKHR returned %d.", (int32_t)result);
+        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateXlibSurfaceKHR returned %d", (int32_t)result);
 
         return Result::SUCCESS;
     }
@@ -107,9 +101,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc)
         waylandSurfaceInfo.surface = (wl_surface*)swapChainDesc.window.wayland.surface;
 
         result = vk.CreateWaylandSurfaceKHR(m_Device, &waylandSurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
-
-        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-            "Can't create a surface: vkCreateWaylandSurfaceKHR returned %d.", (int32_t)result);
+        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateWaylandSurfaceKHR returned %d", (int32_t)result);
 
         return Result::SUCCESS;
     }
@@ -125,9 +117,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
     VkSemaphoreTypeCreateInfo timelineCreateInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, nullptr, VK_SEMAPHORE_TYPE_BINARY, 0 };
     VkSemaphoreCreateInfo createInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &timelineCreateInfo, 0 };
     VkResult result = vk.CreateSemaphore((VkDevice)m_Device, &createInfo, m_Device.GetAllocationCallbacks(), &m_Semaphore);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-        "Can't create a semaphore: vk.CreateSemaphore returned %d.", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateSemaphore returned %d", (int32_t)result);
 
     m_CommandQueue = (CommandQueueVK*)swapChainDesc.commandQueue;
 
@@ -140,15 +130,13 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
 
     if (supported == VK_FALSE)
     {
-        REPORT_ERROR(&m_Device, "The specified surface is not supported by the physical device.");
+        REPORT_ERROR(&m_Device, "The specified surface is not supported by the physical device");
         return Result::UNSUPPORTED;
     }
 
     VkSurfaceCapabilitiesKHR capabilites = {};
     result = vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(m_Device, m_Surface, &capabilites);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-        "Can't get physical device surface capabilities: vkGetPhysicalDeviceSurfaceCapabilitiesKHR returned %d.", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfaceCapabilitiesKHR returned %d", (int32_t)result);
 
     const bool isWidthValid = swapChainDesc.width >= capabilites.minImageExtent.width &&
         swapChainDesc.width <= capabilites.maxImageExtent.width;
@@ -157,21 +145,17 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
 
     if (!isWidthValid || !isHeightValid)
     {
-        REPORT_ERROR(&m_Device, "Invalid SwapChainVK buffer size.");
+        REPORT_ERROR(&m_Device, "Invalid SwapChainVK buffer size");
         return Result::INVALID_ARGUMENT;
     }
 
     uint32_t formatNum = 0;
     result = vk.GetPhysicalDeviceSurfaceFormatsKHR(m_Device, m_Surface, &formatNum, nullptr);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-        "Can't get physical device surface formats: vkGetPhysicalDeviceSurfaceFormatsKHR returned %d.", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfaceFormatsKHR returned %d", (int32_t)result);
 
     VkSurfaceFormatKHR* surfaceFormats = STACK_ALLOC(VkSurfaceFormatKHR, formatNum);
     result = vk.GetPhysicalDeviceSurfaceFormatsKHR(m_Device, m_Surface, &formatNum, surfaceFormats);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-        "Can't get physical device surface formats: vkGetPhysicalDeviceSurfaceFormatsKHR returned %d.", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfaceFormatsKHR returned %d", (int32_t)result);
 
     VkSurfaceFormatKHR surfaceFormat = {};
 
@@ -180,15 +164,11 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
 
     uint32_t presentModeNum = 0;
     result = vk.GetPhysicalDeviceSurfacePresentModesKHR(m_Device, m_Surface, &presentModeNum, nullptr);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-        "Can't get supported present modes for the surface: vkGetPhysicalDeviceSurfacePresentModesKHR returned %d.", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfacePresentModesKHR returned %d", (int32_t)result);
 
     VkPresentModeKHR* presentModes = STACK_ALLOC(VkPresentModeKHR, presentModeNum);
     result = vk.GetPhysicalDeviceSurfacePresentModesKHR(m_Device, m_Surface, &presentModeNum, presentModes);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-        "Can't get supported present modes for the surface: vkGetPhysicalDeviceSurfacePresentModesKHR returned %d.", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfacePresentModesKHR returned %d", (int32_t)result);
 
     // Both of these modes use v-sync for preseting, but FIFO blocks execution
     VkPresentModeKHR desiredPresentMode = swapChainDesc.verticalSyncInterval ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
@@ -199,7 +179,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
 
     if (!supported)
     {
-        REPORT_WARNING(&m_Device, "The present mode is not supported. Using the first mode from the list of supported modes. (Mode: %d)", (int32_t)desiredPresentMode);
+        REPORT_WARNING(&m_Device, "The present mode is not supported. Using the first mode from the list of supported modes (mode: %d)", (int32_t)desiredPresentMode);
         desiredPresentMode = presentModes[0];
     }
 
@@ -228,9 +208,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
     };
 
     result = vk.CreateSwapchainKHR(m_Device, &swapchainInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-        "Can't create a swapchain: vkCreateSwapchainKHR returned %d.", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateSwapchainKHR returned %d", (int32_t)result);
 
     uint32_t imageNum = 0;
     vk.GetSwapchainImagesKHR(m_Device, m_Handle, &imageNum, nullptr);
@@ -282,26 +260,34 @@ inline Texture* const* SwapChainVK::GetTextures(uint32_t& textureNum) const
 inline uint32_t SwapChainVK::AcquireNextTexture()
 {
     const auto& vk = m_Device.GetDispatchTable();
-    const VkResult result = vk.AcquireNextImageKHR(m_Device, m_Handle, VK_DEFAULT_TIMEOUT, m_Semaphore, VK_NULL_HANDLE, &m_TextureIndex);
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) // TODO: find a better way, instead of returning an invalid index
-        return uint32_t(-1);
+    VkResult result = vk.AcquireNextImageKHR(m_Device, m_Handle, VK_DEFAULT_TIMEOUT, m_Semaphore, VK_NULL_HANDLE, &m_TextureIndex);
 
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, m_TextureIndex,
-        "Can't acquire the next texture of the swapchain: vkAcquireNextImageKHR returned %d.", (int32_t)result);
-
-    const uint32_t waitDstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 1, &m_Semaphore, &waitDstStageMask, 0, nullptr, 0, nullptr };
-    vk.QueueSubmit(*m_CommandQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    if (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR)
+    {
+        const uint32_t waitDstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 1, &m_Semaphore, &waitDstStageMask, 0, nullptr, 0, nullptr };
+        result = vk.QueueSubmit(*m_CommandQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        if (result != VK_SUCCESS)
+            REPORT_ERROR(&m_Device, "vkQueueSubmit returned %d", (int32_t)result);
+    }
+    else if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_ERROR_SURFACE_LOST_KHR) // TODO: find a better way, instead of returning an invalid index
+        m_TextureIndex = OUT_OF_DATE;
+    else
+        REPORT_ERROR(&m_Device, "vkAcquireNextImageKHR returned %d", (int32_t)result);
 
     return m_TextureIndex;
 }
 
 inline Result SwapChainVK::Present()
 {
+    if (m_TextureIndex == OUT_OF_DATE)
+        return Result::OUT_OF_DATE;
+
     const auto& vk = m_Device.GetDispatchTable();
 
     VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0, nullptr, nullptr, 0, nullptr, 1, &m_Semaphore };
-    vk.QueueSubmit(*m_CommandQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    VkResult result = vk.QueueSubmit(*m_CommandQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkQueueSubmit returned %d", (int32_t)result);
 
     const VkPresentInfoKHR info = {
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -312,34 +298,26 @@ inline Result SwapChainVK::Present()
         nullptr
     };
 
-    const VkResult result = vk.QueuePresentKHR(*m_CommandQueue, &info);
-    if (result == VK_ERROR_OUT_OF_DATE_KHR)
-    {
-        // This is fine, just restart a swapchain when this happens
-        return GetReturnCode(result);
-    }
+    result = vk.QueuePresentKHR(*m_CommandQueue, &info);
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_ERROR_OUT_OF_DATE_KHR && result != VK_ERROR_SURFACE_LOST_KHR)
+        REPORT_ERROR(&m_Device, "vkQueuePresentKHR returned %d", (int32_t)result);
 
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-        "Can't present the swapchain: vkQueuePresentKHR returned %d.", (int32_t)result);
-
-    return Result::SUCCESS;
+    return GetReturnCode(result);
 }
 
-Result nri::SwapChainVK::ResizeBuffers(Dim_t width, Dim_t height) 
+inline Result nri::SwapChainVK::ResizeBuffers(Dim_t width, Dim_t height)
 {
     m_SwapChainDesc.width = (uint16_t)width;
     m_SwapChainDesc.height = (uint16_t)height;
 
-    // Vulkan requires to recreate swapchain when the window size changes
-    Destroy();
+    Destroy(); // TODO: no resize in VK, do we need resize in D3D11/D3D12?
 
     return Create(m_SwapChainDesc);
 }
 
 inline Result SwapChainVK::SetHdrMetadata(const HdrMetadata& hdrMetadata)
 {
-    const auto& vk = m_Device.GetDispatchTable();
-    if (!vk.SetHdrMetadataEXT)
+    if (!m_Device.supportedFeatures.hdr)
         return Result::UNSUPPORTED;
 
     const VkHdrMetadataEXT data = {
@@ -355,6 +333,7 @@ inline Result SwapChainVK::SetHdrMetadata(const HdrMetadata& hdrMetadata)
         hdrMetadata.frameAverageLightLevelMax
     };
 
+    const auto& vk = m_Device.GetDispatchTable();
     vk.SetHdrMetadataEXT(m_Device, 1, &m_Handle, &data);
 
     return Result::SUCCESS;

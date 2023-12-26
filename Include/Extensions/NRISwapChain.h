@@ -13,7 +13,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 NRI_NAMESPACE_BEGIN
 
 NRI_FORWARD_STRUCT(SwapChain);
-NRI_FORWARD_STRUCT(Display);
 
 NRI_ENUM
 (
@@ -84,10 +83,9 @@ NRI_STRUCT(SwapChainDesc)
     const NRI_NAME(CommandQueue)* commandQueue;
     NRI_NAME(Dim_t) width;
     NRI_NAME(Dim_t) height;
-    uint16_t textureNum;
+    uint8_t textureNum;
     NRI_NAME(SwapChainFormat) format;
-    uint32_t verticalSyncInterval;
-    NRI_NAME(Display)* display;
+    uint8_t verticalSyncInterval;
 };
 
 NRI_STRUCT(HdrMetadata)
@@ -108,12 +106,10 @@ NRI_STRUCT(SwapChainInterface)
     void (NRI_CALL *DestroySwapChain)(NRI_NAME_REF(SwapChain) swapChain);
     void (NRI_CALL *SetSwapChainDebugName)(NRI_NAME_REF(SwapChain) swapChain, const char* name);
     NRI_NAME(Texture)* const* (NRI_CALL *GetSwapChainTextures)(const NRI_NAME_REF(SwapChain) swapChain, uint32_t NRI_REF textureNum);
-    uint32_t (NRI_CALL *AcquireNextSwapChainTexture)(NRI_NAME_REF(SwapChain) swapChain); // TODO: currently returns "-1" on errors and "out of date"
+    uint32_t (NRI_CALL *AcquireNextSwapChainTexture)(NRI_NAME_REF(SwapChain) swapChain); // IMPORTANT: return OUT_OF_DATE index to indicate "out of date" swap chain status (VK only)
     NRI_NAME(Result) (NRI_CALL *SwapChainPresent)(NRI_NAME_REF(SwapChain) swapChain);
-    NRI_NAME(Result) (NRI_CALL *ResizeBuffers)(NRI_NAME_REF(SwapChain) swapChain, NRI_NAME(Dim_t) width, NRI_NAME(Dim_t) height);
+    NRI_NAME(Result) (NRI_CALL *ResizeBuffers)(NRI_NAME_REF(SwapChain) swapChain, NRI_NAME(Dim_t) width, NRI_NAME(Dim_t) height); // IMPORTANT: invalidates swapchain textures, requires GPU idle state, can be deprecated in the future
     NRI_NAME(Result) (NRI_CALL *SetSwapChainHdrMetadata)(NRI_NAME_REF(SwapChain) swapChain, const NRI_NAME_REF(HdrMetadata) hdrMetadata);
-    NRI_NAME(Result) (NRI_CALL *GetDisplays)(NRI_NAME_REF(Device) device, NRI_NAME(Display)** displays, uint32_t NRI_REF displayNum);
-    NRI_NAME(Result) (NRI_CALL *GetDisplaySize)(NRI_NAME_REF(Device) device, NRI_NAME_REF(Display) display, NRI_NAME_REF(Dim_t) width, NRI_NAME_REF(Dim_t) height);
-};
+    };
 
 NRI_NAMESPACE_END

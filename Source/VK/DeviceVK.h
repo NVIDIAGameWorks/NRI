@@ -46,17 +46,11 @@ struct DeviceVK final : public DeviceBase
     inline uint32_t GetPhysicalDeviceGroupSize() const
     { return m_Desc.nodeNum; }
 
-    inline bool IsDescriptorIndexingExtSupported() const
-    { return m_IsDescriptorIndexingSupported; }
-
     inline bool IsConcurrentSharingModeEnabledForBuffers() const
     { return m_ConcurrentSharingModeQueueIndices.size() > 1; }
 
     inline bool IsConcurrentSharingModeEnabledForImages() const
     { return m_ConcurrentSharingModeQueueIndices.size() > 1; }
-
-    inline bool IsBufferDeviceAddressSupported() const
-    { return m_IsBufferDeviceAddressSupported; }
 
     inline const Vector<uint32_t>& GetConcurrentSharingModeQueueIndices() const
     { return m_ConcurrentSharingModeQueueIndices; }
@@ -75,7 +69,7 @@ struct DeviceVK final : public DeviceBase
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);        
+    void SetDebugName(const char* name);
     Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
     Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
     Result CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool);
@@ -116,8 +110,6 @@ struct DeviceVK final : public DeviceBase
     void DestroyFence(Fence& fence);
     void DestroySwapChain(SwapChain& swapChain);
     void DestroyAccelerationStructure(AccelerationStructure& accelerationStructure);
-    Result GetDisplays(Display** displays, uint32_t& displayNum);
-    Result GetDisplaySize(Display& display, Dim_t& width, Dim_t& height);
     Result AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
@@ -180,16 +172,21 @@ private:
     ComPtr<IDXGIAdapter> m_Adapter;
 #endif
     bool m_OwnsNativeObjects = false;
-    bool m_IsDebugUtilsSupported = false;
-    bool m_IsSubsetAllocationSupported = false;
-    bool m_IsDescriptorIndexingSupported = false;
-    bool m_IsBufferDeviceAddressSupported = false;
-    bool m_IsSampleLocationExtSupported = false;
-    bool m_IsConservativeRasterExtSupported = false;
-    bool m_IsRayTracingExtSupported = false;
-    bool m_IsMicroMapSupported = false;
-    bool m_IsMeshShaderExtSupported = false;
-    bool m_IsHDRExtSupported = false;
+
+public:
+    struct SupportedFeatures
+    {
+        bool debugUtils = false;
+        bool subsetAllocation = false;
+        bool descriptorIndexing = false;
+        bool bufferDeviceAddress = false;
+        bool sampleLocations = false;
+        bool conservativeRaster = false;
+        bool rayTracing = false;
+        bool microMap = false;
+        bool meshShader = false;
+        bool hdr = false;
+    } supportedFeatures;
 };
 
 }
