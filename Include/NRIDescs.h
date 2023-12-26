@@ -197,7 +197,7 @@ NRI_ENUM
 (
     TextureLayout, uint8_t,
 
-    GENERAL,
+    UNKNOWN,
     COLOR_ATTACHMENT,
     DEPTH_STENCIL,
     DEPTH_STENCIL_READONLY,
@@ -207,7 +207,7 @@ NRI_ENUM
     COPY_SOURCE,
     COPY_DESTINATION,
     PRESENT,
-    UNKNOWN,
+    GENERAL,
 
     MAX_NUM
 );
@@ -764,6 +764,12 @@ NRI_STRUCT(AddressModes)
     NRI_NAME(AddressMode) u, v, w;
 };
 
+NRI_STRUCT(AccessAndLayout)
+{
+    NRI_NAME(AccessBits) acessBits;
+    NRI_NAME(TextureLayout) layout;
+};
+
 NRI_STRUCT(Filters)
 {
     NRI_NAME(Filter) min, mag, mip;
@@ -952,19 +958,6 @@ NRI_STRUCT(DescriptorPoolDesc)
     uint32_t nodeMask;
 };
 
-NRI_STRUCT(TextureTransitionBarrierDesc)
-{
-    const NRI_NAME(Texture)* texture;
-    NRI_NAME(Mip_t) mipOffset;
-    NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) arrayOffset;
-    NRI_NAME(Dim_t) arraySize;
-    NRI_NAME(AccessBits) prevAccess;
-    NRI_NAME(AccessBits) nextAccess;
-    NRI_NAME(TextureLayout) prevLayout;
-    NRI_NAME(TextureLayout) nextLayout;
-};
-
 NRI_STRUCT(BufferTransitionBarrierDesc)
 {
     const NRI_NAME(Buffer)* buffer;
@@ -979,12 +972,22 @@ NRI_STRUCT(BufferAliasingBarrierDesc)
     NRI_NAME(AccessBits) nextAccess;
 };
 
+NRI_STRUCT(TextureTransitionBarrierDesc)
+{
+    const NRI_NAME(Texture)* texture;
+    NRI_NAME(Mip_t) mipOffset;
+    NRI_NAME(Mip_t) mipNum;
+    NRI_NAME(Dim_t) arrayOffset;
+    NRI_NAME(Dim_t) arraySize;
+    NRI_NAME(AccessAndLayout) prevState;
+    NRI_NAME(AccessAndLayout) nextState;
+};
+
 NRI_STRUCT(TextureAliasingBarrierDesc)
 {
     const NRI_NAME(Texture)* before;
     const NRI_NAME(Texture)* after;
-    NRI_NAME(AccessBits) nextAccess;
-    NRI_NAME(TextureLayout) nextLayout;
+    NRI_NAME(AccessAndLayout) nextState;
 };
 
 NRI_STRUCT(TransitionBarrierDesc)

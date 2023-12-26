@@ -32,8 +32,7 @@ NRI_STRUCT(TextureUploadDesc)
 {
     const NRI_NAME(TextureSubresourceUploadDesc)* subresources;
     NRI_NAME(Texture)* texture;
-    NRI_NAME(AccessBits) nextAccess;
-    NRI_NAME(TextureLayout) nextLayout;
+    NRI_NAME(AccessAndLayout) nextState;
     NRI_NAME(Mip_t) mipNum;
     NRI_NAME(Dim_t) arraySize;
 };
@@ -157,34 +156,14 @@ static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture3D)(NRI_NAME(Format) fo
     return textureDesc;
 }
 
-static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_FUNC_NAME(TextureTransition)(NRI_NAME(Texture)* texture, NRI_NAME(AccessBits) prevAccess, NRI_NAME(AccessBits) nextAccess, NRI_NAME(TextureLayout) prevLayout,
-    NRI_NAME(TextureLayout) nextLayout, NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0), NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)), NRI_NAME(Dim_t) arrayOffset NRI_DEFAULT_VALUE(0),
-    NRI_NAME(Dim_t) arraySize NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_ARRAY_LAYERS)))
-{
-    NRI_NAME(TextureTransitionBarrierDesc) textureTransitionBarrierDesc = NRI_ZERO_INIT;
-    textureTransitionBarrierDesc.texture = texture;
-    textureTransitionBarrierDesc.prevAccess = prevAccess;
-    textureTransitionBarrierDesc.nextAccess = nextAccess;
-    textureTransitionBarrierDesc.prevLayout = prevLayout;
-    textureTransitionBarrierDesc.nextLayout = nextLayout;
-    textureTransitionBarrierDesc.mipOffset = mipOffset;
-    textureTransitionBarrierDesc.mipNum = mipNum;
-    textureTransitionBarrierDesc.arrayOffset = arrayOffset;
-    textureTransitionBarrierDesc.arraySize = arraySize;
-
-    return textureTransitionBarrierDesc;
-}
-
-static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_FUNC_NAME(TextureTransitionFromUnknown)(NRI_NAME(Texture)* texture, NRI_NAME(AccessBits) nextAccess, NRI_NAME(TextureLayout) nextLayout,
+static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_FUNC_NAME(TextureTransition)(NRI_NAME(Texture)* texture, NRI_NAME(AccessAndLayout) prevState, NRI_NAME(AccessAndLayout) nextState,
     NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0), NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)), NRI_NAME(Dim_t) arrayOffset NRI_DEFAULT_VALUE(0),
     NRI_NAME(Dim_t) arraySize NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_ARRAY_LAYERS)))
 {
     NRI_NAME(TextureTransitionBarrierDesc) textureTransitionBarrierDesc = NRI_ZERO_INIT;
     textureTransitionBarrierDesc.texture = texture;
-    textureTransitionBarrierDesc.prevAccess = NRI_ENUM_MEMBER(AccessBits,UNKNOWN);
-    textureTransitionBarrierDesc.nextAccess = nextAccess;
-    textureTransitionBarrierDesc.prevLayout = NRI_ENUM_MEMBER(TextureLayout, UNKNOWN);
-    textureTransitionBarrierDesc.nextLayout = nextLayout;
+    textureTransitionBarrierDesc.prevState = prevState;
+    textureTransitionBarrierDesc.nextState = nextState;
     textureTransitionBarrierDesc.mipOffset = mipOffset;
     textureTransitionBarrierDesc.mipNum = mipNum;
     textureTransitionBarrierDesc.arrayOffset = arrayOffset;
@@ -193,15 +172,30 @@ static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_FUNC_NAME(TextureTransi
     return textureTransitionBarrierDesc;
 }
 
-static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_FUNC_NAME(TextureTransitionFromState)(NRI_NAME_REF(TextureTransitionBarrierDesc) prevState, NRI_NAME(AccessBits) nextAccess, NRI_NAME(TextureLayout) nextLayout,
+static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_FUNC_NAME(TextureTransitionFromUnknown)(NRI_NAME(Texture)* texture, NRI_NAME(AccessAndLayout) nextState,
+    NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0), NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)), NRI_NAME(Dim_t) arrayOffset NRI_DEFAULT_VALUE(0),
+    NRI_NAME(Dim_t) arraySize NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_ARRAY_LAYERS)))
+{
+    NRI_NAME(TextureTransitionBarrierDesc) textureTransitionBarrierDesc = NRI_ZERO_INIT;
+    textureTransitionBarrierDesc.texture = texture;
+    textureTransitionBarrierDesc.prevState.acessBits = NRI_ENUM_MEMBER(AccessBits, UNKNOWN);
+    textureTransitionBarrierDesc.prevState.layout = NRI_ENUM_MEMBER(TextureLayout, UNKNOWN);
+    textureTransitionBarrierDesc.nextState = nextState;
+    textureTransitionBarrierDesc.mipOffset = mipOffset;
+    textureTransitionBarrierDesc.mipNum = mipNum;
+    textureTransitionBarrierDesc.arrayOffset = arrayOffset;
+    textureTransitionBarrierDesc.arraySize = arraySize;
+
+    return textureTransitionBarrierDesc;
+}
+
+static inline NRI_NAME(TextureTransitionBarrierDesc) NRI_FUNC_NAME(TextureTransitionFromState)(NRI_NAME_REF(TextureTransitionBarrierDesc) prevState, NRI_NAME(AccessAndLayout) nextState,
     NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0), NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)))
 {
     NRI_REF_ACCESS(prevState)->mipOffset = mipOffset;
     NRI_REF_ACCESS(prevState)->mipNum = mipNum;
-    NRI_REF_ACCESS(prevState)->prevAccess = NRI_REF_ACCESS(prevState)->nextAccess;
-    NRI_REF_ACCESS(prevState)->nextAccess = nextAccess;
-    NRI_REF_ACCESS(prevState)->prevLayout = NRI_REF_ACCESS(prevState)->nextLayout;
-    NRI_REF_ACCESS(prevState)->nextLayout = nextLayout;
+    NRI_REF_ACCESS(prevState)->prevState = NRI_REF_ACCESS(prevState)->nextState;
+    NRI_REF_ACCESS(prevState)->nextState = nextState;
 
     return *NRI_REF_ACCESS(prevState);
 }

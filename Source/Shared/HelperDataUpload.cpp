@@ -335,18 +335,11 @@ Result HelperDataUpload::DoTransition(const TextureUploadDesc* textureUploadDesc
             transition.arraySize = textureDesc.arraySize;
 
             if (isInitialTransition)
-            {
-                transition.prevAccess = AccessBits::UNKNOWN;
-                transition.nextAccess = AccessBits::COPY_DESTINATION;
-                transition.prevLayout = TextureLayout::UNKNOWN;
-                transition.nextLayout = TextureLayout::COPY_DESTINATION;
-            }
+                transition.nextState = {AccessBits::COPY_DESTINATION, TextureLayout::COPY_DESTINATION};
             else
             {
-                transition.prevAccess = AccessBits::COPY_DESTINATION;
-                transition.nextAccess = textureDesc.nextAccess;
-                transition.prevLayout = TextureLayout::COPY_DESTINATION;
-                transition.nextLayout = textureDesc.nextLayout;
+                transition.prevState = {AccessBits::COPY_DESTINATION, TextureLayout::COPY_DESTINATION};
+                transition.nextState = textureDesc.nextState;
             }
         }
 

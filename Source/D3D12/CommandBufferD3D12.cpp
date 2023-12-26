@@ -502,7 +502,7 @@ inline void CommandBufferD3D12::PipelineBarrier(const TransitionBarrierDesc* tra
                 barrierDesc.mipOffset == 0 &&
                 barrierDesc.mipNum == REMAINING_MIP_LEVELS)
             {
-                AddResourceBarrier(texture, barrierDesc.prevAccess, barrierDesc.nextAccess, *ptr++, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+                AddResourceBarrier(texture, barrierDesc.prevState.acessBits, barrierDesc.nextState.acessBits, *ptr++, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
             }
             else
             {
@@ -511,7 +511,7 @@ inline void CommandBufferD3D12::PipelineBarrier(const TransitionBarrierDesc* tra
                     for (Mip_t mipOffset = barrierDesc.mipOffset; mipOffset < barrierDesc.mipOffset + mipNum; mipOffset++)
                     {
                         uint32_t subresource = texture.GetSubresourceIndex(arrayOffset, mipOffset);
-                        AddResourceBarrier(texture, barrierDesc.prevAccess, barrierDesc.nextAccess, *ptr++, subresource);
+                        AddResourceBarrier(texture, barrierDesc.prevState.acessBits, barrierDesc.nextState.acessBits, *ptr++, subresource);
                     }
                 }
             }

@@ -51,19 +51,19 @@ static bool ValidateTextureTransitionBarrierDesc(const DeviceVal& device, uint32
 
     RETURN_ON_FAILURE(&device, textureTransitionBarrierDesc.texture != nullptr, false, "CmdPipelineBarrier: 'transitionBarriers->textures[%u].texture' is NULL", i);
     RETURN_ON_FAILURE(
-        &device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.prevAccess), false,
+        &device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.prevState.acessBits), false,
         "CmdPipelineBarrier: 'transitionBarriers->textures[%u].prevAccess' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName()
     );
     RETURN_ON_FAILURE(
-        &device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.nextAccess), false,
+        &device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.nextState.acessBits), false,
         "CmdPipelineBarrier: 'transitionBarriers->textures[%u].nextAccess' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName()
     );
     RETURN_ON_FAILURE(
-        &device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.prevLayout), false,
+        &device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.prevState.layout), false,
         "CmdPipelineBarrier: 'transitionBarriers->textures[%u].prevLayout' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName()
     );
     RETURN_ON_FAILURE(
-        &device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.nextLayout), false,
+        &device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.nextState.layout), false,
         "CmdPipelineBarrier: 'transitionBarriers->textures[%u].nextLayout' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName()
     );
 

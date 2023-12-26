@@ -139,7 +139,7 @@ constexpr bool IsAccessMaskSupported(TextureUsageBits usageMask, AccessBits acce
 }
 
 constexpr std::array<TextureUsageBits, (size_t)TextureLayout::MAX_NUM> TEXTURE_USAGE_FOR_TEXTURE_LAYOUT_TABLE = {
-    TextureUsageBits::NONE,                     // GENERAL
+    TextureUsageBits::NONE,                     // UNKNOWN
     TextureUsageBits::COLOR_ATTACHMENT,         // COLOR_ATTACHMENT
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_STENCIL
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_STENCIL_READONLY
@@ -149,7 +149,7 @@ constexpr std::array<TextureUsageBits, (size_t)TextureLayout::MAX_NUM> TEXTURE_U
     TextureUsageBits::NONE,                     // COPY_SOURCE
     TextureUsageBits::NONE,                     // COPY_DESTINATION
     TextureUsageBits::NONE,                     // PRESENT
-    TextureUsageBits::NONE                      // UNKNOWN
+    TextureUsageBits::NONE,                     // GENERAL
 };
 
 constexpr bool IsTextureLayoutSupported(TextureUsageBits usageMask, TextureLayout textureLayout) {

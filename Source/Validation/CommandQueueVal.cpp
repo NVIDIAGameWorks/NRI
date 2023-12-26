@@ -47,22 +47,22 @@ static bool ValidateTransitionBarrierDesc(DeviceVal& device, uint32_t i, const T
     RETURN_ON_FAILURE(&device, textureVal.IsBoundToMemory(), false, "ChangeResourceStates: 'transitionBarriers.textures[%u].texture' is not bound to memory", i);
 
     RETURN_ON_FAILURE(
-        &device, IsAccessMaskSupported(usageMask, textureTransitionBarrierDesc.prevAccess), false,
+        &device, IsAccessMaskSupported(usageMask, textureTransitionBarrierDesc.prevState.acessBits), false,
         "ChangeResourceStates: 'transitionBarriers.textures[%u].prevAccess' is not supported by usageMask of the texture", i
     );
 
     RETURN_ON_FAILURE(
-        &device, IsAccessMaskSupported(usageMask, textureTransitionBarrierDesc.nextAccess), false,
+        &device, IsAccessMaskSupported(usageMask, textureTransitionBarrierDesc.nextState.acessBits), false,
         "ChangeResourceStates: 'transitionBarriers.textures[%u].nextAccess' is not supported by usageMask of the texture", i
     );
 
     RETURN_ON_FAILURE(
-        &device, IsTextureLayoutSupported(usageMask, textureTransitionBarrierDesc.prevLayout), false,
+        &device, IsTextureLayoutSupported(usageMask, textureTransitionBarrierDesc.prevState.layout), false,
         "ChangeResourceStates: 'transitionBarriers.textures[%u].prevLayout' is not supported by usageMask of the texture", i
     );
 
     RETURN_ON_FAILURE(
-        &device, IsTextureLayoutSupported(usageMask, textureTransitionBarrierDesc.nextLayout), false,
+        &device, IsTextureLayoutSupported(usageMask, textureTransitionBarrierDesc.nextState.layout), false,
         "ChangeResourceStates: 'transitionBarriers.textures[%u].nextLayout' is not supported by usageMask of the texture", i
     );
 
@@ -84,7 +84,7 @@ static bool ValidateTextureUploadDesc(DeviceVal& device, uint32_t i, const Textu
     RETURN_ON_FAILURE(&device, textureUploadDesc.texture != nullptr, false, "UploadData: 'textureUploadDescs[%u].texture' is NULL", i);
     RETURN_ON_FAILURE(&device, textureUploadDesc.mipNum <= textureVal.GetDesc().mipNum, false, "UploadData: 'textureUploadDescs[%u].mipNum' is invalid", i);
     RETURN_ON_FAILURE(&device, textureUploadDesc.arraySize <= textureVal.GetDesc().arraySize, false, "UploadData: 'textureUploadDescs[%u].arraySize' is invalid", i);
-    RETURN_ON_FAILURE(&device, textureUploadDesc.nextLayout < TextureLayout::MAX_NUM, false, "UploadData: 'textureUploadDescs[%u].nextLayout' is invalid", i);
+    RETURN_ON_FAILURE(&device, textureUploadDesc.nextState.layout < TextureLayout::MAX_NUM, false, "UploadData: 'textureUploadDescs[%u].nextLayout' is invalid", i);
     RETURN_ON_FAILURE(&device, textureVal.IsBoundToMemory(), false, "UploadData: 'textureUploadDescs[%u].texture' is not bound to memory", i);
 
     for (uint32_t j = 0; j < subresourceNum; j++) {

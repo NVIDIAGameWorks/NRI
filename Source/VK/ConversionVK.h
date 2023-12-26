@@ -19,7 +19,7 @@ constexpr std::array<VkIndexType, (uint32_t)IndexType::MAX_NUM> INDEX_TYPE_TABLE
 };
 
 constexpr std::array<VkImageLayout, (uint32_t)nri::TextureLayout::MAX_NUM> LAYOUT_TABLE = {
-    VK_IMAGE_LAYOUT_GENERAL,                                        // GENERAL,
+    VK_IMAGE_LAYOUT_UNDEFINED,                                      // UNKNOWN
     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                       // COLOR_ATTACHMENT
     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,               // DEPTH_STENCIL
     VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,                // DEPTH_STENCIL_READONLY
@@ -29,7 +29,7 @@ constexpr std::array<VkImageLayout, (uint32_t)nri::TextureLayout::MAX_NUM> LAYOU
     IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,                              // COPY_SOURCE
     IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,                              // COPY_DESTINATION
     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,                                // PRESENT
-    VK_IMAGE_LAYOUT_UNDEFINED                                       // UNKNOWN
+    VK_IMAGE_LAYOUT_GENERAL,                                        // GENERAL
 };
 
 constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits usageMask, uint32_t structureStride)

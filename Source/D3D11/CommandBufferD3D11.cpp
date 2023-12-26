@@ -512,7 +512,7 @@ void CommandBufferD3D11::PipelineBarrier(const TransitionBarrierDesc* transition
     {
         const TextureTransitionBarrierDesc& textureDesc = transitionBarriers->textures[i];
 
-        if ((textureDesc.prevAccess & STORAGE_MASK) && (textureDesc.nextAccess & STORAGE_MASK))
+        if ((textureDesc.prevState.acessBits & STORAGE_MASK) && (textureDesc.nextState.acessBits & STORAGE_MASK))
             result = dependency;
     }
 
