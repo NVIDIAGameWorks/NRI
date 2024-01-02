@@ -335,29 +335,29 @@ Result DeviceD3D12::FillFunctionTable(SwapChainInterface& swapChainInterface) co
 
 #pragma region [  WrapperD3D12  ]
 
-static Result NRI_CALL CreateCommandBuffer(Device& device, const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer)
+static Result NRI_CALL CreateCommandBuffer(Device& device, const CommandBufferD3D12Desc& commandBufferD3D12Desc, CommandBuffer*& commandBuffer)
 {
-    return ((DeviceD3D12&)device).CreateCommandBuffer(commandBufferDesc, commandBuffer);
+    return ((DeviceD3D12&)device).CreateCommandBuffer(commandBufferD3D12Desc, commandBuffer);
 }
 
-static Result NRI_CALL CreateBuffer(Device& device, const BufferD3D12Desc& bufferDesc, Buffer*& buffer)
+static Result NRI_CALL CreateBuffer(Device& device, const BufferD3D12Desc& bufferD3D12Desc, Buffer*& buffer)
 {
-    return ((DeviceD3D12&)device).CreateBuffer(bufferDesc, buffer);
+    return ((DeviceD3D12&)device).CreateBuffer(bufferD3D12Desc, buffer);
 }
 
-static Result NRI_CALL CreateTexture(Device& device, const TextureD3D12Desc& textureDesc, Texture*& texture)
+static Result NRI_CALL CreateTexture(Device& device, const TextureD3D12Desc& textureD3D12Desc, Texture*& texture)
 {
-    return ((DeviceD3D12&)device).CreateTexture(textureDesc, texture);
+    return ((DeviceD3D12&)device).CreateTexture(textureD3D12Desc, texture);
 }
 
-static Result NRI_CALL CreateMemory(Device& device, const MemoryD3D12Desc& memoryDesc, Memory*& memory)
+static Result NRI_CALL CreateMemory(Device& device, const MemoryD3D12Desc& memoryD3D12Desc, Memory*& memory)
 {
-    return ((DeviceD3D12&)device).CreateMemory(memoryDesc, memory);
+    return ((DeviceD3D12&)device).CreateMemory(memoryD3D12Desc, memory);
 }
 
-static Result NRI_CALL CreateAccelerationStructure(Device& device, const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& memory)
+static Result NRI_CALL CreateAccelerationStructure(Device& device, const AccelerationStructureD3D12Desc& accelerationStructureD3D12Desc, AccelerationStructure*& memory)
 {
-    return ((DeviceD3D12&)device).CreateAccelerationStructure(accelerationStructureDesc, memory);
+    return ((DeviceD3D12&)device).CreateAccelerationStructure(accelerationStructureD3D12Desc, memory);
 }
 
 Result DeviceD3D12::FillFunctionTable(WrapperD3D12Interface& wrapperD3D12Interface) const

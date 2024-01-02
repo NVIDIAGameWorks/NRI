@@ -324,9 +324,6 @@ Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
         if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, supportedExts))
             supportedFeatures.conservativeRaster = true;
 
-        if (IsExtensionSupported(VK_EXT_HDR_METADATA_EXTENSION_NAME, supportedExts))
-            supportedFeatures.hdr = true;
-
         if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts))
             supportedFeatures.microMap = true;
 
@@ -622,6 +619,7 @@ Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
         extensions.push_back(deviceCreationDesc.vulkanExtensions.instanceExtensions[i]);
 
     extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+    extensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
     #ifdef VK_USE_PLATFORM_WIN32_KHR
         extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
     #endif
@@ -1091,12 +1089,6 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
         supportedFeatures.conservativeRaster = true;
     }
 
-    if (IsExtensionSupported(VK_EXT_HDR_METADATA_EXTENSION_NAME, supportedExts))
-    {
-        desiredExts.push_back(VK_EXT_HDR_METADATA_EXTENSION_NAME);
-        supportedFeatures.hdr = true;
-    }
-
     if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts))
     {
         desiredExts.push_back(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME);
@@ -1508,12 +1500,6 @@ Result DeviceVK::ResolveDispatchTable()
         RESOLVE_DEVICE_FUNCTION(SetDebugUtilsObjectNameEXT);
         RESOLVE_DEVICE_FUNCTION(CmdBeginDebugUtilsLabelEXT);
         RESOLVE_DEVICE_FUNCTION(CmdEndDebugUtilsLabelEXT);
-    }
-
-    if (supportedFeatures.hdr)
-    {
-        RESOLVE_OPTIONAL_DEVICE_FUNCTION(SetHdrMetadataEXT);
-        supportedFeatures.hdr = m_VK.SetHdrMetadataEXT != nullptr;
     }
 
     if (supportedFeatures.rayTracing)

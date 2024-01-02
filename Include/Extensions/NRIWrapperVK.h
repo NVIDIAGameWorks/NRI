@@ -16,8 +16,6 @@ NRI_FORWARD_STRUCT(VkImageSubresourceRange);
 
 NRI_NAMESPACE_BEGIN
 
-NRI_FORWARD_STRUCT(AccelerationStructure);
-
 typedef uint64_t NRIVkCommandPool;
 typedef uint64_t NRIVkImage;
 typedef uint64_t NRIVkBuffer;
@@ -34,7 +32,6 @@ typedef void* NRIVkPhysicalDevice;
 typedef void* NRIVkDevice;
 typedef void* NRIVkQueue;
 typedef void* NRIVkCommandBuffer;
-typedef void* NRIVkProcAddress;
 
 NRI_STRUCT(DeviceCreationVKDesc)
 {
@@ -137,12 +134,12 @@ NRI_STRUCT(WrapperVKInterface)
     NRI_NAME(Result) (NRI_CALL *CreateGraphicsPipelineVK)(NRI_NAME_REF(Device) device, NRIVkPipeline vkPipeline, NRI_NAME_REF(Pipeline*) pipeline);
     NRI_NAME(Result) (NRI_CALL *CreateComputePipelineVK)(NRI_NAME_REF(Device) device, NRIVkPipeline vkPipeline, NRI_NAME_REF(Pipeline*) pipeline);
     NRI_NAME(Result) (NRI_CALL *CreateQueryPoolVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(QueryPoolVKDesc) queryPoolVKDesc, NRI_NAME_REF(QueryPool*) queryPool);
-    NRI_NAME(Result) (NRI_CALL *CreateAccelerationStructureVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(AccelerationStructureVKDesc) accelerationStructureDesc, NRI_NAME_REF(AccelerationStructure*) accelerationStructure);
+    NRI_NAME(Result) (NRI_CALL *CreateAccelerationStructureVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(AccelerationStructureVKDesc) accelerationStructureVKDesc, NRI_NAME_REF(AccelerationStructure*) accelerationStructure);
 
     NRIVkPhysicalDevice (NRI_CALL *GetVkPhysicalDevice)(const NRI_NAME_REF(Device) device);
     NRIVkInstance (NRI_CALL *GetVkInstance)(const NRI_NAME_REF(Device) device);
-    NRIVkProcAddress(NRI_CALL *GetVkGetInstanceProcAddr)(const NRI_NAME_REF(Device) device);
-    NRIVkProcAddress(NRI_CALL *GetVkGetDeviceProcAddr)(const NRI_NAME_REF(Device) device);
+    void* (NRI_CALL *GetVkGetInstanceProcAddr)(const NRI_NAME_REF(Device) device);
+    void* (NRI_CALL *GetVkGetDeviceProcAddr)(const NRI_NAME_REF(Device) device);
 };
 
 NRI_API NRI_NAME(Result) NRI_CALL nriCreateDeviceFromVkDevice(const NRI_NAME_REF(DeviceCreationVKDesc) deviceDesc, NRI_NAME_REF(Device*) device);

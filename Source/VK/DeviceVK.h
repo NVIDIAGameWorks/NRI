@@ -185,7 +185,6 @@ public:
         bool rayTracing = false;
         bool microMap = false;
         bool meshShader = false;
-        bool hdr = false;
     } supportedFeatures;
 };
 

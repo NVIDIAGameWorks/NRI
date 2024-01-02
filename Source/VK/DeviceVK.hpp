@@ -372,9 +372,9 @@ static Result NRI_CALL CreateQueryPool(Device& device, const QueryPoolVKDesc& qu
     return ((DeviceVK&)device).CreateQueryPool(queryPoolVKDesc, queryPool);
 }
 
-static Result NRI_CALL CreateAccelerationStructure(Device& device, const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure)
+static Result NRI_CALL CreateAccelerationStructure(Device& device, const AccelerationStructureVKDesc& accelerationStructureVKDesc, AccelerationStructure*& accelerationStructure)
 {
-    return ((DeviceVK&)device).CreateAccelerationStructure(accelerationStructureDesc, accelerationStructure);
+    return ((DeviceVK&)device).CreateAccelerationStructure(accelerationStructureVKDesc, accelerationStructure);
 }
 
 static NRIVkPhysicalDevice NRI_CALL GetVkPhysicalDevice(const Device& device)
@@ -387,14 +387,14 @@ static NRIVkInstance NRI_CALL GetVkInstance(const Device& device)
     return (VkInstance)((DeviceVK&)device);
 }
 
-static NRIVkProcAddress NRI_CALL GetVkGetInstanceProcAddr(const Device& device)
+static void* NRI_CALL GetVkGetInstanceProcAddr(const Device& device)
 {
-    return (NRIVkProcAddress)((DeviceVK&)device).GetDispatchTable().GetInstanceProcAddr;
+    return ((DeviceVK&)device).GetDispatchTable().GetInstanceProcAddr;
 }
 
-static NRIVkProcAddress NRI_CALL GetVkGetDeviceProcAddr(const Device& device)
+static void* NRI_CALL GetVkGetDeviceProcAddr(const Device& device)
 {
-    return (NRIVkProcAddress)((DeviceVK&)device).GetDispatchTable().GetDeviceProcAddr;
+    return ((DeviceVK&)device).GetDispatchTable().GetDeviceProcAddr;
 }
 
 Result DeviceVK::FillFunctionTable(WrapperVKInterface& wrapperVKInterface) const

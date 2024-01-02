@@ -17,7 +17,7 @@ struct DeviceVK;
 struct CommandQueueVK;
 struct TextureVK;
 
-struct SwapChainVK
+struct SwapChainVK : public DisplayDescHelper
 {
     inline DeviceVK& GetDevice() const
     { return m_Device; }
@@ -31,12 +31,13 @@ struct SwapChainVK
     // NRI
     //================================================================================================================
 
+    inline Result GetDisplayDesc(DisplayDesc& displayDesc)
+    { return DisplayDescHelper::GetDisplayDesc(m_SwapChainDesc.window.windows.hwnd, displayDesc); }
+
     void SetDebugName(const char* name);
     Texture* const* GetTextures(uint32_t& textureNum) const;
     uint32_t AcquireNextTexture();
     Result Present();
-    Result ResizeBuffers(Dim_t width, Dim_t height);
-    Result SetHdrMetadata(const HdrMetadata& hdrMetadata);
 
 private:
     void Destroy();
@@ -51,7 +52,6 @@ private:
     DeviceVK& m_Device;
     const CommandQueueVK* m_CommandQueue = nullptr;
     uint32_t m_TextureIndex = 0;
-    Format m_Format = Format::UNKNOWN;
 };
 
 }

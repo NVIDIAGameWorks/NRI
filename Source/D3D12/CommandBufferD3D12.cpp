@@ -44,8 +44,8 @@ Result CommandBufferD3D12::Create(D3D12_COMMAND_LIST_TYPE commandListType, ID3D1
 
 Result CommandBufferD3D12::Create(const CommandBufferD3D12Desc& commandBufferDesc)
 {
-    m_CommandAllocator = (ID3D12CommandAllocator*)commandBufferDesc.d3d12CommandAllocator;
-    m_GraphicsCommandList = (ID3D12GraphicsCommandList*)commandBufferDesc.d3d12CommandList;
+    m_CommandAllocator = commandBufferDesc.d3d12CommandAllocator;
+    m_GraphicsCommandList = commandBufferDesc.d3d12CommandList;
     m_GraphicsCommandList->QueryInterface(IID_PPV_ARGS(&m_GraphicsCommandList1));
     m_GraphicsCommandList->QueryInterface(IID_PPV_ARGS(&m_GraphicsCommandList4));
     m_GraphicsCommandList->QueryInterface(IID_PPV_ARGS(&m_GraphicsCommandList6));

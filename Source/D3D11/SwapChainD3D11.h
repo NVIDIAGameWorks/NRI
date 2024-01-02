@@ -30,7 +30,7 @@ struct VersionedSwapChain
     uint8_t version = 0;
 };
 
-struct SwapChainD3D11
+struct SwapChainD3D11 : public DisplayDescHelper
 {
     inline SwapChainD3D11(DeviceD3D11& device) :
         m_Device(device)
@@ -51,19 +51,19 @@ struct SwapChainD3D11
     inline void SetDebugName(const char* name)
     { SET_D3D_DEBUG_OBJECT_NAME(m_SwapChain.ptr, name); }
 
+    inline Result GetDisplayDesc(DisplayDesc& displayDesc)
+    { return DisplayDescHelper::GetDisplayDesc(m_SwapChainDesc.window.windows.hwnd, displayDesc); }
+
     Texture* const* GetTextures(uint32_t& textureNum) const;
     uint32_t AcquireNextTexture();
     Result Present();
-    Result ResizeBuffers(Dim_t width, Dim_t height);
-    Result SetHdrMetadata(const HdrMetadata& hdrMetadata);
-
+    
 private:
     DeviceD3D11& m_Device;
     VersionedSwapChain m_SwapChain;
     Vector<TextureD3D11*> m_Textures;
     SwapChainDesc m_SwapChainDesc = {};
     HANDLE m_FrameLatencyWaitableObject = nullptr;
-    Format m_Format = Format::UNKNOWN;
     UINT m_Flags = 0;
 };
 

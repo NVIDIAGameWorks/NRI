@@ -201,8 +201,7 @@ void SwapChain_PartiallyFillFunctionTable##API(SwapChainInterface& table) \
     table.GetSwapChainTextures = ::GetSwapChainTextures; \
     table.AcquireNextSwapChainTexture = ::AcquireNextSwapChainTexture; \
     table.SwapChainPresent = ::SwapChainPresent; \
-    table.ResizeBuffers = ::ResizeBuffers; \
-    table.SetSwapChainHdrMetadata = ::SetSwapChainHdrMetadata; \
+    table.GetDisplayDesc = ::GetDisplayDesc; \
 }
 
 #define Define_RayTracing_CommandBuffer_PartiallyFillFunctionTable(API) \

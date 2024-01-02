@@ -10,8 +10,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-#include <cstddef>
-
 #include "NRI.h"
 #include "Extensions/NRIDeviceCreation.h"
 #include "Extensions/NRISwapChain.h"
@@ -24,8 +22,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include <array>
 #include <atomic>
-#include <type_traits>
-#include <limits>
 #include <cassert>
 #include <cstring>
 #include <map>
@@ -41,7 +37,7 @@ typedef nri::MemoryAllocatorInterface MemoryAllocatorInterface;
 #include "HelperResourceStateChange.h"
 
 #ifdef _WIN32
-    #include <dxgiformat.h>
+    #include <dxgi1_6.h>
 #else
     typedef uint32_t DXGI_FORMAT;
 #endif
@@ -353,5 +349,31 @@ constexpr nri::FormatSupportBits D3D_FORMAT_SUPPORT_TABLE[] = {
 };
 
 static_assert(GetCountOf(D3D_FORMAT_SUPPORT_TABLE) == (size_t)nri::Format::MAX_NUM, "some format is missing");
+
+struct DisplayDescHelper
+{
+public:
+    nri::Result GetDisplayDesc(void* hwnd, nri::DisplayDesc& displayDesc);
+protected:
+    ComPtr<IDXGIFactory2> m_DxgiFactory2;
+    nri::DisplayDesc m_DisplayDesc = {};
+    bool m_HasDisplayDesc = false;
+};
+
+#else
+
+struct DisplayDescHelper
+{
+    inline nri::Result GetDisplayDesc(void* hwnd, nri::DisplayDesc& displayDesc)
+    {
+        MaybeUnused(hwnd);
+
+        displayDesc = {};
+        displayDesc.sdrLuminance = 80.0f;
+        displayDesc.maxLuminance = 80.0f;
+
+        return nri::Result::UNSUPPORTED;
+    }
+};
 
 #endif

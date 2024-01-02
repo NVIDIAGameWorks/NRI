@@ -56,10 +56,9 @@ Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc,
 
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
 
-    ComPtr<ID3D11Device> d3d11Device = (ID3D11Device*)deviceCreationD3D11Desc.d3d11Device;
-
+    ComPtr<ID3D11Device> d3d11Device = deviceCreationD3D11Desc.d3d11Device;
     DeviceD3D11* implementation = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    const nri::Result result = implementation->Create(deviceCreationDesc, d3d11Device, (AGSContext*)deviceCreationD3D11Desc.agsContextAssociatedWithDevice);
+    const nri::Result result = implementation->Create(deviceCreationDesc, d3d11Device, deviceCreationD3D11Desc.agsContext);
 
     if (result == nri::Result::SUCCESS)
     {
@@ -89,7 +88,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     if (!device)
     {
         ComPtr<IDXGIFactory4> dxgiFactory;
-        HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
+        HRESULT hr = CreateDXGIFactory2(deviceCreationDesc.enableAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
         RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
 
         if (deviceCreationDesc.adapterDesc)
@@ -437,21 +436,21 @@ void DeviceD3D11::FillDesc(bool isValidationEnabled)
     m_Desc.isSubsetAllocationSupported = true;
 }
 
-template<typename Implementation, typename Interface, typename ConstructorArg, typename ... Args>
-nri::Result DeviceD3D11::CreateImplementationWithNonEmptyConstructor(Interface*& entity, ConstructorArg&& constructorArg, const Args&... args)
+template<typename Implementation, typename Interface, typename ... Args>
+Result DeviceD3D11::CreateImplementation(Interface*& entity, const Args&... args)
 {
-    Implementation* implementation = Allocate<Implementation>(GetStdAllocator(), constructorArg);
-    const nri::Result res = implementation->Create(args...);
+    Implementation* implementation = Allocate<Implementation>(GetStdAllocator(), *this);
+    const Result result = implementation->Create(args...);
 
-    if (res == nri::Result::SUCCESS)
+    if (result == Result::SUCCESS)
     {
         entity = (Interface*)implementation;
-        return nri::Result::SUCCESS;
+        return Result::SUCCESS;
     }
 
     Deallocate(GetStdAllocator(), implementation);
 
-    return res;
+    return result;
 }
 
 //================================================================================================================
@@ -478,7 +477,7 @@ void DeviceD3D11::Destroy()
 
 inline Result DeviceD3D11::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain)
 {
-    return CreateImplementationWithNonEmptyConstructor<SwapChainD3D11>(swapChain, *this, swapChainDesc);
+    return CreateImplementation<SwapChainD3D11>(swapChain, swapChainDesc);
 }
 
 inline void DeviceD3D11::DestroySwapChain(SwapChain& swapChain)
@@ -504,7 +503,7 @@ inline Result DeviceD3D11::CreateCommandAllocator(const CommandQueue& commandQue
 
 inline Result DeviceD3D11::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool)
 {
-    return CreateImplementationWithNonEmptyConstructor<DescriptorPoolD3D11>(descriptorPool, *this, descriptorPoolDesc);
+    return CreateImplementation<DescriptorPoolD3D11>(descriptorPool, descriptorPoolDesc);
 }
 
 inline Result DeviceD3D11::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer)
@@ -523,27 +522,27 @@ inline Result DeviceD3D11::CreateTexture(const TextureDesc& textureDesc, Texture
 
 inline Result DeviceD3D11::CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView)
 {
-    return CreateImplementationWithNonEmptyConstructor<DescriptorD3D11>(bufferView, *this, bufferViewDesc);
+    return CreateImplementation<DescriptorD3D11>(bufferView, bufferViewDesc);
 }
 
 inline Result DeviceD3D11::CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView)
 {
-    return CreateImplementationWithNonEmptyConstructor<DescriptorD3D11>(textureView, *this, textureViewDesc);
+    return CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
 }
 
 inline Result DeviceD3D11::CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView)
 {
-    return CreateImplementationWithNonEmptyConstructor<DescriptorD3D11>(textureView, *this, textureViewDesc);
+    return CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
 }
 
 inline Result DeviceD3D11::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView)
 {
-    return CreateImplementationWithNonEmptyConstructor<DescriptorD3D11>(textureView, *this, textureViewDesc);
+    return CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
 }
 
 inline Result DeviceD3D11::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& sampler)
 {
-    return CreateImplementationWithNonEmptyConstructor<DescriptorD3D11>(sampler, *this, samplerDesc);
+    return CreateImplementation<DescriptorD3D11>(sampler, samplerDesc);
 }
 
 inline Result DeviceD3D11::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout)
@@ -596,7 +595,7 @@ inline Result DeviceD3D11::CreatePipeline(const ComputePipelineDesc& computePipe
 
 inline Result DeviceD3D11::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool)
 {
-    return CreateImplementationWithNonEmptyConstructor<QueryPoolD3D11>(queryPool, *this, queryPoolDesc);
+    return CreateImplementation<QueryPoolD3D11>(queryPool, queryPoolDesc);
 }
 
 inline Result DeviceD3D11::CreateFence(uint64_t initialValue, Fence*& fence)

@@ -152,8 +152,6 @@ struct DispatchTable
     VULKAN_FUNCTION(CmdBeginDebugUtilsLabelEXT);
     VULKAN_FUNCTION(CmdEndDebugUtilsLabelEXT);
 
-    VULKAN_FUNCTION(SetHdrMetadataEXT);
-
     VULKAN_FUNCTION(CreateAccelerationStructureKHR);
     VULKAN_FUNCTION(CreateRayTracingPipelinesKHR);
     VULKAN_FUNCTION(DestroyAccelerationStructureKHR);

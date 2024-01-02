@@ -13,7 +13,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #ifdef _WIN32
     #include <windows.h>
-    #include <winerror.h>
 #else
     #include <cstdarg>
     #include <csignal>
@@ -137,6 +136,254 @@ nri::Result GetResultFromHRESULT(long result)
 uint32_t NRIFormatToDXGIFormat(nri::Format format)
 {
     return DXGI_FORMAT_TABLE[(size_t)format].typed;
+}
+
+// Returns true if this is an integrated display panel e.g. the screen attached to tablets or laptops
+static bool IsInternalVideoOutput(const DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY VideoOutputTechnologyType) {
+    switch (VideoOutputTechnologyType) {
+        case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INTERNAL:
+        case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DISPLAYPORT_EMBEDDED:
+        case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_UDI_EMBEDDED:
+            return TRUE;
+
+        default:
+            return FALSE;
+    }
+}
+
+// Since an HMONITOR can represent multiple monitors while in clone, this function as written will return
+// the value for the internal monitor if one exists, and otherwise the highest clone-path priority
+static HRESULT GetPathInfo(_In_ PCWSTR pszDeviceName, _Out_ DISPLAYCONFIG_PATH_INFO* pPathInfo) {
+    HRESULT hr = S_OK;
+    UINT32 NumPathArrayElements = 0;
+    UINT32 NumModeInfoArrayElements = 0;
+    DISPLAYCONFIG_PATH_INFO* PathInfoArray = nullptr;
+    DISPLAYCONFIG_MODE_INFO* ModeInfoArray = nullptr;
+
+    do {
+        // In case this isn't the first time through the loop, delete the buffers allocated
+        delete[] PathInfoArray;
+        PathInfoArray = nullptr;
+
+        delete[] ModeInfoArray;
+        ModeInfoArray = nullptr;
+
+        hr = HRESULT_FROM_WIN32(GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &NumPathArrayElements, &NumModeInfoArrayElements));
+        if (FAILED(hr))
+            break;
+
+        PathInfoArray = new (std::nothrow) DISPLAYCONFIG_PATH_INFO[NumPathArrayElements];
+        if (PathInfoArray == nullptr) {
+            hr = E_OUTOFMEMORY;
+            break;
+        }
+
+        ModeInfoArray = new (std::nothrow) DISPLAYCONFIG_MODE_INFO[NumModeInfoArrayElements];
+        if (ModeInfoArray == nullptr) {
+            hr = E_OUTOFMEMORY;
+            break;
+        }
+
+        hr = HRESULT_FROM_WIN32(QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &NumPathArrayElements, PathInfoArray, &NumModeInfoArrayElements, ModeInfoArray, nullptr));
+    } while (hr == HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER));
+
+    INT DesiredPathIdx = -1;
+
+    if (SUCCEEDED(hr)) {
+        // Loop through all sources until the one which matches the 'monitor' is found.
+        for (uint32_t PathIdx = 0; PathIdx < NumPathArrayElements; ++PathIdx) {
+            DISPLAYCONFIG_SOURCE_DEVICE_NAME SourceName = {};
+            SourceName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
+            SourceName.header.size = sizeof(SourceName);
+            SourceName.header.adapterId = PathInfoArray[PathIdx].sourceInfo.adapterId;
+            SourceName.header.id = PathInfoArray[PathIdx].sourceInfo.id;
+
+            hr = HRESULT_FROM_WIN32(DisplayConfigGetDeviceInfo(&SourceName.header));
+            if (SUCCEEDED(hr)) {
+                if (wcscmp(pszDeviceName, SourceName.viewGdiDeviceName) == 0) {
+                    // Found the source which matches this hmonitor. The paths are given in path-priority order
+                    // so the first found is the most desired, unless we later find an internal.
+                    if (DesiredPathIdx == -1 || IsInternalVideoOutput(PathInfoArray[PathIdx].targetInfo.outputTechnology)) {
+                        DesiredPathIdx = PathIdx;
+                    }
+                }
+            }
+        }
+    }
+
+    if (DesiredPathIdx != -1)
+        *pPathInfo = PathInfoArray[DesiredPathIdx];
+    else
+        hr = E_INVALIDARG;
+
+    delete[] PathInfoArray;
+    PathInfoArray = nullptr;
+
+    delete[] ModeInfoArray;
+    ModeInfoArray = nullptr;
+
+    return hr;
+}
+
+// Overloaded function accepts an HMONITOR and converts to DeviceName
+static HRESULT GetPathInfo(HMONITOR hMonitor, DISPLAYCONFIG_PATH_INFO* pPathInfo) {
+    HRESULT hr = S_OK;
+
+    // Get the name of the 'monitor' being requested
+    MONITORINFOEXW ViewInfo;
+    RtlZeroMemory(&ViewInfo, sizeof(ViewInfo));
+    ViewInfo.cbSize = sizeof(ViewInfo);
+    if (!GetMonitorInfoW(hMonitor, &ViewInfo))
+        hr = HRESULT_FROM_WIN32(GetLastError());
+
+    if (SUCCEEDED(hr))
+        hr = GetPathInfo(ViewInfo.szDevice, pPathInfo);
+
+    return hr;
+}
+
+static float GetSdrLuminance(void* hMonitor) {
+    float nits = 80.0f;
+
+    DISPLAYCONFIG_PATH_INFO info;
+    if (SUCCEEDED(GetPathInfo((HMONITOR)hMonitor, &info))) {
+        const DISPLAYCONFIG_PATH_TARGET_INFO& targetInfo = info.targetInfo;
+
+        DISPLAYCONFIG_SDR_WHITE_LEVEL level;
+        DISPLAYCONFIG_DEVICE_INFO_HEADER& header = level.header;
+        header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SDR_WHITE_LEVEL;
+        header.size = sizeof(level);
+        header.adapterId = targetInfo.adapterId;
+        header.id = targetInfo.id;
+
+        if (DisplayConfigGetDeviceInfo(&header) == ERROR_SUCCESS)
+            nits = (level.SDRWhiteLevel * 80.0f) / 1000.0f;
+    }
+
+    return nits;
+}
+
+// Compute the overlay area of two rectangles, A and B:
+//  (ax1, ay1) = left-top coordinates of A; (ax2, ay2) = right-bottom coordinates of A
+//  (bx1, by1) = left-top coordinates of B; (bx2, by2) = right-bottom coordinates of B
+
+static inline int32_t ComputeIntersectionArea(int32_t ax1, int32_t ay1, int32_t ax2, int32_t ay2, int32_t bx1, int32_t by1, int32_t bx2, int32_t by2)
+{
+    return std::max(0, std::min(ax2, bx2) - std::max(ax1, bx1)) * std::max(0, std::min(ay2, by2) - std::max(ay1, by1));
+}
+
+nri::Result DisplayDescHelper::GetDisplayDesc(void* hwnd, nri::DisplayDesc& displayDesc)
+{
+    // To detect HDR support, we will need to check the color space in the primary DXGI output associated with the app at
+    // this point in time (using window/display intersection).
+
+    // If the display's advanced color state has changed (e.g. HDR display plug/unplug, or OS HDR setting on/off),
+    // then this app's DXGI factory is invalidated and must be created anew in order to retrieve up-to-date display information.
+
+    if (!m_DxgiFactory2 || !m_DxgiFactory2->IsCurrent())
+    {
+        m_HasDisplayDesc = false;
+        ComPtr<IDXGIFactory2> newDxgiFactory2;
+        HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&newDxgiFactory2));
+        if (FAILED(hr))
+            return GetResultFromHRESULT(hr);
+        m_DxgiFactory2 = newDxgiFactory2;
+    }
+    else if (m_HasDisplayDesc)
+    {
+        displayDesc = m_DisplayDesc;
+        return nri::Result::SUCCESS;
+    }
+
+    // Get the retangle bounds of the app window
+
+    RECT windowRect = {};
+    GetWindowRect((HWND)hwnd, &windowRect);
+
+    // First, the method must determine the app's current display.
+    // We don't recommend using IDXGISwapChain::GetContainingOutput method to do that because of two reasons:
+    //    1. Swap chains created with CreateSwapChainForComposition do not support this method.
+    //    2. Swap chains will return a stale dxgi output once DXGIFactory::IsCurrent() is false. In addition,
+    //       we don't recommend re-creating swapchain to resolve the stale dxgi output because it will cause a short
+    //       period of black screen.
+    // Instead, we suggest enumerating through the bounds of all dxgi outputs and determine which one has the greatest
+    // intersection with the app window bounds. Then, use the DXGI output found in previous step to determine if the
+    // app is on a HDR capable display.
+
+    // Retrieve the current default adapter.
+
+    ComPtr<IDXGIAdapter1> dxgiAdapter;
+    HRESULT hr = m_DxgiFactory2->EnumAdapters1(0, &dxgiAdapter);
+    if (FAILED(hr))
+        return GetResultFromHRESULT(hr);
+
+    // Iterate through the DXGI outputs associated with the DXGI adapter, and find the output whose bounds have the greatest
+    // overlap with the app window (i.e. the output for which the intersection area is the greatest).
+
+    ComPtr<IDXGIOutput> bestOutput;
+    int32_t bestIntersectArea = 0;
+    uint32_t i = 0;
+
+    while (true)
+    {
+        ComPtr<IDXGIOutput> currentOutput;
+        hr = dxgiAdapter->EnumOutputs(i, &currentOutput);
+        if (hr == DXGI_ERROR_NOT_FOUND)
+            break;
+
+        // Get the rectangle bounds of current output
+
+        DXGI_OUTPUT_DESC desc;
+        hr = currentOutput->GetDesc(&desc);
+        if (FAILED(hr))
+            return GetResultFromHRESULT(hr);
+
+        const RECT& outputRect = desc.DesktopCoordinates;
+
+        // Compute the intersection
+
+        int32_t intersectArea = ComputeIntersectionArea(
+            windowRect.left, windowRect.top, windowRect.right, windowRect.bottom,
+            outputRect.left, outputRect.top, outputRect.right, outputRect.bottom
+        );
+
+        if (intersectArea > bestIntersectArea)
+        {
+            bestOutput = currentOutput;
+            bestIntersectArea = intersectArea;
+        }
+
+        i++;
+    }
+
+    // Having determined the output (display) upon which the app is primarily being 
+    // rendered, retrieve the HDR capabilities of that display by checking the color space.
+
+    ComPtr<IDXGIOutput6> output6;
+    hr = bestOutput->QueryInterface(IID_PPV_ARGS(&output6));
+    if (FAILED(hr))
+        return GetResultFromHRESULT(hr);
+
+    DXGI_OUTPUT_DESC1 desc = {};
+    hr = output6->GetDesc1(&desc);
+    if (FAILED(hr))
+        return GetResultFromHRESULT(hr);
+
+    displayDesc = {};
+    displayDesc.redPrimary = {desc.RedPrimary[0], desc.RedPrimary[1]};
+    displayDesc.greenPrimary = {desc.GreenPrimary[0], desc.GreenPrimary[1]};
+    displayDesc.bluePrimary = {desc.BluePrimary[0], desc.BluePrimary[1]};
+    displayDesc.whitePoint = {desc.WhitePoint[0], desc.WhitePoint[1]};
+    displayDesc.minLuminance = desc.MinLuminance;
+    displayDesc.maxLuminance = desc.MaxLuminance;
+    displayDesc.maxFullFrameLuminance = desc.MaxFullFrameLuminance;
+    displayDesc.sdrLuminance = GetSdrLuminance(desc.Monitor);
+    displayDesc.isHDR = desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+
+    m_DisplayDesc = displayDesc;
+    m_HasDisplayDesc = true;
+
+    return nri::Result::SUCCESS;
 }
 
 #else

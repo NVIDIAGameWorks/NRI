@@ -38,7 +38,7 @@ Result MemoryD3D12::Create(const MemoryType memoryType, uint64_t size)
 
 Result MemoryD3D12::Create(const MemoryD3D12Desc& memoryDesc)
 {
-    m_Heap = (ID3D12Heap*)memoryDesc.d3d12Heap;
+    m_Heap = memoryDesc.d3d12Heap;
     m_HeapDesc = m_Heap->GetDesc();
 
     return Result::SUCCESS;

@@ -45,12 +45,8 @@ inline Result SwapChainVal::Present() {
     return m_SwapChainAPI.SwapChainPresent(*GetImpl());
 }
 
-inline Result nri::SwapChainVal::ResizeBuffers(Dim_t width, Dim_t height) {
-    return m_SwapChainAPI.ResizeBuffers(*GetImpl(), width, height);
-}
-
-inline Result SwapChainVal::SetHdrMetadata(const HdrMetadata& hdrMetadata) {
-    return m_SwapChainAPI.SetSwapChainHdrMetadata(*GetImpl(), hdrMetadata);
+inline Result SwapChainVal::GetDisplayDesc(DisplayDesc& displayDesc) const {
+    return m_SwapChainAPI.GetDisplayDesc(*GetImpl(), displayDesc);
 }
 
 #include "SwapChainVal.hpp"

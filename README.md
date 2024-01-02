@@ -29,6 +29,7 @@
     - Run `2-Build`
 
 Note: *Xlib* and *Wayland* can be both enabled.
+Note: Minimal supported client is Windows 8.1+. Windows 7 support requires minimal effort and can be added by request.
 
 ## CMake options
 

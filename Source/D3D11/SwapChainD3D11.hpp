@@ -8,6 +8,8 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#pragma region [  SwapChain  ]
+
 static void NRI_CALL SetSwapChainDebugName(SwapChain& swapChain, const char* name)
 {
     ((SwapChainD3D11&)swapChain).SetDebugName(name);
@@ -28,14 +30,11 @@ static Result NRI_CALL SwapChainPresent(SwapChain& swapChain)
     return ((SwapChainD3D11&)swapChain).Present();
 }
 
-static Result NRI_CALL ResizeBuffers(SwapChain& swapChain, Dim_t width, Dim_t height)
+static Result NRI_CALL GetDisplayDesc(SwapChain& swapChain, DisplayDesc& displayDesc)
 {
-    return ((SwapChainD3D11&)swapChain).ResizeBuffers(width, height);
+    return ((SwapChainD3D11&)swapChain).GetDisplayDesc(displayDesc);
 }
 
-static Result NRI_CALL SetSwapChainHdrMetadata(SwapChain& swapChain, const HdrMetadata& hdrMetadata)
-{
-    return ((SwapChainD3D11&)swapChain).SetHdrMetadata(hdrMetadata);
-}
+#pragma endregion
 
 Define_SwapChain_PartiallyFillFunctionTable(D3D11)

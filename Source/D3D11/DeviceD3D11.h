@@ -96,8 +96,8 @@ private:
     void InitVersionedDevice(bool isDeferredContextsEmulationRequested);
     void InitVersionedContext();
 
-    template<typename Implementation, typename Interface, typename ConstructorArg, typename ... Args>
-    nri::Result CreateImplementationWithNonEmptyConstructor(Interface*& entity, ConstructorArg&& constructorArg, const Args&... args);
+    template<typename Implementation, typename Interface, typename ... Args>
+    Result CreateImplementation(Interface*& entity, const Args&... args);
 
 private:
     // don't sort - ~D3D11Extensions must be called last!

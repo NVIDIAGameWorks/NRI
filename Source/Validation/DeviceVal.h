@@ -65,11 +65,11 @@ struct DeviceVal final : public DeviceBase {
         return m_WrapperVKAPI.GetVkInstance(m_Device);
     }
 
-    NRIVkProcAddress GetVkGetInstanceProcAddr() const {
+    void* GetVkGetInstanceProcAddr() const {
         return m_WrapperVKAPI.GetVkGetInstanceProcAddr(m_Device);
     }
 
-    NRIVkProcAddress GetVkGetDeviceProcAddr() const {
+    void* GetVkGetDeviceProcAddr() const {
         return m_WrapperVKAPI.GetVkGetDeviceProcAddr(m_Device);
     }
 

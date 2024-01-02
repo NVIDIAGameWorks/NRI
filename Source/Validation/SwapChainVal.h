@@ -28,8 +28,7 @@ struct SwapChainVal : public DeviceObjectVal<SwapChain> {
     Texture* const* GetTextures(uint32_t& textureNum) const;
     uint32_t AcquireNextTexture();
     Result Present();
-    Result ResizeBuffers(Dim_t width, Dim_t height);
-    Result SetHdrMetadata(const HdrMetadata& hdrMetadata);
+    Result GetDisplayDesc(DisplayDesc& displayDesc) const;
 
   private:
     const SwapChainInterface& m_SwapChainAPI;

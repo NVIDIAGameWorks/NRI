@@ -15,18 +15,33 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 using namespace nri;
 
+static std::array<VkFormat, (size_t)SwapChainFormat::MAX_NUM> g_swapChainFormat =
+{
+    VK_FORMAT_R16G16B16A16_SFLOAT,              // BT709_G10_16BIT
+    VK_FORMAT_R8G8B8A8_UNORM,                   // BT709_G22_8BIT
+    VK_FORMAT_A2B10G10R10_UNORM_PACK32,         // BT709_G22_10BIT
+    VK_FORMAT_A2B10G10R10_UNORM_PACK32,         // BT2020_G2084_10BIT
+};
+
+static std::array<VkColorSpaceKHR, (size_t)SwapChainFormat::MAX_NUM> g_colorSpace =
+{
+    VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT,    // BT709_G10_16BIT
+    VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,          // BT709_G22_8BIT
+    VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,          // BT709_G22_10BIT
+    VK_COLOR_SPACE_HDR10_ST2084_EXT,            // BT2020_G2084_10BIT
+};
+
 SwapChainVK::SwapChainVK(DeviceVK& device) :
     m_Textures(device.GetStdAllocator()),
     m_Device(device)
-{
-}
+{}
 
 SwapChainVK::~SwapChainVK()
 {
     Destroy();
 }
 
-void nri::SwapChainVK::Destroy()
+void SwapChainVK::Destroy()
 {
     const auto& vk = m_Device.GetDispatchTable();
 
@@ -50,64 +65,61 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc)
 {
     const auto& vk = m_Device.GetDispatchTable();
 
-    VkResult result;
-
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-    if (swapChainDesc.windowSystemType == WindowSystemType::WINDOWS)
+    if (swapChainDesc.window.windows.hwnd)
     {
         VkWin32SurfaceCreateInfoKHR win32SurfaceInfo = {};
         win32SurfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
         win32SurfaceInfo.hwnd = (HWND)swapChainDesc.window.windows.hwnd;
 
-        result = vk.CreateWin32SurfaceKHR(m_Device, &win32SurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
+        VkResult result = vk.CreateWin32SurfaceKHR(m_Device, &win32SurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateWin32SurfaceKHR returned %d", (int32_t)result);
 
         return Result::SUCCESS;
     }
 #endif
 #ifdef VK_USE_PLATFORM_METAL_EXT
-    if (swapChainDesc.windowSystemType == WindowSystemType::METAL)
+    if (swapChainDesc.window.metal.caMetalLayer)
     {
         VkMetalSurfaceCreateInfoEXT metalSurfaceCreateInfo = {};
         metalSurfaceCreateInfo.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
         metalSurfaceCreateInfo.pLayer = (CAMetalLayer*)swapChainDesc.window.metal.caMetalLayer;
 
-        result = vk.CreateMetalSurfaceEXT(m_Device, &metalSurfaceCreateInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
+        VkResult result = vk.CreateMetalSurfaceEXT(m_Device, &metalSurfaceCreateInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateMetalSurfaceEXT returned %d", (int32_t)result);
 
         return Result::SUCCESS;
     }
 #endif
 #ifdef VK_USE_PLATFORM_XLIB_KHR
-    if (swapChainDesc.windowSystemType == WindowSystemType::X11)
+    if (swapChainDesc.window.x11.dpy && swapChainDesc.window.x11.window)
     {
         VkXlibSurfaceCreateInfoKHR xlibSurfaceInfo = {};
         xlibSurfaceInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
         xlibSurfaceInfo.dpy = (::Display*)swapChainDesc.window.x11.dpy;
         xlibSurfaceInfo.window = (::Window)swapChainDesc.window.x11.window;
 
-        result = vk.CreateXlibSurfaceKHR(m_Device, &xlibSurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
+        VkResult result = vk.CreateXlibSurfaceKHR(m_Device, &xlibSurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateXlibSurfaceKHR returned %d", (int32_t)result);
 
         return Result::SUCCESS;
     }
 #endif
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
-    if (swapChainDesc.windowSystemType == WindowSystemType::WAYLAND)
-    {
+    if (swapChainDesc.window.wayland.display && swapChainDesc.window.wayland.surface)
         VkWaylandSurfaceCreateInfoKHR waylandSurfaceInfo = {};
         waylandSurfaceInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
         waylandSurfaceInfo.display = (wl_display*)swapChainDesc.window.wayland.display;
         waylandSurfaceInfo.surface = (wl_surface*)swapChainDesc.window.wayland.surface;
 
-        result = vk.CreateWaylandSurfaceKHR(m_Device, &waylandSurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
+        VkResult result = vk.CreateWaylandSurfaceKHR(m_Device, &waylandSurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateWaylandSurfaceKHR returned %d", (int32_t)result);
 
         return Result::SUCCESS;
     }
 #endif
 
-    return Result::UNSUPPORTED;
+    return Result::INVALID_ARGUMENT;
 }
 
 Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
@@ -157,10 +169,21 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
     result = vk.GetPhysicalDeviceSurfaceFormatsKHR(m_Device, m_Surface, &formatNum, surfaceFormats);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfaceFormatsKHR returned %d", (int32_t)result);
 
-    VkSurfaceFormatKHR surfaceFormat = {};
+    VkFormat format = g_swapChainFormat[(uint32_t)swapChainDesc.format];
+    VkColorSpaceKHR colorSpace = g_colorSpace[(uint32_t)swapChainDesc.format];
 
-    surfaceFormat = surfaceFormats[0];
-    m_Format = VKFormatToNRIFormat(surfaceFormat.format);
+    VkSurfaceFormatKHR surfaceFormat = surfaceFormats[0];
+    uint32_t i = 0;
+    for (; i < formatNum; i++)
+    {
+        if (surfaceFormats[i].format == format && surfaceFormats[i].colorSpace == colorSpace)
+        {
+            surfaceFormat = surfaceFormats[i];
+            break;
+        }
+    }
+    if (i == formatNum)
+        REPORT_WARNING(&m_Device, "The requested format is not supported. Using 1st surface format from the list");
 
     uint32_t presentModeNum = 0;
     result = vk.GetPhysicalDeviceSurfacePresentModesKHR(m_Device, m_Surface, &presentModeNum, nullptr);
@@ -173,13 +196,15 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
     // Both of these modes use v-sync for preseting, but FIFO blocks execution
     VkPresentModeKHR desiredPresentMode = swapChainDesc.verticalSyncInterval ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
 
-    supported = false;
-    for (uint32_t i = 0; i < presentModeNum && !supported; i++)
-        supported = desiredPresentMode == presentModes[i];
-
-    if (!supported)
+    i = 0;
+    for (; i < presentModeNum; i++)
     {
-        REPORT_WARNING(&m_Device, "The present mode is not supported. Using the first mode from the list of supported modes (mode: %d)", (int32_t)desiredPresentMode);
+        if (desiredPresentMode == presentModes[i])
+            break;
+    }
+    if (i == presentModeNum)
+    {
+        REPORT_WARNING(&m_Device, "The present mode is not supported. Using the first mode from the list");
         desiredPresentMode = presentModes[0];
     }
 
@@ -217,11 +242,11 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
     vk.GetSwapchainImagesKHR(m_Device, m_Handle, &imageNum, imageHandles);
 
     m_Textures.resize(imageNum);
-    for (uint32_t i = 0; i < imageNum; i++)
+    for (i = 0; i < imageNum; i++)
     {
         TextureVKDesc desc = {};
         desc.vkImage = (NRIVkImage)imageHandles[i];
-        desc.vkFormat = NRIFormatToVKFormat(m_Format);
+        desc.vkFormat = surfaceFormat.format;
         desc.vkImageAspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
         desc.vkImageType = VK_IMAGE_TYPE_2D;
         desc.width = (uint16_t)swapchainInfo.imageExtent.width;
@@ -237,6 +262,8 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
 
         m_Textures[i] = texture;
     }
+
+    m_SwapChainDesc = swapChainDesc;
 
     return Result::SUCCESS;
 }
@@ -303,40 +330,6 @@ inline Result SwapChainVK::Present()
         REPORT_ERROR(&m_Device, "vkQueuePresentKHR returned %d", (int32_t)result);
 
     return GetReturnCode(result);
-}
-
-inline Result nri::SwapChainVK::ResizeBuffers(Dim_t width, Dim_t height)
-{
-    m_SwapChainDesc.width = (uint16_t)width;
-    m_SwapChainDesc.height = (uint16_t)height;
-
-    Destroy(); // TODO: no resize in VK, do we need resize in D3D11/D3D12?
-
-    return Create(m_SwapChainDesc);
-}
-
-inline Result SwapChainVK::SetHdrMetadata(const HdrMetadata& hdrMetadata)
-{
-    if (!m_Device.supportedFeatures.hdr)
-        return Result::UNSUPPORTED;
-
-    const VkHdrMetadataEXT data = {
-        VK_STRUCTURE_TYPE_HDR_METADATA_EXT,
-        nullptr,
-        {hdrMetadata.displayPrimaryRed[0], hdrMetadata.displayPrimaryRed[1]},
-        {hdrMetadata.displayPrimaryGreen[0], hdrMetadata.displayPrimaryGreen[1]},
-        {hdrMetadata.displayPrimaryBlue[0], hdrMetadata.displayPrimaryBlue[1]},
-        {hdrMetadata.whitePoint[0], hdrMetadata.whitePoint[1]},
-        hdrMetadata.luminanceMax,
-        hdrMetadata.luminanceMin,
-        hdrMetadata.contentLightLevelMax,
-        hdrMetadata.frameAverageLightLevelMax
-    };
-
-    const auto& vk = m_Device.GetDispatchTable();
-    vk.SetHdrMetadataEXT(m_Device, 1, &m_Handle, &data);
-
-    return Result::SUCCESS;
 }
 
 #include "SwapChainVK.hpp"

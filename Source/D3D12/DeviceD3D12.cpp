@@ -157,7 +157,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
     }
 
     ComPtr<IDXGIFactory4> dxgiFactory;
-    HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
+    HRESULT hr = CreateDXGIFactory2(deviceCreationDesc.enableAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
     RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
 
     if (deviceCreationDesc.adapterDesc)
