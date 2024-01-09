@@ -1,12 +1,4 @@
-/*
-Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
-
-NVIDIA CORPORATION and its licensors retain all intellectual property
-and proprietary rights in and to this software, related documentation
-and any modifications thereto. Any use, reproduction, disclosure or
-distribution of this software and related documentation without an express
-license agreement from NVIDIA CORPORATION is strictly prohibited.
-*/
+// © 2021 NVIDIA Corporation
 
 #include "SharedD3D11.h"
 #include "DeviceD3D11.h"
@@ -488,6 +480,12 @@ inline void DeviceD3D11::DestroySwapChain(SwapChain& swapChain)
 inline Result DeviceD3D11::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue)
 {
     commandQueue = (CommandQueue*)&m_CommandQueues[(uint32_t)commandQueueType];
+
+    if (commandQueueType != CommandQueueType::GRAPHICS)
+    {
+        REPORT_WARNING(this, "%s command queue is not supported by the device!", commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY");
+        return Result::UNSUPPORTED;
+    }
 
     return Result::SUCCESS;
 }

@@ -1,12 +1,4 @@
-/*
-Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
-
-NVIDIA CORPORATION and its licensors retain all intellectual property
-and proprietary rights in and to this software, related documentation
-and any modifications thereto. Any use, reproduction, disclosure or
-distribution of this software and related documentation without an express
-license agreement from NVIDIA CORPORATION is strictly prohibited.
-*/
+// © 2021 NVIDIA Corporation
 
 #pragma region[  Core  ]
 
@@ -26,13 +18,16 @@ static Result NRI_CALL ChangeResourceStates(CommandQueue& commandQueue, const Tr
     return ((CommandQueueVal&)commandQueue).ChangeResourceStates(transitionBarriers);
 }
 
-static nri::Result NRI_CALL UploadData(
+static Result NRI_CALL UploadData(
     CommandQueue& commandQueue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum
 ) {
     return ((CommandQueueVal&)commandQueue).UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
 }
 
-static nri::Result NRI_CALL WaitForIdle(CommandQueue& commandQueue) {
+static Result NRI_CALL WaitForIdle(CommandQueue& commandQueue) {
+    if(!(&commandQueue))
+        return Result::SUCCESS;
+
     return ((CommandQueueVal&)commandQueue).WaitForIdle();
 }
 

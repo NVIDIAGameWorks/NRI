@@ -1,12 +1,4 @@
-/*
-Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
-
-NVIDIA CORPORATION and its licensors retain all intellectual property
-and proprietary rights in and to this software, related documentation
-and any modifications thereto. Any use, reproduction, disclosure or
-distribution of this software and related documentation without an express
-license agreement from NVIDIA CORPORATION is strictly prohibited.
-*/
+// © 2021 NVIDIA Corporation
 
 #include "SharedVK.h"
 #include "DescriptorPoolVK.h"
@@ -24,7 +16,7 @@ DescriptorPoolVK::~DescriptorPoolVK()
         m_AllocatedSets[i]->~DescriptorSetVK();
         lowLevelAllocator.Free(lowLevelAllocator.userArg, m_AllocatedSets[i]);
     }
-    
+
     const auto& vk = m_Device.GetDispatchTable();
     if (m_Handle != VK_NULL_HANDLE && m_OwnsNativeObjects)
         vk.DestroyDescriptorPool(m_Device, m_Handle, m_Device.GetAllocationCallbacks());

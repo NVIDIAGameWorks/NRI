@@ -1,12 +1,4 @@
-﻿/*
-Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
-
-NVIDIA CORPORATION and its licensors retain all intellectual property
-and proprietary rights in and to this software, related documentation
-and any modifications thereto. Any use, reproduction, disclosure or
-distribution of this software and related documentation without an express
-license agreement from NVIDIA CORPORATION is strictly prohibited.
-*/
+﻿// © 2021 NVIDIA Corporation
 
 #include <dxgi1_5.h>
 
@@ -579,6 +571,9 @@ inline Result DeviceD3D12::GetCommandQueue(CommandQueueType commandQueueType, Co
     Result result = CreateCommandQueue(commandQueueType, commandQueue);
     if (result == Result::SUCCESS)
         m_CommandQueues[queueIndex] = (CommandQueueD3D12*)commandQueue;
+    else
+        REPORT_WARNING(this, "%s command queue is not supported by the device!", commandQueueType == CommandQueueType::GRAPHICS ? "GRAPHICS" :
+            (commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY"));
 
     return result;
 }

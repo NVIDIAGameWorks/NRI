@@ -1,12 +1,4 @@
-/*
-Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
-
-NVIDIA CORPORATION and its licensors retain all intellectual property
-and proprietary rights in and to this software, related documentation
-and any modifications thereto. Any use, reproduction, disclosure or
-distribution of this software and related documentation without an express
-license agreement from NVIDIA CORPORATION is strictly prohibited.
-*/
+// © 2021 NVIDIA Corporation
 
 #include "SharedD3D12.h"
 #include "FenceD3D12.h"
@@ -46,11 +38,11 @@ inline void FenceD3D12::QueueWait(CommandQueueD3D12& commandQueue, uint64_t valu
 
 inline void FenceD3D12::Wait(uint64_t value)
 {
-    if (m_Event == 0 || m_Event == INVALID_HANDLE_VALUE) 
+    if (m_Event == 0 || m_Event == INVALID_HANDLE_VALUE)
     {
         while (m_Fence->GetCompletedValue() < value)
             ;
-    } 
+    }
     else if (m_Fence->GetCompletedValue() < value)
     {
         HRESULT hr = m_Fence->SetEventOnCompletion(value, m_Event);

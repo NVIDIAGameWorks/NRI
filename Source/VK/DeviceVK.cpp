@@ -1,12 +1,4 @@
-/*
-Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
-
-NVIDIA CORPORATION and its licensors retain all intellectual property
-and proprietary rights in and to this software, related documentation
-and any modifications thereto. Any use, reproduction, disclosure or
-distribution of this software and related documentation without an express
-license agreement from NVIDIA CORPORATION is strictly prohibited.
-*/
+// © 2021 NVIDIA Corporation
 
 #include "SharedVK.h"
 #include "CommandQueueVK.h"
@@ -1544,7 +1536,12 @@ inline Result DeviceVK::GetCommandQueue(CommandQueueType commandQueueType, Comma
     SharedScope sharedScope(m_Lock);
 
     if (m_FamilyIndices[(uint32_t)commandQueueType] == INVALID_FAMILY_INDEX)
+    {
+        REPORT_WARNING(this, "%s command queue is not supported by the device!", commandQueueType == CommandQueueType::GRAPHICS ? "GRAPHICS" :
+            (commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY"));
+
         return Result::UNSUPPORTED;
+    }
 
     commandQueue = (CommandQueue*)m_Queues[(uint32_t)commandQueueType];
 

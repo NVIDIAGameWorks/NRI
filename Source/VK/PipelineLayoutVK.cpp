@@ -1,12 +1,4 @@
-/*
-Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
-
-NVIDIA CORPORATION and its licensors retain all intellectual property
-and proprietary rights in and to this software, related documentation
-and any modifications thereto. Any use, reproduction, disclosure or
-distribution of this software and related documentation without an express
-license agreement from NVIDIA CORPORATION is strictly prohibited.
-*/
+// © 2021 NVIDIA Corporation
 
 #include "SharedVK.h"
 #include "PipelineLayoutVK.h"
@@ -56,7 +48,7 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
 
     // Allocate temp memory for ALL "register spaces" making the entire range consecutive (thanks Vulkan API!)
     VkDescriptorSetLayout* descriptorSetLayouts = ALLOCATE_SCRATCH(m_Device, VkDescriptorSetLayout, setNum);
-    
+
     // Create "empty" set layout (needed only if "register space" indices are not consecutive)
     if (setNum != pipelineLayoutDesc.descriptorSetNum)
     {

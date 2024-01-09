@@ -1,12 +1,4 @@
-/*
-Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
-
-NVIDIA CORPORATION and its licensors retain all intellectual property
-and proprietary rights in and to this software, related documentation
-and any modifications thereto. Any use, reproduction, disclosure or
-distribution of this software and related documentation without an express
-license agreement from NVIDIA CORPORATION is strictly prohibited.
-*/
+// © 2021 NVIDIA Corporation
 
 #include "SharedVK.h"
 #include "TextureVK.h"
@@ -110,7 +102,7 @@ Dim_t TextureVK::GetSize(Dim_t dimensionIndex, Mip_t mip) const
         dim = m_Desc.width;
     else if (dimensionIndex == 1)
         dim = m_Desc.height;
-        
+
     dim = (Dim_t)std::max(dim >> mip, 1);
 
     // TODO: VK doesn't require manual alignment, but probably we should use it here and during texture creation

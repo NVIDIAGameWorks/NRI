@@ -1,12 +1,4 @@
-/*
-Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
-
-NVIDIA CORPORATION and its licensors retain all intellectual property
-and proprietary rights in and to this software, related documentation
-and any modifications thereto. Any use, reproduction, disclosure or
-distribution of this software and related documentation without an express
-license agreement from NVIDIA CORPORATION is strictly prohibited.
-*/
+// © 2021 NVIDIA Corporation
 
 #include "SharedExternal.h"
 #include "DeviceBase.h"
@@ -425,7 +417,7 @@ NRI_API Result NRI_CALL nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
 
 #ifdef __APPLE__
-    std::array<const char*, 2> instanceExtensions = 
+    std::array<const char*, 2> instanceExtensions =
     {
         "VK_KHR_get_physical_device_properties2",
         VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME

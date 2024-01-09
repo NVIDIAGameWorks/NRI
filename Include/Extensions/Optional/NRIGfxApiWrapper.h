@@ -1,12 +1,4 @@
-/*
-Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
-
-NVIDIA CORPORATION and its licensors retain all intellectual property
-and proprietary rights in and to this software, related documentation
-and any modifications thereto. Any use, reproduction, disclosure or
-distribution of this software and related documentation without an express
-license agreement from NVIDIA CORPORATION is strictly prohibited.
-*/
+// © 2023 NVIDIA Corporation
 
 #include <memory>
 
@@ -16,7 +8,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #if NRI_STATIC_LIBRARY
         #define NRI_CPP_API
     #else
-        #ifdef NRI_GFX_API_WRAPPER_LIBRARY 
+        #ifdef NRI_GFX_API_WRAPPER_LIBRARY
             #define NRI_API_CPP __declspec( dllexport )
         #else
             #define NRI_API_CPP __declspec( dllimport )
