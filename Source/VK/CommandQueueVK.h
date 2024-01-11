@@ -32,6 +32,9 @@ struct CommandQueueVK
     inline CommandQueueType GetType() const
     { return m_Type; }
 
+    inline Lock& GetLock()
+    { return m_Lock; }
+
     Result Create(const CommandQueueVKDesc& commandQueueDesc);
 
     //================================================================================================================
@@ -50,6 +53,7 @@ private:
     VkQueue m_Handle = VK_NULL_HANDLE;
     uint32_t m_FamilyIndex = (uint32_t)-1;
     CommandQueueType m_Type = (CommandQueueType)-1;
+    Lock m_Lock;
 };
 
 }

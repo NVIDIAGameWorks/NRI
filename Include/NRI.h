@@ -6,8 +6,8 @@
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 112
-#define NRI_VERSION_DATE "4 January 2024"
+#define NRI_VERSION_MINOR 113
+#define NRI_VERSION_DATE "11 January 2024"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall

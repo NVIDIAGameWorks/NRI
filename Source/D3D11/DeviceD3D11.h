@@ -98,7 +98,7 @@ private:
     VersionedContext m_ImmediateContext = {};
     Vector<CommandQueueD3D11> m_CommandQueues;
     DeviceDesc m_Desc = {};
-    CRITICAL_SECTION m_CriticalSection = {};
+    CRITICAL_SECTION m_CriticalSection = {}; // TODO: Lock?
     CoreInterface m_CoreInterface = {};
     ComPtr<IDXGIAdapter> m_Adapter;
     bool m_SkipLiveObjectsReporting = false;

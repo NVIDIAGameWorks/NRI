@@ -42,7 +42,7 @@ private:
     VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
     VkSemaphore m_Semaphore = VK_NULL_HANDLE;
     DeviceVK& m_Device;
-    const CommandQueueVK* m_CommandQueue = nullptr;
+    CommandQueueVK* m_CommandQueue = nullptr;
     uint32_t m_TextureIndex = 0;
 };
 

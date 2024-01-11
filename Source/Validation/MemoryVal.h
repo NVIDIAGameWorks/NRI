@@ -39,10 +39,9 @@ struct MemoryVal : public DeviceObjectVal<Memory> {
     std::vector<BufferVal*> m_Buffers;
     std::vector<TextureVal*> m_Textures;
     std::vector<AccelerationStructureVal*> m_AccelerationStructures;
-    Lock m_Lock;
-
     uint64_t m_Size = 0;
     MemoryLocation m_MemoryLocation = MemoryLocation::MAX_NUM;
+    Lock m_Lock;
 };
 
 } // namespace nri

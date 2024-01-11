@@ -278,6 +278,8 @@ inline Texture* const* SwapChainVK::GetTextures(uint32_t& textureNum) const
 
 inline uint32_t SwapChainVK::AcquireNextTexture()
 {
+    ExclusiveScope lock(m_CommandQueue->GetLock());
+
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.AcquireNextImageKHR(m_Device, m_Handle, VK_DEFAULT_TIMEOUT, m_Semaphore, VK_NULL_HANDLE, &m_TextureIndex);
 
@@ -301,6 +303,8 @@ inline Result SwapChainVK::Present()
 {
     if (m_TextureIndex == OUT_OF_DATE)
         return Result::OUT_OF_DATE;
+
+    ExclusiveScope lock(m_CommandQueue->GetLock());
 
     const auto& vk = m_Device.GetDispatchTable();
 

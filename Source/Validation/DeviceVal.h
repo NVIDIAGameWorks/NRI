@@ -163,13 +163,13 @@ struct DeviceVal final : public DeviceBase {
     HelperInterface m_HelperAPI = {};
     std::array<CommandQueueVal*, COMMAND_QUEUE_TYPE_NUM> m_CommandQueues = {};
     UnorderedMap<MemoryType, MemoryLocation> m_MemoryTypeMap;
-    Lock m_Lock;
     bool m_IsSwapChainSupported = false;
     bool m_IsWrapperD3D11Supported = false;
     bool m_IsWrapperD3D12Supported = false;
     bool m_IsWrapperVKSupported = false;
     bool m_IsRayTracingSupported = false;
     bool m_IsMeshShaderExtSupported = false;
+    Lock m_Lock;
 };
 
 } // namespace nri

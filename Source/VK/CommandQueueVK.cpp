@@ -26,6 +26,8 @@ inline void CommandQueueVK::SetDebugName(const char* name)
 
 inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc)
 {
+    ExclusiveScope lock(m_Lock);
+
     VkCommandBuffer* commandBuffers = STACK_ALLOC(VkCommandBuffer, queueSubmitDesc.commandBufferNum);
 
     VkSubmitInfo submission = {
@@ -69,7 +71,7 @@ inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc)
     const VkResult result = vk.QueueSubmit(m_Handle, 1, &submission, VK_NULL_HANDLE);
 
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(),
-        "Can't submit work to a command queue: vkQueueSubmit returned %d.", (int32_t)result);
+        "Submit: vkQueueSubmit returned %d", (int32_t)result);
 }
 
 inline Result CommandQueueVK::ChangeResourceStates(const TransitionBarrierDesc& transitionBarriers)
@@ -89,12 +91,11 @@ inline Result CommandQueueVK::UploadData(const TextureUploadDesc* textureUploadD
 
 inline Result CommandQueueVK::WaitForIdle()
 {
+    ExclusiveScope lock(m_Lock);
+
     const auto& vk = m_Device.GetDispatchTable();
-
     VkResult result = vk.QueueWaitIdle(m_Handle);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-        "Can't wait for idle: vkQueueWaitIdle returned %d.", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "WaitForIdle: vkQueueWaitIdle returned %d", (int32_t)result);
 
     return Result::SUCCESS;
 }

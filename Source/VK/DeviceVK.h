@@ -142,8 +142,21 @@ private:
     template< typename Implementation, typename Interface, typename ... Args >
     Result CreateImplementation(Interface*& entity, const Args&... args);
 
+public:
+    struct SupportedFeatures
+    {
+        bool debugUtils = false;
+        bool subsetAllocation = false;
+        bool descriptorIndexing = false;
+        bool bufferDeviceAddress = false;
+        bool sampleLocations = false;
+        bool conservativeRaster = false;
+        bool rayTracing = false;
+        bool microMap = false;
+        bool meshShader = false;
+    } supportedFeatures;
+
 private:
-    Lock m_Lock;
     Vector<VkPhysicalDevice> m_PhysicalDevices;
     Vector<uint32_t> m_PhysicalDeviceIndices;
     Vector<uint32_t> m_ConcurrentSharingModeQueueIndices;
@@ -164,20 +177,7 @@ private:
     ComPtr<IDXGIAdapter> m_Adapter;
 #endif
     bool m_OwnsNativeObjects = false;
-
-public:
-    struct SupportedFeatures
-    {
-        bool debugUtils = false;
-        bool subsetAllocation = false;
-        bool descriptorIndexing = false;
-        bool bufferDeviceAddress = false;
-        bool sampleLocations = false;
-        bool conservativeRaster = false;
-        bool rayTracing = false;
-        bool microMap = false;
-        bool meshShader = false;
-    } supportedFeatures;
+    Lock m_Lock;
 };
 
 }

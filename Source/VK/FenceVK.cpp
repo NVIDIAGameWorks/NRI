@@ -48,6 +48,8 @@ inline uint64_t FenceVK::GetFenceValue() const
 
 inline void FenceVK::QueueSignal(CommandQueueVK& commandQueue, uint64_t value)
 {
+    ExclusiveScope lock(commandQueue.GetLock());
+
     VkTimelineSemaphoreSubmitInfo timelineInfo = { VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO, nullptr, 0, nullptr, 1, &value };
     VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO, &timelineInfo, 0, nullptr, nullptr, 0, nullptr, 1, &m_Fence };
 
@@ -57,6 +59,8 @@ inline void FenceVK::QueueSignal(CommandQueueVK& commandQueue, uint64_t value)
 
 inline void FenceVK::QueueWait(CommandQueueVK& commandQueue, uint64_t value)
 {
+    ExclusiveScope lock(commandQueue.GetLock());
+
     VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT; // TODO: matches D3D?
     VkTimelineSemaphoreSubmitInfo timelineInfo = { VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO, nullptr, 1, &value, 0, nullptr };
     VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO, &timelineInfo, 1, &m_Fence, &waitDstStageMask, 0, nullptr, 0, nullptr };

@@ -168,11 +168,11 @@ private:
     ComPtr<ID3D12CommandSignature> m_DispatchCommandSignature;
     CoreInterface m_CoreInterface = {};
     std::array<Lock, DESCRIPTOR_HEAP_TYPE_NUM> m_FreeDescriptorLocks;
-    Lock m_DescriptorHeapLock;
-    Lock m_QueueLock;
     bool m_IsRaytracingSupported = false;
     bool m_IsMeshShaderSupported = false;
     bool m_SkipLiveObjectsReporting = false;
+    Lock m_DescriptorHeapLock;
+    Lock m_QueueLock;
 };
 
 }
