@@ -98,7 +98,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc)
     }
 #endif
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
-    if (swapChainDesc.window.wayland.display && swapChainDesc.window.wayland.surface)
+    if (swapChainDesc.window.wayland.display && swapChainDesc.window.wayland.surface) {
         VkWaylandSurfaceCreateInfoKHR waylandSurfaceInfo = {};
         waylandSurfaceInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
         waylandSurfaceInfo.display = (wl_display*)swapChainDesc.window.wayland.display;

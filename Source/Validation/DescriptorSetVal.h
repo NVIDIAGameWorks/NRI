@@ -5,7 +5,7 @@
 namespace nri {
 
 struct DescriptorSetVal : public DeviceObjectVal<DescriptorSet> {
-    DescriptorSetVal::DescriptorSetVal(DeviceVal& device) : DeviceObjectVal(device) {
+    DescriptorSetVal(DeviceVal& device) : DeviceObjectVal(device) {
     }
 
     inline const DescriptorSetDesc& GetDesc() const {
