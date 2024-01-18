@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xmmintrin.h>
+
 constexpr size_t LOCK_CACHELINE_SIZE = 64;
 
 // Very lightweight exclusive lock
