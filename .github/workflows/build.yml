@@ -41,7 +41,16 @@ jobs:
           $Env:VULKAN_SDK = "C:/VulkanSDK/"
           $Env:Path += ";C:/VulkanSDK/Bin"
           .\2-Build.bat
-
+      -
+        name: Prepare
+        run: |
+          &'.\3-Prepare NRI SDK.bat' --shaders
+      -
+        name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: NRI SDK
+          path: _NRI_SDK
   Build-Ubuntu:
     runs-on: ubuntu-20.04
     steps:
