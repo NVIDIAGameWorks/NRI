@@ -10,7 +10,11 @@ using namespace nri;
 static std::array<VkFormat, (size_t)SwapChainFormat::MAX_NUM> g_swapChainFormat =
 {
     VK_FORMAT_R16G16B16A16_SFLOAT,              // BT709_G10_16BIT
+#ifdef __APPLE__
+    VK_FORMAT_B8G8R8A8_UNORM,                   // BT709_G22_8BIT
+#else
     VK_FORMAT_R8G8B8A8_UNORM,                   // BT709_G22_8BIT
+#endif
     VK_FORMAT_A2B10G10R10_UNORM_PACK32,         // BT709_G22_10BIT
     VK_FORMAT_A2B10G10R10_UNORM_PACK32,         // BT2020_G2084_10BIT
 };

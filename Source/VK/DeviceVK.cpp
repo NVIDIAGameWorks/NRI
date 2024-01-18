@@ -626,6 +626,7 @@ Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
     #endif
     #ifdef __APPLE__
         extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
     #endif
 
     if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, supportedExts))
@@ -1094,7 +1095,8 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     }
 
     #ifdef __APPLE__
-        desiredExts.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+        desiredExts.push_back("VK_KHR_portability_subset");
+        desiredExts.push_back("VK_KHR_dynamic_rendering");
     #endif
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR };
@@ -1459,8 +1461,15 @@ Result DeviceVK::ResolveDispatchTable()
     RESOLVE_DEVICE_FUNCTION(CmdSetStencilReference);
     RESOLVE_DEVICE_FUNCTION(CmdClearAttachments);
     RESOLVE_DEVICE_FUNCTION(CmdClearColorImage);
-    RESOLVE_DEVICE_FUNCTION(CmdBeginRendering);
-    RESOLVE_DEVICE_FUNCTION(CmdEndRendering);
+
+    RESOLVE_OPTIONAL_DEVICE_FUNCTION(CmdBeginRendering);
+    if (!m_VK.CmdBeginRendering)
+        RESOLVE_DEVICE_FUNCTION_WITH_OTHER_NAME(CmdBeginRendering, "vkCmdBeginRenderingKHR");
+
+    RESOLVE_OPTIONAL_DEVICE_FUNCTION(CmdEndRendering);
+    if (!m_VK.CmdEndRendering)
+        RESOLVE_DEVICE_FUNCTION_WITH_OTHER_NAME(CmdEndRendering, "vkCmdEndRenderingKHR");
+
     RESOLVE_DEVICE_FUNCTION(CmdBindVertexBuffers);
     RESOLVE_DEVICE_FUNCTION(CmdBindIndexBuffer);
     RESOLVE_DEVICE_FUNCTION(CmdBindPipeline);
