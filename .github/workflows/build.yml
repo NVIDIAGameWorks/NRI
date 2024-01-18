@@ -2,10 +2,10 @@ name: Build NRI SDK
 on:
   pull_request:
     branches:
-      - master
+      - main
   push:
     branches:
-      - master
+      - main
 jobs:
   Build-Windows:
     runs-on: windows-latest
