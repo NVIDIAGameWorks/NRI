@@ -1095,8 +1095,8 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     }
 
     #ifdef __APPLE__
-        desiredExts.push_back("VK_KHR_portability_subset");
-        desiredExts.push_back("VK_KHR_dynamic_rendering");
+        desiredExts.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+        desiredExts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     #endif
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR };
@@ -1157,6 +1157,9 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     deviceCreateInfo.pQueueCreateInfos = queues.data();
     deviceCreateInfo.enabledExtensionCount = (uint32_t)desiredExts.size();
     deviceCreateInfo.ppEnabledExtensionNames = desiredExts.data();
+
+    // TODO: enablement requires VkPhysicalDeviceFragmentShadingRateFeaturesKHR, which is not exposed in NRI
+    meshShaderFeatures.primitiveFragmentShadingRateMeshShader = VK_FALSE;
 
     VkDeviceGroupDeviceCreateInfo deviceGroupInfo = { VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO };
     if (m_PhysicalDevices.size() > 1)
@@ -1542,7 +1545,7 @@ inline void DeviceVK::SetDebugName(const char* name)
 
 inline Result DeviceVK::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue)
 {
-    SharedScope sharedScope(m_Lock);
+    ExclusiveScope sharedScope(m_Lock);
 
     if (m_FamilyIndices[(uint32_t)commandQueueType] == INVALID_FAMILY_INDEX)
     {

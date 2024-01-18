@@ -101,7 +101,6 @@ private:
     CRITICAL_SECTION m_CriticalSection = {}; // TODO: Lock?
     CoreInterface m_CoreInterface = {};
     ComPtr<IDXGIAdapter> m_Adapter;
-    bool m_SkipLiveObjectsReporting = false;
 
 private:
     void FillDesc(bool isValidationEnabled);

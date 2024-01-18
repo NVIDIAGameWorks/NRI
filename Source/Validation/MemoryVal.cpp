@@ -6,6 +6,7 @@
 #include "TextureVal.h"
 #include "AccelerationStructureVal.h"
 #include "MemoryVal.h"
+
 #include <algorithm>
 
 using namespace nri;

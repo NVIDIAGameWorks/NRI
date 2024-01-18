@@ -1,5 +1,7 @@
 # NVIDIA Render Interface (NRI)
 
+[![Status](https://github.com/NVIDIAGameWorks/NRI/actions/workflows/build.yml/badge.svg)](https://github.com/NVIDIAGameWorks/NRI/actions/workflows/build.yml)
+
 *NRI* is a low-level abstract render interface which currently supports three backends: D3D11, D3D12 and Vulkan. *NRI* has been designed to support all (at least major) low level features of D3D12 and Vulkan APIs, but at the same time to simplify usage and reduce the amount of code needed (especially compared with Vulkan). *NRI* is written in *C++*, but supports both *C++* and *C* interfaces.
 
  Key features:
@@ -55,4 +57,4 @@ In order of complexity:
 
 ## Licence
 
-This project includes NVAPI software. All uses of NVAPI software are governed by the license terms specified here: https://github.com/NVIDIA/nvapi/blob/main/License.txt.
+NRI is licensed under the MIT License. This project includes NVAPI software. All uses of NVAPI software are governed by the license terms specified here: https://github.com/NVIDIA/nvapi/blob/main/License.txt.

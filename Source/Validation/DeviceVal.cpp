@@ -650,7 +650,7 @@ Result DeviceVal::AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint6
     std::unordered_map<MemoryType, MemoryLocation>::iterator it;
     std::unordered_map<MemoryType, MemoryLocation>::iterator end;
     {
-        SharedScope lockScope(m_Lock);
+        ExclusiveScope lockScope(m_Lock);
         it = m_MemoryTypeMap.find(memoryType);
         end = m_MemoryTypeMap.end();
     }

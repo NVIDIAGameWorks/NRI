@@ -9,6 +9,9 @@ struct DeviceVK;
 struct CommandQueueVK;
 struct TextureVK;
 
+// Let's keep things simple and hide it under the hood
+constexpr uint32_t MAX_NUMBER_OF_FRAMES_IN_FLIGHT = 8;
+
 struct SwapChainVK : public DisplayDescHelper
 {
     inline DeviceVK& GetDevice() const
@@ -37,13 +40,14 @@ private:
 
 private:
     Vector<TextureVK*> m_Textures;
+    std::array<VkSemaphore, MAX_NUMBER_OF_FRAMES_IN_FLIGHT> m_Semaphores;
     SwapChainDesc m_SwapChainDesc = {};
     VkSwapchainKHR m_Handle = VK_NULL_HANDLE;
     VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
-    VkSemaphore m_Semaphore = VK_NULL_HANDLE;
     DeviceVK& m_Device;
     CommandQueueVK* m_CommandQueue = nullptr;
     uint32_t m_TextureIndex = 0;
+    uint32_t m_FrameIndex = 0;
 };
 
 }

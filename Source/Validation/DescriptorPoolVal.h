@@ -12,17 +12,15 @@ struct DescriptorPoolVal : public DeviceObjectVal<DescriptorPool> {
     {
         m_Desc.descriptorSetMaxNum = descriptorSetMaxNum;
         m_DescriptorSets.reserve(m_Desc.descriptorSetMaxNum);
-        for(uint32_t i = 0; i < m_Desc.descriptorSetMaxNum; i++) {
-          m_DescriptorSets.emplace_back(DescriptorSetVal(device));
-        }
+        for(uint32_t i = 0; i < m_Desc.descriptorSetMaxNum; i++)
+            m_DescriptorSets.emplace_back(DescriptorSetVal(device));
     }
 
     DescriptorPoolVal(DeviceVal& device, DescriptorPool* descriptorPool, const DescriptorPoolDesc& descriptorPoolDesc)
         : DeviceObjectVal(device, descriptorPool), m_DescriptorSets(device.GetStdAllocator()), m_Desc(descriptorPoolDesc) {
         m_DescriptorSets.reserve(m_Desc.descriptorSetMaxNum);
-        for(uint32_t i = 0; i < m_Desc.descriptorSetMaxNum; i++) {
-          m_DescriptorSets.emplace_back(DescriptorSetVal(device));
-        }
+        for(uint32_t i = 0; i < m_Desc.descriptorSetMaxNum; i++)
+            m_DescriptorSets.emplace_back(DescriptorSetVal(device));
     }
 
     //================================================================================================================

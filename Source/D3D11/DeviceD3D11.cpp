@@ -16,7 +16,6 @@
 #include "SwapChainD3D11.h"
 #include "TextureD3D11.h"
 
-#include <dxgidebug.h>
 #include <d3d12.h>
 
 using namespace nri;
@@ -75,8 +74,7 @@ DeviceD3D11::~DeviceD3D11()
 
 Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* device, AGSContext* agsContext)
 {
-    m_SkipLiveObjectsReporting = deviceCreationDesc.skipLiveObjectsReporting;
-
+    // Get adapter
     if (!device)
     {
         ComPtr<IDXGIFactory4> dxgiFactory;
@@ -105,11 +103,22 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         RETURN_ON_BAD_HRESULT(this, hr, "IDXGIDevice::GetAdapter()");
     }
 
+    // Get adapter description as early as possible for meaningful error reporting
     DXGI_ADAPTER_DESC desc = {};
-    m_Adapter->GetDesc(&desc);
-    const Vendor vendor = GetVendorFromID(desc.VendorId);
-    m_Ext.Create(this, vendor, agsContext, device != nullptr);
+    HRESULT hr = m_Adapter->GetDesc(&desc);
+    RETURN_ON_BAD_HRESULT(this, hr, "IDXGIAdapter::GetDesc()");
 
+    wcstombs(m_Desc.adapterDesc.description, desc.Description, GetCountOf(m_Desc.adapterDesc.description) - 1);
+    m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
+    m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
+    m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
+    m_Desc.adapterDesc.deviceId = desc.DeviceId;
+    m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
+
+    // Extensions
+    m_Ext.Create(this, m_Desc.adapterDesc.vendor, agsContext, device != nullptr);
+
+    // Device
     m_Device.ptr = (ID3D11Device5*)device;
     if (!device)
     {
@@ -128,7 +137,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         }
         else
         {
-            HRESULT hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&m_Device.ptr, nullptr, nullptr);
+            hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&m_Device.ptr, nullptr, nullptr);
 
             if (flags && (uint32_t)hr == 0x887a002d)
                 hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, &levels[0], (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&m_Device.ptr, nullptr, nullptr);
@@ -289,18 +298,6 @@ void DeviceD3D11::FillDesc(bool isValidationEnabled)
         }
     }
 
-    DXGI_ADAPTER_DESC desc = {};
-    hr = m_Adapter->GetDesc(&desc);
-    if (SUCCEEDED(hr))
-    {
-        wcstombs(m_Desc.adapterDesc.description, desc.Description, GetCountOf(m_Desc.adapterDesc.description) - 1);
-        m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
-        m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
-        m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
-        m_Desc.adapterDesc.deviceId = desc.DeviceId;
-        m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
-    }
-
     m_Desc.graphicsAPI = GraphicsAPI::D3D11;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
@@ -451,16 +448,7 @@ Result DeviceD3D11::CreateImplementation(Interface*& entity, const Args&... args
 
 void DeviceD3D11::Destroy()
 {
-    bool skipLiveObjectsReporting = m_SkipLiveObjectsReporting;
     Deallocate(GetStdAllocator(), this);
-
-    if (!skipLiveObjectsReporting)
-    {
-        ComPtr<IDXGIDebug1> pDebug;
-        HRESULT hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebug));
-        if (SUCCEEDED(hr))
-            pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, (DXGI_DEBUG_RLO_FLAGS)((uint32_t)DXGI_DEBUG_RLO_DETAIL | (uint32_t)DXGI_DEBUG_RLO_IGNORE_INTERNAL));
-    }
 }
 
 //================================================================================================================

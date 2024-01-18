@@ -28,8 +28,8 @@ static std::array<VkColorSpaceKHR, (size_t)SwapChainFormat::MAX_NUM> g_colorSpac
 };
 
 SwapChainVK::SwapChainVK(DeviceVK& device) :
-    m_Textures(device.GetStdAllocator()),
-    m_Device(device)
+    m_Textures(device.GetStdAllocator())
+    , m_Device(device)
 {}
 
 SwapChainVK::~SwapChainVK()
@@ -53,8 +53,8 @@ void SwapChainVK::Destroy()
     if (m_Surface != VK_NULL_HANDLE)
         vk.DestroySurfaceKHR(m_Device, m_Surface, m_Device.GetAllocationCallbacks());
 
-    if (m_Semaphore != VK_NULL_HANDLE)
-        vk.DestroySemaphore(m_Device, m_Semaphore, m_Device.GetAllocationCallbacks());
+    for (VkSemaphore& semaphore : m_Semaphores)
+        vk.DestroySemaphore(m_Device, semaphore, m_Device.GetAllocationCallbacks());
 }
 
 Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc)
@@ -102,7 +102,8 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc)
     }
 #endif
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
-    if (swapChainDesc.window.wayland.display && swapChainDesc.window.wayland.surface) {
+    if (swapChainDesc.window.wayland.display && swapChainDesc.window.wayland.surface)
+    {
         VkWaylandSurfaceCreateInfoKHR waylandSurfaceInfo = {};
         waylandSurfaceInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
         waylandSurfaceInfo.display = (wl_display*)swapChainDesc.window.wayland.display;
@@ -122,10 +123,14 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
 {
     const auto& vk = m_Device.GetDispatchTable();
 
-    VkSemaphoreTypeCreateInfo timelineCreateInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, nullptr, VK_SEMAPHORE_TYPE_BINARY, 0 };
-    VkSemaphoreCreateInfo createInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &timelineCreateInfo, 0 };
-    VkResult result = vk.CreateSemaphore((VkDevice)m_Device, &createInfo, m_Device.GetAllocationCallbacks(), &m_Semaphore);
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateSemaphore returned %d", (int32_t)result);
+    for (VkSemaphore& semaphore : m_Semaphores)
+    {
+        VkSemaphoreTypeCreateInfo timelineCreateInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, nullptr, VK_SEMAPHORE_TYPE_BINARY, 0 };
+        VkSemaphoreCreateInfo createInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &timelineCreateInfo, 0 };
+
+        VkResult result = vk.CreateSemaphore((VkDevice)m_Device, &createInfo, m_Device.GetAllocationCallbacks(), &semaphore);
+        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateSemaphore returned %d", (int32_t)result);
+    }
 
     m_CommandQueue = (CommandQueueVK*)swapChainDesc.commandQueue;
 
@@ -143,7 +148,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc)
     }
 
     VkSurfaceCapabilitiesKHR capabilites = {};
-    result = vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(m_Device, m_Surface, &capabilites);
+    VkResult result = vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(m_Device, m_Surface, &capabilites);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfaceCapabilitiesKHR returned %d", (int32_t)result);
 
     const bool isWidthValid = swapChainDesc.width >= capabilites.minImageExtent.width &&
@@ -285,12 +290,30 @@ inline uint32_t SwapChainVK::AcquireNextTexture()
     ExclusiveScope lock(m_CommandQueue->GetLock());
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.AcquireNextImageKHR(m_Device, m_Handle, VK_DEFAULT_TIMEOUT, m_Semaphore, VK_NULL_HANDLE, &m_TextureIndex);
+
+    VkSemaphore semaphore = m_Semaphores[m_FrameIndex];
+    VkResult result = vk.AcquireNextImageKHR(m_Device, m_Handle, VK_DEFAULT_TIMEOUT, semaphore, VK_NULL_HANDLE, &m_TextureIndex);
 
     if (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR)
     {
+        /*
+        TODO: currently we acquire swap chain image this way:
+            SwapChainVK::AcquireNextTexture
+                AcquireNextImageKHR(semaphore) - signal
+                QueueSubmit(semaphore) - wait
+            SwapChainVK::Present()
+                QueueSubmit(semaphore) - signal
+                QueuePresentKHR(semaphore) - wait
+        Would it be better to use 2 semaphores?
+            SwapChainVK::AcquireNextTexture
+                AcquireNextImageKHR(imageAcquiredSemaphore) - signal
+            SwapChainVK::Present()
+                QueueSubmit(imageAcquiredSemaphore) - wait
+                QueueSubmit(renderingFinishedSemaphore) - signal
+                QueuePresentKHR(renderingFinishedSemaphore) - wait
+        */
         const uint32_t waitDstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 1, &m_Semaphore, &waitDstStageMask, 0, nullptr, 0, nullptr };
+        VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 1, &semaphore, &waitDstStageMask, 0, nullptr, 0, nullptr };
         result = vk.QueueSubmit(*m_CommandQueue, 1, &submitInfo, VK_NULL_HANDLE);
         if (result != VK_SUCCESS)
             REPORT_ERROR(&m_Device, "vkQueueSubmit returned %d", (int32_t)result);
@@ -305,21 +328,22 @@ inline uint32_t SwapChainVK::AcquireNextTexture()
 
 inline Result SwapChainVK::Present()
 {
+    ExclusiveScope lock(m_CommandQueue->GetLock());
+
     if (m_TextureIndex == OUT_OF_DATE)
         return Result::OUT_OF_DATE;
 
-    ExclusiveScope lock(m_CommandQueue->GetLock());
-
     const auto& vk = m_Device.GetDispatchTable();
 
-    VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0, nullptr, nullptr, 0, nullptr, 1, &m_Semaphore };
+    VkSemaphore semaphore = m_Semaphores[m_FrameIndex];
+    VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0, nullptr, nullptr, 0, nullptr, 1, &semaphore };
     VkResult result = vk.QueueSubmit(*m_CommandQueue, 1, &submitInfo, VK_NULL_HANDLE);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkQueueSubmit returned %d", (int32_t)result);
 
     const VkPresentInfoKHR info = {
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         nullptr,
-        1, &m_Semaphore,
+        1, &semaphore,
         1, &m_Handle,
         &m_TextureIndex,
         nullptr
@@ -328,6 +352,8 @@ inline Result SwapChainVK::Present()
     result = vk.QueuePresentKHR(*m_CommandQueue, &info);
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_ERROR_OUT_OF_DATE_KHR && result != VK_ERROR_SURFACE_LOST_KHR)
         REPORT_ERROR(&m_Device, "vkQueuePresentKHR returned %d", (int32_t)result);
+
+    m_FrameIndex = (m_FrameIndex + 1) % MAX_NUMBER_OF_FRAMES_IN_FLIGHT;
 
     return GetReturnCode(result);
 }

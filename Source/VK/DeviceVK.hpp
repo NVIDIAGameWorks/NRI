@@ -381,12 +381,12 @@ static NRIVkInstance NRI_CALL GetVkInstance(const Device& device)
 
 static void* NRI_CALL GetVkGetInstanceProcAddr(const Device& device)
 {
-    return reinterpret_cast<void*>(((DeviceVK&)device).GetDispatchTable().GetInstanceProcAddr);
+    return (void*)(((DeviceVK&)device).GetDispatchTable().GetInstanceProcAddr);
 }
 
 static void* NRI_CALL GetVkGetDeviceProcAddr(const Device& device)
 {
-    return reinterpret_cast<void*>(((DeviceVK&)device).GetDispatchTable().GetDeviceProcAddr);
+    return (void*)(((DeviceVK&)device).GetDispatchTable().GetDeviceProcAddr);
 }
 
 Result DeviceVK::FillFunctionTable(WrapperVKInterface& wrapperVKInterface) const

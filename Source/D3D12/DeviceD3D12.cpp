@@ -19,8 +19,6 @@
 #include "AccelerationStructureD3D12.h"
 #include "CommandBufferD3D12.h"
 
-#include <dxgidebug.h>
-
 using namespace nri;
 
 Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device)
@@ -138,8 +136,6 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
 
 Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
 {
-    m_SkipLiveObjectsReporting = deviceCreationDesc.skipLiveObjectsReporting;
-
     // IMPORTANT: Must be called before the D3D12 device is created, or the D3D12 runtime removes the device.
     if (deviceCreationDesc.enableAPIValidation)
     {
@@ -531,16 +527,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
 
 void DeviceD3D12::Destroy()
 {
-    bool skipLiveObjectsReporting = m_SkipLiveObjectsReporting;
     Deallocate(GetStdAllocator(), this);
-
-    if (!skipLiveObjectsReporting)
-    {
-        ComPtr<IDXGIDebug1> pDebug;
-        HRESULT hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebug));
-        if (SUCCEEDED(hr))
-            pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, (DXGI_DEBUG_RLO_FLAGS)((uint32_t)DXGI_DEBUG_RLO_DETAIL | (uint32_t)DXGI_DEBUG_RLO_IGNORE_INTERNAL));
-    }
 }
 
 //================================================================================================================

@@ -50,11 +50,11 @@ NRI_STRUCT(DeviceCreationDesc)
     bool enableAPIValidation;
     bool enableMGPU;
     bool D3D11CommandBufferEmulation;
-    bool skipLiveObjectsReporting;
 };
 
 NRI_API NRI_NAME(Result) NRI_CALL nriEnumerateAdapters(NRI_NAME(AdapterDesc)* adapterDescs, uint32_t NRI_REF adapterDescNum);
 NRI_API NRI_NAME(Result) NRI_CALL nriCreateDevice(const NRI_NAME_REF(DeviceCreationDesc) deviceCreationDesc, NRI_NAME_REF(Device*) device);
 NRI_API void NRI_CALL nriDestroyDevice(NRI_NAME_REF(Device) device);
+NRI_API void NRI_CALL nriReportLiveObjects(); // It's global state for D3D, not needed for VK because validation is tied to the logical device
 
 NRI_NAMESPACE_END
