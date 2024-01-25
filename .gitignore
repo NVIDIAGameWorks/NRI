@@ -46,6 +46,9 @@ compile_commands.json
 *.so.*
 *.manifest
 
+# generated files
+NRIAgilitySDK.h
+
 # generated folders
 _Bin/
 _Build/

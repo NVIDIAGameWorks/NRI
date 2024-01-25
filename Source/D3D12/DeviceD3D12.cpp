@@ -268,6 +268,9 @@ DescriptorPointerCPU DeviceD3D12::GetDescriptorPointerCPU(const DescriptorHandle
 
 void DeviceD3D12::GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const
 {
+    if (memoryLocation == MemoryLocation::DEVICE_UPLOAD && m_Desc.deviceUploadHeapSize == 0)
+        memoryLocation = MemoryLocation::HOST_UPLOAD;
+
     memoryDesc.type = GetMemoryType(memoryLocation, resourceDesc);
 
     D3D12_RESOURCE_ALLOCATION_INFO resourceAllocationInfo = m_Device->GetResourceAllocationInfo(NRI_TEMP_NODE_MASK, 1, &resourceDesc);
@@ -333,25 +336,106 @@ MemoryType DeviceD3D12::GetMemoryType(MemoryLocation memoryLocation, const D3D12
 void DeviceD3D12::FillDesc(bool enableValidation)
 {
     D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
-    m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
+    HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS1 options1 = {};
-    m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &options1, sizeof(options1));
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &options1, sizeof(options1));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options1) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS2 options2 = {};
-    m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS2, &options2, sizeof(options2));
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS2, &options2, sizeof(options2));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options2) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS3 options3 = {};
-    m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &options3, sizeof(options3));
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &options3, sizeof(options3));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options3) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS4 options4 = {};
-    m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS4, &options4, sizeof(options4));
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS4, &options4, sizeof(options4));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options4) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS5 options5 = {};
-    m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5));
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options5) failed, result = 0x%08X!", hr);
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS6 options6 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &options6, sizeof(options6));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options6) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7 = {};
-    m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7));
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options7) failed, result = 0x%08X!", hr);
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS8 options8 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS8, &options8, sizeof(options8));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options8) failed, result = 0x%08X!", hr);
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS9 options9 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS9, &options9, sizeof(options9));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options9) failed, result = 0x%08X!", hr);
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS10 options10 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS10, &options10, sizeof(options10));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options10) failed, result = 0x%08X!", hr);
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS11 options11 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS11, &options11, sizeof(options11));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options11) failed, result = 0x%08X!", hr);
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS12 options12 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12, &options12, sizeof(options12));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options12) failed, result = 0x%08X!", hr);
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS13 options13 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS13, &options13, sizeof(options13));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options13) failed, result = 0x%08X!", hr);
+
+#ifdef NRI_USE_AGILITY_SDK
+    D3D12_FEATURE_DATA_D3D12_OPTIONS14 options14 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS14, &options14, sizeof(options14));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options14) failed, result = 0x%08X!", hr);
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS15 options15 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS15, &options15, sizeof(options15));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options15) failed, result = 0x%08X!", hr);
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS16 options16 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &options16, sizeof(options16));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options16) failed, result = 0x%08X!", hr);
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS17 options17 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS17, &options17, sizeof(options17));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options17) failed, result = 0x%08X!", hr);
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS18 options18 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS18, &options18, sizeof(options18));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options18) failed, result = 0x%08X!", hr);
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS19 options19 = {};
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS19, &options19, sizeof(options19));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options19) failed, result = 0x%08X!", hr);
+#endif
 
     m_IsRaytracingSupported = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0;
     m_IsMeshShaderSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
@@ -378,7 +462,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     }
 
     DXGI_ADAPTER_DESC desc = {};
-    HRESULT hr = m_Adapter->GetDesc(&desc);
+    hr = m_Adapter->GetDesc(&desc);
     if (SUCCEEDED(hr))
     {
         wcstombs(m_Desc.adapterDesc.description, desc.Description, GetCountOf(m_Desc.adapterDesc.description) - 1);
@@ -418,6 +502,9 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     m_Desc.textureArrayMaxDim = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
     m_Desc.texelBufferMaxDim = (1 << D3D12_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP) - 1;
 
+#ifdef NRI_USE_AGILITY_SDK
+    m_Desc.deviceUploadHeapSize = options16.GPUUploadHeapSupported ? desc.DedicatedVideoMemory : 0;
+#endif
     m_Desc.memoryAllocationMaxNum = 0xFFFFFFFF;
     m_Desc.samplerAllocationMaxNum = D3D12_REQ_SAMPLER_OBJECT_COUNT_PER_DEVICE;
     m_Desc.uploadBufferTextureRowAlignment = D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;

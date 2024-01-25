@@ -24,7 +24,7 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
     D3D11_USAGE usage = D3D11_USAGE_STAGING;
     if (memory)
     {
-        usage = memory->GetType() == MemoryLocation::HOST_UPLOAD ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
+        usage = (memory->GetType() == MemoryLocation::HOST_UPLOAD || memory->GetType() == MemoryLocation::DEVICE_UPLOAD) ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
         cpuAccessFlags = 0;
     }
 

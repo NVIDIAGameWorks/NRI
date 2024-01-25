@@ -349,40 +349,87 @@ Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
 
 bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const
 {
-    const VkMemoryPropertyFlags host = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-    const VkMemoryPropertyFlags hostUnwantedFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    VkMemoryPropertyFlags neededFlags = 0; // must have
+    VkMemoryPropertyFlags undesiredFlags = 0; // have higher priority than desired
+    VkMemoryPropertyFlags desiredFlags = 0; // nice to have
 
-    const VkMemoryPropertyFlags device = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    const VkMemoryPropertyFlags deviceUnwantedFlags = 0;
-
-    VkMemoryPropertyFlags flags = IsHostVisibleMemory(memoryLocation) ? host : device;
-    VkMemoryPropertyFlags unwantedFlags = IsHostVisibleMemory(memoryLocation) ? hostUnwantedFlags : deviceUnwantedFlags;
-
-    memoryTypeInfo.isHostCoherent = IsHostVisibleMemory(memoryLocation);
-    memoryTypeInfo.location = (uint8_t)memoryLocation;
-
-    for (uint_fast16_t i = 0; i < m_MemoryProps.memoryTypeCount; i++)
+    if (memoryLocation == MemoryLocation::DEVICE)
     {
-        const bool isMemoryTypeSupported = memoryTypeMask & (1 << i);
-        const bool isPropSupported = (m_MemoryProps.memoryTypes[i].propertyFlags & flags) == flags;
-        const bool hasUnwantedProperties = (m_MemoryProps.memoryTypes[i].propertyFlags & unwantedFlags) != 0;
+        neededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        undesiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    }
+    else if (memoryLocation == MemoryLocation::DEVICE_UPLOAD)
+    {
+        neededFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        desiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    }
+    else
+    {
+        neededFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        undesiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        desiredFlags = VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    }
 
-        if (isMemoryTypeSupported && isPropSupported && !hasUnwantedProperties)
+    // Phase 1: needed, undesired and desired
+    for (uint32_t i = 0; i < m_MemoryProps.memoryTypeCount; i++)
+    {
+        bool isSupported = memoryTypeMask & (1 << i);
+        bool hasNeededFlags = (m_MemoryProps.memoryTypes[i].propertyFlags & neededFlags) == neededFlags;
+        bool hasUndesiredFlags = undesiredFlags == 0 ? false : (m_MemoryProps.memoryTypes[i].propertyFlags & undesiredFlags) == undesiredFlags;
+        bool hasDesiredFlags = (m_MemoryProps.memoryTypes[i].propertyFlags & desiredFlags) == desiredFlags;
+
+        if (isSupported && hasNeededFlags && !hasUndesiredFlags && hasDesiredFlags)
         {
-            memoryTypeInfo.memoryTypeIndex = (uint16_t)i;
+            memoryTypeInfo.memoryTypeIndex = (MemoryTypeIndexType)i;
+            memoryTypeInfo.memoryLocation = memoryLocation;
+
             return true;
         }
     }
 
-    // ignore unwanted properties
-    for (uint_fast16_t i = 0; i < m_MemoryProps.memoryTypeCount; i++)
+    // Phase 2: needed and undesired
+    for (uint32_t i = 0; i < m_MemoryProps.memoryTypeCount; i++)
     {
-        const bool isMemoryTypeSupported = memoryTypeMask & (1 << i);
-        const bool isPropSupported = (m_MemoryProps.memoryTypes[i].propertyFlags & flags) == flags;
+        bool isSupported = memoryTypeMask & (1 << i);
+        bool hasNeededFlags = (m_MemoryProps.memoryTypes[i].propertyFlags & neededFlags) == neededFlags;
+        bool hasUndesiredFlags = undesiredFlags == 0 ? false : (m_MemoryProps.memoryTypes[i].propertyFlags & undesiredFlags) == undesiredFlags;
 
-        if (isMemoryTypeSupported && isPropSupported)
+        if (isSupported && hasNeededFlags && !hasUndesiredFlags)
         {
-            memoryTypeInfo.memoryTypeIndex = (uint16_t)i;
+            memoryTypeInfo.memoryTypeIndex = (MemoryTypeIndexType)i;
+            memoryTypeInfo.memoryLocation = memoryLocation;
+
+            return true;
+        }
+    }
+
+    // Phase 3: needed and desired
+    for (uint32_t i = 0; i < m_MemoryProps.memoryTypeCount; i++)
+    {
+        bool isSupported = memoryTypeMask & (1 << i);
+        bool hasNeededFlags = (m_MemoryProps.memoryTypes[i].propertyFlags & neededFlags) == neededFlags;
+        bool hasDesiredFlags = (m_MemoryProps.memoryTypes[i].propertyFlags & desiredFlags) == desiredFlags;
+
+        if (isSupported && hasNeededFlags && hasDesiredFlags)
+        {
+            memoryTypeInfo.memoryTypeIndex = (MemoryTypeIndexType)i;
+            memoryTypeInfo.memoryLocation = memoryLocation;
+
+            return true;
+        }
+    }
+
+    // Phase 4: only needed
+    for (uint32_t i = 0; i < m_MemoryProps.memoryTypeCount; i++)
+    {
+        bool isSupported = memoryTypeMask & (1 << i);
+        bool hasNeededFlags = (m_MemoryProps.memoryTypes[i].propertyFlags & neededFlags) == neededFlags;
+
+        if (isSupported && hasNeededFlags)
+        {
+            memoryTypeInfo.memoryTypeIndex = (MemoryTypeIndexType)i;
+            memoryTypeInfo.memoryLocation = memoryLocation;
+
             return true;
         }
     }
@@ -390,19 +437,20 @@ bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeM
     return false;
 }
 
-bool DeviceVK::GetMemoryType(uint32_t index, MemoryTypeInfo& memoryTypeInfo) const
+bool DeviceVK::GetMemoryTypeByIndex(uint32_t index, MemoryTypeInfo& memoryTypeInfo) const
 {
     if (index >= m_MemoryProps.memoryTypeCount)
         return false;
 
     const VkMemoryType& memoryType = m_MemoryProps.memoryTypes[index];
+    bool isHostVisible = memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    bool isDevice = memoryType.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-    memoryTypeInfo.memoryTypeIndex = (uint16_t)index;
-    memoryTypeInfo.isHostCoherent = memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-    const bool isHostVisible = memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-    memoryTypeInfo.location = isHostVisible ? (uint8_t)MemoryLocation::HOST_UPLOAD : (uint8_t)MemoryLocation::DEVICE;
-    static_assert((uint32_t)MemoryLocation::MAX_NUM <= std::numeric_limits<uint8_t>::max(), "Unexpected number of memory locations");
+    memoryTypeInfo.memoryTypeIndex = (MemoryTypeIndexType)index;
+    if (isDevice)
+        memoryTypeInfo.memoryLocation = isHostVisible ? MemoryLocation::DEVICE_UPLOAD : MemoryLocation::DEVICE;
+    else
+        memoryTypeInfo.memoryLocation = MemoryLocation::HOST_UPLOAD;
 
     return true;
 }
@@ -844,6 +892,14 @@ void DeviceVK::FillDesc(bool enableValidation)
     m_Desc.textureArrayMaxDim = (Dim_t)limits.maxImageArrayLayers;
     m_Desc.texelBufferMaxDim = limits.maxTexelBufferElements;
 
+    const VkMemoryPropertyFlags neededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    for (uint32_t i = 0; i < m_MemoryProps.memoryTypeCount; i++)
+    {
+        const VkMemoryType& memoryType = m_MemoryProps.memoryTypes[i];
+        if ((memoryType.propertyFlags & neededFlags) == neededFlags)
+            m_Desc.deviceUploadHeapSize += m_MemoryProps.memoryHeaps[memoryType.heapIndex].size;
+    }
+
     m_Desc.memoryAllocationMaxNum = limits.maxMemoryAllocationCount;
     m_Desc.samplerAllocationMaxNum = limits.maxSamplerAllocationCount;
     m_Desc.uploadBufferTextureRowAlignment = 1;
@@ -1247,26 +1303,29 @@ void DeviceVK::SetDebugNameToDeviceGroupObject(VkObjectType objectType, const ui
 
 void DeviceVK::ReportDeviceGroupInfo()
 {
-    REPORT_INFO(this, "Available device memory heaps:");
+    String text(GetStdAllocator());
 
+    REPORT_INFO(this, "Memory heaps:");
     for (uint32_t i = 0; i < m_MemoryProps.memoryHeapCount; i++)
     {
-        String text(GetStdAllocator());
+        text.clear();
+
+        if (m_MemoryProps.memoryHeaps[i].flags == 0)
+            text += "*SYSMEM* ";
         if (m_MemoryProps.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
             text += "DEVICE_LOCAL_BIT ";
         if (m_MemoryProps.memoryHeaps[i].flags & VK_MEMORY_HEAP_MULTI_INSTANCE_BIT)
             text += "MULTI_INSTANCE_BIT ";
 
-        const double size = double(m_MemoryProps.memoryHeaps[i].size) / (1024.0 * 1024.0);
-
-        REPORT_INFO(this, "  Heap%u %.1lfMiB - %s", i, size, text.c_str());
+        double size = double(m_MemoryProps.memoryHeaps[i].size) / (1024.0 * 1024.0);
+        REPORT_INFO(this, "  Heap #%u: %.f Mb - %s", i, size, text.c_str());
 
         if (m_Desc.nodeNum == 1)
             continue;
 
         for (uint32_t j = 0; j < m_Desc.nodeNum; j++)
         {
-            REPORT_INFO(this, "    PhysicalDevice%u", j);
+            REPORT_INFO(this, "    Physical device #%u", j);
 
             for (uint32_t k = 0; k < m_Desc.nodeNum; k++)
             {
@@ -1286,9 +1345,41 @@ void DeviceVK::ReportDeviceGroupInfo()
                 if (flags & VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT)
                     text += "GENERIC_DST_BIT ";
 
-                REPORT_INFO(this, "      PhysicalDevice%u - %s", k, text.c_str());
+                REPORT_INFO(this, "      Physical device #%u - %s", k, text.c_str());
             }
         }
+    }
+
+    REPORT_INFO(this, "Memory types:");
+    for (uint32_t i = 0; i < m_MemoryProps.memoryTypeCount; i++)
+    {
+        text.clear();
+
+        REPORT_INFO(this, "  Memory type #%u", i);
+        REPORT_INFO(this, "    Heap #%u", m_MemoryProps.memoryTypes[i].heapIndex);
+
+        VkMemoryPropertyFlags flags = m_MemoryProps.memoryTypes[i].propertyFlags;
+        if (flags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+            text += "DEVICE_LOCAL_BIT ";
+        if (flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+            text += "HOST_VISIBLE_BIT ";
+        if (flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+            text += "HOST_COHERENT_BIT ";
+        if (flags & VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
+            text += "HOST_CACHED_BIT ";
+        if (flags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT)
+            text += "LAZILY_ALLOCATED_BIT ";
+        if (flags & VK_MEMORY_PROPERTY_PROTECTED_BIT)
+            text += "PROTECTED_BIT ";
+        if (flags & VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD)
+            text += "DEVICE_COHERENT_BIT_AMD ";
+        if (flags & VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD)
+            text += "DEVICE_UNCACHED_BIT_AMD ";
+        if (flags & VK_MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV)
+            text += "RDMA_CAPABLE_BIT_NV ";
+
+        if (!text.empty())
+            REPORT_INFO(this, "    %s", text.c_str());
     }
 }
 
@@ -1826,10 +1917,8 @@ inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBi
         const MemoryTypeUnpack unpack = { memoryImpl.GetType() };
         const MemoryTypeInfo& memoryTypeInfo = unpack.info;
 
-        const MemoryLocation memoryLocation = (MemoryLocation)memoryTypeInfo.location;
-
         uint32_t nodeMask = GetNodeMask(bindingDesc.nodeMask);
-        if (IsHostVisibleMemory(memoryLocation))
+        if (IsHostMemory(memoryTypeInfo.memoryLocation))
             nodeMask = 0x1;
 
         if (memoryTypeInfo.isDedicated == 1)
@@ -1847,7 +1936,7 @@ inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBi
                 info.memory = memoryImpl.GetHandle(j);
                 info.memoryOffset = bindingDesc.offset;
 
-                if (IsHostVisibleMemory(memoryLocation))
+                if (IsHostVisibleMemory(memoryTypeInfo.memoryLocation))
                     bufferImpl.SetHostMemory(memoryImpl, info.memoryOffset);
 
                 if (deviceGroupInfos != nullptr)

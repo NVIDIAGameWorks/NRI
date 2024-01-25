@@ -28,7 +28,7 @@ Result BufferD3D11::Create(const MemoryD3D11& memory)
     if (m_Desc.usageMask & BufferUsageBits::ARGUMENT_BUFFER)
         desc.MiscFlags |= D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
 
-    if (memoryLocation == MemoryLocation::HOST_UPLOAD)
+    if (memoryLocation == MemoryLocation::HOST_UPLOAD || memoryLocation == MemoryLocation::DEVICE_UPLOAD)
     {
         if (m_Desc.usageMask == BufferUsageBits::NONE)
         {

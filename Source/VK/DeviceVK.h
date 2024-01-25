@@ -53,7 +53,7 @@ struct DeviceVK final : public DeviceBase
     Result Create(const DeviceCreationVKDesc& deviceCreationVKDesc);
     Result Create(const DeviceCreationDesc& deviceCreationDesc);
     bool GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const;
-    bool GetMemoryType(uint32_t index, MemoryTypeInfo& memoryTypeInfo) const;
+    bool GetMemoryTypeByIndex(uint32_t index, MemoryTypeInfo& memoryTypeInfo) const;
     void SetDebugNameToTrivialObject(VkObjectType objectType, uint64_t handle, const char* name);
     void SetDebugNameToDeviceGroupObject(VkObjectType objectType, const uint64_t* handles, const char* name);
 

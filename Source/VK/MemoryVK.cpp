@@ -29,8 +29,6 @@ Result MemoryVK::Create(uint32_t nodeMask, const MemoryType memoryType, uint64_t
     const MemoryTypeUnpack unpack = { memoryType };
     const MemoryTypeInfo& memoryTypeInfo = unpack.info;
 
-    const MemoryLocation memoryLocation = (MemoryLocation)memoryTypeInfo.location;
-
     // Dedicated allocation occurs on memory binding
     if (memoryTypeInfo.isDedicated == 1)
         return Result::SUCCESS;
@@ -49,7 +47,7 @@ Result MemoryVK::Create(uint32_t nodeMask, const MemoryType memoryType, uint64_t
     nodeMask = GetNodeMask(nodeMask);
 
     // No need to allocate more than one instance of host memory
-    if (IsHostVisibleMemory(memoryLocation))
+    if (IsHostMemory(memoryTypeInfo.memoryLocation))
     {
         nodeMask = 0x1;
         flagsInfo.flags &= ~VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
@@ -68,7 +66,7 @@ Result MemoryVK::Create(uint32_t nodeMask, const MemoryType memoryType, uint64_t
             RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
                 "Can't allocate a memory: vkAllocateMemory returned %d.", (int32_t)result);
 
-            if (IsHostVisibleMemory(memoryLocation))
+            if (IsHostVisibleMemory(memoryTypeInfo.memoryLocation))
             {
                 result = vk.MapMemory(m_Device, m_Handles[i], 0, size, 0, (void**)&m_MappedMemory[i]);
 
@@ -86,8 +84,8 @@ Result MemoryVK::Create(const MemoryVKDesc& memoryDesc)
     m_OwnsNativeObjects = false;
 
     MemoryTypeUnpack unpack = {};
-    const bool found = m_Device.GetMemoryType(memoryDesc.memoryTypeIndex, unpack.info);
-    CHECK(&m_Device, found, "Can't find memory type: %u", memoryDesc.memoryTypeIndex);
+    const bool found = m_Device.GetMemoryTypeByIndex(memoryDesc.memoryTypeIndex, unpack.info);
+    RETURN_ON_FAILURE(&m_Device, found, Result::INVALID_ARGUMENT, "Can't find memory by index");
 
     const VkDeviceMemory handle = (VkDeviceMemory)memoryDesc.vkDeviceMemory;
     const uint32_t nodeMask = GetNodeMask(memoryDesc.nodeMask);
@@ -102,7 +100,7 @@ Result MemoryVK::Create(const MemoryVKDesc& memoryDesc)
         {
             m_Handles[i] = handle;
 
-            if (IsHostVisibleMemory((MemoryLocation)memoryTypeInfo.location))
+            if (IsHostVisibleMemory(memoryTypeInfo.memoryLocation))
             {
                 const VkResult result = vk.MapMemory(m_Device, m_Handles[i], 0, memoryDesc.size, 0, (void**)&m_MappedMemory[i]);
 
@@ -125,13 +123,11 @@ Result MemoryVK::CreateDedicated(BufferVK& buffer, uint32_t nodeMask)
     const MemoryTypeUnpack unpack = { m_Type };
     const MemoryTypeInfo& memoryTypeInfo = unpack.info;
 
-    const MemoryLocation memoryLocation = (MemoryLocation)memoryTypeInfo.location;
-
     RETURN_ON_FAILURE(&m_Device, memoryTypeInfo.isDedicated == 1, Result::FAILURE,
         "Can't allocate a dedicated memory: memory type is not dedicated.");
 
     MemoryDesc memoryDesc = {};
-    buffer.GetMemoryInfo(memoryLocation, memoryDesc);
+    buffer.GetMemoryInfo(memoryTypeInfo.memoryLocation, memoryDesc);
 
     VkMemoryAllocateFlagsInfo flagsInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO };
     flagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT | VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
@@ -144,8 +140,8 @@ Result MemoryVK::CreateDedicated(BufferVK& buffer, uint32_t nodeMask)
     memoryInfo.allocationSize = memoryDesc.size;
     memoryInfo.memoryTypeIndex = memoryTypeInfo.memoryTypeIndex;
 
-    // No need to allocate two instances of host memory
-    if (IsHostVisibleMemory(memoryLocation))
+    // No need to allocate more than one instance of host memory
+    if (IsHostMemory(memoryTypeInfo.memoryLocation))
     {
         nodeMask = 0x1;
         flagsInfo.flags &= ~VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
@@ -165,7 +161,7 @@ Result MemoryVK::CreateDedicated(BufferVK& buffer, uint32_t nodeMask)
             RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
                 "Can't allocate a dedicated memory: vkAllocateMemory returned %d.", (int32_t)result);
 
-            if (IsHostVisibleMemory(memoryLocation))
+            if (IsHostVisibleMemory(memoryTypeInfo.memoryLocation))
             {
                 result = vk.MapMemory(m_Device, m_Handles[i], 0, memoryDesc.size, 0, (void**)&m_MappedMemory[i]);
 
@@ -188,13 +184,11 @@ Result MemoryVK::CreateDedicated(TextureVK& texture, uint32_t nodeMask)
     const MemoryTypeUnpack unpack = { m_Type };
     const MemoryTypeInfo& memoryTypeInfo = unpack.info;
 
-    const MemoryLocation memoryLocation = (MemoryLocation)memoryTypeInfo.location;
-
     RETURN_ON_FAILURE(&m_Device, memoryTypeInfo.isDedicated == 1, Result::FAILURE,
         "Can't allocate a dedicated memory: the memory type is not dedicated.");
 
     MemoryDesc memoryDesc = {};
-    texture.GetMemoryInfo((MemoryLocation)memoryTypeInfo.location, memoryDesc);
+    texture.GetMemoryInfo(memoryTypeInfo.memoryLocation, memoryDesc);
 
     VkMemoryAllocateFlagsInfo flagsInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO };
     flagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
@@ -207,8 +201,8 @@ Result MemoryVK::CreateDedicated(TextureVK& texture, uint32_t nodeMask)
     memoryInfo.allocationSize = memoryDesc.size;
     memoryInfo.memoryTypeIndex = memoryTypeInfo.memoryTypeIndex;
 
-    // No need to allocate two instances of host memory
-    if (IsHostVisibleMemory(memoryLocation))
+    // No need to allocate more than one instance of host memory
+    if (IsHostMemory(memoryTypeInfo.memoryLocation))
     {
         nodeMask = 0x1;
         dedicatedAllocateInfo.pNext = nullptr;
@@ -228,7 +222,7 @@ Result MemoryVK::CreateDedicated(TextureVK& texture, uint32_t nodeMask)
             RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
                 "Can't allocate a dedicated memory: vkAllocateMemory returned %d.", (int32_t)result);
 
-            if (IsHostVisibleMemory(memoryLocation))
+            if (IsHostVisibleMemory(memoryTypeInfo.memoryLocation))
             {
                 result = vk.MapMemory(m_Device, m_Handles[i], 0, memoryDesc.size, 0, (void**)&m_MappedMemory[i]);
 

@@ -1,4 +1,4 @@
-name: Build NRI SDK
+name: NRI SDK
 on:
   pull_request:
     branches:

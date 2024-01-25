@@ -182,12 +182,12 @@ inline void* BufferVK::Map(uint64_t offset, uint64_t size)
     if (size == WHOLE_SIZE)
         size = m_Desc.size;
 
-    return m_Memory->GetMappedMemory(0) + m_MappedMemoryOffset + offset;
+    return m_Memory->GetMappedMemory(0) + m_MappedMemoryOffset + offset; // TODO: mGPU + DEVICE_UPLOAD requires massaging
 }
 
 inline void BufferVK::Unmap()
 {
-    // TODO: flush the range if the memory is not host coherent
+    // TODO: flush memory range if not HOST_COHERENT
     // if (m_Memory->IsHostCoherent())
     //     m_Memory->FlushMemoryRange(m_MappedMemoryOffset + m_MappedRangeOffset, m_MappedRangeSize);
 }

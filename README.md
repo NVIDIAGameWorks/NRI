@@ -1,4 +1,4 @@
-# NVIDIA Render Interface (NRI)
+# NVIDIA RENDER INTERFACE (NRI)
 
 [![Status](https://github.com/NVIDIAGameWorks/NRI/actions/workflows/build.yml/badge.svg)](https://github.com/NVIDIAGameWorks/NRI/actions/workflows/build.yml)
 
@@ -16,7 +16,7 @@
  - [*NRI samples*](https://github.com/NVIDIAGameWorks/NRISamples)
  - [*NRD Sample*](https://github.com/NVIDIAGameWorks/NRDSample)
 
-## Build instructions
+## BUILD INSTRUCTIONS
 
 - Install [*Cmake*](https://cmake.org/download/) 3.15+
 - Install on
@@ -30,18 +30,53 @@
     - Run `1-Deploy`
     - Run `2-Build`
 
-Note: *Xlib* and *Wayland* can be both enabled.
-Note: Minimal supported client is Windows 8.1+. Windows 7 support requires minimal effort and can be added by request.
+Notes:
+- *Xlib* and *Wayland* can be both enabled
+- Minimal supported client is Windows 8.1+. Windows 7 support requires minimal effort and can be added by request
 
-## CMake options
+## CMAKE OPTIONS
 
-- `NRI_DISABLE_XLIB_SUPPORT=ON` - disable *Xlib* support
-- `NRI_DISABLE_WAYLAND_SUPPORT=ON` - disable *Wayland* support
-- `NRI_STATIC_LIBRARY=ON` - build NRI as a static library
+- `NRI_STATIC_LIBRARY` - build NRI as a static library (`off` by default)
+- `NRI_BACKEND_VK` - enable VULKAN backend (`on` by default)
+- `NRI_BACKEND_D3D11` - enable D3D11 backend (`on` by default on Windows)
+- `NRI_BACKEND_D3D12` - enable D3D12 backend (`on` by default on Windows)
 
-## Samples overview
+Vulkan only:
+- `NRI_ENABLE_XLIB_SUPPORT` - disable *Xlib* support (`on` by default)
+- `NRI_ENABLE_WAYLAND_SUPPORT` - disable *Wayland* support (`on` by default)
 
-In order of complexity:
+D3D12 only:
+- `NRI_ENABLE_AGILITY_SDK_SUPPORT` - enable Agility SDK (`off` by default)
+- `NRI_AGILITY_SDK_PATH` - path to a directory containing Agility SDK: contents of `.nupkg/build/native/` (`C:/AgilitySDK` by default)
+- `NRI_AGILITY_SDK_VERSION` - Agility SDK version (`711` by default, can be newer)
+- `NRI_AGILITY_SDK_DIR` - directory where Agility SDK binaries will be copied to relative to `CMAKE_RUNTIME_OUTPUT_DIRECTORY` (`AgilitySDK` by default)
+
+## AGILITY SDK
+
+IMPORTANT: NRI features requiring Agility SDK are marked as `// TODO: D3D12 requires Agility SDK` with version specification.
+
+*Overview* and *Download* sections can be found [*here*](https://devblogs.microsoft.com/directx/directx12agility/).
+
+D3D12 backend uses Agility SDK to get access to most recent D3D12 features. As soon as these features become available in the OS, installation of Agility SDK will be deprecated.
+
+Installation steps:
+- download Agility SDK package
+    - `preview` versions require enabling Developer Mode in Windows
+- rename `.nupkg` into `.zip`
+- extract contents of `.nupkg/build/native` into `NRI_AGILITY_SDK_PATH` folder
+    - can be located anywhere
+- set `NRI_AGILITY_SDK_DIR` to a path, where `bin` folder needs to be copied
+    - most likely closer to the executable
+- set `NRI_AGILITY_SDK_VERSION` to the version of the package
+- enable `NRI_ENABLE_AGILITY_SDK_SUPPORT`
+- re-deploy project
+- include auto-generated `NRIAgilitySDK.h` header in the code of your executable, using NRI
+
+## SAMPLES OVERVIEW
+
+NRI samples can be found [*here*](https://github.com/NVIDIAGameWorks/NRISamples).
+
+Samples:
 - DeviceInfo - queries and prints out information about device groups in the system
 - Clear - minimal example of rendering using framebuffer clears only
 - CTest - very simple example of C interface usage
@@ -54,7 +89,8 @@ In order of complexity:
 - RayTracingTriangle - simple triangle rendeing through ray tracing
 - RayTracingBoxes - a more advanced ray tracing example with many BLASes in TLAS
 - Wrapper - shows how to wrap native D3D11/D3D12/VK objects into NRI entities
+- Resize - demonstrates window resize
 
-## Licence
+## LICENSE
 
-NRI is licensed under the MIT License. This project includes NVAPI software. All uses of NVAPI software are governed by the license terms specified here: https://github.com/NVIDIA/nvapi/blob/main/License.txt.
+NRI is licensed under the MIT License. This project includes NVAPI software. All uses of NVAPI software are governed by the license terms specified [*here*](https://github.com/NVIDIA/nvapi/blob/main/License.txt).

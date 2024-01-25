@@ -1,15 +1,27 @@
 cmake_minimum_required (VERSION 3.15)
 
 # Options
-option (NRI_DISABLE_XLIB_SUPPORT "Disable 'xlib' support" OFF)
-option (NRI_DISABLE_WAYLAND_SUPPORT "Disable 'wayland' support" OFF)
 option (NRI_STATIC_LIBRARY "Build static library" OFF)
 
-if (WIN32)
-    option (NRI_ENABLE_STREAMLINE_SUPPORT "Enables streamline wrapper for streamline integration. Requires NRI_STREAMLINE_SDK_PATH to point to a valid streamline package" OFF)
-    option(NRI_USE_DEVELOPMENT_STREAMLINE_LIBRARY "Makes the project use development streamline libraries instead of regular ones." OFF)
-    set (NRI_STREAMLINE_SDK_PATH "" CACHE STRING "Path to a directory containing streamline sdk package. Must not include the name of the library 'sl.interposer.lib'. Must not be empty when NRI_ENABLE_STREAMLINE_SUPPORT is on.")
-endif ()
+# Options: backends
+option (NRI_BACKEND_VK "Enable VULKAN backend" ON)
+option (NRI_BACKEND_D3D11 "Enable D3D11 backend" ON)
+option (NRI_BACKEND_D3D12 "Enable D3D12 backend" ON)
+
+# Options: VK specific
+option (NRI_ENABLE_XLIB_SUPPORT "Disable 'xlib' support" ON)
+option (NRI_ENABLE_WAYLAND_SUPPORT "Disable 'wayland' support" ON)
+
+# Options: D3D12 specific
+option (NRI_ENABLE_AGILITY_SDK_SUPPORT "Enable Agility SDK suupport to unlock access to recent D3D12 features" OFF)
+set (NRI_AGILITY_SDK_PATH "C:/AgilitySDK" CACHE STRING "Path to a directory containing Agility SDK (contents of '.nupkg/build/native/')")
+set (NRI_AGILITY_SDK_VERSION "711" CACHE STRING "Agility SDK version")
+set (NRI_AGILITY_SDK_DIR "AgilitySDK" CACHE STRING "Directory where Agility SDK binaries will be copied to relative to 'CMAKE_RUNTIME_OUTPUT_DIRECTORY'")
+
+# Options: StreamLine SDK
+option (NRI_ENABLE_STREAMLINE_SUPPORT "Enable streamline wrapper for streamline integration (requires NRI_STREAMLINE_SDK_PATH to point to a valid streamline package)" OFF)
+option (NRI_USE_DEVELOPMENT_STREAMLINE_LIBRARY "Make the project use development streamline libraries instead of regular ones" OFF)
+set (NRI_STREAMLINE_SDK_PATH "" CACHE STRING "Path to a directory containing StreamLine SDK package (must not include the name of the library 'sl.interposer.lib', must not be empty when NRI_ENABLE_STREAMLINE_SUPPORT is on)")
 
 # Is submodule?
 if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
@@ -40,7 +52,7 @@ set (VERSION_MINOR ${CMAKE_MATCH_1})
 message ("NRI v${VERSION_MAJOR}.${VERSION_MINOR}")
 project (NRI LANGUAGES C CXX)
 
-# Setup dependencies
+# Find Windows SDK
 if (WIN32)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
         set (BIN_ARCHITECTURE "x64")
@@ -50,11 +62,6 @@ if (WIN32)
         set (NVAPI_BIN_ARCHITECTURE "x86")
     endif ()
 
-    # External
-    find_library (INPUT_LIB_NVAPI NAMES nvapi64 nvapi PATHS "External/nvapi/${NVAPI_BIN_ARCHITECTURE}" REQUIRED)
-    find_library (INPUT_LIB_AGS NAMES amd_ags_${BIN_ARCHITECTURE} PATHS "External/amdags/ags_lib/lib" REQUIRED)
-
-    # System
     if ("$ENV{WIN10_SDK_PATH}$ENV{WIN10_SDK_VERSION}" STREQUAL "")
         get_filename_component (WINDOWS_SDK_PATH "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows Kits\\Installed Roots;KitsRoot10]" ABSOLUTE CACHE)
         set (WINDOWS_SDK_VERSION ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION})
@@ -114,30 +121,19 @@ else ()
     message (WARNING "Unknown compiler!")
 endif ()
 
-# Compile definitions
-set (COMPILE_DEFINITIONS NRI_USE_VULKAN=1)
-
-if (WIN32)
-    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} WIN32_LEAN_AND_MEAN NOMINMAX _CRT_SECURE_NO_WARNINGS _UNICODE UNICODE _ENFORCE_MATCHING_ALLOCATORS=0)
-    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_D3D11=1 NRI_USE_D3D12=1)
-endif ()
-
-# Shared
-file (GLOB SHARED_SOURCE "Source/Shared/*.cpp" "Source/Shared/*.h" "Source/Shared/*.hpp")
-source_group ("" FILES ${SHARED_SOURCE})
-add_library (NRI_Shared STATIC ${SHARED_SOURCE})
-target_include_directories (NRI_Shared PRIVATE "Include" "Source/Shared")
-target_compile_definitions (NRI_Shared PRIVATE ${COMPILE_DEFINITIONS})
-target_compile_options (NRI_Shared PRIVATE ${COMPILE_OPTIONS})
-set_property (TARGET NRI_Shared PROPERTY FOLDER ${PROJECT_NAME})
-
-if (NOT NRI_ENABLE_STREAMLINE_SUPPORT)
-    set (INPUT_LIBS_D3D11 ${INPUT_LIB_D3D11} ${INPUT_LIB_DXGI})
-    set (INPUT_LIBS_D3D12 ${INPUT_LIB_D3D12} ${INPUT_LIB_DXGI})
-endif ()
+set (COMPILE_DEFINITIONS WIN32_LEAN_AND_MEAN NOMINMAX _CRT_SECURE_NO_WARNINGS)
 
 # D3D11
-if (WIN32)
+if (WIN32 AND NRI_BACKEND_D3D11)
+    message ("NRI adding backend: D3D11")
+    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_D3D11=1)
+    if (NOT NRI_ENABLE_STREAMLINE_SUPPORT)
+        set (INPUT_LIBS_D3D11 ${INPUT_LIB_D3D11} ${INPUT_LIB_DXGI})
+    endif ()
+
+    find_library (INPUT_LIB_NVAPI NAMES nvapi64 nvapi PATHS "External/nvapi/${NVAPI_BIN_ARCHITECTURE}" REQUIRED)
+    find_library (INPUT_LIB_AGS NAMES amd_ags_${BIN_ARCHITECTURE} PATHS "External/amdags/ags_lib/lib" REQUIRED)
+
     file (GLOB D3D11_SOURCE "Source/D3D11/*.cpp" "Source/D3D11/*.h" "Source/D3D11/*.hpp")
     source_group ("" FILES ${D3D11_SOURCE})
     file (GLOB D3D11_NVAPI "External/nvapi/*.h")
@@ -153,7 +149,13 @@ if (WIN32)
 endif ()
 
 # D3D12
-if (WIN32)
+if (WIN32 AND NRI_BACKEND_D3D12)
+    message ("NRI adding backend: D3D12")
+    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_D3D12=1)
+    if (NOT NRI_ENABLE_STREAMLINE_SUPPORT)
+        set (INPUT_LIBS_D3D12 ${INPUT_LIB_D3D12} ${INPUT_LIB_DXGI})
+    endif ()
+
     file (GLOB D3D12_SOURCE "Source/D3D12/*.cpp" "Source/D3D12/*.h" "Source/D3D12/*.hpp")
     source_group ("" FILES ${D3D12_SOURCE})
     add_library (NRI_D3D12 STATIC ${D3D12_SOURCE})
@@ -162,43 +164,79 @@ if (WIN32)
     target_compile_options (NRI_D3D12 PRIVATE ${COMPILE_OPTIONS})
     target_link_libraries (NRI_D3D12 PRIVATE NRI_Shared ${INPUT_LIBS_D3D12})
     set_property (TARGET NRI_D3D12 PROPERTY FOLDER ${PROJECT_NAME})
+
+    if (NRI_ENABLE_AGILITY_SDK_SUPPORT)
+        target_include_directories (NRI_D3D12 PRIVATE "${NRI_AGILITY_SDK_PATH}/include")
+        target_compile_definitions (NRI_D3D12 PRIVATE NRI_USE_AGILITY_SDK)
+
+        # Copy Agility SDK binaries
+        message (STATUS "Copying Agility SDK binaries to '${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NRI_AGILITY_SDK_DIR}'")
+        file(COPY "${NRI_AGILITY_SDK_PATH}/bin/x64" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NRI_AGILITY_SDK_DIR}")
+
+        # Generate "NRIAgilitySDK.h"
+        file (WRITE Include/NRIAgilitySDK.h
+            "// This file is auto-generated during project deployment. Do not modify!\n"
+            "#ifdef __cplusplus\n"
+            "extern \"C\" {\n"
+            "#endif\n\n"
+            "__declspec(dllexport) extern const uint32_t D3D12SDKVersion = ${NRI_AGILITY_SDK_VERSION};\n"
+            "__declspec(dllexport) extern const char* D3D12SDKPath = \"../${NRI_AGILITY_SDK_DIR}/x64/\";\n\n"
+            "#ifdef __cplusplus\n"
+            "}\n"
+            "#endif\n"
+        )
+    endif ()
 endif ()
 
 # VK
-file (GLOB VK_SOURCE "Source/VK/*.cpp" "Source/VK/*.h" "Source/VK/*.hpp")
-source_group ("" FILES ${VK_SOURCE})
-add_library (NRI_VK STATIC ${VK_SOURCE})
-target_include_directories (NRI_VK PRIVATE "Include" "Source/Shared" "External/vulkan/include")
-target_compile_definitions (NRI_VK PRIVATE ${COMPILE_DEFINITIONS})
-target_compile_options (NRI_VK PRIVATE ${COMPILE_OPTIONS})
-target_link_libraries (NRI_VK PRIVATE NRI_Shared)
-set_property (TARGET NRI_VK PROPERTY FOLDER ${PROJECT_NAME})
+if (NRI_BACKEND_VK)
+    message ("NRI adding backend: VK")
+    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_VULKAN=1)
 
-if (WIN32)
-    target_compile_definitions (NRI_VK PRIVATE VK_USE_PLATFORM_WIN32_KHR)
-elseif (APPLE)
-    target_compile_definitions (NRI_VK PRIVATE VK_USE_PLATFORM_METAL_EXT)
-else ()
-    if (NOT NRI_DISABLE_XLIB_SUPPORT)
-        find_path (XLIB_HEADERS NAMES "X11/Xlib.h")
+    file (GLOB VK_SOURCE "Source/VK/*.cpp" "Source/VK/*.h" "Source/VK/*.hpp")
+    source_group ("" FILES ${VK_SOURCE})
+    add_library (NRI_VK STATIC ${VK_SOURCE})
+    target_include_directories (NRI_VK PRIVATE "Include" "Source/Shared" "External/vulkan/include")
+    target_compile_definitions (NRI_VK PRIVATE ${COMPILE_DEFINITIONS})
+    target_compile_options (NRI_VK PRIVATE ${COMPILE_OPTIONS})
+    target_link_libraries (NRI_VK PRIVATE NRI_Shared)
+    set_property (TARGET NRI_VK PROPERTY FOLDER ${PROJECT_NAME})
 
-        if (NOT XLIB_HEADERS)
-            message (FATAL_ERROR "Can't find 'X11/xlib.h'.(libx11-dev is not installed?)")
+    if (WIN32)
+        target_compile_definitions (NRI_VK PRIVATE VK_USE_PLATFORM_WIN32_KHR)
+    elseif (APPLE)
+        target_compile_definitions (NRI_VK PRIVATE VK_USE_PLATFORM_METAL_EXT)
+    else ()
+        if (NRI_ENABLE_XLIB_SUPPORT)
+            find_path (XLIB_HEADERS NAMES "X11/Xlib.h")
+
+            if (NOT XLIB_HEADERS)
+                message (FATAL_ERROR "Can't find 'X11/xlib.h'.(libx11-dev is not installed?)")
+            endif ()
+
+            target_compile_definitions (NRI_VK PRIVATE VK_USE_PLATFORM_XLIB_KHR)
         endif ()
 
-        target_compile_definitions (NRI_VK PRIVATE VK_USE_PLATFORM_XLIB_KHR)
-    endif ()
+        if (NRI_ENABLE_WAYLAND_SUPPORT)
+            find_path (WAYLAND_HEADERS NAMES "wayland-client.h")
 
-    if (NOT NRI_DISABLE_WAYLAND_SUPPORT)
-        find_path (WAYLAND_HEADERS NAMES "wayland-client.h")
+            if (NOT WAYLAND_HEADERS)
+                message (FATAL_ERROR "Can't find 'wayland-client.h'.(libwayland-dev is not installed?)")
+            endif ()
 
-        if (NOT WAYLAND_HEADERS)
-            message (FATAL_ERROR "Can't find 'wayland-client.h'.(libwayland-dev is not installed?)")
+            target_compile_definitions (NRI_VK PRIVATE VK_USE_PLATFORM_WAYLAND_KHR)
         endif ()
-
-        target_compile_definitions (NRI_VK PRIVATE VK_USE_PLATFORM_WAYLAND_KHR)
     endif ()
 endif ()
+
+# Shared
+file (GLOB SHARED_SOURCE "Source/Shared/*.cpp" "Source/Shared/*.h" "Source/Shared/*.hpp")
+source_group ("" FILES ${SHARED_SOURCE})
+add_library (NRI_Shared STATIC ${SHARED_SOURCE})
+target_include_directories (NRI_Shared PRIVATE "Include" "Source/Shared")
+target_compile_definitions (NRI_Shared PRIVATE ${COMPILE_DEFINITIONS})
+target_compile_options (NRI_Shared PRIVATE ${COMPILE_OPTIONS})
+set_property (TARGET NRI_Shared PROPERTY FOLDER ${PROJECT_NAME})
 
 # Validation
 file (GLOB NRI_VALIDATION_SOURCE "Source/Validation/*.cpp" "Source/Validation/*.h" "Source/Validation/*.hpp")
@@ -269,12 +307,21 @@ target_include_directories (${PROJECT_NAME} PRIVATE "Include" "Source/Shared" "E
 target_compile_definitions (${PROJECT_NAME} PRIVATE ${COMPILE_DEFINITIONS})
 target_compile_options (${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS})
 
-target_link_libraries (${PROJECT_NAME} PRIVATE NRI_Shared NRI_VK NRI_Validation)
-
+target_link_libraries (${PROJECT_NAME} PRIVATE NRI_Shared NRI_Validation)
 if (WIN32)
-    target_link_libraries (${PROJECT_NAME} PRIVATE NRI_D3D11 NRI_D3D12)
-elseif (UNIX)
+    target_link_libraries (${PROJECT_NAME} PRIVATE ${INPUT_LIB_DXGI} ${INPUT_LIB_DXGUID}) # for nriReportLiveObjects
+else ()
     target_link_libraries (${PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
+endif ()
+
+if (WIN32 AND NRI_BACKEND_D3D11)
+    target_link_libraries (${PROJECT_NAME} PRIVATE NRI_D3D11)
+endif ()
+if (WIN32 AND NRI_BACKEND_D3D12)
+    target_link_libraries (${PROJECT_NAME} PRIVATE NRI_D3D12)
+endif ()
+if (NRI_BACKEND_VK)
+    target_link_libraries (${PROJECT_NAME} PRIVATE NRI_VK)
 endif ()
 
 set_property (TARGET ${PROJECT_NAME} PROPERTY FOLDER ${PROJECT_NAME})

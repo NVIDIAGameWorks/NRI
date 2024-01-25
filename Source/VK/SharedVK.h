@@ -12,12 +12,12 @@
 
 #include "DispatchTable.h"
 
+typedef uint16_t MemoryTypeIndexType;
 struct MemoryTypeInfo
 {
-    uint16_t memoryTypeIndex;
-    uint8_t location;
-    uint8_t isDedicated : 1;
-    uint8_t isHostCoherent : 1;
+    MemoryTypeIndexType memoryTypeIndex;
+    nri::MemoryLocation memoryLocation;
+    bool isDedicated;
 };
 static_assert(sizeof(MemoryTypeInfo) <= sizeof(nri::MemoryType), "Unexpected structure size");
 
@@ -33,6 +33,9 @@ constexpr HandleType GetVulkanHandle(NRIType* object, uint32_t nodeIndex)
 
 constexpr bool IsHostVisibleMemory(nri::MemoryLocation location)
 { return location > nri::MemoryLocation::DEVICE; }
+
+constexpr bool IsHostMemory(nri::MemoryLocation location)
+{ return location > nri::MemoryLocation::DEVICE_UPLOAD; }
 
 // TODO: mostly needed for AMD?
 #if 1

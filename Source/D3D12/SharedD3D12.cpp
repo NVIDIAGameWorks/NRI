@@ -19,8 +19,13 @@ D3D12_COMMAND_LIST_TYPE nri::GetCommandListType(CommandQueueType commandQueueTyp
 constexpr std::array<D3D12_HEAP_TYPE, (uint32_t)MemoryLocation::MAX_NUM> HEAP_TYPES =
 {
     D3D12_HEAP_TYPE_DEFAULT,                    // DEVICE
+#ifdef NRI_USE_AGILITY_SDK
+    D3D12_HEAP_TYPE_GPU_UPLOAD,                 // DEVICE_UPLOAD
+#else
+    D3D12_HEAP_TYPE_UPLOAD,                     // DEVICE_UPLOAD
+#endif
     D3D12_HEAP_TYPE_UPLOAD,                     // HOST_UPLOAD
-    D3D12_HEAP_TYPE_READBACK                    // HOST_READBACK
+    D3D12_HEAP_TYPE_READBACK,                   // HOST_READBACK
 };
 
 MemoryType nri::GetMemoryType(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags)

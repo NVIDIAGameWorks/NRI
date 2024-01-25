@@ -921,7 +921,7 @@ constexpr std::array<const char*, uint32_t(nri::GraphicsAPI::VULKAN) + 1> GRAPHI
 {
     "D3D11",
     "D3D12",
-    "VULKAN"
+    "VK"
 };
 
 void nri::DeviceBase::ReportMessage(nri::Message messageType, const char* file, uint32_t line, const char* format, ...) const

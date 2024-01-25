@@ -89,6 +89,7 @@ NRI_ENUM
     MemoryLocation, uint8_t,
 
     DEVICE,
+    DEVICE_UPLOAD, // TODO: D3D12 requires Agility SDK v711+
     HOST_UPLOAD,
     HOST_READBACK,
 
@@ -1276,6 +1277,7 @@ NRI_STRUCT(DeviceDesc)
     uint32_t texelBufferMaxDim;
 
     // Memory
+    uint64_t deviceUploadHeapSize; // ReBAR
     uint32_t memoryAllocationMaxNum;
     uint32_t samplerAllocationMaxNum;
     uint32_t uploadBufferTextureRowAlignment;
