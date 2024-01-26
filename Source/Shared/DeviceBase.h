@@ -43,6 +43,7 @@ namespace nri
         virtual Result FillFunctionTable(WrapperVKInterface& table) const { table = {}; return Result::UNSUPPORTED; }
         virtual Result FillFunctionTable(RayTracingInterface& table) const { table = {}; return Result::UNSUPPORTED; }
         virtual Result FillFunctionTable(MeshShaderInterface& table) const { table = {}; return Result::UNSUPPORTED; }
+        virtual Result FillFunctionTable(TilingInterface& table) const { table = {}; return Result::UNSUPPORTED; }
         virtual Result FillFunctionTable(HelperInterface& table) const { table = {}; return Result::UNSUPPORTED; }
 
     protected:

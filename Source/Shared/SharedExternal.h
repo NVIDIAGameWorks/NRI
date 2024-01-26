@@ -8,6 +8,7 @@
 #include "Extensions/NRIWrapperD3D11.h"
 #include "Extensions/NRIWrapperD3D12.h"
 #include "Extensions/NRIWrapperVK.h"
+#include "Extensions/NRITiling.h"
 #include "Extensions/NRIRayTracing.h"
 #include "Extensions/NRIMeshShader.h"
 #include "Extensions/NRIHelper.h"

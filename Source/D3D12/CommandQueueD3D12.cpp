@@ -1,6 +1,8 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedD3D12.h"
+#include "TextureD3D12.h"
+#include "MemoryD3D12.h"
 #include "CommandQueueD3D12.h"
 #include "CommandBufferD3D12.h"
 
@@ -68,6 +70,57 @@ inline Result CommandQueueD3D12::WaitForIdle()
     HelperWaitIdle helperWaitIdle(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
 
     return helperWaitIdle.WaitIdle();
+}
+
+inline Result CommandQueueD3D12::BindTextureTiles(Texture& texture, const TileBindDesc* binds, uint32_t bindNum) 
+{
+    TextureD3D12& nativeTexture = (TextureD3D12&)texture;
+    TextureTilingRequirementsDesc tilingRequirements = nativeTexture.GetTilingRequirements();
+
+    // TODO: batch multiple calls of UpdateTileMappings into one
+    for (size_t i = 0; i < bindNum; i++) 
+    {
+        const TileBindDesc& bind = binds[i];
+        D3D12_TILE_REGION_SIZE tileRegion = {};
+        uint32_t subresource = nativeTexture.GetSubresourceIndex(bind.region.arrayOffset, bind.region.mipOffset);
+        D3D12_TILED_RESOURCE_COORDINATE resourceCoordinate = {};
+        if (nativeTexture.IsPackedSubresource(subresource))
+        {
+            // Don't use any offsets here, just update an entire packed mip
+            resourceCoordinate.Subresource = tilingRequirements.startPackedTileIndex;
+            tileRegion.NumTiles = tilingRequirements.packedTileNum;
+            tileRegion.UseBox = FALSE;
+        }
+        else
+        {
+            resourceCoordinate.Subresource = subresource;
+            resourceCoordinate.X = bind.region.x / tilingRequirements.tileWidth;
+            resourceCoordinate.Y = bind.region.y / tilingRequirements.tileHeight;
+            resourceCoordinate.Z = bind.region.z / tilingRequirements.tileDepth;
+            tileRegion.Width = bind.region.width / tilingRequirements.tileWidth;
+            tileRegion.Height = bind.region.height / tilingRequirements.tileHeight;
+            tileRegion.Depth = bind.region.depth / tilingRequirements.tileDepth;
+            tileRegion.NumTiles = tileRegion.Width * tileRegion.Height * tileRegion.Depth;
+            tileRegion.UseBox = TRUE;
+        }
+
+        D3D12_TILE_RANGE_FLAGS rangeFlag = bind.tilePool == nullptr ? D3D12_TILE_RANGE_FLAG_NONE : D3D12_TILE_RANGE_FLAG_NULL;
+        UINT heapTiledOffset = bind.offsetInTiles;
+
+        MemoryD3D12* memory = (MemoryD3D12*)bind.tilePool;
+        m_CommandQueue->UpdateTileMappings(
+            nativeTexture, 
+            1,
+            &resourceCoordinate, 
+            &tileRegion, 
+            *memory, 
+            1, 
+            &rangeFlag,
+            &heapTiledOffset,
+            &tileRegion.NumTiles,
+            D3D12_TILE_MAPPING_FLAG_NONE
+        );
+    }
 }
 
 #include "CommandQueueD3D12.hpp"

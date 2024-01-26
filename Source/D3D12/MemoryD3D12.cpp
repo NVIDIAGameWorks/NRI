@@ -5,7 +5,7 @@
 
 using namespace nri;
 
-Result MemoryD3D12::Create(const MemoryType memoryType, uint64_t size)
+Result MemoryD3D12::Create(const MemoryType memoryType, bool tiling, uint64_t size)
 {
     D3D12_HEAP_DESC heapDesc = {};
     heapDesc.SizeInBytes = size;

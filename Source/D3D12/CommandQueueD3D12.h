@@ -43,6 +43,7 @@ struct CommandQueueD3D12
     Result UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum,
         const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum);
     Result WaitForIdle();
+    Result BindTextureTiles(Texture& texture, const TileBindDesc* binds, uint32_t bindNum);
 
 private:
     DeviceD3D12& m_Device;

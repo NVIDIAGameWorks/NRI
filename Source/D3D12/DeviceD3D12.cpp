@@ -11,6 +11,7 @@
 #include "MemoryD3D12.h"
 #include "BufferD3D12.h"
 #include "TextureD3D12.h"
+#include "TilingD3D12.h"
 #include "DescriptorD3D12.h"
 #include "PipelineLayoutD3D12.h"
 #include "PipelineD3D12.h"
@@ -375,6 +376,8 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     if (FAILED(hr))
         REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options7) failed, result = 0x%08X!", hr);
 
+#ifdef NRI_USE_AGILITY_SDK
+    // D3D12_FEATURE_DATA_D3D12_OPTIONS8 is not supported on Windows 10 LTSC (21H2)
     D3D12_FEATURE_DATA_D3D12_OPTIONS8 options8 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS8, &options8, sizeof(options8));
     if (FAILED(hr))
@@ -405,7 +408,6 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     if (FAILED(hr))
         REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options13) failed, result = 0x%08X!", hr);
 
-#ifdef NRI_USE_AGILITY_SDK
     D3D12_FEATURE_DATA_D3D12_OPTIONS14 options14 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS14, &options14, sizeof(options14));
     if (FAILED(hr))
@@ -606,6 +608,8 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     m_Desc.isRegisterAliasingSupported = true;
     m_Desc.isSubsetAllocationSupported = true;
     m_Desc.isFloat16Supported = options4.Native16BitShaderOpsSupported;
+    m_Desc.isTilingSupported = options.TiledResourcesTier != D3D12_TILED_RESOURCES_TIER_NOT_SUPPORTED;
+    m_Desc.isVolumeTilingSupported = options.TiledResourcesTier >= D3D12_TILED_RESOURCES_TIER_3;
 }
 
 //================================================================================================================
@@ -807,9 +811,9 @@ inline void DeviceD3D12::DestroyQueryPool(QueryPool& queryPool)
     Deallocate(GetStdAllocator(), (QueryPoolD3D12*)&queryPool);
 }
 
-inline Result DeviceD3D12::AllocateMemory(const MemoryType memoryType, uint64_t size, Memory*& memory)
+inline Result DeviceD3D12::AllocateMemory(const MemoryType memoryType, uint64_t size, bool tiling, Memory*& memory)
 {
-    return CreateImplementation<MemoryD3D12>(memory, memoryType, size);
+    return CreateImplementation<MemoryD3D12>(memory, memoryType, tiling, size);
 }
 
 inline Result DeviceD3D12::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum)

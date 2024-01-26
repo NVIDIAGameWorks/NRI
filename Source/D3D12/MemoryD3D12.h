@@ -28,7 +28,7 @@ struct MemoryD3D12
     inline DeviceD3D12& GetDevice() const
     { return m_Device; }
 
-    Result Create(const MemoryType memoryType, uint64_t size);
+    Result Create(const MemoryType memoryType, bool tiling, uint64_t size);
     Result Create(const MemoryD3D12Desc& memoryDesc);
 
     //================================================================================================================

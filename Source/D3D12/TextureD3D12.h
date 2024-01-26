@@ -30,13 +30,20 @@ struct TextureD3D12
     inline operator ID3D12Resource*() const
     { return m_Texture.GetInterface(); }
 
+
     inline uint32_t GetSubresourceIndex(Dim_t arrayOffset, Mip_t mipOffset) const
     { return arrayOffset * m_Desc.mipNum + mipOffset; }
+
+    inline bool IsPackedSubresource(uint32_t subresource) const
+    { return subresource >= m_SubresourceTilings.size(); }
+
+    SubresourceTilingDesc GetSubresourceTiling(Dim_t arrayOffset, Mip_t mipOffset) const;
+    TextureTilingRequirementsDesc GetTilingRequirements() const;
+    Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const;
 
     Result Create(const TextureDesc& textureDesc);
     Result Create(const TextureD3D12Desc& textureDesc);
     Result BindMemory(const MemoryD3D12* memory, uint64_t offset);
-    Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const;
 
     //================================================================================================================
     // NRI
@@ -48,9 +55,16 @@ struct TextureD3D12
     void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
 private:
+    void ObtainTilingInfo();
+
+    // Base texture info
     DeviceD3D12& m_Device;
     TextureDesc m_Desc = {};
     ComPtr<ID3D12Resource> m_Texture;
+
+    // Tiled texture info
+    Vector<SubresourceTilingDesc> m_SubresourceTilings;
+    TextureTilingRequirementsDesc m_TilingRequirements;
 };
 
 }
