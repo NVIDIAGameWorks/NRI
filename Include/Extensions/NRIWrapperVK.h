@@ -8,6 +8,8 @@ NRI_FORWARD_STRUCT(VkImageSubresourceRange);
 
 NRI_NAMESPACE_BEGIN
 
+NRI_FORWARD_STRUCT(AccelerationStructure);
+
 typedef uint64_t NRIVkCommandPool;
 typedef uint64_t NRIVkImage;
 typedef uint64_t NRIVkBuffer;
