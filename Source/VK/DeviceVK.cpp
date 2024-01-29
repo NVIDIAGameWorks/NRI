@@ -150,7 +150,7 @@ DeviceVK::~DeviceVK()
     for (uint32_t i = 0; i < m_Queues.size(); i++)
         Deallocate(GetStdAllocator(), m_Queues[i]);
 
-    if (m_Messenger != VK_NULL_HANDLE)
+    if (m_Messenger)
     {
         typedef PFN_vkDestroyDebugUtilsMessengerEXT Func;
         Func destroyCallback = (Func)m_VK.GetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -264,7 +264,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc)
 
     FillFamilyIndices(false, nullptr, 0);
 
-    // Get adapter
+    // Get adapter description as early as possible for meaningful error reporting
     GetAdapterDesc();
 
     // Create device
@@ -316,15 +316,15 @@ Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
     if (res != Result::SUCCESS)
         return res;
 
-    // Find physical device    
+    // Find physical device
     const VkPhysicalDevice* physicalDevices = (VkPhysicalDevice*)deviceCreationVKDesc.vkPhysicalDevices; // TODO: physical device indices?
     m_PhysicalDevices.insert(m_PhysicalDevices.begin(), physicalDevices, physicalDevices + deviceCreationVKDesc.deviceGroupSize);
 
     m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevices.front(), &m_MemoryProps);
 
     FillFamilyIndices(true, deviceCreationVKDesc.queueFamilyIndices, deviceCreationVKDesc.queueFamilyIndexNum);
-    
-    // Get adapter
+
+    // Get adapter description as early as possible for meaningful error reporting
     GetAdapterDesc();
 
     // Create device
@@ -344,7 +344,7 @@ Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
         if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, supportedExts))
             supportedFeatures.debugUtils = true;
     }
-    
+
     { // Device extensions
         uint32_t extensionNum = 0;
         m_VK.EnumerateDeviceExtensionProperties(m_PhysicalDevices.front(), nullptr, &extensionNum, nullptr);
@@ -573,76 +573,20 @@ VkBool32 VKAPI_PTR DebugUtilsMessenger(
 {
     MaybeUnused(messageType);
 
-    bool isError = false;
-    bool isWarning = false;
-
     /*
-    // TODO: convert an error to a warning as
-    if (callbackData->messageIdNumber == <message ID>)
-        messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+    // TODO: some messages can be muted here
+    if (callbackData->messageIdNumber == XXX)
+        return VK_FALSE;
     */
 
-    const char* type = "unknown";
-    switch( messageSeverity )
-    {
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-        type = "verbose";
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        type = "info";
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-        type = "warning";
-        isWarning = true;
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        type = "error";
-        isError = true;
-        break;
-    }
-
-    if (!isWarning && !isError)
-        return VK_FALSE;
+    Message severity = Message::TYPE_INFO;
+    if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+        severity = Message::TYPE_ERROR;
+    else if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+        severity = Message::TYPE_WARNING;
 
     DeviceVK& device = *(DeviceVK*)userData;
-
-    String message(device.GetStdAllocator());
-    message += std::to_string(callbackData->messageIdNumber);
-    message += " ";
-    message += callbackData->pMessageIdName;
-    message += " ";
-    message += callbackData->pMessage;
-
-    // vkCmdCopyBufferToImage: For optimal performance VkImage 0x984b920000000104 layout should be VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL instead of GENERAL.
-    if (callbackData->messageIdNumber == 1303270965)
-        return VK_FALSE;
-
-    if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-    {
-        message += "\nObjectNum: " + std::to_string(callbackData->objectCount);
-
-        char buffer[64];
-
-        for (uint32_t i = 0; i < callbackData->objectCount; i++)
-        {
-            const VkDebugUtilsObjectNameInfoEXT& object = callbackData->pObjects[i];
-            snprintf(buffer, sizeof(buffer), "0x%llx", (unsigned long long)object.objectHandle);
-
-            message += "\n\tObject ";
-            message += object.pObjectName != nullptr ? object.pObjectName : "";
-            message += " ";
-            message += GetObjectTypeName(object.objectType);
-            message += " (";
-            message += buffer;
-            message += ")";
-        }
-
-        REPORT_ERROR(&device, "DebugUtilsMessenger: %s, %s", type, message.c_str());
-    }
-    else if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-        REPORT_WARNING(&device, "DebugUtilsMessenger: %s, %s", type, message.c_str());
-    else
-        REPORT_INFO(&device, "DebugUtilsMessenger: %s, %s", type, message.c_str());
+    device.ReportMessage(severity, __FILE__, __LINE__, "%s", callbackData->pMessage);
 
     return VK_FALSE;
 }
@@ -722,9 +666,22 @@ Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
         VK_API_VERSION_1_3
     };
 
-    const VkInstanceCreateInfo info = {
-        VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+    const VkValidationFeatureEnableEXT enabledValidationFeatures[] = {
+        VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
+    };
+
+    const VkValidationFeaturesEXT validationFeatures = {
+        VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT,
         nullptr,
+        GetCountOf(enabledValidationFeatures),
+        enabledValidationFeatures,
+        0,
+        nullptr,
+    };
+  
+  const VkInstanceCreateInfo info = {
+        VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        deviceCreationDesc.enableAPIValidation ? &validationFeatures : nullptr,
     #ifdef __APPLE__
         (VkInstanceCreateFlags)VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
     #else
@@ -1110,6 +1067,9 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
 
     if (IsExtensionSupported(VK_KHR_RAY_QUERY_EXTENSION_NAME, supportedExts))
         desiredExts.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME, supportedExts))
+        desiredExts.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
 
     if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, supportedExts))
     {
