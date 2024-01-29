@@ -1,3 +1,4 @@
+#include "DeviceD3D12.h"
 // © 2021 NVIDIA Corporation
 
 Declare_PartiallyFillFunctionTable_Functions(D3D12)
@@ -427,6 +428,37 @@ Result DeviceD3D12::FillFunctionTable(MeshShaderInterface& meshShaderInterface) 
     MeshShader_CommandBuffer_PartiallyFillFunctionTableD3D12(meshShaderInterface);
 
     return ValidateFunctionTable(meshShaderInterface);
+}
+
+#pragma endregion
+
+#pragma region[  Tiling  ]
+
+/*
+ Result(NRI_CALL* CreateTilePool)(uint64_t poolSize, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(TilePool*) tilePool);
+    void(NRI_CALL* DestroyTilePool)(NRI_NAME_REF(TilePool) tilePool);
+
+    Result(NRI_CALL* GetTextureTiling)(NRI_NAME_REF(Texture) texture, uint32_t* tileNum, const NRI_NAME_REF(PackedMipInfoDesc) packedMipInfo, NRI_NAME_REF(TileShapeDesc), uint32_t
+ subresourceNum, const NRI_NAME_REF(SubresourceTilingDesc) subresourceTilings);
+
+    Result(NRI_CALL* BindTextureTiles)(NRI_NAME_REF(CommandQueue) commandQueue, NRI_NAME_REF(Texture) texture, const NRI_NAME(TileBindDesc)* binds, uint32_t bindNum);
+
+*/
+
+static Result NRI_CALL CreateTilePool(Device& device, uint32_t nodeMask, MemoryType memoryType, uint64_t poolSize, NRI_NAME_REF(TilePool*) tilePool)
+{
+    return ((DeviceD3D12&)device).AllocateMemory(memoryType, poolSize, (Memory*&)tilePool);
+}
+
+Result nri::DeviceD3D12::FillFunctionTable(TilingInterface& tilingInterface) const
+{
+    if (!m_Desc.isTilingSupported)
+        return Result::UNSUPPORTED;
+
+    tilingInterface = {};
+    tilingInterface.CreateTilePool = ::CreateTilePool;
+
+    return ValidateFunctionTable(tilingInterface);
 }
 
 #pragma endregion

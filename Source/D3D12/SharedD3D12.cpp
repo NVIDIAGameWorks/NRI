@@ -489,6 +489,7 @@ bool nri::GetTextureDesc(const TextureD3D12Desc& textureD3D12Desc, TextureDesc& 
     textureDesc.arraySize = textureDesc.type == TextureType::TEXTURE_3D ? 1 : (Dim_t)desc.DepthOrArraySize;
     textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
     textureDesc.nodeMask = ALL_NODES; // TODO: not in D3D12_RESOURCE_DESC...
+    textureDesc.tiled = desc.Layout == D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE;
 
     if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
         textureDesc.usageMask |= TextureUsageBits::COLOR_ATTACHMENT;

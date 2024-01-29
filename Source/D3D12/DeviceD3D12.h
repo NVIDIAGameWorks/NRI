@@ -124,7 +124,7 @@ struct DeviceD3D12 final : public DeviceBase
     void DestroyPipeline(Pipeline& pipeline);
     void DestroyFence(Fence& queueSemaphore);
     void DestroyQueryPool(QueryPool& queryPool);
-    Result AllocateMemory(const MemoryType memoryType, uint64_t size, Memory*& memory);
+    Result AllocateMemory(const MemoryType memoryType, uint64_t size, bool tiling, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     void FreeMemory(Memory& memory);
@@ -149,6 +149,7 @@ struct DeviceD3D12 final : public DeviceBase
     Result FillFunctionTable(WrapperD3D12Interface& wrapperD3D12Interface) const;
     Result FillFunctionTable(RayTracingInterface& rayTracingInterface) const;
     Result FillFunctionTable(MeshShaderInterface& meshShaderInterface) const;
+    Result FillFunctionTable(TilingInterface& tilingInterface) const;
     Result FillFunctionTable(HelperInterface& helperInterface) const;
 
 private:

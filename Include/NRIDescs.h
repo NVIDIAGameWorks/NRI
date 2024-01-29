@@ -875,7 +875,8 @@ NRI_STRUCT(TextureDesc)
     NRI_NAME(Mip_t) mipNum;
     NRI_NAME(Dim_t) arraySize;
     NRI_NAME(Sample_t) sampleNum;
-    uint32_t nodeMask;
+    uint32_t nodeMask;  
+    bool tiled;
 };
 
 NRI_STRUCT(BufferDesc)
@@ -1398,6 +1399,8 @@ NRI_STRUCT(DeviceDesc)
     bool isRegisterAliasingSupported;
     bool isSubsetAllocationSupported;
     bool isFloat16Supported;
+    bool isTilingSupported;
+    bool isVolumeTilingSupported;       // 3D textures tiling
 };
 
 NRI_NAMESPACE_END
