@@ -65,7 +65,11 @@ Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc,
 DeviceD3D11::DeviceD3D11(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator) :
     DeviceBase(callbacks, stdAllocator)
     , m_CommandQueues(GetStdAllocator())
-{}
+{
+    m_Desc.graphicsAPI = GraphicsAPI::D3D11;
+    m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
+    m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
+}
 
 DeviceD3D11::~DeviceD3D11()
 {
@@ -297,10 +301,6 @@ void DeviceD3D11::FillDesc(bool isValidationEnabled)
             timestampFrequency = data.Frequency;
         }
     }
-
-    m_Desc.graphicsAPI = GraphicsAPI::D3D11;
-    m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
-    m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
 
     m_Desc.viewportMaxNum = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
     m_Desc.viewportSubPixelBits = D3D11_SUBPIXEL_FRACTIONAL_BIT_COUNT;

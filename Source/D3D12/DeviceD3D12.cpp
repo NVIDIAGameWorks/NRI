@@ -63,6 +63,9 @@ DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_
     , m_DrawIndexedCommandSignatures(GetStdAllocator())
 {
     m_FreeDescriptors.resize(DESCRIPTOR_HEAP_TYPE_NUM, Vector<DescriptorHandle>(GetStdAllocator()));
+    m_Desc.graphicsAPI = GraphicsAPI::D3D12;
+    m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
+    m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
 }
 
 DeviceD3D12::~DeviceD3D12()
@@ -473,9 +476,6 @@ void DeviceD3D12::FillDesc(bool enableValidation)
         m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
     }
 
-    m_Desc.graphicsAPI = GraphicsAPI::D3D12;
-    m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
-    m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
 
     m_Desc.viewportMaxNum = D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
     m_Desc.viewportSubPixelBits = D3D12_SUBPIXEL_FRACTIONAL_BIT_COUNT;

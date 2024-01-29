@@ -137,6 +137,9 @@ DeviceVK::DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_
     m_PhysicalDeviceIndices(GetStdAllocator()),
     m_ConcurrentSharingModeQueueIndices(GetStdAllocator())
 {
+    m_Desc.graphicsAPI = GraphicsAPI::VULKAN;
+    m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
+    m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
 }
 
 DeviceVK::~DeviceVK()
@@ -862,10 +865,6 @@ void DeviceVK::FillDesc(bool enableValidation)
 #endif
 
     const VkPhysicalDeviceLimits& limits = props.properties.limits;
-
-    m_Desc.graphicsAPI = GraphicsAPI::VULKAN;
-    m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
-    m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
 
     m_Desc.viewportMaxNum = limits.maxViewports;
     m_Desc.viewportSubPixelBits = limits.viewportSubPixelBits;
