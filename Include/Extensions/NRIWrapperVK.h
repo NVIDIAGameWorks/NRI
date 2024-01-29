@@ -4,8 +4,6 @@
 
 #include "NRIDeviceCreation.h"
 
-NRI_FORWARD_STRUCT(VkImageSubresourceRange);
-
 NRI_NAMESPACE_BEGIN
 
 NRI_FORWARD_STRUCT(AccelerationStructure);

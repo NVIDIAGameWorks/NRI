@@ -138,6 +138,7 @@ private:
     Result ResolveDispatchTable();
     void FilterInstanceLayers(Vector<const char*>& layers);
     void ReportDeviceGroupInfo();
+    void GetAdapterDesc();
 
     template< typename Implementation, typename Interface, typename ... Args >
     Result CreateImplementation(Interface*& entity, const Args&... args);
@@ -173,9 +174,6 @@ private:
     VkInstance m_Instance = VK_NULL_HANDLE;
     VkAllocationCallbacks* m_AllocationCallbackPtr = nullptr;
     VkDebugUtilsMessengerEXT m_Messenger = VK_NULL_HANDLE;
-#ifdef _WIN32
-    ComPtr<IDXGIAdapter> m_Adapter;
-#endif
     bool m_OwnsNativeObjects = false;
     Lock m_Lock;
 };

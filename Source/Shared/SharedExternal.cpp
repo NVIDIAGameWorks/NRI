@@ -348,6 +348,9 @@ nri::Result DisplayDescHelper::GetDisplayDesc(void* hwnd, nri::DisplayDesc& disp
         i++;
     }
 
+    if (!bestOutput)
+        return nri::Result::FAILURE;
+
     // Having determined the output (display) upon which the app is primarily being
     // rendered, retrieve the HDR capabilities of that display by checking the color space.
 

@@ -104,7 +104,7 @@ NRI_STRUCT(SwapChainInterface)
     NRI_NAME(Texture)* const* (NRI_CALL *GetSwapChainTextures)(const NRI_NAME_REF(SwapChain) swapChain, uint32_t NRI_REF textureNum);
     uint32_t (NRI_CALL *AcquireNextSwapChainTexture)(NRI_NAME_REF(SwapChain) swapChain); // IMPORTANT: return OUT_OF_DATE index to indicate "out of date" swap chain status (VK only)
     NRI_NAME(Result) (NRI_CALL *SwapChainPresent)(NRI_NAME_REF(SwapChain) swapChain);
-    NRI_NAME(Result) (NRI_CALL *GetDisplayDesc)(NRI_NAME_REF(SwapChain) swapChain, NRI_NAME_REF(DisplayDesc) displayDesc);
+    NRI_NAME(Result) (NRI_CALL *GetDisplayDesc)(NRI_NAME_REF(SwapChain) swapChain, NRI_NAME_REF(DisplayDesc) displayDesc); // returns FAILURE if window is outside of all monitors
 };
 
 NRI_NAMESPACE_END

@@ -269,18 +269,33 @@ void DeviceD3D11::FillDesc(bool isValidationEnabled)
 {
     D3D11_FEATURE_DATA_D3D11_OPTIONS options = {};
     HRESULT hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS, &options, sizeof(options));
+    if (FAILED(hr))
+        REPORT_WARNING(this, "ID3D11Device::CheckFeatureSupport(options) failed, result = 0x%08X!", hr);
 
     D3D11_FEATURE_DATA_D3D11_OPTIONS1 options1 = {};
     hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS1, &options1, sizeof(options1));
+    if (FAILED(hr))
+        REPORT_WARNING(this, "ID3D11Device::CheckFeatureSupport(options1) failed, result = 0x%08X!", hr);
 
     D3D11_FEATURE_DATA_D3D11_OPTIONS2 options2 = {};
     hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS2, &options2, sizeof(options2));
+    if (FAILED(hr))
+        REPORT_WARNING(this, "ID3D11Device::CheckFeatureSupport(options2) failed, result = 0x%08X!", hr);
 
     D3D11_FEATURE_DATA_D3D11_OPTIONS3 options3 = {};
     hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS3, &options3, sizeof(options3));
+    if (FAILED(hr))
+        REPORT_WARNING(this, "ID3D11Device::CheckFeatureSupport(options3) failed, result = 0x%08X!", hr);
 
     D3D11_FEATURE_DATA_D3D11_OPTIONS4 options4 = {};
     hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS4, &options4, sizeof(options4));
+    if (FAILED(hr))
+        REPORT_WARNING(this, "ID3D11Device::CheckFeatureSupport(options4) failed, result = 0x%08X!", hr);
+
+    D3D11_FEATURE_DATA_D3D11_OPTIONS5 options5 = {};
+    hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS5, &options5, sizeof(options5));
+    if (FAILED(hr))
+        REPORT_WARNING(this, "ID3D11Device::CheckFeatureSupport(options4) failed, result = 0x%08X!", hr);
 
     uint64_t timestampFrequency = 0;
     {

@@ -99,6 +99,7 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
     m_SkipLiveObjectsReporting = true;
     m_Device = deviceCreationDesc.d3d12Device;
 
+    // Get adapter
     ComPtr<IDXGIFactory4> dxgiFactory;
     HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
     RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
@@ -106,6 +107,22 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
     hr = dxgiFactory->EnumAdapterByLuid(m_Device->GetAdapterLuid(), IID_PPV_ARGS(&m_Adapter));
     RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
 
+    // Get adapter description as early as possible for meaningful error reporting
+    DXGI_ADAPTER_DESC desc = {};
+    hr = m_Adapter->GetDesc(&desc);
+    RETURN_ON_BAD_HRESULT(this, hr, "IDXGIAdapter::GetDesc()");
+
+    wcstombs(m_Desc.adapterDesc.description, desc.Description, GetCountOf(m_Desc.adapterDesc.description) - 1);
+    m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
+    m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
+    m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
+    m_Desc.adapterDesc.deviceId = desc.DeviceId;
+    m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
+
+    // Create device
+    m_Device->QueryInterface(IID_PPV_ARGS(&m_Device5));
+
+    // Wrap command queues
     if (deviceCreationDesc.d3d12GraphicsQueue)
         CreateCommandQueue(deviceCreationDesc.d3d12GraphicsQueue, m_CommandQueues[(uint32_t)CommandQueueType::GRAPHICS]);
     if (deviceCreationDesc.d3d12ComputeQueue)
@@ -113,25 +130,27 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
     if (deviceCreationDesc.d3d12CopyQueue)
         CreateCommandQueue(deviceCreationDesc.d3d12CopyQueue, m_CommandQueues[(uint32_t)CommandQueueType::COPY]);
 
-    m_Device->QueryInterface(IID_PPV_ARGS(&m_Device5));
-
+    // Check GRAPHICS queue availability
     CommandQueue* commandQueue;
     Result result = GetCommandQueue(CommandQueueType::GRAPHICS, commandQueue);
     if (result != Result::SUCCESS)
         return result;
 
-    D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDesc = {};
-    indirectArgumentDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+    { // Create dispatch command signature
+        D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDesc = {};
+        indirectArgumentDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
 
-    D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
-    commandSignatureDesc.NumArgumentDescs = 1;
-    commandSignatureDesc.pArgumentDescs = &indirectArgumentDesc;
-    commandSignatureDesc.NodeMask = NRI_TEMP_NODE_MASK;
-    commandSignatureDesc.ByteStride = 12;
+        D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
+        commandSignatureDesc.NumArgumentDescs = 1;
+        commandSignatureDesc.pArgumentDescs = &indirectArgumentDesc;
+        commandSignatureDesc.NodeMask = NRI_TEMP_NODE_MASK;
+        commandSignatureDesc.ByteStride = 12;
 
-    hr = m_Device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&m_DispatchCommandSignature));
-    RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateCommandSignature()");
+        hr = m_Device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&m_DispatchCommandSignature));
+        RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateCommandSignature()");
+    }
 
+    // Fill desc
     FillDesc(false);
 
     return FillFunctionTable(m_CoreInterface);
@@ -147,6 +166,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
             debugController->EnableDebugLayer();
     }
 
+    // Get adapter
     ComPtr<IDXGIFactory4> dxgiFactory;
     HRESULT hr = CreateDXGIFactory2(deviceCreationDesc.enableAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
     RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
@@ -163,8 +183,23 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
         RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapters()");
     }
 
+    // Get adapter description as early as possible for meaningful error reporting
+    DXGI_ADAPTER_DESC desc = {};
+    hr = m_Adapter->GetDesc(&desc);
+    RETURN_ON_BAD_HRESULT(this, hr, "IDXGIAdapter::GetDesc()");
+
+    wcstombs(m_Desc.adapterDesc.description, desc.Description, GetCountOf(m_Desc.adapterDesc.description) - 1);
+    m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
+    m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
+    m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
+    m_Desc.adapterDesc.deviceId = desc.DeviceId;
+    m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
+
+    // Create device
     hr = D3D12CreateDevice(m_Adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_Device));
     RETURN_ON_BAD_HRESULT(this, hr, "D3D12CreateDevice()");
+
+    m_Device->QueryInterface(IID_PPV_ARGS(&m_Device5));
 
     // TODO: this code is currently needed to disable known false-positive errors reported by the debug layer
     if (deviceCreationDesc.enableAPIValidation)
@@ -190,25 +225,27 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
         }
     }
 
-    m_Device->QueryInterface(IID_PPV_ARGS(&m_Device5));
-
+    // Check GRAPHICS queue availability
     CommandQueue* commandQueue;
     Result result = GetCommandQueue(CommandQueueType::GRAPHICS, commandQueue);
     if (result != Result::SUCCESS)
         return result;
 
-    D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDesc = {};
-    indirectArgumentDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+    { // Create dispatch command signature
+        D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDesc = {};
+        indirectArgumentDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
 
-    D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
-    commandSignatureDesc.NumArgumentDescs = 1;
-    commandSignatureDesc.pArgumentDescs = &indirectArgumentDesc;
-    commandSignatureDesc.NodeMask = NRI_TEMP_NODE_MASK;
-    commandSignatureDesc.ByteStride = 12;
+        D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
+        commandSignatureDesc.NumArgumentDescs = 1;
+        commandSignatureDesc.pArgumentDescs = &indirectArgumentDesc;
+        commandSignatureDesc.NodeMask = NRI_TEMP_NODE_MASK;
+        commandSignatureDesc.ByteStride = 12;
 
-    hr = m_Device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&m_DispatchCommandSignature));
-    RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateCommandSignature()");
+        hr = m_Device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&m_DispatchCommandSignature));
+        RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateCommandSignature()");
+    }
 
+    // Fill desc
     FillDesc(deviceCreationDesc.enableAPIValidation);
 
     return FillFunctionTable(m_CoreInterface);
@@ -341,52 +378,52 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
     HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS1 options1 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &options1, sizeof(options1));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options1) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options1) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS2 options2 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS2, &options2, sizeof(options2));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options2) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options2) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS3 options3 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &options3, sizeof(options3));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options3) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options3) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS4 options4 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS4, &options4, sizeof(options4));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options4) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options4) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS5 options5 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options5) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options5) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS6 options6 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &options6, sizeof(options6));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options6) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options6) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options7) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options7) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS8 options8 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS8, &options8, sizeof(options8));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options8) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options8) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS9 options9 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS9, &options9, sizeof(options9));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options9) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options9) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS10 options10 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS10, &options10, sizeof(options10));
@@ -396,86 +433,76 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     D3D12_FEATURE_DATA_D3D12_OPTIONS11 options11 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS11, &options11, sizeof(options11));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options11) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options11) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS12 options12 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12, &options12, sizeof(options12));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options12) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options12) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS13 options13 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS13, &options13, sizeof(options13));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options13) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options13) failed, result = 0x%08X!", hr);
 
 #ifdef NRI_USE_AGILITY_SDK
     D3D12_FEATURE_DATA_D3D12_OPTIONS14 options14 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS14, &options14, sizeof(options14));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options14) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options14) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS15 options15 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS15, &options15, sizeof(options15));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options15) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options15) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS16 options16 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &options16, sizeof(options16));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options16) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options16) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS17 options17 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS17, &options17, sizeof(options17));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options17) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options17) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS18 options18 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS18, &options18, sizeof(options18));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options18) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options18) failed, result = 0x%08X!", hr);
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS19 options19 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS19, &options19, sizeof(options19));
     if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CheckFeatureSupport(options19) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options19) failed, result = 0x%08X!", hr);
 #endif
 
     m_IsRaytracingSupported = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0;
     m_IsMeshShaderSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
 
-    D3D12_FEATURE_DATA_FEATURE_LEVELS levels = {};
-     const std::array<D3D_FEATURE_LEVEL, 4> levelsList = {
+    const std::array<D3D_FEATURE_LEVEL, 5> levelsList = {
         D3D_FEATURE_LEVEL_11_0,
         D3D_FEATURE_LEVEL_11_1,
         D3D_FEATURE_LEVEL_12_0,
         D3D_FEATURE_LEVEL_12_1,
+        D3D_FEATURE_LEVEL_12_2,
     };
+
+    D3D12_FEATURE_DATA_FEATURE_LEVELS levels = {};
     levels.NumFeatureLevels = (uint32_t)levelsList.size();
     levels.pFeatureLevelsRequested = levelsList.data();
     m_Device->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, &levels, sizeof(levels));
 
     uint64_t timestampFrequency = 0;
-
-    CommandQueue* commandQueue = nullptr;
-    const Result result = GetCommandQueue(CommandQueueType::GRAPHICS, commandQueue);
-    if (result == Result::SUCCESS)
     {
-        ID3D12CommandQueue* commandQueueD3D12 = *(CommandQueueD3D12*)commandQueue;
-        commandQueueD3D12->GetTimestampFrequency(&timestampFrequency);
+        CommandQueue* commandQueue = nullptr;
+        Result result = GetCommandQueue(CommandQueueType::GRAPHICS, commandQueue);
+        if (result == Result::SUCCESS)
+        {
+            ID3D12CommandQueue* commandQueueD3D12 = *(CommandQueueD3D12*)commandQueue;
+            commandQueueD3D12->GetTimestampFrequency(&timestampFrequency);
+        }
     }
-
-    DXGI_ADAPTER_DESC desc = {};
-    hr = m_Adapter->GetDesc(&desc);
-    if (SUCCEEDED(hr))
-    {
-        wcstombs(m_Desc.adapterDesc.description, desc.Description, GetCountOf(m_Desc.adapterDesc.description) - 1);
-        m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
-        m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
-        m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
-        m_Desc.adapterDesc.deviceId = desc.DeviceId;
-        m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
-    }
-
 
     m_Desc.viewportMaxNum = D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
     m_Desc.viewportSubPixelBits = D3D12_SUBPIXEL_FRACTIONAL_BIT_COUNT;
@@ -503,7 +530,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     m_Desc.texelBufferMaxDim = (1 << D3D12_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP) - 1;
 
 #ifdef NRI_USE_AGILITY_SDK
-    m_Desc.deviceUploadHeapSize = options16.GPUUploadHeapSupported ? desc.DedicatedVideoMemory : 0;
+    m_Desc.deviceUploadHeapSize = options16.GPUUploadHeapSupported ? m_Desc.adapterDesc.videoMemorySize : 0;
 #endif
     m_Desc.memoryAllocationMaxNum = 0xFFFFFFFF;
     m_Desc.samplerAllocationMaxNum = D3D12_REQ_SAMPLER_OBJECT_COUNT_PER_DEVICE;

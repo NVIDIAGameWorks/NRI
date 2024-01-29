@@ -167,6 +167,59 @@ DeviceVK::~DeviceVK()
         UnloadSharedLibrary(*m_Loader);
 }
 
+void DeviceVK::GetAdapterDesc()
+{
+    VkPhysicalDeviceIDProperties deviceIDProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES };
+    VkPhysicalDeviceProperties2 props = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &deviceIDProps };
+    m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevices.front(), &props);
+
+#ifdef _WIN32
+    static_assert(sizeof(LUID) == VK_LUID_SIZE, "invalid sizeof");
+
+    ComPtr<IDXGIFactory4> dxgiFactory;
+    HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
+    if (FAILED(hr))
+        REPORT_WARNING(this, "CreateDXGIFactory2() failed, result = 0x%08X!", hr);
+
+    ComPtr<IDXGIAdapter> adapter;
+    LUID luid = *(LUID*)&deviceIDProps.deviceLUID[0];
+    hr = dxgiFactory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&adapter));
+    if (FAILED(hr))
+        REPORT_WARNING(this, "IDXGIFactory4::EnumAdapterByLuid() failed, result = 0x%08X!", hr);
+
+    DXGI_ADAPTER_DESC desc = {};
+    hr = adapter->GetDesc(&desc);
+    if (FAILED(hr))
+        REPORT_WARNING(this, "IDXGIAdapter::GetDesc() failed, result = 0x%08X!", hr);
+    else
+    {
+        wcstombs(m_Desc.adapterDesc.description, desc.Description, GetCountOf(m_Desc.adapterDesc.description) - 1);
+        m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
+        m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
+        m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
+        m_Desc.adapterDesc.deviceId = desc.DeviceId;
+        m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
+    }
+#else
+    strncpy(m_Desc.adapterDesc.description, props.properties.deviceName, sizeof(m_Desc.adapterDesc.description));
+    m_Desc.adapterDesc.luid = *(uint64_t*)&deviceIDProps.deviceLUID[0];
+    m_Desc.adapterDesc.deviceId = props.properties.deviceID;
+    m_Desc.adapterDesc.vendor = GetVendorFromID(props.properties.vendorID);
+
+    /* THIS IS AWFUL!
+    https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkPhysicalDeviceMemoryProperties.html
+    In a unified memory architecture (UMA) system there is often only a single memory heap which is considered to
+    be equally "local" to the host and to the device, and such an implementation must advertise the heap as device-local. */
+    for (uint32_t k = 0; k < m_MemoryProps.memoryHeapCount; k++)
+    {
+        if (m_MemoryProps.memoryHeaps[k].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+            m_Desc.adapterDesc.videoMemorySize += m_MemoryProps.memoryHeaps[k].size;
+        else
+            m_Desc.adapterDesc.systemMemorySize += m_MemoryProps.memoryHeaps[k].size;
+    }
+#endif
+}
+
 Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc)
 {
     m_OwnsNativeObjects = true;
@@ -198,18 +251,23 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc)
     if (res != Result::SUCCESS)
         return res;
 
-    // Create device
     res = ResolveInstanceDispatchTable();
     if (res != Result::SUCCESS)
         return res;
 
+    // Find physical device
     res = FindPhysicalDeviceGroup(deviceCreationDesc.adapterDesc, deviceCreationDesc.enableMGPU);
     if (res != Result::SUCCESS)
         return res;
 
     m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevices.front(), &m_MemoryProps);
+
     FillFamilyIndices(false, nullptr, 0);
 
+    // Get adapter
+    GetAdapterDesc();
+
+    // Create device
     res = CreateLogicalDevice(deviceCreationDesc);
     if (res != Result::SUCCESS)
         return res;
@@ -223,23 +281,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc)
     const auto begin = m_PhysicalDeviceIndices.begin();
     for (uint32_t i = 0; i < groupSize; i++)
         std::fill(begin + i * groupSize, begin + (i + 1) * groupSize, i);
-
-    // Get adapter
-#ifdef _WIN32
-    VkPhysicalDeviceIDProperties deviceIDProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES };
-    VkPhysicalDeviceProperties2 props = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &deviceIDProps };
-    m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevices.front(), &props);
-
-    static_assert(sizeof(LUID) == VK_LUID_SIZE, "invalid sizeof");
-
-    ComPtr<IDXGIFactory4> dxgiFactory;
-    HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
-    RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
-
-    LUID luid = *(LUID*)&deviceIDProps.deviceLUID[0];
-    hr = dxgiFactory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&m_Adapter));
-    RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
-#endif
 
     // Finalize
     CreateCommandQueues();
@@ -256,10 +297,6 @@ Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
     m_OwnsNativeObjects = false;
     m_SPIRVBindingOffsets = deviceCreationVKDesc.spirvBindingOffsets;
 
-    // TODO: physical device indices?
-    const VkPhysicalDevice* physicalDevices = (VkPhysicalDevice*)deviceCreationVKDesc.vkPhysicalDevices;
-    m_PhysicalDevices.insert(m_PhysicalDevices.begin(), physicalDevices, physicalDevices + deviceCreationVKDesc.deviceGroupSize);
-
     const char* loaderPath = deviceCreationVKDesc.vulkanLoaderPath ? deviceCreationVKDesc.vulkanLoaderPath : VULKAN_LOADER_NAME;
     m_Loader = LoadSharedLibrary(loaderPath);
     if (!m_Loader)
@@ -275,23 +312,29 @@ Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
 
     m_Instance = (VkInstance)deviceCreationVKDesc.vkInstance;
 
-    // Create device
     res = ResolveInstanceDispatchTable();
     if (res != Result::SUCCESS)
         return res;
 
+    // Find physical device    
+    const VkPhysicalDevice* physicalDevices = (VkPhysicalDevice*)deviceCreationVKDesc.vkPhysicalDevices; // TODO: physical device indices?
+    m_PhysicalDevices.insert(m_PhysicalDevices.begin(), physicalDevices, physicalDevices + deviceCreationVKDesc.deviceGroupSize);
+
+    m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevices.front(), &m_MemoryProps);
+
+    FillFamilyIndices(true, deviceCreationVKDesc.queueFamilyIndices, deviceCreationVKDesc.queueFamilyIndexNum);
+    
+    // Get adapter
+    GetAdapterDesc();
+
+    // Create device
     m_Device = (VkDevice)deviceCreationVKDesc.vkDevice;
 
     res = ResolveDispatchTable();
     if (res != Result::SUCCESS)
         return res;
 
-    m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevices.front(), &m_MemoryProps);
-
-    FillFamilyIndices(true, deviceCreationVKDesc.queueFamilyIndices, deviceCreationVKDesc.queueFamilyIndexNum);
-
-    // Instance extensions
-    {
+    { // Instance extensions
         uint32_t extensionNum = 0;
         m_VK.EnumerateInstanceExtensionProperties(nullptr, &extensionNum, nullptr);
 
@@ -301,9 +344,8 @@ Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
         if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, supportedExts))
             supportedFeatures.debugUtils = true;
     }
-
-    // Device extensions
-    {
+    
+    { // Device extensions
         uint32_t extensionNum = 0;
         m_VK.EnumerateDeviceExtensionProperties(m_PhysicalDevices.front(), nullptr, &extensionNum, nullptr);
 
@@ -325,23 +367,6 @@ Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
         if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, supportedExts))
             supportedFeatures.meshShader = true;
     }
-
-    // Get adapter
-#ifdef _WIN32
-    VkPhysicalDeviceIDProperties deviceIDProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES };
-    VkPhysicalDeviceProperties2 props = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &deviceIDProps };
-    m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevices.front(), &props);
-
-    static_assert(sizeof(LUID) == VK_LUID_SIZE, "invalid sizeof");
-
-    ComPtr<IDXGIFactory4> dxgiFactory;
-    HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
-    RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
-
-    LUID luid = *(LUID*)&deviceIDProps.deviceLUID[0];
-    hr = dxgiFactory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&m_Adapter));
-    RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
-#endif
 
     // Finalize
     CreateCommandQueues();
@@ -365,12 +390,13 @@ bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeM
     {
         neededFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         desiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        undesiredFlags = VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
     }
     else
     {
         neededFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         undesiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        desiredFlags = VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        desiredFlags = memoryLocation == MemoryLocation::HOST_READBACK ? VK_MEMORY_PROPERTY_HOST_CACHED_BIT : 0;
     }
 
     // Phase 1: needed, undesired and desired
@@ -825,44 +851,10 @@ void DeviceVK::FillDesc(bool enableValidation)
     VkPhysicalDeviceFeatures2 features2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &features12 };
     m_VK.GetPhysicalDeviceFeatures2(m_PhysicalDevices.front(), &features2);
 
-    VkPhysicalDeviceMemoryProperties memoryProperties = {};
-    m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevices.front(), &memoryProperties);
-
     supportedFeatures.descriptorIndexing = features12.descriptorIndexing ? true : false;
     supportedFeatures.bufferDeviceAddress = features12.bufferDeviceAddress ? true : false;
 
     static_assert(VK_LUID_SIZE == sizeof(uint64_t), "invalid sizeof");
-
-#ifdef _WIN32
-    DXGI_ADAPTER_DESC desc = {};
-    HRESULT hr = m_Adapter->GetDesc(&desc);
-    if (SUCCEEDED(hr))
-    {
-        wcstombs(m_Desc.adapterDesc.description, desc.Description, GetCountOf(m_Desc.adapterDesc.description) - 1);
-        m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
-        m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
-        m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
-        m_Desc.adapterDesc.deviceId = desc.DeviceId;
-        m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
-    }
-#else
-    strncpy(m_Desc.adapterDesc.description, props.properties.deviceName, sizeof(m_Desc.adapterDesc.description));
-    m_Desc.adapterDesc.luid = *(uint64_t*)&deviceIDProps.deviceLUID[0];
-    m_Desc.adapterDesc.deviceId = props.properties.deviceID;
-    m_Desc.adapterDesc.vendor = GetVendorFromID(props.properties.vendorID);
-
-    /* THIS IS AWFUL!
-    https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkPhysicalDeviceMemoryProperties.html
-    In a unified memory architecture (UMA) system there is often only a single memory heap which is considered to
-    be equally "local" to the host and to the device, and such an implementation must advertise the heap as device-local. */
-    for (uint32_t k = 0; k < memoryProperties.memoryHeapCount; k++)
-    {
-        if (memoryProperties.memoryHeaps[k].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
-            m_Desc.adapterDesc.videoMemorySize += memoryProperties.memoryHeaps[k].size;
-        else
-            m_Desc.adapterDesc.systemMemorySize += memoryProperties.memoryHeaps[k].size;
-    }
-#endif
 
     const VkPhysicalDeviceLimits& limits = props.properties.limits;
 
