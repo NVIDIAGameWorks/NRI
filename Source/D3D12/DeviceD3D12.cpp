@@ -415,6 +415,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options7) failed, result = 0x%08X!", hr);
 
+#ifdef NRI_USE_AGILITY_SDK
     D3D12_FEATURE_DATA_D3D12_OPTIONS8 options8 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS8, &options8, sizeof(options8));
     if (FAILED(hr))
@@ -445,7 +446,6 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options13) failed, result = 0x%08X!", hr);
 
-#ifdef NRI_USE_AGILITY_SDK
     D3D12_FEATURE_DATA_D3D12_OPTIONS14 options14 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS14, &options14, sizeof(options14));
     if (FAILED(hr))
