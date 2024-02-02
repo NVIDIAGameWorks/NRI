@@ -49,7 +49,8 @@ NRI_STRUCT(DeviceCreationDesc)
     bool enableNRIValidation;
     bool enableAPIValidation;
     bool enableMGPU;
-    bool D3D11CommandBufferEmulation;
+    bool enableD3D11CommandBufferEmulation; // force enable, but why?
+    bool disableVulkanRayTracing; // to save some CPU memory
 };
 
 NRI_API NRI_NAME(Result) NRI_CALL nriEnumerateAdapters(NRI_NAME(AdapterDesc)* adapterDescs, uint32_t NRI_REF adapterDescNum);

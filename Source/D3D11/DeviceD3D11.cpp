@@ -152,7 +152,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     else
         device->AddRef();
 
-    InitVersionedDevice(deviceCreationDesc.D3D11CommandBufferEmulation);
+    InitVersionedDevice(deviceCreationDesc.enableD3D11CommandBufferEmulation);
     InitVersionedContext();
     FillDesc(deviceCreationDesc.enableAPIValidation);
 

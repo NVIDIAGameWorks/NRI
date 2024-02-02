@@ -9,7 +9,7 @@
  - common denominator for D3D11, D3D12 and Vulkan APIs
  - low overhead
  - ray tracing support
- - API-provided and/or integrated validation layer
+ - validation layers (GAPI and NRI itself)
  - default D3D11 behavior is changed to match D3D12/VK where applicable using *NVAPI* or *AMD AGS* libraries
 
  *NRI* is used in:
@@ -37,18 +37,18 @@ Notes:
 ## CMAKE OPTIONS
 
 - `NRI_STATIC_LIBRARY` - build NRI as a static library (`off` by default)
-- `NRI_BACKEND_VK` - enable VULKAN backend (`on` by default)
-- `NRI_BACKEND_D3D11` - enable D3D11 backend (`on` by default on Windows)
-- `NRI_BACKEND_D3D12` - enable D3D12 backend (`on` by default on Windows)
+- `NRI_ENABLE_VK_SUPPORT` - enable VULKAN backend (`on` by default)
+- `NRI_ENABLE_D3D11_SUPPORT` - enable D3D11 backend (`on` by default on Windows)
+- `NRI_ENABLE_D3D12_SUPPORT` - enable D3D12 backend (`on` by default on Windows)
 
 Vulkan only:
-- `NRI_ENABLE_XLIB_SUPPORT` - disable *Xlib* support (`on` by default)
-- `NRI_ENABLE_WAYLAND_SUPPORT` - disable *Wayland* support (`on` by default)
+- `NRI_ENABLE_XLIB_SUPPORT` - enable *Xlib* support (`on` by default)
+- `NRI_ENABLE_WAYLAND_SUPPORT` - enable *Wayland* support (`on` by default)
 
 D3D12 only:
 - `NRI_ENABLE_AGILITY_SDK_SUPPORT` - enable Agility SDK (`off` by default)
 - `NRI_AGILITY_SDK_PATH` - path to a directory containing Agility SDK: contents of `.nupkg/build/native/` (`C:/AgilitySDK` by default)
-- `NRI_AGILITY_SDK_VERSION` - Agility SDK version (`711` by default, can be newer)
+- `NRI_AGILITY_SDK_VERSION` - Agility SDK version (`711` or newer)
 - `NRI_AGILITY_SDK_DIR` - directory where Agility SDK binaries will be copied to relative to `CMAKE_RUNTIME_OUTPUT_DIRECTORY` (`AgilitySDK` by default)
 
 ## AGILITY SDK

@@ -362,7 +362,7 @@ Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
             supportedFeatures.conservativeRaster = true;
 
         if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts))
-            supportedFeatures.microMap = true;
+            supportedFeatures.opacityMicroMap = true;
 
         if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, supportedExts))
             supportedFeatures.meshShader = true;
@@ -1050,6 +1050,7 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     for (uint32_t i = 0; i < deviceCreationDesc.vulkanExtensions.deviceExtensionNum; i++)
         desiredExts.push_back(deviceCreationDesc.vulkanExtensions.deviceExtensions[i]);
 
+    // Enable if supported
     if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, supportedExts))
         desiredExts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
@@ -1059,24 +1060,17 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     if (IsExtensionSupported(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME, supportedExts))
         desiredExts.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
-    if (IsExtensionSupported(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME, supportedExts))
-        desiredExts.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
-
-    if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, supportedExts))
-        desiredExts.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
-
-    if (IsExtensionSupported(VK_KHR_RAY_QUERY_EXTENSION_NAME, supportedExts))
-        desiredExts.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
-
     if (IsExtensionSupported(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME, supportedExts))
         desiredExts.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
 
-    if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, supportedExts))
-    {
-        desiredExts.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-        supportedFeatures.rayTracing = true;
-    }
+    // IMPORTANT: must have for APPLE
+    if (IsExtensionSupported(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, supportedExts))
+        desiredExts.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
 
+    if (IsExtensionSupported(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, supportedExts))
+        desiredExts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+
+    // Enable if supported, store availability
     if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, supportedExts))
     {
         desiredExts.push_back(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME);
@@ -1089,22 +1083,44 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
         supportedFeatures.conservativeRaster = true;
     }
 
-    if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts))
-    {
-        desiredExts.push_back(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME);
-        supportedFeatures.microMap = true;
-    }
-
     if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, supportedExts))
     {
         desiredExts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
         supportedFeatures.meshShader = true;
     }
 
-    #ifdef __APPLE__
-        desiredExts.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
-        desiredExts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-    #endif
+    if (IsExtensionSupported(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME, supportedExts))
+        desiredExts.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
+
+    // RT consumes memory: enable if supported and not disabled, store availability
+    if (!deviceCreationDesc.disableVulkanRayTracing)
+    {
+        bool isRayTracingSupported = true;
+
+        // Mandatory
+        if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, supportedExts))
+            desiredExts.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+        else
+            isRayTracingSupported = false;
+
+        if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, supportedExts))
+            desiredExts.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+        else
+            isRayTracingSupported = false;
+
+        supportedFeatures.rayTracing = isRayTracingSupported;
+
+        // Optional
+        if (IsExtensionSupported(VK_KHR_RAY_QUERY_EXTENSION_NAME, supportedExts))
+            desiredExts.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+    }
+
+    // Dependent stuff
+    if (supportedFeatures.rayTracing && IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts))
+    {
+        desiredExts.push_back(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME);
+        supportedFeatures.opacityMicroMap = true;
+    }
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR };
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR };
@@ -1130,7 +1146,7 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
         features2.pNext = &rayQueryFeatures;
     }
 
-    if (supportedFeatures.microMap)
+    if (supportedFeatures.opacityMicroMap)
     {
         micromapFeatures.pNext = features2.pNext;
         features2.pNext = &micromapFeatures;

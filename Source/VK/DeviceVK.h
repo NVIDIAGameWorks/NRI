@@ -153,7 +153,7 @@ public:
         bool sampleLocations = false;
         bool conservativeRaster = false;
         bool rayTracing = false;
-        bool microMap = false;
+        bool opacityMicroMap = false;
         bool meshShader = false;
     } supportedFeatures;
 

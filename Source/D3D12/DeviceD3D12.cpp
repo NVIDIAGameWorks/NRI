@@ -96,7 +96,6 @@ Result DeviceD3D12::CreateImplementation(Interface*& entity, const Args&... args
 
 Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
 {
-    m_SkipLiveObjectsReporting = true;
     m_Device = deviceCreationDesc.d3d12Device;
 
     // Get adapter
