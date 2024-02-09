@@ -25,6 +25,9 @@ Result AccelerationStructureD3D12::Create(const AccelerationStructureD3D12Desc& 
 
 Result AccelerationStructureD3D12::Create(const AccelerationStructureDesc& accelerationStructureDesc)
 {
+    if (m_Device.GetVersion() < 5)
+        return Result::UNSUPPORTED;
+
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS accelerationStructureInputs = {};
     accelerationStructureInputs.Type = GetAccelerationStructureType(accelerationStructureDesc.type);
     accelerationStructureInputs.Flags = GetAccelerationStructureBuildFlags(accelerationStructureDesc.flags);
@@ -38,7 +41,7 @@ Result AccelerationStructureD3D12::Create(const AccelerationStructureDesc& accel
         accelerationStructureInputs.pGeometryDescs = &geometryDescs[0];
     }
 
-    ((ID3D12Device5*)m_Device)->GetRaytracingAccelerationStructurePrebuildInfo(&accelerationStructureInputs, &m_PrebuildInfo);
+    m_Device->GetRaytracingAccelerationStructurePrebuildInfo(&accelerationStructureInputs, &m_PrebuildInfo);
 
     BufferDesc bufferDesc = {};
     bufferDesc.size = m_PrebuildInfo.ResultDataMaxSizeInBytes;

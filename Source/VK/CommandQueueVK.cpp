@@ -74,13 +74,6 @@ inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc)
         "Submit: vkQueueSubmit returned %d", (int32_t)result);
 }
 
-inline Result CommandQueueVK::ChangeResourceStates(const TransitionBarrierDesc& transitionBarriers)
-{
-    HelperResourceStateChange resourceStateChange(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
-
-    return resourceStateChange.ChangeStates(transitionBarriers);
-}
-
 inline Result CommandQueueVK::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum,
     const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum)
 {

@@ -71,7 +71,7 @@ Result BufferD3D11::Create(const MemoryD3D11& memory)
     if (m_Desc.usageMask & BufferUsageBits::SHADER_RESOURCE_STORAGE)
         desc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
 
-    HRESULT hr = m_Device.GetDevice()->CreateBuffer(&desc, nullptr, &m_Buffer);
+    HRESULT hr = m_Device->CreateBuffer(&desc, nullptr, &m_Buffer);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateBuffer()");
 
     uint32_t priority = memory.GetResidencyPriority(m_Desc.size);
@@ -104,24 +104,26 @@ Result BufferD3D11::Create(const BufferD3D11Desc& bufferDesc)
 
 void* BufferD3D11::Map(MapType mapType, uint64_t offset)
 {
-    CriticalSection criticalSection(m_Device.GetImmediateContext());
-
-    FinalizeQueries();
-    FinalizeReadback();
-
-    D3D11_MAP map = D3D11_MAP_READ;
-    if (m_Type == BufferType::DYNAMIC)
-        map = D3D11_MAP_WRITE_NO_OVERWRITE;
-    else if (m_Type == BufferType::UPLOAD && mapType == MapType::DEFAULT)
-        map = D3D11_MAP_WRITE;
-
     D3D11_MAPPED_SUBRESOURCE mappedData = {};
-    HRESULT hr = m_Device.GetImmediateContext()->Map(m_Buffer, 0, map, 0, &mappedData);
-    if (FAILED(hr))
+    m_Device.EnterCriticalSection();
     {
-        REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
-        return nullptr;
+        FinalizeQueries();
+        FinalizeReadback();
+
+        D3D11_MAP map = D3D11_MAP_READ;
+        if (m_Type == BufferType::DYNAMIC)
+            map = D3D11_MAP_WRITE_NO_OVERWRITE;
+        else if (m_Type == BufferType::UPLOAD && mapType == MapType::DEFAULT)
+            map = D3D11_MAP_WRITE;
+
+        HRESULT hr = m_Device.GetImmediateContext()->Map(m_Buffer, 0, map, 0, &mappedData);
+        if (FAILED(hr))
+        {
+            REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
+            offset = 0;
+        }
     }
+    m_Device.LeaveCriticalSection();
 
     uint8_t* ptr = (uint8_t*)mappedData.pData;
 
@@ -133,19 +135,23 @@ void BufferD3D11::FinalizeQueries()
     if (!m_QueryRange.pool)
         return;
 
-    D3D11_MAPPED_SUBRESOURCE mappedData = {};
-    HRESULT hr = m_Device.GetImmediateContext()->Map(m_Buffer, 0, D3D11_MAP_WRITE, 0, &mappedData);
-    if (SUCCEEDED(hr))
+    m_Device.EnterCriticalSection();
     {
-        uint8_t* ptr = (uint8_t*)mappedData.pData;
-        ptr += m_QueryRange.bufferOffset;
+        D3D11_MAPPED_SUBRESOURCE mappedData = {};
+        HRESULT hr = m_Device.GetImmediateContext()->Map(m_Buffer, 0, D3D11_MAP_WRITE, 0, &mappedData);
+        if (SUCCEEDED(hr))
+        {
+            uint8_t* ptr = (uint8_t*)mappedData.pData;
+            ptr += m_QueryRange.bufferOffset;
 
-        m_QueryRange.pool->GetData(ptr, m_QueryRange.offset, m_QueryRange.num);
+            m_QueryRange.pool->GetData(ptr, m_QueryRange.offset, m_QueryRange.num);
 
-        m_Device.GetImmediateContext()->Unmap(m_Buffer, 0);
+            m_Device.GetImmediateContext()->Unmap(m_Buffer, 0);
+        }
+        else
+            REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
     }
-    else
-        REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
+    m_Device.LeaveCriticalSection();
 
     m_QueryRange.pool = nullptr;
 }
@@ -157,42 +163,46 @@ void BufferD3D11::FinalizeReadback()
 
     m_IsReadbackDataChanged = false;
 
-    D3D11_MAPPED_SUBRESOURCE srcData = {};
-    HRESULT hr = m_Device.GetImmediateContext()->Map(*m_ReadbackTexture, 0, D3D11_MAP_READ, 0, &srcData);
-    if (FAILED(hr))
+    m_Device.EnterCriticalSection();
     {
-        REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
-        return;
-    }
-
-    D3D11_MAPPED_SUBRESOURCE dstData = {};
-    hr = m_Device.GetImmediateContext()->Map(m_Buffer, 0, D3D11_MAP_WRITE, 0, &dstData);
-    if (FAILED(hr))
-    {
-        m_Device.GetImmediateContext()->Unmap(*m_ReadbackTexture, 0);
-        REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
-        return;
-    }
-
-    const uint32_t d = m_ReadbackTexture->GetDesc().depth;
-    const uint32_t h = m_ReadbackTexture->GetDesc().height;
-    const uint8_t* src = (uint8_t*)srcData.pData;
-    uint8_t* dst = (uint8_t*)dstData.pData;
-    for (uint32_t i = 0; i < d; i++)
-    {
-        for (uint32_t j = 0; j < h; j++)
+        D3D11_MAPPED_SUBRESOURCE srcData = {};
+        HRESULT hr = m_Device.GetImmediateContext()->Map(*m_ReadbackTexture, 0, D3D11_MAP_READ, 0, &srcData);
+        if (FAILED(hr))
         {
-            const uint8_t* s = src + j * srcData.RowPitch;
-            uint8_t* dstLocal = dst + j * m_ReadbackDataLayoutDesc.rowPitch;
-            memcpy(dstLocal, s, srcData.RowPitch);
+            REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
+            return;
         }
-        src += srcData.DepthPitch;
-        dst += m_ReadbackDataLayoutDesc.slicePitch;
+
+        D3D11_MAPPED_SUBRESOURCE dstData = {};
+        hr = m_Device.GetImmediateContext()->Map(m_Buffer, 0, D3D11_MAP_WRITE, 0, &dstData);
+        if (FAILED(hr))
+        {
+            m_Device.GetImmediateContext()->Unmap(*m_ReadbackTexture, 0);
+            REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
+            return;
+        }
+
+        const uint32_t d = m_ReadbackTexture->GetDesc().depth;
+        const uint32_t h = m_ReadbackTexture->GetDesc().height;
+        const uint8_t* src = (uint8_t*)srcData.pData;
+        uint8_t* dst = (uint8_t*)dstData.pData;
+        for (uint32_t i = 0; i < d; i++)
+        {
+            for (uint32_t j = 0; j < h; j++)
+            {
+                const uint8_t* s = src + j * srcData.RowPitch;
+                uint8_t* dstLocal = dst + j * m_ReadbackDataLayoutDesc.rowPitch;
+                memcpy(dstLocal, s, srcData.RowPitch);
+            }
+            src += srcData.DepthPitch;
+            dst += m_ReadbackDataLayoutDesc.slicePitch;
+        }
+
+
+        m_Device.GetImmediateContext()->Unmap(m_Buffer, 0);
+        m_Device.GetImmediateContext()->Unmap(*m_ReadbackTexture, 0);
     }
-
-
-    m_Device.GetImmediateContext()->Unmap(m_Buffer, 0);
-    m_Device.GetImmediateContext()->Unmap(*m_ReadbackTexture, 0);
+    m_Device.LeaveCriticalSection();
 }
 
 TextureD3D11& BufferD3D11::RecreateReadbackTexture(const TextureD3D11& srcTexture, const TextureRegionDesc& srcRegionDesc, const TextureDataLayoutDesc& readbackDataLayoutDesc)
@@ -268,9 +278,11 @@ inline void* BufferD3D11::Map(uint64_t offset, uint64_t size)
 
 void BufferD3D11::Unmap()
 {
-    CriticalSection criticalSection(m_Device.GetImmediateContext());
-
-    m_Device.GetImmediateContext()->Unmap(m_Buffer, 0);
+    m_Device.EnterCriticalSection();
+    {
+        m_Device.GetImmediateContext()->Unmap(m_Buffer, 0);
+    }
+    m_Device.LeaveCriticalSection();
 }
 
 #include "BufferD3D11.hpp"

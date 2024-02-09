@@ -7,9 +7,9 @@ using namespace nri;
 
 Result FenceD3D11::Create(uint64_t initialValue)
 {
-    if (m_Device.GetDevice().version >= 5)
+    if (m_Device.GetVersion() >= 5)
     {
-        HRESULT hr = m_Device.GetDevice()->CreateFence(initialValue, D3D11_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence));
+        HRESULT hr = m_Device->CreateFence(initialValue, D3D11_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence));
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device5::CreateFence()");
     }
     else
@@ -17,7 +17,7 @@ Result FenceD3D11::Create(uint64_t initialValue)
         D3D11_QUERY_DESC queryDesc = {};
         queryDesc.Query = D3D11_QUERY_EVENT;
 
-        HRESULT hr = m_Device.GetDevice()->CreateQuery(&queryDesc, &m_Query);
+        HRESULT hr = m_Device->CreateQuery(&queryDesc, &m_Query);
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateQuery()");
     }
 

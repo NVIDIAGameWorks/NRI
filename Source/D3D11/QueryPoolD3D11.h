@@ -21,8 +21,8 @@ struct QueryPoolD3D11
     { return m_Device; }
 
     Result Create(const QueryPoolDesc& queryPoolDesc);
-    void BeginQuery(const VersionedContext& deferredContext, uint32_t offset);
-    void EndQuery(const VersionedContext& deferredContext, uint32_t offset);
+    void BeginQuery(ID3D11DeviceContextBest* deferredContext, uint32_t offset);
+    void EndQuery(ID3D11DeviceContextBest* deferredContext, uint32_t offset);
     void GetData(uint8_t* dstMemory, uint32_t offset, uint32_t num) const;
 
     //================================================================================================================

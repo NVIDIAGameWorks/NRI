@@ -53,6 +53,9 @@ typedef PipelineDescComponent<D3D12_RT_FORMAT_ARRAY, D3D12_PIPELINE_STATE_SUBOBJ
 
 Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipelineDesc)
 {
+    if (m_Device.GetVersion() < 2)
+        return Result::UNSUPPORTED;
+
     m_PipelineLayout = (const PipelineLayoutD3D12*)graphicsPipelineDesc.pipelineLayout;
 
     if (graphicsPipelineDesc.inputAssembly != nullptr)
@@ -86,23 +89,25 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
     stream.rootSignature = *m_PipelineLayout;
     stream.nodeMask = NRI_TEMP_NODE_MASK;
 
-    for (uint32_t i = 0; i < graphicsPipelineDesc.shaderStageNum; i++)
+    for (uint32_t i = 0; i < graphicsPipelineDesc.shaderNum; i++)
     {
-        const ShaderDesc& shader = graphicsPipelineDesc.shaderStages[i];
-        if (shader.stage == ShaderStage::VERTEX)
+        const ShaderDesc& shader = graphicsPipelineDesc.shaders[i];
+        if (shader.stage == StageBits::VERTEX_SHADER)
             FillShaderBytecode(stream.vertexShader, shader);
-        else if (shader.stage == ShaderStage::TESS_CONTROL)
+        else if (shader.stage == StageBits::TESS_CONTROL_SHADER)
             FillShaderBytecode(stream.hullShader, shader);
-        else if (shader.stage == ShaderStage::TESS_EVALUATION)
+        else if (shader.stage == StageBits::TESS_EVALUATION_SHADER)
             FillShaderBytecode(stream.domainShader, shader);
-        else if (shader.stage == ShaderStage::GEOMETRY)
+        else if (shader.stage == StageBits::GEOMETRY_SHADER)
             FillShaderBytecode(stream.geometryShader, shader);
-        else if (shader.stage == ShaderStage::MESH_CONTROL)
+        else if (shader.stage == StageBits::MESH_CONTROL_SHADER)
             FillShaderBytecode(stream.amplificationShader, shader);
-        else if (shader.stage == ShaderStage::MESH_EVALUATION)
+        else if (shader.stage == StageBits::MESH_EVALUATION_SHADER)
             FillShaderBytecode(stream.meshShader, shader);
-        else if (shader.stage == ShaderStage::FRAGMENT)
+        else if (shader.stage == StageBits::FRAGMENT_SHADER)
             FillShaderBytecode(stream.pixelShader, shader);
+        else
+            return Result::INVALID_ARGUMENT;
     }
 
     D3D12_INPUT_LAYOUT_DESC inputLayout = {};
@@ -135,7 +140,7 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
     pipelineStateStreamDesc.pPipelineStateSubobjectStream = &stream;
     pipelineStateStreamDesc.SizeInBytes = sizeof(stream);
 
-    HRESULT hr = ((ID3D12Device2*)m_Device)->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState));
+    HRESULT hr = m_Device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreatePipelineState()");
 
     m_IsGraphicsPipeline = true;
@@ -166,19 +171,21 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
 
     FillInputLayout(graphicsPipleineStateDesc.InputLayout, graphicsPipelineDesc);
 
-    for (uint32_t i = 0; i < graphicsPipelineDesc.shaderStageNum; i++)
+    for (uint32_t i = 0; i < graphicsPipelineDesc.shaderNum; i++)
     {
-        const ShaderDesc& shader = graphicsPipelineDesc.shaderStages[i];
-        if (shader.stage == ShaderStage::VERTEX)
+        const ShaderDesc& shader = graphicsPipelineDesc.shaders[i];
+        if (shader.stage == StageBits::VERTEX_SHADER)
             FillShaderBytecode(graphicsPipleineStateDesc.VS, shader);
-        else if (shader.stage == ShaderStage::TESS_CONTROL)
+        else if (shader.stage == StageBits::TESS_CONTROL_SHADER)
             FillShaderBytecode(graphicsPipleineStateDesc.HS, shader);
-        else if (shader.stage == ShaderStage::TESS_EVALUATION)
+        else if (shader.stage == StageBits::TESS_EVALUATION_SHADER)
             FillShaderBytecode(graphicsPipleineStateDesc.DS, shader);
-        else if (shader.stage == ShaderStage::GEOMETRY)
+        else if (shader.stage == StageBits::GEOMETRY_SHADER)
             FillShaderBytecode(graphicsPipleineStateDesc.GS, shader);
-        else if (shader.stage == ShaderStage::FRAGMENT)
+        else if (shader.stage == StageBits::FRAGMENT_SHADER)
             FillShaderBytecode(graphicsPipleineStateDesc.PS, shader);
+        else
+            return Result::INVALID_ARGUMENT;
     }
 
     FillRasterizerState(graphicsPipleineStateDesc.RasterizerState, graphicsPipelineDesc);
@@ -195,7 +202,7 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
             graphicsPipleineStateDesc.RTVFormats[i] = GetDxgiFormat(graphicsPipelineDesc.outputMerger->color[i].format).typed;
     }
 
-    HRESULT hr = ((ID3D12Device*)m_Device)->CreateGraphicsPipelineState(&graphicsPipleineStateDesc, IID_PPV_ARGS(&m_PipelineState));
+    HRESULT hr = m_Device->CreateGraphicsPipelineState(&graphicsPipleineStateDesc, IID_PPV_ARGS(&m_PipelineState));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateGraphicsPipelineState()");
 
     m_IsGraphicsPipeline = true;
@@ -212,9 +219,9 @@ Result PipelineD3D12::Create(const ComputePipelineDesc& computePipelineDesc)
 
     computePipleineStateDesc.pRootSignature = *m_PipelineLayout;
 
-    FillShaderBytecode(computePipleineStateDesc.CS, computePipelineDesc.computeShader);
+    FillShaderBytecode(computePipleineStateDesc.CS, computePipelineDesc.shader);
 
-    HRESULT hr = ((ID3D12Device*)m_Device)->CreateComputePipelineState(&computePipleineStateDesc, IID_PPV_ARGS(&m_PipelineState));
+    HRESULT hr = m_Device->CreateComputePipelineState(&computePipleineStateDesc, IID_PPV_ARGS(&m_PipelineState));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateComputePipelineState()");
 
     return Result::SUCCESS;
@@ -222,9 +229,8 @@ Result PipelineD3D12::Create(const ComputePipelineDesc& computePipelineDesc)
 
 Result PipelineD3D12::Create(const RayTracingPipelineDesc& rayTracingPipelineDesc)
 {
-    ID3D12Device5* device5 = m_Device;
-    if (!device5)
-        return Result::FAILURE;
+    if (m_Device.GetVersion() < 5)
+        return Result::UNSUPPORTED;
 
     m_PipelineLayout = (const PipelineLayoutD3D12*)rayTracingPipelineDesc.pipelineLayout;
 
@@ -277,8 +283,8 @@ Result PipelineD3D12::Create(const RayTracingPipelineDesc& rayTracingPipelineDes
     Vector<D3D12_DXIL_LIBRARY_DESC> libraryDescs(rayTracingPipelineDesc.shaderLibrary->shaderNum, m_Device.GetStdAllocator());
     for (uint32_t i = 0; i < rayTracingPipelineDesc.shaderLibrary->shaderNum; i++)
     {
-        libraryDescs[i].DXILLibrary.pShaderBytecode = rayTracingPipelineDesc.shaderLibrary->shaderDescs[i].bytecode;
-        libraryDescs[i].DXILLibrary.BytecodeLength = (size_t)rayTracingPipelineDesc.shaderLibrary->shaderDescs[i].size;
+        libraryDescs[i].DXILLibrary.pShaderBytecode = rayTracingPipelineDesc.shaderLibrary->shaders[i].bytecode;
+        libraryDescs[i].DXILLibrary.BytecodeLength = (size_t)rayTracingPipelineDesc.shaderLibrary->shaders[i].size;
         libraryDescs[i].NumExports = 0;
         libraryDescs[i].pExports = nullptr;
 
@@ -290,7 +296,7 @@ Result PipelineD3D12::Create(const RayTracingPipelineDesc& rayTracingPipelineDes
     Vector<std::wstring> wEntryPointNames(rayTracingPipelineDesc.shaderLibrary->shaderNum, m_Device.GetStdAllocator());
     for (uint32_t i = 0; i < rayTracingPipelineDesc.shaderLibrary->shaderNum; i++)
     {
-        const ShaderDesc& shader = rayTracingPipelineDesc.shaderLibrary->shaderDescs[i];
+        const ShaderDesc& shader = rayTracingPipelineDesc.shaderLibrary->shaders[i];
         const size_t entryPointNameLength = shader.entryPointName != nullptr ? strlen(shader.entryPointName) + 1 : 0;
         wEntryPointNames[i].resize(entryPointNameLength);
         ConvertCharToWchar(shader.entryPointName, (wchar_t*)wEntryPointNames[i].data(), entryPointNameLength);
@@ -310,9 +316,9 @@ Result PipelineD3D12::Create(const RayTracingPipelineDesc& rayTracingPipelineDes
             if (shaderIndex)
             {
                 uint32_t lookupIndex = shaderIndex - 1;
-                const ShaderDesc& shader = rayTracingPipelineDesc.shaderLibrary->shaderDescs[lookupIndex];
+                const ShaderDesc& shader = rayTracingPipelineDesc.shaderLibrary->shaders[lookupIndex];
                 const std::wstring& entryPointName = wEntryPointNames[lookupIndex];
-                if (shader.stage == ShaderStage::RAYGEN || shader.stage == ShaderStage::MISS || shader.stage == ShaderStage::CALLABLE)
+                if (shader.stage == StageBits::RAYGEN_SHADER || shader.stage == StageBits::MISS_SHADER || shader.stage == StageBits::CALLABLE_SHADER)
                 {
                     shaderIndentifierName = entryPointName;
                     isHitGroup = false;
@@ -321,14 +327,14 @@ Result PipelineD3D12::Create(const RayTracingPipelineDesc& rayTracingPipelineDes
 
                 switch (shader.stage)
                 {
-                case ShaderStage::INTERSECTION:
+                case StageBits::INTERSECTION_SHADER:
                     hitGroups[hitGroupNum].IntersectionShaderImport = entryPointName.c_str();
                     hasIntersectionShader = true;
                     break;
-                case ShaderStage::CLOSEST_HIT:
+                case StageBits::CLOSEST_HIT_SHADER:
                     hitGroups[hitGroupNum].ClosestHitShaderImport = entryPointName.c_str();
                     break;
-                case ShaderStage::ANY_HIT:
+                case StageBits::ANY_HIT_SHADER:
                     hitGroups[hitGroupNum].AnyHitShaderImport = entryPointName.c_str();
                     break;
                 }
@@ -355,7 +361,7 @@ Result PipelineD3D12::Create(const RayTracingPipelineDesc& rayTracingPipelineDes
     stateObjectDesc.NumSubobjects = stateSubobjectNum;
     stateObjectDesc.pSubobjects = stateSubobjectNum ? &stateSubobjects[0] : nullptr;
 
-    HRESULT hr = device5->CreateStateObject(&stateObjectDesc, IID_PPV_ARGS(&m_StateObject));
+    HRESULT hr = m_Device->CreateStateObject(&stateObjectDesc, IID_PPV_ARGS(&m_StateObject));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device5::CreateStateObject()");
 
     m_StateObject->QueryInterface(&m_StateObjectProperties);

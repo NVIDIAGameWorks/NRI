@@ -11,56 +11,6 @@
 
 using namespace nri;
 
-static bool ValidateTransitionBarrierDesc(DeviceVal& device, uint32_t i, const BufferTransitionBarrierDesc& bufferTransitionBarrierDesc) {
-    const BufferVal& bufferVal = *(BufferVal*)bufferTransitionBarrierDesc.buffer;
-    const BufferUsageBits usageMask = bufferVal.GetDesc().usageMask;
-
-    RETURN_ON_FAILURE(&device, bufferTransitionBarrierDesc.buffer != nullptr, false, "ChangeResourceStates: 'transitionBarriers.buffers[%u].buffer' is NULL", i);
-    RETURN_ON_FAILURE(&device, bufferVal.IsBoundToMemory(), false, "ChangeResourceStates: 'transitionBarriers.buffers[%u].buffer' is not bound to memory", i);
-
-    RETURN_ON_FAILURE(
-        &device, IsAccessMaskSupported(usageMask, bufferTransitionBarrierDesc.prevAccess), false,
-        "ChangeResourceStates: 'transitionBarriers.buffers[%u].prevAccess' is not supported by usageMask of the buffer", i
-    );
-
-    RETURN_ON_FAILURE(
-        &device, IsAccessMaskSupported(usageMask, bufferTransitionBarrierDesc.nextAccess), false,
-        "ChangeResourceStates: 'transitionBarriers.buffers[%u].nextAccess' is not supported by usageMask of the buffer", i
-    );
-
-    return true;
-}
-
-static bool ValidateTransitionBarrierDesc(DeviceVal& device, uint32_t i, const TextureTransitionBarrierDesc& textureTransitionBarrierDesc) {
-    const TextureVal& textureVal = *(TextureVal*)textureTransitionBarrierDesc.texture;
-    const TextureUsageBits usageMask = textureVal.GetDesc().usageMask;
-
-    RETURN_ON_FAILURE(&device, textureTransitionBarrierDesc.texture != nullptr, false, "ChangeResourceStates: 'transitionBarriers.textures[%u].texture' is NULL", i);
-    RETURN_ON_FAILURE(&device, textureVal.IsBoundToMemory(), false, "ChangeResourceStates: 'transitionBarriers.textures[%u].texture' is not bound to memory", i);
-
-    RETURN_ON_FAILURE(
-        &device, IsAccessMaskSupported(usageMask, textureTransitionBarrierDesc.prevState.acessBits), false,
-        "ChangeResourceStates: 'transitionBarriers.textures[%u].prevAccess' is not supported by usageMask of the texture", i
-    );
-
-    RETURN_ON_FAILURE(
-        &device, IsAccessMaskSupported(usageMask, textureTransitionBarrierDesc.nextState.acessBits), false,
-        "ChangeResourceStates: 'transitionBarriers.textures[%u].nextAccess' is not supported by usageMask of the texture", i
-    );
-
-    RETURN_ON_FAILURE(
-        &device, IsTextureLayoutSupported(usageMask, textureTransitionBarrierDesc.prevState.layout), false,
-        "ChangeResourceStates: 'transitionBarriers.textures[%u].prevLayout' is not supported by usageMask of the texture", i
-    );
-
-    RETURN_ON_FAILURE(
-        &device, IsTextureLayoutSupported(usageMask, textureTransitionBarrierDesc.nextState.layout), false,
-        "ChangeResourceStates: 'transitionBarriers.textures[%u].nextLayout' is not supported by usageMask of the texture", i
-    );
-
-    return true;
-}
-
 static bool ValidateTextureUploadDesc(DeviceVal& device, uint32_t i, const TextureUploadDesc& textureUploadDesc) {
     const uint32_t subresourceNum = textureUploadDesc.arraySize * textureUploadDesc.mipNum;
     if (subresourceNum == 0 && textureUploadDesc.subresources != nullptr) {
@@ -76,7 +26,7 @@ static bool ValidateTextureUploadDesc(DeviceVal& device, uint32_t i, const Textu
     RETURN_ON_FAILURE(&device, textureUploadDesc.texture != nullptr, false, "UploadData: 'textureUploadDescs[%u].texture' is NULL", i);
     RETURN_ON_FAILURE(&device, textureUploadDesc.mipNum <= textureVal.GetDesc().mipNum, false, "UploadData: 'textureUploadDescs[%u].mipNum' is invalid", i);
     RETURN_ON_FAILURE(&device, textureUploadDesc.arraySize <= textureVal.GetDesc().arraySize, false, "UploadData: 'textureUploadDescs[%u].arraySize' is invalid", i);
-    RETURN_ON_FAILURE(&device, textureUploadDesc.nextState.layout < TextureLayout::MAX_NUM, false, "UploadData: 'textureUploadDescs[%u].nextLayout' is invalid", i);
+    RETURN_ON_FAILURE(&device, textureUploadDesc.after.layout < Layout::MAX_NUM, false, "UploadData: 'textureUploadDescs[%u].nextLayout' is invalid", i);
     RETURN_ON_FAILURE(&device, textureVal.IsBoundToMemory(), false, "UploadData: 'textureUploadDescs[%u].texture' is not bound to memory", i);
 
     for (uint32_t j = 0; j < subresourceNum; j++) {
@@ -134,37 +84,6 @@ void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc) {
         ((CommandBuffer**)queueSubmitDescImpl.commandBuffers)[i] = NRI_GET_IMPL(CommandBuffer, queueSubmitDesc.commandBuffers[i]);
 
     GetCoreInterface().QueueSubmit(*GetImpl(), queueSubmitDescImpl);
-}
-
-Result CommandQueueVal::ChangeResourceStates(const TransitionBarrierDesc& transitionBarriers) {
-    auto* bufferTransitionBarriers = STACK_ALLOC(BufferTransitionBarrierDesc, transitionBarriers.bufferNum);
-    auto* textureTransitionBarriers = STACK_ALLOC(TextureTransitionBarrierDesc, transitionBarriers.textureNum);
-
-    for (uint32_t i = 0; i < transitionBarriers.bufferNum; i++) {
-        if (!ValidateTransitionBarrierDesc(m_Device, i, transitionBarriers.buffers[i]))
-            return Result::INVALID_ARGUMENT;
-
-        const BufferVal& bufferVal = *(BufferVal*)transitionBarriers.buffers[i].buffer;
-
-        bufferTransitionBarriers[i] = transitionBarriers.buffers[i];
-        bufferTransitionBarriers[i].buffer = bufferVal.GetImpl();
-    }
-
-    for (uint32_t i = 0; i < transitionBarriers.textureNum; i++) {
-        if (!ValidateTransitionBarrierDesc(m_Device, i, transitionBarriers.textures[i]))
-            return Result::INVALID_ARGUMENT;
-
-        const TextureVal& textureVal = *(TextureVal*)transitionBarriers.textures[i].texture;
-
-        textureTransitionBarriers[i] = transitionBarriers.textures[i];
-        textureTransitionBarriers[i].texture = textureVal.GetImpl();
-    }
-
-    TransitionBarrierDesc transitionBarriersImpl = transitionBarriers;
-    transitionBarriersImpl.buffers = bufferTransitionBarriers;
-    transitionBarriersImpl.textures = textureTransitionBarriers;
-
-    return m_HelperAPI.ChangeResourceStates(*GetImpl(), transitionBarriersImpl);
 }
 
 Result CommandQueueVal::UploadData(

@@ -236,7 +236,7 @@ static void* NRI_CALL GetDeviceNativeObject(const Device& device)
     if (!(&device))
         return nullptr;
 
-    return (DeviceD3D12&)device;
+    return ((DeviceD3D12&)device).GetNativeObject();
 }
 
 Result DeviceD3D12::FillFunctionTable(CoreInterface& coreInterface) const
@@ -398,7 +398,7 @@ Result DeviceD3D12::FillFunctionTable(RayTracingInterface& rayTracingInterface) 
 {
     rayTracingInterface = {};
 
-    if (!m_Device5.GetInterface() || !m_IsRaytracingSupported)
+    if (!m_IsRaytracingSupported)
         return Result::UNSUPPORTED;
 
     FillFunctionTablePipelineD3D12(rayTracingInterface);

@@ -9,6 +9,9 @@
 
 struct AGSContext;
 
+struct ID3D11DeviceContext4;
+typedef ID3D11DeviceContext4 ID3D11DeviceContextBest;
+
 namespace nri
 {
 
@@ -58,69 +61,6 @@ D3D11_LOGIC_OP GetD3D11LogicOpFromLogicFunc(LogicFunc logicalFunc);
 bool GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& textureDesc);
 bool GetBufferDesc(const BufferD3D11Desc& bufferD3D11Desc, BufferDesc& bufferDesc);
 
-struct VersionedDevice
-{
-    ~VersionedDevice()
-    {}
-
-    inline ID3D11Device5* operator->() const
-    { return ptr; }
-
-    inline operator ID3D11Device5*() const
-    { return ptr.GetInterface(); }
-
-    ComPtr<ID3D11Device5> ptr;
-    const D3D11Extensions* ext = nullptr;
-    bool isDeferredContextEmulated = false;
-    uint8_t version = 0;
-};
-
-struct VersionedContext
-{
-    ~VersionedContext()
-    {}
-
-    inline ID3D11DeviceContext4* operator->() const
-    { return ptr; }
-
-    inline operator ID3D11DeviceContext4*() const
-    { return ptr.GetInterface(); }
-
-    inline void EnterCriticalSection() const
-    {
-        if (multiThread)
-            multiThread->Enter();
-        else
-            ::EnterCriticalSection(criticalSection);
-    }
-
-    inline void LeaveCriticalSection() const
-    {
-        if (multiThread)
-            multiThread->Leave();
-        else
-            ::LeaveCriticalSection(criticalSection);
-    }
-
-    ComPtr<ID3D11DeviceContext4> ptr;
-    ComPtr<ID3D11Multithread> multiThread;
-    const D3D11Extensions* ext = nullptr;
-    CRITICAL_SECTION* criticalSection;
-    uint8_t version = 0;
-};
-
-struct CriticalSection
-{
-    inline CriticalSection(const VersionedContext& deferredContext) :
-        m_Context(deferredContext)
-    { m_Context.EnterCriticalSection(); }
-
-    inline ~CriticalSection()
-    { m_Context.LeaveCriticalSection(); }
-
-    const VersionedContext& m_Context;
-};
-
 struct SubresourceInfo
 {
     const void* resource = nullptr;
@@ -154,7 +94,7 @@ struct BindingState
     std::vector<SubresourceAndSlot> storages; // max expected size - D3D11_1_UAV_SLOT_COUNT
     std::array<ID3D11UnorderedAccessView*, D3D11_PS_CS_UAV_REGISTER_COUNT> graphicsStorageDescriptors = {};
 
-    inline void TrackSubresource_UnbindIfNeeded_PostponeGraphicsStorageBinding(const VersionedContext& deferredContext, const SubresourceInfo& subresource, void* descriptor, uint32_t slot, bool isGraphics, bool isStorage)
+    inline void TrackSubresource_UnbindIfNeeded_PostponeGraphicsStorageBinding(ID3D11DeviceContextBest* deferredContext, const SubresourceInfo& subresource, void* descriptor, uint32_t slot, bool isGraphics, bool isStorage)
     {
         constexpr void* null = nullptr;
 
@@ -205,7 +145,7 @@ struct BindingState
         }
     }
 
-    inline void UnbindAndReset(const VersionedContext& deferredContext)
+    inline void UnbindAndReset(ID3D11DeviceContextBest* deferredContext)
     {
         constexpr void* null = nullptr;
 

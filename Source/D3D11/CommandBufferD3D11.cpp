@@ -14,17 +14,40 @@ using namespace nri;
 
 static constexpr uint64_t s_nullOffsets[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {0};
 
+uint8_t QueryLatestDeviceContext(ComPtr<ID3D11DeviceContextBest>& in, ComPtr<ID3D11DeviceContextBest>& out)
+{
+    static const IID versions[] = {
+        __uuidof(ID3D11DeviceContext4),
+        __uuidof(ID3D11DeviceContext3),
+        __uuidof(ID3D11DeviceContext2),
+        __uuidof(ID3D11DeviceContext1),
+        __uuidof(ID3D11DeviceContext),
+    };
+    const uint8_t n = (uint8_t)GetCountOf(versions);
+
+    uint8_t i = 0;
+    for (; i < n; i++)
+    {
+        HRESULT hr = in->QueryInterface(versions[i], (void**)&out);
+        if (SUCCEEDED(hr))
+            break;
+    }
+
+    return n - i - 1;
+}
+
 CommandBufferD3D11::CommandBufferD3D11(DeviceD3D11& device) :
     m_Device(device),
-    m_DeferredContext(device.GetImmediateContext())
+    m_DeferredContext(device.GetImmediateContext()),
+    m_Version(device.GetImmediateContextVersion())
 {
     m_DeferredContext->QueryInterface(IID_PPV_ARGS(&m_Annotation));
-    m_DeferredContext.ext->BeginUAVOverlap(m_DeferredContext);
 }
 
 CommandBufferD3D11::~CommandBufferD3D11()
 {
-    m_DeferredContext.ext->EndUAVOverlap(m_DeferredContext);
+    if (m_DeferredContext && m_DeferredContext->GetType() == D3D11_DEVICE_CONTEXT_DEFERRED)
+        m_Device.GetExt()->EndUAVOverlap(m_DeferredContext);
 }
 
 //================================================================================================================
@@ -33,51 +56,26 @@ CommandBufferD3D11::~CommandBufferD3D11()
 
 Result CommandBufferD3D11::Create(ID3D11DeviceContext* precreatedContext)
 {
-    HRESULT hr;
-    ComPtr<ID3D11DeviceContext> context = precreatedContext;
+    // Release inherited interfaces from the immediate context
+    m_DeferredContext = nullptr;
+    m_Annotation = nullptr;
 
+    // Create deferred context
+    ComPtr<ID3D11DeviceContextBest> context = (ID3D11DeviceContextBest*)precreatedContext; // can be immediate
     if (!precreatedContext)
     {
-        hr = m_Device.GetDevice()->CreateDeferredContext(0, &context);
+        HRESULT hr = m_Device->CreateDeferredContext(0, (ID3D11DeviceContext**)&context);
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateDeferredContext()");
     }
 
-    // Release inherited interfaces from the immediate context
-    m_DeferredContext.ptr = nullptr;
-    m_Annotation = nullptr;
+    m_Version = QueryLatestDeviceContext(context, m_DeferredContext);
 
-    hr = context->QueryInterface(__uuidof(ID3D11DeviceContext4), (void**)&m_DeferredContext.ptr);
-    m_DeferredContext.version = 4;
-    m_DeferredContext.ext = m_Device.GetDevice().ext;
-    if (FAILED(hr))
-    {
-        REPORT_WARNING(&m_Device, "QueryInterface(ID3D11DeviceContext4) - FAILED!");
-        hr = context->QueryInterface(__uuidof(ID3D11DeviceContext3), (void**)&m_DeferredContext.ptr);
-        m_DeferredContext.version = 3;
-        if (FAILED(hr))
-        {
-            REPORT_WARNING(&m_Device, "QueryInterface(ID3D11DeviceContext3) - FAILED!");
-            hr = context->QueryInterface(__uuidof(ID3D11DeviceContext2), (void**)&m_DeferredContext.ptr);
-            m_DeferredContext.version = 2;
-            if (FAILED(hr))
-            {
-                REPORT_WARNING(&m_Device, "QueryInterface(ID3D11DeviceContext2) - FAILED!");
-                hr = context->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&m_DeferredContext.ptr);
-                m_DeferredContext.version = 1;
-                if (FAILED(hr))
-                {
-                    REPORT_WARNING(&m_Device, "QueryInterface(ID3D11DeviceContext1) - FAILED!");
-                    m_DeferredContext.ptr = (ID3D11DeviceContext4*)context.GetInterface();
-                    m_DeferredContext.version = 0;
-                }
-            }
-        }
-    }
-
-    hr = m_DeferredContext->QueryInterface(IID_PPV_ARGS(&m_Annotation));
+    HRESULT hr = m_DeferredContext->QueryInterface(IID_PPV_ARGS(&m_Annotation));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "QueryInterface(ID3DUserDefinedAnnotation)");
 
-    m_DeferredContext.ext->BeginUAVOverlap(m_DeferredContext);
+    // Skip UAV barriers by default on the deferred context
+    if (m_DeferredContext && m_DeferredContext->GetType() == D3D11_DEVICE_CONTEXT_DEFERRED)
+        m_Device.GetExt()->BeginUAVOverlap(m_DeferredContext);
 
     return Result::SUCCESS;
 }
@@ -86,11 +84,6 @@ void CommandBufferD3D11::Submit()
 {
     m_Device.GetImmediateContext()->ExecuteCommandList(m_CommandList, FALSE);
     m_CommandList = nullptr;
-}
-
-ID3D11DeviceContext* CommandBufferD3D11::GetNativeObject() const
-{
-    return m_DeferredContext.ptr;
 }
 
 StdAllocator<uint8_t>& CommandBufferD3D11::GetStdAllocator() const
@@ -110,8 +103,6 @@ Result CommandBufferD3D11::Begin(const DescriptorPool* descriptorPool)
     m_IndexBuffer = nullptr;
     m_VertexBuffer = nullptr;
     m_StencilRef = 0;
-
-    SetDepthBounds(0.0f, 1.0f);
 
     if (descriptorPool)
         SetDescriptorPool(*descriptorPool);
@@ -152,7 +143,7 @@ void CommandBufferD3D11::SetDepthBounds(float boundsMin, float boundsMax)
 {
     if (m_DepthBounds[0] != boundsMin || m_DepthBounds[1] != boundsMax)
     {
-        m_DeferredContext.ext->SetDepthBounds(m_DeferredContext, boundsMin, boundsMax);
+        m_Device.GetExt()->SetDepthBounds(m_DeferredContext, boundsMin, boundsMax);
 
         m_DepthBounds[0] = boundsMin;
         m_DepthBounds[1] = boundsMax;
@@ -209,7 +200,7 @@ void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t 
             rectsD3D[i] = { rect.x, rect.y, (LONG)(rect.x + rect.width), (LONG)(rect.y + rect.height) };
         }
 
-        if (m_DeferredContext.version >= 1)
+        if (m_Version >= 1)
         {
             // https://learn.microsoft.com/en-us/windows/win32/api/d3d11_1/nf-d3d11_1-id3d11devicecontext1-clearview
 
@@ -343,6 +334,7 @@ void CommandBufferD3D11::SetPipeline(const Pipeline& pipeline)
     pipelineD3D11->ChangeSamplePositions(m_DeferredContext, m_SamplePositionsState, DynamicState::SET_ONLY);
     pipelineD3D11->ChangeStencilReference(m_DeferredContext, m_StencilRef, DynamicState::SET_ONLY);
     pipelineD3D11->Bind(m_DeferredContext, m_Pipeline);
+    SetDepthBounds(0.0f, 1.0f);
 
     m_Pipeline = pipelineD3D11;
 }
@@ -375,12 +367,12 @@ void CommandBufferD3D11::DrawIndexed(uint32_t indexNum, uint32_t instanceNum, ui
 
 void CommandBufferD3D11::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride)
 {
-    m_DeferredContext.ext->MultiDrawIndirect(m_DeferredContext, (BufferD3D11&)buffer, offset, drawNum, stride);
+    m_Device.GetExt()->MultiDrawIndirect(m_DeferredContext, (BufferD3D11&)buffer, offset, drawNum, stride);
 }
 
 void CommandBufferD3D11::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride)
 {
-    m_DeferredContext.ext->MultiDrawIndexedIndirect(m_DeferredContext, (BufferD3D11&)buffer, offset, drawNum, stride);
+    m_Device.GetExt()->MultiDrawIndexedIndirect(m_DeferredContext, (BufferD3D11&)buffer, offset, drawNum, stride);
 }
 
 void CommandBufferD3D11::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size)
@@ -488,36 +480,62 @@ void CommandBufferD3D11::DispatchIndirect(const Buffer& buffer, uint64_t offset)
     m_DeferredContext->DispatchIndirect((BufferD3D11&)buffer, (uint32_t)offset);
 }
 
-void CommandBufferD3D11::PipelineBarrier(const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency)
+void CommandBufferD3D11::Barrier(const BarrierGroupDesc& barrierGroupDesc)
 {
-    MaybeUnused(aliasingBarriers);
-
     constexpr AccessBits STORAGE_MASK = AccessBits::SHADER_RESOURCE_STORAGE;
-    constexpr BarrierDependency NO_WFI = (BarrierDependency)(-1);
 
-    if (!transitionBarriers || (transitionBarriers->textureNum == 0 && transitionBarriers->bufferNum == 0))
+    if (barrierGroupDesc.textureNum == 0 && barrierGroupDesc.bufferNum == 0)
         return;
 
-    BarrierDependency result = NO_WFI;
+    uint32_t flags = 0;
 
-    for (uint32_t i = 0; i < transitionBarriers->textureNum; i++)
+    for (uint32_t i = 0; i < barrierGroupDesc.globalNum; i++)
     {
-        const TextureTransitionBarrierDesc& textureDesc = transitionBarriers->textures[i];
-
-        if ((textureDesc.prevState.acessBits & STORAGE_MASK) && (textureDesc.nextState.acessBits & STORAGE_MASK))
-            result = dependency;
+        const GlobalBarrierDesc& barrier = barrierGroupDesc.globals[i];
+        if ((barrier.before.access & STORAGE_MASK) && (barrier.after.access & STORAGE_MASK))
+        {
+            bool isGraphics = barrier.before.stages == StageBits::ALL || (barrier.before.stages & (StageBits::DRAW));
+            if (isGraphics)
+                flags |= NVAPI_D3D_BEGIN_UAV_OVERLAP_GFX_WFI;
+            
+            bool isCompute = barrier.before.stages == StageBits::ALL || (barrier.before.stages & StageBits::COMPUTE_SHADER);
+            if (isCompute)
+                flags |= NVAPI_D3D_BEGIN_UAV_OVERLAP_COMP_WFI;
+        }
     }
 
-    for (uint32_t i = 0; i < transitionBarriers->bufferNum && result == NO_WFI; i++)
+    for (uint32_t i = 0; i < barrierGroupDesc.bufferNum; i++)
     {
-        const BufferTransitionBarrierDesc& bufferDesc = transitionBarriers->buffers[i];
-
-        if ((bufferDesc.prevAccess & STORAGE_MASK) && (bufferDesc.nextAccess & STORAGE_MASK))
-            result = dependency;
+        const BufferBarrierDesc& barrier = barrierGroupDesc.buffers[i];
+        if ((barrier.before.access & STORAGE_MASK) && (barrier.after.access & STORAGE_MASK))
+        {
+            bool isGraphics = barrier.before.stages == StageBits::ALL || (barrier.before.stages & (StageBits::DRAW));
+            if (isGraphics)
+                flags |= NVAPI_D3D_BEGIN_UAV_OVERLAP_GFX_WFI;
+            
+            bool isCompute = barrier.before.stages == StageBits::ALL || (barrier.before.stages & StageBits::COMPUTE_SHADER);
+            if (isCompute)
+                flags |= NVAPI_D3D_BEGIN_UAV_OVERLAP_COMP_WFI;
+        }
     }
 
-    if (result != NO_WFI)
-        m_DeferredContext.ext->WaitForDrain(m_DeferredContext, result);
+    for (uint32_t i = 0; i < barrierGroupDesc.textureNum; i++)
+    {
+        const TextureBarrierDesc& barrier = barrierGroupDesc.textures[i];
+        if ((barrier.before.access & STORAGE_MASK) && (barrier.after.access & STORAGE_MASK))
+        {
+            bool isGraphics = barrier.before.stages == StageBits::ALL || (barrier.before.stages & (StageBits::DRAW));
+            if (isGraphics)
+                flags |= NVAPI_D3D_BEGIN_UAV_OVERLAP_GFX_WFI;
+            
+            bool isCompute = barrier.before.stages == StageBits::ALL || (barrier.before.stages & StageBits::COMPUTE_SHADER);
+            if (isCompute)
+                flags |= NVAPI_D3D_BEGIN_UAV_OVERLAP_COMP_WFI;
+        }
+    }
+
+    if (flags)
+        m_Device.GetExt()->WaitForDrain(m_DeferredContext, flags);
 }
 
 void CommandBufferD3D11::BeginQuery(const QueryPool& queryPool, uint32_t offset)

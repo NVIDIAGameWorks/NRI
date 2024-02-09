@@ -70,7 +70,7 @@ NRI_ENUM_BITS
 
 NRI_STRUCT(ShaderLibrary)
 {
-    const NRI_NAME(ShaderDesc)* shaderDescs;
+    const NRI_NAME(ShaderDesc)* shaders;
     uint32_t shaderNum;
 };
 

@@ -236,7 +236,7 @@ static void* NRI_CALL GetDeviceNativeObject(const Device& device)
     if (!(&device))
         return nullptr;
 
-    return ((DeviceD3D11&)device).GetDevice();
+    return ((DeviceD3D11&)device).GetNativeObject();
 }
 
 void Core_CommandBufferEmu_PartiallyFillFunctionTable(CoreInterface& coreInterface);
@@ -292,7 +292,7 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& coreInterface) const
     Core_QueryPool_PartiallyFillFunctionTableD3D11(coreInterface);
     Core_Texture_PartiallyFillFunctionTableD3D11(coreInterface);
 
-    if (m_Device.isDeferredContextEmulated)
+    if (m_IsDeferredContextEmulated)
         Core_CommandBufferEmu_PartiallyFillFunctionTable(coreInterface);
     else
         Core_CommandBuffer_PartiallyFillFunctionTableD3D11(coreInterface);

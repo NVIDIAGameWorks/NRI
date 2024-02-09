@@ -27,10 +27,9 @@ static void NRI_CALL CmdSetPipeline(CommandBuffer& commandBuffer, const Pipeline
     ((CommandBufferVK&)commandBuffer).SetPipeline(pipeline);
 }
 
-static void NRI_CALL CmdPipelineBarrier(CommandBuffer& commandBuffer, const TransitionBarrierDesc* transitionBarriers,
-    const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency)
+static void NRI_CALL CmdBarrier(CommandBuffer& commandBuffer, const BarrierGroupDesc& barrierGroupDesc)
 {
-    ((CommandBufferVK&)commandBuffer).PipelineBarrier(transitionBarriers, aliasingBarriers, dependency);
+    ((CommandBufferVK&)commandBuffer).Barrier(barrierGroupDesc);
 }
 
 static void NRI_CALL CmdSetDescriptorPool(CommandBuffer& commandBuffer, const DescriptorPool& descriptorPool)

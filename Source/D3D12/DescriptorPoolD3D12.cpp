@@ -26,13 +26,13 @@ Result DescriptorPoolD3D12::Create(const DescriptorPoolDesc& descriptorPoolDesc)
         {
             ComPtr<ID3D12DescriptorHeap> descriptorHeap;
             D3D12_DESCRIPTOR_HEAP_DESC desc = { (D3D12_DESCRIPTOR_HEAP_TYPE)i, descriptorHeapSize[i], D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, NRI_TEMP_NODE_MASK };
-            HRESULT hr = ((ID3D12Device*)m_Device)->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap));
+            HRESULT hr = m_Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateDescriptorHeap()");
 
             m_DescriptorHeapDescs[i].descriptorHeap = descriptorHeap;
             m_DescriptorHeapDescs[i].descriptorPointerCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr;
             m_DescriptorHeapDescs[i].descriptorPointerGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
-            m_DescriptorHeapDescs[i].descriptorSize = ((ID3D12Device*)m_Device)->GetDescriptorHandleIncrementSize((D3D12_DESCRIPTOR_HEAP_TYPE)i);
+            m_DescriptorHeapDescs[i].descriptorSize = m_Device->GetDescriptorHandleIncrementSize((D3D12_DESCRIPTOR_HEAP_TYPE)i);
 
             m_DescriptorHeaps[m_DescriptorHeapNum] = descriptorHeap;
             m_DescriptorHeapNum++;

@@ -29,9 +29,9 @@ static void NRI_CALL CmdSetPipeline(CommandBuffer& commandBuffer, const Pipeline
     ((CommandBufferEmuD3D11&)commandBuffer).SetPipeline(pipeline);
 }
 
-static void NRI_CALL CmdPipelineBarrier(CommandBuffer& commandBuffer, const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency)
+static void NRI_CALL CmdBarrier(CommandBuffer& commandBuffer, const BarrierGroupDesc& barrierGroupDesc)
 {
-    ((CommandBufferEmuD3D11&)commandBuffer).PipelineBarrier(transitionBarriers, aliasingBarriers, dependency);
+    ((CommandBufferEmuD3D11&)commandBuffer).Barrier(barrierGroupDesc);
 }
 
 static void NRI_CALL CmdSetDescriptorPool(CommandBuffer& commandBuffer, const DescriptorPool& descriptorPool)
@@ -225,7 +225,7 @@ void Core_CommandBufferEmu_PartiallyFillFunctionTable(CoreInterface& coreInterfa
     coreInterface.CmdSetPipelineLayout = ::CmdSetPipelineLayout;
     coreInterface.CmdSetPipeline = ::CmdSetPipeline;
     coreInterface.CmdSetConstants = ::CmdSetConstants;
-    coreInterface.CmdPipelineBarrier = ::CmdPipelineBarrier;
+    coreInterface.CmdBarrier = ::CmdBarrier;
     coreInterface.CmdBeginRendering = ::CmdBeginRendering;
     coreInterface.CmdClearAttachments = ::CmdClearAttachments;
     coreInterface.CmdSetViewports = ::CmdSetViewports;

@@ -17,7 +17,6 @@ struct CommandQueueVal : public DeviceObjectVal<CommandQueue> {
     void Submit(const QueueSubmitDesc& queueSubmitDesc);
 
     Result WaitForIdle();
-    Result ChangeResourceStates(const TransitionBarrierDesc& transitionBarriers);
     Result UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum);
 
   private:

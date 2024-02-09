@@ -10,48 +10,56 @@ constexpr std::array<VkIndexType, (uint32_t)IndexType::MAX_NUM> INDEX_TYPE_TABLE
     VK_INDEX_TYPE_UINT32
 };
 
-constexpr std::array<VkImageLayout, (uint32_t)nri::TextureLayout::MAX_NUM> LAYOUT_TABLE = {
+constexpr VkIndexType GetIndexType(IndexType indexType)
+{
+    return INDEX_TYPE_TABLE[(uint32_t)indexType];
+}
+
+constexpr std::array<VkImageLayout, (uint32_t)Layout::MAX_NUM> LAYOUT_TABLE = {
     VK_IMAGE_LAYOUT_UNDEFINED,                                      // UNKNOWN
     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                       // COLOR_ATTACHMENT
     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,               // DEPTH_STENCIL
     VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,                // DEPTH_STENCIL_READONLY
-    VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR, // DEPTH_READONLY
-    VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR, // STENCIL_READONLY
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                       // SHADER_RESOURCE
+    VK_IMAGE_LAYOUT_GENERAL,                                        // SHADER_RESOURCE_STORAGE
     IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,                              // COPY_SOURCE
     IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,                              // COPY_DESTINATION
     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,                                // PRESENT
-    VK_IMAGE_LAYOUT_GENERAL,                                        // GENERAL
 };
 
-constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits usageMask, uint32_t structureStride)
+constexpr VkImageLayout GetImageLayout(Layout layout)
+{
+    return LAYOUT_TABLE[(uint32_t)layout];
+}
+
+constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits bufferUsageBits, uint32_t structureStride)
 {
     VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
-    if (usageMask & BufferUsageBits::VERTEX_BUFFER)
+    if (bufferUsageBits & BufferUsageBits::VERTEX_BUFFER)
         flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-    if (usageMask & BufferUsageBits::INDEX_BUFFER)
+    if (bufferUsageBits & BufferUsageBits::INDEX_BUFFER)
         flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
-    if (usageMask & BufferUsageBits::CONSTANT_BUFFER)
+    if (bufferUsageBits & BufferUsageBits::CONSTANT_BUFFER)
         flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
-    if (usageMask & BufferUsageBits::ARGUMENT_BUFFER)
+    if (bufferUsageBits & BufferUsageBits::ARGUMENT_BUFFER)
         flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 
     // TODO: add more usage bits
-    if (usageMask & BufferUsageBits::RAY_TRACING_BUFFER)
+    if (bufferUsageBits & BufferUsageBits::RAY_TRACING_BUFFER)
     {
         flags |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     }
 
-    if (usageMask & BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_READ)
+    if (bufferUsageBits & BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_READ)
         flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 
-    if (usageMask & BufferUsageBits::SHADER_RESOURCE)
+    if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE)
     {
         if (structureStride == 0)
             flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
@@ -59,69 +67,13 @@ constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits usageMask, uint
             flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     }
 
-    if (usageMask & BufferUsageBits::SHADER_RESOURCE_STORAGE)
+    if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE_STORAGE)
     {
-        if (structureStride == 0 && (usageMask & BufferUsageBits::RAY_TRACING_BUFFER) == 0)
+        if (structureStride == 0 && (bufferUsageBits & BufferUsageBits::RAY_TRACING_BUFFER) == 0)
             flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
         else
             flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     }
-
-    return flags;
-}
-
-constexpr VkIndexType GetIndexType(IndexType indexType)
-{
-    return INDEX_TYPE_TABLE[(uint32_t)indexType];
-}
-
-constexpr VkImageLayout GetImageLayout(TextureLayout layout)
-{
-    return LAYOUT_TABLE[(uint32_t)layout];
-}
-
-constexpr VkAccessFlags GetAccessFlags(AccessBits mask)
-{
-    VkAccessFlags flags = 0;
-
-    if (mask & AccessBits::VERTEX_BUFFER)
-        flags |= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-
-    if (mask & AccessBits::INDEX_BUFFER)
-        flags |= VK_ACCESS_INDEX_READ_BIT;
-
-    if (mask & AccessBits::CONSTANT_BUFFER)
-        flags |= VK_ACCESS_UNIFORM_READ_BIT;
-
-    if (mask & AccessBits::ARGUMENT_BUFFER)
-        flags |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
-
-    if (mask & AccessBits::SHADER_RESOURCE)
-        flags |= VK_ACCESS_SHADER_READ_BIT;
-
-    if (mask & AccessBits::SHADER_RESOURCE_STORAGE)
-        flags |= VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-
-    if (mask & AccessBits::COLOR_ATTACHMENT)
-        flags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // TODO: add READ bit too?
-
-    if (mask & AccessBits::DEPTH_STENCIL_WRITE)
-        flags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-    if (mask & AccessBits::DEPTH_STENCIL_READ)
-        flags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-
-    if (mask & AccessBits::COPY_SOURCE)
-        flags |= VK_ACCESS_TRANSFER_READ_BIT;
-
-    if (mask & AccessBits::COPY_DESTINATION)
-        flags |= VK_ACCESS_TRANSFER_WRITE_BIT;
-
-    if (mask & AccessBits::ACCELERATION_STRUCTURE_READ)
-        flags |= VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-
-    if (mask & AccessBits::ACCELERATION_STRUCTURE_WRITE)
-        flags |= VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
 
     return flags;
 }
@@ -144,27 +96,52 @@ constexpr VkDescriptorType GetDescriptorType(DescriptorType type)
     return DESCRIPTOR_TYPES[(uint32_t)type];
 }
 
-constexpr std::array<VkShaderStageFlags, (uint32_t)ShaderStage::MAX_NUM> SHADER_STAGE_TABLE = {
-    VK_SHADER_STAGE_ALL,                            // ALL,
-    VK_SHADER_STAGE_VERTEX_BIT,                     // VERTEX,
-    VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,       // TESS_CONTROL,
-    VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,    // TESS_EVALUATION,
-    VK_SHADER_STAGE_GEOMETRY_BIT,                   // GEOMETRY,
-    VK_SHADER_STAGE_FRAGMENT_BIT,                   // FRAGMENT,
-    VK_SHADER_STAGE_COMPUTE_BIT,                    // COMPUTE,
-    VK_SHADER_STAGE_RAYGEN_BIT_KHR,                 // RAYGEN,
-    VK_SHADER_STAGE_MISS_BIT_KHR,                   // MISS,
-    VK_SHADER_STAGE_INTERSECTION_BIT_KHR,           // INTERSECTION,
-    VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,            // CLOSEST_HIT,
-    VK_SHADER_STAGE_ANY_HIT_BIT_KHR,                // ANY_HIT
-    VK_SHADER_STAGE_CALLABLE_BIT_KHR,               // CALLABLE
-    VK_SHADER_STAGE_TASK_BIT_EXT,                   // MESH_CONTROL
-    VK_SHADER_STAGE_MESH_BIT_EXT                    // MESH_EVALUATION
-};
-
-constexpr VkShaderStageFlags GetShaderStageFlags(ShaderStage stage)
+constexpr VkShaderStageFlags GetShaderStageFlags(StageBits stage)
 {
-    return SHADER_STAGE_TABLE[(uint32_t)stage];
+    if (stage & StageBits::VERTEX_SHADER)
+        return VK_SHADER_STAGE_VERTEX_BIT;
+
+    if (stage & StageBits::TESS_CONTROL_SHADER)
+        return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+
+    if (stage & StageBits::TESS_EVALUATION_SHADER)
+        return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+
+    if (stage & StageBits::GEOMETRY_SHADER)
+        return VK_SHADER_STAGE_GEOMETRY_BIT;
+
+    if (stage & StageBits::FRAGMENT_SHADER)
+        return VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    if (stage & StageBits::COMPUTE_SHADER)
+        return VK_SHADER_STAGE_COMPUTE_BIT;
+
+    if (stage & StageBits::RAYGEN_SHADER)
+        return VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+
+    if (stage & StageBits::MISS_SHADER)
+        return VK_SHADER_STAGE_MISS_BIT_KHR;
+
+    if (stage & StageBits::INTERSECTION_SHADER)
+        return VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+
+    if (stage & StageBits::CLOSEST_HIT_SHADER)
+        return VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+
+    if (stage & StageBits::ANY_HIT_SHADER)
+        return VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+
+    if (stage & StageBits::CALLABLE_SHADER)
+        return VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+
+    if (stage & StageBits::MESH_CONTROL_SHADER)
+        return VK_SHADER_STAGE_TASK_BIT_EXT;
+
+    if (stage & StageBits::MESH_EVALUATION_SHADER)
+        return VK_SHADER_STAGE_MESH_BIT_EXT;
+
+    // Should be unreachable
+    return VK_SHADER_STAGE_ALL;
 }
 
 constexpr std::array<VkFormat, (uint32_t)Format::MAX_NUM> VK_IMAGE_VIEW_FORMAT = {
@@ -515,20 +492,20 @@ constexpr VkImageType GetImageType(TextureType type)
     return IMAGE_TYPES[(uint32_t)type];
 }
 
-constexpr VkImageUsageFlags GetImageUsageFlags(TextureUsageBits usageMask)
+constexpr VkImageUsageFlags GetImageUsageFlags(TextureUsageBits textureUsageBits)
 {
     VkImageUsageFlags flags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-    if (usageMask & TextureUsageBits::SHADER_RESOURCE)
+    if (textureUsageBits & TextureUsageBits::SHADER_RESOURCE)
         flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
 
-    if (usageMask & TextureUsageBits::SHADER_RESOURCE_STORAGE)
+    if (textureUsageBits & TextureUsageBits::SHADER_RESOURCE_STORAGE)
         flags |= VK_IMAGE_USAGE_STORAGE_BIT;
 
-    if (usageMask & TextureUsageBits::COLOR_ATTACHMENT)
+    if (textureUsageBits & TextureUsageBits::COLOR_ATTACHMENT)
         flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    if (usageMask & TextureUsageBits::DEPTH_STENCIL_ATTACHMENT)
+    if (textureUsageBits & TextureUsageBits::DEPTH_STENCIL_ATTACHMENT)
         flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
     return flags;

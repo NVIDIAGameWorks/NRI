@@ -2,10 +2,16 @@
 
 #pragma once
 
-struct ID3D12GraphicsCommandList;
-struct ID3D12GraphicsCommandList4;
 struct ID3D12CommandAllocator;
 struct ID3D12Resource;
+
+#ifdef NRI_USE_AGILITY_SDK
+    struct ID3D12GraphicsCommandList9;
+    typedef ID3D12GraphicsCommandList9 ID3D12GraphicsCommandListBest;
+#else
+    struct ID3D12GraphicsCommandList6;
+    typedef ID3D12GraphicsCommandList6 ID3D12GraphicsCommandListBest;
+#endif
 
 namespace nri
 {
@@ -70,7 +76,7 @@ struct CommandBufferD3D12
     void ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc);
     void Dispatch(uint32_t x, uint32_t y, uint32_t z);
     void DispatchIndirect(const Buffer& buffer, uint64_t offset);
-    void PipelineBarrier(const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency);
+    void Barrier(const BarrierGroupDesc& barrierGroupDesc);
     void BeginQuery(const QueryPool& queryPool, uint32_t offset);
     void EndQuery(const QueryPool& queryPool, uint32_t offset);
     void CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& buffer, uint64_t alignedBufferOffset);
@@ -92,15 +98,9 @@ struct CommandBufferD3D12
     void DispatchMeshTasks(uint32_t x, uint32_t y, uint32_t z);
 
 private:
-    void AddResourceBarrier(ID3D12Resource* resource, AccessBits before, AccessBits after, D3D12_RESOURCE_BARRIER& resourceBarrier, uint32_t subresource);
-
-private:
     DeviceD3D12& m_Device;
     ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
-    ComPtr<ID3D12GraphicsCommandList> m_GraphicsCommandList;
-    ComPtr<ID3D12GraphicsCommandList1> m_GraphicsCommandList1;
-    ComPtr<ID3D12GraphicsCommandList4> m_GraphicsCommandList4;
-    ComPtr<ID3D12GraphicsCommandList6> m_GraphicsCommandList6;
+    ComPtr<ID3D12GraphicsCommandListBest> m_GraphicsCommandList;
     std::array<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> m_RenderTargets = {};
     D3D12_CPU_DESCRIPTOR_HANDLE m_DepthStencil = {};
     const PipelineLayoutD3D12* m_PipelineLayout = nullptr;
@@ -108,6 +108,7 @@ private:
     D3D12_PRIMITIVE_TOPOLOGY m_PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
     std::array<DescriptorSetD3D12*, 64> m_DescriptorSets = {}; // TODO: 64?
     uint32_t m_RenderTargetNum = 0;
+    uint8_t m_Version = 0;
     bool m_IsGraphicsPipelineLayout = false;
 };
 

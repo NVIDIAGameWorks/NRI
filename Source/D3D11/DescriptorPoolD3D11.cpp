@@ -33,7 +33,9 @@ inline Result DescriptorPoolD3D11::AllocateDescriptorSets(const PipelineLayout& 
     uint32_t instanceNum, uint32_t nodeMask, uint32_t variableDescriptorNum)
 {
     MaybeUnused(nodeMask);
-    MaybeUnused(variableDescriptorNum); // TODO: report error if non-0?
+
+    if (variableDescriptorNum)
+        return Result::UNSUPPORTED;
 
     const PipelineLayoutD3D11& pipelineLayoutD3D11 = (PipelineLayoutD3D11&)pipelineLayout;
 

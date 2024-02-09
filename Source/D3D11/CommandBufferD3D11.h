@@ -17,16 +17,15 @@ struct CommandBufferD3D11 final : public CommandBufferHelper
     inline DeviceD3D11& GetDevice() const
     { return m_Device; }
 
-    inline operator ID3D11CommandList*() const
-    { return m_CommandList.GetInterface(); }
-
     //================================================================================================================
     // CommandBufferHelper
     //================================================================================================================
 
+    inline ID3D11DeviceContext* GetNativeObject() const
+    { return m_DeferredContext; }
+
     Result Create(ID3D11DeviceContext* precreatedContext);
     void Submit();
-    ID3D11DeviceContext* GetNativeObject() const;
     StdAllocator<uint8_t>& GetStdAllocator() const;
 
     //================================================================================================================
@@ -35,7 +34,7 @@ struct CommandBufferD3D11 final : public CommandBufferHelper
 
     inline void SetDebugName(const char* name)
     {
-        SET_D3D_DEBUG_OBJECT_NAME(m_DeferredContext.ptr, name);
+        SET_D3D_DEBUG_OBJECT_NAME(m_DeferredContext, name);
         SET_D3D_DEBUG_OBJECT_NAME(m_CommandList, name);
     }
 
@@ -68,7 +67,7 @@ struct CommandBufferD3D11 final : public CommandBufferHelper
     void ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc);
     void Dispatch(uint32_t x, uint32_t y, uint32_t z);
     void DispatchIndirect(const Buffer& buffer, uint64_t offset);
-    void PipelineBarrier(const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency);
+    void Barrier(const BarrierGroupDesc& barrierGroupDesc);
     void BeginQuery(const QueryPool& queryPool, uint32_t offset);
     void EndQuery(const QueryPool& queryPool, uint32_t offset);
     void CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset);
@@ -77,9 +76,7 @@ struct CommandBufferD3D11 final : public CommandBufferHelper
 
 private:
     DeviceD3D11& m_Device;
-    VersionedContext m_DeferredContext = {}; // can be immediate to redirect data from emulation
-    BindingState m_BindingState = {};
-    SamplePositionsState m_SamplePositionsState = {};
+    ComPtr<ID3D11DeviceContextBest> m_DeferredContext; // can be immediate to redirect data from emulation
     ComPtr<ID3D11CommandList> m_CommandList;
     ComPtr<ID3DUserDefinedAnnotation> m_Annotation;
     std::array<ID3D11RenderTargetView*, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT> m_RenderTargets = {};
@@ -88,6 +85,8 @@ private:
     PipelineD3D11* m_Pipeline = nullptr;
     const Buffer* m_IndexBuffer = nullptr;
     const Buffer* m_VertexBuffer = nullptr;
+    BindingState m_BindingState = {};
+    SamplePositionsState m_SamplePositionsState = {};
     uint64_t m_IndexBufferOffset = 0;
     uint64_t m_VertexBufferOffset = 0;
     uint32_t m_VertexBufferBaseSlot = 0;
@@ -95,6 +94,7 @@ private:
     IndexType m_IndexType = IndexType::UINT32;
     float m_DepthBounds[2] = {0.0f, 1.0f};
     uint8_t m_StencilRef = 0;
+    uint8_t m_Version = 0;
 };
 
 }

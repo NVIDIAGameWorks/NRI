@@ -22,41 +22,41 @@ using namespace nri;
 
 void ConvertGeometryObjectsVal(GeometryObject* destObjects, const GeometryObject* sourceObjects, uint32_t objectNum);
 
-static bool ValidateBufferTransitionBarrierDesc(const DeviceVal& device, uint32_t i, const BufferTransitionBarrierDesc& bufferTransitionBarrierDesc) {
-    const BufferVal& bufferVal = *(const BufferVal*)bufferTransitionBarrierDesc.buffer;
+static bool ValidateBufferBarrierDesc(const DeviceVal& device, uint32_t i, const BufferBarrierDesc& bufferBarrierDesc) {
+    const BufferVal& bufferVal = *(const BufferVal*)bufferBarrierDesc.buffer;
 
-    RETURN_ON_FAILURE(&device, bufferTransitionBarrierDesc.buffer != nullptr, false, "CmdPipelineBarrier: 'transitionBarriers->buffers[%u].buffer' is NULL", i);
+    RETURN_ON_FAILURE(&device, bufferBarrierDesc.buffer != nullptr, false, "CmdBarrier: 'bufferBarrierDesc.buffers[%u].buffer' is NULL", i);
     RETURN_ON_FAILURE(
-        &device, IsAccessMaskSupported(bufferVal.GetDesc().usageMask, bufferTransitionBarrierDesc.prevAccess), false,
-        "CmdPipelineBarrier: 'transitionBarriers->buffers[%u].prevAccess' is not supported by the usage mask of the buffer ('%s')", i, bufferVal.GetDebugName()
+        &device, IsAccessMaskSupported(bufferVal.GetDesc().usageMask, bufferBarrierDesc.before.access), false,
+        "CmdBarrier: 'bufferBarrierDesc.buffers[%u].before' is not supported by the usage mask of the buffer ('%s')", i, bufferVal.GetDebugName()
     );
     RETURN_ON_FAILURE(
-        &device, IsAccessMaskSupported(bufferVal.GetDesc().usageMask, bufferTransitionBarrierDesc.nextAccess), false,
-        "CmdPipelineBarrier: 'transitionBarriers->buffers[%u].nextAccess' is not supported by the usage mask of the buffer ('%s')", i, bufferVal.GetDebugName()
+        &device, IsAccessMaskSupported(bufferVal.GetDesc().usageMask, bufferBarrierDesc.after.access), false,
+        "CmdBarrier: 'bufferBarrierDesc.buffers[%u].after' is not supported by the usage mask of the buffer ('%s')", i, bufferVal.GetDebugName()
     );
 
     return true;
 }
 
-static bool ValidateTextureTransitionBarrierDesc(const DeviceVal& device, uint32_t i, const TextureTransitionBarrierDesc& textureTransitionBarrierDesc) {
-    const TextureVal& textureVal = *(const TextureVal*)textureTransitionBarrierDesc.texture;
+static bool ValidateTextureBarrierDesc(const DeviceVal& device, uint32_t i, const TextureBarrierDesc& textureBarrierDesc) {
+    const TextureVal& textureVal = *(const TextureVal*)textureBarrierDesc.texture;
 
-    RETURN_ON_FAILURE(&device, textureTransitionBarrierDesc.texture != nullptr, false, "CmdPipelineBarrier: 'transitionBarriers->textures[%u].texture' is NULL", i);
+    RETURN_ON_FAILURE(&device, textureBarrierDesc.texture != nullptr, false, "CmdBarrier: 'bufferBarrierDesc.textures[%u].texture' is NULL", i);
     RETURN_ON_FAILURE(
-        &device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.prevState.acessBits), false,
-        "CmdPipelineBarrier: 'transitionBarriers->textures[%u].prevAccess' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName()
+        &device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureBarrierDesc.before.access), false,
+        "CmdBarrier: 'bufferBarrierDesc.textures[%u].before' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName()
     );
     RETURN_ON_FAILURE(
-        &device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.nextState.acessBits), false,
-        "CmdPipelineBarrier: 'transitionBarriers->textures[%u].nextAccess' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName()
+        &device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureBarrierDesc.after.access), false,
+        "CmdBarrier: 'bufferBarrierDesc.textures[%u].after' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName()
     );
     RETURN_ON_FAILURE(
-        &device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.prevState.layout), false,
-        "CmdPipelineBarrier: 'transitionBarriers->textures[%u].prevLayout' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName()
+        &device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureBarrierDesc.before.layout), false,
+        "CmdBarrier: 'bufferBarrierDesc.textures[%u].prevLayout' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName()
     );
     RETURN_ON_FAILURE(
-        &device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureTransitionBarrierDesc.nextState.layout), false,
-        "CmdPipelineBarrier: 'transitionBarriers->textures[%u].nextLayout' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName()
+        &device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureBarrierDesc.after.layout), false,
+        "CmdBarrier: 'bufferBarrierDesc.textures[%u].nextLayout' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName()
     );
 
     return true;
@@ -350,59 +350,35 @@ void CommandBufferVal::DispatchIndirect(const Buffer& buffer, uint64_t offset) {
     GetCoreInterface().CmdDispatchIndirect(*GetImpl(), *bufferImpl, offset);
 }
 
-void CommandBufferVal::PipelineBarrier(const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency) {
-    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdPipelineBarrier: the command buffer must be in the recording state");
-    RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "CmdPipelineBarrier: must be called outside of 'CmdBeginRendering/CmdEndRendering'");
+void CommandBufferVal::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdBarrier: the command buffer must be in the recording state");
+    RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "CmdBarrier: must be called outside of 'CmdBeginRendering/CmdEndRendering'");
 
-    TransitionBarrierDesc transitionBarrierImpl;
-    if (transitionBarriers) {
-        transitionBarrierImpl = *transitionBarriers;
-
-        for (uint32_t i = 0; i < transitionBarriers->bufferNum; i++) {
-            if (!ValidateBufferTransitionBarrierDesc(m_Device, i, transitionBarriers->buffers[i]))
-                return;
-        }
-
-        for (uint32_t i = 0; i < transitionBarriers->textureNum; i++) {
-            if (!ValidateTextureTransitionBarrierDesc(m_Device, i, transitionBarriers->textures[i]))
-                return;
-        }
-
-        transitionBarrierImpl.buffers = STACK_ALLOC(BufferTransitionBarrierDesc, transitionBarriers->bufferNum);
-        memcpy((void*)transitionBarrierImpl.buffers, transitionBarriers->buffers, sizeof(BufferTransitionBarrierDesc) * transitionBarriers->bufferNum);
-        for (uint32_t i = 0; i < transitionBarrierImpl.bufferNum; i++)
-            ((BufferTransitionBarrierDesc*)transitionBarrierImpl.buffers)[i].buffer = NRI_GET_IMPL(Buffer, transitionBarriers->buffers[i].buffer);
-
-        transitionBarrierImpl.textures = STACK_ALLOC(TextureTransitionBarrierDesc, transitionBarriers->textureNum);
-        memcpy((void*)transitionBarrierImpl.textures, transitionBarriers->textures, sizeof(TextureTransitionBarrierDesc) * transitionBarriers->textureNum);
-        for (uint32_t i = 0; i < transitionBarrierImpl.textureNum; i++)
-            ((TextureTransitionBarrierDesc*)transitionBarrierImpl.textures)[i].texture = NRI_GET_IMPL(Texture, transitionBarriers->textures[i].texture);
-
-        transitionBarriers = &transitionBarrierImpl;
+    for (uint32_t i = 0; i < barrierGroupDesc.bufferNum; i++) {
+        if (!ValidateBufferBarrierDesc(m_Device, i, barrierGroupDesc.buffers[i]))
+            return;
     }
 
-    AliasingBarrierDesc aliasingBarriersImpl;
-    if (aliasingBarriers) {
-        aliasingBarriersImpl = *aliasingBarriers;
-
-        aliasingBarriersImpl.buffers = STACK_ALLOC(BufferAliasingBarrierDesc, aliasingBarriers->bufferNum);
-        memcpy((void*)aliasingBarriersImpl.buffers, aliasingBarriers->buffers, sizeof(BufferAliasingBarrierDesc) * aliasingBarriers->bufferNum);
-        for (uint32_t i = 0; i < aliasingBarriersImpl.bufferNum; i++) {
-            ((BufferAliasingBarrierDesc*)aliasingBarriersImpl.buffers)[i].before = NRI_GET_IMPL(Buffer, aliasingBarriers->buffers[i].before);
-            ((BufferAliasingBarrierDesc*)aliasingBarriersImpl.buffers)[i].after = NRI_GET_IMPL(Buffer, aliasingBarriers->buffers[i].after);
-        }
-
-        aliasingBarriersImpl.textures = STACK_ALLOC(TextureAliasingBarrierDesc, aliasingBarriers->textureNum);
-        memcpy((void*)aliasingBarriersImpl.textures, aliasingBarriers->textures, sizeof(TextureAliasingBarrierDesc) * aliasingBarriers->textureNum);
-        for (uint32_t i = 0; i < aliasingBarriersImpl.textureNum; i++) {
-            ((TextureAliasingBarrierDesc*)aliasingBarriersImpl.textures)[i].before = NRI_GET_IMPL(Texture, aliasingBarriers->textures[i].before);
-            ((TextureAliasingBarrierDesc*)aliasingBarriersImpl.textures)[i].after = NRI_GET_IMPL(Texture, aliasingBarriers->textures[i].after);
-        }
-
-        aliasingBarriers = &aliasingBarriersImpl;
+    for (uint32_t i = 0; i < barrierGroupDesc.textureNum; i++) {
+        if (!ValidateTextureBarrierDesc(m_Device, i, barrierGroupDesc.textures[i]))
+            return;
     }
 
-    GetCoreInterface().CmdPipelineBarrier(*GetImpl(), transitionBarriers, aliasingBarriers, dependency);
+    BufferBarrierDesc* buffers = STACK_ALLOC(BufferBarrierDesc, barrierGroupDesc.bufferNum);
+    memcpy(buffers, barrierGroupDesc.buffers, sizeof(BufferBarrierDesc) * barrierGroupDesc.bufferNum);
+    for (uint32_t i = 0; i < barrierGroupDesc.bufferNum; i++)
+        buffers[i].buffer = NRI_GET_IMPL(Buffer, barrierGroupDesc.buffers[i].buffer);
+
+    TextureBarrierDesc* textures = STACK_ALLOC(TextureBarrierDesc, barrierGroupDesc.textureNum);
+    memcpy(textures, barrierGroupDesc.textures, sizeof(TextureBarrierDesc) * barrierGroupDesc.textureNum);
+    for (uint32_t i = 0; i < barrierGroupDesc.textureNum; i++)
+        textures[i].texture = NRI_GET_IMPL(Texture, barrierGroupDesc.textures[i].texture);
+
+    BarrierGroupDesc barrierGroupDescImpl = barrierGroupDesc;
+    barrierGroupDescImpl.buffers = buffers;
+    barrierGroupDescImpl.textures = textures;
+
+    GetCoreInterface().CmdBarrier(*GetImpl(), barrierGroupDescImpl);
 }
 
 void CommandBufferVal::BeginQuery(const QueryPool& queryPool, uint32_t offset) {

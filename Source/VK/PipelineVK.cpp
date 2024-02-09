@@ -21,34 +21,13 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
     m_OwnsNativeObjects = true;
     m_BindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
-    VkPipelineVertexInputStateCreateInfo vertexInputState = {};
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {};
-    VkPipelineTessellationStateCreateInfo tessellationState = {};
-    VkPipelineViewportStateCreateInfo viewportState = {};
-    VkPipelineRasterizationConservativeStateCreateInfoEXT consetvativeRasterizationState = {};
-    VkPipelineRasterizationStateCreateInfo rasterizationState = {};
-    VkPipelineMultisampleStateCreateInfo multisampleState = {};
-    VkPipelineDepthStencilStateCreateInfo depthStencilState = {};
-    VkPipelineColorBlendStateCreateInfo colorBlendState = {};
-    VkPipelineDynamicStateCreateInfo dynamicState = {};
-
-    VkPipelineShaderStageCreateInfo* stages = STACK_ALLOC(VkPipelineShaderStageCreateInfo, graphicsPipelineDesc.shaderStageNum);
-    VkShaderModule* modules = STACK_ALLOC(VkShaderModule, graphicsPipelineDesc.shaderStageNum);
+    VkPipelineShaderStageCreateInfo* stages = STACK_ALLOC(VkPipelineShaderStageCreateInfo, graphicsPipelineDesc.shaderNum);
+    VkShaderModule* modules = STACK_ALLOC(VkShaderModule, graphicsPipelineDesc.shaderNum);
     VkShaderModule* modulesBegin = modules;
 
-    const InputAssemblyDesc& inputAssembly = *graphicsPipelineDesc.inputAssembly;
-    vertexInputState.pVertexAttributeDescriptions = STACK_ALLOC(VkVertexInputAttributeDescription, inputAssembly.attributeNum);
-    vertexInputState.pVertexBindingDescriptions = STACK_ALLOC(VkVertexInputBindingDescription, inputAssembly.streamNum);
-
-    if (graphicsPipelineDesc.outputMerger != nullptr)
-        colorBlendState.pAttachments = STACK_ALLOC(VkPipelineColorBlendAttachmentState, graphicsPipelineDesc.outputMerger->colorNum);
-
-    uint32_t sampleMask = graphicsPipelineDesc.rasterization->sampleMask;
-    multisampleState.pSampleMask = &sampleMask;
-
-    for (uint32_t i = 0; i < graphicsPipelineDesc.shaderStageNum; i++)
+    for (uint32_t i = 0; i < graphicsPipelineDesc.shaderNum; i++)
     {
-        const ShaderDesc& shaderDesc = graphicsPipelineDesc.shaderStages[i];
+        const ShaderDesc& shaderDesc = graphicsPipelineDesc.shaders[i];
         Result res = SetupShaderStage(stages[i], shaderDesc, modules);
         if (res != Result::SUCCESS)
             return res;
@@ -56,14 +35,38 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
         stages[i].pName = (shaderDesc.entryPointName == nullptr) ? "main" : shaderDesc.entryPointName;
     }
 
+    VkPipelineVertexInputStateCreateInfo vertexInputState = {};
+    vertexInputState.pVertexAttributeDescriptions = STACK_ALLOC(VkVertexInputAttributeDescription, graphicsPipelineDesc.inputAssembly->attributeNum);
+    vertexInputState.pVertexBindingDescriptions = STACK_ALLOC(VkVertexInputBindingDescription, graphicsPipelineDesc.inputAssembly->streamNum);
     FillVertexInputState(graphicsPipelineDesc, vertexInputState);
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {};
     FillInputAssemblyState(graphicsPipelineDesc, inputAssemblyState);
+
+    VkPipelineTessellationStateCreateInfo tessellationState = {};
     FillTessellationState(graphicsPipelineDesc, tessellationState);
+
+    VkPipelineViewportStateCreateInfo viewportState = {};
     FillViewportState(graphicsPipelineDesc, viewportState);
+
+    VkPipelineRasterizationStateCreateInfo rasterizationState = {};
+    VkPipelineRasterizationConservativeStateCreateInfoEXT consetvativeRasterizationState = {};
     FillRasterizationState(graphicsPipelineDesc, rasterizationState, consetvativeRasterizationState);
+
+    VkPipelineMultisampleStateCreateInfo multisampleState = {};
+    uint32_t sampleMask = graphicsPipelineDesc.rasterization->sampleMask;
+    multisampleState.pSampleMask = &sampleMask;
     FillMultisampleState(graphicsPipelineDesc, multisampleState);
+
+    VkPipelineDepthStencilStateCreateInfo depthStencilState = {};
     FillDepthStencilState(graphicsPipelineDesc, depthStencilState);
+
+    VkPipelineColorBlendStateCreateInfo colorBlendState = {};
+    if (graphicsPipelineDesc.outputMerger)
+        colorBlendState.pAttachments = STACK_ALLOC(VkPipelineColorBlendAttachmentState, graphicsPipelineDesc.outputMerger->colorNum);
     FillColorBlendState(graphicsPipelineDesc, colorBlendState);
+
+    VkPipelineDynamicStateCreateInfo dynamicState = {};
     FillDynamicState(dynamicState);
 
     const PipelineLayoutVK& pipelineLayoutVK = *(const PipelineLayoutVK*)graphicsPipelineDesc.pipelineLayout;
@@ -88,7 +91,7 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         &pipelineRenderingCreateInfo,
         (VkPipelineCreateFlags)0,
-        graphicsPipelineDesc.shaderStageNum,
+        graphicsPipelineDesc.shaderNum,
         stages,
         &vertexInputState,
         &inputAssemblyState,
@@ -98,7 +101,7 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
         &multisampleState,
         &depthStencilState,
         &colorBlendState,
-        &dynamicState, // TODO: do we need dynamic state?
+        &dynamicState,
         pipelineLayoutVK,
         VK_NULL_HANDLE,
         0,
@@ -112,7 +115,7 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
     RETURN_ON_FAILURE(&m_Device, vkResult == VK_SUCCESS, GetReturnCode(vkResult),
         "Can't create a graphics pipeline: vkCreateGraphicsPipelines returned %d.", (int32_t)vkResult);
 
-    for (size_t i = 0; i < graphicsPipelineDesc.shaderStageNum; i++)
+    for (size_t i = 0; i < graphicsPipelineDesc.shaderNum; i++)
         vk.DestroyShaderModule(m_Device, modulesBegin[i], m_Device.GetAllocationCallbacks());
 
     return Result::SUCCESS;
@@ -129,8 +132,8 @@ Result PipelineVK::Create(const ComputePipelineDesc& computePipelineDesc)
         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         nullptr,
         (VkShaderModuleCreateFlags)0,
-        (size_t)computePipelineDesc.computeShader.size,
-        (const uint32_t*)computePipelineDesc.computeShader.bytecode
+        (size_t)computePipelineDesc.shader.size,
+        (const uint32_t*)computePipelineDesc.shader.bytecode
     };
 
     VkShaderModule module = VK_NULL_HANDLE;
@@ -146,7 +149,7 @@ Result PipelineVK::Create(const ComputePipelineDesc& computePipelineDesc)
         (VkPipelineShaderStageCreateFlags)0,
         VK_SHADER_STAGE_COMPUTE_BIT,
         module,
-        (computePipelineDesc.computeShader.entryPointName == nullptr) ? "main" : computePipelineDesc.computeShader.entryPointName,
+        (computePipelineDesc.shader.entryPointName == nullptr) ? "main" : computePipelineDesc.shader.entryPointName,
         nullptr
     };
 
@@ -184,7 +187,7 @@ Result PipelineVK::Create(const RayTracingPipelineDesc& rayTracingPipelineDesc)
 
     for (uint32_t i = 0; i < stageNum; i++)
     {
-        const ShaderDesc& shaderDesc = rayTracingPipelineDesc.shaderLibrary->shaderDescs[i];
+        const ShaderDesc& shaderDesc = rayTracingPipelineDesc.shaderLibrary->shaders[i];
         Result result = SetupShaderStage(stages[i], shaderDesc, modules);
         if (result != Result::SUCCESS)
             return result;
@@ -245,16 +248,14 @@ Result PipelineVK::Create(const RayTracingPipelineDesc& rayTracingPipelineDesc)
         }
     }
 
-    VkRayTracingPipelineCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR };
-
+    
+    VkRayTracingPipelineCreateInfoKHR createInfo = {VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR};
     createInfo.stageCount = stageNum;
     createInfo.pStages = stages;
-    createInfo.maxPipelineRayRecursionDepth = rayTracingPipelineDesc.recursionDepthMax;
-    createInfo.layout = pipelineLayoutVK;
-
     createInfo.groupCount = rayTracingPipelineDesc.shaderGroupDescNum;
     createInfo.pGroups = groupArray;
-
+    createInfo.maxPipelineRayRecursionDepth = rayTracingPipelineDesc.recursionDepthMax;
+    createInfo.layout = pipelineLayoutVK;
     createInfo.basePipelineIndex = -1;
 
     const auto& vk = m_Device.GetDispatchTable();
@@ -493,19 +494,21 @@ void PipelineVK::FillColorBlendState(const GraphicsPipelineDesc& graphicsPipelin
     }
 }
 
-constexpr std::array<VkDynamicState, 4> DYNAMIC_STATE = {
+constexpr std::array<VkDynamicState, 4> DYNAMIC_STATE = { // TODO: add more
     VK_DYNAMIC_STATE_VIEWPORT,
     VK_DYNAMIC_STATE_SCISSOR,
     VK_DYNAMIC_STATE_DEPTH_BOUNDS,
     VK_DYNAMIC_STATE_STENCIL_REFERENCE,
 };
 
-void PipelineVK::FillDynamicState(VkPipelineDynamicStateCreateInfo& state) const
+void PipelineVK::FillDynamicState(VkPipelineDynamicStateCreateInfo& state)
 {
     state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 
     state.dynamicStateCount = (uint32_t)DYNAMIC_STATE.size();
     state.pDynamicStates = DYNAMIC_STATE.data();
+
+    m_HasDynamicState = true; // TODO: keep in mind - all enabled dynamic state must be set at least once!
 }
 
 void PipelineVK::FillGroupIndices(const RayTracingPipelineDesc& rayTracingPipelineDesc, uint32_t* groupIndices)

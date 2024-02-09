@@ -63,46 +63,10 @@ bool nri::RequiresDedicatedAllocation(MemoryType memoryType)
 {
     D3D12_HEAP_FLAGS heapFlags = GetHeapFlags(memoryType);
 
-    if ((heapFlags & D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES) == D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES )
+    if ((heapFlags & D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES) == D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES)
         return true;
 
     return false;
-}
-
-D3D12_RESOURCE_STATES nri::GetResourceStates(AccessBits accessMask, D3D12_COMMAND_LIST_TYPE commandListType)
-{
-    D3D12_RESOURCE_STATES resourceStates = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON; // TODO: PS resource and/or non-PS resource?
-
-    if (accessMask & (AccessBits::CONSTANT_BUFFER | AccessBits::VERTEX_BUFFER))
-        resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-    if (accessMask & AccessBits::INDEX_BUFFER)
-        resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDEX_BUFFER;
-    if (accessMask & AccessBits::ARGUMENT_BUFFER)
-        resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
-    if (accessMask & AccessBits::SHADER_RESOURCE_STORAGE)
-        resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-    if (accessMask & AccessBits::COLOR_ATTACHMENT)
-        resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_RENDER_TARGET;
-    if (accessMask & AccessBits::DEPTH_STENCIL_READ)
-        resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_DEPTH_READ;
-    if (accessMask & AccessBits::DEPTH_STENCIL_WRITE)
-        resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_DEPTH_WRITE;
-    if (accessMask & AccessBits::COPY_SOURCE)
-        resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE;
-    if (accessMask & AccessBits::COPY_DESTINATION)
-        resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST;
-    if (accessMask & AccessBits::SHADER_RESOURCE)
-    {
-        resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-        if (commandListType == D3D12_COMMAND_LIST_TYPE_DIRECT)
-            resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-    }
-    if (accessMask & AccessBits::ACCELERATION_STRUCTURE_READ)
-        resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-    if (accessMask & AccessBits::ACCELERATION_STRUCTURE_WRITE)
-        resourceStates |= D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-
-    return resourceStates;
 }
 
 D3D12_RESOURCE_FLAGS nri::GetBufferFlags(BufferUsageBits bufferUsageMask)
@@ -170,27 +134,34 @@ D3D12_DESCRIPTOR_HEAP_TYPE nri::GetDescriptorHeapType(DescriptorType descriptorT
     return descriptorType == DescriptorType::SAMPLER ? D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER : D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 }
 
-constexpr std::array<D3D12_SHADER_VISIBILITY, (uint32_t)ShaderStage::MAX_NUM> SHADER_STAGES = {
-    D3D12_SHADER_VISIBILITY_ALL,                // ALL
-    D3D12_SHADER_VISIBILITY_VERTEX,             // VERTEX
-    D3D12_SHADER_VISIBILITY_HULL,               // TESS_CONTROL
-    D3D12_SHADER_VISIBILITY_DOMAIN,             // TESS_EVALUATION
-    D3D12_SHADER_VISIBILITY_GEOMETRY,           // GEOMETRY
-    D3D12_SHADER_VISIBILITY_PIXEL,              // FRAGMENT
-    D3D12_SHADER_VISIBILITY_ALL,                // COMPUTE
-    D3D12_SHADER_VISIBILITY_ALL,                // RAYGEN
-    D3D12_SHADER_VISIBILITY_ALL,                // MISS
-    D3D12_SHADER_VISIBILITY_ALL,                // INTERSECTION
-    D3D12_SHADER_VISIBILITY_ALL,                // CLOSEST_HIT
-    D3D12_SHADER_VISIBILITY_ALL,                // ANY_HIT
-    D3D12_SHADER_VISIBILITY_ALL,                // CALLABLE
-    D3D12_SHADER_VISIBILITY_AMPLIFICATION,      // MESH_CONTROL
-    D3D12_SHADER_VISIBILITY_MESH                // MESH_EVALUATION
-};
-
-D3D12_SHADER_VISIBILITY nri::GetShaderVisibility(ShaderStage shaderStage)
+D3D12_SHADER_VISIBILITY nri::GetShaderVisibility(StageBits shaderStages)
 {
-    return SHADER_STAGES[(uint32_t)shaderStage];
+    if (shaderStages == StageBits::ALL || shaderStages == StageBits::COMPUTE_SHADER || (shaderStages & StageBits::RAY_TRACING_SHADERS) != 0)
+        return D3D12_SHADER_VISIBILITY_ALL;
+
+    if (shaderStages == StageBits::VERTEX_SHADER)
+        return D3D12_SHADER_VISIBILITY_VERTEX;
+
+    if (shaderStages == StageBits::TESS_CONTROL_SHADER)
+        return D3D12_SHADER_VISIBILITY_HULL;
+
+    if (shaderStages == StageBits::TESS_EVALUATION_SHADER)
+        return D3D12_SHADER_VISIBILITY_DOMAIN;
+
+    if (shaderStages == StageBits::GEOMETRY_SHADER)
+        return D3D12_SHADER_VISIBILITY_GEOMETRY;
+
+    if (shaderStages == StageBits::FRAGMENT_SHADER)
+        return D3D12_SHADER_VISIBILITY_PIXEL;
+
+    if (shaderStages == StageBits::MESH_CONTROL_SHADER)
+        return D3D12_SHADER_VISIBILITY_AMPLIFICATION;
+
+    if (shaderStages == StageBits::MESH_EVALUATION_SHADER)
+        return D3D12_SHADER_VISIBILITY_MESH;
+
+    // Should be unreachable
+    return D3D12_SHADER_VISIBILITY_ALL;
 }
 
 constexpr std::array<D3D12_PRIMITIVE_TOPOLOGY_TYPE, (uint32_t)Topology::MAX_NUM> PRIMITIVE_TOPOLOGY_TYPES = {

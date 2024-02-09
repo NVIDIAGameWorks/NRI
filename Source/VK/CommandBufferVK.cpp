@@ -14,14 +14,6 @@
 
 using namespace nri;
 
-struct Barriers
-{
-    VkBufferMemoryBarrier* buffers;
-    VkImageMemoryBarrier* images;
-    uint32_t bufferNum;
-    uint32_t imageNum;
-};
-
 CommandBufferVK::~CommandBufferVK()
 {
     if (m_CommandPool == VK_NULL_HANDLE)
@@ -86,9 +78,6 @@ inline Result CommandBufferVK::Begin(const DescriptorPool* descriptorPool, uint3
 
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
         "Can't begin a command buffer: vkBeginCommandBuffer returned %d.", (int32_t)result);
-
-    if (m_Type == CommandQueueType::GRAPHICS)
-        vk.CmdSetDepthBounds(m_Handle, 0.0f, 1.0f);
 
     m_CurrentPipelineBindPoint = VK_PIPELINE_BIND_POINT_MAX_ENUM;
     m_CurrentPipelineLayoutHandle = VK_NULL_HANDLE;
@@ -382,10 +371,13 @@ inline void CommandBufferVK::SetPipeline(const Pipeline& pipeline)
         return;
 
     const PipelineVK& pipelineImpl = (const PipelineVK&)pipeline;
+    m_CurrentPipeline = &pipelineImpl;
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBindPipeline(m_Handle, pipelineImpl.GetBindPoint(), pipelineImpl);
-    m_CurrentPipeline = &pipelineImpl;
+
+    if (pipelineImpl.HasDynamicState())
+        vk.CmdSetDepthBounds(m_Handle, 0.0f, 1.0f);
 }
 
 inline void CommandBufferVK::SetDescriptorPool(const DescriptorPool& descriptorPool)
@@ -630,47 +622,194 @@ inline void CommandBufferVK::DispatchIndirect(const Buffer& buffer, uint64_t off
     vk.CmdDispatchIndirect(m_Handle, bufferImpl.GetHandle(m_PhysicalDeviceIndex), offset);
 }
 
-inline void CommandBufferVK::PipelineBarrier(const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency)
+static inline VkPipelineStageFlags2 GetPipelineStageFlags(StageBits stageBits)
 {
-    MaybeUnused(dependency); // TODO: use it or remove, because it's needed only for VK
+    // Check non-mask values first
+    if (stageBits == StageBits::ALL)
+        return VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 
-    Barriers barriers = {};
+    if (stageBits == StageBits::NONE)
+        return VK_PIPELINE_STAGE_2_NONE;
 
-    barriers.bufferNum = transitionBarriers ? transitionBarriers->bufferNum : 0;
-    barriers.bufferNum += aliasingBarriers ? aliasingBarriers->bufferNum : 0;
+    // Gather bits
+    VkPipelineStageFlags2 flags = 0;
 
-    barriers.buffers = STACK_ALLOC(VkBufferMemoryBarrier, barriers.bufferNum);
-    barriers.bufferNum = 0;
+    if (stageBits & StageBits::INDEX_INPUT)
+        flags |= VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT;
 
-    if (aliasingBarriers != nullptr)
-        FillAliasingBufferBarriers(*aliasingBarriers, barriers);
-    if (transitionBarriers != nullptr)
-        FillTransitionBufferBarriers(*transitionBarriers, barriers);
+    if (stageBits & StageBits::VERTEX_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
 
-    barriers.imageNum = transitionBarriers ? transitionBarriers->textureNum : 0;
-    barriers.imageNum += aliasingBarriers ? aliasingBarriers->textureNum : 0;
+    if (stageBits & StageBits::TESS_CONTROL_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT;
 
-    barriers.images = STACK_ALLOC(VkImageMemoryBarrier, barriers.imageNum);
-    barriers.imageNum = 0;
+    if (stageBits & StageBits::TESS_EVALUATION_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT;
 
-    if (aliasingBarriers != nullptr)
-        FillAliasingImageBarriers(*aliasingBarriers, barriers);
-    if (transitionBarriers != nullptr)
-        FillTransitionImageBarriers(*transitionBarriers, barriers);
+    if (stageBits & StageBits::GEOMETRY_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT;
 
-    // TODO: more optimal srcStageMask and dstStageMask
+    if (stageBits & StageBits::MESH_CONTROL_SHADER) // Requires supportedFeatures.meshShader
+        flags |= VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT;
+
+    if (stageBits & StageBits::MESH_EVALUATION_SHADER) // Requires supportedFeatures.meshShader
+        flags |= VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT;
+
+    if (stageBits & StageBits::FRAGMENT_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+
+    if (stageBits & StageBits::DEPTH_STENCIL_ATTACHMENT)
+        flags |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+
+    if (stageBits & StageBits::COLOR_ATTACHMENT)
+        flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+    if (stageBits & StageBits::COMPUTE_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+
+    if (stageBits & StageBits::RAY_TRACING_SHADERS) // Requires supportedFeatures.rayTracing
+        flags |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+
+    if (stageBits & StageBits::INDIRECT)
+        flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
+    
+    if (stageBits & StageBits::STREAM_OUTPUT) // Requires supportedFeatures.transformFeedback
+        flags |= VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT;
+    
+    if (stageBits & (StageBits::COPY | StageBits::CLEAR_STORAGE))
+        flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+
+    if (stageBits & StageBits::ACCELERATION_STRUCTURE)
+        flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+
+    return flags;
+}
+
+static inline VkAccessFlags2 GetAccessFlags(AccessBits accessBits)
+{
+    VkAccessFlags2 flags = 0;
+
+    if (accessBits & AccessBits::VERTEX_BUFFER)
+        flags |= VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT;
+
+    if (accessBits & AccessBits::INDEX_BUFFER)
+        flags |= VK_ACCESS_2_INDEX_READ_BIT;
+
+    if (accessBits & AccessBits::CONSTANT_BUFFER)
+        flags |= VK_ACCESS_2_UNIFORM_READ_BIT;
+
+    if (accessBits & AccessBits::ARGUMENT_BUFFER)
+        flags |= VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
+
+    if (accessBits & AccessBits::SHADER_RESOURCE)
+        flags |= VK_ACCESS_2_SHADER_READ_BIT;
+
+    if (accessBits & AccessBits::SHADER_RESOURCE_STORAGE)
+        flags |= VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT;
+
+    if (accessBits & AccessBits::COLOR_ATTACHMENT)
+        flags |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+
+    if (accessBits & AccessBits::DEPTH_STENCIL_WRITE)
+        flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+    if (accessBits & AccessBits::DEPTH_STENCIL_READ)
+        flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+
+    if (accessBits & AccessBits::COPY_SOURCE)
+        flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
+
+    if (accessBits & AccessBits::COPY_DESTINATION)
+        flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
+
+    if (accessBits & AccessBits::ACCELERATION_STRUCTURE_READ)
+        flags |= VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+
+    if (accessBits & AccessBits::ACCELERATION_STRUCTURE_WRITE)
+        flags |= VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+
+    if (accessBits & AccessBits::STREAM_OUTPUT)
+        flags |= VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT; // TODO: VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT, VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT?
+
+    if (accessBits & AccessBits::SHADING_RATE) // Requires supportedFeatures.shadingRate
+        flags |= VK_ACCESS_2_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR;
+
+    return flags;
+}
+
+inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc)
+{
+    VkMemoryBarrier2* memoryBarriers = STACK_ALLOC(VkMemoryBarrier2, barrierGroupDesc.globalNum);
+    for (uint16_t i = 0; i < barrierGroupDesc.globalNum; i++)
+    {
+        const GlobalBarrierDesc& barrierDesc = barrierGroupDesc.globals[i];
+
+        VkMemoryBarrier2& barrier = memoryBarriers[i];
+        barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+        barrier.pNext = nullptr;
+        barrier.srcStageMask = GetPipelineStageFlags(barrierDesc.before.stages);
+        barrier.srcAccessMask = GetAccessFlags(barrierDesc.before.access);
+        barrier.dstStageMask = GetPipelineStageFlags(barrierDesc.after.stages);
+        barrier.dstAccessMask = GetAccessFlags(barrierDesc.after.access);
+    }
+
+    VkBufferMemoryBarrier2* bufferBarriers = STACK_ALLOC(VkBufferMemoryBarrier2, barrierGroupDesc.bufferNum);
+    for (uint16_t i = 0; i < barrierGroupDesc.bufferNum; i++)
+    {
+        const BufferBarrierDesc& barrierDesc = barrierGroupDesc.buffers[i];
+        const BufferVK& bufferImpl = *(const BufferVK*)barrierDesc.buffer;
+        
+        VkBufferMemoryBarrier2& barrier = bufferBarriers[i];
+        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+        barrier.pNext = nullptr;
+        barrier.srcStageMask = GetPipelineStageFlags(barrierDesc.before.stages);
+        barrier.srcAccessMask = GetAccessFlags(barrierDesc.before.access);
+        barrier.dstStageMask = GetPipelineStageFlags(barrierDesc.after.stages);
+        barrier.dstAccessMask = GetAccessFlags(barrierDesc.after.access);
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.buffer = bufferImpl.GetHandle(m_PhysicalDeviceIndex);
+        barrier.offset = 0;
+        barrier.size = VK_WHOLE_SIZE;
+    }
+
+    VkImageMemoryBarrier2* textureBarriers = STACK_ALLOC(VkImageMemoryBarrier2, barrierGroupDesc.textureNum);
+    for (uint16_t i = 0; i < barrierGroupDesc.textureNum; i++)
+    {
+        const TextureBarrierDesc& barrierDesc = barrierGroupDesc.textures[i];
+        const TextureVK& textureImpl = *(const TextureVK*)barrierDesc.texture;
+
+        VkImageMemoryBarrier2& barrier = textureBarriers[i];
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+        barrier.pNext = nullptr;
+        barrier.srcStageMask = GetPipelineStageFlags(barrierDesc.before.stages);
+        barrier.srcAccessMask = GetAccessFlags(barrierDesc.before.access);
+        barrier.dstStageMask = GetPipelineStageFlags(barrierDesc.after.stages);
+        barrier.dstAccessMask = GetAccessFlags(barrierDesc.after.access);
+        barrier.oldLayout = GetImageLayout(barrierDesc.before.layout);
+        barrier.newLayout = GetImageLayout(barrierDesc.after.layout);
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = textureImpl.GetHandle(m_PhysicalDeviceIndex);
+        barrier.subresourceRange = {
+            textureImpl.GetImageAspectFlags(),
+            barrierDesc.mipOffset,
+            (barrierDesc.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : barrierDesc.mipNum,
+            barrierDesc.arrayOffset,
+            (barrierDesc.arraySize == REMAINING_ARRAY_LAYERS) ? VK_REMAINING_ARRAY_LAYERS : barrierDesc.arraySize
+        };
+    }
+
+    VkDependencyInfo dependencyInfo = {VK_STRUCTURE_TYPE_DEPENDENCY_INFO};
+    dependencyInfo.memoryBarrierCount = barrierGroupDesc.globalNum;
+    dependencyInfo.pMemoryBarriers = memoryBarriers;
+    dependencyInfo.bufferMemoryBarrierCount = barrierGroupDesc.bufferNum;
+    dependencyInfo.pBufferMemoryBarriers = bufferBarriers;
+    dependencyInfo.imageMemoryBarrierCount = barrierGroupDesc.textureNum;
+    dependencyInfo.pImageMemoryBarriers = textureBarriers;
+
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdPipelineBarrier(
-        m_Handle,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        0,
-        0,
-        nullptr,
-        barriers.bufferNum,
-        barriers.buffers,
-        barriers.imageNum,
-        barriers.images);
+    vk.CmdPipelineBarrier2(m_Handle, &dependencyInfo);
 }
 
 inline void CommandBufferVK::BeginQuery(const QueryPool& queryPool, uint32_t offset)
@@ -732,108 +871,6 @@ inline void CommandBufferVK::EndAnnotation()
         return;
 
     vk.CmdEndDebugUtilsLabelEXT(m_Handle);
-}
-
-inline void CommandBufferVK::FillAliasingBufferBarriers(const AliasingBarrierDesc& aliasing, Barriers& barriers) const
-{
-    for (uint32_t i = 0; i < aliasing.bufferNum; i++)
-    {
-        const BufferAliasingBarrierDesc& barrierDesc = aliasing.buffers[i];
-        const BufferVK& bufferImpl = *(const BufferVK*)barrierDesc.after;
-
-        barriers.buffers[barriers.bufferNum++] = {
-            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            nullptr,
-            (VkAccessFlags)0,
-            GetAccessFlags(barrierDesc.nextAccess),
-            VK_QUEUE_FAMILY_IGNORED,
-            VK_QUEUE_FAMILY_IGNORED,
-            bufferImpl.GetHandle(m_PhysicalDeviceIndex),
-            0,
-            VK_WHOLE_SIZE
-        };
-    }
-}
-
-inline void CommandBufferVK::FillAliasingImageBarriers(const AliasingBarrierDesc& aliasing, Barriers& barriers) const
-{
-    for (uint32_t i = 0; i < aliasing.textureNum; i++)
-    {
-        const TextureAliasingBarrierDesc& barrierDesc = aliasing.textures[i];
-        const TextureVK& textureImpl = *(const TextureVK*)barrierDesc.after;
-
-        barriers.images[barriers.imageNum++] = {
-            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-            nullptr,
-            (VkAccessFlags)0,
-            GetAccessFlags(barrierDesc.nextState.acessBits),
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            GetImageLayout(barrierDesc.nextState.layout),
-            VK_QUEUE_FAMILY_IGNORED,
-            VK_QUEUE_FAMILY_IGNORED,
-            textureImpl.GetHandle(m_PhysicalDeviceIndex),
-            VkImageSubresourceRange{
-                textureImpl.GetImageAspectFlags(),
-                0,
-                VK_REMAINING_MIP_LEVELS,
-                0,
-                VK_REMAINING_ARRAY_LAYERS
-            }
-        };
-    }
-}
-
-inline void CommandBufferVK::FillTransitionBufferBarriers(const TransitionBarrierDesc& transitions, Barriers& barriers) const
-{
-    for (uint32_t i = 0; i < transitions.bufferNum; i++)
-    {
-        const BufferTransitionBarrierDesc& barrierDesc = transitions.buffers[i];
-
-        VkBufferMemoryBarrier& barrier = barriers.buffers[barriers.bufferNum++];
-        const BufferVK& bufferImpl = *(const BufferVK*)barrierDesc.buffer;
-
-        barrier = {
-            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            nullptr,
-            GetAccessFlags(barrierDesc.prevAccess),
-            GetAccessFlags(barrierDesc.nextAccess),
-            VK_QUEUE_FAMILY_IGNORED,
-            VK_QUEUE_FAMILY_IGNORED,
-            bufferImpl.GetHandle(m_PhysicalDeviceIndex),
-            0,
-            VK_WHOLE_SIZE
-        };
-    }
-}
-
-inline void CommandBufferVK::FillTransitionImageBarriers(const TransitionBarrierDesc& transitions, Barriers& barriers) const
-{
-    for (uint32_t i = 0; i < transitions.textureNum; i++)
-    {
-        const TextureTransitionBarrierDesc& barrierDesc = transitions.textures[i];
-
-        VkImageMemoryBarrier& barrier = barriers.images[barriers.imageNum++];
-        const TextureVK& textureImpl = *(const TextureVK*)barrierDesc.texture;
-
-        barrier = {
-            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-            nullptr,
-            GetAccessFlags(barrierDesc.prevState.acessBits),
-            GetAccessFlags(barrierDesc.nextState.acessBits),
-            GetImageLayout(barrierDesc.prevState.layout),
-            GetImageLayout(barrierDesc.nextState.layout),
-            VK_QUEUE_FAMILY_IGNORED,
-            VK_QUEUE_FAMILY_IGNORED,
-            textureImpl.GetHandle(m_PhysicalDeviceIndex),
-            VkImageSubresourceRange{
-                textureImpl.GetImageAspectFlags(),
-                barrierDesc.mipOffset,
-                (barrierDesc.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : barrierDesc.mipNum,
-                barrierDesc.arrayOffset,
-                (barrierDesc.arraySize == REMAINING_ARRAY_LAYERS) ? VK_REMAINING_ARRAY_LAYERS : barrierDesc.arraySize
-            }
-        };
-    }
 }
 
 inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, uint32_t dstNodeIndex, const TextureVK& srcTexture, uint32_t srcNodeIndex)

@@ -2,14 +2,18 @@
 
 #pragma once
 
-struct IDXGIFactory2;
 struct IDXGIAdapter;
-struct ID3D12Device;
-struct ID3D12Device5;
 struct ID3D12DescriptorHeap;
 struct ID3D12CommandSignature;
-struct IDXGIOutput;
 struct D3D12_CPU_DESCRIPTOR_HANDLE;
+
+#ifdef NRI_USE_AGILITY_SDK
+    struct ID3D12Device13;
+    typedef ID3D12Device13 ID3D12DeviceBest;
+#else
+    struct ID3D12Device5;
+    typedef ID3D12Device5 ID3D12DeviceBest;
+#endif
 
 typedef size_t DescriptorPointerCPU;
 typedef uint64_t DescriptorPointerGPU;
@@ -43,17 +47,23 @@ struct DeviceD3D12 final : public DeviceBase
     DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator);
     ~DeviceD3D12();
 
-    inline operator ID3D12Device*() const
-    { return m_Device.GetInterface(); }
+    inline ID3D12DeviceBest* GetNativeObject() const
+    { return m_Device; }
 
-    inline operator ID3D12Device5*() const
-    { return m_Device5.GetInterface(); }
+    inline ID3D12DeviceBest* operator->() const
+    { return m_Device; }
+
+    inline uint8_t GetVersion() const
+    { return m_Version; }
 
     inline IDXGIAdapter* GetAdapter() const
-    { return m_Adapter.GetInterface(); }
+    { return m_Adapter; }
 
     inline bool IsMeshShaderSupported() const
     { return m_IsMeshShaderSupported; }
+
+    inline bool AreEnhancedBarriersSupported() const
+    { return m_AreEnhancedBarriersSupported; }
 
     inline const CoreInterface& GetCoreInterface() const
     { return m_CoreInterface; }
@@ -156,8 +166,7 @@ private:
     MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const;
 
 private:
-    ComPtr<ID3D12Device> m_Device;
-    ComPtr<ID3D12Device5> m_Device5;
+    ComPtr<ID3D12DeviceBest> m_Device;
     ComPtr<IDXGIAdapter> m_Adapter;
     std::array<CommandQueueD3D12*, COMMAND_QUEUE_TYPE_NUM> m_CommandQueues = {};
     Vector<DescriptorHeapDesc> m_DescriptorHeaps;
@@ -167,9 +176,11 @@ private:
     UnorderedMap<uint32_t, ComPtr<ID3D12CommandSignature>> m_DrawIndexedCommandSignatures;
     ComPtr<ID3D12CommandSignature> m_DispatchCommandSignature;
     CoreInterface m_CoreInterface = {};
-    std::array<Lock, DESCRIPTOR_HEAP_TYPE_NUM> m_FreeDescriptorLocks;
+    uint8_t m_Version = 0;
     bool m_IsRaytracingSupported = false;
     bool m_IsMeshShaderSupported = false;
+    bool m_AreEnhancedBarriersSupported = false;
+    std::array<Lock, DESCRIPTOR_HEAP_TYPE_NUM> m_FreeDescriptorLocks;
     Lock m_DescriptorHeapLock;
     Lock m_QueueLock;
 };

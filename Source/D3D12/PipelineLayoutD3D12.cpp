@@ -9,18 +9,18 @@ D3D12_ROOT_SIGNATURE_FLAGS GetRootSignatureStageFlags(const PipelineLayoutDesc& 
 {
     D3D12_ROOT_SIGNATURE_FLAGS flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
 
-    if (pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::VERTEX)
+    if (pipelineLayoutDesc.shaderStages & StageBits::VERTEX_SHADER)
         flags |= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
     else
         flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
 
-    if (!(pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::TESS_CONTROL))
+    if (!(pipelineLayoutDesc.shaderStages & StageBits::TESS_CONTROL_SHADER))
         flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
-    if (!(pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::TESS_EVALUATION))
+    if (!(pipelineLayoutDesc.shaderStages & StageBits::TESS_EVALUATION_SHADER))
         flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS;
-    if (!(pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::GEOMETRY))
+    if (!(pipelineLayoutDesc.shaderStages & StageBits::GEOMETRY_SHADER))
         flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-    if (!(pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::FRAGMENT))
+    if (!(pipelineLayoutDesc.shaderStages & StageBits::FRAGMENT_SHADER))
         flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 
     // Windows versions prior to 20H1 (which introduced DirectX Ultimate) can
@@ -29,9 +29,9 @@ D3D12_ROOT_SIGNATURE_FLAGS GetRootSignatureStageFlags(const PipelineLayoutDesc& 
     // (and thus Windows) supports mesh shading.
     if(device.IsMeshShaderSupported())
     {
-        if (!(pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::MESH_CONTROL))
+        if (!(pipelineLayoutDesc.shaderStages & StageBits::MESH_CONTROL_SHADER))
             flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS;
-        if (!(pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::MESH_EVALUATION))
+        if (!(pipelineLayoutDesc.shaderStages & StageBits::MESH_EVALUATION_SHADER))
             flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS;
     }
 
@@ -48,7 +48,7 @@ PipelineLayoutD3D12::PipelineLayoutD3D12(DeviceD3D12& device) :
 
 Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
 {
-    m_IsGraphicsPipelineLayout = pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::ALL_GRAPHICS;
+    m_IsGraphicsPipelineLayout = pipelineLayoutDesc.shaderStages & StageBits::GRAPHICS_SHADERS;
 
     uint32_t rangeMax = 0;
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++)
@@ -74,7 +74,7 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
         D3D12_ROOT_PARAMETER1 rootParameter = {};
         rootParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 
-        D3D12_DESCRIPTOR_RANGE_FLAGS descriptorRangeFlags = descriptorSetDesc.bindingMask & DescriptorSetBindingBits::PARTIALLY_BOUND ?
+        D3D12_DESCRIPTOR_RANGE_FLAGS descriptorRangeFlags = descriptorSetDesc.partiallyBound ?
             D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE | D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE : D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
 
         uint32_t groupedRangeNum = 0;
@@ -83,7 +83,7 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
         {
             auto& descriptorRangeMapping = m_DescriptorSetMappings[i].descriptorRangeMappings[j];
 
-            D3D12_SHADER_VISIBILITY shaderVisibility = GetShaderVisibility(descriptorSetDesc.ranges[j].visibility);
+            D3D12_SHADER_VISIBILITY shaderVisibility = GetShaderVisibility(descriptorSetDesc.ranges[j].shaderStages);
             D3D12_DESCRIPTOR_RANGE_TYPE rangeType = GetDescriptorRangesType(descriptorSetDesc.ranges[j].descriptorType);
 
             if (groupedRangeNum &&
@@ -135,7 +135,7 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
             {
                 rootParameterLocal.Descriptor.ShaderRegister = descriptorSetDesc.dynamicConstantBuffers[j].registerIndex;
                 rootParameterLocal.Descriptor.RegisterSpace = descriptorSetDesc.registerSpace;
-                rootParameterLocal.ShaderVisibility = GetShaderVisibility(descriptorSetDesc.dynamicConstantBuffers[j].visibility);
+                rootParameterLocal.ShaderVisibility = GetShaderVisibility(descriptorSetDesc.dynamicConstantBuffers[j].shaderStages);
                 rootParameters.push_back(rootParameterLocal);
             }
         }
@@ -154,7 +154,7 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
         rootParameterLocal.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
         for (uint32_t i = 0; i < pipelineLayoutDesc.pushConstantNum; i++)
         {
-            rootParameterLocal.ShaderVisibility = GetShaderVisibility(pipelineLayoutDesc.pushConstants[i].visibility);
+            rootParameterLocal.ShaderVisibility = GetShaderVisibility(pipelineLayoutDesc.pushConstants[i].shaderStages);
             rootParameterLocal.Constants.ShaderRegister = pipelineLayoutDesc.pushConstants[i].registerIndex;
             rootParameterLocal.Constants.RegisterSpace = 0;
             rootParameterLocal.Constants.Num32BitValues = pipelineLayoutDesc.pushConstants[i].size / 4;
@@ -173,7 +173,7 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     HRESULT hr = D3D12SerializeVersionedRootSignature(&rootSignatureDesc, &rootSignatureBlob, &errorBlob);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "D3D12SerializeVersionedRootSignature()");
 
-    hr = ((ID3D12Device*)m_Device)->CreateRootSignature(NRI_TEMP_NODE_MASK, rootSignatureBlob->GetBufferPointer(), rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
+    hr = m_Device->CreateRootSignature(NRI_TEMP_NODE_MASK, rootSignatureBlob->GetBufferPointer(), rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateRootSignature()");
 
     return Result::SUCCESS;

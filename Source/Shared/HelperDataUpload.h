@@ -16,10 +16,8 @@ private:
     bool CopyTextureContent(const nri::TextureUploadDesc& textureDataDesc, nri::Dim_t& arrayOffset, nri::Mip_t& mipOffset, bool& isCapacityInsufficient);
     void CopyTextureSubresourceContent(const nri::TextureSubresourceUploadDesc& subresource, uint64_t alignedRowPitch, uint64_t alignedSlicePitch);
     bool CopyBufferContent(const nri::BufferUploadDesc& bufferDataDesc, uint64_t& bufferContentOffset);
-    template<bool isInitialTransition>
-    nri::Result DoTransition(const nri::TextureUploadDesc* textureDataDescs, uint32_t textureDataDescNum);
-    template<bool isInitialTransition>
-    nri::Result DoTransition(const nri::BufferUploadDesc* bufferDataDescs, uint32_t bufferDataDescNum);
+    template<bool isInitialTransition> void DoTransition(const nri::TextureUploadDesc* textureDataDescs, uint32_t textureDataDescNum);
+    template<bool isInitialTransition> void DoTransition(const nri::BufferUploadDesc* bufferDataDescs, uint32_t bufferDataDescNum);
 
     Vector<nri::CommandBuffer*> m_CommandBuffers;
     const nri::CoreInterface& NRI;

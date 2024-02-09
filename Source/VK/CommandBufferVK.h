@@ -2,8 +2,6 @@
 
 #pragma once
 
-struct Barriers;
-
 namespace nri
 {
 
@@ -42,7 +40,7 @@ struct CommandBufferVK
     void SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
     void SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size);
     void SetDescriptorPool(const DescriptorPool& descriptorPool);
-    void PipelineBarrier(const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency);
+    void Barrier(const BarrierGroupDesc& barrierGroupDesc);
 
     void BeginRendering(const AttachmentsDesc& attachmentsDesc);
     void EndRendering();
@@ -108,10 +106,6 @@ struct CommandBufferVK
     void DispatchMeshTasks(uint32_t x, uint32_t y, uint32_t z);
 
 private:
-    void FillAliasingBufferBarriers(const AliasingBarrierDesc& aliasing, Barriers& barriers) const;
-    void FillAliasingImageBarriers(const AliasingBarrierDesc& aliasing, Barriers& barriers) const;
-    void FillTransitionBufferBarriers(const TransitionBarrierDesc& transitions, Barriers& barriers) const;
-    void FillTransitionImageBarriers(const TransitionBarrierDesc& transitions, Barriers& barriers) const;
     void CopyWholeTexture(const TextureVK& dstTexture, uint32_t dstNodeIndex, const TextureVK& srcTexture, uint32_t srcNodeIndex);
 
 private:

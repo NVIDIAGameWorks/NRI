@@ -21,6 +21,39 @@
 
 using namespace nri;
 
+static uint8_t QueryLatestDevice(ComPtr<ID3D12DeviceBest>& in, ComPtr<ID3D12DeviceBest>& out)
+{
+    static const IID versions[] = {
+#ifdef NRI_USE_AGILITY_SDK
+        __uuidof(ID3D12Device13),
+        __uuidof(ID3D12Device12),
+        __uuidof(ID3D12Device11),
+        __uuidof(ID3D12Device10),
+        __uuidof(ID3D12Device9),
+        __uuidof(ID3D12Device8),
+        __uuidof(ID3D12Device7),
+        __uuidof(ID3D12Device6),
+#endif
+        __uuidof(ID3D12Device5),
+        __uuidof(ID3D12Device4),
+        __uuidof(ID3D12Device3),
+        __uuidof(ID3D12Device2),
+        __uuidof(ID3D12Device1),
+        __uuidof(ID3D12Device),
+    };
+    const uint8_t n = (uint8_t)GetCountOf(versions);
+
+    uint8_t i = 0;
+    for (; i < n; i++)
+    {
+        HRESULT hr = in->QueryInterface(versions[i], (void**)&out);
+        if (SUCCEEDED(hr))
+            break;
+    }
+
+    return n - i - 1;
+}
+
 Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device)
 {
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
@@ -96,14 +129,14 @@ Result DeviceD3D12::CreateImplementation(Interface*& entity, const Args&... args
 
 Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
 {
-    m_Device = deviceCreationDesc.d3d12Device;
+    ComPtr<ID3D12DeviceBest> device = (ID3D12DeviceBest*)deviceCreationDesc.d3d12Device;
 
     // Get adapter
     ComPtr<IDXGIFactory4> dxgiFactory;
     HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
     RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
 
-    hr = dxgiFactory->EnumAdapterByLuid(m_Device->GetAdapterLuid(), IID_PPV_ARGS(&m_Adapter));
+    hr = dxgiFactory->EnumAdapterByLuid(device->GetAdapterLuid(), IID_PPV_ARGS(&m_Adapter));
     RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
 
     // Get adapter description as early as possible for meaningful error reporting
@@ -119,7 +152,8 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
     m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
 
     // Create device
-    m_Device->QueryInterface(IID_PPV_ARGS(&m_Device5));
+    m_Version = QueryLatestDevice(device, m_Device);
+    REPORT_INFO(this, "Using ID3D12Device%u...", m_Version);
 
     // Wrap command queues
     if (deviceCreationDesc.d3d12GraphicsQueue)
@@ -195,10 +229,12 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
     m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
 
     // Create device
-    hr = D3D12CreateDevice(m_Adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_Device));
+    ComPtr<ID3D12DeviceBest> device;
+    hr = D3D12CreateDevice(m_Adapter, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), (void**)&device);
     RETURN_ON_BAD_HRESULT(this, hr, "D3D12CreateDevice()");
 
-    m_Device->QueryInterface(IID_PPV_ARGS(&m_Device5));
+    m_Version = QueryLatestDevice(device, m_Device);
+    REPORT_INFO(this, "Using ID3D12Device%u...", m_Version);
 
     // TODO: this code is currently needed to disable known false-positive errors reported by the debug layer
     if (deviceCreationDesc.enableAPIValidation)
@@ -261,7 +297,7 @@ Result DeviceD3D12::CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYP
 
     ComPtr<ID3D12DescriptorHeap> descriptorHeap;
     D3D12_DESCRIPTOR_HEAP_DESC desc = {type, DESCRIPTORS_BATCH_SIZE, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, NRI_TEMP_NODE_MASK};
-    HRESULT hr = ((ID3D12Device*)m_Device)->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap));
+    HRESULT hr = m_Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap));
     RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateDescriptorHeap()");
 
     DescriptorHeapDesc descriptorHeapDesc = {};
@@ -403,6 +439,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options5) failed, result = 0x%08X!", hr);
+    m_IsRaytracingSupported = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS6 options6 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &options6, sizeof(options6));
@@ -413,6 +450,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options7) failed, result = 0x%08X!", hr);
+    m_IsMeshShaderSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
 
 #ifdef NRI_USE_AGILITY_SDK
     D3D12_FEATURE_DATA_D3D12_OPTIONS8 options8 = {};
@@ -439,6 +477,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12, &options12, sizeof(options12));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options12) failed, result = 0x%08X!", hr);
+    m_AreEnhancedBarriersSupported = options12.EnhancedBarriersSupported;    
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS13 options13 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS13, &options13, sizeof(options13));
@@ -475,9 +514,6 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options19) failed, result = 0x%08X!", hr);
 #endif
-
-    m_IsRaytracingSupported = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0;
-    m_IsMeshShaderSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
 
     const std::array<D3D_FEATURE_LEVEL, 5> levelsList = {
         D3D_FEATURE_LEVEL_11_0,

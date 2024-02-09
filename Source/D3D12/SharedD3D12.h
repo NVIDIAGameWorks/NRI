@@ -30,7 +30,6 @@ D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE GetCopyMode(CopyMode copyMode)
 
 D3D12_RESOURCE_FLAGS GetBufferFlags(BufferUsageBits bufferUsageMask);
 D3D12_RESOURCE_FLAGS GetTextureFlags(TextureUsageBits textureUsageMask);
-D3D12_RESOURCE_STATES GetResourceStates(AccessBits accessMask, D3D12_COMMAND_LIST_TYPE commandListType);
 
 bool RequiresDedicatedAllocation(MemoryType memoryType);
 void ConvertGeometryDescs(D3D12_RAYTRACING_GEOMETRY_DESC* geometryDescs, const GeometryObject* geometryObjects, uint32_t geometryObjectNum);
@@ -56,7 +55,7 @@ UINT8 GetRenderTargetWriteMask(ColorWriteBits colorWriteMask);
 D3D12_LOGIC_OP GetLogicOp(LogicFunc logicFunc);
 D3D12_BLEND GetBlend(BlendFactor blendFactor);
 D3D12_BLEND_OP GetBlendOp(BlendFunc blendFunc);
-D3D12_SHADER_VISIBILITY GetShaderVisibility(ShaderStage shaderStage);
+D3D12_SHADER_VISIBILITY GetShaderVisibility(StageBits shaderStage);
 D3D12_DESCRIPTOR_RANGE_TYPE GetDescriptorRangesType(DescriptorType descriptorType);
 D3D12_RESOURCE_DIMENSION GetResourceDimension(TextureType textureType);
 

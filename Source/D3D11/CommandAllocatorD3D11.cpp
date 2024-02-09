@@ -13,7 +13,7 @@ Result CreateCommandBuffer(DeviceD3D11& device, ID3D11DeviceContext* precreatedC
     if (precreatedContext)
         isImmediate = precreatedContext->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE;
     else
-        isImmediate = device.GetDevice().isDeferredContextEmulated;
+        isImmediate = device.IsDeferredContextEmulated();
 
     void* impl;
     if (isImmediate)

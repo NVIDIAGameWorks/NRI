@@ -31,8 +31,8 @@ Result TextureVK::Create(const TextureDesc& textureDesc)
     const Vector<uint32_t>& queueIndices = m_Device.GetConcurrentSharingModeQueueIndices();
     uint32_t nodeMask = GetNodeMask(textureDesc.nodeMask);
 
-    VkImageCreateInfo info = {};
-    info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    VkImageCreateInfo info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    info.flags = GetImageCreateFlags(textureDesc.format);
     info.imageType = imageType;
     info.format = ::GetVkFormat(textureDesc.format);
     info.extent.width = textureDesc.width;
@@ -46,7 +46,7 @@ Result TextureVK::Create(const TextureDesc& textureDesc)
     info.sharingMode = sharingMode;
     info.queueFamilyIndexCount = (uint32_t)queueIndices.size();
     info.pQueueFamilyIndices = queueIndices.data();
-    info.flags = GetImageCreateFlags(textureDesc.format);
+    info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     const auto& vk = m_Device.GetDispatchTable();
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)

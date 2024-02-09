@@ -29,9 +29,9 @@ static void NRI_CALL CmdSetPipeline(CommandBuffer& commandBuffer, const Pipeline
     ((CommandBufferD3D11&)commandBuffer).SetPipeline(pipeline);
 }
 
-static void NRI_CALL CmdPipelineBarrier(CommandBuffer& commandBuffer, const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency)
+static void NRI_CALL CmdBarrier(CommandBuffer& commandBuffer, const BarrierGroupDesc& barrierGroupDesc)
 {
-    ((CommandBufferD3D11&)commandBuffer).PipelineBarrier(transitionBarriers, aliasingBarriers, dependency);
+    ((CommandBufferD3D11&)commandBuffer).Barrier(barrierGroupDesc);
 }
 
 static void NRI_CALL CmdSetDescriptorPool(CommandBuffer& commandBuffer, const DescriptorPool& descriptorPool)
@@ -208,7 +208,7 @@ static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandB
     if (!(&commandBuffer))
         return nullptr;
 
-    return (CommandBufferD3D11&)commandBuffer;
+    return ((CommandBufferD3D11&)commandBuffer).GetNativeObject();
 }
 
 #pragma endregion

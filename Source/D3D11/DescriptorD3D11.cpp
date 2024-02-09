@@ -77,7 +77,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
             srv.Texture1D.MipLevels = remainingMipLevels;
             srv.Format = dxgiFormat.typed;
 
-            hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
+            hr = m_Device->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::RESOURCE;
         }
@@ -93,7 +93,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
             srv.Texture1DArray.ArraySize = remainingArrayLayers;
             srv.Format = dxgiFormat.typed;
 
-            hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
+            hr = m_Device->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::RESOURCE;
         }
@@ -106,7 +106,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
             uav.Texture1D.MipSlice = textureViewDesc.mipOffset;
             uav.Format = dxgiFormat.typed;
 
-            hr = m_Device.GetDevice()->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
+            hr = m_Device->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::STORAGE;
         }
@@ -121,7 +121,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
             uav.Texture1DArray.ArraySize = remainingArrayLayers;
             uav.Format = dxgiFormat.typed;
 
-            hr = m_Device.GetDevice()->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
+            hr = m_Device->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::STORAGE;
         }
@@ -136,7 +136,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
             rtv.Texture1DArray.ArraySize = remainingArrayLayers;
             rtv.Format = dxgiFormat.typed;
 
-            hr = m_Device.GetDevice()->CreateRenderTargetView(texture, &rtv, (ID3D11RenderTargetView**)&m_Descriptor);
+            hr = m_Device->CreateRenderTargetView(texture, &rtv, (ID3D11RenderTargetView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::NO_SHADER_VISIBLE;
         }
@@ -157,7 +157,7 @@ Result DescriptorD3D11::Create(const Texture1DViewDesc& textureViewDesc)
             if (textureViewDesc.flags & ResourceViewBits::READONLY_STENCIL)
                 dsv.Flags |= D3D11_DSV_READ_ONLY_STENCIL;
 
-            hr = m_Device.GetDevice()->CreateDepthStencilView(texture, &dsv, (ID3D11DepthStencilView**)&m_Descriptor);
+            hr = m_Device->CreateDepthStencilView(texture, &dsv, (ID3D11DepthStencilView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::NO_SHADER_VISIBLE;
         }
@@ -200,7 +200,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
             }
             srv.Format = GetShaderFormatForDepth(dxgiFormat.typed);
 
-            hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
+            hr = m_Device->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::RESOURCE;
         }
@@ -225,7 +225,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
             }
             srv.Format = GetShaderFormatForDepth(dxgiFormat.typed);
 
-            hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
+            hr = m_Device->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::RESOURCE;
         }
@@ -239,7 +239,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
             srv.TextureCube.MipLevels = remainingMipLevels;
             srv.Format = dxgiFormat.typed;
 
-            hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
+            hr = m_Device->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::RESOURCE;
         }
@@ -255,7 +255,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
             srv.TextureCubeArray.NumCubes = textureViewDesc.arraySize / 6;
             srv.Format = GetShaderFormatForDepth(dxgiFormat.typed);
 
-            hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
+            hr = m_Device->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::RESOURCE;
         }
@@ -268,7 +268,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
             uav.Texture2D.MipSlice = textureViewDesc.mipOffset;
             uav.Format = GetShaderFormatForDepth(dxgiFormat.typed);
 
-            hr = m_Device.GetDevice()->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
+            hr = m_Device->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::STORAGE;
         }
@@ -283,7 +283,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
             uav.Texture2DArray.ArraySize = remainingArrayLayers;
             uav.Format = GetShaderFormatForDepth(dxgiFormat.typed);
 
-            hr = m_Device.GetDevice()->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
+            hr = m_Device->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::STORAGE;
         }
@@ -307,7 +307,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
             }
             rtv.Format = dxgiFormat.typed;
 
-            hr = m_Device.GetDevice()->CreateRenderTargetView(texture, &rtv, (ID3D11RenderTargetView**)&m_Descriptor);
+            hr = m_Device->CreateRenderTargetView(texture, &rtv, (ID3D11RenderTargetView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::NO_SHADER_VISIBLE;
         }
@@ -337,7 +337,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc)
             if (textureViewDesc.flags & ResourceViewBits::READONLY_STENCIL)
                 dsv.Flags |= D3D11_DSV_READ_ONLY_STENCIL;
 
-            hr = m_Device.GetDevice()->CreateDepthStencilView(texture, &dsv, (ID3D11DepthStencilView**)&m_Descriptor);
+            hr = m_Device->CreateDepthStencilView(texture, &dsv, (ID3D11DepthStencilView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::NO_SHADER_VISIBLE;
         }
@@ -373,7 +373,7 @@ Result DescriptorD3D11::Create(const Texture3DViewDesc& textureViewDesc)
             srv.Texture3D.MipLevels = remainingMipLevels;
             srv.Format = dxgiFormat.typed;
 
-            hr = m_Device.GetDevice()->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
+            hr = m_Device->CreateShaderResourceView(texture, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::RESOURCE;
         }
@@ -388,7 +388,7 @@ Result DescriptorD3D11::Create(const Texture3DViewDesc& textureViewDesc)
             uav.Texture3D.WSize = textureViewDesc.sliceNum;
             uav.Format = dxgiFormat.typed;
 
-            hr = m_Device.GetDevice()->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
+            hr = m_Device->CreateUnorderedAccessView(texture, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::STORAGE;
         }
@@ -403,7 +403,7 @@ Result DescriptorD3D11::Create(const Texture3DViewDesc& textureViewDesc)
             rtv.Texture3D.WSize = textureViewDesc.sliceNum;
             rtv.Format = dxgiFormat.typed;
 
-            hr = m_Device.GetDevice()->CreateRenderTargetView(texture, &rtv, (ID3D11RenderTargetView**)&m_Descriptor);
+            hr = m_Device->CreateRenderTargetView(texture, &rtv, (ID3D11RenderTargetView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::NO_SHADER_VISIBLE;
         }
@@ -431,7 +431,7 @@ Result DescriptorD3D11::Create(const BufferViewDesc& bufferViewDesc)
     {
         format = Format::RGBA32_SFLOAT;
 
-        if (bufferViewDesc.offset != 0 && m_Device.GetDevice().version == 0)
+        if (bufferViewDesc.offset != 0 && m_Device.GetVersion() == 0)
             REPORT_ERROR(&m_Device, "Constant buffers with non-zero offsets require 11.1+ feature level!");
     }
     else if (stride)
@@ -463,7 +463,7 @@ Result DescriptorD3D11::Create(const BufferViewDesc& bufferViewDesc)
             srv.Buffer.FirstElement = m_ElementOffset;
             srv.Buffer.NumElements = m_ElementNum;
 
-            hr = m_Device.GetDevice()->CreateShaderResourceView(buffer, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
+            hr = m_Device->CreateShaderResourceView(buffer, &srv, (ID3D11ShaderResourceView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::RESOURCE;
         }
@@ -477,7 +477,7 @@ Result DescriptorD3D11::Create(const BufferViewDesc& bufferViewDesc)
             uav.Buffer.FirstElement = m_ElementOffset;
             uav.Buffer.NumElements = m_ElementNum;
 
-            hr = m_Device.GetDevice()->CreateUnorderedAccessView(buffer, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
+            hr = m_Device->CreateUnorderedAccessView(buffer, &uav, (ID3D11UnorderedAccessView**)&m_Descriptor);
 
             m_Type = DescriptorTypeDX11::STORAGE;
         }
@@ -520,7 +520,7 @@ Result DescriptorD3D11::Create(const SamplerDesc& samplerDesc)
         desc.BorderColor[3] = 1.0f;
     }
 
-    HRESULT hr = m_Device.GetDevice()->CreateSamplerState(&desc, (ID3D11SamplerState**)&m_Descriptor);
+    HRESULT hr = m_Device->CreateSamplerState(&desc, (ID3D11SamplerState**)&m_Descriptor);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateSamplerState()");
 
     m_Type = DescriptorTypeDX11::SAMPLER;

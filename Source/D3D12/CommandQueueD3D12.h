@@ -39,7 +39,6 @@ struct CommandQueueD3D12
     { SET_D3D_DEBUG_OBJECT_NAME(m_CommandQueue, name); }
 
     void Submit(const QueueSubmitDesc& queueSubmitDesc);
-    Result ChangeResourceStates(const TransitionBarrierDesc& transitionBarriers);
     Result UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum,
         const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum);
     Result WaitForIdle();

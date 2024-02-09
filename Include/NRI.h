@@ -1,13 +1,32 @@
 // © 2021 NVIDIA Corporation
 
+/*
+NRI: generalized common denominator for D3D11, D3D12 and Vulkan GAPIs
+    D3D11 spec: https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm
+    D3D12 spec: https://microsoft.github.io/DirectX-Specs/
+    VK spec: https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html
+
+Goals:
+- generalization of D3D12 and VK GAPIs
+- providing access to low-level features of modern GAPIs
+- low overhead
+- D3D11 support (as much as possible)
+
+Non-goals:
+- high level RHI
+- exposing entities not existing in GAPIs
+- D3D11-like abstraction level
+- hidden management of any kind
+*/
+
 #pragma once
 
 #include <stdint.h>
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 117
-#define NRI_VERSION_DATE "2 February 2024"
+#define NRI_VERSION_MINOR 118
+#define NRI_VERSION_DATE "9 February 2024"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -85,7 +104,9 @@ NRI_STRUCT(CoreInterface)
         void (NRI_CALL *CmdSetPipelineLayout)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(PipelineLayout) pipelineLayout);
         void (NRI_CALL *CmdSetPipeline)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Pipeline) pipeline);
         void (NRI_CALL *CmdSetConstants)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t pushConstantIndex, const void* data, uint32_t size);
-        void (NRI_CALL *CmdPipelineBarrier)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME(TransitionBarrierDesc)* transitionBarriers, const NRI_NAME(AliasingBarrierDesc)* aliasingBarriers, NRI_NAME(BarrierDependency) dependency);
+
+        // Barrier (can be used inside "Graphics" but with limited functionality)
+        void (NRI_CALL *CmdBarrier)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(BarrierGroupDesc) barrierGroupDesc);
 
         // Graphics
         void (NRI_CALL *CmdBeginRendering)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(AttachmentsDesc) attachmentsDesc);
@@ -109,6 +130,16 @@ NRI_STRUCT(CoreInterface)
         void (NRI_CALL *CmdDispatch)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t x, uint32_t y, uint32_t z);
         void (NRI_CALL *CmdDispatchIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset);
 
+        // Copy
+        void (NRI_CALL *CmdCopyBuffer)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(Buffer) dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const NRI_NAME_REF(Buffer) srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size);
+        void (NRI_CALL *CmdCopyTexture)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(Texture) dstTexture, uint32_t dstNodeIndex, const NRI_NAME(TextureRegionDesc)* dstRegionDesc, const NRI_NAME_REF(Texture) srcTexture, uint32_t srcNodeIndex, const NRI_NAME(TextureRegionDesc)* srcRegionDesc);
+        void (NRI_CALL *CmdUploadBufferToTexture)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(Texture) dstTexture, const NRI_NAME_REF(TextureRegionDesc) dstRegionDesc, const NRI_NAME_REF(Buffer) srcBuffer, const NRI_NAME_REF(TextureDataLayoutDesc) srcDataLayoutDesc);
+        void (NRI_CALL *CmdReadbackTextureToBuffer)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(Buffer) dstBuffer, NRI_NAME_REF(TextureDataLayoutDesc) dstDataLayoutDesc, const NRI_NAME_REF(Texture) srcTexture, const NRI_NAME_REF(TextureRegionDesc) srcRegionDesc);
+
+        // Clear storage
+        void (NRI_CALL *CmdClearStorageBuffer)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(ClearStorageBufferDesc) clearDesc);
+        void (NRI_CALL *CmdClearStorageTexture)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(ClearStorageTextureDesc) clearDesc);
+
         // Query
         void (NRI_CALL *CmdBeginQuery)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(QueryPool) queryPool, uint32_t offset);
         void (NRI_CALL *CmdEndQuery)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(QueryPool) queryPool, uint32_t offset);
@@ -118,14 +149,6 @@ NRI_STRUCT(CoreInterface)
         // Annotation
         void (NRI_CALL *CmdBeginAnnotation)(NRI_NAME_REF(CommandBuffer) commandBuffer, const char* name);
         void (NRI_CALL *CmdEndAnnotation)(NRI_NAME_REF(CommandBuffer) commandBuffer);
-
-        // Misc
-        void (NRI_CALL *CmdClearStorageBuffer)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(ClearStorageBufferDesc) clearDesc);
-        void (NRI_CALL *CmdClearStorageTexture)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(ClearStorageTextureDesc) clearDesc);
-        void (NRI_CALL *CmdCopyBuffer)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(Buffer) dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const NRI_NAME_REF(Buffer) srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size);
-        void (NRI_CALL *CmdCopyTexture)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(Texture) dstTexture, uint32_t dstNodeIndex, const NRI_NAME(TextureRegionDesc)* dstRegionDesc, const NRI_NAME_REF(Texture) srcTexture, uint32_t srcNodeIndex, const NRI_NAME(TextureRegionDesc)* srcRegionDesc);
-        void (NRI_CALL *CmdUploadBufferToTexture)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(Texture) dstTexture, const NRI_NAME_REF(TextureRegionDesc) dstRegionDesc, const NRI_NAME_REF(Buffer) srcBuffer, const NRI_NAME_REF(TextureDataLayoutDesc) srcDataLayoutDesc);
-        void (NRI_CALL *CmdReadbackTextureToBuffer)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(Buffer) dstBuffer, NRI_NAME_REF(TextureDataLayoutDesc) dstDataLayoutDesc, const NRI_NAME_REF(Texture) srcTexture, const NRI_NAME_REF(TextureRegionDesc) srcRegionDesc);
     // }
     NRI_NAME(Result) (NRI_CALL *EndCommandBuffer)(NRI_NAME_REF(CommandBuffer) commandBuffer);
 

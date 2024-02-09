@@ -22,6 +22,28 @@ static std::array<DXGI_COLOR_SPACE_TYPE, (size_t)SwapChainFormat::MAX_NUM> g_col
     DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020,     // BT2020_G2084_10BIT
 };
 
+static uint8_t QueryLatestSwapChain(ComPtr<IDXGISwapChainBest>& in, ComPtr<IDXGISwapChainBest>& out)
+{
+    static const IID versions[] = {
+        __uuidof(IDXGISwapChain4),
+        __uuidof(IDXGISwapChain3),
+        __uuidof(IDXGISwapChain2),
+        __uuidof(IDXGISwapChain1),
+        __uuidof(IDXGISwapChain),
+    };
+    const uint8_t n = (uint8_t)GetCountOf(versions);
+
+    uint8_t i = 0;
+    for (; i < n; i++)
+    {
+        HRESULT hr = in->QueryInterface(versions[i], (void**)&out);
+        if (SUCCEEDED(hr))
+            break;
+    }
+
+    return n - i - 1;
+}
+
 SwapChainD3D11::~SwapChainD3D11()
 {
     if (m_FrameLatencyWaitableObject)
@@ -36,8 +58,6 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
     HWND hwnd = (HWND)swapChainDesc.window.windows.hwnd;
     if (!hwnd)
         return Result::INVALID_ARGUMENT;
-
-    ID3D11Device* device = m_Device.GetDevice().ptr.GetInterface();
 
     // Query DXGIFactory2
     HRESULT hr = m_Device.GetAdapter()->GetParent(IID_PPV_ARGS(&m_DxgiFactory2));
@@ -72,43 +92,17 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
     if (isTearingAllowed)
         desc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
-    ComPtr<IDXGISwapChain1> swapChain;
-    hr = m_DxgiFactory2->CreateSwapChainForHwnd(device, hwnd, &desc, nullptr, nullptr, &swapChain);
+    ComPtr<IDXGISwapChainBest> swapChain;
+    hr = m_DxgiFactory2->CreateSwapChainForHwnd(m_Device.GetNativeObject(), hwnd, &desc, nullptr, nullptr, (IDXGISwapChain1**)&swapChain);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGIFactory2::CreateSwapChainForHwnd()");
+
+    m_Version = QueryLatestSwapChain(swapChain, m_SwapChain);
 
     hr = m_DxgiFactory2->MakeWindowAssociation(hwnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGIFactory::MakeWindowAssociation()");
 
-    // Query interfaces
-    hr = swapChain->QueryInterface(__uuidof(IDXGISwapChain4), (void**)&m_SwapChain.ptr);
-    m_SwapChain.version = 4;
-    if (FAILED(hr))
-    {
-        REPORT_WARNING(&m_Device, "QueryInterface(IDXGISwapChain4) - FAILED!");
-        hr = device->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&m_SwapChain.ptr);
-        m_SwapChain.version = 3;
-        if (FAILED(hr))
-        {
-            REPORT_WARNING(&m_Device, "QueryInterface(IDXGISwapChain3) - FAILED!");
-            hr = device->QueryInterface(__uuidof(IDXGISwapChain2), (void**)&m_SwapChain.ptr);
-            m_SwapChain.version = 2;
-            if (FAILED(hr))
-            {
-                REPORT_WARNING(&m_Device, "QueryInterface(IDXGISwapChain2) - FAILED!");
-                hr = device->QueryInterface(__uuidof(IDXGISwapChain1), (void**)&m_SwapChain.ptr);
-                m_SwapChain.version = 1;
-                if (FAILED(hr))
-                {
-                    REPORT_WARNING(&m_Device, "QueryInterface(IDXGISwapChain1) - FAILED!");
-                    m_SwapChain.ptr = (IDXGISwapChain4*)swapChain.GetInterface();
-                    m_SwapChain.version = 0;
-                }
-            }
-        }
-    }
-
     // Color space
-    if (m_SwapChain.version >= 3)
+    if (m_Version >= 3)
     {
         uint32_t colorSpaceSupport = 0;
         hr = m_SwapChain->CheckColorSpaceSupport(colorSpace, &colorSpaceSupport);
@@ -126,7 +120,7 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
         REPORT_ERROR(&m_Device, "IDXGISwapChain3::SetColorSpace1() is not supported by the OS!");
 
     // Background color
-    if (m_SwapChain.version >= 1)
+    if (m_Version >= 1)
     {
         DXGI_RGBA color = {0.0f, 0.0f, 0.0f, 1.0f};
         hr = m_SwapChain->SetBackgroundColor(&color);
@@ -135,7 +129,7 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc)
     }
 
     // Maximum frame latency
-    if (m_SwapChain.version >= 2)
+    if (m_Version >= 2)
     {
         // IMPORTANT: SetMaximumFrameLatency must be called BEFORE GetFrameLatencyWaitableObject!
         hr = m_SwapChain->SetMaximumFrameLatency(swapChainDesc.textureNum);

@@ -14,7 +14,7 @@ Result CommandQueueD3D12::Create(CommandQueueType queueType)
     commandQueueDesc.NodeMask = NRI_TEMP_NODE_MASK;
     commandQueueDesc.Type = GetCommandListType(queueType);
 
-    HRESULT hr = ((ID3D12Device*)m_Device)->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&m_CommandQueue));
+    HRESULT hr = m_Device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&m_CommandQueue));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateCommandQueue()");
 
     m_CommandListType = commandQueueDesc.Type;
@@ -46,13 +46,6 @@ inline void CommandQueueD3D12::Submit(const QueueSubmitDesc& queueSubmitDesc)
 
         m_CommandQueue->ExecuteCommandLists(queueSubmitDesc.commandBufferNum, commandLists);
     }
-}
-
-inline Result CommandQueueD3D12::ChangeResourceStates(const TransitionBarrierDesc& transitionBarriers)
-{
-    HelperResourceStateChange resourceStateChange(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
-
-    return resourceStateChange.ChangeStates(transitionBarriers);
 }
 
 inline Result CommandQueueD3D12::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum,

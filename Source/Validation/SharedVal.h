@@ -130,21 +130,19 @@ constexpr bool IsAccessMaskSupported(TextureUsageBits usageMask, AccessBits acce
     return (uint32_t)(requiredUsageMask & usageMask) == (uint32_t)requiredUsageMask;
 }
 
-constexpr std::array<TextureUsageBits, (size_t)TextureLayout::MAX_NUM> TEXTURE_USAGE_FOR_TEXTURE_LAYOUT_TABLE = {
+constexpr std::array<TextureUsageBits, (size_t)Layout::MAX_NUM> TEXTURE_USAGE_FOR_TEXTURE_LAYOUT_TABLE = {
     TextureUsageBits::NONE,                     // UNKNOWN
     TextureUsageBits::COLOR_ATTACHMENT,         // COLOR_ATTACHMENT
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_STENCIL
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_STENCIL_READONLY
-    TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_READONLY
-    TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // STENCIL_READONLY
     TextureUsageBits::SHADER_RESOURCE,          // SHADER_RESOURCE
+    TextureUsageBits::SHADER_RESOURCE_STORAGE,  // SHADER_RESOURCE_STORAGE
     TextureUsageBits::NONE,                     // COPY_SOURCE
     TextureUsageBits::NONE,                     // COPY_DESTINATION
     TextureUsageBits::NONE,                     // PRESENT
-    TextureUsageBits::NONE,                     // GENERAL
 };
 
-constexpr bool IsTextureLayoutSupported(TextureUsageBits usageMask, TextureLayout textureLayout) {
+constexpr bool IsTextureLayoutSupported(TextureUsageBits usageMask, Layout textureLayout) {
     const TextureUsageBits requiredMask = TEXTURE_USAGE_FOR_TEXTURE_LAYOUT_TABLE[(size_t)textureLayout];
 
     return (uint32_t)(requiredMask & usageMask) == (uint32_t)requiredMask;

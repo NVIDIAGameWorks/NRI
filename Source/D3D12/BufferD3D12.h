@@ -2,7 +2,13 @@
 
 #pragma once
 
-struct ID3D12Resource;
+#ifdef NRI_USE_AGILITY_SDK
+    struct ID3D12Resource2;
+    typedef ID3D12Resource2 ID3D12ResourceBest;
+#else
+    struct ID3D12Resource;
+    typedef ID3D12Resource ID3D12ResourceBest;
+#endif
 
 namespace nri
 {
@@ -19,7 +25,7 @@ struct BufferD3D12
     inline ~BufferD3D12()
     {}
 
-    inline operator ID3D12Resource*() const
+    inline operator ID3D12ResourceBest*() const
     { return m_Buffer.GetInterface(); }
 
     inline const BufferDesc& GetDesc() const
@@ -48,7 +54,7 @@ struct BufferD3D12
 
 private:
     DeviceD3D12& m_Device;
-    ComPtr<ID3D12Resource> m_Buffer;
+    ComPtr<ID3D12ResourceBest> m_Buffer;
     BufferDesc m_Desc = {};
 };
 

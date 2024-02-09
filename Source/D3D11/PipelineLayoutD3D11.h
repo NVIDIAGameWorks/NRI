@@ -22,7 +22,7 @@ struct BindingRange
     uint32_t baseSlot;
     uint32_t descriptorNum;
     uint32_t descriptorOffset;
-    uint32_t shaderVisibility;
+    StageBits shaderStages;
     DescriptorTypeDX11 descriptorType;
 };
 
@@ -30,7 +30,7 @@ struct ConstantBuffer
 {
     ComPtr<ID3D11Buffer> buffer;
     uint32_t slot;
-    uint32_t shaderVisibility;
+    StageBits shaderStages;
 };
 
 union Vec4
@@ -65,9 +65,9 @@ struct PipelineLayoutD3D11
     { return m_BindingRanges[range]; }
 
     Result Create(const PipelineLayoutDesc& pipelineDesc);
-    void SetConstants(const VersionedContext& deferredContext, uint32_t pushConstantIndex, const Vec4* data, uint32_t size) const;
-    void Bind(const VersionedContext& deferredContext);
-    void BindDescriptorSet(BindingState& currentBindingState, const VersionedContext& deferredContext,
+    void SetConstants(ID3D11DeviceContextBest* deferredContext, uint32_t pushConstantIndex, const Vec4* data, uint32_t size) const;
+    void Bind(ID3D11DeviceContextBest* deferredContext);
+    void BindDescriptorSet(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext,
         uint32_t setIndexInPipelineLayout, const DescriptorSetD3D11& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const;
 
     //================================================================================================================
@@ -79,7 +79,7 @@ struct PipelineLayoutD3D11
 
 private:
     template<bool isGraphics>
-    void BindDescriptorSetImpl(BindingState& currentBindingState, const VersionedContext& deferredContext, uint32_t setIndexInPipelineLayout,
+    void BindDescriptorSetImpl(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndexInPipelineLayout,
         const DescriptorSetD3D11& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const;
 
     DeviceD3D11& m_Device;

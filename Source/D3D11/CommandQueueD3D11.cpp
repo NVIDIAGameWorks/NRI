@@ -18,13 +18,6 @@ inline void CommandQueueD3D11::Submit(const QueueSubmitDesc& queueSubmitDesc)
     }
 }
 
-inline Result CommandQueueD3D11::ChangeResourceStates(const TransitionBarrierDesc& transitionBarriers)
-{
-    HelperResourceStateChange resourceStateChange(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
-
-    return resourceStateChange.ChangeStates(transitionBarriers);
-}
-
 inline Result CommandQueueD3D11::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum,
     const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum)
 {

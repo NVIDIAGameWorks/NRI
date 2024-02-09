@@ -41,11 +41,11 @@ struct PipelineD3D11
 
     Result Create(const GraphicsPipelineDesc& pipelineDesc);
     Result Create(const ComputePipelineDesc& pipelineDesc);
-    void Bind(const VersionedContext& deferredContext, const PipelineD3D11* currentPipeline) const;
+    void Bind(ID3D11DeviceContextBest* deferredContext, const PipelineD3D11* currentPipeline) const;
 
     // dynamic state
-    void ChangeSamplePositions(const VersionedContext& deferredContext, const SamplePositionsState& samplePositionState, DynamicState mode);
-    void ChangeStencilReference(const VersionedContext& deferredContext, uint8_t stencilRef, DynamicState mode);
+    void ChangeSamplePositions(ID3D11DeviceContextBest* deferredContext, const SamplePositionsState& samplePositionState, DynamicState mode);
+    void ChangeStencilReference(ID3D11DeviceContextBest* deferredContext, uint8_t stencilRef, DynamicState mode);
 
     //================================================================================================================
     // NRI

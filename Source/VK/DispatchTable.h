@@ -129,7 +129,7 @@ struct DispatchTable
     VULKAN_FUNCTION(CmdCopyImage);
     VULKAN_FUNCTION(CmdCopyBufferToImage);
     VULKAN_FUNCTION(CmdCopyImageToBuffer);
-    VULKAN_FUNCTION(CmdPipelineBarrier);
+    VULKAN_FUNCTION(CmdPipelineBarrier2);
     VULKAN_FUNCTION(CmdBeginQuery);
     VULKAN_FUNCTION(CmdEndQuery);
     VULKAN_FUNCTION(CmdWriteTimestamp);

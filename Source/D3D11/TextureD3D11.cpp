@@ -40,7 +40,7 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
         desc.BindFlags = bindFlags;
         desc.CPUAccessFlags = cpuAccessFlags;
 
-        hr = m_Device.GetDevice()->CreateTexture1D(&desc, nullptr, (ID3D11Texture1D**)&m_Texture);
+        hr = m_Device->CreateTexture1D(&desc, nullptr, (ID3D11Texture1D**)&m_Texture);
     }
     else if (m_Desc.type == TextureType::TEXTURE_3D)
     {
@@ -54,7 +54,7 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
         desc.BindFlags = bindFlags;
         desc.CPUAccessFlags = cpuAccessFlags;
 
-        hr = m_Device.GetDevice()->CreateTexture3D(&desc, nullptr, (ID3D11Texture3D**)&m_Texture);
+        hr = m_Device->CreateTexture3D(&desc, nullptr, (ID3D11Texture3D**)&m_Texture);
     }
     else
     {
@@ -72,7 +72,7 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
         if (m_Desc.sampleNum == 1 && desc.Width == desc.Height && (m_Desc.arraySize % 6 == 0))
             desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE; // TODO: valid assumption?
 
-        hr = m_Device.GetDevice()->CreateTexture2D(&desc, nullptr, (ID3D11Texture2D**)&m_Texture);
+        hr = m_Device->CreateTexture2D(&desc, nullptr, (ID3D11Texture2D**)&m_Texture);
     }
 
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateTextureXx()");

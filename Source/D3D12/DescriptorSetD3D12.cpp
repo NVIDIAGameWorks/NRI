@@ -85,7 +85,7 @@ inline void DescriptorSetD3D12::UpdateDescriptorRanges(uint32_t rangeOffset, uin
             DescriptorPointerCPU srcPointer = ((DescriptorD3D12*)rangeUpdateDescs[i].descriptors[j])->GetPointerCPU();
             D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = (D3D12_DESCRIPTOR_HEAP_TYPE)rangeMapping.descriptorHeapType;
 
-            ((ID3D12Device*)m_DescriptorPoolD3D12.GetDevice())->CopyDescriptorsSimple(1, { dstPointer }, { srcPointer }, descriptorHeapType);
+            m_DescriptorPoolD3D12.GetDevice()->CopyDescriptorsSimple(1, { dstPointer }, { srcPointer }, descriptorHeapType);
         }
     }
 }
@@ -108,7 +108,7 @@ inline void DescriptorSetD3D12::Copy(const DescriptorSetCopyDesc& descriptorSetC
         uint32_t descriptorNum = m_DescriptorSetMapping->descriptorRangeMappings[i].descriptorNum;
         D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = (D3D12_DESCRIPTOR_HEAP_TYPE)m_DescriptorSetMapping->descriptorRangeMappings[i].descriptorHeapType;
 
-        ((ID3D12Device*)m_DescriptorPoolD3D12.GetDevice())->CopyDescriptorsSimple(descriptorNum, { dstPointer }, { srcPointer }, descriptorHeapType);
+        m_DescriptorPoolD3D12.GetDevice()->CopyDescriptorsSimple(descriptorNum, { dstPointer }, { srcPointer }, descriptorHeapType);
     }
 
     for (uint32_t i = 0; i < descriptorSetCopyDesc.dynamicConstantBufferNum; i++)

@@ -16,16 +16,39 @@
 #include "SwapChainD3D11.h"
 #include "TextureD3D11.h"
 
-#include <d3d12.h>
-
 using namespace nri;
+
+uint8_t QueryLatestDeviceContext(ComPtr<ID3D11DeviceContextBest>& in, ComPtr<ID3D11DeviceContextBest>& out);
+
+static uint8_t QueryLatestDevice(ComPtr<ID3D11DeviceBest>& in, ComPtr<ID3D11DeviceBest>& out)
+{
+    static const IID versions[] = {
+        __uuidof(ID3D11Device5),
+        __uuidof(ID3D11Device4),
+        __uuidof(ID3D11Device3),
+        __uuidof(ID3D11Device2),
+        __uuidof(ID3D11Device1),
+        __uuidof(ID3D11Device),
+    };
+    const uint8_t n = (uint8_t)GetCountOf(versions);
+
+    uint8_t i = 0;
+    for (; i < n; i++)
+    {
+        HRESULT hr = in->QueryInterface(versions[i], (void**)&out);
+        if (SUCCEEDED(hr))
+            break;
+    }
+
+    return n - i - 1;
+}
 
 Result CreateDeviceD3D11(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device)
 {
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
 
     DeviceD3D11* implementation = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    const nri::Result result = implementation->Create(deviceCreationDesc, nullptr, nullptr);
+    const nri::Result result = implementation->Create(deviceCreationDesc, nullptr, nullptr, false);
 
     if (result == nri::Result::SUCCESS)
     {
@@ -47,9 +70,8 @@ Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc,
 
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
 
-    ComPtr<ID3D11Device> d3d11Device = deviceCreationD3D11Desc.d3d11Device;
     DeviceD3D11* implementation = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    const nri::Result result = implementation->Create(deviceCreationDesc, d3d11Device, deviceCreationD3D11Desc.agsContext);
+    const nri::Result result = implementation->Create(deviceCreationDesc, deviceCreationD3D11Desc.d3d11Device, deviceCreationD3D11Desc.agsContext, deviceCreationD3D11Desc.isNVAPILoaded);
 
     if (result == nri::Result::SUCCESS)
     {
@@ -73,10 +95,13 @@ DeviceD3D11::DeviceD3D11(const CallbackInterface& callbacks, StdAllocator<uint8_
 
 DeviceD3D11::~DeviceD3D11()
 {
+    if (m_ImmediateContext)
+        GetExt()->EndUAVOverlap(m_ImmediateContext);
+
     DeleteCriticalSection(&m_CriticalSection);
 }
 
-Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* device, AGSContext* agsContext)
+Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* device, AGSContext* agsContext, bool isNVAPILoadedInApp)
 {
     // Get adapter
     if (!device)
@@ -120,10 +145,13 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
 
     // Extensions
-    m_Ext.Create(this, m_Desc.adapterDesc.vendor, agsContext, device != nullptr);
+    if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA)
+        m_Ext.InitializeNVExt(this, isNVAPILoadedInApp, device != nullptr);
+    else if (m_Desc.adapterDesc.vendor == Vendor::AMD)
+        m_Ext.InitializeAMDExt(this, agsContext, device != nullptr);
 
     // Device
-    m_Device.ptr = (ID3D11Device5*)device;
+    ComPtr<ID3D11DeviceBest> deviceTemp = (ID3D11DeviceBest*)device;
     if (!device)
     {
         const UINT flags = deviceCreationDesc.enableAPIValidation ? D3D11_CREATE_DEVICE_DEBUG : 0;
@@ -136,133 +164,63 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         if (m_Ext.IsAGSAvailable())
         {
             device = m_Ext.CreateDeviceUsingAGS(m_Adapter, levels.data(), levels.size(), flags);
-            if (device == nullptr)
+            if (!device)
                 return Result::FAILURE;
         }
         else
         {
-            hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&m_Device.ptr, nullptr, nullptr);
+            hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
 
+            // If Debug Layer is not available, try without D3D11_CREATE_DEVICE_DEBUG
             if (flags && (uint32_t)hr == 0x887a002d)
-                hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, &levels[0], (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&m_Device.ptr, nullptr, nullptr);
+                hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
 
             RETURN_ON_BAD_HRESULT(this, hr, "D3D11CreateDevice()");
         }
     }
-    else
-        device->AddRef();
 
-    InitVersionedDevice(deviceCreationDesc.enableD3D11CommandBufferEmulation);
-    InitVersionedContext();
+    m_Version = QueryLatestDevice(deviceTemp, m_Device);
+    REPORT_INFO(this, "Using ID3D11Device%u...", m_Version);
+
+    // Immediate context
+    ComPtr<ID3D11DeviceContextBest> immediateContext;
+    m_Device->GetImmediateContext((ID3D11DeviceContext**)&immediateContext);
+
+    m_ImmediateContextVersion = QueryLatestDeviceContext(immediateContext, m_ImmediateContext);
+    REPORT_INFO(this, "Using ID3D11DeviceContext%u...", m_ImmediateContextVersion);
+
+    // Skip UAV barriers by default on the immediate context
+    GetExt()->BeginUAVOverlap(m_ImmediateContext);
+
+    // Threading
+    D3D11_FEATURE_DATA_THREADING threadingCaps = {};
+    hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_THREADING, &threadingCaps, sizeof(threadingCaps));
+    if (FAILED(hr) || !threadingCaps.DriverConcurrentCreates)
+        REPORT_WARNING(this, "Concurrent resource creation is not supported by the driver!");
+
+    m_IsDeferredContextEmulated = !m_Ext.IsNvAPIAvailable() || deviceCreationDesc.enableD3D11CommandBufferEmulation;
+    if (!threadingCaps.DriverCommandLists)
+    {
+        REPORT_WARNING(this, "Deferred Contexts are not supported by the driver and will be emulated!");
+        m_IsDeferredContextEmulated = true;
+    }
+
+    hr = m_ImmediateContext->QueryInterface(IID_PPV_ARGS(&m_Multithread));
+    if (FAILED(hr))
+    {
+        REPORT_WARNING(this, "ID3D11Multithread is not supported: a critical section will be used instead!");
+        InitializeCriticalSection(&m_CriticalSection);
+    }
+    else
+        m_Multithread->SetMultithreadProtected(true);
+
+    // Other
     FillDesc(deviceCreationDesc.enableAPIValidation);
 
     for (uint32_t i = 0; i < COMMAND_QUEUE_TYPE_NUM; i++)
         m_CommandQueues.emplace_back(*this);
 
     return FillFunctionTable(m_CoreInterface);
-}
-
-void DeviceD3D11::InitVersionedDevice(bool isDeferredContextsEmulationRequested)
-{
-    m_Device.ext = &m_Ext;
-
-    ComPtr<ID3D11Device5> versionedDevice;
-    HRESULT hr = m_Device->QueryInterface(__uuidof(ID3D11Device5), (void**)&versionedDevice);
-    m_Device.version = 5;
-    if (FAILED(hr))
-    {
-        REPORT_WARNING(this, "QueryInterface(ID3D11Device5) - FAILED!");
-        hr = m_Device->QueryInterface(__uuidof(ID3D11Device4), (void**)&versionedDevice);
-        m_Device.version = 4;
-        if (FAILED(hr))
-        {
-            REPORT_WARNING(this, "QueryInterface(ID3D11Device4) - FAILED!");
-            hr = m_Device->QueryInterface(__uuidof(ID3D11Device3), (void**)&versionedDevice);
-            m_Device.version = 3;
-            if (FAILED(hr))
-            {
-                REPORT_WARNING(this, "QueryInterface(ID3D11Device3) - FAILED!");
-                hr = m_Device->QueryInterface(__uuidof(ID3D11Device2), (void**)&versionedDevice);
-                m_Device.version = 2;
-                if (FAILED(hr))
-                {
-                    REPORT_WARNING(this, "QueryInterface(ID3D11Device2) - FAILED!");
-                    hr = m_Device->QueryInterface(__uuidof(ID3D11Device1), (void**)&versionedDevice);
-                    m_Device.version = 1;
-                    if (FAILED(hr))
-                    {
-                        REPORT_WARNING(this, "QueryInterface(ID3D11Device1) - FAILED!");
-                        m_Device.version = 0;
-                        versionedDevice = m_Device.ptr;
-                    }
-                }
-            }
-        }
-    }
-
-    m_Device.ptr = versionedDevice;
-
-    D3D11_FEATURE_DATA_THREADING threadingCaps = {};
-    hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_THREADING, &threadingCaps, sizeof(threadingCaps));
-
-    if (FAILED(hr) || !threadingCaps.DriverConcurrentCreates)
-        REPORT_WARNING(this, "Concurrent resource creation is not supported by the driver!");
-
-    m_Device.isDeferredContextEmulated = !m_Ext.IsNvAPIAvailable() || isDeferredContextsEmulationRequested;
-
-    if (!threadingCaps.DriverCommandLists)
-    {
-        REPORT_WARNING(this, "Deferred Contexts are not supported by the driver and will be emulated!");
-        m_Device.isDeferredContextEmulated = true;
-    }
-}
-
-void DeviceD3D11::InitVersionedContext()
-{
-    m_ImmediateContext.ext = &m_Ext;
-
-    m_Device.ptr->GetImmediateContext((ID3D11DeviceContext**)&m_ImmediateContext.ptr);
-
-    ComPtr<ID3D11DeviceContext4> versionedImmediateContext;
-    HRESULT hr = m_ImmediateContext->QueryInterface(__uuidof(ID3D11DeviceContext4), (void**)&versionedImmediateContext);
-    m_ImmediateContext.version = 4;
-    if (FAILED(hr))
-    {
-        REPORT_WARNING(this, "QueryInterface(ID3D11DeviceContext4) - FAILED!");
-        hr = m_ImmediateContext->QueryInterface(__uuidof(ID3D11DeviceContext3), (void**)&versionedImmediateContext);
-        m_ImmediateContext.version = 3;
-        if (FAILED(hr))
-        {
-            REPORT_WARNING(this, "QueryInterface(ID3D11DeviceContext3) - FAILED!");
-            hr = m_ImmediateContext->QueryInterface(__uuidof(ID3D11DeviceContext2), (void**)&versionedImmediateContext);
-            m_ImmediateContext.version = 2;
-            if (FAILED(hr))
-            {
-                REPORT_WARNING(this, "QueryInterface(ID3D11DeviceContext2) - FAILED!");
-                hr = m_ImmediateContext->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&versionedImmediateContext);
-                m_ImmediateContext.version = 1;
-                if (FAILED(hr))
-                {
-                    REPORT_WARNING(this, "QueryInterface(ID3D11DeviceContext1) - FAILED!");
-                    m_ImmediateContext.version = 0;
-                    versionedImmediateContext = m_ImmediateContext.ptr;
-                }
-            }
-        }
-    }
-
-    m_ImmediateContext.ptr = versionedImmediateContext;
-
-    InitializeCriticalSection(&m_CriticalSection);
-
-    hr = m_ImmediateContext->QueryInterface(IID_PPV_ARGS(&m_ImmediateContext.multiThread));
-    if (FAILED(hr))
-    {
-        REPORT_WARNING(this, "QueryInterface(ID3D11Multithread) - FAILED! Critical section will be used instead!");
-        m_ImmediateContext.criticalSection = &m_CriticalSection;
-    }
-    else
-        m_ImmediateContext.multiThread->SetMultithreadProtected(true);
 }
 
 void DeviceD3D11::FillDesc(bool isValidationEnabled)
@@ -295,7 +253,7 @@ void DeviceD3D11::FillDesc(bool isValidationEnabled)
     D3D11_FEATURE_DATA_D3D11_OPTIONS5 options5 = {};
     hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS5, &options5, sizeof(options5));
     if (FAILED(hr))
-        REPORT_WARNING(this, "ID3D11Device::CheckFeatureSupport(options4) failed, result = 0x%08X!", hr);
+        REPORT_WARNING(this, "ID3D11Device::CheckFeatureSupport(options5) failed, result = 0x%08X!", hr);
 
     uint64_t timestampFrequency = 0;
     {
@@ -344,10 +302,10 @@ void DeviceD3D11::FillDesc(bool isValidationEnabled)
 
     m_Desc.memoryAllocationMaxNum = 0xFFFFFFFF;
     m_Desc.samplerAllocationMaxNum = D3D11_REQ_SAMPLER_OBJECT_COUNT_PER_DEVICE;
-    m_Desc.uploadBufferTextureRowAlignment = D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
-    m_Desc.uploadBufferTextureSliceAlignment = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
+    m_Desc.uploadBufferTextureRowAlignment = 256; // D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
+    m_Desc.uploadBufferTextureSliceAlignment = 512; // D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
     m_Desc.typedBufferOffsetAlignment = D3D11_RAW_UAV_SRV_BYTE_ALIGNMENT;
-    m_Desc.constantBufferOffsetAlignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+    m_Desc.constantBufferOffsetAlignment = 256; // D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
     m_Desc.constantBufferMaxRange = D3D11_REQ_IMMEDIATE_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
     m_Desc.storageBufferOffsetAlignment = D3D11_RAW_UAV_SRV_BYTE_ALIGNMENT;
     m_Desc.storageBufferMaxRange = (1 << D3D11_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP) - 1;
@@ -358,9 +316,9 @@ void DeviceD3D11::FillDesc(bool isValidationEnabled)
     m_Desc.boundDescriptorSetMaxNum = D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT;
     m_Desc.perStageDescriptorSamplerMaxNum = D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT;
     m_Desc.perStageDescriptorConstantBufferMaxNum = D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT;
-    m_Desc.perStageDescriptorStorageBufferMaxNum = m_Device.version >= 1 ? D3D11_1_UAV_SLOT_COUNT : D3D11_PS_CS_UAV_REGISTER_COUNT;
+    m_Desc.perStageDescriptorStorageBufferMaxNum = m_Version >= 1 ? D3D11_1_UAV_SLOT_COUNT : D3D11_PS_CS_UAV_REGISTER_COUNT;
     m_Desc.perStageDescriptorTextureMaxNum = D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT;
-    m_Desc.perStageDescriptorStorageTextureMaxNum = m_Device.version >= 1 ? D3D11_1_UAV_SLOT_COUNT : D3D11_PS_CS_UAV_REGISTER_COUNT;
+    m_Desc.perStageDescriptorStorageTextureMaxNum = m_Version >= 1 ? D3D11_1_UAV_SLOT_COUNT : D3D11_PS_CS_UAV_REGISTER_COUNT;
     m_Desc.perStageResourceMaxNum = D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT;
 
     m_Desc.descriptorSetSamplerMaxNum = m_Desc.perStageDescriptorSamplerMaxNum;

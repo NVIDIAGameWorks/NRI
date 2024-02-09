@@ -16,11 +16,6 @@ static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDe
 
 #pragma region [  Helper  ]
 
-static Result NRI_CALL ChangeResourceStates(CommandQueue& commandQueue, const TransitionBarrierDesc& transitionBarriers)
-{
-    return ((CommandQueueVK&)commandQueue).ChangeResourceStates(transitionBarriers);
-}
-
 static Result NRI_CALL UploadData(CommandQueue& commandQueue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum,
     const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum)
 {

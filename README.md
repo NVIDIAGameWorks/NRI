@@ -2,15 +2,28 @@
 
 [![Status](https://github.com/NVIDIAGameWorks/NRI/actions/workflows/build.yml/badge.svg)](https://github.com/NVIDIAGameWorks/NRI/actions/workflows/build.yml)
 
-*NRI* is a low-level abstract render interface which currently supports three backends: D3D11, D3D12 and Vulkan. *NRI* has been designed to support all (at least major) low level features of D3D12 and Vulkan APIs, but at the same time to simplify usage and reduce the amount of code needed (especially compared with Vulkan). *NRI* is written in *C++*, but supports both *C++* and *C* interfaces.
+*NRI* is a low-level abstract render interface which currently supports three backends: D3D11, D3D12 and Vulkan (VK). *NRI* has been designed to support all (at least major) low level features of D3D12 and VK APIs, but at the same time to simplify usage and reduce the amount of code needed (especially compared with VK). *NRI* is written in *C++*, but supports both *C++* and *C* interfaces.
 
- Key features:
+Goals:
+- generalization of D3D12 ([spec](https://microsoft.github.io/DirectX-Specs/)) and VK ([spec](https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html)) GAPIs
+- providing access to low-level features of modern GAPIs
+- low overhead
+- D3D11 ([spec](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm)) support (as much as possible)
+
+Non-goals:
+- high level RHI
+- exposing entities not existing in GAPIs
+- D3D11-like abstraction level
+- hidden management of any kind
+
+Key features:
  - *C++* and *C* compatible interfaces
- - common denominator for D3D11, D3D12 and Vulkan APIs
+ - generalized common denominator for D3D12, VK and D3D11 GAPIs
  - low overhead
- - ray tracing support
- - validation layers (GAPI and NRI itself)
- - default D3D11 behavior is changed to match D3D12/VK where applicable using *NVAPI* or *AMD AGS* libraries
+ - ray tracing & mesh shaders support
+ - validation layers (GAPI- and NRI- provided)
+ - default D3D11 behavior is changed to match D3D12/VK using *NVAPI* or *AMD AGS* libraries, where applicable
+ - supporting as much as possible VK-enabled platforms: Windows, Linux, MacOS, Android
 
  *NRI* is used in:
  - [*NRI samples*](https://github.com/NVIDIAGameWorks/NRISamples)
@@ -41,7 +54,7 @@ Notes:
 - `NRI_ENABLE_D3D11_SUPPORT` - enable D3D11 backend (`on` by default on Windows)
 - `NRI_ENABLE_D3D12_SUPPORT` - enable D3D12 backend (`on` by default on Windows)
 
-Vulkan only:
+VK only:
 - `NRI_ENABLE_XLIB_SUPPORT` - enable *Xlib* support (`on` by default)
 - `NRI_ENABLE_WAYLAND_SUPPORT` - enable *Wayland* support (`on` by default)
 

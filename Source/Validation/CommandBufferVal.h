@@ -57,7 +57,7 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     void ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc);
     void Dispatch(uint32_t x, uint32_t y, uint32_t z);
     void DispatchIndirect(const Buffer& buffer, uint64_t offset);
-    void PipelineBarrier(const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency);
+    void Barrier(const BarrierGroupDesc& barrierGroupDesc);
     void BeginQuery(const QueryPool& queryPool, uint32_t offset);
     void EndQuery(const QueryPool& queryPool, uint32_t offset);
     void CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset);

@@ -39,7 +39,7 @@ enum OpCode : uint32_t
     READBACK_TEXTURE_TO_BUFFER,
     DISPATCH,
     DISPATCH_INDIRECT,
-    PIPELINE_BARRIER,
+    BARRIER,
     BEGIN_QUERY,
     END_QUERY,
     COPY_QUERIES,
@@ -88,6 +88,13 @@ template<typename T> inline void Read(PushBuffer& pushBuffer, size_t& i, T& data
 template<typename T> inline void Read(PushBuffer& pushBuffer, size_t& i, T*& data, uint32_t& num)
 {
     num = pushBuffer[i++];
+    data = (T*)&pushBuffer[i];
+    i += GetElementNum(sizeof(T) * num);
+}
+
+template<typename T> inline void Read(PushBuffer& pushBuffer, size_t& i, T*& data, uint16_t& num)
+{
+    num = (uint16_t)pushBuffer[i++];
     data = (T*)&pushBuffer[i];
     i += GetElementNum(sizeof(T) * num);
 }
@@ -459,16 +466,14 @@ void CommandBufferEmuD3D11::Submit()
                 commandBuffer.DispatchIndirect(*buffer, offset);
             }
             break;
-        case PIPELINE_BARRIER:
+        case BARRIER:
             {
-                BarrierDependency dependency;
-                Read(m_PushBuffer, i, dependency);
+                BarrierGroupDesc barrierGroupDesc = {};
+                Read(m_PushBuffer, i, barrierGroupDesc.globals, barrierGroupDesc.globalNum);
+                Read(m_PushBuffer, i, barrierGroupDesc.buffers, barrierGroupDesc.bufferNum);
+                Read(m_PushBuffer, i, barrierGroupDesc.textures, barrierGroupDesc.textureNum);
 
-                TransitionBarrierDesc desc = {};
-                Read(m_PushBuffer, i, desc.buffers, desc.bufferNum);
-                Read(m_PushBuffer, i, desc.textures, desc.textureNum);
-
-                commandBuffer.PipelineBarrier(&desc, nullptr, dependency);
+                commandBuffer.Barrier(barrierGroupDesc);
             }
             break;
         case BEGIN_QUERY:
@@ -770,23 +775,12 @@ inline void CommandBufferEmuD3D11::DispatchIndirect(const Buffer& buffer, uint64
     Push(m_PushBuffer, offset);
 }
 
-inline void CommandBufferEmuD3D11::PipelineBarrier(const TransitionBarrierDesc* transitionBarriers, const AliasingBarrierDesc* aliasingBarriers, BarrierDependency dependency)
+inline void CommandBufferEmuD3D11::Barrier(const BarrierGroupDesc& barrierGroupDesc)
 {
-    MaybeUnused(aliasingBarriers);
-
-    Push(m_PushBuffer, PIPELINE_BARRIER);
-    Push(m_PushBuffer, dependency);
-
-    if (transitionBarriers)
-    {
-        Push(m_PushBuffer, transitionBarriers->buffers, transitionBarriers->bufferNum);
-        Push(m_PushBuffer, transitionBarriers->textures, transitionBarriers->textureNum);
-    }
-    else
-    {
-        Push(m_PushBuffer, (const BufferTransitionBarrierDesc*)nullptr, 0);
-        Push(m_PushBuffer, (const TextureTransitionBarrierDesc*)nullptr, 0);
-    }
+    Push(m_PushBuffer, BARRIER);
+    Push(m_PushBuffer, barrierGroupDesc.globals, barrierGroupDesc.globalNum);
+    Push(m_PushBuffer, barrierGroupDesc.buffers, barrierGroupDesc.bufferNum);
+    Push(m_PushBuffer, barrierGroupDesc.textures, barrierGroupDesc.textureNum);
 }
 
 inline void CommandBufferEmuD3D11::BeginQuery(const QueryPool& queryPool, uint32_t offset)

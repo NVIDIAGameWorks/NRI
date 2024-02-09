@@ -26,7 +26,6 @@ typedef nri::MemoryAllocatorInterface MemoryAllocatorInterface;
 #include "HelperWaitIdle.h"
 #include "HelperDeviceMemoryAllocator.h"
 #include "HelperDataUpload.h"
-#include "HelperResourceStateChange.h"
 
 #ifdef _WIN32
     #include <dxgi1_6.h>

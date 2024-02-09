@@ -96,7 +96,7 @@ void Core_CommandBuffer_PartiallyFillFunctionTable##API(CoreInterface& table) \
     table.CmdSetPipelineLayout = ::CmdSetPipelineLayout; \
     table.CmdSetPipeline = ::CmdSetPipeline; \
     table.CmdSetConstants = ::CmdSetConstants; \
-    table.CmdPipelineBarrier = ::CmdPipelineBarrier; \
+    table.CmdBarrier = ::CmdBarrier; \
     table.CmdBeginRendering = ::CmdBeginRendering; \
     table.CmdClearAttachments = ::CmdClearAttachments; \
     table.CmdSetViewports = ::CmdSetViewports; \
@@ -229,7 +229,6 @@ void MeshShader_CommandBuffer_PartiallyFillFunctionTable##API(MeshShaderInterfac
 #define Define_Helper_CommandQueue_PartiallyFillFunctionTable(API) \
 void Helper_CommandQueue_PartiallyFillFunctionTable##API(HelperInterface& table) \
 { \
-    table.ChangeResourceStates = ::ChangeResourceStates; \
     table.UploadData = ::UploadData; \
     table.WaitForIdle = ::WaitForIdle; \
 }

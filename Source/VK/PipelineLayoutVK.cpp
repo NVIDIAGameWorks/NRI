@@ -20,13 +20,13 @@ PipelineLayoutVK::~PipelineLayoutVK()
 
 Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
 {
-    if (pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::ALL_GRAPHICS)
+    if (pipelineLayoutDesc.shaderStages & StageBits::GRAPHICS_SHADERS)
         m_PipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
-    if (pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::COMPUTE)
+    if (pipelineLayoutDesc.shaderStages & StageBits::COMPUTE_SHADER)
         m_PipelineBindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 
-    if (pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::ALL_RAY_TRACING)
+    if (pipelineLayoutDesc.shaderStages & StageBits::RAY_TRACING_SHADERS)
         m_PipelineBindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
 
     uint32_t bindingOffsets[(uint32_t)DescriptorType::MAX_NUM] = {};
@@ -163,7 +163,7 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
 void PipelineLayoutVK::FillDescriptorBindings(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets,
     VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags) const
 {
-    const VkDescriptorBindingFlagsEXT commonBindingFlags = descriptorSetDesc.bindingMask & DescriptorSetBindingBits::PARTIALLY_BOUND ?
+    const VkDescriptorBindingFlagsEXT commonBindingFlags = descriptorSetDesc.partiallyBound ?
         VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT : 0;
 
     constexpr VkDescriptorBindingFlagsEXT variableSizedArrayFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
@@ -184,7 +184,7 @@ void PipelineLayoutVK::FillDescriptorBindings(const DescriptorSetDesc& descripto
             descriptorBinding.binding = baseBindingIndex;
             descriptorBinding.descriptorType = GetDescriptorType(range.descriptorType);
             descriptorBinding.descriptorCount = range.descriptorNum;
-            descriptorBinding.stageFlags = GetShaderStageFlags(range.visibility);
+            descriptorBinding.stageFlags = GetShaderStageFlags(range.shaderStages);
         }
         else
         {
@@ -197,7 +197,7 @@ void PipelineLayoutVK::FillDescriptorBindings(const DescriptorSetDesc& descripto
                 descriptorBinding.binding = baseBindingIndex + j;
                 descriptorBinding.descriptorType = GetDescriptorType(range.descriptorType);
                 descriptorBinding.descriptorCount = 1;
-                descriptorBinding.stageFlags = GetShaderStageFlags(range.visibility);
+                descriptorBinding.stageFlags = GetShaderStageFlags(range.shaderStages);
             }
         }
     }
@@ -217,7 +217,7 @@ void PipelineLayoutVK::FillDynamicConstantBufferBindings(const DescriptorSetDesc
         descriptorBinding.binding = buffer.registerIndex + bindingOffsets[(uint32_t)DescriptorType::CONSTANT_BUFFER];
         descriptorBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         descriptorBinding.descriptorCount = 1;
-        descriptorBinding.stageFlags = GetShaderStageFlags(buffer.visibility);
+        descriptorBinding.stageFlags = GetShaderStageFlags(buffer.shaderStages);
     }
 }
 
@@ -231,7 +231,7 @@ void PipelineLayoutVK::FillPushConstantRanges(const PipelineLayoutDesc& pipeline
 
         VkPushConstantRange& range = pushConstantRanges[i];
         range = {};
-        range.stageFlags = GetShaderStageFlags(pushConstantDesc.visibility);
+        range.stageFlags = GetShaderStageFlags(pushConstantDesc.shaderStages);
         range.offset = offset;
         range.size = pushConstantDesc.size;
 
@@ -253,7 +253,7 @@ void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipeline
     destination.pushConstantBindings.resize(source.pushConstantNum);
     for (uint32_t i = 0, offset = 0; i < source.pushConstantNum; i++)
     {
-        destination.pushConstantBindings[i] = { GetShaderStageFlags(source.pushConstants[i].visibility), offset };
+        destination.pushConstantBindings[i] = { GetShaderStageFlags(source.pushConstants[i].shaderStages), offset };
         offset += source.pushConstants[i].size;
     }
 

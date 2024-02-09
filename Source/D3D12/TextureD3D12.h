@@ -4,7 +4,13 @@
 
 #include "SharedD3D12.h"
 
-struct ID3D12Resource;
+#ifdef NRI_USE_AGILITY_SDK
+    struct ID3D12Resource2;
+    typedef ID3D12Resource2 ID3D12ResourceBest;
+#else
+    struct ID3D12Resource;
+    typedef ID3D12Resource ID3D12ResourceBest;
+#endif
 
 namespace nri
 {
@@ -27,7 +33,7 @@ struct TextureD3D12
     inline const TextureDesc& GetDesc() const
     { return m_Desc; }
 
-    inline operator ID3D12Resource*() const
+    inline operator ID3D12ResourceBest*() const
     { return m_Texture.GetInterface(); }
 
     inline uint32_t GetSubresourceIndex(Dim_t arrayOffset, Mip_t mipOffset) const
@@ -50,7 +56,7 @@ struct TextureD3D12
 private:
     DeviceD3D12& m_Device;
     TextureDesc m_Desc = {};
-    ComPtr<ID3D12Resource> m_Texture;
+    ComPtr<ID3D12ResourceBest> m_Texture;
 };
 
 }

@@ -127,6 +127,7 @@ struct DeviceVK final : public DeviceBase
     Result FillFunctionTable(HelperInterface& helperInterface) const;
 
 private:
+    void ProcessDeviceExtensions(Vector<const char*>& desiredExts, bool disableRayTracing);
     Result CreateInstance(const DeviceCreationDesc& deviceCreationDesc);
     Result FindPhysicalDeviceGroup(const AdapterDesc* physicalDeviceGroup, bool enableMGPU);
     Result CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDesc);
@@ -146,16 +147,18 @@ private:
 public:
     struct SupportedFeatures
     {
-        bool debugUtils = false;
-        bool subsetAllocation = false;
-        bool descriptorIndexing = false;
-        bool bufferDeviceAddress = false;
-        bool sampleLocations = false;
-        bool conservativeRaster = false;
-        bool rayTracing = false;
-        bool opacityMicroMap = false;
-        bool meshShader = false;
-    } supportedFeatures;
+        bool debugUtils;
+        bool subsetAllocation;
+        bool descriptorIndexing;
+        bool bufferDeviceAddress;
+        bool sampleLocations;
+        bool conservativeRaster;
+        bool rayTracing;
+        bool opacityMicroMap;
+        bool meshShader;
+        bool transformFeedback;
+        bool shadingRate;
+    } supportedFeatures = {};
 
 private:
     Vector<VkPhysicalDevice> m_PhysicalDevices;

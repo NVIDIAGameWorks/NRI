@@ -23,6 +23,17 @@
 
 using namespace nri;
 
+static inline bool IsShaderStageValid(StageBits shaderStages, StageBits allowedStages) {
+    uint32_t x = (uint32_t)(shaderStages & allowedStages);
+    uint32_t n = 0;
+    while (x) {
+        n += x & 1;
+        x >>= 1;
+    }
+
+    return n == 1 || shaderStages == StageBits::ALL;
+}
+
 void ConvertGeometryObjectsVal(GeometryObject* destObjects, const GeometryObject* sourceObjects, uint32_t objectNum);
 QueryType GetQueryTypeVK(uint32_t queryTypeVK);
 
@@ -408,15 +419,16 @@ Result DeviceVal::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& 
 }
 
 Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout) {
-    const bool isGraphics = pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::ALL_GRAPHICS;
-    const bool isCompute = pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::COMPUTE;
-    const bool isRayTracing = pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::ALL_RAY_TRACING;
+    const bool isGraphics = pipelineLayoutDesc.shaderStages & StageBits::GRAPHICS_SHADERS;
+    const bool isCompute = pipelineLayoutDesc.shaderStages & StageBits::COMPUTE_SHADER;
+    const bool isRayTracing = pipelineLayoutDesc.shaderStages & StageBits::RAY_TRACING_SHADERS;
     const uint32_t supportedTypes = (uint32_t)isGraphics + (uint32_t)isCompute + (uint32_t)isRayTracing;
 
-    RETURN_ON_FAILURE(this, supportedTypes > 0, Result::INVALID_ARGUMENT, "CreatePipelineLayout: 'pipelineLayoutDesc.stageMask' is 0");
+    RETURN_ON_FAILURE(this, pipelineLayoutDesc.shaderStages != StageBits::NONE, Result::INVALID_ARGUMENT, "CreatePipelineLayout: 'pipelineLayoutDesc.shaderStages' can't be NONE");
+    RETURN_ON_FAILURE(this, supportedTypes > 0, Result::INVALID_ARGUMENT, "CreatePipelineLayout: 'pipelineLayoutDesc.shaderStages' doesn't include any shader stages");
     RETURN_ON_FAILURE(
         this, supportedTypes == 1, Result::INVALID_ARGUMENT,
-        "CreatePipelineLayout: 'pipelineLayoutDesc.stageMask' is invalid, it can't be compatible with more than one type of pipeline"
+        "CreatePipelineLayout: 'pipelineLayoutDesc.shaderStages' is invalid, it can't be compatible with more than one type of pipeline"
     );
 
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
@@ -437,23 +449,17 @@ Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutD
             );
 
             RETURN_ON_FAILURE(
-                this, range.visibility < ShaderStage::MAX_NUM, Result::INVALID_ARGUMENT,
-                "CreatePipelineLayout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].visibility' is invalid", i, j
-            );
-
-            RETURN_ON_FAILURE(
                 this, range.descriptorType < DescriptorType::MAX_NUM, Result::INVALID_ARGUMENT,
                 "CreatePipelineLayout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].descriptorType' is invalid", i, j
             );
 
-            if (range.visibility != ShaderStage::ALL) {
-                const PipelineLayoutShaderStageBits visibilityMask = PipelineLayoutShaderStageBits(1 << (uint32_t)range.visibility);
-                const uint32_t filteredVisibilityMask = visibilityMask & pipelineLayoutDesc.stageMask;
+            if (range.shaderStages != StageBits::ALL) {
+                const uint32_t filteredVisibilityMask = range.shaderStages & pipelineLayoutDesc.shaderStages;
 
                 RETURN_ON_FAILURE(
-                    this, (uint32_t)visibilityMask == filteredVisibilityMask, Result::INVALID_ARGUMENT,
-                    "CreatePipelineLayout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].visibility' is not "
-                    "compatible with 'pipelineLayoutDesc.stageMask'",
+                    this, (uint32_t)range.shaderStages == filteredVisibilityMask, Result::INVALID_ARGUMENT,
+                    "CreatePipelineLayout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].shaderStages' is not "
+                    "compatible with 'pipelineLayoutDesc.shaderStages'",
                     i, j
                 );
             }
@@ -475,26 +481,24 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
     RETURN_ON_FAILURE(this, graphicsPipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.pipelineLayout' is NULL");
     RETURN_ON_FAILURE(this, graphicsPipelineDesc.outputMerger != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.outputMerger' is NULL");
     RETURN_ON_FAILURE(this, graphicsPipelineDesc.rasterization != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.rasterization' is NULL");
-    RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaderStages != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaderStages' is NULL");
-    RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaderStageNum > 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaderStageNum' is 0");
+    RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaders != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders' is NULL");
+    RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaderNum > 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaderNum' is 0");
 
     if (graphicsPipelineDesc.rasterization->sampleMask == 0)
         ReportMessage(Message::TYPE_WARNING, __FILE__, __LINE__, "rasterization->sampleMask = 0: is it intentional?");
 
     const ShaderDesc* vertexShader = nullptr;
-    for (uint32_t i = 0; i < graphicsPipelineDesc.shaderStageNum; i++) {
-        const ShaderDesc* shaderDesc = graphicsPipelineDesc.shaderStages + i;
+    for (uint32_t i = 0; i < graphicsPipelineDesc.shaderNum; i++) {
+        const ShaderDesc* shaderDesc = graphicsPipelineDesc.shaders + i;
 
-        if (shaderDesc->stage == ShaderStage::VERTEX)
+        if (shaderDesc->stage == StageBits::VERTEX_SHADER)
             vertexShader = shaderDesc;
 
-        RETURN_ON_FAILURE(this, shaderDesc->bytecode != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaderStages[%u].bytecode' is invalid", i);
-
-        RETURN_ON_FAILURE(this, shaderDesc->size != 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaderStages[%u].size' is 0", i);
-
+        RETURN_ON_FAILURE(this, shaderDesc->bytecode != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].bytecode' is invalid", i);
+        RETURN_ON_FAILURE(this, shaderDesc->size != 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].size' is 0", i);
         RETURN_ON_FAILURE(
-            this, shaderDesc->stage > ShaderStage::ALL && shaderDesc->stage < ShaderStage::COMPUTE, Result::INVALID_ARGUMENT,
-            "CreatePipeline: 'graphicsPipelineDesc.shaderStages[%u].stage' is invalid", i
+            this, IsShaderStageValid(shaderDesc->stage, StageBits::GRAPHICS_SHADERS), Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].stage' must include only 1 graphics shader stage",
+            i
         );
     }
 
@@ -513,11 +517,9 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
         );
 
         const PipelineLayoutVal& pipelineLayout = *(PipelineLayoutVal*)graphicsPipelineDesc.pipelineLayout;
-        const PipelineLayoutShaderStageBits stageMask = pipelineLayout.GetPipelineLayoutDesc().stageMask;
+        const StageBits shaderStages = pipelineLayout.GetPipelineLayoutDesc().shaderStages;
 
-        RETURN_ON_FAILURE(
-            this, (stageMask & PipelineLayoutShaderStageBits::VERTEX) != 0, Result::INVALID_ARGUMENT, "CreatePipeline: vertex stage is not enabled in the pipeline layout"
-        );
+        RETURN_ON_FAILURE(this, (shaderStages & StageBits::VERTEX_SHADER) != 0, Result::INVALID_ARGUMENT, "CreatePipeline: vertex stage is not enabled in the pipeline layout");
 
         for (uint32_t i = 0; i < graphicsPipelineDesc.inputAssembly->attributeNum; i++) {
             const VertexAttributeDesc* attribute = graphicsPipelineDesc.inputAssembly->attributes + i;
@@ -547,15 +549,12 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
 
 Result DeviceVal::CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline) {
     RETURN_ON_FAILURE(this, computePipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'computePipelineDesc.pipelineLayout' is NULL");
-    RETURN_ON_FAILURE(this, computePipelineDesc.computeShader.size != 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'computePipelineDesc.computeShader.size' is 0");
+    RETURN_ON_FAILURE(this, computePipelineDesc.shader.size != 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'computePipelineDesc.shader.size' is 0");
+    RETURN_ON_FAILURE(this, computePipelineDesc.shader.bytecode != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'computePipelineDesc.shader.bytecode' is NULL");
 
     RETURN_ON_FAILURE(
-        this, computePipelineDesc.computeShader.bytecode != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'computePipelineDesc.computeShader.bytecode' is NULL"
-    );
-
-    RETURN_ON_FAILURE(
-        this, computePipelineDesc.computeShader.stage == ShaderStage::COMPUTE, Result::INVALID_ARGUMENT,
-        "CreatePipeline: 'computePipelineDesc.computeShader.stage' must be ShaderStage::COMPUTE"
+        this, computePipelineDesc.shader.stage == StageBits::COMPUTE_SHADER, Result::INVALID_ARGUMENT,
+        "CreatePipeline: 'computePipelineDesc.shader.stage' must be 'StageBits::COMPUTE_SHADER'"
     );
 
     auto computePipelineDescImpl = computePipelineDesc;
@@ -1226,17 +1225,16 @@ Result DeviceVal::CreateRayTracingPipeline(const RayTracingPipelineDesc& pipelin
     RETURN_ON_FAILURE(this, pipelineDesc.recursionDepthMax != 0, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.recursionDepthMax' is 0");
 
     for (uint32_t i = 0; i < pipelineDesc.shaderLibrary->shaderNum; i++) {
-        const ShaderDesc& shaderDesc = pipelineDesc.shaderLibrary->shaderDescs[i];
+        const ShaderDesc& shaderDesc = pipelineDesc.shaderLibrary->shaders[i];
 
         RETURN_ON_FAILURE(
-            this, shaderDesc.bytecode != nullptr, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaderDescs[%u].bytecode' is invalid", i
+            this, shaderDesc.bytecode != nullptr, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].bytecode' is invalid", i
         );
 
-        RETURN_ON_FAILURE(this, shaderDesc.size != 0, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaderDescs[%u].size' is 0", i);
-
+        RETURN_ON_FAILURE(this, shaderDesc.size != 0, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].size' is 0", i);
         RETURN_ON_FAILURE(
-            this, shaderDesc.stage > ShaderStage::COMPUTE && shaderDesc.stage < ShaderStage::MAX_NUM, Result::INVALID_ARGUMENT,
-            "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaderDescs[%u].stage' is invalid", i
+            this, IsShaderStageValid(shaderDesc.stage, StageBits::RAY_TRACING_SHADERS), Result::INVALID_ARGUMENT,
+            "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].stage' must include only 1 ray tracing shader stage", i
         );
     }
 

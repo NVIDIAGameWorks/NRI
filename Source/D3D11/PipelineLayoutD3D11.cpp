@@ -8,27 +8,27 @@
 using namespace nri;
 
 #define SET_CONSTANT_BUFFERS1(xy, stage) \
-    if ( IsShaderVisible(bindingRange.shaderVisibility, stage) ) \
+    if (IsShaderVisible(bindingRange.shaderStages, stage)) \
         deferredContext->xy##SetConstantBuffers1(bindingRange.baseSlot, bindingRange.descriptorNum, (ID3D11Buffer**)descriptors, constantFirst, constantNum)
 
 #define SET_CONSTANT_BUFFERS(xy, stage) \
-    if ( IsShaderVisible(bindingRange.shaderVisibility, stage) ) \
+    if (IsShaderVisible(bindingRange.shaderStages, stage)) \
         deferredContext->xy##SetConstantBuffers(bindingRange.baseSlot, bindingRange.descriptorNum, (ID3D11Buffer**)descriptors)
 
 #define SET_SHADER_RESOURCES(xy, stage) \
-    if ( IsShaderVisible(bindingRange.shaderVisibility, stage) ) \
+    if (IsShaderVisible(bindingRange.shaderStages, stage)) \
         deferredContext->xy##SetShaderResources(bindingRange.baseSlot, bindingRange.descriptorNum, (ID3D11ShaderResourceView**)descriptors)
 
 #define SET_SAMPLERS(xy, stage) \
-    if ( IsShaderVisible(bindingRange.shaderVisibility, stage) ) \
+    if (IsShaderVisible(bindingRange.shaderStages, stage)) \
         deferredContext->xy##SetSamplers(bindingRange.baseSlot, bindingRange.descriptorNum, (ID3D11SamplerState**)descriptors)
 
 #define SET_CONSTANT_BUFFER(xy, stage) \
-    if ( IsShaderVisible(cb.shaderVisibility, stage) ) \
+    if (IsShaderVisible(cb.shaderStages, stage)) \
         deferredContext->xy##SetConstantBuffers(cb.slot, 1, (ID3D11Buffer**)&cb.buffer)
 
 #define SET_SAMPLER(xy, stage) \
-    if ( IsShaderVisible(ss.shaderVisibility, stage) ) \
+    if (IsShaderVisible(ss.shaderStages, stage)) \
         deferredContext->xy##SetSamplers(ss.slot, 1, (ID3D11SamplerState**)&ss.sampler)
 
 // see StageSlots
@@ -50,23 +50,19 @@ constexpr DescriptorTypeDX11 GetDescriptorTypeIndex(DescriptorType type)
     return g_RemapDescriptorTypeToIndex[(uint32_t)type];
 }
 
-constexpr bool IsShaderVisible(uint32_t shaderVisibility, ShaderStage stage)
+constexpr bool IsShaderVisible(StageBits shaderVisibility, StageBits stage)
 {
-    return shaderVisibility & (1 << (uint32_t)stage);
+    return shaderVisibility & stage;
 }
 
-constexpr uint32_t GetShaderVisibility(ShaderStage visibility, PipelineLayoutShaderStageBits stageMask)
+constexpr StageBits GetShaderVisibility(StageBits visibility, StageBits stageMask)
 {
-    // UAVs are visible from any stage on DX11.1, but can be bound to OM or compute
-    //if (descriptorTypeIndex == DescriptorTypeDX11::STORAGE && !m_ComputeShader)
-    //    visibility = ShaderStage::FRAGMENT;
-
-    return (visibility == ShaderStage::ALL) ? (uint32_t)stageMask : (1 << (uint32_t)visibility) & (uint32_t)stageMask;
+    return (visibility == StageBits::ALL) ? stageMask : (StageBits)(visibility & stageMask);
 }
 
 Result PipelineLayoutD3D11::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
 {
-    m_IsGraphicsPipelineLayout = pipelineLayoutDesc.stageMask & PipelineLayoutShaderStageBits::ALL_GRAPHICS;
+    m_IsGraphicsPipelineLayout = pipelineLayoutDesc.shaderStages & StageBits::GRAPHICS_SHADERS;
 
     BindingSet bindingSet = {};
 
@@ -86,14 +82,14 @@ Result PipelineLayoutD3D11::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
             bindingRange.descriptorOffset = bindingSet.descriptorNum;
             bindingRange.descriptorNum = range.descriptorNum;
             bindingRange.descriptorType = GetDescriptorTypeIndex(range.descriptorType);
-            bindingRange.shaderVisibility = GetShaderVisibility(range.visibility, pipelineLayoutDesc.stageMask);
+            bindingRange.shaderStages = GetShaderVisibility(range.shaderStages, pipelineLayoutDesc.shaderStages);
             m_BindingRanges.push_back(bindingRange);
 
             bindingSet.descriptorNum += bindingRange.descriptorNum;
         }
 
         // Dynamic constant buffers
-        if (set.dynamicConstantBufferNum && m_Device.GetDevice().version == 0)
+        if (set.dynamicConstantBufferNum && m_Device.GetVersion() == 0)
             REPORT_ERROR(&m_Device, "Dynamic constant buffers with non-zero offsets require DX11.1+");
 
         for (uint32_t j = 0; j < set.dynamicConstantBufferNum; j++)
@@ -105,7 +101,7 @@ Result PipelineLayoutD3D11::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
             bindingRange.descriptorOffset = bindingSet.descriptorNum;
             bindingRange.descriptorNum = 1;
             bindingRange.descriptorType = DescriptorTypeDX11::DYNAMIC_CONSTANT;
-            bindingRange.shaderVisibility = GetShaderVisibility(cb.visibility, pipelineLayoutDesc.stageMask);
+            bindingRange.shaderStages = GetShaderVisibility(cb.shaderStages, pipelineLayoutDesc.shaderStages);
             m_BindingRanges.push_back(bindingRange);
 
             bindingSet.descriptorNum += bindingRange.descriptorNum;
@@ -129,11 +125,11 @@ Result PipelineLayoutD3D11::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
         const PushConstantDesc& pushConstant = pipelineLayoutDesc.pushConstants[i];
 
         ConstantBuffer cb = {};
-        cb.shaderVisibility = GetShaderVisibility(pushConstant.visibility, pipelineLayoutDesc.stageMask);
+        cb.shaderStages = GetShaderVisibility(pushConstant.shaderStages, pipelineLayoutDesc.shaderStages);
         cb.slot = pushConstant.registerIndex;
 
         desc.ByteWidth = Align(pushConstant.size, 16);
-        HRESULT hr = m_Device.GetDevice()->CreateBuffer(&desc, nullptr, &cb.buffer);
+        HRESULT hr = m_Device->CreateBuffer(&desc, nullptr, &cb.buffer);
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateBuffer()");
 
         m_ConstantBuffers.push_back(cb);
@@ -142,22 +138,22 @@ Result PipelineLayoutD3D11::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     return Result::SUCCESS;
 }
 
-void PipelineLayoutD3D11::Bind(const VersionedContext& deferredContext)
+void PipelineLayoutD3D11::Bind(ID3D11DeviceContextBest* deferredContext)
 {
     for (size_t i = 0; i < m_ConstantBuffers.size(); i++)
     {
         const ConstantBuffer& cb = m_ConstantBuffers[i];
 
-        SET_CONSTANT_BUFFER(VS, ShaderStage::VERTEX);
-        SET_CONSTANT_BUFFER(HS, ShaderStage::TESS_CONTROL);
-        SET_CONSTANT_BUFFER(DS, ShaderStage::TESS_EVALUATION);
-        SET_CONSTANT_BUFFER(GS, ShaderStage::GEOMETRY);
-        SET_CONSTANT_BUFFER(PS, ShaderStage::FRAGMENT);
-        SET_CONSTANT_BUFFER(CS, ShaderStage::COMPUTE);
+        SET_CONSTANT_BUFFER(VS, StageBits::VERTEX_SHADER);
+        SET_CONSTANT_BUFFER(HS, StageBits::TESS_CONTROL_SHADER);
+        SET_CONSTANT_BUFFER(DS, StageBits::TESS_EVALUATION_SHADER);
+        SET_CONSTANT_BUFFER(GS, StageBits::GEOMETRY_SHADER);
+        SET_CONSTANT_BUFFER(PS, StageBits::FRAGMENT_SHADER);
+        SET_CONSTANT_BUFFER(CS, StageBits::COMPUTE_SHADER);
     }
 }
 
-void PipelineLayoutD3D11::SetConstants(const VersionedContext& deferredContext, uint32_t pushConstantIndex, const Vec4* data, uint32_t size) const
+void PipelineLayoutD3D11::SetConstants(ID3D11DeviceContextBest* deferredContext, uint32_t pushConstantIndex, const Vec4* data, uint32_t size) const
 {
     MaybeUnused(size);
 
@@ -165,7 +161,7 @@ void PipelineLayoutD3D11::SetConstants(const VersionedContext& deferredContext, 
     deferredContext->UpdateSubresource(cb.buffer, 0, nullptr, data, 0, 0);
 }
 
-void PipelineLayoutD3D11::BindDescriptorSet(BindingState& currentBindingState, const VersionedContext& deferredContext,
+void PipelineLayoutD3D11::BindDescriptorSet(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext,
     uint32_t setIndexInPipelineLayout, const DescriptorSetD3D11& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const
 {
     if (m_IsGraphicsPipelineLayout)
@@ -175,7 +171,7 @@ void PipelineLayoutD3D11::BindDescriptorSet(BindingState& currentBindingState, c
 }
 
 template<bool isGraphics>
-void PipelineLayoutD3D11::BindDescriptorSetImpl(BindingState& currentBindingState, const VersionedContext& deferredContext, uint32_t setIndexInPipelineLayout,
+void PipelineLayoutD3D11::BindDescriptorSetImpl(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndexInPipelineLayout,
     const DescriptorSetD3D11& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const
 {
     const BindingSet& bindingSet = m_BindingSets[setIndexInPipelineLayout];
@@ -235,30 +231,30 @@ void PipelineLayoutD3D11::BindDescriptorSetImpl(BindingState& currentBindingStat
             {
                 if (isGraphics)
                 {
-                    SET_CONSTANT_BUFFERS1(VS, ShaderStage::VERTEX);
-                    SET_CONSTANT_BUFFERS1(HS, ShaderStage::TESS_CONTROL);
-                    SET_CONSTANT_BUFFERS1(DS, ShaderStage::TESS_EVALUATION);
-                    SET_CONSTANT_BUFFERS1(GS, ShaderStage::GEOMETRY);
-                    SET_CONSTANT_BUFFERS1(PS, ShaderStage::FRAGMENT);
+                    SET_CONSTANT_BUFFERS1(VS, StageBits::VERTEX_SHADER);
+                    SET_CONSTANT_BUFFERS1(HS, StageBits::TESS_CONTROL_SHADER);
+                    SET_CONSTANT_BUFFERS1(DS, StageBits::TESS_EVALUATION_SHADER);
+                    SET_CONSTANT_BUFFERS1(GS, StageBits::GEOMETRY_SHADER);
+                    SET_CONSTANT_BUFFERS1(PS, StageBits::FRAGMENT_SHADER);
                 }
                 else
                 {
-                    SET_CONSTANT_BUFFERS1(CS, ShaderStage::COMPUTE);
+                    SET_CONSTANT_BUFFERS1(CS, StageBits::COMPUTE_SHADER);
                 }
             }
             else
             {
                 if (isGraphics)
                 {
-                    SET_CONSTANT_BUFFERS(VS, ShaderStage::VERTEX);
-                    SET_CONSTANT_BUFFERS(HS, ShaderStage::TESS_CONTROL);
-                    SET_CONSTANT_BUFFERS(DS, ShaderStage::TESS_EVALUATION);
-                    SET_CONSTANT_BUFFERS(GS, ShaderStage::GEOMETRY);
-                    SET_CONSTANT_BUFFERS(PS, ShaderStage::FRAGMENT);
+                    SET_CONSTANT_BUFFERS(VS, StageBits::VERTEX_SHADER);
+                    SET_CONSTANT_BUFFERS(HS, StageBits::TESS_CONTROL_SHADER);
+                    SET_CONSTANT_BUFFERS(DS, StageBits::TESS_EVALUATION_SHADER);
+                    SET_CONSTANT_BUFFERS(GS, StageBits::GEOMETRY_SHADER);
+                    SET_CONSTANT_BUFFERS(PS, StageBits::FRAGMENT_SHADER);
                 }
                 else
                 {
-                    SET_CONSTANT_BUFFERS(CS, ShaderStage::COMPUTE);
+                    SET_CONSTANT_BUFFERS(CS, StageBits::COMPUTE_SHADER);
                 }
             }
         }
@@ -266,30 +262,30 @@ void PipelineLayoutD3D11::BindDescriptorSetImpl(BindingState& currentBindingStat
         {
             if (isGraphics)
             {
-                SET_SHADER_RESOURCES(VS, ShaderStage::VERTEX);
-                SET_SHADER_RESOURCES(HS, ShaderStage::TESS_CONTROL);
-                SET_SHADER_RESOURCES(DS, ShaderStage::TESS_EVALUATION);
-                SET_SHADER_RESOURCES(GS, ShaderStage::GEOMETRY);
-                SET_SHADER_RESOURCES(PS, ShaderStage::FRAGMENT);
+                SET_SHADER_RESOURCES(VS, StageBits::VERTEX_SHADER);
+                SET_SHADER_RESOURCES(HS, StageBits::TESS_CONTROL_SHADER);
+                SET_SHADER_RESOURCES(DS, StageBits::TESS_EVALUATION_SHADER);
+                SET_SHADER_RESOURCES(GS, StageBits::GEOMETRY_SHADER);
+                SET_SHADER_RESOURCES(PS, StageBits::FRAGMENT_SHADER);
             }
             else
             {
-                SET_SHADER_RESOURCES(CS, ShaderStage::COMPUTE);
+                SET_SHADER_RESOURCES(CS, StageBits::COMPUTE_SHADER);
             }
         }
         else if (bindingRange.descriptorType == DescriptorTypeDX11::SAMPLER)
         {
             if (isGraphics)
             {
-                SET_SAMPLERS(VS, ShaderStage::VERTEX);
-                SET_SAMPLERS(HS, ShaderStage::TESS_CONTROL);
-                SET_SAMPLERS(DS, ShaderStage::TESS_EVALUATION);
-                SET_SAMPLERS(GS, ShaderStage::GEOMETRY);
-                SET_SAMPLERS(PS, ShaderStage::FRAGMENT);
+                SET_SAMPLERS(VS, StageBits::VERTEX_SHADER);
+                SET_SAMPLERS(HS, StageBits::TESS_CONTROL_SHADER);
+                SET_SAMPLERS(DS, StageBits::TESS_EVALUATION_SHADER);
+                SET_SAMPLERS(GS, StageBits::GEOMETRY_SHADER);
+                SET_SAMPLERS(PS, StageBits::FRAGMENT_SHADER);
             }
             else
             {
-                SET_SAMPLERS(CS, ShaderStage::COMPUTE);
+                SET_SAMPLERS(CS, StageBits::COMPUTE_SHADER);
             }
         }
         else if (bindingRange.descriptorType == DescriptorTypeDX11::STORAGE)
@@ -298,12 +294,13 @@ void PipelineLayoutD3D11::BindDescriptorSetImpl(BindingState& currentBindingStat
                 isStorageRebindNeededInGraphics = true;
             else
             {
-                if (IsShaderVisible(bindingRange.shaderVisibility, ShaderStage::COMPUTE))
+                if (IsShaderVisible(bindingRange.shaderStages, StageBits::COMPUTE_SHADER))
                     deferredContext->CSSetUnorderedAccessViews(bindingRange.baseSlot, bindingRange.descriptorNum, (ID3D11UnorderedAccessView**)descriptors, nullptr);
             }
         }
     }
 
+    // UAVs are visible from any stage on DX11.1, but can be bound only to OM or CS
     if (isStorageRebindNeededInGraphics)
     {
         uint32_t num = (uint32_t)currentBindingState.graphicsStorageDescriptors.size();
