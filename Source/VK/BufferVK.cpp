@@ -165,7 +165,7 @@ void BufferVK::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDe
 
     MemoryTypeUnpack unpack = {};
     const bool found = m_Device.GetMemoryType(memoryLocation, requirements.memoryRequirements.memoryTypeBits, unpack.info);
-    CHECK(&m_Device, found, "Can't find suitable memory type: %d", requirements.memoryRequirements.memoryTypeBits);
+    CHECK(found, "Can't find suitable memory type");
 
     unpack.info.isDedicated = dedicatedRequirements.requiresDedicatedAllocation;
 
@@ -174,7 +174,7 @@ void BufferVK::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDe
 
 inline void* BufferVK::Map(uint64_t offset, uint64_t size)
 {
-    CHECK(&m_Device, m_Memory != nullptr, "The buffer does not support memory mapping.");
+    CHECK(m_Memory != nullptr, "The buffer does not support memory mapping.");
 
     m_MappedRangeOffset = offset;
     m_MappedRangeSize = size;

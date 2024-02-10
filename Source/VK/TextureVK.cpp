@@ -158,7 +158,7 @@ void TextureVK::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryD
 
     MemoryTypeUnpack unpack = {};
     const bool found = m_Device.GetMemoryType(memoryLocation, requirements.memoryRequirements.memoryTypeBits, unpack.info);
-    CHECK(&m_Device, found, "Can't find suitable memory type: %d", requirements.memoryRequirements.memoryTypeBits);
+    CHECK(found, "Can't find suitable memory type");
 
     unpack.info.isDedicated = dedicatedRequirements.requiresDedicatedAllocation;
 

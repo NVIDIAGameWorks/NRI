@@ -59,7 +59,7 @@ private:
     void FillInputLayout(D3D12_INPUT_LAYOUT_DESC& inputLayoutDesc, const GraphicsPipelineDesc& graphicsPipelineDesc);
     void FillShaderBytecode(D3D12_SHADER_BYTECODE& shaderBytecode, const ShaderDesc& shaderDesc) const;
     void FillRasterizerState(D3D12_RASTERIZER_DESC& rasterizerDesc, const GraphicsPipelineDesc& graphicsPipelineDesc);
-    void FillDepthStencilState(D3D12_DEPTH_STENCIL_DESC& depthStencilDesc, const OutputMergerDesc& outputMergerDesc) const;
+    void FillDepthStencilState(D3D12_DEPTH_STENCIL_DESC* depthStencilDesc, const OutputMergerDesc& outputMergerDesc) const;
     void FillBlendState(D3D12_BLEND_DESC& blendDesc, const GraphicsPipelineDesc& graphicsPipelineDesc);
     void FillSampleDesc(DXGI_SAMPLE_DESC& sampleDesc, UINT& sampleMask, const GraphicsPipelineDesc& graphicsPipelineDesc);
 

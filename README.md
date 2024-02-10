@@ -20,7 +20,10 @@ Key features:
  - *C++* and *C* compatible interfaces
  - generalized common denominator for D3D12, VK and D3D11 GAPIs
  - low overhead
- - ray tracing & mesh shaders support
+ - ray tracing support
+ - mesh shaders support
+ - D3D12 Ultimate features support, including enhanced barriers
+ - VK [printf](https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md) support
  - validation layers (GAPI- and NRI- provided)
  - default D3D11 behavior is changed to match D3D12/VK using *NVAPI* or *AMD AGS* libraries, where applicable
  - supporting as much as possible VK-enabled platforms: Windows, Linux, MacOS, Android

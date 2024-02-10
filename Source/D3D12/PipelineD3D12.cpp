@@ -6,30 +6,17 @@
 
 using namespace nri;
 
-extern const uint16_t ROOT_PARAMETER_UNUSED;
-
 template<typename DescComponent, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE subobjectType>
 struct alignas(void*) PipelineDescComponent
 {
     PipelineDescComponent() = default;
-    operator DescComponent&();
-    void operator= (const DescComponent& desc);
+    
+    inline void operator= (const DescComponent& d)
+    { desc = d; }
 
     D3D12_PIPELINE_STATE_SUBOBJECT_TYPE type = subobjectType;
     DescComponent desc = {};
 };
-
-template<typename DescComponent, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE subobjectType>
-inline PipelineDescComponent<DescComponent, subobjectType>::operator DescComponent&()
-{
-    return desc;
-}
-
-template<typename DescComponent, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE subobjectType>
-inline void PipelineDescComponent<DescComponent, subobjectType>::operator= (const DescComponent& d)
-{
-    this->desc = d;
-}
 
 typedef PipelineDescComponent<ID3D12RootSignature*, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE> PipelineRootSignature;
 typedef PipelineDescComponent<D3D12_INPUT_LAYOUT_DESC, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_INPUT_LAYOUT> PipelineInputLayout;
@@ -47,19 +34,17 @@ typedef PipelineDescComponent<DXGI_SAMPLE_DESC, D3D12_PIPELINE_STATE_SUBOBJECT_T
 typedef PipelineDescComponent<UINT, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK> PipelineSampleMask;
 typedef PipelineDescComponent<D3D12_BLEND_DESC, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND> PipelineBlend;
 typedef PipelineDescComponent<D3D12_RASTERIZER_DESC, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER> PipelineRasterizer;
-typedef PipelineDescComponent<D3D12_DEPTH_STENCIL_DESC, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL> PipelineDepthStencil;
+typedef PipelineDescComponent<D3D12_DEPTH_STENCIL_DESC1, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL1> PipelineDepthStencil;
 typedef PipelineDescComponent<DXGI_FORMAT, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT> PipelineDepthStencilFormat;
 typedef PipelineDescComponent<D3D12_RT_FORMAT_ARRAY, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS> PipelineRenderTargetFormats;
 
+static_assert( (uint32_t)PrimitiveRestart::DISABLED == D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED, "Enum mismatch." );
+static_assert( (uint32_t)PrimitiveRestart::INDICES_UINT16 == D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFF, "Enum mismatch." );
+static_assert( (uint32_t)PrimitiveRestart::INDICES_UINT32 == D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFFFFFF, "Enum mismatch." );
+
 Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipelineDesc)
 {
-    if (m_Device.GetVersion() < 2)
-        return Result::UNSUPPORTED;
-
-    m_PipelineLayout = (const PipelineLayoutD3D12*)graphicsPipelineDesc.pipelineLayout;
-
-    if (graphicsPipelineDesc.inputAssembly != nullptr)
-        m_PrimitiveTopology = ::GetPrimitiveTopology(graphicsPipelineDesc.inputAssembly->topology, graphicsPipelineDesc.inputAssembly->tessControlPointNum);
+    CHECK(m_Device.GetVersion() >= 2, "Newer interface needed");
 
     struct Stream
     {
@@ -85,7 +70,6 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
     };
 
     Stream stream = {};
-
     stream.rootSignature = *m_PipelineLayout;
     stream.nodeMask = NRI_TEMP_NODE_MASK;
 
@@ -93,42 +77,45 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
     {
         const ShaderDesc& shader = graphicsPipelineDesc.shaders[i];
         if (shader.stage == StageBits::VERTEX_SHADER)
-            FillShaderBytecode(stream.vertexShader, shader);
+            FillShaderBytecode(stream.vertexShader.desc, shader);
         else if (shader.stage == StageBits::TESS_CONTROL_SHADER)
-            FillShaderBytecode(stream.hullShader, shader);
+            FillShaderBytecode(stream.hullShader.desc, shader);
         else if (shader.stage == StageBits::TESS_EVALUATION_SHADER)
-            FillShaderBytecode(stream.domainShader, shader);
+            FillShaderBytecode(stream.domainShader.desc, shader);
         else if (shader.stage == StageBits::GEOMETRY_SHADER)
-            FillShaderBytecode(stream.geometryShader, shader);
+            FillShaderBytecode(stream.geometryShader.desc, shader);
         else if (shader.stage == StageBits::MESH_CONTROL_SHADER)
-            FillShaderBytecode(stream.amplificationShader, shader);
+            FillShaderBytecode(stream.amplificationShader.desc, shader);
         else if (shader.stage == StageBits::MESH_EVALUATION_SHADER)
-            FillShaderBytecode(stream.meshShader, shader);
+            FillShaderBytecode(stream.meshShader.desc, shader);
         else if (shader.stage == StageBits::FRAGMENT_SHADER)
-            FillShaderBytecode(stream.pixelShader, shader);
+            FillShaderBytecode(stream.pixelShader.desc, shader);
         else
             return Result::INVALID_ARGUMENT;
     }
 
     D3D12_INPUT_LAYOUT_DESC inputLayout = {};
-
-    if (graphicsPipelineDesc.inputAssembly != nullptr)
+    uint32_t attributesNum = graphicsPipelineDesc.inputAssembly ? graphicsPipelineDesc.inputAssembly->attributeNum : 0;
+    inputLayout.pInputElementDescs = STACK_ALLOC(D3D12_INPUT_ELEMENT_DESC, attributesNum);
+    if (graphicsPipelineDesc.inputAssembly)
     {
+        FillInputLayout(inputLayout, graphicsPipelineDesc);
+
+        m_PrimitiveTopology = ::GetPrimitiveTopology(graphicsPipelineDesc.inputAssembly->topology, graphicsPipelineDesc.inputAssembly->tessControlPointNum);
+
         stream.primitiveTopology = GetPrimitiveTopologyType(graphicsPipelineDesc.inputAssembly->topology);
         stream.indexBufferStripCutValue = (D3D12_INDEX_BUFFER_STRIP_CUT_VALUE)graphicsPipelineDesc.inputAssembly->primitiveRestart;
-
-        inputLayout.pInputElementDescs = STACK_ALLOC(D3D12_INPUT_ELEMENT_DESC, graphicsPipelineDesc.inputAssembly->attributeNum);
-        FillInputLayout(inputLayout, graphicsPipelineDesc);
         stream.inputLayout = inputLayout;
     }
 
-    FillRasterizerState(stream.rasterizer, graphicsPipelineDesc);
-    FillBlendState(stream.blend, graphicsPipelineDesc);
-    FillSampleDesc(stream.sampleDesc, stream.sampleMask.desc, graphicsPipelineDesc);
+    FillRasterizerState(stream.rasterizer.desc, graphicsPipelineDesc);
+    FillBlendState(stream.blend.desc, graphicsPipelineDesc);
+    FillSampleDesc(stream.sampleDesc.desc, stream.sampleMask.desc, graphicsPipelineDesc);
 
-    if (graphicsPipelineDesc.outputMerger != nullptr)
+    if (graphicsPipelineDesc.outputMerger)
     {
-        FillDepthStencilState(stream.depthStencil, *graphicsPipelineDesc.outputMerger);
+        FillDepthStencilState((D3D12_DEPTH_STENCIL_DESC*)&stream.depthStencil.desc, *graphicsPipelineDesc.outputMerger);
+        stream.depthStencil.desc.DepthBoundsTestEnable = graphicsPipelineDesc.outputMerger->depth.boundsTest ? 1 : 0;
         stream.depthStencilFormat = GetDxgiFormat(graphicsPipelineDesc.outputMerger->depthStencilFormat).typed;
 
         stream.renderTargetFormats.desc.NumRenderTargets = graphicsPipelineDesc.outputMerger->colorNum;
@@ -141,35 +128,34 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
     pipelineStateStreamDesc.SizeInBytes = sizeof(stream);
 
     HRESULT hr = m_Device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState));
-    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreatePipelineState()");
-
-    m_IsGraphicsPipeline = true;
+    RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device2::CreatePipelineState()");
 
     return Result::SUCCESS;
 }
 
 Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
 {
-    if (m_Device.IsMeshShaderSupported())
+    m_PipelineLayout = (const PipelineLayoutD3D12*)graphicsPipelineDesc.pipelineLayout;
+    m_IsGraphicsPipeline = true;
+
+    if (m_Device.GetVersion() >= 2)
         return CreateFromStream(graphicsPipelineDesc);
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipleineStateDesc = {};
     graphicsPipleineStateDesc.NodeMask = NRI_TEMP_NODE_MASK;
-
-    m_PipelineLayout = (const PipelineLayoutD3D12*)graphicsPipelineDesc.pipelineLayout;
-
     graphicsPipleineStateDesc.pRootSignature = *m_PipelineLayout;
 
-    graphicsPipleineStateDesc.PrimitiveTopologyType = GetPrimitiveTopologyType(graphicsPipelineDesc.inputAssembly->topology);
-    m_PrimitiveTopology = ::GetPrimitiveTopology(graphicsPipelineDesc.inputAssembly->topology, graphicsPipelineDesc.inputAssembly->tessControlPointNum);
-    graphicsPipleineStateDesc.InputLayout.pInputElementDescs = STACK_ALLOC(D3D12_INPUT_ELEMENT_DESC, graphicsPipelineDesc.inputAssembly->attributeNum);
+    uint32_t attributesNum = graphicsPipelineDesc.inputAssembly ? graphicsPipelineDesc.inputAssembly->attributeNum : 0;
+    graphicsPipleineStateDesc.InputLayout.pInputElementDescs = STACK_ALLOC(D3D12_INPUT_ELEMENT_DESC, attributesNum);
+    if (graphicsPipelineDesc.inputAssembly)
+    {
+        FillInputLayout(graphicsPipleineStateDesc.InputLayout, graphicsPipelineDesc);
 
-    static_assert( (uint32_t)PrimitiveRestart::DISABLED == D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED, "Enum mismatch." );
-    static_assert( (uint32_t)PrimitiveRestart::INDICES_UINT16 == D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFF, "Enum mismatch." );
-    static_assert( (uint32_t)PrimitiveRestart::INDICES_UINT32 == D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFFFFFF, "Enum mismatch." );
-    graphicsPipleineStateDesc.IBStripCutValue = (D3D12_INDEX_BUFFER_STRIP_CUT_VALUE)graphicsPipelineDesc.inputAssembly->primitiveRestart;
+        m_PrimitiveTopology = ::GetPrimitiveTopology(graphicsPipelineDesc.inputAssembly->topology, graphicsPipelineDesc.inputAssembly->tessControlPointNum);
 
-    FillInputLayout(graphicsPipleineStateDesc.InputLayout, graphicsPipelineDesc);
+        graphicsPipleineStateDesc.PrimitiveTopologyType = GetPrimitiveTopologyType(graphicsPipelineDesc.inputAssembly->topology);
+        graphicsPipleineStateDesc.IBStripCutValue = (D3D12_INDEX_BUFFER_STRIP_CUT_VALUE)graphicsPipelineDesc.inputAssembly->primitiveRestart;
+    }
 
     for (uint32_t i = 0; i < graphicsPipelineDesc.shaderNum; i++)
     {
@@ -194,7 +180,7 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
 
     if (graphicsPipelineDesc.outputMerger)
     {
-        FillDepthStencilState(graphicsPipleineStateDesc.DepthStencilState, *graphicsPipelineDesc.outputMerger);
+        FillDepthStencilState(&graphicsPipleineStateDesc.DepthStencilState, *graphicsPipelineDesc.outputMerger);
         graphicsPipleineStateDesc.DSVFormat = GetDxgiFormat(graphicsPipelineDesc.outputMerger->depthStencilFormat).typed;
 
         graphicsPipleineStateDesc.NumRenderTargets = graphicsPipelineDesc.outputMerger->colorNum;
@@ -204,8 +190,6 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc)
 
     HRESULT hr = m_Device->CreateGraphicsPipelineState(&graphicsPipleineStateDesc, IID_PPV_ARGS(&m_PipelineState));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateGraphicsPipelineState()");
-
-    m_IsGraphicsPipeline = true;
 
     return Result::SUCCESS;
 }
@@ -444,22 +428,22 @@ void PipelineD3D12::FillRasterizerState(D3D12_RASTERIZER_DESC& rasterizerDesc, c
     rasterizerDesc.ConservativeRaster = rasterizationDesc.conservativeRasterization ? D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 }
 
-void PipelineD3D12::FillDepthStencilState(D3D12_DEPTH_STENCIL_DESC& depthStencilDesc, const OutputMergerDesc& outputMergerDesc) const
+void PipelineD3D12::FillDepthStencilState(D3D12_DEPTH_STENCIL_DESC* depthStencilDesc, const OutputMergerDesc& outputMergerDesc) const
 {
-    depthStencilDesc.DepthEnable = outputMergerDesc.depth.compareFunc == CompareFunc::NONE ? FALSE : TRUE;
-    depthStencilDesc.DepthWriteMask = outputMergerDesc.depth.write ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
-    depthStencilDesc.DepthFunc = GetComparisonFunc(outputMergerDesc.depth.compareFunc);
-    depthStencilDesc.StencilEnable = (outputMergerDesc.stencil.front.compareFunc == CompareFunc::NONE && outputMergerDesc.stencil.back.compareFunc == CompareFunc::NONE) ? FALSE : TRUE;
-    depthStencilDesc.StencilReadMask = (UINT8)outputMergerDesc.stencil.compareMask;
-    depthStencilDesc.StencilWriteMask = (UINT8)outputMergerDesc.stencil.writeMask;
-    depthStencilDesc.FrontFace.StencilFailOp = GetStencilOp(outputMergerDesc.stencil.front.fail);
-    depthStencilDesc.FrontFace.StencilDepthFailOp = GetStencilOp(outputMergerDesc.stencil.front.depthFail);
-    depthStencilDesc.FrontFace.StencilPassOp = GetStencilOp(outputMergerDesc.stencil.front.pass);
-    depthStencilDesc.FrontFace.StencilFunc = GetComparisonFunc(outputMergerDesc.stencil.front.compareFunc);
-    depthStencilDesc.BackFace.StencilFailOp = GetStencilOp(outputMergerDesc.stencil.back.fail);
-    depthStencilDesc.BackFace.StencilDepthFailOp = GetStencilOp(outputMergerDesc.stencil.back.depthFail);
-    depthStencilDesc.BackFace.StencilPassOp = GetStencilOp(outputMergerDesc.stencil.back.pass);
-    depthStencilDesc.BackFace.StencilFunc = GetComparisonFunc(outputMergerDesc.stencil.back.compareFunc);
+    depthStencilDesc->DepthEnable = outputMergerDesc.depth.compareFunc == CompareFunc::NONE ? FALSE : TRUE;
+    depthStencilDesc->DepthWriteMask = outputMergerDesc.depth.write ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+    depthStencilDesc->DepthFunc = GetComparisonFunc(outputMergerDesc.depth.compareFunc);
+    depthStencilDesc->StencilEnable = (outputMergerDesc.stencil.front.compareFunc == CompareFunc::NONE && outputMergerDesc.stencil.back.compareFunc == CompareFunc::NONE) ? FALSE : TRUE;
+    depthStencilDesc->StencilReadMask = (UINT8)outputMergerDesc.stencil.compareMask;
+    depthStencilDesc->StencilWriteMask = (UINT8)outputMergerDesc.stencil.writeMask;
+    depthStencilDesc->FrontFace.StencilFailOp = GetStencilOp(outputMergerDesc.stencil.front.fail);
+    depthStencilDesc->FrontFace.StencilDepthFailOp = GetStencilOp(outputMergerDesc.stencil.front.depthFail);
+    depthStencilDesc->FrontFace.StencilPassOp = GetStencilOp(outputMergerDesc.stencil.front.pass);
+    depthStencilDesc->FrontFace.StencilFunc = GetComparisonFunc(outputMergerDesc.stencil.front.compareFunc);
+    depthStencilDesc->BackFace.StencilFailOp = GetStencilOp(outputMergerDesc.stencil.back.fail);
+    depthStencilDesc->BackFace.StencilDepthFailOp = GetStencilOp(outputMergerDesc.stencil.back.depthFail);
+    depthStencilDesc->BackFace.StencilPassOp = GetStencilOp(outputMergerDesc.stencil.back.pass);
+    depthStencilDesc->BackFace.StencilFunc = GetComparisonFunc(outputMergerDesc.stencil.back.compareFunc);
 }
 
 void PipelineD3D12::FillBlendState(D3D12_BLEND_DESC& blendDesc, const GraphicsPipelineDesc& graphicsPipelineDesc)

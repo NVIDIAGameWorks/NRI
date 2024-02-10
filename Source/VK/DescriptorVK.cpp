@@ -289,7 +289,7 @@ inline void DescriptorVK::SetDebugName(const char* name)
         break;
 
     default:
-        CHECK(&m_Device, false, "unexpected descriptor type in SetDebugName: %u", (uint32_t)m_Type);
+        CHECK(false, "unexpected descriptor type");
         break;
     }
 }

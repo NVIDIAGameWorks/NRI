@@ -20,7 +20,7 @@ Result HelperDataUpload::UploadData(const TextureUploadDesc* textureUploadDescs,
 
     for (uint32_t i = 0; i < textureUploadDescNum; i++)
     {
-        if (textureUploadDescs[i].subresources == nullptr)
+        if (!textureUploadDescs[i].subresources)
             continue;
 
         const TextureSubresourceUploadDesc& subresource = textureUploadDescs[i].subresources[0];
@@ -237,12 +237,13 @@ bool HelperDataUpload::CopyTextureContent(const TextureUploadDesc& textureUpload
         return true;
 
     const DeviceDesc& deviceDesc = NRI.GetDeviceDesc(m_Device);
+    const TextureDesc& textureDesc = NRI.GetTextureDesc(*textureUploadDesc.texture);
 
-    for (; arrayOffset < textureUploadDesc.arraySize; arrayOffset++)
+    for (; arrayOffset < textureDesc.arraySize; arrayOffset++)
     {
-        for (; mipOffset < textureUploadDesc.mipNum; mipOffset++)
+        for (; mipOffset < textureDesc.mipNum; mipOffset++)
         {
-            const auto& subresource = textureUploadDesc.subresources[arrayOffset * textureUploadDesc.mipNum + mipOffset];
+            const auto& subresource = textureUploadDesc.subresources[arrayOffset * textureDesc.mipNum + mipOffset];
 
             const uint32_t sliceRowNum = subresource.slicePitch / subresource.rowPitch;
             const uint32_t alignedRowPitch = Align(subresource.rowPitch, deviceDesc.uploadBufferTextureRowAlignment);
@@ -339,6 +340,7 @@ void HelperDataUpload::DoTransition(const TextureUploadDesc* textureUploadDescs,
     constexpr uint32_t TEXTURES_PER_PASS = 256;
     TextureBarrierDesc textureBarriers[TEXTURES_PER_PASS];
 
+    AccessLayoutStage state = {AccessBits::COPY_DESTINATION, Layout::COPY_DESTINATION, StageBits::COPY};
     for (uint32_t i = 0; i < textureDataDescNum;)
     {
         const uint32_t passBegin = i;
@@ -346,21 +348,16 @@ void HelperDataUpload::DoTransition(const TextureUploadDesc* textureUploadDescs,
 
         for ( ; i < passEnd; i++)
         {
-            const TextureUploadDesc& textureDesc = textureUploadDescs[i];
-            TextureBarrierDesc& barrier = textureBarriers[i - passBegin];
+            const TextureUploadDesc& textureUploadDesc = textureUploadDescs[i];
+            const TextureDesc& textureDesc = NRI.GetTextureDesc(*textureUploadDesc.texture);
 
+            TextureBarrierDesc& barrier = textureBarriers[i - passBegin];
             barrier = {};
-            barrier.texture = textureDesc.texture;
+            barrier.texture = textureUploadDesc.texture;
             barrier.mipNum = textureDesc.mipNum;
             barrier.arraySize = textureDesc.arraySize;
-
-            if (isInitialTransition)
-                barrier.after = {AccessBits::COPY_DESTINATION, Layout::COPY_DESTINATION, StageBits::COPY};
-            else
-            {
-                barrier.before = {AccessBits::COPY_DESTINATION, Layout::COPY_DESTINATION, StageBits::COPY};
-                barrier.after = {textureDesc.after.access, textureDesc.after.layout, StageBits::ALL};
-            }
+            barrier.before = isInitialTransition ? textureUploadDesc.before : state;
+            barrier.after = isInitialTransition ? state : textureUploadDesc.after;
         }
 
         BarrierGroupDesc barrierGroup = {};
@@ -378,6 +375,7 @@ void HelperDataUpload::DoTransition(const BufferUploadDesc* bufferUploadDescs, u
     constexpr uint32_t BUFFERS_PER_PASS = 256;
     BufferBarrierDesc bufferBarriers[BUFFERS_PER_PASS];
 
+    AccessStage state = {AccessBits::COPY_DESTINATION, StageBits::COPY};
     for (uint32_t i = 0; i < bufferUploadDescNum;)
     {
         const uint32_t passBegin = i;
@@ -386,21 +384,12 @@ void HelperDataUpload::DoTransition(const BufferUploadDesc* bufferUploadDescs, u
         for ( ; i < passEnd; i++)
         {
             const BufferUploadDesc& bufferUploadDesc = bufferUploadDescs[i];
-            BufferBarrierDesc& barrier = bufferBarriers[i - passBegin];
 
+            BufferBarrierDesc& barrier = bufferBarriers[i - passBegin];
             barrier = {};
             barrier.buffer = bufferUploadDesc.buffer;
-
-            if (isInitialTransition)
-            {
-                barrier.before = {bufferUploadDesc.before, StageBits::ALL};
-                barrier.after = {AccessBits::COPY_DESTINATION, StageBits::COPY};
-            }
-            else
-            {
-                barrier.before = {AccessBits::COPY_DESTINATION, StageBits::COPY};
-                barrier.after = {bufferUploadDesc.after, StageBits::ALL};
-            }
+            barrier.before = isInitialTransition ? bufferUploadDesc.before : state;
+            barrier.after = isInitialTransition ? state : bufferUploadDesc.after;
         }
 
         BarrierGroupDesc barrierGroup = {};

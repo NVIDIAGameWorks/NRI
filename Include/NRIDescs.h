@@ -889,7 +889,7 @@ NRI_STRUCT(ClearDesc)
 
 NRI_STRUCT(StencilDesc)
 {
-    NRI_NAME(CompareFunc) compareFunc;
+    NRI_NAME(CompareFunc) compareFunc; // compareFunc != NONE, expects CmdSetStencilReference
     NRI_NAME(StencilFunc) fail;
     NRI_NAME(StencilFunc) pass;
     NRI_NAME(StencilFunc) depthFail;
@@ -915,13 +915,13 @@ NRI_STRUCT(DepthAttachmentDesc)
 {
     NRI_NAME(CompareFunc) compareFunc;
     bool write;
+    bool boundsTest; // boundsTest = true, expects CmdSetDepthBounds
 };
 
 NRI_STRUCT(StencilAttachmentDesc)
 {
     NRI_NAME(StencilDesc) front;
     NRI_NAME(StencilDesc) back;
-    uint8_t reference;
     uint8_t compareMask;
     uint8_t writeMask;
 };
@@ -1152,6 +1152,7 @@ NRI_STRUCT(BarrierGroupDesc)
 //===============================================================================================================================
 #pragma region [ Other ]
 
+// Copy
 NRI_STRUCT(TextureRegionDesc)
 {
     uint16_t x;
@@ -1171,6 +1172,7 @@ NRI_STRUCT(TextureDataLayoutDesc)
     uint32_t slicePitch;
 };
 
+// Submit work to queue
 NRI_STRUCT(QueueSubmitDesc)
 {
     const NRI_NAME(CommandBuffer)* const* commandBuffers;
@@ -1178,6 +1180,7 @@ NRI_STRUCT(QueueSubmitDesc)
     uint32_t nodeIndex;
 };
 
+// Memory
 NRI_STRUCT(BufferMemoryBindingDesc)
 {
     NRI_NAME(Memory)* memory;
@@ -1202,6 +1205,7 @@ NRI_STRUCT(MemoryDesc)
     bool mustBeDedicated;
 };
 
+// Clear storage
 NRI_STRUCT(ClearStorageBufferDesc)
 {
     const NRI_NAME(Descriptor)* storageBuffer;
@@ -1220,6 +1224,7 @@ NRI_STRUCT(ClearStorageTextureDesc)
     uint32_t offsetInRange;
 };
 
+// Descriptor set
 NRI_STRUCT(DescriptorRangeUpdateDesc)
 {
     const NRI_NAME(Descriptor)* const* descriptors;
@@ -1426,17 +1431,14 @@ NRI_STRUCT(DeviceDesc)
     uint32_t rayTracingGeometryObjectMaxNum;
 
     // Mesh shader
-    uint32_t meshTaskWorkGroupInvocationMaxNum;
-    uint32_t meshTaskWorkGroupMaxDim[3];
-    uint32_t meshTaskTotalMemoryMaxSize;
-    uint32_t meshTaskOutputMaxNum;
-    uint32_t meshWorkGroupInvocationMaxNum;
-    uint32_t meshWorkGroupMaxDim[3];
-    uint32_t meshOutputVertexMaxNum;
-    uint32_t meshOutputPrimitiveMaxNum;
-    uint32_t meshMultiviewViewMaxNum;
-    uint32_t meshOutputPerVertexGranularity;
-    uint32_t meshOutputPerPrimitiveGranularity;
+    uint32_t meshControlSharedMemoryMaxSize;
+    uint32_t meshControlWorkGroupInvocationMaxNum;
+    uint32_t meshControlPayloadMaxSize;
+    uint32_t meshEvaluationOutputVerticesMaxNum;
+    uint32_t meshEvaluationOutputPrimitiveMaxNum;
+    uint32_t meshEvaluationOutputComponentMaxNum;
+    uint32_t meshEvaluationSharedMemoryMaxSize;
+    uint32_t meshEvaluationWorkGroupInvocationMaxNum;
 
     // Other
     uint64_t timestampFrequencyHz;

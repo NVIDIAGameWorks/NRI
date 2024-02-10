@@ -121,6 +121,7 @@ void CommandBufferVal::SetScissors(const Rect* rects, uint32_t rectNum) {
 
 void CommandBufferVal::SetDepthBounds(float boundsMin, float boundsMax) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdSetDepthBounds: the command buffer must be in the recording state");
+    RETURN_ON_FAILURE(&m_Device, m_Device.GetDesc().isDepthBoundsTestSupported, ReturnVoid(), "CmdSetDepthBounds: DeviceDesc::isDepthBoundsTestSupported = false");
 
     GetCoreInterface().CmdSetDepthBounds(*GetImpl(), boundsMin, boundsMax);
 }
@@ -133,6 +134,7 @@ void CommandBufferVal::SetStencilReference(uint8_t reference) {
 
 void CommandBufferVal::SetSamplePositions(const SamplePosition* positions, uint32_t positionNum) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdSetSamplePositions: the command buffer must be in the recording state");
+    RETURN_ON_FAILURE(&m_Device, m_Device.GetDesc().isProgrammableSampleLocationsSupported, ReturnVoid(), "CmdSetSamplePositions: DeviceDesc::isProgrammableSampleLocationsSupported = false");
 
     GetCoreInterface().CmdSetSamplePositions(*GetImpl(), positions, positionNum);
 }

@@ -27,13 +27,13 @@ inline uint64_t FenceD3D12::GetFenceValue() const
 inline void FenceD3D12::QueueSignal(CommandQueueD3D12& commandQueue, uint64_t value)
 {
     HRESULT hr = ((ID3D12CommandQueue*)commandQueue)->Signal(m_Fence, value);
-    CHECK(&m_Device, hr == S_OK, "ID3D12CommandQueue::Signal() - FAILED!");
+    CHECK(hr == S_OK, "ID3D12CommandQueue::Signal() - FAILED!");
 }
 
 inline void FenceD3D12::QueueWait(CommandQueueD3D12& commandQueue, uint64_t value)
 {
     HRESULT hr = ((ID3D12CommandQueue*)commandQueue)->Wait(m_Fence, value);
-    CHECK(&m_Device, hr == S_OK, "ID3D12CommandQueue::Wait() - FAILED!");
+    CHECK(hr == S_OK, "ID3D12CommandQueue::Wait() - FAILED!");
 }
 
 inline void FenceD3D12::Wait(uint64_t value)
@@ -46,10 +46,10 @@ inline void FenceD3D12::Wait(uint64_t value)
     else if (m_Fence->GetCompletedValue() < value)
     {
         HRESULT hr = m_Fence->SetEventOnCompletion(value, m_Event);
-        CHECK(&m_Device, hr == S_OK, "ID3D12Fence::SetEventOnCompletion() - FAILED!");
+        CHECK(hr == S_OK, "ID3D12Fence::SetEventOnCompletion() - FAILED!");
 
         uint32_t result = WaitForSingleObjectEx(m_Event, DEFAULT_TIMEOUT, TRUE);
-        CHECK(&m_Device, result == WAIT_OBJECT_0, "WaitForSingleObjectEx(): failed, result = 0x%08X!", result);
+        CHECK(result == WAIT_OBJECT_0, "WaitForSingleObjectEx() - FAILED!");
     }
 }
 

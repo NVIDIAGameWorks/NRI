@@ -22,7 +22,7 @@ DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Bu
             m_ResourceViewType = ResourceViewType::SHADER_RESOURCE_STORAGE;
             break;
         default:
-            CHECK(&m_Device, false, "unexpected BufferView type in DescriptorVal: %u", (uint32_t)bufferViewDesc.viewType);
+            CHECK(false, "unexpected BufferView");
             break;
     }
 }
@@ -45,7 +45,7 @@ DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Te
             m_ResourceViewType = ResourceViewType::DEPTH_STENCIL_ATTACHMENT;
             break;
         default:
-            CHECK(&m_Device, false, "unexpected TextureView type in DescriptorVal: %u", (uint32_t)textureViewDesc.viewType);
+            CHECK(false, "unexpected TextureView");
             break;
     }
 }
@@ -70,7 +70,7 @@ DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Te
             m_ResourceViewType = ResourceViewType::DEPTH_STENCIL_ATTACHMENT;
             break;
         default:
-            CHECK(&m_Device, false, "unexpected TextureView type in DescriptorVal: %u", (uint32_t)textureViewDesc.viewType);
+            CHECK(false, "unexpected TextureView");
             break;
     }
 }
@@ -88,7 +88,7 @@ DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Te
             m_ResourceViewType = ResourceViewType::COLOR_ATTACHMENT;
             break;
         default:
-            CHECK(&m_Device, false, "unexpected TextureView type in DescriptorVal: %u", (uint32_t)textureViewDesc.viewType);
+            CHECK(false, "unexpected TextureView");
             break;
     }
 }

@@ -20,19 +20,12 @@ NRI_STRUCT(TextureSubresourceUploadDesc)
     uint32_t slicePitch;
 };
 
-NRI_STRUCT(AccessLayout)
-{
-    NRI_NAME(AccessBits) access;
-    NRI_NAME(Layout) layout;
-};
-
 NRI_STRUCT(TextureUploadDesc)
 {
-    const NRI_NAME(TextureSubresourceUploadDesc)* subresources;
+    const NRI_NAME(TextureSubresourceUploadDesc)* subresources; // must include ALL subresources = arraySize * mipNum
     NRI_NAME(Texture)* texture;
-    NRI_NAME(AccessLayout) after;
-    NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) arraySize;
+    NRI_NAME(AccessLayoutStage) before;
+    NRI_NAME(AccessLayoutStage) after;
 };
 
 NRI_STRUCT(BufferUploadDesc)
@@ -41,8 +34,8 @@ NRI_STRUCT(BufferUploadDesc)
     uint64_t dataSize;
     NRI_NAME(Buffer)* buffer;
     uint64_t bufferOffset;
-    NRI_NAME(AccessBits) before;
-    NRI_NAME(AccessBits) after;
+    NRI_NAME(AccessStage) before;
+    NRI_NAME(AccessStage) after;
 };
 
 NRI_STRUCT(ResourceGroupDesc)

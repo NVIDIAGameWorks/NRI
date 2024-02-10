@@ -119,7 +119,7 @@ struct DeviceD3D11 final : public DeviceBase
     Result FillFunctionTable(HelperInterface& helperInterface) const;
 
 private:
-    void FillDesc(bool isValidationEnabled);
+    void FillDesc(bool isValidationEnabled, const AGSDX11ReturnedParams& params);
 
     template<typename Implementation, typename Interface, typename ... Args>
     Result CreateImplementation(Interface*& entity, const Args&... args);

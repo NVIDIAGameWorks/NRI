@@ -225,7 +225,7 @@ void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t 
             }
         }
         else
-            CHECK(&m_Device, false, "'ClearView' emulation for 11.0 is not implemented!");
+            CHECK(false, "'ClearView' emulation for 11.0 is not implemented!");
     }
 }
 
@@ -334,7 +334,6 @@ void CommandBufferD3D11::SetPipeline(const Pipeline& pipeline)
     pipelineD3D11->ChangeSamplePositions(m_DeferredContext, m_SamplePositionsState, DynamicState::SET_ONLY);
     pipelineD3D11->ChangeStencilReference(m_DeferredContext, m_StencilRef, DynamicState::SET_ONLY);
     pipelineD3D11->Bind(m_DeferredContext, m_Pipeline);
-    SetDepthBounds(0.0f, 1.0f);
 
     m_Pipeline = pipelineD3D11;
 }
@@ -453,7 +452,7 @@ void CommandBufferD3D11::UploadBufferToTexture(Texture& dstTexture, const Textur
 
 void CommandBufferD3D11::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc)
 {
-    CHECK(&m_Device, dstDataLayoutDesc.offset == 0, "D3D11 implementation currently supports copying a texture region to a buffer only with offset = 0!");
+    CHECK(dstDataLayoutDesc.offset == 0, "D3D11 implementation currently supports copying a texture region to a buffer only with offset = 0!");
 
     BufferD3D11& dst = (BufferD3D11&)dstBuffer;
     TextureD3D11& src = (TextureD3D11&)srcTexture;

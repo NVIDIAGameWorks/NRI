@@ -151,6 +151,16 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         m_Ext.InitializeAMDExt(this, agsContext, device != nullptr);
 
     // Device
+    AGSDX11ReturnedParams params = {};
+    if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA)
+    {
+        // Tricky part: AGSDX11ReturnedParams is used to properly propagate depthBoundsTest support
+        params.extensionsSupported.depthBoundsDeferredContexts = true;
+        params.extensionsSupported.depthBoundsTest = true;
+        params.extensionsSupported.uavOverlap = true;
+        params.extensionsSupported.UAVOverlapDeferredContexts = true;
+    }
+
     ComPtr<ID3D11DeviceBest> deviceTemp = (ID3D11DeviceBest*)device;
     if (!device)
     {
@@ -163,7 +173,9 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
 
         if (m_Ext.IsAGSAvailable())
         {
-            device = m_Ext.CreateDeviceUsingAGS(m_Adapter, levels.data(), levels.size(), flags);
+            m_Ext.CreateDeviceUsingAGS(m_Adapter, levels.data(), levels.size(), flags, params);
+
+            device = params.pDevice;
             if (!device)
                 return Result::FAILURE;
         }
@@ -203,6 +215,9 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     {
         REPORT_WARNING(this, "Deferred Contexts are not supported by the driver and will be emulated!");
         m_IsDeferredContextEmulated = true;
+
+        params.extensionsSupported.UAVOverlapDeferredContexts = params.extensionsSupported.uavOverlap;
+        params.extensionsSupported.depthBoundsDeferredContexts = params.extensionsSupported.depthBoundsTest;
     }
 
     hr = m_ImmediateContext->QueryInterface(IID_PPV_ARGS(&m_Multithread));
@@ -215,7 +230,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         m_Multithread->SetMultithreadProtected(true);
 
     // Other
-    FillDesc(deviceCreationDesc.enableAPIValidation);
+    FillDesc(deviceCreationDesc.enableAPIValidation, params);
 
     for (uint32_t i = 0; i < COMMAND_QUEUE_TYPE_NUM; i++)
         m_CommandQueues.emplace_back(*this);
@@ -223,7 +238,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     return FillFunctionTable(m_CoreInterface);
 }
 
-void DeviceD3D11::FillDesc(bool isValidationEnabled)
+void DeviceD3D11::FillDesc(bool isValidationEnabled, const AGSDX11ReturnedParams& params)
 {
     D3D11_FEATURE_DATA_D3D11_OPTIONS options = {};
     HRESULT hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS, &options, sizeof(options));
@@ -389,7 +404,7 @@ void DeviceD3D11::FillDesc(bool isValidationEnabled)
     m_Desc.isAPIValidationEnabled = isValidationEnabled;
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
-    m_Desc.isDepthBoundsTestSupported = m_Desc.adapterDesc.vendor == Vendor::NVIDIA || m_Desc.adapterDesc.vendor == Vendor::AMD;
+    m_Desc.isDepthBoundsTestSupported = params.extensionsSupported.depthBoundsDeferredContexts;
     m_Desc.isProgrammableSampleLocationsSupported = m_Desc.adapterDesc.vendor == Vendor::NVIDIA;
     m_Desc.isComputeQueueSupported = false;
     m_Desc.isCopyQueueSupported = false;

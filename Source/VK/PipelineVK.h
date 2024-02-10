@@ -23,9 +23,6 @@ struct PipelineVK
     inline VkPipelineBindPoint GetBindPoint() const
     { return m_BindPoint; }
 
-    inline bool HasDynamicState() const
-    { return m_HasDynamicState; }
-
     ~PipelineVK();
 
     Result Create(const GraphicsPipelineDesc& graphicsPipelineDesc);
@@ -59,7 +56,6 @@ private:
     VkPipeline m_Handle = VK_NULL_HANDLE;
     VkPipelineBindPoint m_BindPoint = (VkPipelineBindPoint)0;
     bool m_OwnsNativeObjects = false;
-    bool m_HasDynamicState = false;
 };
 
 }

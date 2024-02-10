@@ -71,12 +71,11 @@ constexpr uint32_t GetNodeMask(uint32_t mask)
     (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
 
 #if _DEBUG
-    #define CHECK(deviceBase, condition, format, ...) \
-        if ( !(condition) ) \
-            (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
+    #define CHECK(condition, message) \
+        assert(condition && message)
 #else
-    #define CHECK(deviceBase, condition, format, ...) \
-        ((void)sizeof((void)(condition), 0))
+    #define CHECK(condition, message) \
+        ((void)condition, message)
 #endif
 
 #define SET_D3D_DEBUG_OBJECT_NAME(obj, name) \

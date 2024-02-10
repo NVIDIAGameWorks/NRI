@@ -637,6 +637,18 @@ void DeviceD3D12::FillDesc(bool enableValidation)
         m_Desc.rayTracingGeometryObjectMaxNum = (1 << 24) - 1;
     }
 
+    if (m_IsMeshShaderSupported)
+    {
+        m_Desc.meshControlSharedMemoryMaxSize = 32 * 1024;
+        m_Desc.meshControlWorkGroupInvocationMaxNum = 128;
+        m_Desc.meshControlPayloadMaxSize = 16 * 1024;
+        m_Desc.meshEvaluationOutputVerticesMaxNum = 256;
+        m_Desc.meshEvaluationOutputPrimitiveMaxNum = 256;
+        m_Desc.meshEvaluationOutputComponentMaxNum = 128;
+        m_Desc.meshEvaluationSharedMemoryMaxSize = 28 * 1024;
+        m_Desc.meshEvaluationWorkGroupInvocationMaxNum = 128;
+    }
+
     m_Desc.timestampFrequencyHz = timestampFrequency;
     m_Desc.subPixelPrecisionBits = D3D12_SUBPIXEL_FRACTIONAL_BIT_COUNT;
     m_Desc.subTexelPrecisionBits = D3D12_SUBTEXEL_FRACTIONAL_BIT_COUNT;

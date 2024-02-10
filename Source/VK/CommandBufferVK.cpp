@@ -375,9 +375,6 @@ inline void CommandBufferVK::SetPipeline(const Pipeline& pipeline)
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBindPipeline(m_Handle, pipelineImpl.GetBindPoint(), pipelineImpl);
-
-    if (pipelineImpl.HasDynamicState())
-        vk.CmdSetDepthBounds(m_Handle, 0.0f, 1.0f);
 }
 
 inline void CommandBufferVK::SetDescriptorPool(const DescriptorPool& descriptorPool)
@@ -672,10 +669,10 @@ static inline VkPipelineStageFlags2 GetPipelineStageFlags(StageBits stageBits)
 
     if (stageBits & StageBits::INDIRECT)
         flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
-    
+
     if (stageBits & StageBits::STREAM_OUTPUT) // Requires supportedFeatures.transformFeedback
         flags |= VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT;
-    
+
     if (stageBits & (StageBits::COPY | StageBits::CLEAR_STORAGE))
         flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
 
@@ -758,7 +755,7 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc)
     {
         const BufferBarrierDesc& barrierDesc = barrierGroupDesc.buffers[i];
         const BufferVK& bufferImpl = *(const BufferVK*)barrierDesc.buffer;
-        
+
         VkBufferMemoryBarrier2& barrier = bufferBarriers[i];
         barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
         barrier.pNext = nullptr;

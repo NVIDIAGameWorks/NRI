@@ -364,17 +364,31 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredExts, bool di
     Vector<VkExtensionProperties> supportedExts(extensionNum, GetStdAllocator());
     m_VK.EnumerateDeviceExtensionProperties(m_PhysicalDevices.front(), nullptr, &extensionNum, supportedExts.data());
 
+    REPORT_INFO(this, "Supported extensions");
+    for (const VkExtensionProperties& props : supportedExts)
+        REPORT_INFO(this, "    %s (v%u)", props.extensionName, props.specVersion);
+
     // Mandatory
-    desiredExts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME); // TODO: move to supportedFeatures?
-    desiredExts.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
     desiredExts.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
-    desiredExts.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME); // at least for "printf"
+
+    if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, supportedExts)) // TODO: move to supportedFeatures?
+        desiredExts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
 #ifdef __APPLE__
-    desiredExts.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
-    desiredExts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+    if (IsExtensionSupported(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, supportedExts))
+        desiredExts.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, supportedExts))
+        desiredExts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
 #endif
 
     // Optional
+    if (IsExtensionSupported(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME, supportedExts))
+        desiredExts.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME, supportedExts))
+        desiredExts.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME); // at least for "printf"
+
     if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, supportedExts))
     {
         desiredExts.push_back(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME);
@@ -1145,7 +1159,7 @@ void DeviceVK::FillDesc(bool enableValidation)
     }
 
     // Mesh shader
-    if (!supportedFeatures.meshShader)
+    if (supportedFeatures.meshShader)
     {
         VkPhysicalDeviceMeshShaderPropertiesEXT meshShaderProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT };
 
@@ -1153,21 +1167,14 @@ void DeviceVK::FillDesc(bool enableValidation)
 
         m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevices.front(), &props);
 
-        m_Desc.meshTaskWorkGroupInvocationMaxNum = meshShaderProps.maxTaskWorkGroupInvocations;
-        m_Desc.meshTaskWorkGroupMaxDim[0] = meshShaderProps.maxTaskWorkGroupSize[0];
-        m_Desc.meshTaskWorkGroupMaxDim[1] = meshShaderProps.maxTaskWorkGroupSize[1];
-        m_Desc.meshTaskWorkGroupMaxDim[2] = meshShaderProps.maxTaskWorkGroupSize[2];
-        m_Desc.meshTaskTotalMemoryMaxSize = meshShaderProps.maxTaskPayloadAndSharedMemorySize;
-        m_Desc.meshTaskOutputMaxNum = meshShaderProps.maxMeshWorkGroupTotalCount;
-        m_Desc.meshWorkGroupInvocationMaxNum = meshShaderProps.maxMeshWorkGroupInvocations;
-        m_Desc.meshWorkGroupMaxDim[0] = meshShaderProps.maxMeshWorkGroupSize[0];
-        m_Desc.meshWorkGroupMaxDim[1] = meshShaderProps.maxMeshWorkGroupSize[1];
-        m_Desc.meshWorkGroupMaxDim[2] = meshShaderProps.maxMeshWorkGroupSize[2];
-        m_Desc.meshOutputVertexMaxNum = meshShaderProps.maxMeshOutputVertices;
-        m_Desc.meshOutputPrimitiveMaxNum = meshShaderProps.maxMeshOutputPrimitives;
-        m_Desc.meshMultiviewViewMaxNum = meshShaderProps.maxMeshMultiviewViewCount;
-        m_Desc.meshOutputPerVertexGranularity = meshShaderProps.meshOutputPerVertexGranularity;
-        m_Desc.meshOutputPerPrimitiveGranularity = meshShaderProps.meshOutputPerPrimitiveGranularity;
+        m_Desc.meshControlSharedMemoryMaxSize = meshShaderProps.maxTaskSharedMemorySize;
+        m_Desc.meshControlWorkGroupInvocationMaxNum = meshShaderProps.maxTaskWorkGroupInvocations;
+        m_Desc.meshControlPayloadMaxSize = meshShaderProps.maxTaskPayloadSize;
+        m_Desc.meshEvaluationOutputVerticesMaxNum = meshShaderProps.maxMeshOutputVertices;
+        m_Desc.meshEvaluationOutputPrimitiveMaxNum = meshShaderProps.maxMeshOutputPrimitives;
+        m_Desc.meshEvaluationOutputComponentMaxNum = meshShaderProps.maxMeshOutputComponents;
+        m_Desc.meshEvaluationSharedMemoryMaxSize = meshShaderProps.maxMeshSharedMemorySize;
+        m_Desc.meshEvaluationWorkGroupInvocationMaxNum = meshShaderProps.maxMeshWorkGroupInvocations;
     }
 }
 

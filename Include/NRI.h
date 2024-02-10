@@ -25,8 +25,8 @@ Non-goals:
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 118
-#define NRI_VERSION_DATE "9 February 2024"
+#define NRI_VERSION_MINOR 119
+#define NRI_VERSION_DATE "10 February 2024"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -111,14 +111,24 @@ NRI_STRUCT(CoreInterface)
         // Graphics
         void (NRI_CALL *CmdBeginRendering)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(AttachmentsDesc) attachmentsDesc);
         // {
+            // Fast clear
             void (NRI_CALL *CmdClearAttachments)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME(ClearDesc)* clearDescs, uint32_t clearDescNum, const NRI_NAME(Rect)* rects, uint32_t rectNum);
+
+            // Mandatory state before any Draw command
             void (NRI_CALL *CmdSetViewports)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME(Viewport)* viewports, uint32_t viewportNum);
             void (NRI_CALL *CmdSetScissors)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME(Rect)* rects, uint32_t rectNum);
-            void (NRI_CALL *CmdSetDepthBounds)(NRI_NAME_REF(CommandBuffer) commandBuffer, float boundsMin, float boundsMax);
+
+            // Mandatory state before any Draw command, if enabled in the pipeline
             void (NRI_CALL *CmdSetStencilReference)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint8_t reference);
+            void (NRI_CALL *CmdSetDepthBounds)(NRI_NAME_REF(CommandBuffer) commandBuffer, float boundsMin, float boundsMax);
+
+            // Optional state
             void (NRI_CALL *CmdSetSamplePositions)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME(SamplePosition)* positions, uint32_t positionNum);
+
             void (NRI_CALL *CmdSetIndexBuffer)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, NRI_NAME(IndexType) indexType);
             void (NRI_CALL *CmdSetVertexBuffers)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const NRI_NAME(Buffer)* const* buffers, const uint64_t* offsets);
+
+            // Draw
             void (NRI_CALL *CmdDraw)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t vertexNum, uint32_t instanceNum, uint32_t baseVertex, uint32_t baseInstance);
             void (NRI_CALL *CmdDrawIndexed)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t indexNum, uint32_t instanceNum, uint32_t baseIndex, uint32_t baseVertex, uint32_t baseInstance);
             void (NRI_CALL *CmdDrawIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
@@ -136,7 +146,7 @@ NRI_STRUCT(CoreInterface)
         void (NRI_CALL *CmdUploadBufferToTexture)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(Texture) dstTexture, const NRI_NAME_REF(TextureRegionDesc) dstRegionDesc, const NRI_NAME_REF(Buffer) srcBuffer, const NRI_NAME_REF(TextureDataLayoutDesc) srcDataLayoutDesc);
         void (NRI_CALL *CmdReadbackTextureToBuffer)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(Buffer) dstBuffer, NRI_NAME_REF(TextureDataLayoutDesc) dstDataLayoutDesc, const NRI_NAME_REF(Texture) srcTexture, const NRI_NAME_REF(TextureRegionDesc) srcRegionDesc);
 
-        // Clear storage
+        // Clear storage (slow clear)
         void (NRI_CALL *CmdClearStorageBuffer)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(ClearStorageBufferDesc) clearDesc);
         void (NRI_CALL *CmdClearStorageTexture)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(ClearStorageTextureDesc) clearDesc);
 

@@ -472,7 +472,6 @@ inline void CommandBufferD3D12::SetPipeline(const Pipeline& pipeline)
         return;
 
     pipelineD3D12->Bind(m_GraphicsCommandList, m_PrimitiveTopology);
-    SetDepthBounds(0.0f, 1.0f);
 
     m_Pipeline = pipelineD3D12;
 }

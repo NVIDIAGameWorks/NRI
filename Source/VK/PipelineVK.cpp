@@ -433,12 +433,13 @@ void PipelineVK::FillDepthStencilState(const GraphicsPipelineDesc& graphicsPipel
     if (graphicsPipelineDesc.outputMerger == nullptr)
         return;
 
-    const DepthAttachmentDesc& depthDesc = graphicsPipelineDesc.outputMerger->depth;
+    const DepthAttachmentDesc& depth = graphicsPipelineDesc.outputMerger->depth;
     const StencilAttachmentDesc& stencil = graphicsPipelineDesc.outputMerger->stencil;
-    state.depthTestEnable = depthDesc.compareFunc != CompareFunc::NONE;
-    state.depthWriteEnable = depthDesc.write;
-    state.depthCompareOp = GetCompareOp(depthDesc.compareFunc);
-    state.depthBoundsTestEnable = VK_TRUE;
+
+    state.depthTestEnable = depth.compareFunc != CompareFunc::NONE;
+    state.depthWriteEnable = depth.write;
+    state.depthCompareOp = GetCompareOp(depth.compareFunc);
+    state.depthBoundsTestEnable = depth.boundsTest;
     state.stencilTestEnable = stencil.front.compareFunc != CompareFunc::NONE;
     state.minDepthBounds = 0.0f;
     state.maxDepthBounds = 1.0f;
@@ -449,7 +450,6 @@ void PipelineVK::FillDepthStencilState(const GraphicsPipelineDesc& graphicsPipel
     state.front.compareOp = GetCompareOp(stencil.front.compareFunc);
     state.front.compareMask = stencil.compareMask;
     state.front.writeMask = stencil.writeMask;
-    state.front.reference = stencil.reference;
 
     state.back.failOp = GetStencilOp(stencil.back.fail);
     state.back.passOp = GetStencilOp(stencil.back.pass);
@@ -457,7 +457,6 @@ void PipelineVK::FillDepthStencilState(const GraphicsPipelineDesc& graphicsPipel
     state.back.compareOp = GetCompareOp(stencil.back.compareFunc);
     state.back.compareMask = stencil.compareMask;
     state.back.writeMask = stencil.writeMask;
-    state.back.reference = stencil.reference;
 }
 
 void PipelineVK::FillColorBlendState(const GraphicsPipelineDesc& graphicsPipelineDesc, VkPipelineColorBlendStateCreateInfo& state) const
@@ -497,18 +496,16 @@ void PipelineVK::FillColorBlendState(const GraphicsPipelineDesc& graphicsPipelin
 constexpr std::array<VkDynamicState, 4> DYNAMIC_STATE = { // TODO: add more
     VK_DYNAMIC_STATE_VIEWPORT,
     VK_DYNAMIC_STATE_SCISSOR,
-    VK_DYNAMIC_STATE_DEPTH_BOUNDS,
     VK_DYNAMIC_STATE_STENCIL_REFERENCE,
+    VK_DYNAMIC_STATE_DEPTH_BOUNDS,
 };
 
 void PipelineVK::FillDynamicState(VkPipelineDynamicStateCreateInfo& state)
 {
     state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 
-    state.dynamicStateCount = (uint32_t)DYNAMIC_STATE.size();
+    state.dynamicStateCount = m_Device.GetDesc().isDepthBoundsTestSupported ? 4 : 3;
     state.pDynamicStates = DYNAMIC_STATE.data();
-
-    m_HasDynamicState = true; // TODO: keep in mind - all enabled dynamic state must be set at least once!
 }
 
 void PipelineVK::FillGroupIndices(const RayTracingPipelineDesc& rayTracingPipelineDesc, uint32_t* groupIndices)
