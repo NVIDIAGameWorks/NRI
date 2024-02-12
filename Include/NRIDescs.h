@@ -228,14 +228,14 @@ NRI_ENUM_BITS
 
     // Other stages
     COPY                            = NRI_SET_BIT(17), // Invoked by "CmdCopy*", "CmdUpload*" and "CmdReadback*"
-    CLEAR_STORAGE                   = NRI_SET_BIT(18), // Invoked by "CmdClearStorage*" 
+    CLEAR_STORAGE                   = NRI_SET_BIT(18), // Invoked by "CmdClearStorage*"
     ACCELERATION_STRUCTURE          = NRI_SET_BIT(19), // Invoked by "Cmd*AccelerationStructure*"
 
     // Modifiers
     INDIRECT                        = NRI_SET_BIT(20), // Invoked by "Indirect" command (used as addition to other bits)
     STREAM_OUTPUT                   = NRI_SET_BIT(21), // Stream output (transform feedback) activated
 
-    // Umbrella stages    
+    // Umbrella stages
     TESSELATION_SHADERS             = NRI_ENUM_MEMBER_UNSCOPED(StageBits, TESS_CONTROL_SHADER) |
                                       NRI_ENUM_MEMBER_UNSCOPED(StageBits, TESS_EVALUATION_SHADER),
 
@@ -255,7 +255,7 @@ NRI_ENUM_BITS
                                       NRI_ENUM_MEMBER_UNSCOPED(StageBits, CLOSEST_HIT_SHADER) |
                                       NRI_ENUM_MEMBER_UNSCOPED(StageBits, ANY_HIT_SHADER) |
                                       NRI_ENUM_MEMBER_UNSCOPED(StageBits, CALLABLE_SHADER),
-    
+
     // Invoked by "CmdDraw*"
     DRAW                            = NRI_ENUM_MEMBER_UNSCOPED(StageBits, INDEX_INPUT) |
                                       NRI_ENUM_MEMBER_UNSCOPED(StageBits, GRAPHICS_SHADERS) |
@@ -1259,48 +1259,41 @@ NRI_ENUM
     OCCLUSION,
     PIPELINE_STATISTICS,
     ACCELERATION_STRUCTURE_COMPACTED_SIZE,
+    // TODO: STREAM_OUTPUT_STATISTICS?
 
     MAX_NUM
-);
-
-NRI_ENUM_BITS
-(
-    PipelineStatsBits, uint16_t,
-
-    INPUT_ASSEMBLY_VERTICES             = NRI_SET_BIT(0),
-    INPUT_ASSEMBLY_PRIMITIVES           = NRI_SET_BIT(1),
-    VERTEX_SHADER_INVOCATIONS           = NRI_SET_BIT(2),
-    GEOMETRY_SHADER_INVOCATIONS         = NRI_SET_BIT(3),
-    GEOMETRY_SHADER_PRIMITIVES          = NRI_SET_BIT(4),
-    CLIPPING_INVOCATIONS                = NRI_SET_BIT(5),
-    CLIPPING_PRIMITIVES                 = NRI_SET_BIT(6),
-    FRAGMENT_SHADER_INVOCATIONS         = NRI_SET_BIT(7),
-    TESS_CONTROL_SHADER_PATCHES         = NRI_SET_BIT(8),
-    TESS_EVALUATION_SHADER_INVOCATIONS  = NRI_SET_BIT(9),
-    COMPUTE_SHADER_INVOCATIONS          = NRI_SET_BIT(10)
 );
 
 NRI_STRUCT(QueryPoolDesc)
 {
     NRI_NAME(QueryType) queryType;
     uint32_t capacity;
-    NRI_NAME(PipelineStatsBits) pipelineStatsMask;
     uint32_t nodeMask;
 };
 
+// Data layout for QueryType::PIPELINE_STATISTICS
+// Never used, only describes the data layout in various cases
 NRI_STRUCT(PipelineStatisticsDesc)
 {
-    uint64_t inputVertices;
-    uint64_t inputPrimitives;
-    uint64_t vertexShaderInvocations;
-    uint64_t geometryShaderInvocations;
-    uint64_t geometryShaderPrimitives;
-    uint64_t rasterizerInPrimitives;
-    uint64_t rasterizerOutPrimitives;
-    uint64_t fragmentShaderInvocations;
-    uint64_t tessControlInvocations;
-    uint64_t tessEvaluationInvocations;
-    uint64_t computeShaderInvocations;
+    // Common part
+    uint64_t inputVertexNum;
+    uint64_t inputPrimitiveNum;
+    uint64_t vertexShaderInvocationNum;
+    uint64_t geometryShaderInvocationNum;
+    uint64_t geometryShaderPrimitiveNum;
+    uint64_t rasterizerInPrimitiveNum;
+    uint64_t rasterizerOutPrimitiveNum;
+    uint64_t fragmentShaderInvocationNum;
+    uint64_t tessControlShaderInvocationNum;
+    uint64_t tessEvaluationShaderInvocationNum;
+    uint64_t computeShaderInvocationNum;
+
+    // If "isMeshShadersSupported" or D3D12
+    uint64_t meshControlShaderInvocationNum;
+    uint64_t meshEvaluationShaderInvocationNum;
+
+    // If D3D12
+    uint64_t meshEvaluationShaderPrimitiveNum;
 };
 
 #pragma endregion
@@ -1392,15 +1385,13 @@ NRI_STRUCT(DeviceDesc)
     uint32_t vertexShaderStreamMaxNum;
     uint32_t vertexShaderOutputComponentMaxNum;
 
-    // Tessellation control shader
+    // Tessellation control and evaluation shaders
     float tessControlShaderGenerationMaxLevel;
     uint32_t tessControlShaderPatchPointMaxNum;
     uint32_t tessControlShaderPerVertexInputComponentMaxNum;
     uint32_t tessControlShaderPerVertexOutputComponentMaxNum;
     uint32_t tessControlShaderPerPatchOutputComponentMaxNum;
     uint32_t tessControlShaderTotalOutputComponentMaxNum;
-
-    // Tessellation evaluation shader
     uint32_t tessEvaluationShaderInputComponentMaxNum;
     uint32_t tessEvaluationShaderOutputComponentMaxNum;
 
@@ -1430,7 +1421,7 @@ NRI_STRUCT(DeviceDesc)
     uint32_t rayTracingShaderRecursionMaxDepth;
     uint32_t rayTracingGeometryObjectMaxNum;
 
-    // Mesh shader
+    // Mesh control and evaluation shaders
     uint32_t meshControlSharedMemoryMaxSize;
     uint32_t meshControlWorkGroupInvocationMaxNum;
     uint32_t meshControlPayloadMaxSize;
@@ -1475,6 +1466,8 @@ NRI_STRUCT(DeviceDesc)
     bool isRegisterAliasingSupported;
     bool isSubsetAllocationSupported;
     bool isFloat16Supported;
+    bool isRaytracingSupported;
+    bool isMeshShaderSupported;
 };
 
 #pragma endregion

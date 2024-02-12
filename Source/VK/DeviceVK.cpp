@@ -1141,6 +1141,7 @@ void DeviceVK::FillDesc(bool enableValidation)
     }
 
     // Ray tracing
+    m_Desc.isRaytracingSupported = supportedFeatures.rayTracing;
     if (supportedFeatures.rayTracing)
     {
         VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR };
@@ -1159,6 +1160,7 @@ void DeviceVK::FillDesc(bool enableValidation)
     }
 
     // Mesh shader
+    m_Desc.isMeshShaderSupported = supportedFeatures.meshShader;
     if (supportedFeatures.meshShader)
     {
         VkPhysicalDeviceMeshShaderPropertiesEXT meshShaderProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT };

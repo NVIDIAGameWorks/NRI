@@ -30,7 +30,9 @@ struct QueryPoolD3D11
     //================================================================================================================
 
     void SetDebugName(const char* name);
-    uint32_t GetQuerySize() const;
+
+    inline uint32_t GetQuerySize() const
+    { return m_Type == QueryType::PIPELINE_STATISTICS ? sizeof(D3D11_QUERY_DATA_PIPELINE_STATISTICS) : sizeof(uint64_t); }
 
 private:
     DeviceD3D11& m_Device;

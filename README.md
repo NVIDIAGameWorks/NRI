@@ -8,6 +8,7 @@ Goals:
 - generalization of D3D12 ([spec](https://microsoft.github.io/DirectX-Specs/)) and VK ([spec](https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html)) GAPIs
 - providing access to low-level features of modern GAPIs
 - low overhead
+- explicitness
 - D3D11 ([spec](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm)) support (as much as possible)
 
 Non-goals:

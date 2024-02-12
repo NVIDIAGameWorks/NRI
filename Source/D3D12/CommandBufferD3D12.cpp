@@ -814,8 +814,7 @@ inline void CommandBufferD3D12::CopyQueries(const QueryPool& queryPool, uint32_t
     const QueryPoolD3D12& queryPoolD3D12 = (QueryPoolD3D12&)queryPool;
     const BufferD3D12& bufferD3D12 = (BufferD3D12&)buffer;
 
-    // WAR: QueryHeap uses a readback buffer for QueryType::ACCELERATION_STRUCTURE_COMPACTED_SIZE
-    if (queryPoolD3D12.GetType() == (D3D12_QUERY_TYPE)-1)
+    if (queryPoolD3D12.GetType() == QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE)
     {
         const uint64_t srcOffset = offset * queryPoolD3D12.GetQuerySize();
         const uint64_t size = num * queryPoolD3D12.GetQuerySize();

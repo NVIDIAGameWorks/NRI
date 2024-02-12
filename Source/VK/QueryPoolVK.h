@@ -19,9 +19,6 @@ struct QueryPoolVK
     inline DeviceVK& GetDevice() const
     { return m_Device; }
 
-    inline uint32_t GetStride() const
-    { return m_Stride; }
-
     inline VkQueryType GetType() const
     { return m_Type; }
 
@@ -35,13 +32,15 @@ struct QueryPoolVK
     //================================================================================================================
 
     void SetDebugName(const char* name);
-    uint32_t GetQuerySize() const;
+
+    inline uint32_t GetQuerySize() const
+    { return m_QuerySize; }
 
 private:
     DeviceVK& m_Device;
     std::array<VkQueryPool, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_Handles = {};
-    uint32_t m_Stride = 0;
     VkQueryType m_Type = (VkQueryType)0;
+    uint32_t m_QuerySize = 0;
     bool m_OwnsNativeObjects = false;
 };
 

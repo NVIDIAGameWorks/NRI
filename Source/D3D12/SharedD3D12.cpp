@@ -366,46 +366,6 @@ D3D12_FILTER nri::GetFilterAnisotropic(FilterExt filterExt, bool useComparison)
     return useComparison ? D3D12_FILTER_COMPARISON_ANISOTROPIC : D3D12_FILTER_ANISOTROPIC;
 }
 
-// WAR: QueryPoolD3D12 uses a readback buffer for ACCELERATION_STRUCTURE_COMPACTED_SIZE
-constexpr std::array<D3D12_QUERY_TYPE, (uint32_t)QueryType::MAX_NUM> QUERY_TYPES =
-{
-    D3D12_QUERY_TYPE_TIMESTAMP,                         // TIMESTAMP
-    D3D12_QUERY_TYPE_OCCLUSION,                         // OCCLUSION
-    D3D12_QUERY_TYPE_PIPELINE_STATISTICS,               // PIPELINE_STATISTICS
-    (D3D12_QUERY_TYPE)-1                                // ACCELERATION_STRUCTURE_COMPACTED_SIZE
-};
-
-D3D12_QUERY_TYPE nri::GetQueryType(QueryType queryType)
-{
-    return QUERY_TYPES[(uint32_t)queryType];
-}
-
-// WAR: QueryPoolD3D12 uses a readback buffer for ACCELERATION_STRUCTURE_COMPACTED_SIZE
-constexpr std::array<D3D12_QUERY_HEAP_TYPE, (uint32_t)QueryType::MAX_NUM> QUERY_HEAP_TYPES =
-{
-    D3D12_QUERY_HEAP_TYPE_TIMESTAMP,                    // TIMESTAMP
-    D3D12_QUERY_HEAP_TYPE_OCCLUSION,                    // OCCLUSION
-    D3D12_QUERY_HEAP_TYPE_PIPELINE_STATISTICS,          // PIPELINE_STATISTICS
-    (D3D12_QUERY_HEAP_TYPE)-1                           // ACCELERATION_STRUCTURE_COMPACTED_SIZE
-};
-
-D3D12_QUERY_HEAP_TYPE nri::GetQueryHeapType(QueryType queryType)
-{
-    return QUERY_HEAP_TYPES[(uint32_t)queryType];
-}
-
-uint32_t nri::GetQueryElementSize(D3D12_QUERY_TYPE queryType)
-{
-    if (queryType == D3D12_QUERY_TYPE_TIMESTAMP)
-        return sizeof(uint64_t);
-    else if (queryType == D3D12_QUERY_TYPE_OCCLUSION)
-        return sizeof(uint64_t);
-    else if (queryType == D3D12_QUERY_TYPE_PIPELINE_STATISTICS)
-        return sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS);
-
-    return 0;
-}
-
 void nri::ConvertRects(D3D12_RECT* rectsD3D12, const Rect* rects, uint32_t rectNum)
 {
     for (uint32_t i = 0; i < rectNum; i++)

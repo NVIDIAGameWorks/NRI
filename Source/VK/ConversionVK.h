@@ -566,55 +566,6 @@ constexpr VkSamplerAddressMode GetSamplerAddressMode(AddressMode addressMode)
     return SAMPLER_ADDRESS_MODE[(uint32_t)addressMode];
 }
 
-constexpr std::array<VkQueryType, (uint32_t)QueryType::MAX_NUM> QUERY_TYPE = {
-    VK_QUERY_TYPE_TIMESTAMP,                                // TIMESTAMP
-    VK_QUERY_TYPE_OCCLUSION,                                // OCCLUSION
-    VK_QUERY_TYPE_PIPELINE_STATISTICS,                      // PIPELINE_STATISTICS
-    VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR // ACCELERATION_STRUCTURE_COMPACTED_SIZE
-};
-
-constexpr VkQueryType GetQueryType(QueryType queryType)
-{
-    return QUERY_TYPE[(uint32_t)queryType];
-}
-
-constexpr VkQueryPipelineStatisticFlags GetQueryPipelineStatisticsFlags(PipelineStatsBits pipelineStatsMask)
-{
-    VkQueryPipelineStatisticFlags flags = 0;
-
-    if (pipelineStatsMask & PipelineStatsBits::INPUT_ASSEMBLY_VERTICES)
-        flags |= VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT;
-
-    if (pipelineStatsMask & PipelineStatsBits::INPUT_ASSEMBLY_PRIMITIVES)
-        flags |= VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT;
-
-    if (pipelineStatsMask & PipelineStatsBits::VERTEX_SHADER_INVOCATIONS)
-        flags |= VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT;
-
-    if (pipelineStatsMask & PipelineStatsBits::GEOMETRY_SHADER_INVOCATIONS)
-        flags |= VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT;
-
-    if (pipelineStatsMask & PipelineStatsBits::GEOMETRY_SHADER_PRIMITIVES)
-        flags |= VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT;
-
-    if (pipelineStatsMask & PipelineStatsBits::CLIPPING_INVOCATIONS)
-        flags |= VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT;
-
-    if (pipelineStatsMask & PipelineStatsBits::FRAGMENT_SHADER_INVOCATIONS)
-        flags |= VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT;
-
-    if (pipelineStatsMask & PipelineStatsBits::TESS_CONTROL_SHADER_PATCHES)
-        flags |= VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT;
-
-    if (pipelineStatsMask & PipelineStatsBits::TESS_EVALUATION_SHADER_INVOCATIONS)
-        flags |= VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT;
-
-    if (pipelineStatsMask & PipelineStatsBits::COMPUTE_SHADER_INVOCATIONS)
-        flags |= VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
-
-    return flags;
-}
-
 constexpr std::array<VkImageViewType, (uint32_t)Texture1DViewType::MAX_NUM> IMAGE_VIEW_TYPE_1D = {
     VK_IMAGE_VIEW_TYPE_1D,          // SHADER_RESOURCE_1D,
     VK_IMAGE_VIEW_TYPE_1D_ARRAY,    // SHADER_RESOURCE_1D_ARRAY,

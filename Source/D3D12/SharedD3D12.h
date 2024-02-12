@@ -58,8 +58,4 @@ D3D12_BLEND_OP GetBlendOp(BlendFunc blendFunc);
 D3D12_SHADER_VISIBILITY GetShaderVisibility(StageBits shaderStage);
 D3D12_DESCRIPTOR_RANGE_TYPE GetDescriptorRangesType(DescriptorType descriptorType);
 D3D12_RESOURCE_DIMENSION GetResourceDimension(TextureType textureType);
-
-D3D12_QUERY_TYPE GetQueryType(QueryType queryType);
-D3D12_QUERY_HEAP_TYPE GetQueryHeapType(QueryType queryType);
-uint32_t GetQueryElementSize(D3D12_QUERY_TYPE queryType);
 }

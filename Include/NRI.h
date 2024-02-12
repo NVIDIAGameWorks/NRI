@@ -25,8 +25,8 @@ Non-goals:
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 119
-#define NRI_VERSION_DATE "10 February 2024"
+#define NRI_VERSION_MINOR 120
+#define NRI_VERSION_DATE "12 February 2024"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -125,6 +125,7 @@ NRI_STRUCT(CoreInterface)
             // Optional state
             void (NRI_CALL *CmdSetSamplePositions)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME(SamplePosition)* positions, uint32_t positionNum);
 
+            // Input assembly
             void (NRI_CALL *CmdSetIndexBuffer)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, NRI_NAME(IndexType) indexType);
             void (NRI_CALL *CmdSetVertexBuffers)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const NRI_NAME(Buffer)* const* buffers, const uint64_t* offsets);
 
@@ -151,10 +152,10 @@ NRI_STRUCT(CoreInterface)
         void (NRI_CALL *CmdClearStorageTexture)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(ClearStorageTextureDesc) clearDesc);
 
         // Query
+        void (NRI_CALL *CmdResetQueries)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(QueryPool) queryPool, uint32_t offset, uint32_t num); // TODO: delete
         void (NRI_CALL *CmdBeginQuery)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(QueryPool) queryPool, uint32_t offset);
         void (NRI_CALL *CmdEndQuery)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(QueryPool) queryPool, uint32_t offset);
         void (NRI_CALL *CmdCopyQueries)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(QueryPool) queryPool, uint32_t offset, uint32_t num, NRI_NAME_REF(Buffer) dstBuffer, uint64_t dstOffset);
-        void (NRI_CALL *CmdResetQueries)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(QueryPool) queryPool, uint32_t offset, uint32_t num);
 
         // Annotation
         void (NRI_CALL *CmdBeginAnnotation)(NRI_NAME_REF(CommandBuffer) commandBuffer, const char* name);

@@ -832,13 +832,12 @@ inline void CommandBufferVK::CopyQueries(const QueryPool& queryPool, uint32_t of
     const QueryPoolVK& queryPoolImpl = (const QueryPoolVK&)queryPool;
     const BufferVK& bufferImpl = (const BufferVK&)dstBuffer;
 
-    VkQueryResultFlags flags = VK_QUERY_RESULT_PARTIAL_BIT;
-    if (queryPoolImpl.GetType() == VK_QUERY_TYPE_TIMESTAMP)
-        flags = VK_QUERY_RESULT_64_BIT;
+    // TODO: wait is questionable here, but it's needed to ensure that CopyQueries copies to the destination buffer "complete" values (perf seems unaffected)
+    VkQueryResultFlags flags = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT;
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdCopyQueryPoolResults(m_Handle, queryPoolImpl.GetHandle(m_PhysicalDeviceIndex), offset, num, bufferImpl.GetHandle(m_PhysicalDeviceIndex), dstOffset,
-        queryPoolImpl.GetStride(), flags);
+        queryPoolImpl.GetQuerySize(), flags);
 }
 
 inline void CommandBufferVK::ResetQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num)

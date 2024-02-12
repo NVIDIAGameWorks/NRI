@@ -22,7 +22,36 @@ QueryPoolVK::~QueryPoolVK()
 Result QueryPoolVK::Create(const QueryPoolDesc& queryPoolDesc)
 {
     m_OwnsNativeObjects = true;
-    m_Type = GetQueryType(queryPoolDesc.queryType);
+
+    if (queryPoolDesc.queryType == QueryType::TIMESTAMP)
+        m_Type = VK_QUERY_TYPE_TIMESTAMP;
+    else if (queryPoolDesc.queryType == QueryType::OCCLUSION)
+        m_Type = VK_QUERY_TYPE_OCCLUSION;
+    else if (queryPoolDesc.queryType == QueryType::PIPELINE_STATISTICS)
+        m_Type = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+    else if (queryPoolDesc.queryType == QueryType::ACCELERATION_STRUCTURE_COMPACTED_SIZE)
+        m_Type = VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR;
+    else
+        return Result::INVALID_ARGUMENT;
+
+    VkQueryPipelineStatisticFlags pipelineStatistics = 
+        VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
+
+    if (m_Device.supportedFeatures.meshShader)
+    {
+        pipelineStatistics |= VK_QUERY_PIPELINE_STATISTIC_TASK_SHADER_INVOCATIONS_BIT_EXT |
+            VK_QUERY_PIPELINE_STATISTIC_MESH_SHADER_INVOCATIONS_BIT_EXT;
+    }
 
     const VkQueryPoolCreateInfo poolInfo = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
@@ -30,25 +59,22 @@ Result QueryPoolVK::Create(const QueryPoolDesc& queryPoolDesc)
         (VkQueryPoolCreateFlags)0,
         m_Type,
         queryPoolDesc.capacity,
-        GetQueryPipelineStatisticsFlags(queryPoolDesc.pipelineStatsMask)
+        pipelineStatistics
     };
 
     const auto& vk = m_Device.GetDispatchTable();
 
-    const uint32_t nodeMask = GetNodeMask(queryPoolDesc.nodeMask);
-
+    uint32_t nodeMask = GetNodeMask(queryPoolDesc.nodeMask);
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
         if ((1 << i) & nodeMask)
         {
-            const VkResult result = vk.CreateQueryPool(m_Device, &poolInfo, m_Device.GetAllocationCallbacks(), &m_Handles[i]);
-
-            RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-                "Can't create a query pool: vkCreateQueryPool returned %d.", (int32_t)result);
+            VkResult result = vk.CreateQueryPool(m_Device, &poolInfo, m_Device.GetAllocationCallbacks(), &m_Handles[i]);
+            RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't create a query pool: vkCreateQueryPool returned %d.", (int32_t)result);
         }
     }
 
-    m_Stride = GetQuerySize();
+    m_QuerySize = (m_Type == VK_QUERY_TYPE_PIPELINE_STATISTICS ? (m_Device.supportedFeatures.meshShader ? 13 : 11) : 1) * sizeof(uint64_t);
 
     return Result::SUCCESS;
 }
@@ -58,16 +84,16 @@ Result QueryPoolVK::Create(const QueryPoolVKDesc& queryPoolDesc)
     m_OwnsNativeObjects = false;
     m_Type = (VkQueryType)queryPoolDesc.vkQueryType;
 
-    const VkQueryPool handle = (VkQueryPool)queryPoolDesc.vkQueryPool;
-    const uint32_t nodeMask = GetNodeMask(queryPoolDesc.nodeMask);
-
+    VkQueryPool handle = (VkQueryPool)queryPoolDesc.vkQueryPool;
+    
+    uint32_t nodeMask = GetNodeMask(queryPoolDesc.nodeMask);
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
     {
         if ((1 << i) & nodeMask)
             m_Handles[i] = handle;
     }
 
-    m_Stride = GetQuerySize();
+    m_QuerySize = (m_Type == VK_QUERY_TYPE_PIPELINE_STATISTICS ? (m_Device.supportedFeatures.meshShader ? 13 : 11) : 1) * sizeof(uint64_t);
 
     return Result::SUCCESS;
 }
@@ -83,24 +109,6 @@ inline void QueryPoolVK::SetDebugName(const char* name)
         handles[i] = (uint64_t)m_Handles[i];
 
     m_Device.SetDebugNameToDeviceGroupObject(VK_OBJECT_TYPE_QUERY_POOL, handles.data(), name);
-}
-
-inline uint32_t QueryPoolVK::GetQuerySize() const
-{
-    const uint32_t highestBitInPipelineStatsBits = 11;
-
-    switch (m_Type)
-    {
-    case VK_QUERY_TYPE_TIMESTAMP:
-        return sizeof(uint64_t);
-    case VK_QUERY_TYPE_OCCLUSION:
-        return sizeof(uint64_t);
-    case VK_QUERY_TYPE_PIPELINE_STATISTICS:
-        return highestBitInPipelineStatsBits * sizeof(uint64_t);
-    default:
-        CHECK(false, "unexpected query type in GetQuerySize");
-        return 0;
-    }
 }
 
 #include "QueryPoolVK.hpp"

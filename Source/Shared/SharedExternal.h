@@ -70,11 +70,7 @@ constexpr uint32_t GetNodeMask(uint32_t mask)
 #define REPORT_ERROR(deviceBase, format, ...) \
     (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
 
-#if _DEBUG
-    #define CHECK(condition, message) assert(condition && message)
-#else
-    #define CHECK(condition, message)
-#endif
+#define CHECK(condition, message) assert(condition && message)
 
 #define SET_D3D_DEBUG_OBJECT_NAME(obj, name) \
     if (obj) \

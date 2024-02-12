@@ -680,6 +680,8 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     m_Desc.isRegisterAliasingSupported = true;
     m_Desc.isSubsetAllocationSupported = true;
     m_Desc.isFloat16Supported = options4.Native16BitShaderOpsSupported;
+    m_Desc.isRaytracingSupported = m_IsRaytracingSupported;
+    m_Desc.isMeshShaderSupported = m_IsMeshShaderSupported;
 }
 
 //================================================================================================================

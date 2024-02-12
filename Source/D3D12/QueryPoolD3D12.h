@@ -2,6 +2,8 @@
 
 #pragma once
 
+constexpr D3D12_QUERY_TYPE QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE = D3D12_QUERY_TYPE(-1);
+
 namespace nri
 {
 
@@ -44,7 +46,7 @@ private:
     Result CreateReadbackBuffer(const QueryPoolDesc& queryPoolDesc);
 
     DeviceD3D12& m_Device;
-    D3D12_QUERY_TYPE m_QueryType = D3D12_QUERY_TYPE(-1);
+    D3D12_QUERY_TYPE m_QueryType = QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE;
     uint32_t m_QuerySize = 0;
     ComPtr<ID3D12QueryHeap> m_QueryHeap;
     ComPtr<ID3D12Resource> m_ReadbackBuffer;
