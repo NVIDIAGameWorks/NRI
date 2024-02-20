@@ -22,9 +22,16 @@ Result QueryPoolD3D12::Create(const QueryPoolDesc& queryPoolDesc)
     }
     else if (queryPoolDesc.queryType == QueryType::PIPELINE_STATISTICS)
     {
+#ifdef NRI_USE_AGILITY_SDK
+        // Prerequisite: D3D12_FEATURE_D3D12_OPTIONS9
         m_QuerySize = sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS1);
         m_QueryType = D3D12_QUERY_TYPE_PIPELINE_STATISTICS1;
         desc.Type = D3D12_QUERY_HEAP_TYPE_PIPELINE_STATISTICS1;
+#else
+        m_QuerySize = sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS);
+        m_QueryType = D3D12_QUERY_TYPE_PIPELINE_STATISTICS;
+        desc.Type = D3D12_QUERY_HEAP_TYPE_PIPELINE_STATISTICS;
+#endif
     }
     else if (queryPoolDesc.queryType == QueryType::ACCELERATION_STRUCTURE_COMPACTED_SIZE)
     {

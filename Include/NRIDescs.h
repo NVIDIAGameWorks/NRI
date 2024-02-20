@@ -307,14 +307,6 @@ NRI_STRUCT(SamplePosition)
     int8_t x, y;
 };
 
-NRI_STRUCT(SPIRVBindingOffsets)
-{
-    uint32_t samplerOffset;
-    uint32_t textureOffset;
-    uint32_t constantBufferOffset;
-    uint32_t storageTextureAndBufferOffset;
-};
-
 #pragma endregion
 
 //===============================================================================================================================
@@ -1288,11 +1280,11 @@ NRI_STRUCT(PipelineStatisticsDesc)
     uint64_t tessEvaluationShaderInvocationNum;
     uint64_t computeShaderInvocationNum;
 
-    // If "isMeshShadersSupported" or D3D12
+    // If "isMeshShaderPipelineStatsSupported"
     uint64_t meshControlShaderInvocationNum;
     uint64_t meshEvaluationShaderInvocationNum;
 
-    // If D3D12
+    // If "isMeshShaderPipelineStatsSupported" and D3D12
     uint64_t meshEvaluationShaderPrimitiveNum;
 };
 
@@ -1455,19 +1447,19 @@ NRI_STRUCT(DeviceDesc)
     uint8_t nodeNum;
 
     // Features support
-    bool isAPIValidationEnabled;
-    bool isTextureFilterMinMaxSupported;
-    bool isLogicOpSupported;
-    bool isDepthBoundsTestSupported;
-    bool isProgrammableSampleLocationsSupported;
-    bool isComputeQueueSupported;
-    bool isCopyQueueSupported;
-    bool isCopyQueueTimestampSupported;
-    bool isRegisterAliasingSupported;
-    bool isSubsetAllocationSupported;
-    bool isFloat16Supported;
-    bool isRaytracingSupported;
-    bool isMeshShaderSupported;
+    uint32_t isTextureFilterMinMaxSupported : 1;
+    uint32_t isLogicOpSupported : 1;
+    uint32_t isDepthBoundsTestSupported : 1;
+    uint32_t isProgrammableSampleLocationsSupported : 1;
+    uint32_t isComputeQueueSupported : 1;
+    uint32_t isCopyQueueSupported : 1;
+    uint32_t isCopyQueueTimestampSupported : 1;
+    uint32_t isRegisterAliasingSupported : 1;
+    uint32_t isSubsetAllocationSupported : 1;
+    uint32_t isFloat16Supported : 1;
+    uint32_t isRaytracingSupported : 1;
+    uint32_t isMeshShaderSupported : 1;
+    uint32_t isMeshShaderPipelineStatsSupported : 1;
 };
 
 #pragma endregion

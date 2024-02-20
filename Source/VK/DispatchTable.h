@@ -20,9 +20,7 @@ struct DispatchTable
     VULKAN_FUNCTION(CreateDevice);
     VULKAN_FUNCTION(GetDeviceQueue);
     VULKAN_FUNCTION(EnumeratePhysicalDeviceGroups);
-    VULKAN_FUNCTION(GetPhysicalDeviceProperties);
     VULKAN_FUNCTION(GetPhysicalDeviceProperties2);
-    VULKAN_FUNCTION(GetPhysicalDeviceFeatures);
     VULKAN_FUNCTION(GetPhysicalDeviceFeatures2);
     VULKAN_FUNCTION(GetPhysicalDeviceQueueFamilyProperties);
     VULKAN_FUNCTION(EnumerateDeviceExtensionProperties);

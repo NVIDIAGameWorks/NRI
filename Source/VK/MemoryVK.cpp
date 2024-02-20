@@ -36,7 +36,7 @@ Result MemoryVK::Create(uint32_t nodeMask, const MemoryType memoryType, uint64_t
     VkMemoryAllocateFlagsInfo flagsInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO };
     flagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
 
-    if (m_Device.supportedFeatures.bufferDeviceAddress)
+    if (m_Device.m_IsDeviceAddressSupported)
         flagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 
     VkMemoryAllocateInfo memoryInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };

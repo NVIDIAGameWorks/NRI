@@ -28,10 +28,41 @@ Key features:
  - validation layers (GAPI- and NRI- provided)
  - default D3D11 behavior is changed to match D3D12/VK using *NVAPI* or *AMD AGS* libraries, where applicable
  - supporting as much as possible VK-enabled platforms: Windows, Linux, MacOS, Android
+ - can be used as a *shared* or *static* library.
 
  *NRI* is used in:
  - [*NRI samples*](https://github.com/NVIDIAGameWorks/NRISamples)
  - [*NRD Sample*](https://github.com/NVIDIAGameWorks/NRDSample)
+
+## C/C++ INTERFACE DIFFERENCES
+
+| C++                   | C                     |
+|-----------------------|-----------------------|
+| `nri::Interface`      | `NriInterface`        |
+| `nri::Enum::MEMBER`   | `NriEnum_MEMBER`      |
+| `nri::CONST`          | `NRI_CONST`           |
+| `nri::nriFunction`    | `nriFunction`         |
+| `nri::Function`       | `nriFunction`         |
+| Reference `&`         | Pointer `*`           |
+
+## ENTITIES
+
+| NRI                     | D3D11                              | D3D12                         | VK                           |
+|-------------------------|------------------------------------|-------------------------------|------------------------------|
+| `Device`                | `ID3D11Device`                     | `ID3D12Device`                | `VkDevice`                   |
+| `CommandBuffer`         | `ID3D11DeviceContext` (deferred)   | `ID3D12CommandList`           | `VkCommandBuffer`            |
+| `CommandQueue`          | `ID3D11DeviceContext` (immediate)  | `ID3D12CommandQueue`          | `VkQueue`                    |
+| `Fence`                 | `ID3D11Fence`                      | `ID3D12Fence`                 | `VkSemaphore` (timeline)     |
+| `CommandAllocator`      | N/A                                | `ID3D12CommandAllocator`      | `VkCommandPool`              |
+| `Buffer`                | `ID3D11Buffer`                     | `ID3D12Resource`              | `VkBuffer`                   |
+| `Texture`               | `ID3D11Texture`                    | `ID3D12Resource`              | `VkImage`                    |
+| `Memory`                | N/A                                | `ID3D12Heap`                  | `VkDeviceMemory`             |
+| `Descriptor`            | `ID3D11*View`                      | `D3D12_CPU_DESCRIPTOR_HANDLE` | `Vk*View` or `VkSampler`     |
+| `DescriptorSet`         | N/A                                | N/A                           | `VkDescriptorSet`            |
+| `DescriptorPool`        | N/A                                | `ID3D12DescriptorHeap`        | `VkDescriptorPool`           |
+| `PipelineLayout`        | N/A                                | `ID3D12RootSignature`         | `VkPipelineLayout`           |
+| `Pipeline`              | `ID3D11*Shader` and `ID3D11*State` | `ID3D12StateObject`           | `VkPipeline`                 |
+| `AccelerationStructure` | N/A                                | `ID3D12Resource`              | `VkAccelerationStructure`    |
 
 ## BUILD INSTRUCTIONS
 

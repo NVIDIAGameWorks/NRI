@@ -230,7 +230,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         m_Multithread->SetMultithreadProtected(true);
 
     // Other
-    FillDesc(deviceCreationDesc.enableAPIValidation, params);
+    FillDesc(params);
 
     for (uint32_t i = 0; i < COMMAND_QUEUE_TYPE_NUM; i++)
         m_CommandQueues.emplace_back(*this);
@@ -238,7 +238,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     return FillFunctionTable(m_CoreInterface);
 }
 
-void DeviceD3D11::FillDesc(bool isValidationEnabled, const AGSDX11ReturnedParams& params)
+void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params)
 {
     D3D11_FEATURE_DATA_D3D11_OPTIONS options = {};
     HRESULT hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS, &options, sizeof(options));
@@ -399,18 +399,13 @@ void DeviceD3D11::FillDesc(bool isValidationEnabled, const AGSDX11ReturnedParams
     m_Desc.rayTracingShaderRecursionMaxDepth = 0;
     m_Desc.rayTracingGeometryObjectMaxNum = 0;
     m_Desc.conservativeRasterTier = (uint8_t)options2.ConservativeRasterizationTier;
+
     m_Desc.nodeNum = 1; // TODO: is there a way to query it in D3D11?
 
-    m_Desc.isAPIValidationEnabled = isValidationEnabled;
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isDepthBoundsTestSupported = params.extensionsSupported.depthBoundsDeferredContexts;
     m_Desc.isProgrammableSampleLocationsSupported = m_Desc.adapterDesc.vendor == Vendor::NVIDIA;
-    m_Desc.isComputeQueueSupported = false;
-    m_Desc.isCopyQueueSupported = false;
-    m_Desc.isCopyQueueTimestampSupported = false;
-    m_Desc.isRegisterAliasingSupported = false;
-    m_Desc.isSubsetAllocationSupported = true;
 }
 
 template<typename Implementation, typename Interface, typename ... Args>

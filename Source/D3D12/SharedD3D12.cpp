@@ -20,9 +20,10 @@ constexpr std::array<D3D12_HEAP_TYPE, (uint32_t)MemoryLocation::MAX_NUM> HEAP_TY
 {
     D3D12_HEAP_TYPE_DEFAULT,                    // DEVICE
 #ifdef NRI_USE_AGILITY_SDK
+    // Prerequisite: D3D12_FEATURE_D3D12_OPTIONS16
     D3D12_HEAP_TYPE_GPU_UPLOAD,                 // DEVICE_UPLOAD
 #else
-    D3D12_HEAP_TYPE_UPLOAD,                     // DEVICE_UPLOAD
+    D3D12_HEAP_TYPE_UPLOAD,                     // DEVICE_UPLOAD (silent fallback to HOST_UPLOAD)
 #endif
     D3D12_HEAP_TYPE_UPLOAD,                     // HOST_UPLOAD
     D3D12_HEAP_TYPE_READBACK,                   // HOST_READBACK

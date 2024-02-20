@@ -398,7 +398,7 @@ Result DeviceD3D12::FillFunctionTable(RayTracingInterface& rayTracingInterface) 
 {
     rayTracingInterface = {};
 
-    if (!m_IsRaytracingSupported)
+    if (!m_Desc.isRaytracingSupported)
         return Result::UNSUPPORTED;
 
     FillFunctionTablePipelineD3D12(rayTracingInterface);
@@ -419,7 +419,7 @@ Result DeviceD3D12::FillFunctionTable(RayTracingInterface& rayTracingInterface) 
 
 Result DeviceD3D12::FillFunctionTable(MeshShaderInterface& meshShaderInterface) const
 {
-    if (!m_IsMeshShaderSupported)
+    if (!m_Desc.isMeshShaderSupported)
         return Result::UNSUPPORTED;
 
     meshShaderInterface = {};

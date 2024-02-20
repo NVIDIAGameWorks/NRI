@@ -340,7 +340,9 @@ void HelperDataUpload::DoTransition(const TextureUploadDesc* textureUploadDescs,
     constexpr uint32_t TEXTURES_PER_PASS = 256;
     TextureBarrierDesc textureBarriers[TEXTURES_PER_PASS];
 
-    AccessLayoutStage state = {AccessBits::COPY_DESTINATION, Layout::COPY_DESTINATION, StageBits::COPY};
+    const AccessLayoutStage state = {AccessBits::COPY_DESTINATION, Layout::COPY_DESTINATION, StageBits::COPY};
+    const AccessLayoutStage initialState = {AccessBits::UNKNOWN, Layout::UNKNOWN, StageBits::NONE};
+
     for (uint32_t i = 0; i < textureDataDescNum;)
     {
         const uint32_t passBegin = i;
@@ -356,7 +358,7 @@ void HelperDataUpload::DoTransition(const TextureUploadDesc* textureUploadDescs,
             barrier.texture = textureUploadDesc.texture;
             barrier.mipNum = textureDesc.mipNum;
             barrier.arraySize = textureDesc.arraySize;
-            barrier.before = isInitialTransition ? textureUploadDesc.before : state;
+            barrier.before = isInitialTransition ? initialState : state;
             barrier.after = isInitialTransition ? state : textureUploadDesc.after;
         }
 
@@ -375,7 +377,9 @@ void HelperDataUpload::DoTransition(const BufferUploadDesc* bufferUploadDescs, u
     constexpr uint32_t BUFFERS_PER_PASS = 256;
     BufferBarrierDesc bufferBarriers[BUFFERS_PER_PASS];
 
-    AccessStage state = {AccessBits::COPY_DESTINATION, StageBits::COPY};
+    const AccessStage state = {AccessBits::COPY_DESTINATION, StageBits::COPY};
+    const AccessStage initialState = {AccessBits::UNKNOWN, StageBits::NONE};
+
     for (uint32_t i = 0; i < bufferUploadDescNum;)
     {
         const uint32_t passBegin = i;
@@ -388,7 +392,7 @@ void HelperDataUpload::DoTransition(const BufferUploadDesc* bufferUploadDescs, u
             BufferBarrierDesc& barrier = bufferBarriers[i - passBegin];
             barrier = {};
             barrier.buffer = bufferUploadDesc.buffer;
-            barrier.before = isInitialTransition ? bufferUploadDesc.before : state;
+            barrier.before = isInitialTransition ? initialState : state;
             barrier.after = isInitialTransition ? state : bufferUploadDesc.after;
         }
 

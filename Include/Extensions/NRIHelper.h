@@ -24,7 +24,6 @@ NRI_STRUCT(TextureUploadDesc)
 {
     const NRI_NAME(TextureSubresourceUploadDesc)* subresources; // must include ALL subresources = arraySize * mipNum
     NRI_NAME(Texture)* texture;
-    NRI_NAME(AccessLayoutStage) before;
     NRI_NAME(AccessLayoutStage) after;
 };
 
@@ -34,7 +33,6 @@ NRI_STRUCT(BufferUploadDesc)
     uint64_t dataSize;
     NRI_NAME(Buffer)* buffer;
     uint64_t bufferOffset;
-    NRI_NAME(AccessStage) before;
     NRI_NAME(AccessStage) after;
 };
 

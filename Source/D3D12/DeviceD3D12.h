@@ -59,9 +59,6 @@ struct DeviceD3D12 final : public DeviceBase
     inline IDXGIAdapter* GetAdapter() const
     { return m_Adapter; }
 
-    inline bool IsMeshShaderSupported() const
-    { return m_IsMeshShaderSupported; }
-
     inline bool AreEnhancedBarriersSupported() const
     { return m_AreEnhancedBarriersSupported; }
 
@@ -162,7 +159,7 @@ struct DeviceD3D12 final : public DeviceBase
     Result FillFunctionTable(HelperInterface& helperInterface) const;
 
 private:
-    void FillDesc(bool enableValidation);
+    void FillDesc();
     MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const;
 
 private:
@@ -177,8 +174,6 @@ private:
     ComPtr<ID3D12CommandSignature> m_DispatchCommandSignature;
     CoreInterface m_CoreInterface = {};
     uint8_t m_Version = 0;
-    bool m_IsRaytracingSupported = false;
-    bool m_IsMeshShaderSupported = false;
     bool m_AreEnhancedBarriersSupported = false;
     std::array<Lock, DESCRIPTOR_HEAP_TYPE_NUM> m_FreeDescriptorLocks;
     Lock m_DescriptorHeapLock;

@@ -81,7 +81,7 @@ static inline D3D12_BARRIER_SYNC GetBarrierSyncFlags(StageBits stageBits)
 
     if (stageBits & StageBits::INDIRECT)
         flags |= D3D12_BARRIER_SYNC_EXECUTE_INDIRECT;
-    
+
     if (stageBits & StageBits::COPY)
         flags |= D3D12_BARRIER_SYNC_COPY;
 
@@ -96,7 +96,10 @@ static inline D3D12_BARRIER_SYNC GetBarrierSyncFlags(StageBits stageBits)
 
 static inline D3D12_BARRIER_ACCESS GetBarrierAccessFlags(AccessBits accessBits)
 {
-    D3D12_BARRIER_ACCESS flags = D3D12_BARRIER_ACCESS_COMMON; // TODO: D3D12_BARRIER_ACCESS_NO_ACCESS introduces incompatibility problems
+    if (accessBits == AccessBits::UNKNOWN)
+        return D3D12_BARRIER_ACCESS_NO_ACCESS;
+
+    D3D12_BARRIER_ACCESS flags = D3D12_BARRIER_ACCESS_COMMON; // = 0
 
     if (accessBits & AccessBits::VERTEX_BUFFER)
         flags |= D3D12_BARRIER_ACCESS_VERTEX_BUFFER;
@@ -147,7 +150,7 @@ static inline D3D12_BARRIER_ACCESS GetBarrierAccessFlags(AccessBits accessBits)
 }
 
 constexpr std::array<D3D12_BARRIER_LAYOUT, (uint32_t)DescriptorType::MAX_NUM> LAYOUTS = {
-    D3D12_BARRIER_LAYOUT_COMMON,                        // UNKNOWN // TODO: D3D12_BARRIER_LAYOUT_UNDEFINED introduces incompatibility problems
+    D3D12_BARRIER_LAYOUT_UNDEFINED,                     // UNKNOWN
     D3D12_BARRIER_LAYOUT_RENDER_TARGET,                 // COLOR_ATTACHMENT
     D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE,           // DEPTH_STENCIL
     D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_READ,            // DEPTH_STENCIL_READONLY
@@ -619,7 +622,7 @@ inline void CommandBufferD3D12::DispatchIndirect(const Buffer& buffer, uint64_t 
 
 inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc)
 {
-#ifdef NRI_USE_AGILITY_SDK    
+#ifdef NRI_USE_AGILITY_SDK
     if (m_Device.AreEnhancedBarriersSupported())
     { // Enhanced barriers
         // Count
@@ -627,10 +630,10 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
         if (!barrierNum)
             return;
 
-        // Gather
         D3D12_BARRIER_GROUP barrierGroups[3] = {};
         uint32_t barriersGroupsNum = 0;
 
+        // Global
         uint16_t num = barrierGroupDesc.globalNum;
         D3D12_GLOBAL_BARRIER* globalBarriers = STACK_ALLOC(D3D12_GLOBAL_BARRIER, num);
         if (num)
@@ -652,6 +655,7 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
             }
         }
 
+        // Buffer
         num = barrierGroupDesc.bufferNum;
         D3D12_BUFFER_BARRIER* bufferBarriers = STACK_ALLOC(D3D12_BUFFER_BARRIER, num);
         if (barrierGroupDesc.bufferNum)
@@ -677,6 +681,7 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
             }
         }
 
+        // Texture
         num = barrierGroupDesc.textureNum;
         D3D12_TEXTURE_BARRIER* textureBarriers = STACK_ALLOC(D3D12_TEXTURE_BARRIER, num);
         if (barrierGroupDesc.textureNum)
@@ -696,8 +701,8 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
                 D3D12_TEXTURE_BARRIER& out = textureBarriers[i];
                 out.SyncBefore = GetBarrierSyncFlags(in.before.stages);
                 out.SyncAfter = GetBarrierSyncFlags(in.after.stages);
-                out.AccessBefore = GetBarrierAccessFlags(in.before.access);
-                out.AccessAfter = GetBarrierAccessFlags(in.after.access);
+                out.AccessBefore = in.before.layout == Layout::PRESENT ? D3D12_BARRIER_ACCESS_COMMON : GetBarrierAccessFlags(in.before.access);
+                out.AccessAfter = in.after.layout == Layout::PRESENT ? D3D12_BARRIER_ACCESS_COMMON : GetBarrierAccessFlags(in.after.access);
                 out.LayoutBefore = GetBarrierLayout(in.before.layout);
                 out.LayoutAfter = GetBarrierLayout(in.after.layout);
                 out.pResource = texture;

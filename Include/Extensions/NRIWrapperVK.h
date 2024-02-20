@@ -27,17 +27,17 @@ typedef void* NRIVkCommandBuffer;
 
 NRI_STRUCT(DeviceCreationVKDesc)
 {
+    NRI_NAME(CallbackInterface) callbackInterface;
+    NRI_NAME(MemoryAllocatorInterface) memoryAllocatorInterface;
+    NRI_NAME(SPIRVBindingOffsets) spirvBindingOffsets;
+    NRI_NAME(VulkanExtensions) enabledExtensions;
     NRIVkInstance vkInstance;
     NRIVkDevice vkDevice;
     const NRIVkPhysicalDevice* vkPhysicalDevices;
     uint32_t deviceGroupSize;
     const uint32_t* queueFamilyIndices;
     uint32_t queueFamilyIndexNum;
-    NRI_NAME(CallbackInterface) callbackInterface;
-    NRI_NAME(MemoryAllocatorInterface) memoryAllocatorInterface;
-    NRI_NAME(SPIRVBindingOffsets) spirvBindingOffsets;
     const char* vulkanLoaderPath;
-    bool enableNRIValidation;
 };
 
 NRI_STRUCT(CommandQueueVKDesc)

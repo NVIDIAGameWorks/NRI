@@ -50,8 +50,7 @@ struct DeviceVK final : public DeviceBase
     DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator);
     ~DeviceVK();
 
-    Result Create(const DeviceCreationVKDesc& deviceCreationVKDesc);
-    Result Create(const DeviceCreationDesc& deviceCreationDesc);
+    Result Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationVKDesc& deviceCreationVKDesc, bool isWrapper);
     bool GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const;
     bool GetMemoryTypeByIndex(uint32_t index, MemoryTypeInfo& memoryTypeInfo) const;
     void SetDebugNameToTrivialObject(VkObjectType objectType, uint64_t handle, const char* name);
@@ -127,38 +126,25 @@ struct DeviceVK final : public DeviceBase
     Result FillFunctionTable(HelperInterface& helperInterface) const;
 
 private:
-    void ProcessDeviceExtensions(Vector<const char*>& desiredExts, bool disableRayTracing);
-    Result CreateInstance(const DeviceCreationDesc& deviceCreationDesc);
-    Result FindPhysicalDeviceGroup(const AdapterDesc* physicalDeviceGroup, bool enableMGPU);
-    Result CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDesc);
-    void FillFamilyIndices(bool useEnabledFamilyIndices, const uint32_t* enabledFamilyIndices, uint32_t familyIndexNum);
-    void FillDesc(bool enableValidation);
-    void CreateCommandQueues();
-    Result ResolvePreInstanceDispatchTable();
-    Result ResolveInstanceDispatchTable();
-    Result ResolveDispatchTable();
     void FilterInstanceLayers(Vector<const char*>& layers);
+    void ProcessInstanceExtensions(Vector<const char*>& desiredInstanceExts);
+    void ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, bool disableRayTracing);
+    void FillFamilyIndices(bool useEnabledFamilyIndices, const uint32_t* enabledFamilyIndices, uint32_t familyIndexNum);
+    void CreateCommandQueues();
     void ReportDeviceGroupInfo();
     void GetAdapterDesc();
+    Result CreateInstance(bool enableAPIValidation, const Vector<const char*>& desiredInstanceExts);
+    Result FindPhysicalDeviceGroup(const AdapterDesc* physicalDeviceGroup, bool enableMGPU);
+    Result ResolvePreInstanceDispatchTable();
+    Result ResolveInstanceDispatchTable();
+    Result ResolveDispatchTable(const Vector<const char*>& desiredInstanceExts, const Vector<const char*>& desiredDeviceExts);
 
     template< typename Implementation, typename Interface, typename ... Args >
     Result CreateImplementation(Interface*& entity, const Args&... args);
 
 public:
-    struct SupportedFeatures
-    {
-        bool debugUtils;
-        bool subsetAllocation;
-        bool descriptorIndexing;
-        bool bufferDeviceAddress;
-        bool sampleLocations;
-        bool conservativeRaster;
-        bool rayTracing;
-        bool opacityMicroMap;
-        bool meshShader;
-        bool transformFeedback;
-        bool shadingRate;
-    } supportedFeatures = {};
+    bool m_IsDescriptorIndexingSupported = false;
+    bool m_IsDeviceAddressSupported = false;
 
 private:
     Vector<VkPhysicalDevice> m_PhysicalDevices;

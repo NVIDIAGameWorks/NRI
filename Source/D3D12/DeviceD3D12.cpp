@@ -184,7 +184,7 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
     }
 
     // Fill desc
-    FillDesc(false);
+    FillDesc();
 
     return FillFunctionTable(m_CoreInterface);
 }
@@ -281,7 +281,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
     }
 
     // Fill desc
-    FillDesc(deviceCreationDesc.enableAPIValidation);
+    FillDesc();
 
     return FillFunctionTable(m_CoreInterface);
 }
@@ -408,7 +408,7 @@ MemoryType DeviceD3D12::GetMemoryType(MemoryLocation memoryLocation, const D3D12
     return ::GetMemoryType(memoryLocation, resourceDesc);
 }
 
-void DeviceD3D12::FillDesc(bool enableValidation)
+void DeviceD3D12::FillDesc()
 {
     D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
     HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
@@ -439,7 +439,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options5) failed, result = 0x%08X!", hr);
-    m_IsRaytracingSupported = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0;
+    m_Desc.isRaytracingSupported = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS6 options6 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &options6, sizeof(options6));
@@ -450,9 +450,10 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options7) failed, result = 0x%08X!", hr);
-    m_IsMeshShaderSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
+    m_Desc.isMeshShaderSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
 
 #ifdef NRI_USE_AGILITY_SDK
+    // Minimum supported client: Windows 10 Build 20348 (or Agility SDK)
     D3D12_FEATURE_DATA_D3D12_OPTIONS8 options8 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS8, &options8, sizeof(options8));
     if (FAILED(hr))
@@ -462,7 +463,9 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS9, &options9, sizeof(options9));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options9) failed, result = 0x%08X!", hr);
+    m_Desc.isMeshShaderPipelineStatsSupported = options9.MeshShaderPipelineStatsSupported;
 
+    // Minimum supported client: Windows 11 Build 22000 (or Agility SDK)
     D3D12_FEATURE_DATA_D3D12_OPTIONS10 options10 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS10, &options10, sizeof(options10));
     if (FAILED(hr))
@@ -473,6 +476,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options11) failed, result = 0x%08X!", hr);
 
+    // Minimum supported client: Windows 11 22H2 (or Agility SDK)
     D3D12_FEATURE_DATA_D3D12_OPTIONS12 options12 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12, &options12, sizeof(options12));
     if (FAILED(hr))
@@ -484,6 +488,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options13) failed, result = 0x%08X!", hr);
 
+    // Minimum supported client: Agility SDK
     D3D12_FEATURE_DATA_D3D12_OPTIONS14 options14 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS14, &options14, sizeof(options14));
     if (FAILED(hr))
@@ -628,7 +633,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     m_Desc.computeShaderWorkGroupMaxDim[1] = D3D12_CS_THREAD_GROUP_MAX_Y;
     m_Desc.computeShaderWorkGroupMaxDim[2] = D3D12_CS_THREAD_GROUP_MAX_Z;
 
-    if (m_IsRaytracingSupported)
+    if (m_Desc.isRaytracingSupported)
     {
         m_Desc.rayTracingShaderGroupIdentifierSize = D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT;
         m_Desc.rayTracingShaderTableAligment = D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
@@ -637,7 +642,7 @@ void DeviceD3D12::FillDesc(bool enableValidation)
         m_Desc.rayTracingGeometryObjectMaxNum = (1 << 24) - 1;
     }
 
-    if (m_IsMeshShaderSupported)
+    if (m_Desc.isMeshShaderSupported)
     {
         m_Desc.meshControlSharedMemoryMaxSize = 32 * 1024;
         m_Desc.meshControlWorkGroupInvocationMaxNum = 128;
@@ -669,7 +674,6 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     m_Desc.conservativeRasterTier = (uint8_t)options.ConservativeRasterizationTier;
     m_Desc.nodeNum = (uint8_t)m_Device->GetNodeCount();
 
-    m_Desc.isAPIValidationEnabled = enableValidation;
     m_Desc.isTextureFilterMinMaxSupported = levels.MaxSupportedFeatureLevel >= D3D_FEATURE_LEVEL_11_1 ? true : false;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isDepthBoundsTestSupported = options2.DepthBoundsTestSupported != 0;
@@ -678,10 +682,8 @@ void DeviceD3D12::FillDesc(bool enableValidation)
     m_Desc.isCopyQueueSupported = true;
     m_Desc.isCopyQueueTimestampSupported = options3.CopyQueueTimestampQueriesSupported != 0;
     m_Desc.isRegisterAliasingSupported = true;
-    m_Desc.isSubsetAllocationSupported = true;
+    m_Desc.isSubsetAllocationSupported = false; // TODO: mGPU is not implemented
     m_Desc.isFloat16Supported = options4.Native16BitShaderOpsSupported;
-    m_Desc.isRaytracingSupported = m_IsRaytracingSupported;
-    m_Desc.isMeshShaderSupported = m_IsMeshShaderSupported;
 }
 
 //================================================================================================================

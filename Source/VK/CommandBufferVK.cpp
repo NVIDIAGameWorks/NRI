@@ -646,10 +646,10 @@ static inline VkPipelineStageFlags2 GetPipelineStageFlags(StageBits stageBits)
     if (stageBits & StageBits::GEOMETRY_SHADER)
         flags |= VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT;
 
-    if (stageBits & StageBits::MESH_CONTROL_SHADER) // Requires supportedFeatures.meshShader
+    if (stageBits & StageBits::MESH_CONTROL_SHADER)
         flags |= VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT;
 
-    if (stageBits & StageBits::MESH_EVALUATION_SHADER) // Requires supportedFeatures.meshShader
+    if (stageBits & StageBits::MESH_EVALUATION_SHADER)
         flags |= VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT;
 
     if (stageBits & StageBits::FRAGMENT_SHADER)
@@ -664,13 +664,13 @@ static inline VkPipelineStageFlags2 GetPipelineStageFlags(StageBits stageBits)
     if (stageBits & StageBits::COMPUTE_SHADER)
         flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
 
-    if (stageBits & StageBits::RAY_TRACING_SHADERS) // Requires supportedFeatures.rayTracing
+    if (stageBits & StageBits::RAY_TRACING_SHADERS)
         flags |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
 
     if (stageBits & StageBits::INDIRECT)
         flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
 
-    if (stageBits & StageBits::STREAM_OUTPUT) // Requires supportedFeatures.transformFeedback
+    if (stageBits & StageBits::STREAM_OUTPUT)
         flags |= VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT;
 
     if (stageBits & (StageBits::COPY | StageBits::CLEAR_STORAGE))
@@ -728,7 +728,7 @@ static inline VkAccessFlags2 GetAccessFlags(AccessBits accessBits)
     if (accessBits & AccessBits::STREAM_OUTPUT)
         flags |= VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT; // TODO: VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT, VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT?
 
-    if (accessBits & AccessBits::SHADING_RATE) // Requires supportedFeatures.shadingRate
+    if (accessBits & AccessBits::SHADING_RATE)
         flags |= VK_ACCESS_2_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR;
 
     return flags;
@@ -736,67 +736,71 @@ static inline VkAccessFlags2 GetAccessFlags(AccessBits accessBits)
 
 inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc)
 {
+    // Global
     VkMemoryBarrier2* memoryBarriers = STACK_ALLOC(VkMemoryBarrier2, barrierGroupDesc.globalNum);
     for (uint16_t i = 0; i < barrierGroupDesc.globalNum; i++)
     {
-        const GlobalBarrierDesc& barrierDesc = barrierGroupDesc.globals[i];
+        const GlobalBarrierDesc& in = barrierGroupDesc.globals[i];
 
-        VkMemoryBarrier2& barrier = memoryBarriers[i];
-        barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
-        barrier.pNext = nullptr;
-        barrier.srcStageMask = GetPipelineStageFlags(barrierDesc.before.stages);
-        barrier.srcAccessMask = GetAccessFlags(barrierDesc.before.access);
-        barrier.dstStageMask = GetPipelineStageFlags(barrierDesc.after.stages);
-        barrier.dstAccessMask = GetAccessFlags(barrierDesc.after.access);
+        VkMemoryBarrier2& out = memoryBarriers[i];
+        out.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+        out.pNext = nullptr;
+        out.srcStageMask = GetPipelineStageFlags(in.before.stages);
+        out.srcAccessMask = GetAccessFlags(in.before.access);
+        out.dstStageMask = GetPipelineStageFlags(in.after.stages);
+        out.dstAccessMask = GetAccessFlags(in.after.access);
     }
 
+    // Buffer
     VkBufferMemoryBarrier2* bufferBarriers = STACK_ALLOC(VkBufferMemoryBarrier2, barrierGroupDesc.bufferNum);
     for (uint16_t i = 0; i < barrierGroupDesc.bufferNum; i++)
     {
-        const BufferBarrierDesc& barrierDesc = barrierGroupDesc.buffers[i];
-        const BufferVK& bufferImpl = *(const BufferVK*)barrierDesc.buffer;
+        const BufferBarrierDesc& in = barrierGroupDesc.buffers[i];
+        const BufferVK& bufferImpl = *(const BufferVK*)in.buffer;
 
-        VkBufferMemoryBarrier2& barrier = bufferBarriers[i];
-        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
-        barrier.pNext = nullptr;
-        barrier.srcStageMask = GetPipelineStageFlags(barrierDesc.before.stages);
-        barrier.srcAccessMask = GetAccessFlags(barrierDesc.before.access);
-        barrier.dstStageMask = GetPipelineStageFlags(barrierDesc.after.stages);
-        barrier.dstAccessMask = GetAccessFlags(barrierDesc.after.access);
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.buffer = bufferImpl.GetHandle(m_PhysicalDeviceIndex);
-        barrier.offset = 0;
-        barrier.size = VK_WHOLE_SIZE;
+        VkBufferMemoryBarrier2& out = bufferBarriers[i];
+        out.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+        out.pNext = nullptr;
+        out.srcStageMask = GetPipelineStageFlags(in.before.stages);
+        out.srcAccessMask = GetAccessFlags(in.before.access);
+        out.dstStageMask = GetPipelineStageFlags(in.after.stages);
+        out.dstAccessMask = GetAccessFlags(in.after.access);
+        out.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        out.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        out.buffer = bufferImpl.GetHandle(m_PhysicalDeviceIndex);
+        out.offset = 0;
+        out.size = VK_WHOLE_SIZE;
     }
 
+    // Texture
     VkImageMemoryBarrier2* textureBarriers = STACK_ALLOC(VkImageMemoryBarrier2, barrierGroupDesc.textureNum);
     for (uint16_t i = 0; i < barrierGroupDesc.textureNum; i++)
     {
-        const TextureBarrierDesc& barrierDesc = barrierGroupDesc.textures[i];
-        const TextureVK& textureImpl = *(const TextureVK*)barrierDesc.texture;
+        const TextureBarrierDesc& in = barrierGroupDesc.textures[i];
+        const TextureVK& textureImpl = *(const TextureVK*)in.texture;
 
-        VkImageMemoryBarrier2& barrier = textureBarriers[i];
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-        barrier.pNext = nullptr;
-        barrier.srcStageMask = GetPipelineStageFlags(barrierDesc.before.stages);
-        barrier.srcAccessMask = GetAccessFlags(barrierDesc.before.access);
-        barrier.dstStageMask = GetPipelineStageFlags(barrierDesc.after.stages);
-        barrier.dstAccessMask = GetAccessFlags(barrierDesc.after.access);
-        barrier.oldLayout = GetImageLayout(barrierDesc.before.layout);
-        barrier.newLayout = GetImageLayout(barrierDesc.after.layout);
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = textureImpl.GetHandle(m_PhysicalDeviceIndex);
-        barrier.subresourceRange = {
+        VkImageMemoryBarrier2& out = textureBarriers[i];
+        out.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+        out.pNext = nullptr;
+        out.srcStageMask = GetPipelineStageFlags(in.before.stages);
+        out.srcAccessMask = in.before.layout == Layout::PRESENT ? VK_ACCESS_2_MEMORY_READ_BIT : GetAccessFlags(in.before.access);
+        out.dstStageMask = GetPipelineStageFlags(in.after.stages);
+        out.dstAccessMask = in.after.layout == Layout::PRESENT ? VK_ACCESS_2_MEMORY_READ_BIT : GetAccessFlags(in.after.access);
+        out.oldLayout = GetImageLayout(in.before.layout);
+        out.newLayout = GetImageLayout(in.after.layout);
+        out.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        out.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        out.image = textureImpl.GetHandle(m_PhysicalDeviceIndex);
+        out.subresourceRange = {
             textureImpl.GetImageAspectFlags(),
-            barrierDesc.mipOffset,
-            (barrierDesc.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : barrierDesc.mipNum,
-            barrierDesc.arrayOffset,
-            (barrierDesc.arraySize == REMAINING_ARRAY_LAYERS) ? VK_REMAINING_ARRAY_LAYERS : barrierDesc.arraySize
+            in.mipOffset,
+            (in.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : in.mipNum,
+            in.arrayOffset,
+            (in.arraySize == REMAINING_ARRAY_LAYERS) ? VK_REMAINING_ARRAY_LAYERS : in.arraySize
         };
     }
 
+    // Submit
     VkDependencyInfo dependencyInfo = {VK_STRUCTURE_TYPE_DEPENDENCY_INFO};
     dependencyInfo.memoryBarrierCount = barrierGroupDesc.globalNum;
     dependencyInfo.pMemoryBarriers = memoryBarriers;

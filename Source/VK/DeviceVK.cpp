@@ -17,20 +17,20 @@
 #include "AccelerationStructureVK.h"
 #include "MemoryVK.h"
 
-constexpr uint32_t INVALID_FAMILY_INDEX = uint32_t(-1);
+static_assert(VK_LUID_SIZE == sizeof(uint64_t), "invalid sizeof");
 
-#ifdef _WIN32
-    #include <dxgi1_4.h>
-#endif
+constexpr uint32_t INVALID_FAMILY_INDEX = uint32_t(-1);
 
 using namespace nri;
 
-Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device)
-{
-    StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
-    DeviceVK* implementation = Allocate<DeviceVK>(allocator, deviceCreationDesc.callbackInterface, allocator);
+#define APPEND_EXT(desc) *tail = &desc; tail = &desc.pNext
 
-    const Result res = implementation->Create(deviceCreationDesc);
+Result CreateDeviceVK(const DeviceCreationDesc& desc, DeviceBase*& device)
+{
+    StdAllocator<uint8_t> allocator(desc.memoryAllocatorInterface);
+    DeviceVK* implementation = Allocate<DeviceVK>(allocator, desc.callbackInterface, allocator);
+
+    const Result res = implementation->Create(desc, {}, false);
 
     if (res == Result::SUCCESS)
     {
@@ -42,11 +42,11 @@ Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*&
     return res;
 }
 
-Result CreateDeviceVK(const DeviceCreationVKDesc& deviceCreationDesc, DeviceBase*& device)
+Result CreateDeviceVK(const DeviceCreationVKDesc& desc, DeviceBase*& device)
 {
-    StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
-    DeviceVK* implementation = Allocate<DeviceVK>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    const Result res = implementation->Create(deviceCreationDesc);
+    StdAllocator<uint8_t> allocator(desc.memoryAllocatorInterface);
+    DeviceVK* implementation = Allocate<DeviceVK>(allocator, desc.callbackInterface, allocator);
+    const Result res = implementation->Create({}, desc, true);
 
     if (res == Result::SUCCESS)
     {
@@ -63,6 +63,17 @@ inline bool IsExtensionSupported(const char* ext, const Vector<VkExtensionProper
     for (auto& e : list)
     {
         if (!strcmp(ext, e.extensionName))
+            return true;
+    }
+
+    return false;
+}
+
+inline bool IsExtensionSupported(const char* ext, const Vector<const char*>& list)
+{
+    for (auto& e : list)
+    {
+        if (!strcmp(ext, e))
             return true;
     }
 
@@ -113,6 +124,147 @@ void VKAPI_PTR vkHostMemoryInternalFreeNotification(void* pUserData, size_t size
     MaybeUnused(size);
     MaybeUnused(allocationType);
     MaybeUnused(allocationScope);
+}
+
+void DeviceVK::FilterInstanceLayers(Vector<const char*>& layers)
+{
+    uint32_t layerNum = 0;
+    m_VK.EnumerateInstanceLayerProperties(&layerNum, nullptr);
+
+    Vector<VkLayerProperties> supportedLayers(layerNum, GetStdAllocator());
+    m_VK.EnumerateInstanceLayerProperties(&layerNum, supportedLayers.data());
+
+    for (size_t i = 0; i < layers.size(); i++)
+    {
+        bool found = false;
+        for (uint32_t j = 0; j < layerNum && !found; j++)
+        {
+            if (strcmp(supportedLayers[j].layerName, layers[i]) == 0)
+                found = true;
+        }
+
+        if (!found)
+            layers.erase(layers.begin() + i--);
+    }
+}
+
+void DeviceVK::ProcessInstanceExtensions(Vector<const char*>& desiredInstanceExts)
+{
+    // Query extensions
+    uint32_t extensionNum = 0;
+    m_VK.EnumerateInstanceExtensionProperties(nullptr, &extensionNum, nullptr);
+
+    Vector<VkExtensionProperties> supportedExts(extensionNum, GetStdAllocator());
+    m_VK.EnumerateInstanceExtensionProperties(nullptr, &extensionNum, supportedExts.data());
+
+    REPORT_INFO(this, "Supported instance extensions:");
+    for (const VkExtensionProperties& props : supportedExts)
+        REPORT_INFO(this, "    %s (v%u)", props.extensionName, props.specVersion);
+
+    // Mandatory // TODO: review
+    desiredInstanceExts.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+    #ifdef VK_USE_PLATFORM_WIN32_KHR
+        desiredInstanceExts.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+    #endif
+    #ifdef VK_USE_PLATFORM_METAL_EXT
+        desiredInstanceExts.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
+    #endif
+    #ifdef VK_USE_PLATFORM_XLIB_KHR
+        desiredInstanceExts.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+    #endif
+    #ifdef VK_USE_PLATFORM_WAYLAND_KHR
+        desiredInstanceExts.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
+    #endif
+    #ifdef __APPLE__
+        desiredInstanceExts.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+        desiredInstanceExts.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+    #endif
+
+    // Optional
+    if (IsExtensionSupported(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME, supportedExts))
+        desiredInstanceExts.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, supportedExts))
+        desiredInstanceExts.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+}
+
+void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, bool disableRayTracing)
+{
+    // Query extensions
+    uint32_t extensionNum = 0;
+    m_VK.EnumerateDeviceExtensionProperties(m_PhysicalDevices.front(), nullptr, &extensionNum, nullptr);
+
+    Vector<VkExtensionProperties> supportedExts(extensionNum, GetStdAllocator());
+    m_VK.EnumerateDeviceExtensionProperties(m_PhysicalDevices.front(), nullptr, &extensionNum, supportedExts.data());
+
+    REPORT_INFO(this, "Supported device extensions:");
+    for (const VkExtensionProperties& props : supportedExts)
+        REPORT_INFO(this, "    %s (v%u)", props.extensionName, props.specVersion);
+
+    // Mandatory // TODO: review
+    desiredDeviceExts.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+#ifdef __APPLE__
+    if (IsExtensionSupported(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+#endif
+
+    // Optional (KHR, not in core)
+    if (IsExtensionSupported(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME, supportedExts)) // TODO: in core?
+        desiredDeviceExts.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME); // at least for "printf"
+
+    if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
+
+    // Optional (EXT)
+    if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+
+    // Ray tracing
+    // It consumes CPU memory: enable if supported and not disabled
+    if (!disableRayTracing)
+    {
+        // Mandatory
+        if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, supportedExts))
+            desiredDeviceExts.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, supportedExts))
+            desiredDeviceExts.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+
+        // Optional
+        if (IsExtensionSupported(VK_KHR_RAY_QUERY_EXTENSION_NAME, supportedExts))
+            desiredDeviceExts.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME, supportedExts))
+            desiredDeviceExts.push_back(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts))
+            desiredDeviceExts.push_back(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME);
+    }
 }
 
 template< typename Implementation, typename Interface, typename ... Args >
@@ -220,253 +372,104 @@ void DeviceVK::GetAdapterDesc()
 #endif
 }
 
-Result DeviceVK::Create(const DeviceCreationVKDesc& deviceCreationVKDesc)
+Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationVKDesc& deviceCreationVKDesc, bool isWrapper)
 {
-    m_OwnsNativeObjects = false;
-    m_SPIRVBindingOffsets = deviceCreationVKDesc.spirvBindingOffsets;
+    m_OwnsNativeObjects = !isWrapper;
+    m_SPIRVBindingOffsets = isWrapper ? deviceCreationVKDesc.spirvBindingOffsets : deviceCreationDesc.spirvBindingOffsets;
 
-    const char* loaderPath = deviceCreationVKDesc.vulkanLoaderPath ? deviceCreationVKDesc.vulkanLoaderPath : VULKAN_LOADER_NAME;
-    m_Loader = LoadSharedLibrary(loaderPath);
-    if (!m_Loader)
-    {
-        REPORT_ERROR(this, "Failed to load Vulkan loader: '%s'.", loaderPath);
-        return Result::UNSUPPORTED;
+    { // Custom allocator
+        m_AllocationCallbacks.pUserData = &GetStdAllocator();
+        m_AllocationCallbacks.pfnAllocation = vkAllocateHostMemory;
+        m_AllocationCallbacks.pfnReallocation = vkReallocateHostMemory;
+        m_AllocationCallbacks.pfnFree = vkFreeHostMemory;
+        m_AllocationCallbacks.pfnInternalAllocation = vkHostMemoryInternalAllocationNotification;
+        m_AllocationCallbacks.pfnInternalFree = vkHostMemoryInternalFreeNotification;
+
+        if (!isWrapper)
+            m_AllocationCallbackPtr = &m_AllocationCallbacks;
+    }
+
+    { // Loader
+        const char* loaderPath = deviceCreationVKDesc.vulkanLoaderPath ? deviceCreationVKDesc.vulkanLoaderPath : VULKAN_LOADER_NAME;
+        m_Loader = LoadSharedLibrary(loaderPath);
+        if (!m_Loader)
+        {
+            REPORT_ERROR(this, "Failed to load Vulkan loader: '%s'.", loaderPath);
+            return Result::UNSUPPORTED;
+        }
     }
 
     // Create instance
-    Result res = ResolvePreInstanceDispatchTable();
-    if (res != Result::SUCCESS)
-        return res;
+    Vector<const char*> desiredInstanceExts(GetStdAllocator());
+    {
+        Result res = ResolvePreInstanceDispatchTable();
+        if (res != Result::SUCCESS)
+            return res;
 
-    m_Instance = (VkInstance)deviceCreationVKDesc.vkInstance;
+        if (isWrapper)
+        {
+            for (uint32_t i = 0; i < deviceCreationVKDesc.enabledExtensions.instanceExtensionNum; i++)
+                desiredInstanceExts.push_back(deviceCreationVKDesc.enabledExtensions.instanceExtensions[i]);
 
-    res = ResolveInstanceDispatchTable();
-    if (res != Result::SUCCESS)
-        return res;
+            m_Instance = (VkInstance)deviceCreationVKDesc.vkInstance;
+        }
+        else
+        {
+            ProcessInstanceExtensions(desiredInstanceExts);
 
-    // Find physical device
-    const VkPhysicalDevice* physicalDevices = (VkPhysicalDevice*)deviceCreationVKDesc.vkPhysicalDevices; // TODO: physical device indices?
-    m_PhysicalDevices.insert(m_PhysicalDevices.begin(), physicalDevices, physicalDevices + deviceCreationVKDesc.deviceGroupSize);
+            for (uint32_t i = 0; i < deviceCreationDesc.vulkanExtensions.instanceExtensionNum; i++)
+                desiredInstanceExts.push_back(deviceCreationDesc.vulkanExtensions.instanceExtensions[i]);
 
-    m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevices.front(), &m_MemoryProps);
+            res = CreateInstance(deviceCreationDesc.enableAPIValidation, desiredInstanceExts);
+            if (res != Result::SUCCESS)
+                return res;
+        }
 
-    FillFamilyIndices(true, deviceCreationVKDesc.queueFamilyIndices, deviceCreationVKDesc.queueFamilyIndexNum);
+        res = ResolveInstanceDispatchTable();
+        if (res != Result::SUCCESS)
+            return res;
+    }
+
+    { // Group
+        if (isWrapper)
+        {
+            const VkPhysicalDevice* physicalDevices = (VkPhysicalDevice*)deviceCreationVKDesc.vkPhysicalDevices;
+            m_PhysicalDevices.insert(m_PhysicalDevices.begin(), physicalDevices, physicalDevices + deviceCreationVKDesc.deviceGroupSize);
+        }
+        else
+        {
+            Result res = FindPhysicalDeviceGroup(deviceCreationDesc.adapterDesc, deviceCreationDesc.enableMGPU);
+            if (res != Result::SUCCESS)
+                return res;
+        }
+
+        m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevices.front(), &m_MemoryProps);
+
+        FillFamilyIndices(isWrapper, deviceCreationVKDesc.queueFamilyIndices, deviceCreationVKDesc.queueFamilyIndexNum);
+    }
 
     // Get adapter description as early as possible for meaningful error reporting
     GetAdapterDesc();
 
-    // Create device
-    m_Device = (VkDevice)deviceCreationVKDesc.vkDevice;
+    // Device extensions
+    Vector<const char*> desiredDeviceExts(GetStdAllocator());
 
-    res = ResolveDispatchTable();
-    if (res != Result::SUCCESS)
-        return res;
-
-    { // Instance extensions
-        uint32_t extensionNum = 0;
-        m_VK.EnumerateInstanceExtensionProperties(nullptr, &extensionNum, nullptr);
-
-        Vector<VkExtensionProperties> supportedExts(extensionNum, GetStdAllocator());
-        m_VK.EnumerateInstanceExtensionProperties(nullptr, &extensionNum, supportedExts.data());
-
-        if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, supportedExts))
-            supportedFeatures.debugUtils = true;
-    }
-
-    Vector<const char*> desiredExts(GetStdAllocator());
-    ProcessDeviceExtensions(desiredExts, false);
-
-    // Finalize
-    CreateCommandQueues();
-    FillDesc(false);
-
-    return FillFunctionTable(m_CoreInterface);
-}
-
-Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc)
-{
-    m_OwnsNativeObjects = true;
-    m_SPIRVBindingOffsets = deviceCreationDesc.spirvBindingOffsets;
-
-    m_AllocationCallbacks.pUserData = &GetStdAllocator();
-    m_AllocationCallbacks.pfnAllocation = vkAllocateHostMemory;
-    m_AllocationCallbacks.pfnReallocation = vkReallocateHostMemory;
-    m_AllocationCallbacks.pfnFree = vkFreeHostMemory;
-    m_AllocationCallbacks.pfnInternalAllocation = vkHostMemoryInternalAllocationNotification;
-    m_AllocationCallbacks.pfnInternalFree = vkHostMemoryInternalFreeNotification;
-
-    if (deviceCreationDesc.enableAPIValidation)
-        m_AllocationCallbackPtr = &m_AllocationCallbacks;
-
-    m_Loader = LoadSharedLibrary(VULKAN_LOADER_NAME);
-    if (!m_Loader)
+    if (isWrapper)
     {
-        REPORT_ERROR(this, "Failed to load Vulkan loader: '%s'.", VULKAN_LOADER_NAME);
-        return Result::UNSUPPORTED;
+        for (uint32_t i = 0; i < deviceCreationVKDesc.enabledExtensions.deviceExtensionNum; i++)
+            desiredDeviceExts.push_back(deviceCreationVKDesc.enabledExtensions.deviceExtensions[i]);
     }
-
-    // Create instance
-    Result res = ResolvePreInstanceDispatchTable();
-    if (res != Result::SUCCESS)
-        return res;
-
-    res = CreateInstance(deviceCreationDesc);
-    if (res != Result::SUCCESS)
-        return res;
-
-    res = ResolveInstanceDispatchTable();
-    if (res != Result::SUCCESS)
-        return res;
-
-    // Find physical device
-    res = FindPhysicalDeviceGroup(deviceCreationDesc.adapterDesc, deviceCreationDesc.enableMGPU);
-    if (res != Result::SUCCESS)
-        return res;
-
-    m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevices.front(), &m_MemoryProps);
-
-    FillFamilyIndices(false, nullptr, 0);
-
-    // Get adapter description as early as possible for meaningful error reporting
-    GetAdapterDesc();
-
-    // Create device
-    res = CreateLogicalDevice(deviceCreationDesc);
-    if (res != Result::SUCCESS)
-        return res;
-
-    res = ResolveDispatchTable();
-    if (res != Result::SUCCESS)
-        return res;
-
-    const uint32_t groupSize = m_Desc.nodeNum;
-    m_PhysicalDeviceIndices.resize(groupSize * groupSize);
-    const auto begin = m_PhysicalDeviceIndices.begin();
-    for (uint32_t i = 0; i < groupSize; i++)
-        std::fill(begin + i * groupSize, begin + (i + 1) * groupSize, i);
-
-    // Finalize
-    CreateCommandQueues();
-    FillDesc(deviceCreationDesc.enableAPIValidation);
-
-    if (deviceCreationDesc.enableAPIValidation)
-        ReportDeviceGroupInfo();
-
-    return FillFunctionTable(m_CoreInterface);
-}
-
-void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredExts, bool disableRayTracing)
-{
-    // Query extensions
-    uint32_t extensionNum = 0;
-    m_VK.EnumerateDeviceExtensionProperties(m_PhysicalDevices.front(), nullptr, &extensionNum, nullptr);
-
-    Vector<VkExtensionProperties> supportedExts(extensionNum, GetStdAllocator());
-    m_VK.EnumerateDeviceExtensionProperties(m_PhysicalDevices.front(), nullptr, &extensionNum, supportedExts.data());
-
-    REPORT_INFO(this, "Supported extensions");
-    for (const VkExtensionProperties& props : supportedExts)
-        REPORT_INFO(this, "    %s (v%u)", props.extensionName, props.specVersion);
-
-    // Mandatory
-    desiredExts.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
-
-    if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, supportedExts)) // TODO: move to supportedFeatures?
-        desiredExts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-
-#ifdef __APPLE__
-    if (IsExtensionSupported(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, supportedExts))
-        desiredExts.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
-
-    if (IsExtensionSupported(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, supportedExts))
-        desiredExts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-#endif
-
-    // Optional
-    if (IsExtensionSupported(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME, supportedExts))
-        desiredExts.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
-
-    if (IsExtensionSupported(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME, supportedExts))
-        desiredExts.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME); // at least for "printf"
-
-    if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, supportedExts))
+    else
     {
-        desiredExts.push_back(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME);
-        supportedFeatures.sampleLocations = true;
+        ProcessDeviceExtensions(desiredDeviceExts, deviceCreationDesc.disableVulkanRayTracing);
+        
+        for (uint32_t i = 0; i < deviceCreationDesc.vulkanExtensions.deviceExtensionNum; i++)
+            desiredDeviceExts.push_back(deviceCreationDesc.vulkanExtensions.deviceExtensions[i]);
     }
 
-    if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, supportedExts))
-    {
-        desiredExts.push_back(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
-        supportedFeatures.conservativeRaster = true;
-    }
-
-    if (IsExtensionSupported(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME, supportedExts))
-    {
-        desiredExts.push_back(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME);
-        supportedFeatures.transformFeedback = true;
-    }
-
-    if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, supportedExts))
-    {
-        desiredExts.push_back(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME);
-        supportedFeatures.shadingRate = true;
-    }
-
-    if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, supportedExts))
-    {
-        desiredExts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
-        supportedFeatures.meshShader = true;
-    }
-
-    if (IsExtensionSupported(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME, supportedExts))
-        desiredExts.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
-
-    // RT consumes memory: enable if supported and not disabled, store availability
-    if (!disableRayTracing)
-    {
-        bool isRayTracingSupported = true;
-
-        // Mandatory
-        if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, supportedExts))
-            desiredExts.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
-        else
-            isRayTracingSupported = false;
-
-        if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, supportedExts))
-            desiredExts.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-        else
-            isRayTracingSupported = false;
-
-        supportedFeatures.rayTracing = isRayTracingSupported;
-
-        // Optional
-        if (IsExtensionSupported(VK_KHR_RAY_QUERY_EXTENSION_NAME, supportedExts))
-            desiredExts.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
-    }
-
-    // Dependent stuff
-    if (supportedFeatures.rayTracing && IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts))
-    {
-        desiredExts.push_back(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME);
-        supportedFeatures.opacityMicroMap = true;
-    }
-}
-
-Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDesc)
-{
-    // Process extensions
-    Vector<const char*> desiredExts(GetStdAllocator());
-    for (uint32_t i = 0; i < deviceCreationDesc.vulkanExtensions.deviceExtensionNum; i++)
-        desiredExts.push_back(deviceCreationDesc.vulkanExtensions.deviceExtensions[i]);
-
-    ProcessDeviceExtensions(desiredExts, deviceCreationDesc.disableVulkanRayTracing);
-
-    // Chain extensions
-#define APPEND_EXT(desc) *tail = &desc; tail = &desc.pNext
-
-    VkPhysicalDeviceFeatures2 features2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-    void** tail = &features2.pNext;
+    // Device features
+    VkPhysicalDeviceFeatures2 features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+    void** tail = &features.pNext;
 
     VkPhysicalDeviceVulkan11Features features11 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
     APPEND_EXT(features11);
@@ -477,85 +480,346 @@ Result DeviceVK::CreateLogicalDevice(const DeviceCreationDesc& deviceCreationDes
     VkPhysicalDeviceVulkan13Features features13 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
     APPEND_EXT(features13);
 
-    VkPhysicalDeviceTransformFeedbackFeaturesEXT transformFeedbackFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT};
-    if (supportedFeatures.transformFeedback)
+#ifdef __APPLE__
+    VkPhysicalDevicePortabilitySubsetFeaturesKHR portabilitySubsetFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, desiredDeviceExts))
     {
-        APPEND_EXT(transformFeedbackFeatures);
+        APPEND_EXT(portabilitySubsetFeatures);
+    }
+#endif
+
+    VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, desiredDeviceExts))
+    {
+        APPEND_EXT(maintenance5Features);
     }
 
     VkPhysicalDeviceFragmentShadingRateFeaturesKHR shadingRateFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR};
-    if (supportedFeatures.shadingRate)
+    if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, desiredDeviceExts))
     {
         APPEND_EXT(shadingRateFeatures);
     }
 
-    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
-    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
-    VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR};
-    if (supportedFeatures.rayTracing)
+    VkPhysicalDeviceTransformFeedbackFeaturesEXT transformFeedbackFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME, desiredDeviceExts))
     {
-        APPEND_EXT(rayTracingFeatures);
-        APPEND_EXT(accelerationStructureFeatures);
-        APPEND_EXT(rayQueryFeatures);
-    }
-
-    VkPhysicalDeviceOpacityMicromapFeaturesEXT micromapFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_EXT};
-    if (supportedFeatures.opacityMicroMap)
-    {
-        APPEND_EXT(micromapFeatures);
+        APPEND_EXT(transformFeedbackFeatures);
     }
 
     VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT};
-    if (supportedFeatures.meshShader)
+    if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, desiredDeviceExts))
     {
         APPEND_EXT(meshShaderFeatures);
     }
 
-#undef APPEND_EXT
-
-    // Query extensions availability
-    m_VK.GetPhysicalDeviceFeatures2(m_PhysicalDevices.front(), &features2);
-
-    // Disable features here
-    // ...
-
-    // Create device
-    Vector<VkDeviceQueueCreateInfo> queues(GetStdAllocator());
-    const float priorities = 1.0f;
-    for (size_t i = 0; i < m_FamilyIndices.size(); i++)
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, desiredDeviceExts))
     {
-        if (m_FamilyIndices[i] == INVALID_FAMILY_INDEX)
-            continue;
-
-        VkDeviceQueueCreateInfo info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
-        info.queueCount = 1;
-        info.queueFamilyIndex = m_FamilyIndices[i];
-        info.pQueuePriorities = &priorities;
-        queues.push_back(info);
+        APPEND_EXT(accelerationStructureFeatures);
     }
 
-    VkDeviceCreateInfo deviceCreateInfo = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
-    deviceCreateInfo.pNext = &features2;
-    deviceCreateInfo.queueCreateInfoCount = (uint32_t)queues.size();
-    deviceCreateInfo.pQueueCreateInfos = queues.data();
-    deviceCreateInfo.enabledExtensionCount = (uint32_t)desiredExts.size();
-    deviceCreateInfo.ppEnabledExtensionNames = desiredExts.data();
-
-    VkDeviceGroupDeviceCreateInfo deviceGroupInfo = { VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO };
-    if (m_PhysicalDevices.size() > 1)
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, desiredDeviceExts))
     {
-        deviceGroupInfo.pNext = deviceCreateInfo.pNext;
-        deviceGroupInfo.physicalDeviceCount = (uint32_t)m_PhysicalDevices.size();
-        deviceGroupInfo.pPhysicalDevices = m_PhysicalDevices.data();
-        deviceCreateInfo.pNext = &deviceGroupInfo;
+        APPEND_EXT(rayTracingPipelineFeatures);
     }
 
-    const VkResult result = m_VK.CreateDevice(m_PhysicalDevices.front(), &deviceCreateInfo, m_AllocationCallbackPtr, &m_Device);
+    VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_RAY_QUERY_EXTENSION_NAME, desiredDeviceExts))
+    {
+        APPEND_EXT(rayQueryFeatures);
+    }
 
-    RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "Can't create a device: "
-        "vkCreateDevice returned %d.", (int32_t)result);
+    VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR rayTracingMaintenanceFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME, desiredDeviceExts))
+    {
+        APPEND_EXT(rayTracingMaintenanceFeatures);
+    }
 
-    return Result::SUCCESS;
+    VkPhysicalDeviceOpacityMicromapFeaturesEXT micromapFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, desiredDeviceExts))
+    {
+        APPEND_EXT(micromapFeatures);
+    }
+
+    m_VK.GetPhysicalDeviceFeatures2(m_PhysicalDevices.front(), &features);
+
+    { // Create device
+        if (isWrapper)
+            m_Device = (VkDevice)deviceCreationVKDesc.vkDevice;
+        else
+        {
+            // Disable features here
+            // ...
+
+            // Create device
+            Vector<VkDeviceQueueCreateInfo> queues(GetStdAllocator());
+            const float priorities = 1.0f;
+            for (size_t i = 0; i < m_FamilyIndices.size(); i++)
+            {
+                if (m_FamilyIndices[i] == INVALID_FAMILY_INDEX)
+                    continue;
+
+                VkDeviceQueueCreateInfo info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
+                info.queueCount = 1;
+                info.queueFamilyIndex = m_FamilyIndices[i];
+                info.pQueuePriorities = &priorities;
+                queues.push_back(info);
+            }
+
+            VkDeviceCreateInfo deviceCreateInfo = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
+            deviceCreateInfo.pNext = &features;
+            deviceCreateInfo.queueCreateInfoCount = (uint32_t)queues.size();
+            deviceCreateInfo.pQueueCreateInfos = queues.data();
+            deviceCreateInfo.enabledExtensionCount = (uint32_t)desiredDeviceExts.size();
+            deviceCreateInfo.ppEnabledExtensionNames = desiredDeviceExts.data();
+
+            VkDeviceGroupDeviceCreateInfo deviceGroupInfo = { VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO };
+            if (m_PhysicalDevices.size() > 1)
+            {
+                deviceGroupInfo.pNext = deviceCreateInfo.pNext;
+                deviceGroupInfo.physicalDeviceCount = (uint32_t)m_PhysicalDevices.size();
+                deviceGroupInfo.pPhysicalDevices = m_PhysicalDevices.data();
+                deviceCreateInfo.pNext = &deviceGroupInfo;
+            }
+
+            VkResult result = m_VK.CreateDevice(m_PhysicalDevices.front(), &deviceCreateInfo, m_AllocationCallbackPtr, &m_Device);
+            RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkCreateDevice returned %d", (int32_t)result);
+        }
+
+        Result res = ResolveDispatchTable(desiredInstanceExts, desiredDeviceExts);
+        if (res != Result::SUCCESS)
+            return res;
+    }
+
+    // Finalize
+    CreateCommandQueues();
+    ReportDeviceGroupInfo();
+
+    const uint32_t groupSize = m_Desc.nodeNum;
+    m_PhysicalDeviceIndices.resize(groupSize * groupSize);
+    const auto begin = m_PhysicalDeviceIndices.begin();
+    for (uint32_t i = 0; i < groupSize; i++)
+        std::fill(begin + i * groupSize, begin + (i + 1) * groupSize, i);
+
+    { // Desc
+        // Device properties
+        VkPhysicalDeviceProperties2 props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+        tail = &props.pNext;
+
+        VkPhysicalDeviceVulkan11Properties props11 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES};
+        APPEND_EXT(props11);
+
+        VkPhysicalDeviceVulkan12Properties props12 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES};
+        APPEND_EXT(props12);
+
+        VkPhysicalDeviceVulkan13Properties props13 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES};
+        APPEND_EXT(props13);
+
+        VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT};
+        if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts))
+        {
+            APPEND_EXT(conservativeRasterProps);
+        }
+
+        VkPhysicalDeviceSampleLocationsPropertiesEXT sampleLocationsProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT};
+        if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, desiredDeviceExts))
+        {
+            APPEND_EXT(sampleLocationsProps);
+            m_Desc.isProgrammableSampleLocationsSupported = true;
+        }
+
+        VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, desiredDeviceExts))
+        {
+            APPEND_EXT(rayTracingProps);
+        }
+
+        VkPhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, desiredDeviceExts))
+        {
+            APPEND_EXT(accelerationStructureProps);
+            m_Desc.isRaytracingSupported = true;
+        }
+
+        VkPhysicalDeviceMeshShaderPropertiesEXT meshShaderProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT};
+        if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, desiredDeviceExts))
+        {
+            APPEND_EXT(meshShaderProps);
+            m_Desc.isMeshShaderSupported = true;
+        }
+
+        m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevices.front(), &props);
+
+        // Fill
+        const VkPhysicalDeviceLimits& limits = props.properties.limits;
+
+        m_IsDescriptorIndexingSupported = features12.descriptorIndexing ? true : false;
+        m_IsDeviceAddressSupported = features12.bufferDeviceAddress ? true : false;
+
+        m_Desc.viewportMaxNum = limits.maxViewports;
+        m_Desc.viewportSubPixelBits = limits.viewportSubPixelBits;
+        m_Desc.viewportBoundsRange[0] = int32_t(limits.viewportBoundsRange[0]);
+        m_Desc.viewportBoundsRange[1] = int32_t(limits.viewportBoundsRange[1]);
+
+        m_Desc.attachmentMaxDim = (Dim_t)std::min(limits.maxFramebufferWidth, limits.maxFramebufferHeight);
+        m_Desc.attachmentLayerMaxNum = (Dim_t)limits.maxFramebufferLayers;
+        m_Desc.colorAttachmentMaxNum = (Dim_t)limits.maxColorAttachments;
+
+        m_Desc.colorSampleMaxNum = (Sample_t)limits.framebufferColorSampleCounts;
+        m_Desc.depthSampleMaxNum = (Sample_t)limits.framebufferDepthSampleCounts;
+        m_Desc.stencilSampleMaxNum = (Sample_t)limits.framebufferStencilSampleCounts;
+        m_Desc.zeroAttachmentsSampleMaxNum = (Sample_t)limits.framebufferNoAttachmentsSampleCounts;
+        m_Desc.textureColorSampleMaxNum = (Sample_t)limits.sampledImageColorSampleCounts;
+        m_Desc.textureIntegerSampleMaxNum = (Sample_t)limits.sampledImageIntegerSampleCounts;
+        m_Desc.textureDepthSampleMaxNum = (Sample_t)limits.sampledImageDepthSampleCounts;
+        m_Desc.textureStencilSampleMaxNum = (Sample_t)limits.sampledImageStencilSampleCounts;
+        m_Desc.storageTextureSampleMaxNum = (Sample_t)limits.storageImageSampleCounts;
+
+        m_Desc.texture1DMaxDim = (Dim_t)limits.maxImageDimension1D;
+        m_Desc.texture2DMaxDim = (Dim_t)limits.maxImageDimension2D;
+        m_Desc.texture3DMaxDim = (Dim_t)limits.maxImageDimension3D;
+        m_Desc.textureArrayMaxDim = (Dim_t)limits.maxImageArrayLayers;
+        m_Desc.texelBufferMaxDim = limits.maxTexelBufferElements;
+
+        const VkMemoryPropertyFlags neededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        for (uint32_t i = 0; i < m_MemoryProps.memoryTypeCount; i++)
+        {
+            const VkMemoryType& memoryType = m_MemoryProps.memoryTypes[i];
+            if ((memoryType.propertyFlags & neededFlags) == neededFlags)
+                m_Desc.deviceUploadHeapSize += m_MemoryProps.memoryHeaps[memoryType.heapIndex].size;
+        }
+
+        m_Desc.memoryAllocationMaxNum = limits.maxMemoryAllocationCount;
+        m_Desc.samplerAllocationMaxNum = limits.maxSamplerAllocationCount;
+        m_Desc.uploadBufferTextureRowAlignment = 1;
+        m_Desc.uploadBufferTextureSliceAlignment = 1;
+        m_Desc.typedBufferOffsetAlignment = (uint32_t)limits.minTexelBufferOffsetAlignment;
+        m_Desc.constantBufferOffsetAlignment = (uint32_t)limits.minUniformBufferOffsetAlignment;
+        m_Desc.constantBufferMaxRange = limits.maxUniformBufferRange;
+        m_Desc.storageBufferOffsetAlignment = (uint32_t)limits.minStorageBufferOffsetAlignment;
+        m_Desc.storageBufferMaxRange = limits.maxStorageBufferRange;
+        m_Desc.pushConstantsMaxSize = limits.maxPushConstantsSize;
+        m_Desc.bufferMaxSize = std::numeric_limits<uint64_t>::max();
+        m_Desc.bufferTextureGranularity = (uint32_t)limits.bufferImageGranularity;
+
+        m_Desc.boundDescriptorSetMaxNum = limits.maxBoundDescriptorSets;
+        m_Desc.perStageDescriptorSamplerMaxNum = limits.maxPerStageDescriptorSamplers;
+        m_Desc.perStageDescriptorConstantBufferMaxNum = limits.maxPerStageDescriptorUniformBuffers;
+        m_Desc.perStageDescriptorStorageBufferMaxNum = limits.maxPerStageDescriptorStorageBuffers;
+        m_Desc.perStageDescriptorTextureMaxNum = limits.maxPerStageDescriptorSampledImages;
+        m_Desc.perStageDescriptorStorageTextureMaxNum = limits.maxPerStageDescriptorStorageImages;
+        m_Desc.perStageResourceMaxNum = limits.maxPerStageResources;
+
+        m_Desc.descriptorSetSamplerMaxNum = limits.maxDescriptorSetSamplers;
+        m_Desc.descriptorSetConstantBufferMaxNum = limits.maxDescriptorSetUniformBuffers;
+        m_Desc.descriptorSetStorageBufferMaxNum = limits.maxDescriptorSetStorageBuffers;
+        m_Desc.descriptorSetTextureMaxNum = limits.maxDescriptorSetSampledImages;
+        m_Desc.descriptorSetStorageTextureMaxNum = limits.maxDescriptorSetStorageImages;
+
+        m_Desc.vertexShaderAttributeMaxNum = limits.maxVertexInputAttributes;
+        m_Desc.vertexShaderStreamMaxNum = limits.maxVertexInputBindings;
+        m_Desc.vertexShaderOutputComponentMaxNum = limits.maxVertexOutputComponents;
+
+        m_Desc.tessControlShaderGenerationMaxLevel = (float)limits.maxTessellationGenerationLevel;
+        m_Desc.tessControlShaderPatchPointMaxNum = limits.maxTessellationPatchSize;
+        m_Desc.tessControlShaderPerVertexInputComponentMaxNum = limits.maxTessellationControlPerVertexInputComponents;
+        m_Desc.tessControlShaderPerVertexOutputComponentMaxNum = limits.maxTessellationControlPerVertexOutputComponents;
+        m_Desc.tessControlShaderPerPatchOutputComponentMaxNum = limits.maxTessellationControlPerPatchOutputComponents;
+        m_Desc.tessControlShaderTotalOutputComponentMaxNum = limits.maxTessellationControlTotalOutputComponents;
+
+        m_Desc.tessEvaluationShaderInputComponentMaxNum = limits.maxTessellationEvaluationInputComponents;
+        m_Desc.tessEvaluationShaderOutputComponentMaxNum = limits.maxTessellationEvaluationOutputComponents;
+
+        m_Desc.geometryShaderInvocationMaxNum = limits.maxGeometryShaderInvocations;
+        m_Desc.geometryShaderInputComponentMaxNum = limits.maxGeometryInputComponents;
+        m_Desc.geometryShaderOutputComponentMaxNum = limits.maxGeometryOutputComponents;
+        m_Desc.geometryShaderOutputVertexMaxNum = limits.maxGeometryOutputVertices;
+        m_Desc.geometryShaderTotalOutputComponentMaxNum = limits.maxGeometryTotalOutputComponents;
+
+        m_Desc.fragmentShaderInputComponentMaxNum = limits.maxFragmentInputComponents;
+        m_Desc.fragmentShaderOutputAttachmentMaxNum = limits.maxFragmentOutputAttachments;
+        m_Desc.fragmentShaderDualSourceAttachmentMaxNum = limits.maxFragmentDualSrcAttachments;
+        m_Desc.fragmentShaderCombinedOutputResourceMaxNum = limits.maxFragmentCombinedOutputResources;
+
+        m_Desc.computeShaderSharedMemoryMaxSize = limits.maxComputeSharedMemorySize;
+        m_Desc.computeShaderWorkGroupMaxNum[0] = limits.maxComputeWorkGroupCount[0];
+        m_Desc.computeShaderWorkGroupMaxNum[1] = limits.maxComputeWorkGroupCount[1];
+        m_Desc.computeShaderWorkGroupMaxNum[2] = limits.maxComputeWorkGroupCount[2];
+        m_Desc.computeShaderWorkGroupInvocationMaxNum = limits.maxComputeWorkGroupInvocations;
+        m_Desc.computeShaderWorkGroupMaxDim[0] = limits.maxComputeWorkGroupSize[0];
+        m_Desc.computeShaderWorkGroupMaxDim[1] = limits.maxComputeWorkGroupSize[1];
+        m_Desc.computeShaderWorkGroupMaxDim[2] = limits.maxComputeWorkGroupSize[2];
+
+        m_Desc.timestampFrequencyHz = uint64_t( 1e9 / double(limits.timestampPeriod) + 0.5 );
+        m_Desc.subPixelPrecisionBits = limits.subPixelPrecisionBits;
+        m_Desc.subTexelPrecisionBits = limits.subTexelPrecisionBits;
+        m_Desc.mipmapPrecisionBits = limits.mipmapPrecisionBits;
+        m_Desc.drawIndexedIndex16ValueMax = std::min<uint32_t>(std::numeric_limits<uint16_t>::max(), limits.maxDrawIndexedIndexValue);
+        m_Desc.drawIndexedIndex32ValueMax = limits.maxDrawIndexedIndexValue;
+        m_Desc.drawIndirectMaxNum = limits.maxDrawIndirectCount;
+        m_Desc.samplerLodBiasMin = -limits.maxSamplerLodBias;
+        m_Desc.samplerLodBiasMax = limits.maxSamplerLodBias;
+        m_Desc.samplerAnisotropyMax = limits.maxSamplerAnisotropy;
+        m_Desc.texelOffsetMin = limits.minTexelOffset;
+        m_Desc.texelOffsetMax = limits.maxTexelOffset;
+        m_Desc.texelGatherOffsetMin = limits.minTexelGatherOffset;
+        m_Desc.texelGatherOffsetMax = limits.maxTexelGatherOffset;
+        m_Desc.clipDistanceMaxNum = limits.maxClipDistances;
+        m_Desc.cullDistanceMaxNum = limits.maxCullDistances;
+        m_Desc.combinedClipAndCullDistanceMaxNum = limits.maxCombinedClipAndCullDistances;
+
+        m_Desc.nodeNum = (uint8_t)m_PhysicalDevices.size();
+
+        m_Desc.isTextureFilterMinMaxSupported = features12.samplerFilterMinmax;
+        m_Desc.isLogicOpSupported = features.features.logicOp;
+        m_Desc.isDepthBoundsTestSupported = features.features.depthBounds;
+        m_Desc.isComputeQueueSupported = m_Queues[(uint32_t)CommandQueueType::COMPUTE] != nullptr;
+        m_Desc.isCopyQueueSupported = m_Queues[(uint32_t)CommandQueueType::COPY] != nullptr;
+        m_Desc.isRegisterAliasingSupported = true;
+        m_Desc.isFloat16Supported = features12.shaderFloat16;
+
+        // Copy queue timestamp
+        uint32_t familyNum = 0;
+        m_VK.GetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevices.front(), &familyNum, nullptr);
+
+        Vector<VkQueueFamilyProperties> familyProperties(familyNum, m_StdAllocator);
+        m_VK.GetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevices.front(), &familyNum, familyProperties.data());
+
+        uint32_t copyQueueTimestampValidBits = 0;
+        const uint32_t copyQueueFamilyIndex = m_FamilyIndices[(uint32_t)CommandQueueType::COPY];
+        if (copyQueueFamilyIndex != INVALID_FAMILY_INDEX)
+            copyQueueTimestampValidBits = familyProperties[copyQueueFamilyIndex].timestampValidBits;
+        m_Desc.isCopyQueueTimestampSupported = copyQueueTimestampValidBits == 64;
+
+        // Conservative raster
+        if ( conservativeRasterProps.fullyCoveredFragmentShaderInputVariable && conservativeRasterProps.primitiveOverestimationSize <= (1.0 / 256.0f) )
+            m_Desc.conservativeRasterTier = 3;
+        else if ( conservativeRasterProps.degenerateTrianglesRasterized && conservativeRasterProps.primitiveOverestimationSize < (1.0f / 2.0f) )
+            m_Desc.conservativeRasterTier = 2;
+        else
+            m_Desc.conservativeRasterTier = 1;
+
+        // Ray tracing
+        m_Desc.rayTracingShaderGroupIdentifierSize = rayTracingProps.shaderGroupHandleSize;
+        m_Desc.rayTracingShaderRecursionMaxDepth = rayTracingProps.maxRayRecursionDepth;
+        m_Desc.rayTracingGeometryObjectMaxNum = (uint32_t)accelerationStructureProps.maxGeometryCount;
+        m_Desc.rayTracingShaderTableAligment = rayTracingProps.shaderGroupBaseAlignment;
+        m_Desc.rayTracingShaderTableMaxStride = rayTracingProps.maxShaderGroupStride;
+
+        // Mesh shader
+        m_Desc.meshControlSharedMemoryMaxSize = meshShaderProps.maxTaskSharedMemorySize;
+        m_Desc.meshControlWorkGroupInvocationMaxNum = meshShaderProps.maxTaskWorkGroupInvocations;
+        m_Desc.meshControlPayloadMaxSize = meshShaderProps.maxTaskPayloadSize;
+        m_Desc.meshEvaluationOutputVerticesMaxNum = meshShaderProps.maxMeshOutputVertices;
+        m_Desc.meshEvaluationOutputPrimitiveMaxNum = meshShaderProps.maxMeshOutputPrimitives;
+        m_Desc.meshEvaluationOutputComponentMaxNum = meshShaderProps.maxMeshOutputComponents;
+        m_Desc.meshEvaluationSharedMemoryMaxSize = meshShaderProps.maxMeshSharedMemorySize;
+        m_Desc.meshEvaluationWorkGroupInvocationMaxNum = meshShaderProps.maxMeshWorkGroupInvocations;
+        m_Desc.isMeshShaderPipelineStatsSupported = meshShaderFeatures.meshShaderQueries == VK_TRUE;
+    }
+
+    return FillFunctionTable(m_CoreInterface);
 }
 
 bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const
@@ -774,70 +1038,13 @@ VkBool32 VKAPI_PTR DebugUtilsMessenger(
     return VK_FALSE;
 }
 
-void DeviceVK::FilterInstanceLayers(Vector<const char*>& layers)
-{
-    uint32_t layerNum = 0;
-    m_VK.EnumerateInstanceLayerProperties(&layerNum, nullptr);
-
-    Vector<VkLayerProperties> supportedLayers(layerNum, GetStdAllocator());
-    m_VK.EnumerateInstanceLayerProperties(&layerNum, supportedLayers.data());
-
-    for (size_t i = 0; i < layers.size(); i++)
-    {
-        bool found = false;
-        for (uint32_t j = 0; j < layerNum && !found; j++)
-        {
-            if (strcmp(supportedLayers[j].layerName, layers[i]) == 0)
-                found = true;
-        }
-
-        if (!found)
-            layers.erase(layers.begin() + i--);
-    }
-}
-
-Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
+Result DeviceVK::CreateInstance(bool enableAPIValidation, const Vector<const char*>& desiredInstanceExts)
 {
     Vector<const char*> layers(GetStdAllocator());
-    if (deviceCreationDesc.enableAPIValidation)
+    if (enableAPIValidation)
         layers.push_back("VK_LAYER_KHRONOS_validation");
 
     FilterInstanceLayers(layers);
-
-    uint32_t extensionNum = 0;
-    m_VK.EnumerateInstanceExtensionProperties(nullptr, &extensionNum, nullptr);
-
-    Vector<VkExtensionProperties> supportedExts(extensionNum, GetStdAllocator());
-    m_VK.EnumerateInstanceExtensionProperties(nullptr, &extensionNum, supportedExts.data());
-
-    Vector<const char*> extensions(GetStdAllocator());
-    for (uint32_t i = 0; i < deviceCreationDesc.vulkanExtensions.instanceExtensionNum; i++)
-        extensions.push_back(deviceCreationDesc.vulkanExtensions.instanceExtensions[i]);
-
-    extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-    extensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
-    #ifdef VK_USE_PLATFORM_WIN32_KHR
-        extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-    #endif
-    #ifdef VK_USE_PLATFORM_METAL_EXT
-        extensions.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
-    #endif
-    #ifdef VK_USE_PLATFORM_XLIB_KHR
-        extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-    #endif
-    #ifdef VK_USE_PLATFORM_WAYLAND_KHR
-        extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
-    #endif
-    #ifdef __APPLE__
-        extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-        extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-    #endif
-
-    if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, supportedExts))
-    {
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        supportedFeatures.debugUtils = true;
-    }
 
     const VkApplicationInfo appInfo = {
         VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -864,7 +1071,7 @@ Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
   
   const VkInstanceCreateInfo info = {
         VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        deviceCreationDesc.enableAPIValidation ? &validationFeatures : nullptr,
+        enableAPIValidation ? &validationFeatures : nullptr,
     #ifdef __APPLE__
         (VkInstanceCreateFlags)VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
     #else
@@ -873,8 +1080,8 @@ Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
         &appInfo,
         (uint32_t)layers.size(),
         layers.data(),
-        (uint32_t)extensions.size(),
-        extensions.data(),
+        (uint32_t)desiredInstanceExts.size(),
+        desiredInstanceExts.data(),
     };
 
     VkResult result = m_VK.CreateInstance(&info, m_AllocationCallbackPtr, &m_Instance);
@@ -882,13 +1089,11 @@ Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
     RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result),
         "Can't create a VkInstance: vkCreateInstance returned %d.", (int32_t)result);
 
-    if (deviceCreationDesc.enableAPIValidation)
+    if (enableAPIValidation)
     {
-        typedef PFN_vkCreateDebugUtilsMessengerEXT Func;
-        Func vkCreateDebugUtilsMessengerEXT = nullptr;
-        vkCreateDebugUtilsMessengerEXT = (Func)m_VK.GetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT");
-
         VkDebugUtilsMessengerCreateInfoEXT createInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
+        createInfo.pUserData = this;
+        createInfo.pfnUserCallback = DebugUtilsMessenger;
 
         createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
         createInfo.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -896,13 +1101,10 @@ Result DeviceVK::CreateInstance(const DeviceCreationDesc& deviceCreationDesc)
         createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
         createInfo.messageType |= VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
-        createInfo.pUserData = this;
-        createInfo.pfnUserCallback = DebugUtilsMessenger;
-
+        PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)m_VK.GetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT");
         result = vkCreateDebugUtilsMessengerEXT(m_Instance, &createInfo, m_AllocationCallbackPtr, &m_Messenger);
 
-        RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result),
-            "Can't create a debug utils messenger callback: vkCreateDebugUtilsMessengerEXT returned %d.", (int32_t)result);
+        RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkCreateDebugUtilsMessengerEXT returned %d", (int32_t)result);
     }
 
     return Result::SUCCESS;
@@ -951,12 +1153,12 @@ Result DeviceVK::FindPhysicalDeviceGroup(const AdapterDesc* adapterDesc, bool en
         "Can't create a device: physical device not found.");
 
     const VkPhysicalDeviceGroupProperties& group = deviceGroups[i];
-
-    supportedFeatures.subsetAllocation = true;
-    if (group.subsetAllocation == VK_FALSE && group.physicalDeviceCount > 1)
+    if (group.physicalDeviceCount > 1)
     {
-        supportedFeatures.subsetAllocation = false;
-        REPORT_WARNING(this, "The device group does not support memory allocation on a subset of the physical devices.");
+        if (group.subsetAllocation == VK_FALSE)
+            REPORT_WARNING(this, "The device group does not support memory allocation on a subset of the physical devices.");
+
+        m_Desc.isSubsetAllocationSupported = group.subsetAllocation == VK_TRUE;
     }
 
     m_PhysicalDevices.insert(m_PhysicalDevices.begin(), group.physicalDevices, group.physicalDevices + group.physicalDeviceCount);
@@ -965,219 +1167,6 @@ Result DeviceVK::FindPhysicalDeviceGroup(const AdapterDesc* adapterDesc, bool en
         m_PhysicalDevices.resize(1);
 
     return Result::SUCCESS;
-}
-
-void DeviceVK::FillDesc(bool enableValidation)
-{
-    uint32_t familyNum = 0;
-    m_VK.GetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevices.front(), &familyNum, nullptr);
-
-    Vector<VkQueueFamilyProperties> familyProperties(familyNum, m_StdAllocator);
-    m_VK.GetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevices.front(), &familyNum, familyProperties.data());
-
-    uint32_t copyQueueTimestampValidBits = 0;
-    const uint32_t copyQueueFamilyIndex = m_FamilyIndices[(uint32_t)CommandQueueType::COPY];
-    if (copyQueueFamilyIndex != INVALID_FAMILY_INDEX)
-        copyQueueTimestampValidBits = familyProperties[copyQueueFamilyIndex].timestampValidBits;
-
-    VkPhysicalDeviceIDProperties deviceIDProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES };
-    VkPhysicalDeviceProperties2 props = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &deviceIDProps };
-    m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevices.front(), &props);
-
-    VkPhysicalDeviceFeatures features = {};
-    m_VK.GetPhysicalDeviceFeatures(m_PhysicalDevices.front(), &features);
-
-    VkPhysicalDeviceVulkan12Features features12 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
-    VkPhysicalDeviceFeatures2 features2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &features12 };
-    m_VK.GetPhysicalDeviceFeatures2(m_PhysicalDevices.front(), &features2);
-
-    supportedFeatures.descriptorIndexing = features12.descriptorIndexing ? true : false;
-    supportedFeatures.bufferDeviceAddress = features12.bufferDeviceAddress ? true : false;
-
-    static_assert(VK_LUID_SIZE == sizeof(uint64_t), "invalid sizeof");
-
-    const VkPhysicalDeviceLimits& limits = props.properties.limits;
-
-    m_Desc.viewportMaxNum = limits.maxViewports;
-    m_Desc.viewportSubPixelBits = limits.viewportSubPixelBits;
-    m_Desc.viewportBoundsRange[0] = int32_t(limits.viewportBoundsRange[0]);
-    m_Desc.viewportBoundsRange[1] = int32_t(limits.viewportBoundsRange[1]);
-
-    m_Desc.attachmentMaxDim = (Dim_t)std::min(limits.maxFramebufferWidth, limits.maxFramebufferHeight);
-    m_Desc.attachmentLayerMaxNum = (Dim_t)limits.maxFramebufferLayers;
-    m_Desc.colorAttachmentMaxNum = (Dim_t)limits.maxColorAttachments;
-
-    m_Desc.colorSampleMaxNum = (Sample_t)limits.framebufferColorSampleCounts;
-    m_Desc.depthSampleMaxNum = (Sample_t)limits.framebufferDepthSampleCounts;
-    m_Desc.stencilSampleMaxNum = (Sample_t)limits.framebufferStencilSampleCounts;
-    m_Desc.zeroAttachmentsSampleMaxNum = (Sample_t)limits.framebufferNoAttachmentsSampleCounts;
-    m_Desc.textureColorSampleMaxNum = (Sample_t)limits.sampledImageColorSampleCounts;
-    m_Desc.textureIntegerSampleMaxNum = (Sample_t)limits.sampledImageIntegerSampleCounts;
-    m_Desc.textureDepthSampleMaxNum = (Sample_t)limits.sampledImageDepthSampleCounts;
-    m_Desc.textureStencilSampleMaxNum = (Sample_t)limits.sampledImageStencilSampleCounts;
-    m_Desc.storageTextureSampleMaxNum = (Sample_t)limits.storageImageSampleCounts;
-
-    m_Desc.texture1DMaxDim = (Dim_t)limits.maxImageDimension1D;
-    m_Desc.texture2DMaxDim = (Dim_t)limits.maxImageDimension2D;
-    m_Desc.texture3DMaxDim = (Dim_t)limits.maxImageDimension3D;
-    m_Desc.textureArrayMaxDim = (Dim_t)limits.maxImageArrayLayers;
-    m_Desc.texelBufferMaxDim = limits.maxTexelBufferElements;
-
-    const VkMemoryPropertyFlags neededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    for (uint32_t i = 0; i < m_MemoryProps.memoryTypeCount; i++)
-    {
-        const VkMemoryType& memoryType = m_MemoryProps.memoryTypes[i];
-        if ((memoryType.propertyFlags & neededFlags) == neededFlags)
-            m_Desc.deviceUploadHeapSize += m_MemoryProps.memoryHeaps[memoryType.heapIndex].size;
-    }
-
-    m_Desc.memoryAllocationMaxNum = limits.maxMemoryAllocationCount;
-    m_Desc.samplerAllocationMaxNum = limits.maxSamplerAllocationCount;
-    m_Desc.uploadBufferTextureRowAlignment = 1;
-    m_Desc.uploadBufferTextureSliceAlignment = 1;
-    m_Desc.typedBufferOffsetAlignment = (uint32_t)limits.minTexelBufferOffsetAlignment;
-    m_Desc.constantBufferOffsetAlignment = (uint32_t)limits.minUniformBufferOffsetAlignment;
-    m_Desc.constantBufferMaxRange = limits.maxUniformBufferRange;
-    m_Desc.storageBufferOffsetAlignment = (uint32_t)limits.minStorageBufferOffsetAlignment;
-    m_Desc.storageBufferMaxRange = limits.maxStorageBufferRange;
-    m_Desc.pushConstantsMaxSize = limits.maxPushConstantsSize;
-    m_Desc.bufferMaxSize = std::numeric_limits<uint64_t>::max();
-    m_Desc.bufferTextureGranularity = (uint32_t)limits.bufferImageGranularity;
-
-    m_Desc.boundDescriptorSetMaxNum = limits.maxBoundDescriptorSets;
-    m_Desc.perStageDescriptorSamplerMaxNum = limits.maxPerStageDescriptorSamplers;
-    m_Desc.perStageDescriptorConstantBufferMaxNum = limits.maxPerStageDescriptorUniformBuffers;
-    m_Desc.perStageDescriptorStorageBufferMaxNum = limits.maxPerStageDescriptorStorageBuffers;
-    m_Desc.perStageDescriptorTextureMaxNum = limits.maxPerStageDescriptorSampledImages;
-    m_Desc.perStageDescriptorStorageTextureMaxNum = limits.maxPerStageDescriptorStorageImages;
-    m_Desc.perStageResourceMaxNum = limits.maxPerStageResources;
-
-    m_Desc.descriptorSetSamplerMaxNum = limits.maxDescriptorSetSamplers;
-    m_Desc.descriptorSetConstantBufferMaxNum = limits.maxDescriptorSetUniformBuffers;
-    m_Desc.descriptorSetStorageBufferMaxNum = limits.maxDescriptorSetStorageBuffers;
-    m_Desc.descriptorSetTextureMaxNum = limits.maxDescriptorSetSampledImages;
-    m_Desc.descriptorSetStorageTextureMaxNum = limits.maxDescriptorSetStorageImages;
-
-    m_Desc.vertexShaderAttributeMaxNum = limits.maxVertexInputAttributes;
-    m_Desc.vertexShaderStreamMaxNum = limits.maxVertexInputBindings;
-    m_Desc.vertexShaderOutputComponentMaxNum = limits.maxVertexOutputComponents;
-
-    m_Desc.tessControlShaderGenerationMaxLevel = (float)limits.maxTessellationGenerationLevel;
-    m_Desc.tessControlShaderPatchPointMaxNum = limits.maxTessellationPatchSize;
-    m_Desc.tessControlShaderPerVertexInputComponentMaxNum = limits.maxTessellationControlPerVertexInputComponents;
-    m_Desc.tessControlShaderPerVertexOutputComponentMaxNum = limits.maxTessellationControlPerVertexOutputComponents;
-    m_Desc.tessControlShaderPerPatchOutputComponentMaxNum = limits.maxTessellationControlPerPatchOutputComponents;
-    m_Desc.tessControlShaderTotalOutputComponentMaxNum = limits.maxTessellationControlTotalOutputComponents;
-
-    m_Desc.tessEvaluationShaderInputComponentMaxNum = limits.maxTessellationEvaluationInputComponents;
-    m_Desc.tessEvaluationShaderOutputComponentMaxNum = limits.maxTessellationEvaluationOutputComponents;
-
-    m_Desc.geometryShaderInvocationMaxNum = limits.maxGeometryShaderInvocations;
-    m_Desc.geometryShaderInputComponentMaxNum = limits.maxGeometryInputComponents;
-    m_Desc.geometryShaderOutputComponentMaxNum = limits.maxGeometryOutputComponents;
-    m_Desc.geometryShaderOutputVertexMaxNum = limits.maxGeometryOutputVertices;
-    m_Desc.geometryShaderTotalOutputComponentMaxNum = limits.maxGeometryTotalOutputComponents;
-
-    m_Desc.fragmentShaderInputComponentMaxNum = limits.maxFragmentInputComponents;
-    m_Desc.fragmentShaderOutputAttachmentMaxNum = limits.maxFragmentOutputAttachments;
-    m_Desc.fragmentShaderDualSourceAttachmentMaxNum = limits.maxFragmentDualSrcAttachments;
-    m_Desc.fragmentShaderCombinedOutputResourceMaxNum = limits.maxFragmentCombinedOutputResources;
-
-    m_Desc.computeShaderSharedMemoryMaxSize = limits.maxComputeSharedMemorySize;
-    m_Desc.computeShaderWorkGroupMaxNum[0] = limits.maxComputeWorkGroupCount[0];
-    m_Desc.computeShaderWorkGroupMaxNum[1] = limits.maxComputeWorkGroupCount[1];
-    m_Desc.computeShaderWorkGroupMaxNum[2] = limits.maxComputeWorkGroupCount[2];
-    m_Desc.computeShaderWorkGroupInvocationMaxNum = limits.maxComputeWorkGroupInvocations;
-    m_Desc.computeShaderWorkGroupMaxDim[0] = limits.maxComputeWorkGroupSize[0];
-    m_Desc.computeShaderWorkGroupMaxDim[1] = limits.maxComputeWorkGroupSize[1];
-    m_Desc.computeShaderWorkGroupMaxDim[2] = limits.maxComputeWorkGroupSize[2];
-
-    m_Desc.timestampFrequencyHz = uint64_t( 1e9 / double(limits.timestampPeriod) + 0.5 );
-    m_Desc.subPixelPrecisionBits = limits.subPixelPrecisionBits;
-    m_Desc.subTexelPrecisionBits = limits.subTexelPrecisionBits;
-    m_Desc.mipmapPrecisionBits = limits.mipmapPrecisionBits;
-    m_Desc.drawIndexedIndex16ValueMax = std::min<uint32_t>(std::numeric_limits<uint16_t>::max(), limits.maxDrawIndexedIndexValue);
-    m_Desc.drawIndexedIndex32ValueMax = limits.maxDrawIndexedIndexValue;
-    m_Desc.drawIndirectMaxNum = limits.maxDrawIndirectCount;
-    m_Desc.samplerLodBiasMin = -limits.maxSamplerLodBias;
-    m_Desc.samplerLodBiasMax = limits.maxSamplerLodBias;
-    m_Desc.samplerAnisotropyMax = limits.maxSamplerAnisotropy;
-    m_Desc.texelOffsetMin = limits.minTexelOffset;
-    m_Desc.texelOffsetMax = limits.maxTexelOffset;
-    m_Desc.texelGatherOffsetMin = limits.minTexelGatherOffset;
-    m_Desc.texelGatherOffsetMax = limits.maxTexelGatherOffset;
-    m_Desc.clipDistanceMaxNum = limits.maxClipDistances;
-    m_Desc.cullDistanceMaxNum = limits.maxCullDistances;
-    m_Desc.combinedClipAndCullDistanceMaxNum = limits.maxCombinedClipAndCullDistances;
-    m_Desc.nodeNum = (uint8_t)m_PhysicalDevices.size();
-
-    m_Desc.isAPIValidationEnabled = enableValidation;
-    m_Desc.isTextureFilterMinMaxSupported = features12.samplerFilterMinmax;
-    m_Desc.isLogicOpSupported = features.logicOp;
-    m_Desc.isDepthBoundsTestSupported = features.depthBounds;
-    m_Desc.isProgrammableSampleLocationsSupported = supportedFeatures.sampleLocations;
-    m_Desc.isComputeQueueSupported = m_Queues[(uint32_t)CommandQueueType::COMPUTE] != nullptr;
-    m_Desc.isCopyQueueSupported = m_Queues[(uint32_t)CommandQueueType::COPY] != nullptr;
-    m_Desc.isCopyQueueTimestampSupported = copyQueueTimestampValidBits == 64;
-    m_Desc.isRegisterAliasingSupported = true;
-    m_Desc.isSubsetAllocationSupported = supportedFeatures.subsetAllocation;
-    m_Desc.isFloat16Supported = features12.shaderFloat16;
-
-    // Conservative raster
-    if (supportedFeatures.conservativeRaster)
-    {
-        VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT };
-
-        props.pNext = &conservativeRasterProps;
-
-        m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevices.front(), &props);
-
-        if ( conservativeRasterProps.fullyCoveredFragmentShaderInputVariable && conservativeRasterProps.primitiveOverestimationSize <= (1.0 / 256.0f) )
-            m_Desc.conservativeRasterTier = 3;
-        else if ( conservativeRasterProps.degenerateTrianglesRasterized && conservativeRasterProps.primitiveOverestimationSize < (1.0f / 2.0f) )
-            m_Desc.conservativeRasterTier = 2;
-        else
-            m_Desc.conservativeRasterTier = 1;
-    }
-
-    // Ray tracing
-    m_Desc.isRaytracingSupported = supportedFeatures.rayTracing;
-    if (supportedFeatures.rayTracing)
-    {
-        VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR };
-        VkPhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProperties = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR };
-
-        props.pNext = &rayTracingProps;
-        rayTracingProps.pNext = &accelerationStructureProperties;
-
-        m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevices.front(), &props);
-
-        m_Desc.rayTracingShaderGroupIdentifierSize = rayTracingProps.shaderGroupHandleSize;
-        m_Desc.rayTracingShaderRecursionMaxDepth = rayTracingProps.maxRayRecursionDepth;
-        m_Desc.rayTracingGeometryObjectMaxNum = (uint32_t)accelerationStructureProperties.maxGeometryCount;
-        m_Desc.rayTracingShaderTableAligment = rayTracingProps.shaderGroupBaseAlignment;
-        m_Desc.rayTracingShaderTableMaxStride = rayTracingProps.maxShaderGroupStride;
-    }
-
-    // Mesh shader
-    m_Desc.isMeshShaderSupported = supportedFeatures.meshShader;
-    if (supportedFeatures.meshShader)
-    {
-        VkPhysicalDeviceMeshShaderPropertiesEXT meshShaderProps = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT };
-
-        props.pNext = &meshShaderProps;
-
-        m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevices.front(), &props);
-
-        m_Desc.meshControlSharedMemoryMaxSize = meshShaderProps.maxTaskSharedMemorySize;
-        m_Desc.meshControlWorkGroupInvocationMaxNum = meshShaderProps.maxTaskWorkGroupInvocations;
-        m_Desc.meshControlPayloadMaxSize = meshShaderProps.maxTaskPayloadSize;
-        m_Desc.meshEvaluationOutputVerticesMaxNum = meshShaderProps.maxMeshOutputVertices;
-        m_Desc.meshEvaluationOutputPrimitiveMaxNum = meshShaderProps.maxMeshOutputPrimitives;
-        m_Desc.meshEvaluationOutputComponentMaxNum = meshShaderProps.maxMeshOutputComponents;
-        m_Desc.meshEvaluationSharedMemoryMaxSize = meshShaderProps.maxMeshSharedMemorySize;
-        m_Desc.meshEvaluationWorkGroupInvocationMaxNum = meshShaderProps.maxMeshWorkGroupInvocations;
-    }
 }
 
 void DeviceVK::FillFamilyIndices(bool useEnabledFamilyIndices, const uint32_t* enabledFamilyIndices, uint32_t familyIndexNum)
@@ -1429,9 +1418,7 @@ Result DeviceVK::ResolveInstanceDispatchTable()
     RESOLVE_INSTANCE_FUNCTION(CreateDevice);
     RESOLVE_INSTANCE_FUNCTION(GetDeviceQueue);
     RESOLVE_INSTANCE_FUNCTION(EnumeratePhysicalDeviceGroups);
-    RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceProperties);
     RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceProperties2);
-    RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceFeatures);
     RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceFeatures2);
     RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceQueueFamilyProperties);
     RESOLVE_INSTANCE_FUNCTION(EnumerateDeviceExtensionProperties);
@@ -1458,7 +1445,7 @@ Result DeviceVK::ResolveInstanceDispatchTable()
     return Result::SUCCESS;
 }
 
-Result DeviceVK::ResolveDispatchTable()
+Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredInstanceExts, const Vector<const char*>& desiredDeviceExts)
 {
     RESOLVE_DEVICE_FUNCTION(CreateBuffer);
     RESOLVE_DEVICE_FUNCTION(CreateImage);
@@ -1572,29 +1559,33 @@ Result DeviceVK::ResolveDispatchTable()
 
     RESOLVE_DEVICE_FUNCTION(GetSwapchainImagesKHR);
 
-    if (supportedFeatures.debugUtils)
+    if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, desiredInstanceExts))
     {
         RESOLVE_DEVICE_FUNCTION(SetDebugUtilsObjectNameEXT);
         RESOLVE_DEVICE_FUNCTION(CmdBeginDebugUtilsLabelEXT);
         RESOLVE_DEVICE_FUNCTION(CmdEndDebugUtilsLabelEXT);
     }
 
-    if (supportedFeatures.rayTracing)
+    if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, desiredDeviceExts))
     {
         RESOLVE_DEVICE_FUNCTION(CreateAccelerationStructureKHR);
-        RESOLVE_DEVICE_FUNCTION(CreateRayTracingPipelinesKHR);
         RESOLVE_DEVICE_FUNCTION(DestroyAccelerationStructureKHR);
         RESOLVE_DEVICE_FUNCTION(GetAccelerationStructureDeviceAddressKHR);
         RESOLVE_DEVICE_FUNCTION(GetAccelerationStructureBuildSizesKHR);
-        RESOLVE_DEVICE_FUNCTION(GetRayTracingShaderGroupHandlesKHR);
         RESOLVE_DEVICE_FUNCTION(CmdBuildAccelerationStructuresKHR);
         RESOLVE_DEVICE_FUNCTION(CmdCopyAccelerationStructureKHR);
         RESOLVE_DEVICE_FUNCTION(CmdWriteAccelerationStructuresPropertiesKHR);
+    }
+
+    if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, desiredDeviceExts))
+    {
+        RESOLVE_DEVICE_FUNCTION(CreateRayTracingPipelinesKHR);
+        RESOLVE_DEVICE_FUNCTION(GetRayTracingShaderGroupHandlesKHR);
         RESOLVE_DEVICE_FUNCTION(CmdTraceRaysKHR);
         RESOLVE_DEVICE_FUNCTION(GetBufferDeviceAddress);
     }
 
-    if (supportedFeatures.meshShader)
+    if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, desiredDeviceExts))
     {
         RESOLVE_DEVICE_FUNCTION(CmdDrawMeshTasksEXT);
     }

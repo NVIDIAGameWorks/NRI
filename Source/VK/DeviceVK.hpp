@@ -442,7 +442,7 @@ void FillFunctionTablePipelineVK(RayTracingInterface& rayTracingInterface);
 
 Result DeviceVK::FillFunctionTable(RayTracingInterface& rayTracingInterface) const
 {
-    if (!supportedFeatures.rayTracing)
+    if (!m_Desc.isRaytracingSupported)
         return Result::UNSUPPORTED;
 
     rayTracingInterface = {};
@@ -464,7 +464,7 @@ Result DeviceVK::FillFunctionTable(RayTracingInterface& rayTracingInterface) con
 
 Result DeviceVK::FillFunctionTable(MeshShaderInterface& meshShaderInterface) const
 {
-    if (!supportedFeatures.meshShader)
+    if (!m_Desc.isMeshShaderSupported)
         return Result::UNSUPPORTED;
 
     meshShaderInterface = {};
