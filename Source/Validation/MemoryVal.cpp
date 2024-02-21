@@ -8,6 +8,8 @@
 #include "MemoryVal.h"
 #include "TextureVal.h"
 
+#include <algorithm>
+
 using namespace nri;
 
 MemoryVal::MemoryVal(DeviceVal& device, Memory* memory, uint64_t size, MemoryLocation memoryLocation)
