@@ -4,48 +4,58 @@
 
 struct IDXGIAdapter;
 
-namespace nri
-{
+namespace nri {
 
 struct CommandQueueVK;
 
-struct DeviceVK final : public DeviceBase
-{
-    inline operator VkDevice() const
-    { return m_Device; }
+struct DeviceVK final : public DeviceBase {
+    inline operator VkDevice() const {
+        return m_Device;
+    }
 
-    inline operator VkPhysicalDevice() const
-    { return m_PhysicalDevices.front(); }
+    inline operator VkPhysicalDevice() const {
+        return m_PhysicalDevices.front();
+    }
 
-    inline operator VkInstance() const
-    { return m_Instance; }
+    inline operator VkInstance() const {
+        return m_Instance;
+    }
 
-    inline const DispatchTable& GetDispatchTable() const
-    { return m_VK; }
+    inline const DispatchTable& GetDispatchTable() const {
+        return m_VK;
+    }
 
-    inline const VkAllocationCallbacks* GetAllocationCallbacks() const
-    { return m_AllocationCallbackPtr; }
+    inline const VkAllocationCallbacks* GetAllocationCallbacks() const {
+        return m_AllocationCallbackPtr;
+    }
 
-    inline const std::array<uint32_t, COMMAND_QUEUE_TYPE_NUM>& GetQueueFamilyIndices() const
-    { return m_FamilyIndices; }
+    inline const std::array<uint32_t, COMMAND_QUEUE_TYPE_NUM>& GetQueueFamilyIndices() const {
+        return m_FamilyIndices;
+    }
 
-    inline const SPIRVBindingOffsets& GetSPIRVBindingOffsets() const
-    { return m_SPIRVBindingOffsets; }
+    inline const SPIRVBindingOffsets& GetSPIRVBindingOffsets() const {
+        return m_SPIRVBindingOffsets;
+    }
 
-    inline const CoreInterface& GetCoreInterface() const
-    { return m_CoreInterface; }
+    inline const CoreInterface& GetCoreInterface() const {
+        return m_CoreInterface;
+    }
 
-    inline uint32_t GetPhysicalDeviceGroupSize() const
-    { return m_Desc.nodeNum; }
+    inline uint32_t GetPhysicalDeviceGroupSize() const {
+        return m_Desc.nodeNum;
+    }
 
-    inline bool IsConcurrentSharingModeEnabledForBuffers() const
-    { return m_ConcurrentSharingModeQueueIndices.size() > 1; }
+    inline bool IsConcurrentSharingModeEnabledForBuffers() const {
+        return m_ConcurrentSharingModeQueueIndices.size() > 1;
+    }
 
-    inline bool IsConcurrentSharingModeEnabledForImages() const
-    { return m_ConcurrentSharingModeQueueIndices.size() > 1; }
+    inline bool IsConcurrentSharingModeEnabledForImages() const {
+        return m_ConcurrentSharingModeQueueIndices.size() > 1;
+    }
 
-    inline const Vector<uint32_t>& GetConcurrentSharingModeQueueIndices() const
-    { return m_ConcurrentSharingModeQueueIndices; }
+    inline const Vector<uint32_t>& GetConcurrentSharingModeQueueIndices() const {
+        return m_ConcurrentSharingModeQueueIndices;
+    }
 
     DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator);
     ~DeviceVK();
@@ -114,8 +124,9 @@ struct DeviceVK final : public DeviceBase
     // DeviceBase
     //================================================================================================================
 
-    const DeviceDesc& GetDesc() const
-    { return m_Desc; }
+    const DeviceDesc& GetDesc() const {
+        return m_Desc;
+    }
 
     void Destroy();
     Result FillFunctionTable(CoreInterface& table) const;
@@ -125,7 +136,7 @@ struct DeviceVK final : public DeviceBase
     Result FillFunctionTable(MeshShaderInterface& meshShaderInterface) const;
     Result FillFunctionTable(HelperInterface& helperInterface) const;
 
-private:
+  private:
     void FilterInstanceLayers(Vector<const char*>& layers);
     void ProcessInstanceExtensions(Vector<const char*>& desiredInstanceExts);
     void ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, bool disableRayTracing);
@@ -139,14 +150,14 @@ private:
     Result ResolveInstanceDispatchTable();
     Result ResolveDispatchTable(const Vector<const char*>& desiredInstanceExts, const Vector<const char*>& desiredDeviceExts);
 
-    template< typename Implementation, typename Interface, typename ... Args >
+    template <typename Implementation, typename Interface, typename... Args>
     Result CreateImplementation(Interface*& entity, const Args&... args);
 
-public:
+  public:
     bool m_IsDescriptorIndexingSupported = false;
     bool m_IsDeviceAddressSupported = false;
 
-private:
+  private:
     Vector<VkPhysicalDevice> m_PhysicalDevices;
     Vector<uint32_t> m_PhysicalDeviceIndices;
     Vector<uint32_t> m_ConcurrentSharingModeQueueIndices;
@@ -167,4 +178,4 @@ private:
     Lock m_Lock;
 };
 
-}
+} // namespace nri

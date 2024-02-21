@@ -2,7 +2,7 @@
 
 #include "SharedExternal.h"
 #include "SharedVal.h"
-#include "DescriptorSetVal.h"
+
 #include "DescriptorPoolVal.h"
 #include "PipelineLayoutVal.h"
 
@@ -115,9 +115,7 @@ Result DescriptorPoolVal::AllocateDescriptorSets(
 
         bool enoughDescriptors = m_DynamicConstantBufferNum + descriptorSetDesc.dynamicConstantBufferNum <= m_Desc.dynamicConstantBufferMaxNum;
 
-        RETURN_ON_FAILURE(
-            &m_Device, enoughDescriptors, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: the maximum number of descriptors exceeded ('DYNAMIC_CONSTANT_BUFFER')"
-        );
+        RETURN_ON_FAILURE(&m_Device, enoughDescriptors, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: the maximum number of descriptors exceeded ('DYNAMIC_CONSTANT_BUFFER')");
     }
 
     PipelineLayout* pipelineLayoutImpl = NRI_GET_IMPL(PipelineLayout, &pipelineLayout);

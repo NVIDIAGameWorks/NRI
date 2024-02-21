@@ -1,19 +1,18 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedD3D12.h"
+
 #include "AccelerationStructureD3D12.h"
 #include "BufferD3D12.h"
 
 using namespace nri;
 
-AccelerationStructureD3D12::~AccelerationStructureD3D12()
-{
+AccelerationStructureD3D12::~AccelerationStructureD3D12() {
     if (m_Buffer)
         Deallocate(m_Device.GetStdAllocator(), m_Buffer);
 }
 
-Result AccelerationStructureD3D12::Create(const AccelerationStructureD3D12Desc& accelerationStructureDesc)
-{
+Result AccelerationStructureD3D12::Create(const AccelerationStructureD3D12Desc& accelerationStructureDesc) {
     m_PrebuildInfo.ScratchDataSizeInBytes = accelerationStructureDesc.scratchDataSize;
     m_PrebuildInfo.UpdateScratchDataSizeInBytes = accelerationStructureDesc.updateScratchDataSize;
 
@@ -23,8 +22,7 @@ Result AccelerationStructureD3D12::Create(const AccelerationStructureD3D12Desc& 
     return m_Device.CreateBuffer(bufferDesc, (Buffer*&)m_Buffer);
 }
 
-Result AccelerationStructureD3D12::Create(const AccelerationStructureDesc& accelerationStructureDesc)
-{
+Result AccelerationStructureD3D12::Create(const AccelerationStructureDesc& accelerationStructureDesc) {
     if (m_Device.GetVersion() < 5)
         return Result::UNSUPPORTED;
 
@@ -35,8 +33,7 @@ Result AccelerationStructureD3D12::Create(const AccelerationStructureDesc& accel
     accelerationStructureInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY; // TODO:
 
     Vector<D3D12_RAYTRACING_GEOMETRY_DESC> geometryDescs(accelerationStructureDesc.instanceOrGeometryObjectNum, m_Device.GetStdAllocator());
-    if (accelerationStructureInputs.Type == D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL && accelerationStructureDesc.instanceOrGeometryObjectNum)
-    {
+    if (accelerationStructureInputs.Type == D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL && accelerationStructureDesc.instanceOrGeometryObjectNum) {
         ConvertGeometryDescs(&geometryDescs[0], accelerationStructureDesc.geometryObjects, accelerationStructureDesc.instanceOrGeometryObjectNum);
         accelerationStructureInputs.pGeometryDescs = &geometryDescs[0];
     }
@@ -53,46 +50,39 @@ Result AccelerationStructureD3D12::Create(const AccelerationStructureDesc& accel
     return result;
 }
 
-void AccelerationStructureD3D12::GetMemoryInfo(MemoryDesc& memoryDesc) const
-{
+void AccelerationStructureD3D12::GetMemoryInfo(MemoryDesc& memoryDesc) const {
     memoryDesc.size = m_PrebuildInfo.ResultDataMaxSizeInBytes;
     memoryDesc.alignment = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT;
     memoryDesc.type = GetMemoryType(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
     memoryDesc.mustBeDedicated = false;
 }
 
-uint64_t AccelerationStructureD3D12::GetUpdateScratchBufferSize() const
-{
+uint64_t AccelerationStructureD3D12::GetUpdateScratchBufferSize() const {
     return m_PrebuildInfo.UpdateScratchDataSizeInBytes;
 }
 
-uint64_t AccelerationStructureD3D12::GetBuildScratchBufferSize() const
-{
+uint64_t AccelerationStructureD3D12::GetBuildScratchBufferSize() const {
     return m_PrebuildInfo.ScratchDataSizeInBytes;
 }
 
-Result AccelerationStructureD3D12::BindMemory(Memory* memory, uint64_t offset)
-{
+Result AccelerationStructureD3D12::BindMemory(Memory* memory, uint64_t offset) {
     Result result = m_Buffer->BindMemory((MemoryD3D12*)memory, offset, true);
 
     return result;
 }
 
-Result AccelerationStructureD3D12::CreateDescriptor(Descriptor*& descriptor) const
-{
+Result AccelerationStructureD3D12::CreateDescriptor(Descriptor*& descriptor) const {
     const AccelerationStructure& accelerationStructure = (const AccelerationStructure&)*this;
     Result result = m_Device.CreateDescriptor(accelerationStructure, descriptor);
 
     return result;
 }
 
-uint64_t AccelerationStructureD3D12::GetHandle() const
-{
+uint64_t AccelerationStructureD3D12::GetHandle() const {
     return m_Buffer->GetPointerGPU();
 }
 
-AccelerationStructureD3D12::operator ID3D12Resource* () const
-{
+AccelerationStructureD3D12::operator ID3D12Resource*() const {
     return (ID3D12Resource*)*m_Buffer;
 }
 
@@ -100,8 +90,7 @@ AccelerationStructureD3D12::operator ID3D12Resource* () const
 // NRI
 //================================================================================================================
 
-inline void AccelerationStructureD3D12::SetDebugName(const char* name)
-{
+inline void AccelerationStructureD3D12::SetDebugName(const char* name) {
     m_Buffer->SetDebugName(name);
 }
 

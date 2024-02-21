@@ -2,6 +2,7 @@
 
 #include "SharedExternal.h"
 #include "SharedVal.h"
+
 #include "BufferVal.h"
 
 using namespace nri;

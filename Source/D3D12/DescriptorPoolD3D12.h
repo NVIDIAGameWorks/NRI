@@ -2,26 +2,24 @@
 
 #pragma once
 
-namespace nri
-{
+#include "DescriptorSetD3D12.h"
+
+namespace nri {
 
 struct DeviceD3D12;
 
-struct DescriptorPoolD3D12
-{
-    inline DescriptorPoolD3D12(DeviceD3D12& device)
-        : m_Device(device)
-        , m_DescriptorSets(device.GetStdAllocator())
-    {}
+struct DescriptorPoolD3D12 {
+    inline DescriptorPoolD3D12(DeviceD3D12& device) : m_Device(device), m_DescriptorSets(device.GetStdAllocator()) {
+    }
 
-    inline ~DescriptorPoolD3D12()
-    {
+    inline ~DescriptorPoolD3D12() {
         Reset();
         m_DescriptorSets.clear();
     }
 
-    inline DeviceD3D12& GetDevice() const
-    { return m_Device; }
+    inline DeviceD3D12& GetDevice() const {
+        return m_Device;
+    }
 
     Result Create(const DescriptorPoolDesc& descriptorPoolDesc);
     void Bind(ID3D12GraphicsCommandList* graphicsCommandList) const;
@@ -34,10 +32,12 @@ struct DescriptorPoolD3D12
     //================================================================================================================
 
     void SetDebugName(const char* name);
-    Result AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
+    Result AllocateDescriptorSets(
+        const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum
+    );
     void Reset();
 
-private:
+  private:
     DeviceD3D12& m_Device;
     std::array<DescriptorHeapDesc, DescriptorHeapType::MAX_NUM> m_DescriptorHeapDescs;
     std::array<uint32_t, DescriptorHeapType::MAX_NUM> m_DescriptorNum = {};
@@ -47,4 +47,4 @@ private:
     uint32_t m_DescriptorSetNum = 0;
 };
 
-}
+} // namespace nri

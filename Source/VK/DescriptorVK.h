@@ -2,14 +2,12 @@
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceVK;
 struct TextureVK;
 
-enum class DescriptorTypeVK
-{
+enum class DescriptorTypeVK {
     NONE = 0,
     BUFFER_VIEW,
     IMAGE_VIEW,
@@ -17,15 +15,13 @@ enum class DescriptorTypeVK
     ACCELERATION_STRUCTURE
 };
 
-struct DescriptorBufferDesc
-{
+struct DescriptorBufferDesc {
     std::array<VkBuffer, PHYSICAL_DEVICE_GROUP_MAX_SIZE> handles;
     uint64_t offset;
     uint64_t size;
 };
 
-struct DescriptorTextureDesc
-{
+struct DescriptorTextureDesc {
     std::array<VkImage, PHYSICAL_DEVICE_GROUP_MAX_SIZE> handles;
     const TextureVK* texture;
     VkImageLayout layout;
@@ -36,60 +32,70 @@ struct DescriptorTextureDesc
     Mip_t mipNum;
 };
 
-struct DescriptorVK
-{
-    inline DescriptorVK(DeviceVK& device) :
-        m_Device(device)
-    { m_BufferViews.fill(VK_NULL_HANDLE); }
+struct DescriptorVK {
+    inline DescriptorVK(DeviceVK& device) : m_Device(device) {
+        m_BufferViews.fill(VK_NULL_HANDLE);
+    }
 
-    inline DeviceVK& GetDevice() const
-    { return m_Device; }
+    inline DeviceVK& GetDevice() const {
+        return m_Device;
+    }
 
-    inline VkBufferView GetBufferView(uint32_t nodeIndex) const
-    { return m_BufferViews[nodeIndex]; }
+    inline VkBufferView GetBufferView(uint32_t nodeIndex) const {
+        return m_BufferViews[nodeIndex];
+    }
 
-    inline VkImageView GetImageView(uint32_t nodeIndex) const
-    { return m_ImageViews[nodeIndex]; }
+    inline VkImageView GetImageView(uint32_t nodeIndex) const {
+        return m_ImageViews[nodeIndex];
+    }
 
-    inline const VkSampler& GetSampler() const
-    { return m_Sampler; }
+    inline const VkSampler& GetSampler() const {
+        return m_Sampler;
+    }
 
-    inline VkAccelerationStructureKHR GetAccelerationStructure(uint32_t nodeIndex) const
-    { return m_AccelerationStructures[nodeIndex]; }
+    inline VkAccelerationStructureKHR GetAccelerationStructure(uint32_t nodeIndex) const {
+        return m_AccelerationStructures[nodeIndex];
+    }
 
-    inline VkBuffer GetBuffer(uint32_t nodeIndex) const
-    { return m_BufferDesc.handles[nodeIndex]; }
+    inline VkBuffer GetBuffer(uint32_t nodeIndex) const {
+        return m_BufferDesc.handles[nodeIndex];
+    }
 
-    inline VkImage GetImage(uint32_t nodeIndex) const
-    { return m_TextureDesc.handles[nodeIndex]; }
+    inline VkImage GetImage(uint32_t nodeIndex) const {
+        return m_TextureDesc.handles[nodeIndex];
+    }
 
-    inline const TextureVK& GetTexture() const
-    { return *m_TextureDesc.texture; }
+    inline const TextureVK& GetTexture() const {
+        return *m_TextureDesc.texture;
+    }
 
-    inline DescriptorTypeVK GetType() const
-    { return m_Type; }
+    inline DescriptorTypeVK GetType() const {
+        return m_Type;
+    }
 
-    inline VkFormat GetFormat() const
-    { return m_Format; }
+    inline VkFormat GetFormat() const {
+        return m_Format;
+    }
 
-    inline VkImageLayout GetImageLayout() const
-    { return m_TextureDesc.layout; }
+    inline VkImageLayout GetImageLayout() const {
+        return m_TextureDesc.layout;
+    }
 
-    inline const DescriptorTextureDesc& GetTextureDesc() const
-    { return m_TextureDesc; }
+    inline const DescriptorTextureDesc& GetTextureDesc() const {
+        return m_TextureDesc;
+    }
 
-    inline const DescriptorBufferDesc& GetBufferDesc() const
-    { return m_BufferDesc; }
+    inline const DescriptorBufferDesc& GetBufferDesc() const {
+        return m_BufferDesc;
+    }
 
-    inline void GetBufferInfo(uint32_t nodeIndex, VkDescriptorBufferInfo& info) const
-    {
+    inline void GetBufferInfo(uint32_t nodeIndex, VkDescriptorBufferInfo& info) const {
         info.buffer = m_BufferDesc.handles[nodeIndex];
         info.offset = m_BufferDesc.offset;
         info.range = m_BufferDesc.size;
     }
 
-    inline void GetImageSubresourceRange(VkImageSubresourceRange& range) const
-    {
+    inline void GetImageSubresourceRange(VkImageSubresourceRange& range) const {
         range.aspectMask = m_TextureDesc.aspectFlags;
         range.baseMipLevel = m_TextureDesc.mipOffset;
         range.levelCount = m_TextureDesc.mipNum;
@@ -112,21 +118,19 @@ struct DescriptorVK
 
     void SetDebugName(const char* name);
 
-private:
-    template<typename T>
+  private:
+    template <typename T>
     Result CreateTextureView(const T& textureViewDesc);
 
-private:
+  private:
     DeviceVK& m_Device;
-    union
-    {
+    union {
         std::array<VkBufferView, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_BufferViews;
         std::array<VkImageView, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_ImageViews;
         std::array<VkAccelerationStructureKHR, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_AccelerationStructures;
         VkSampler m_Sampler;
     };
-    union
-    {
+    union {
         DescriptorBufferDesc m_BufferDesc;
         DescriptorTextureDesc m_TextureDesc = {};
     };
@@ -134,4 +138,4 @@ private:
     VkFormat m_Format = VK_FORMAT_UNDEFINED;
 };
 
-}
+} // namespace nri

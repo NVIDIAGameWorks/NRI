@@ -1,13 +1,13 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedVK.h"
+
 #include "CommandBufferVK.h"
 #include "CommandQueueVK.h"
 
 using namespace nri;
 
-Result CommandQueueVK::Create(const CommandQueueVKDesc& commandQueueDesc)
-{
+Result CommandQueueVK::Create(const CommandQueueVKDesc& commandQueueDesc) {
     m_Handle = (VkQueue)commandQueueDesc.vkQueue;
     m_FamilyIndex = commandQueueDesc.familyIndex;
     m_Type = commandQueueDesc.commandQueueType;
@@ -19,28 +19,16 @@ Result CommandQueueVK::Create(const CommandQueueVKDesc& commandQueueDesc)
 // NRI
 //================================================================================================================
 
-inline void CommandQueueVK::SetDebugName(const char* name)
-{
+inline void CommandQueueVK::SetDebugName(const char* name) {
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_QUEUE, (uint64_t)m_Handle, name);
 }
 
-inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc)
-{
+inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc) {
     ExclusiveScope lock(m_Lock);
 
     VkCommandBuffer* commandBuffers = STACK_ALLOC(VkCommandBuffer, queueSubmitDesc.commandBufferNum);
 
-    VkSubmitInfo submission = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        nullptr,
-        0,
-        nullptr,
-        nullptr,
-        queueSubmitDesc.commandBufferNum,
-        commandBuffers,
-        0,
-        nullptr
-    };
+    VkSubmitInfo submission = {VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0, nullptr, nullptr, queueSubmitDesc.commandBufferNum, commandBuffers, 0, nullptr};
 
     for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++)
         *(commandBuffers++) = *(CommandBufferVK*)queueSubmitDesc.commandBuffers[i];
@@ -48,21 +36,11 @@ inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc)
     VkDeviceGroupSubmitInfo deviceGroupInfo = {};
     uint32_t* commandBufferDeviceMasks = STACK_ALLOC(uint32_t, queueSubmitDesc.commandBufferNum);
 
-    if (m_Device.GetPhysicalDeviceGroupSize() > 1)
-    {
+    if (m_Device.GetPhysicalDeviceGroupSize() > 1) {
         for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++)
             commandBufferDeviceMasks[i] = 1u << queueSubmitDesc.nodeIndex;
 
-        deviceGroupInfo = {
-            VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,
-            nullptr,
-            0,
-            nullptr,
-            queueSubmitDesc.commandBufferNum,
-            commandBufferDeviceMasks,
-            0,
-            nullptr
-        };
+        deviceGroupInfo = {VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO, nullptr, 0, nullptr, queueSubmitDesc.commandBufferNum, commandBufferDeviceMasks, 0, nullptr};
 
         submission.pNext = &deviceGroupInfo;
     }
@@ -70,20 +48,18 @@ inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc)
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.QueueSubmit(m_Handle, 1, &submission, VK_NULL_HANDLE);
 
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(),
-        "Submit: vkQueueSubmit returned %d", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(), "Submit: vkQueueSubmit returned %d", (int32_t)result);
 }
 
-inline Result CommandQueueVK::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum,
-    const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum)
-{
+inline Result CommandQueueVK::UploadData(
+    const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum
+) {
     HelperDataUpload helperDataUpload(m_Device.GetCoreInterface(), (Device&)m_Device, m_Device.GetStdAllocator(), (CommandQueue&)*this);
 
     return helperDataUpload.UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
 }
 
-inline Result CommandQueueVK::WaitForIdle()
-{
+inline Result CommandQueueVK::WaitForIdle() {
     ExclusiveScope lock(m_Lock);
 
     const auto& vk = m_Device.GetDispatchTable();

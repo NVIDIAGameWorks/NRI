@@ -3,14 +3,15 @@
 #pragma once
 
 #include "NRI.h"
+
 #include "Extensions/NRIDeviceCreation.h"
+#include "Extensions/NRIHelper.h"
+#include "Extensions/NRIMeshShader.h"
+#include "Extensions/NRIRayTracing.h"
 #include "Extensions/NRISwapChain.h"
 #include "Extensions/NRIWrapperD3D11.h"
 #include "Extensions/NRIWrapperD3D12.h"
 #include "Extensions/NRIWrapperVK.h"
-#include "Extensions/NRIRayTracing.h"
-#include "Extensions/NRIMeshShader.h"
-#include "Extensions/NRIHelper.h"
 
 #include <array>
 #include <atomic>
@@ -23,79 +24,77 @@
 typedef nri::MemoryAllocatorInterface MemoryAllocatorInterface;
 #include "StdAllocator.h"
 
-#include "HelperWaitIdle.h"
-#include "HelperDeviceMemoryAllocator.h"
 #include "HelperDataUpload.h"
+#include "HelperDeviceMemoryAllocator.h"
+#include "HelperWaitIdle.h"
 
 #ifdef _WIN32
-    #include <dxgi1_6.h>
+#    include <dxgi1_6.h>
 #else
-    typedef uint32_t DXGI_FORMAT;
+typedef uint32_t DXGI_FORMAT;
 #endif
+
+#define RETURN_ON_BAD_HRESULT(deviceBase, hr, msg) \
+    if (FAILED(hr)) { \
+        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, msg##" failed, result = 0x%08X!", hr); \
+        return GetResultFromHRESULT(hr); \
+    }
+
+#define RETURN_ON_FAILURE(deviceBase, condition, returnCode, format, ...) \
+    if (!(condition)) { \
+        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__); \
+        return returnCode; \
+    }
+
+#define REPORT_INFO(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
+
+#define REPORT_WARNING(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_WARNING, __FILE__, __LINE__, format, ##__VA_ARGS__)
+
+#define REPORT_ERROR(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
+
+#define CHECK(condition, message) assert(condition&& message)
+
+#define SET_D3D_DEBUG_OBJECT_NAME(obj, name) \
+    if (obj) \
+    obj->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)std::strlen(name), name)
+
+#include "DeviceBase.h"
 
 constexpr uint32_t PHYSICAL_DEVICE_GROUP_MAX_SIZE = 4;
 constexpr uint32_t COMMAND_QUEUE_TYPE_NUM = (uint32_t)nri::CommandQueueType::MAX_NUM;
 constexpr uint32_t DEFAULT_TIMEOUT = 5000; // 5 sec
 constexpr uint64_t VK_DEFAULT_TIMEOUT = DEFAULT_TIMEOUT * 1000000ull;
 
-constexpr void ReturnVoid()
-{}
+constexpr void ReturnVoid() {
+}
 
-template<typename... Args> constexpr void MaybeUnused([[maybe_unused]] const Args&... args)
-{}
+template <typename... Args>
+constexpr void MaybeUnused([[maybe_unused]] const Args&... args) {
+}
 
-constexpr uint32_t GetNodeMask(uint32_t mask)
-{ return mask == nri::ALL_NODES ? 0xff : mask; }
+constexpr uint32_t GetNodeMask(uint32_t mask) {
+    return mask == nri::ALL_NODES ? 0xff : mask;
+}
 
-#define RETURN_ON_BAD_HRESULT(deviceBase, hr, msg) \
-    if ( FAILED(hr) ) \
-    { \
-        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, msg##" failed, result = 0x%08X!", hr); \
-        return GetResultFromHRESULT(hr); \
-    }
-
-#define RETURN_ON_FAILURE(deviceBase, condition, returnCode, format, ...) \
-    if ( !(condition) ) \
-    { \
-        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__); \
-        return returnCode; \
-    }
-
-#define REPORT_INFO(deviceBase, format, ...) \
-    (deviceBase)->ReportMessage(nri::Message::TYPE_INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
-
-#define REPORT_WARNING(deviceBase, format, ...) \
-    (deviceBase)->ReportMessage(nri::Message::TYPE_WARNING, __FILE__, __LINE__, format, ##__VA_ARGS__)
-
-#define REPORT_ERROR(deviceBase, format, ...) \
-    (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
-
-#define CHECK(condition, message) assert(condition && message)
-
-#define SET_D3D_DEBUG_OBJECT_NAME(obj, name) \
-    if (obj) \
-        obj->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)std::strlen(name), name)
-
-inline nri::Vendor GetVendorFromID(uint32_t vendorID)
-{
-    switch (vendorID)
-    {
-    case 0x10DE: return nri::Vendor::NVIDIA;
-    case 0x1002: return nri::Vendor::AMD;
-    case 0x8086: return nri::Vendor::INTEL;
+inline nri::Vendor GetVendorFromID(uint32_t vendorID) {
+    switch (vendorID) {
+        case 0x10DE:
+            return nri::Vendor::NVIDIA;
+        case 0x1002:
+            return nri::Vendor::AMD;
+        case 0x8086:
+            return nri::Vendor::INTEL;
     }
 
     return nri::Vendor::UNKNOWN;
 }
 
-struct DxgiFormat
-{
+struct DxgiFormat {
     DXGI_FORMAT typeless;
     DXGI_FORMAT typed;
 };
 
-struct FormatProps
-{
+struct FormatProps {
     uint16_t stride;
     uint8_t blockWidth;
     bool isInteger;
@@ -128,19 +127,16 @@ extern const char* VULKAN_LOADER_NAME;
 struct IUnknown;
 
 // This struct acts as a smart pointer for IUnknown pointers making sure to call AddRef() and Release() as needed.
-template<typename T>
-struct ComPtr
-{
-    inline ComPtr(T* lComPtr = nullptr) : m_ComPtr(lComPtr)
-    {
+template <typename T>
+struct ComPtr {
+    inline ComPtr(T* lComPtr = nullptr) : m_ComPtr(lComPtr) {
         static_assert(std::is_base_of<IUnknown, T>::value, "T needs to be IUnknown based");
 
         if (m_ComPtr)
             m_ComPtr->AddRef();
     }
 
-    inline ComPtr(const ComPtr<T>& lComPtrObj)
-    {
+    inline ComPtr(const ComPtr<T>& lComPtrObj) {
         static_assert(std::is_base_of<IUnknown, T>::value, "T needs to be IUnknown based");
 
         m_ComPtr = lComPtrObj.m_ComPtr;
@@ -149,14 +145,12 @@ struct ComPtr
             m_ComPtr->AddRef();
     }
 
-    inline ComPtr(ComPtr<T>&& lComPtrObj)
-    {
+    inline ComPtr(ComPtr<T>&& lComPtrObj) {
         m_ComPtr = lComPtrObj.m_ComPtr;
         lComPtrObj.m_ComPtr = nullptr;
     }
 
-    inline T* operator=(T* lComPtr)
-    {
+    inline T* operator=(T* lComPtr) {
         if (m_ComPtr)
             m_ComPtr->Release();
 
@@ -168,8 +162,7 @@ struct ComPtr
         return m_ComPtr;
     }
 
-    inline T* operator=(const ComPtr<T>& lComPtrObj)
-    {
+    inline T* operator=(const ComPtr<T>& lComPtrObj) {
         if (m_ComPtr)
             m_ComPtr->Release();
 
@@ -181,65 +174,61 @@ struct ComPtr
         return m_ComPtr;
     }
 
-    inline ~ComPtr()
-    {
-        if (m_ComPtr)
-        {
+    inline ~ComPtr() {
+        if (m_ComPtr) {
             m_ComPtr->Release();
             m_ComPtr = nullptr;
         }
     }
 
-    inline T** operator&()
-    {
+    inline T** operator&() {
         // The assert on operator& usually indicates a bug. Could be a potential memory leak.
         // If this really what is needed, however, use GetInterface() explicitly.
         assert(m_ComPtr == nullptr);
         return &m_ComPtr;
     }
 
-    inline operator T*() const
-    { return m_ComPtr; }
+    inline operator T*() const {
+        return m_ComPtr;
+    }
 
-    inline T* GetInterface() const
-    { return m_ComPtr; }
+    inline T* GetInterface() const {
+        return m_ComPtr;
+    }
 
-    inline T& operator*() const
-    { return *m_ComPtr; }
+    inline T& operator*() const {
+        return *m_ComPtr;
+    }
 
-    inline T* operator->() const
-    { return m_ComPtr; }
+    inline T* operator->() const {
+        return m_ComPtr;
+    }
 
-    inline bool operator!() const
-    { return (nullptr == m_ComPtr); }
+    inline bool operator!() const {
+        return (nullptr == m_ComPtr);
+    }
 
-    inline bool operator<(T* lComPtr) const
-    { return m_ComPtr < lComPtr; }
+    inline bool operator<(T* lComPtr) const {
+        return m_ComPtr < lComPtr;
+    }
 
-    inline bool operator!=(T* lComPtr) const
-    { return !operator==(lComPtr); }
+    inline bool operator!=(T* lComPtr) const {
+        return !operator==(lComPtr);
+    }
 
-    inline bool operator==(T* lComPtr) const
-    { return m_ComPtr == lComPtr; }
+    inline bool operator==(T* lComPtr) const {
+        return m_ComPtr == lComPtr;
+    }
 
-protected:
+  protected:
     T* m_ComPtr;
 };
 
-constexpr nri::FormatSupportBits COMMON_SUPPORT =
-    nri::FormatSupportBits::TEXTURE |
-    nri::FormatSupportBits::STORAGE_TEXTURE |
-    nri::FormatSupportBits::BUFFER |
-    nri::FormatSupportBits::STORAGE_BUFFER |
-    nri::FormatSupportBits::COLOR_ATTACHMENT |
-    nri::FormatSupportBits::VERTEX_BUFFER;
+constexpr nri::FormatSupportBits COMMON_SUPPORT = nri::FormatSupportBits::TEXTURE | nri::FormatSupportBits::STORAGE_TEXTURE | nri::FormatSupportBits::BUFFER |
+                                                  nri::FormatSupportBits::STORAGE_BUFFER | nri::FormatSupportBits::COLOR_ATTACHMENT | nri::FormatSupportBits::VERTEX_BUFFER;
 
-constexpr nri::FormatSupportBits COMMON_SUPPORT_WITHOUT_VERTEX =
-    nri::FormatSupportBits::TEXTURE |
-    nri::FormatSupportBits::STORAGE_TEXTURE |
-    nri::FormatSupportBits::BUFFER |
-    nri::FormatSupportBits::STORAGE_BUFFER |
-    nri::FormatSupportBits::COLOR_ATTACHMENT;
+constexpr nri::FormatSupportBits COMMON_SUPPORT_WITHOUT_VERTEX = nri::FormatSupportBits::TEXTURE | nri::FormatSupportBits::STORAGE_TEXTURE | nri::FormatSupportBits::BUFFER |
+                                                                 nri::FormatSupportBits::STORAGE_BUFFER | nri::FormatSupportBits::COLOR_ATTACHMENT;
 
 constexpr nri::FormatSupportBits D3D_FORMAT_SUPPORT_TABLE[] = {
     nri::FormatSupportBits::UNSUPPORTED, // UNKNOWN,
@@ -334,11 +323,11 @@ constexpr nri::FormatSupportBits D3D_FORMAT_SUPPORT_TABLE[] = {
 
 static_assert(GetCountOf(D3D_FORMAT_SUPPORT_TABLE) == (size_t)nri::Format::MAX_NUM, "some format is missing");
 
-struct DisplayDescHelper
-{
-public:
+struct DisplayDescHelper {
+  public:
     nri::Result GetDisplayDesc(void* hwnd, nri::DisplayDesc& displayDesc);
-protected:
+
+  protected:
     ComPtr<IDXGIFactory2> m_DxgiFactory2;
     nri::DisplayDesc m_DisplayDesc = {};
     bool m_HasDisplayDesc = false;
@@ -346,10 +335,8 @@ protected:
 
 #else
 
-struct DisplayDescHelper
-{
-    inline nri::Result GetDisplayDesc(void* hwnd, nri::DisplayDesc& displayDesc)
-    {
+struct DisplayDescHelper {
+    inline nri::Result GetDisplayDesc(void* hwnd, nri::DisplayDesc& displayDesc) {
         MaybeUnused(hwnd);
 
         displayDesc = {};

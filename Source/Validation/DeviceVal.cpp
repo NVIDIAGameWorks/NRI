@@ -1,17 +1,16 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedExternal.h"
-#include "DeviceBase.h"
 #include "SharedVal.h"
-#include "DeviceVal.h"
 
+#include "AccelerationStructureVal.h"
 #include "BufferVal.h"
-#include "CommandQueueVal.h"
 #include "CommandAllocatorVal.h"
 #include "CommandBufferVal.h"
-#include "DescriptorVal.h"
-#include "DescriptorSetVal.h"
+#include "CommandQueueVal.h"
 #include "DescriptorPoolVal.h"
+#include "DescriptorVal.h"
+#include "DeviceVal.h"
 #include "FenceVal.h"
 #include "MemoryVal.h"
 #include "PipelineLayoutVal.h"
@@ -19,7 +18,6 @@
 #include "QueryPoolVal.h"
 #include "SwapChainVal.h"
 #include "TextureVal.h"
-#include "AccelerationStructureVal.h"
 
 using namespace nri;
 
@@ -497,8 +495,8 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
         RETURN_ON_FAILURE(this, shaderDesc->bytecode != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].bytecode' is invalid", i);
         RETURN_ON_FAILURE(this, shaderDesc->size != 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].size' is 0", i);
         RETURN_ON_FAILURE(
-            this, IsShaderStageValid(shaderDesc->stage, StageBits::GRAPHICS_SHADERS), Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].stage' must include only 1 graphics shader stage",
-            i
+            this, IsShaderStageValid(shaderDesc->stage, StageBits::GRAPHICS_SHADERS), Result::INVALID_ARGUMENT,
+            "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].stage' must include only 1 graphics shader stage", i
         );
     }
 

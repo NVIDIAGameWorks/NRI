@@ -4,30 +4,31 @@
 
 #include <limits>
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceVK;
 struct BufferVK;
 struct TextureVK;
 
-struct MemoryVK
-{
-    inline MemoryVK(DeviceVK& device) :
-        m_Device(device)
-    {}
+struct MemoryVK {
+    inline MemoryVK(DeviceVK& device) : m_Device(device) {
+    }
 
-    inline VkDeviceMemory GetHandle(uint32_t nodeIndex) const
-    { return m_Handles[nodeIndex]; }
+    inline VkDeviceMemory GetHandle(uint32_t nodeIndex) const {
+        return m_Handles[nodeIndex];
+    }
 
-    inline DeviceVK& GetDevice() const
-    { return m_Device; }
+    inline DeviceVK& GetDevice() const {
+        return m_Device;
+    }
 
-    inline MemoryType GetType() const
-    { return m_Type; }
+    inline MemoryType GetType() const {
+        return m_Type;
+    }
 
-    inline uint8_t* GetMappedMemory(uint32_t nodeIndex) const
-    { return m_MappedMemory[nodeIndex]; }
+    inline uint8_t* GetMappedMemory(uint32_t nodeIndex) const {
+        return m_MappedMemory[nodeIndex];
+    }
 
     ~MemoryVK();
 
@@ -42,7 +43,7 @@ struct MemoryVK
 
     void SetDebugName(const char* name);
 
-private:
+  private:
     DeviceVK& m_Device;
     std::array<VkDeviceMemory, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_Handles = {};
     std::array<uint8_t*, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_MappedMemory = {};
@@ -50,4 +51,4 @@ private:
     bool m_OwnsNativeObjects = false;
 };
 
-}
+} // namespace nri

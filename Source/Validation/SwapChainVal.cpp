@@ -1,9 +1,8 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedExternal.h"
-#include "DeviceBase.h"
-#include "DeviceVal.h"
 #include "SharedVal.h"
+
 #include "SwapChainVal.h"
 #include "TextureVal.h"
 

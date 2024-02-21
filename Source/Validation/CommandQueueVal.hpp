@@ -21,7 +21,7 @@ static Result NRI_CALL UploadData(
 }
 
 static Result NRI_CALL WaitForIdle(CommandQueue& commandQueue) {
-    if(!(&commandQueue))
+    if (!(&commandQueue))
         return Result::SUCCESS;
 
     return ((CommandQueueVal&)commandQueue).WaitForIdle();

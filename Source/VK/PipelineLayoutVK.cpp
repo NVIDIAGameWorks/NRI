@@ -1,13 +1,13 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedVK.h"
-#include "PipelineLayoutVK.h"
+
 #include "DescriptorVK.h"
+#include "PipelineLayoutVK.h"
 
 using namespace nri;
 
-PipelineLayoutVK::~PipelineLayoutVK()
-{
+PipelineLayoutVK::~PipelineLayoutVK() {
     const auto& vk = m_Device.GetDispatchTable();
     const auto allocationCallbacks = m_Device.GetAllocationCallbacks();
 
@@ -18,8 +18,7 @@ PipelineLayoutVK::~PipelineLayoutVK()
         vk.DestroyDescriptorSetLayout(m_Device, handle, allocationCallbacks);
 }
 
-Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
-{
+Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
     if (pipelineLayoutDesc.shaderStages & StageBits::GRAPHICS_SHADERS)
         m_PipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
@@ -37,8 +36,7 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     m_DescriptorSetLayouts.resize(pipelineLayoutDesc.descriptorSetNum);
 
     uint32_t setNum = 0;
-    for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++)
-    {
+    for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
         m_DescriptorSetLayouts[i] = CreateSetLayout(pipelineLayoutDesc.descriptorSets[i], bindingOffsets);
         m_DescriptorSetSpaces[i] = pipelineLayoutDesc.descriptorSets[i].registerSpace;
 
@@ -50,8 +48,7 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     VkDescriptorSetLayout* descriptorSetLayouts = ALLOCATE_SCRATCH(m_Device, VkDescriptorSetLayout, setNum);
 
     // Create "empty" set layout (needed only if "register space" indices are not consecutive)
-    if (setNum != pipelineLayoutDesc.descriptorSetNum)
-    {
+    if (setNum != pipelineLayoutDesc.descriptorSetNum) {
         VkDescriptorSetLayout emptyLayout = CreateSetLayout({}, bindingOffsets);
         m_DescriptorSetLayouts.push_back(emptyLayout);
 
@@ -60,8 +57,7 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     }
 
     // Populate descriptor set layouts
-    for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++)
-    {
+    for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
         uint32_t setIndex = pipelineLayoutDesc.descriptorSets[i].registerSpace;
         descriptorSetLayouts[setIndex] = m_DescriptorSetLayouts[i];
     }
@@ -71,7 +67,7 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     FillPushConstantRanges(pipelineLayoutDesc, pushConstantRanges);
 
     // Create pipeline layout
-    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
+    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
     pipelineLayoutCreateInfo.setLayoutCount = setNum;
     pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts;
     pipelineLayoutCreateInfo.pushConstantRangeCount = pipelineLayoutDesc.pushConstantNum;
@@ -84,16 +80,14 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     FREE_SCRATCH(m_Device, pushConstantRanges, pipelineLayoutDesc.pushConstantNum);
     FREE_SCRATCH(m_Device, descriptorSetLayouts, setNum);
 
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, Result::FAILURE,
-        "Can't create a pipeline layout: vkCreatePipelineLayout returned %d.", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, Result::FAILURE, "Can't create a pipeline layout: vkCreatePipelineLayout returned %d.", (int32_t)result);
 
     FillRuntimeBindingInfo(pipelineLayoutDesc, bindingOffsets);
 
     return Result::SUCCESS;
 }
 
-void PipelineLayoutVK::FillBindingOffsets(bool ignoreGlobalSPIRVOffsets, uint32_t* bindingOffsets)
-{
+void PipelineLayoutVK::FillBindingOffsets(bool ignoreGlobalSPIRVOffsets, uint32_t* bindingOffsets) {
     SPIRVBindingOffsets spirvBindingOffsets;
 
     if (ignoreGlobalSPIRVOffsets)
@@ -112,12 +106,10 @@ void PipelineLayoutVK::FillBindingOffsets(bool ignoreGlobalSPIRVOffsets, uint32_
     bindingOffsets[(uint32_t)DescriptorType::ACCELERATION_STRUCTURE] = spirvBindingOffsets.textureOffset;
 }
 
-VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets)
-{
+VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets) {
     uint32_t bindingMaxNum = descriptorSetDesc.dynamicConstantBufferNum;
 
-    for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++)
-    {
+    for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++) {
         const DescriptorRangeDesc& range = descriptorSetDesc.ranges[i];
         bindingMaxNum += range.isArray ? 1 : range.descriptorNum;
     }
@@ -133,18 +125,12 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
     const uint32_t bindingNum = uint32_t(bindings - bindingsBegin);
 
     VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT,
-        nullptr,
-        bindingNum,
-        bindingFlagsBegin
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT, nullptr, bindingNum, bindingFlagsBegin
     };
 
     VkDescriptorSetLayoutCreateInfo info = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        m_Device.m_IsDescriptorIndexingSupported ? &bindingFlagsInfo : nullptr,
-        (VkDescriptorSetLayoutCreateFlags)0,
-        bindingNum,
-        bindingsBegin
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, m_Device.m_IsDescriptorIndexingSupported ? &bindingFlagsInfo : nullptr, (VkDescriptorSetLayoutCreateFlags)0,
+        bindingNum, bindingsBegin
     };
 
     VkDescriptorSetLayout handle = VK_NULL_HANDLE;
@@ -154,29 +140,24 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
     FREE_SCRATCH(m_Device, bindingsBegin, bindingMaxNum);
     FREE_SCRATCH(m_Device, bindingFlagsBegin, bindingMaxNum);
 
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, 0,
-        "Can't create the descriptor set layout: vkCreateDescriptorSetLayout returned %d.", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, 0, "Can't create the descriptor set layout: vkCreateDescriptorSetLayout returned %d.", (int32_t)result);
 
     return handle;
 }
 
-void PipelineLayoutVK::FillDescriptorBindings(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets,
-    VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags) const
-{
-    const VkDescriptorBindingFlagsEXT commonBindingFlags = descriptorSetDesc.partiallyBound ?
-        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT : 0;
+void PipelineLayoutVK::FillDescriptorBindings(
+    const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags
+) const {
+    const VkDescriptorBindingFlagsEXT commonBindingFlags = descriptorSetDesc.partiallyBound ? VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT : 0;
 
-    constexpr VkDescriptorBindingFlagsEXT variableSizedArrayFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
-        VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+    constexpr VkDescriptorBindingFlagsEXT variableSizedArrayFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
 
-    for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++)
-    {
+    for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++) {
         const DescriptorRangeDesc& range = descriptorSetDesc.ranges[i];
 
         const uint32_t baseBindingIndex = range.baseRegisterIndex + bindingOffsets[(uint32_t)range.descriptorType];
 
-        if (range.isArray)
-        {
+        if (range.isArray) {
             *(bindingFlags++) = commonBindingFlags | (range.isDescriptorNumVariable ? variableSizedArrayFlags : 0);
 
             VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
@@ -185,11 +166,8 @@ void PipelineLayoutVK::FillDescriptorBindings(const DescriptorSetDesc& descripto
             descriptorBinding.descriptorType = GetDescriptorType(range.descriptorType);
             descriptorBinding.descriptorCount = range.descriptorNum;
             descriptorBinding.stageFlags = GetShaderStageFlags(range.shaderStages);
-        }
-        else
-        {
-            for (uint32_t j = 0; j < range.descriptorNum; j++)
-            {
+        } else {
+            for (uint32_t j = 0; j < range.descriptorNum; j++) {
                 *(bindingFlags++) = commonBindingFlags;
 
                 VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
@@ -203,11 +181,10 @@ void PipelineLayoutVK::FillDescriptorBindings(const DescriptorSetDesc& descripto
     }
 }
 
-void PipelineLayoutVK::FillDynamicConstantBufferBindings(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets,
-    VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags) const
-{
-    for (uint32_t i = 0; i < descriptorSetDesc.dynamicConstantBufferNum; i++)
-    {
+void PipelineLayoutVK::FillDynamicConstantBufferBindings(
+    const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags
+) const {
+    for (uint32_t i = 0; i < descriptorSetDesc.dynamicConstantBufferNum; i++) {
         const DynamicConstantBufferDesc& buffer = descriptorSetDesc.dynamicConstantBuffers[i];
 
         *(bindingFlags++) = 0;
@@ -221,12 +198,10 @@ void PipelineLayoutVK::FillDynamicConstantBufferBindings(const DescriptorSetDesc
     }
 }
 
-void PipelineLayoutVK::FillPushConstantRanges(const PipelineLayoutDesc& pipelineLayoutDesc, VkPushConstantRange* pushConstantRanges) const
-{
+void PipelineLayoutVK::FillPushConstantRanges(const PipelineLayoutDesc& pipelineLayoutDesc, VkPushConstantRange* pushConstantRanges) const {
     uint32_t offset = 0;
 
-    for (uint32_t i = 0; i < pipelineLayoutDesc.pushConstantNum; i++)
-    {
+    for (uint32_t i = 0; i < pipelineLayoutDesc.pushConstantNum; i++) {
         const PushConstantDesc& pushConstantDesc = pipelineLayoutDesc.pushConstants[i];
 
         VkPushConstantRange& range = pushConstantRanges[i];
@@ -239,28 +214,23 @@ void PipelineLayoutVK::FillPushConstantRanges(const PipelineLayoutDesc& pipeline
     }
 }
 
-void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipelineLayoutDesc, const uint32_t* bindingOffsets)
-{
+void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipelineLayoutDesc, const uint32_t* bindingOffsets) {
     RuntimeBindingInfo& destination = m_RuntimeBindingInfo;
     const PipelineLayoutDesc& source = pipelineLayoutDesc;
 
-    destination.descriptorSetDescs.insert(destination.descriptorSetDescs.begin(),
-        source.descriptorSets, source.descriptorSets + source.descriptorSetNum);
+    destination.descriptorSetDescs.insert(destination.descriptorSetDescs.begin(), source.descriptorSets, source.descriptorSets + source.descriptorSetNum);
 
-    destination.pushConstantDescs.insert(destination.pushConstantDescs.begin(),
-        source.pushConstants, source.pushConstants + source.pushConstantNum);
+    destination.pushConstantDescs.insert(destination.pushConstantDescs.begin(), source.pushConstants, source.pushConstants + source.pushConstantNum);
 
     destination.pushConstantBindings.resize(source.pushConstantNum);
-    for (uint32_t i = 0, offset = 0; i < source.pushConstantNum; i++)
-    {
-        destination.pushConstantBindings[i] = { GetShaderStageFlags(source.pushConstants[i].shaderStages), offset };
+    for (uint32_t i = 0, offset = 0; i < source.pushConstantNum; i++) {
+        destination.pushConstantBindings[i] = {GetShaderStageFlags(source.pushConstants[i].shaderStages), offset};
         offset += source.pushConstants[i].size;
     }
 
     size_t rangeNum = 0;
     size_t dynamicConstantBufferNum = 0;
-    for (uint32_t i = 0; i < source.descriptorSetNum; i++)
-    {
+    for (uint32_t i = 0; i < source.descriptorSetNum; i++) {
         rangeNum += source.descriptorSets[i].rangeNum;
         dynamicConstantBufferNum += source.descriptorSets[i].dynamicConstantBufferNum;
     }
@@ -269,26 +239,21 @@ void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipeline
     destination.descriptorSetRangeDescs.reserve(rangeNum);
     destination.dynamicConstantBufferDescs.reserve(dynamicConstantBufferNum);
 
-    for (uint32_t i = 0; i < source.descriptorSetNum; i++)
-    {
+    for (uint32_t i = 0; i < source.descriptorSetNum; i++) {
         const DescriptorSetDesc& descriptorSetDesc = source.descriptorSets[i];
 
         destination.hasVariableDescriptorNum[i] = false;
 
-        destination.descriptorSetDescs[i].ranges =
-            destination.descriptorSetRangeDescs.data() + destination.descriptorSetRangeDescs.size();
+        destination.descriptorSetDescs[i].ranges = destination.descriptorSetRangeDescs.data() + destination.descriptorSetRangeDescs.size();
 
-        destination.descriptorSetDescs[i].dynamicConstantBuffers =
-            destination.dynamicConstantBufferDescs.data() + destination.dynamicConstantBufferDescs.size();
+        destination.descriptorSetDescs[i].dynamicConstantBuffers = destination.dynamicConstantBufferDescs.data() + destination.dynamicConstantBufferDescs.size();
 
         // Copy descriptor range descs
-        destination.descriptorSetRangeDescs.insert(destination.descriptorSetRangeDescs.end(),
-            descriptorSetDesc.ranges, descriptorSetDesc.ranges + descriptorSetDesc.rangeNum);
+        destination.descriptorSetRangeDescs.insert(destination.descriptorSetRangeDescs.end(), descriptorSetDesc.ranges, descriptorSetDesc.ranges + descriptorSetDesc.rangeNum);
 
         // Fix descriptor range binding offsets and check for variable descriptor num
         DescriptorRangeDesc* ranges = const_cast<DescriptorRangeDesc*>(destination.descriptorSetDescs[i].ranges);
-        for (uint32_t j = 0; j < descriptorSetDesc.rangeNum; j++)
-        {
+        for (uint32_t j = 0; j < descriptorSetDesc.rangeNum; j++) {
             ranges[j].baseRegisterIndex += bindingOffsets[(uint32_t)descriptorSetDesc.ranges[j].descriptorType];
 
             if (m_Device.m_IsDescriptorIndexingSupported && descriptorSetDesc.ranges[j].isDescriptorNumVariable)
@@ -296,8 +261,10 @@ void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipeline
         }
 
         // Copy dynamic constant buffer descs
-        destination.dynamicConstantBufferDescs.insert(destination.dynamicConstantBufferDescs.end(),
-            descriptorSetDesc.dynamicConstantBuffers, descriptorSetDesc.dynamicConstantBuffers + descriptorSetDesc.dynamicConstantBufferNum);
+        destination.dynamicConstantBufferDescs.insert(
+            destination.dynamicConstantBufferDescs.end(), descriptorSetDesc.dynamicConstantBuffers,
+            descriptorSetDesc.dynamicConstantBuffers + descriptorSetDesc.dynamicConstantBufferNum
+        );
 
         // Copy dynamic constant buffer binding offsets
         DynamicConstantBufferDesc* dynamicConstantBuffers = const_cast<DynamicConstantBufferDesc*>(destination.descriptorSetDescs[i].dynamicConstantBuffers);
@@ -306,21 +273,19 @@ void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipeline
     }
 }
 
-RuntimeBindingInfo::RuntimeBindingInfo(StdAllocator<uint8_t>& allocator) :
-    hasVariableDescriptorNum(allocator),
-    descriptorSetRangeDescs(allocator),
-    dynamicConstantBufferDescs(allocator),
-    descriptorSetDescs(allocator),
-    pushConstantDescs(allocator),
-    pushConstantBindings(allocator)
-{
+RuntimeBindingInfo::RuntimeBindingInfo(StdAllocator<uint8_t>& allocator)
+    : hasVariableDescriptorNum(allocator),
+      descriptorSetRangeDescs(allocator),
+      dynamicConstantBufferDescs(allocator),
+      descriptorSetDescs(allocator),
+      pushConstantDescs(allocator),
+      pushConstantBindings(allocator) {
 }
 
 //================================================================================================================
 // NRI
 //================================================================================================================
 
-void PipelineLayoutVK::SetDebugName(const char* name)
-{
+void PipelineLayoutVK::SetDebugName(const char* name) {
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_PIPELINE_LAYOUT, (uint64_t)m_Handle, name);
 }

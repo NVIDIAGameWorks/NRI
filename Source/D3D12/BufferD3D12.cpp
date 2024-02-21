@@ -1,13 +1,13 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedD3D12.h"
+
 #include "BufferD3D12.h"
 #include "MemoryD3D12.h"
 
 using namespace nri;
 
-static inline void GetResourceDesc(D3D12_RESOURCE_DESC* desc, const BufferDesc& bufferDesc)
-{
+static inline void GetResourceDesc(D3D12_RESOURCE_DESC* desc, const BufferDesc& bufferDesc) {
     desc->Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     desc->Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT; // 64KB
     desc->Width = bufferDesc.size;
@@ -19,15 +19,13 @@ static inline void GetResourceDesc(D3D12_RESOURCE_DESC* desc, const BufferDesc& 
     desc->Flags = GetBufferFlags(bufferDesc.usageMask);
 }
 
-Result BufferD3D12::Create(const BufferDesc& bufferDesc)
-{
+Result BufferD3D12::Create(const BufferDesc& bufferDesc) {
     m_Desc = bufferDesc;
 
     return Result::SUCCESS;
 }
 
-Result BufferD3D12::Create(const BufferD3D12Desc& bufferDesc)
-{
+Result BufferD3D12::Create(const BufferD3D12Desc& bufferDesc) {
     if (!GetBufferDesc(bufferDesc, m_Desc))
         return Result::INVALID_ARGUMENT;
 
@@ -36,32 +34,30 @@ Result BufferD3D12::Create(const BufferD3D12Desc& bufferDesc)
     return Result::SUCCESS;
 }
 
-Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool isAccelerationStructureBuffer)
-{
+Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool isAccelerationStructureBuffer) {
     MaybeUnused(isAccelerationStructureBuffer);
     const D3D12_HEAP_DESC& heapDesc = memory->GetHeapDesc();
-    
+
 #ifdef NRI_USE_AGILITY_SDK
-    if (m_Device.GetVersion() >= 10)
-    {
+    if (m_Device.GetVersion() >= 10) {
         D3D12_RESOURCE_DESC1 desc1 = {};
         GetResourceDesc((D3D12_RESOURCE_DESC*)&desc1, m_Desc);
 
         uint32_t castableFormatNum = 0;
         DXGI_FORMAT* castableFormats = nullptr; // TODO: add castable formats, see options12.RelaxedFormatCastingSupported
 
-        if (memory->RequiresDedicatedAllocation())
-        {
-            HRESULT hr = m_Device->CreateCommittedResource3(&heapDesc.Properties, D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &desc1, D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Buffer));
+        if (memory->RequiresDedicatedAllocation()) {
+            HRESULT hr = m_Device->CreateCommittedResource3(
+                &heapDesc.Properties, D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &desc1, D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, nullptr, castableFormatNum, castableFormats,
+                IID_PPV_ARGS(&m_Buffer)
+            );
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device10::CreateCommittedResource3()");
-        }
-        else
-        {
-            HRESULT hr = m_Device->CreatePlacedResource2(*memory, offset, &desc1, D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Buffer));
+        } else {
+            HRESULT hr =
+                m_Device->CreatePlacedResource2(*memory, offset, &desc1, D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Buffer));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device10::CreatePlacedResource2()");
         }
-    }
-    else
+    } else
 #endif
     {
         D3D12_RESOURCE_DESC desc = {};
@@ -75,13 +71,10 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool 
         if (isAccelerationStructureBuffer)
             initialState |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 
-        if (memory->RequiresDedicatedAllocation())
-        {
+        if (memory->RequiresDedicatedAllocation()) {
             HRESULT hr = m_Device->CreateCommittedResource(&heapDesc.Properties, D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &desc, initialState, nullptr, IID_PPV_ARGS(&m_Buffer));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateCommittedResource()");
-        }
-        else
-        {
+        } else {
             HRESULT hr = m_Device->CreatePlacedResource(*memory, offset, &desc, initialState, nullptr, IID_PPV_ARGS(&m_Buffer));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreatePlacedResource()");
         }
@@ -94,20 +87,18 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool 
 // NRI
 //================================================================================================================
 
-inline void BufferD3D12::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const
-{
+inline void BufferD3D12::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
     D3D12_RESOURCE_DESC desc = {};
     GetResourceDesc(&desc, m_Desc);
 
     m_Device.GetMemoryInfo(memoryLocation, desc, memoryDesc);
 }
 
-inline void* BufferD3D12::Map(uint64_t offset, uint64_t size)
-{
+inline void* BufferD3D12::Map(uint64_t offset, uint64_t size) {
     uint8_t* data = nullptr;
 
     if (size == WHOLE_SIZE)
-        size =  m_Desc.size;
+        size = m_Desc.size;
 
     D3D12_RANGE range = {(SIZE_T)offset, (SIZE_T)(offset + size)};
     HRESULT hr = m_Buffer->Map(0, &range, (void**)&data);
@@ -117,8 +108,7 @@ inline void* BufferD3D12::Map(uint64_t offset, uint64_t size)
     return data + offset;
 }
 
-inline void BufferD3D12::Unmap()
-{
+inline void BufferD3D12::Unmap() {
     m_Buffer->Unmap(0, nullptr);
 }
 

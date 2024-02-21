@@ -2,20 +2,18 @@
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceVK;
 struct CommandQueueVK;
 
-struct FenceVK
-{
-    inline FenceVK(DeviceVK& device) :
-        m_Device(device)
-    {}
+struct FenceVK {
+    inline FenceVK(DeviceVK& device) : m_Device(device) {
+    }
 
-    inline DeviceVK& GetDevice() const
-    { return m_Device; }
+    inline DeviceVK& GetDevice() const {
+        return m_Device;
+    }
 
     ~FenceVK();
 
@@ -31,9 +29,9 @@ struct FenceVK
     void QueueWait(CommandQueueVK& commandQueue, uint64_t value);
     void Wait(uint64_t value);
 
-private:
+  private:
     DeviceVK& m_Device;
     VkSemaphore m_Fence = VK_NULL_HANDLE;
 };
 
-}
+} // namespace nri

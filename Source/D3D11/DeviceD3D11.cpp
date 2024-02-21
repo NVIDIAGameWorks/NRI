@@ -1,17 +1,17 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedD3D11.h"
-#include "DeviceD3D11.h"
+
 #include "BufferD3D11.h"
-#include "CommandQueueD3D11.h"
 #include "CommandAllocatorD3D11.h"
+#include "CommandQueueD3D11.h"
 #include "DescriptorD3D11.h"
-#include "DescriptorSetD3D11.h"
 #include "DescriptorPoolD3D11.h"
+#include "DeviceD3D11.h"
 #include "FenceD3D11.h"
 #include "MemoryD3D11.h"
-#include "PipelineLayoutD3D11.h"
 #include "PipelineD3D11.h"
+#include "PipelineLayoutD3D11.h"
 #include "QueryPoolD3D11.h"
 #include "SwapChainD3D11.h"
 #include "TextureD3D11.h"
@@ -20,21 +20,14 @@ using namespace nri;
 
 uint8_t QueryLatestDeviceContext(ComPtr<ID3D11DeviceContextBest>& in, ComPtr<ID3D11DeviceContextBest>& out);
 
-static uint8_t QueryLatestDevice(ComPtr<ID3D11DeviceBest>& in, ComPtr<ID3D11DeviceBest>& out)
-{
+static uint8_t QueryLatestDevice(ComPtr<ID3D11DeviceBest>& in, ComPtr<ID3D11DeviceBest>& out) {
     static const IID versions[] = {
-        __uuidof(ID3D11Device5),
-        __uuidof(ID3D11Device4),
-        __uuidof(ID3D11Device3),
-        __uuidof(ID3D11Device2),
-        __uuidof(ID3D11Device1),
-        __uuidof(ID3D11Device),
+        __uuidof(ID3D11Device5), __uuidof(ID3D11Device4), __uuidof(ID3D11Device3), __uuidof(ID3D11Device2), __uuidof(ID3D11Device1), __uuidof(ID3D11Device),
     };
     const uint8_t n = (uint8_t)GetCountOf(versions);
 
     uint8_t i = 0;
-    for (; i < n; i++)
-    {
+    for (; i < n; i++) {
         HRESULT hr = in->QueryInterface(versions[i], (void**)&out);
         if (SUCCEEDED(hr))
             break;
@@ -43,15 +36,13 @@ static uint8_t QueryLatestDevice(ComPtr<ID3D11DeviceBest>& in, ComPtr<ID3D11Devi
     return n - i - 1;
 }
 
-Result CreateDeviceD3D11(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device)
-{
+Result CreateDeviceD3D11(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device) {
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
 
     DeviceD3D11* implementation = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
     const nri::Result result = implementation->Create(deviceCreationDesc, nullptr, nullptr, false);
 
-    if (result == nri::Result::SUCCESS)
-    {
+    if (result == nri::Result::SUCCESS) {
         device = (DeviceBase*)implementation;
         return nri::Result::SUCCESS;
     }
@@ -61,8 +52,7 @@ Result CreateDeviceD3D11(const DeviceCreationDesc& deviceCreationDesc, DeviceBas
     return result;
 }
 
-Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc, DeviceBase*& device)
-{
+Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc, DeviceBase*& device) {
     DeviceCreationDesc deviceCreationDesc = {};
     deviceCreationDesc.callbackInterface = deviceCreationD3D11Desc.callbackInterface;
     deviceCreationDesc.memoryAllocatorInterface = deviceCreationD3D11Desc.memoryAllocatorInterface;
@@ -71,10 +61,10 @@ Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc,
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
 
     DeviceD3D11* implementation = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    const nri::Result result = implementation->Create(deviceCreationDesc, deviceCreationD3D11Desc.d3d11Device, deviceCreationD3D11Desc.agsContext, deviceCreationD3D11Desc.isNVAPILoaded);
+    const nri::Result result =
+        implementation->Create(deviceCreationDesc, deviceCreationD3D11Desc.d3d11Device, deviceCreationD3D11Desc.agsContext, deviceCreationD3D11Desc.isNVAPILoaded);
 
-    if (result == nri::Result::SUCCESS)
-    {
+    if (result == nri::Result::SUCCESS) {
         device = (DeviceBase*)implementation;
         return nri::Result::SUCCESS;
     }
@@ -84,46 +74,35 @@ Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc,
     return result;
 }
 
-DeviceD3D11::DeviceD3D11(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator) :
-    DeviceBase(callbacks, stdAllocator)
-    , m_CommandQueues(GetStdAllocator())
-{
+DeviceD3D11::DeviceD3D11(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator) : DeviceBase(callbacks, stdAllocator), m_CommandQueues(GetStdAllocator()) {
     m_Desc.graphicsAPI = GraphicsAPI::D3D11;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
 }
 
-DeviceD3D11::~DeviceD3D11()
-{
+DeviceD3D11::~DeviceD3D11() {
     if (m_ImmediateContext)
         GetExt()->EndUAVOverlap(m_ImmediateContext);
 
     DeleteCriticalSection(&m_CriticalSection);
 }
 
-Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* device, AGSContext* agsContext, bool isNVAPILoadedInApp)
-{
+Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* device, AGSContext* agsContext, bool isNVAPILoadedInApp) {
     // Get adapter
-    if (!device)
-    {
+    if (!device) {
         ComPtr<IDXGIFactory4> dxgiFactory;
         HRESULT hr = CreateDXGIFactory2(deviceCreationDesc.enableAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
         RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
 
-        if (deviceCreationDesc.adapterDesc)
-        {
+        if (deviceCreationDesc.adapterDesc) {
             LUID luid = *(LUID*)&deviceCreationDesc.adapterDesc->luid;
             hr = dxgiFactory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&m_Adapter));
             RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
-        }
-        else
-        {
+        } else {
             hr = dxgiFactory->EnumAdapters(0, &m_Adapter);
             RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapters()");
         }
-    }
-    else
-    {
+    } else {
         ComPtr<IDXGIDevice> dxgiDevice;
         HRESULT hr = device->QueryInterface(IID_PPV_ARGS(&dxgiDevice));
         RETURN_ON_BAD_HRESULT(this, hr, "QueryInterface(IDXGIDevice)");
@@ -152,8 +131,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
 
     // Device
     AGSDX11ReturnedParams params = {};
-    if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA)
-    {
+    if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA) {
         // Tricky part: AGSDX11ReturnedParams is used to properly propagate depthBoundsTest support
         params.extensionsSupported.depthBoundsDeferredContexts = true;
         params.extensionsSupported.depthBoundsTest = true;
@@ -162,30 +140,26 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     }
 
     ComPtr<ID3D11DeviceBest> deviceTemp = (ID3D11DeviceBest*)device;
-    if (!device)
-    {
+    if (!device) {
         const UINT flags = deviceCreationDesc.enableAPIValidation ? D3D11_CREATE_DEVICE_DEBUG : 0;
-        const std::array<D3D_FEATURE_LEVEL, 2> levels =
-        {
-            D3D_FEATURE_LEVEL_11_1,
-            D3D_FEATURE_LEVEL_11_0
-        };
+        const std::array<D3D_FEATURE_LEVEL, 2> levels = {D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
 
-        if (m_Ext.IsAGSAvailable())
-        {
+        if (m_Ext.IsAGSAvailable()) {
             m_Ext.CreateDeviceUsingAGS(m_Adapter, levels.data(), levels.size(), flags, params);
 
             device = params.pDevice;
             if (!device)
                 return Result::FAILURE;
-        }
-        else
-        {
-            hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
+        } else {
+            hr = D3D11CreateDevice(
+                m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr
+            );
 
             // If Debug Layer is not available, try without D3D11_CREATE_DEVICE_DEBUG
             if (flags && (uint32_t)hr == 0x887a002d)
-                hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
+                hr = D3D11CreateDevice(
+                    m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr
+                );
 
             RETURN_ON_BAD_HRESULT(this, hr, "D3D11CreateDevice()");
         }
@@ -211,8 +185,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         REPORT_WARNING(this, "Concurrent resource creation is not supported by the driver!");
 
     m_IsDeferredContextEmulated = !m_Ext.IsNvAPIAvailable() || deviceCreationDesc.enableD3D11CommandBufferEmulation;
-    if (!threadingCaps.DriverCommandLists)
-    {
+    if (!threadingCaps.DriverCommandLists) {
         REPORT_WARNING(this, "Deferred Contexts are not supported by the driver and will be emulated!");
         m_IsDeferredContextEmulated = true;
 
@@ -221,12 +194,10 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     }
 
     hr = m_ImmediateContext->QueryInterface(IID_PPV_ARGS(&m_Multithread));
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         REPORT_WARNING(this, "ID3D11Multithread is not supported: a critical section will be used instead!");
         InitializeCriticalSection(&m_CriticalSection);
-    }
-    else
+    } else
         m_Multithread->SetMultithreadProtected(true);
 
     // Other
@@ -238,8 +209,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     return FillFunctionTable(m_CoreInterface);
 }
 
-void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params)
-{
+void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params) {
     D3D11_FEATURE_DATA_D3D11_OPTIONS options = {};
     HRESULT hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS, &options, sizeof(options));
     if (FAILED(hr))
@@ -277,13 +247,12 @@ void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params)
 
         ComPtr<ID3D11Query> query;
         hr = m_Device->CreateQuery(&queryDesc, &query);
-        if (SUCCEEDED(hr))
-        {
+        if (SUCCEEDED(hr)) {
             m_ImmediateContext->Begin(query);
             m_ImmediateContext->End(query);
 
             D3D11_QUERY_DATA_TIMESTAMP_DISJOINT data = {};
-            while ( m_ImmediateContext->GetData(query, &data, sizeof(D3D11_QUERY_DATA_TIMESTAMP_DISJOINT), 0) == S_FALSE )
+            while (m_ImmediateContext->GetData(query, &data, sizeof(D3D11_QUERY_DATA_TIMESTAMP_DISJOINT), 0) == S_FALSE)
                 ;
 
             timestampFrequency = data.Frequency;
@@ -317,7 +286,7 @@ void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params)
 
     m_Desc.memoryAllocationMaxNum = 0xFFFFFFFF;
     m_Desc.samplerAllocationMaxNum = D3D11_REQ_SAMPLER_OBJECT_COUNT_PER_DEVICE;
-    m_Desc.uploadBufferTextureRowAlignment = 256; // D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
+    m_Desc.uploadBufferTextureRowAlignment = 256;   // D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
     m_Desc.uploadBufferTextureSliceAlignment = 512; // D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
     m_Desc.typedBufferOffsetAlignment = D3D11_RAW_UAV_SRV_BYTE_ALIGNMENT;
     m_Desc.constantBufferOffsetAlignment = 256; // D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
@@ -351,7 +320,8 @@ void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params)
     m_Desc.tessControlShaderPerVertexInputComponentMaxNum = D3D11_HS_CONTROL_POINT_PHASE_INPUT_REGISTER_COUNT * D3D11_HS_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessControlShaderPerVertexOutputComponentMaxNum = D3D11_HS_CONTROL_POINT_PHASE_OUTPUT_REGISTER_COUNT * D3D11_HS_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessControlShaderPerPatchOutputComponentMaxNum = D3D11_HS_OUTPUT_PATCH_CONSTANT_REGISTER_SCALAR_COMPONENTS;
-    m_Desc.tessControlShaderTotalOutputComponentMaxNum = m_Desc.tessControlShaderPatchPointMaxNum * m_Desc.tessControlShaderPerVertexOutputComponentMaxNum + m_Desc.tessControlShaderPerPatchOutputComponentMaxNum;
+    m_Desc.tessControlShaderTotalOutputComponentMaxNum =
+        m_Desc.tessControlShaderPatchPointMaxNum * m_Desc.tessControlShaderPerVertexOutputComponentMaxNum + m_Desc.tessControlShaderPerPatchOutputComponentMaxNum;
 
     m_Desc.tessEvaluationShaderInputComponentMaxNum = D3D11_DS_INPUT_CONTROL_POINT_REGISTER_COUNT * D3D11_DS_INPUT_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessEvaluationShaderOutputComponentMaxNum = D3D11_DS_INPUT_CONTROL_POINT_REGISTER_COUNT * D3D11_DS_INPUT_CONTROL_POINT_REGISTER_COMPONENTS;
@@ -408,14 +378,12 @@ void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params)
     m_Desc.isProgrammableSampleLocationsSupported = m_Desc.adapterDesc.vendor == Vendor::NVIDIA;
 }
 
-template<typename Implementation, typename Interface, typename ... Args>
-Result DeviceD3D11::CreateImplementation(Interface*& entity, const Args&... args)
-{
+template <typename Implementation, typename Interface, typename... Args>
+Result DeviceD3D11::CreateImplementation(Interface*& entity, const Args&... args) {
     Implementation* implementation = Allocate<Implementation>(GetStdAllocator(), *this);
     const Result result = implementation->Create(args...);
 
-    if (result == Result::SUCCESS)
-    {
+    if (result == Result::SUCCESS) {
         entity = (Interface*)implementation;
         return Result::SUCCESS;
     }
@@ -429,8 +397,7 @@ Result DeviceD3D11::CreateImplementation(Interface*& entity, const Args&... args
 // DeviceBase
 //================================================================================================================
 
-void DeviceD3D11::Destroy()
-{
+void DeviceD3D11::Destroy() {
     Deallocate(GetStdAllocator(), this);
 }
 
@@ -438,22 +405,18 @@ void DeviceD3D11::Destroy()
 // NRI
 //================================================================================================================
 
-inline Result DeviceD3D11::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain)
-{
+inline Result DeviceD3D11::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
     return CreateImplementation<SwapChainD3D11>(swapChain, swapChainDesc);
 }
 
-inline void DeviceD3D11::DestroySwapChain(SwapChain& swapChain)
-{
+inline void DeviceD3D11::DestroySwapChain(SwapChain& swapChain) {
     Deallocate(GetStdAllocator(), (SwapChainD3D11*)&swapChain);
 }
 
-inline Result DeviceD3D11::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue)
-{
+inline Result DeviceD3D11::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
     commandQueue = (CommandQueue*)&m_CommandQueues[(uint32_t)commandQueueType];
 
-    if (commandQueueType != CommandQueueType::GRAPHICS)
-    {
+    if (commandQueueType != CommandQueueType::GRAPHICS) {
         REPORT_WARNING(this, "%s command queue is not supported by the device!", commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY");
         return Result::UNSUPPORTED;
     }
@@ -461,8 +424,7 @@ inline Result DeviceD3D11::GetCommandQueue(CommandQueueType commandQueueType, Co
     return Result::SUCCESS;
 }
 
-inline Result DeviceD3D11::CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator)
-{
+inline Result DeviceD3D11::CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
     MaybeUnused(commandQueue);
 
     commandAllocator = (CommandAllocator*)Allocate<CommandAllocatorD3D11>(GetStdAllocator(), *this);
@@ -470,57 +432,47 @@ inline Result DeviceD3D11::CreateCommandAllocator(const CommandQueue& commandQue
     return Result::SUCCESS;
 }
 
-inline Result DeviceD3D11::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool)
-{
+inline Result DeviceD3D11::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
     return CreateImplementation<DescriptorPoolD3D11>(descriptorPool, descriptorPoolDesc);
 }
 
-inline Result DeviceD3D11::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer)
-{
+inline Result DeviceD3D11::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer) {
     buffer = (Buffer*)Allocate<BufferD3D11>(GetStdAllocator(), *this, bufferDesc);
 
     return Result::SUCCESS;
 }
 
-inline Result DeviceD3D11::CreateTexture(const TextureDesc& textureDesc, Texture*& texture)
-{
+inline Result DeviceD3D11::CreateTexture(const TextureDesc& textureDesc, Texture*& texture) {
     texture = (Texture*)Allocate<TextureD3D11>(GetStdAllocator(), *this, textureDesc);
 
     return Result::SUCCESS;
 }
 
-inline Result DeviceD3D11::CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView)
-{
+inline Result DeviceD3D11::CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
     return CreateImplementation<DescriptorD3D11>(bufferView, bufferViewDesc);
 }
 
-inline Result DeviceD3D11::CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView)
-{
+inline Result DeviceD3D11::CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
     return CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
 }
 
-inline Result DeviceD3D11::CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView)
-{
+inline Result DeviceD3D11::CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView) {
     return CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
 }
 
-inline Result DeviceD3D11::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView)
-{
+inline Result DeviceD3D11::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView) {
     return CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
 }
 
-inline Result DeviceD3D11::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& sampler)
-{
+inline Result DeviceD3D11::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& sampler) {
     return CreateImplementation<DescriptorD3D11>(sampler, samplerDesc);
 }
 
-inline Result DeviceD3D11::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout)
-{
+inline Result DeviceD3D11::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout) {
     PipelineLayoutD3D11* implementation = Allocate<PipelineLayoutD3D11>(GetStdAllocator(), *this);
     const nri::Result res = implementation->Create(pipelineLayoutDesc);
 
-    if (res == nri::Result::SUCCESS)
-    {
+    if (res == nri::Result::SUCCESS) {
         pipelineLayout = (PipelineLayout*)implementation;
         return nri::Result::SUCCESS;
     }
@@ -530,13 +482,11 @@ inline Result DeviceD3D11::CreatePipelineLayout(const PipelineLayoutDesc& pipeli
     return res;
 }
 
-inline Result DeviceD3D11::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline)
-{
+inline Result DeviceD3D11::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline) {
     PipelineD3D11* implementation = Allocate<PipelineD3D11>(GetStdAllocator(), *this);
     const nri::Result res = implementation->Create(graphicsPipelineDesc);
 
-    if (res == nri::Result::SUCCESS)
-    {
+    if (res == nri::Result::SUCCESS) {
         pipeline = (Pipeline*)implementation;
         return nri::Result::SUCCESS;
     }
@@ -546,13 +496,11 @@ inline Result DeviceD3D11::CreatePipeline(const GraphicsPipelineDesc& graphicsPi
     return res;
 }
 
-inline Result DeviceD3D11::CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline)
-{
+inline Result DeviceD3D11::CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline) {
     PipelineD3D11* implementation = Allocate<PipelineD3D11>(GetStdAllocator(), *this);
     const nri::Result res = implementation->Create(computePipelineDesc);
 
-    if (res == nri::Result::SUCCESS)
-    {
+    if (res == nri::Result::SUCCESS) {
         pipeline = (Pipeline*)implementation;
         return nri::Result::SUCCESS;
     }
@@ -562,18 +510,15 @@ inline Result DeviceD3D11::CreatePipeline(const ComputePipelineDesc& computePipe
     return res;
 }
 
-inline Result DeviceD3D11::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool)
-{
+inline Result DeviceD3D11::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool) {
     return CreateImplementation<QueryPoolD3D11>(queryPool, queryPoolDesc);
 }
 
-inline Result DeviceD3D11::CreateFence(uint64_t initialValue, Fence*& fence)
-{
+inline Result DeviceD3D11::CreateFence(uint64_t initialValue, Fence*& fence) {
     FenceD3D11* implementation = Allocate<FenceD3D11>(GetStdAllocator(), *this);
     const nri::Result res = implementation->Create(initialValue);
 
-    if (res == nri::Result::SUCCESS)
-    {
+    if (res == nri::Result::SUCCESS) {
         fence = (Fence*)implementation;
         return nri::Result::SUCCESS;
     }
@@ -583,53 +528,43 @@ inline Result DeviceD3D11::CreateFence(uint64_t initialValue, Fence*& fence)
     return res;
 }
 
-inline void DeviceD3D11::DestroyCommandAllocator(CommandAllocator& commandAllocator)
-{
+inline void DeviceD3D11::DestroyCommandAllocator(CommandAllocator& commandAllocator) {
     Deallocate(GetStdAllocator(), (CommandAllocatorD3D11*)&commandAllocator);
 }
 
-inline void DeviceD3D11::DestroyDescriptorPool(DescriptorPool& descriptorPool)
-{
+inline void DeviceD3D11::DestroyDescriptorPool(DescriptorPool& descriptorPool) {
     Deallocate(GetStdAllocator(), (DescriptorPoolD3D11*)&descriptorPool);
 }
 
-inline void DeviceD3D11::DestroyBuffer(Buffer& buffer)
-{
+inline void DeviceD3D11::DestroyBuffer(Buffer& buffer) {
     Deallocate(GetStdAllocator(), (BufferD3D11*)&buffer);
 }
 
-inline void DeviceD3D11::DestroyTexture(Texture& texture)
-{
+inline void DeviceD3D11::DestroyTexture(Texture& texture) {
     Deallocate(GetStdAllocator(), (TextureD3D11*)&texture);
 }
 
-inline void DeviceD3D11::DestroyDescriptor(Descriptor& descriptor)
-{
+inline void DeviceD3D11::DestroyDescriptor(Descriptor& descriptor) {
     Deallocate(GetStdAllocator(), (DescriptorD3D11*)&descriptor);
 }
 
-inline void DeviceD3D11::DestroyPipelineLayout(PipelineLayout& pipelineLayout)
-{
+inline void DeviceD3D11::DestroyPipelineLayout(PipelineLayout& pipelineLayout) {
     Deallocate(GetStdAllocator(), (PipelineLayoutD3D11*)&pipelineLayout);
 }
 
-inline void DeviceD3D11::DestroyPipeline(Pipeline& pipeline)
-{
+inline void DeviceD3D11::DestroyPipeline(Pipeline& pipeline) {
     Deallocate(GetStdAllocator(), (PipelineD3D11*)&pipeline);
 }
 
-inline void DeviceD3D11::DestroyQueryPool(QueryPool& queryPool)
-{
+inline void DeviceD3D11::DestroyQueryPool(QueryPool& queryPool) {
     Deallocate(GetStdAllocator(), (QueryPoolD3D11*)&queryPool);
 }
 
-inline void DeviceD3D11::DestroyFence(Fence& fence)
-{
+inline void DeviceD3D11::DestroyFence(Fence& fence) {
     Deallocate(GetStdAllocator(), (FenceD3D11*)&fence);
 }
 
-inline Result DeviceD3D11::AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory)
-{
+inline Result DeviceD3D11::AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory) {
     MaybeUnused(size);
 
     memory = (Memory*)Allocate<MemoryD3D11>(GetStdAllocator(), *this, memoryType);
@@ -637,10 +572,8 @@ inline Result DeviceD3D11::AllocateMemory(MemoryType memoryType, uint64_t size, 
     return Result::SUCCESS;
 }
 
-inline Result DeviceD3D11::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum)
-{
-    for (uint32_t i = 0; i < memoryBindingDescNum; i++)
-    {
+inline Result DeviceD3D11::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
+    for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         const BufferMemoryBindingDesc& desc = memoryBindingDescs[i];
         Result res = ((BufferD3D11*)desc.buffer)->Create(*(MemoryD3D11*)desc.memory);
         if (res != Result::SUCCESS)
@@ -650,10 +583,8 @@ inline Result DeviceD3D11::BindBufferMemory(const BufferMemoryBindingDesc* memor
     return Result::SUCCESS;
 }
 
-inline Result DeviceD3D11::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum)
-{
-    for (uint32_t i = 0; i < memoryBindingDescNum; i++)
-    {
+inline Result DeviceD3D11::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
+    for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         const TextureMemoryBindingDesc& desc = memoryBindingDescs[i];
         Result res = ((TextureD3D11*)desc.texture)->Create((MemoryD3D11*)desc.memory);
         if (res != Result::SUCCESS)
@@ -663,27 +594,23 @@ inline Result DeviceD3D11::BindTextureMemory(const TextureMemoryBindingDesc* mem
     return Result::SUCCESS;
 }
 
-inline void DeviceD3D11::FreeMemory(Memory& memory)
-{
+inline void DeviceD3D11::FreeMemory(Memory& memory) {
     Deallocate(GetStdAllocator(), (MemoryD3D11*)&memory);
 }
 
-inline FormatSupportBits DeviceD3D11::GetFormatSupport(Format format) const
-{
+inline FormatSupportBits DeviceD3D11::GetFormatSupport(Format format) const {
     const uint32_t offset = std::min((uint32_t)format, (uint32_t)GetCountOf(D3D_FORMAT_SUPPORT_TABLE) - 1);
 
     return D3D_FORMAT_SUPPORT_TABLE[offset];
 }
 
-inline uint32_t DeviceD3D11::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const
-{
+inline uint32_t DeviceD3D11::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const {
     HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this, m_StdAllocator);
 
     return allocator.CalculateAllocationNumber(resourceGroupDesc);
 }
 
-inline Result DeviceD3D11::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, nri::Memory** allocations)
-{
+inline Result DeviceD3D11::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, nri::Memory** allocations) {
     HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this, m_StdAllocator);
 
     return allocator.AllocateAndBindMemory(resourceGroupDesc, allocations);

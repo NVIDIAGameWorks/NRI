@@ -1,29 +1,24 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region [  Core  ]
+#pragma region[  Core  ]
 
-static uint64_t NRI_CALL GetFenceValue(Fence& fence)
-{
+static uint64_t NRI_CALL GetFenceValue(Fence& fence) {
     return ((FenceD3D12&)fence).GetFenceValue();
 }
 
-static void NRI_CALL QueueSignal(CommandQueue& commandQueue, Fence& fence, uint64_t value)
-{
+static void NRI_CALL QueueSignal(CommandQueue& commandQueue, Fence& fence, uint64_t value) {
     return ((FenceD3D12&)fence).QueueSignal((CommandQueueD3D12&)commandQueue, value);
 }
 
-static void NRI_CALL QueueWait(CommandQueue& commandQueue, Fence& fence, uint64_t value)
-{
+static void NRI_CALL QueueWait(CommandQueue& commandQueue, Fence& fence, uint64_t value) {
     return ((FenceD3D12&)fence).QueueWait((CommandQueueD3D12&)commandQueue, value);
 }
 
-static void NRI_CALL Wait(Fence& fence, uint64_t value)
-{
+static void NRI_CALL Wait(Fence& fence, uint64_t value) {
     ((FenceD3D12&)fence).Wait(value);
 }
 
-static void NRI_CALL SetFenceDebugName(Fence& fence, const char* name)
-{
+static void NRI_CALL SetFenceDebugName(Fence& fence, const char* name) {
     ((FenceD3D12&)fence).SetDebugName(name);
 }
 

@@ -1,14 +1,14 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedD3D11.h"
+
 #include "CommandAllocatorD3D11.h"
 #include "CommandBufferD3D11.h"
 #include "CommandBufferEmuD3D11.h"
 
 using namespace nri;
 
-Result CreateCommandBuffer(DeviceD3D11& device, ID3D11DeviceContext* precreatedContext, CommandBuffer*& commandBuffer)
-{
+Result CreateCommandBuffer(DeviceD3D11& device, ID3D11DeviceContext* precreatedContext, CommandBuffer*& commandBuffer) {
     bool isImmediate = false;
     if (precreatedContext)
         isImmediate = precreatedContext->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE;
@@ -23,8 +23,7 @@ Result CreateCommandBuffer(DeviceD3D11& device, ID3D11DeviceContext* precreatedC
 
     const nri::Result result = ((CommandBufferHelper*)impl)->Create(precreatedContext);
 
-    if (result == nri::Result::SUCCESS)
-    {
+    if (result == nri::Result::SUCCESS) {
         commandBuffer = (CommandBuffer*)impl;
         return nri::Result::SUCCESS;
     }
@@ -37,8 +36,7 @@ Result CreateCommandBuffer(DeviceD3D11& device, ID3D11DeviceContext* precreatedC
     return result;
 }
 
-inline Result CommandAllocatorD3D11::CreateCommandBuffer(CommandBuffer*& commandBuffer)
-{
+inline Result CommandAllocatorD3D11::CreateCommandBuffer(CommandBuffer*& commandBuffer) {
     return ::CreateCommandBuffer(m_Device, nullptr, commandBuffer);
 }
 

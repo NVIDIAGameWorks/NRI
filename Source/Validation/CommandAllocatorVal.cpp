@@ -2,8 +2,8 @@
 
 #include "SharedExternal.h"
 #include "SharedVal.h"
-#include "CommandAllocatorVal.h"
 
+#include "CommandAllocatorVal.h"
 #include "CommandBufferVal.h"
 
 using namespace nri;

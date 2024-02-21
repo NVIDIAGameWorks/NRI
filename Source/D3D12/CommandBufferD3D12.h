@@ -6,15 +6,14 @@ struct ID3D12CommandAllocator;
 struct ID3D12Resource;
 
 #ifdef NRI_USE_AGILITY_SDK
-    struct ID3D12GraphicsCommandList9;
-    typedef ID3D12GraphicsCommandList9 ID3D12GraphicsCommandListBest;
+struct ID3D12GraphicsCommandList9;
+typedef ID3D12GraphicsCommandList9 ID3D12GraphicsCommandListBest;
 #else
-    struct ID3D12GraphicsCommandList6;
-    typedef ID3D12GraphicsCommandList6 ID3D12GraphicsCommandListBest;
+struct ID3D12GraphicsCommandList6;
+typedef ID3D12GraphicsCommandList6 ID3D12GraphicsCommandListBest;
 #endif
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceD3D12;
 struct PipelineD3D12;
@@ -22,20 +21,20 @@ struct PipelineLayoutD3D12;
 struct DescriptorPoolD3D12;
 struct DescriptorSetD3D12;
 
-struct CommandBufferD3D12
-{
-    inline CommandBufferD3D12(DeviceD3D12& device)
-        : m_Device(device)
-    {}
+struct CommandBufferD3D12 {
+    inline CommandBufferD3D12(DeviceD3D12& device) : m_Device(device) {
+    }
 
-    inline ~CommandBufferD3D12()
-    {}
+    inline ~CommandBufferD3D12() {
+    }
 
-    inline operator ID3D12GraphicsCommandList*() const
-    { return m_GraphicsCommandList.GetInterface(); }
+    inline operator ID3D12GraphicsCommandList*() const {
+        return m_GraphicsCommandList.GetInterface();
+    }
 
-    inline DeviceD3D12& GetDevice() const
-    { return m_Device; }
+    inline DeviceD3D12& GetDevice() const {
+        return m_Device;
+    }
 
     Result Create(D3D12_COMMAND_LIST_TYPE commandListType, ID3D12CommandAllocator* commandAllocator);
     Result Create(const CommandBufferD3D12Desc& commandBufferDesc);
@@ -44,8 +43,9 @@ struct CommandBufferD3D12
     // NRI
     //================================================================================================================
 
-    inline void SetDebugName(const char* name)
-    { SET_D3D_DEBUG_OBJECT_NAME(m_GraphicsCommandList, name); }
+    inline void SetDebugName(const char* name) {
+        SET_D3D_DEBUG_OBJECT_NAME(m_GraphicsCommandList, name);
+    }
 
     Result Begin(const DescriptorPool* descriptorPool);
     Result End();
@@ -58,7 +58,8 @@ struct CommandBufferD3D12
     void ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc);
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);
     void BeginRendering(const AttachmentsDesc& attachmentsDesc);
-    inline void EndRendering() {}
+    inline void EndRendering() {
+    }
     void SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets);
     void SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType);
     void SetPipelineLayout(const PipelineLayout& pipelineLayout);
@@ -83,21 +84,27 @@ struct CommandBufferD3D12
     void BeginAnnotation(const char* name);
     void EndAnnotation();
 
-    void BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset,
-        AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset);
-    void BuildBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects,
-        AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset);
-    void UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset,
-        AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset);
-    void UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects,
-        AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset);
+    void BuildTopLevelAccelerationStructure(
+        uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset
+    );
+    void BuildBottomLevelAccelerationStructure(
+        uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset
+    );
+    void UpdateTopLevelAccelerationStructure(
+        uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src,
+        Buffer& scratch, uint64_t scratchOffset
+    );
+    void UpdateBottomLevelAccelerationStructure(
+        uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src,
+        Buffer& scratch, uint64_t scratchOffset
+    );
     void CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode);
     void WriteAccelerationStructureSize(const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryOffset);
     void DispatchRays(const DispatchRaysDesc& dispatchRaysDesc);
 
     void DispatchMeshTasks(uint32_t x, uint32_t y, uint32_t z);
 
-private:
+  private:
     DeviceD3D12& m_Device;
     ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
     ComPtr<ID3D12GraphicsCommandListBest> m_GraphicsCommandList;
@@ -112,4 +119,4 @@ private:
     bool m_IsGraphicsPipelineLayout = false;
 };
 
-}
+} // namespace nri

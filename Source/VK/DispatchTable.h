@@ -4,8 +4,7 @@
 
 #define VULKAN_FUNCTION(name) PFN_vk##name name
 
-struct DispatchTable
-{
+struct DispatchTable {
     VULKAN_FUNCTION(GetInstanceProcAddr);
     VULKAN_FUNCTION(CreateInstance);
     VULKAN_FUNCTION(EnumerateInstanceExtensionProperties);

@@ -2,27 +2,27 @@
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct PipelineLayoutD3D11;
 struct PipelineD3D11;
 struct BufferD3D11;
 
-struct CommandBufferD3D11 final : public CommandBufferHelper
-{
+struct CommandBufferD3D11 final : public CommandBufferHelper {
     CommandBufferD3D11(DeviceD3D11& device);
     ~CommandBufferD3D11();
 
-    inline DeviceD3D11& GetDevice() const
-    { return m_Device; }
+    inline DeviceD3D11& GetDevice() const {
+        return m_Device;
+    }
 
     //================================================================================================================
     // CommandBufferHelper
     //================================================================================================================
 
-    inline ID3D11DeviceContext* GetNativeObject() const
-    { return m_DeferredContext; }
+    inline ID3D11DeviceContext* GetNativeObject() const {
+        return m_DeferredContext;
+    }
 
     Result Create(ID3D11DeviceContext* precreatedContext);
     void Submit();
@@ -32,8 +32,7 @@ struct CommandBufferD3D11 final : public CommandBufferHelper
     // NRI
     //================================================================================================================
 
-    inline void SetDebugName(const char* name)
-    {
+    inline void SetDebugName(const char* name) {
         SET_D3D_DEBUG_OBJECT_NAME(m_DeferredContext, name);
         SET_D3D_DEBUG_OBJECT_NAME(m_CommandList, name);
     }
@@ -49,7 +48,8 @@ struct CommandBufferD3D11 final : public CommandBufferHelper
     void ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc);
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);
     void BeginRendering(const AttachmentsDesc& attachmentsDesc);
-    inline void EndRendering() {}
+    inline void EndRendering() {
+    }
     void SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets);
     void SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType);
     void SetPipelineLayout(const PipelineLayout& pipelineLayout);
@@ -74,7 +74,7 @@ struct CommandBufferD3D11 final : public CommandBufferHelper
     void BeginAnnotation(const char* name);
     void EndAnnotation();
 
-private:
+  private:
     DeviceD3D11& m_Device;
     ComPtr<ID3D11DeviceContextBest> m_DeferredContext; // can be immediate to redirect data from emulation
     ComPtr<ID3D11CommandList> m_CommandList;
@@ -97,4 +97,4 @@ private:
     uint8_t m_Version = 0;
 };
 
-}
+} // namespace nri

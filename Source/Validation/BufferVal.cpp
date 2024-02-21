@@ -1,11 +1,11 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedExternal.h"
-#include "DeviceBase.h"
-#include "DeviceVal.h"
 #include "SharedVal.h"
-#include "MemoryVal.h"
+
 #include "BufferVal.h"
+#include "DeviceVal.h"
+#include "MemoryVal.h"
 
 using namespace nri;
 

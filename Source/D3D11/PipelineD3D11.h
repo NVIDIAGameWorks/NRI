@@ -4,38 +4,36 @@
 
 struct NvAPI_D3D11_RASTERIZER_DESC_EX;
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceD3D11;
 struct DescriptorSetD3D11;
 struct PipelineLayoutD3D11;
 
-struct RasterizerState
-{
+struct RasterizerState {
     ComPtr<ID3D11RasterizerState2> ptr;
     uint64_t samplePositionHash = 0;
 };
 
-struct PipelineD3D11
-{
-    inline PipelineD3D11(DeviceD3D11& device) :
-        m_Device(device)
-        , m_InputAssemplyStrides(device.GetStdAllocator())
-        , m_RasterizerStates(device.GetStdAllocator())
-    {}
+struct PipelineD3D11 {
+    inline PipelineD3D11(DeviceD3D11& device) : m_Device(device), m_InputAssemplyStrides(device.GetStdAllocator()), m_RasterizerStates(device.GetStdAllocator()) {
+    }
 
-    inline DeviceD3D11& GetDevice() const
-    { return m_Device; }
+    inline DeviceD3D11& GetDevice() const {
+        return m_Device;
+    }
 
-    inline uint32_t GetInputAssemblyStride(uint32_t bindingSlot) const
-    { return m_InputAssemplyStrides[bindingSlot]; }
+    inline uint32_t GetInputAssemblyStride(uint32_t bindingSlot) const {
+        return m_InputAssemplyStrides[bindingSlot];
+    }
 
-    inline bool IsCompute() const
-    { return m_ComputeShader != nullptr; }
+    inline bool IsCompute() const {
+        return m_ComputeShader != nullptr;
+    }
 
-    inline bool IsRasterizerDiscarded() const
-    { return m_IsRasterizerDiscarded; }
+    inline bool IsRasterizerDiscarded() const {
+        return m_IsRasterizerDiscarded;
+    }
 
     ~PipelineD3D11();
 
@@ -53,7 +51,7 @@ struct PipelineD3D11
 
     void SetDebugName(const char* name);
 
-private:
+  private:
     DeviceD3D11& m_Device;
 
     Vector<uint32_t> m_InputAssemplyStrides;
@@ -80,4 +78,4 @@ private:
     const PipelineLayoutD3D11* m_PipelineLayout = nullptr;
 };
 
-}
+} // namespace nri

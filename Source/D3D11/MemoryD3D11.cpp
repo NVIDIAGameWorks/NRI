@@ -1,12 +1,12 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedD3D11.h"
+
 #include "MemoryD3D11.h"
 
 using namespace nri;
 
-uint32_t MemoryD3D11::GetResidencyPriority(uint64_t size) const
-{
+uint32_t MemoryD3D11::GetResidencyPriority(uint64_t size) const {
     uint32_t high = 0;
 
     if (m_ResidencyPriority == MemoryResidencyPriority::MINIMUM)

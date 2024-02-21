@@ -5,18 +5,31 @@
 #include <d3d12.h>
 
 #include "SharedExternal.h"
-#include "DeviceBase.h"
-#include "DeviceD3D12.h"
+
+typedef size_t DescriptorPointerCPU;
+typedef uint64_t DescriptorPointerGPU;
+typedef uint16_t HeapIndexType;
+typedef uint16_t HeapOffsetType;
 
 #define NRI_TEMP_NODE_MASK 0x1
 
-namespace nri
-{
-enum DescriptorHeapType : uint32_t
-{
+namespace nri {
+enum DescriptorHeapType : uint32_t {
     RESOURCE = 0,
     SAMPLER,
     MAX_NUM
+};
+
+struct DescriptorHandle {
+    HeapIndexType heapIndex;
+    HeapOffsetType heapOffset;
+};
+
+struct DescriptorHeapDesc {
+    ComPtr<ID3D12DescriptorHeap> descriptorHeap;
+    DescriptorPointerCPU descriptorPointerCPU;
+    DescriptorPointerGPU descriptorPointerGPU;
+    uint32_t descriptorSize;
 };
 
 DXGI_FORMAT GetShaderFormatForDepth(DXGI_FORMAT format);
@@ -58,4 +71,6 @@ D3D12_BLEND_OP GetBlendOp(BlendFunc blendFunc);
 D3D12_SHADER_VISIBILITY GetShaderVisibility(StageBits shaderStage);
 D3D12_DESCRIPTOR_RANGE_TYPE GetDescriptorRangesType(DescriptorType descriptorType);
 D3D12_RESOURCE_DIMENSION GetResourceDimension(TextureType textureType);
-}
+} // namespace nri
+
+#include "DeviceD3D12.h"

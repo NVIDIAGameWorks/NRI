@@ -2,25 +2,24 @@
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceVK;
 struct PipelineVK;
 struct PipelineLayoutVK;
 struct TextureVK;
 
-struct CommandBufferVK
-{
-    inline CommandBufferVK(DeviceVK& device) :
-        m_Device(device)
-    {}
+struct CommandBufferVK {
+    inline CommandBufferVK(DeviceVK& device) : m_Device(device) {
+    }
 
-    inline operator VkCommandBuffer() const
-    { return m_Handle; }
+    inline operator VkCommandBuffer() const {
+        return m_Handle;
+    }
 
-    inline DeviceVK& GetDevice() const
-    { return m_Device; }
+    inline DeviceVK& GetDevice() const {
+        return m_Device;
+    }
 
     ~CommandBufferVK();
 
@@ -68,47 +67,50 @@ struct CommandBufferVK
 
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);
 
-    void CopyBuffer(Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer,
-        uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size);
+    void CopyBuffer(Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size);
 
-    void CopyTexture(Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc,
-        const Texture& srcTexture, uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc);
+    void CopyTexture(
+        Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc
+    );
 
-    void UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer,
-        const TextureDataLayoutDesc& srcDataLayoutDesc);
+    void UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc);
 
-    void ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture,
-        const TextureRegionDesc& srcRegionDesc);
+    void ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc);
 
     void CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset);
     void ResetQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num);
 
-    void BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset,
-        AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset);
+    void BuildTopLevelAccelerationStructure(
+        uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset
+    );
 
-    void BuildBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects,
-        AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset);
+    void BuildBottomLevelAccelerationStructure(
+        uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset
+    );
 
-    void UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset,
-        AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch,
-        uint64_t scratchOffset);
+    void UpdateTopLevelAccelerationStructure(
+        uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src,
+        Buffer& scratch, uint64_t scratchOffset
+    );
 
-    void UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects,
-        AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch,
-        uint64_t scratchOffset);
+    void UpdateBottomLevelAccelerationStructure(
+        uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src,
+        Buffer& scratch, uint64_t scratchOffset
+    );
 
     void CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode);
 
-    void WriteAccelerationStructureSize(const AccelerationStructure* const* accelerationStructures,
-        uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryPoolOffset);
+    void WriteAccelerationStructureSize(
+        const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryPoolOffset
+    );
 
     void DispatchRays(const DispatchRaysDesc& dispatchRaysDesc);
     void DispatchMeshTasks(uint32_t x, uint32_t y, uint32_t z);
 
-private:
+  private:
     void CopyWholeTexture(const TextureVK& dstTexture, uint32_t dstNodeIndex, const TextureVK& srcTexture, uint32_t srcNodeIndex);
 
-private:
+  private:
     DeviceVK& m_Device;
     const PipelineVK* m_CurrentPipeline = nullptr;
     const PipelineLayoutVK* m_CurrentPipelineLayout = nullptr;
@@ -123,4 +125,4 @@ private:
     Dim_t m_RenderHeight = 0;
 };
 
-}
+} // namespace nri

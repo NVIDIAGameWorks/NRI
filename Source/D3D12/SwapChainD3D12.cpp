@@ -1,42 +1,35 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedD3D12.h"
+
+#include "CommandQueueD3D12.h"
 #include "SwapChainD3D12.h"
 #include "TextureD3D12.h"
-#include "CommandQueueD3D12.h"
 
 using namespace nri;
 
-static std::array<DXGI_FORMAT, (size_t)SwapChainFormat::MAX_NUM> g_swapChainFormat =
-{
-    DXGI_FORMAT_R16G16B16A16_FLOAT,                 // BT709_G10_16BIT
-    DXGI_FORMAT_R8G8B8A8_UNORM,                     // BT709_G22_8BIT
-    DXGI_FORMAT_R10G10B10A2_UNORM,                  // BT709_G22_10BIT
-    DXGI_FORMAT_R10G10B10A2_UNORM,                  // BT2020_G2084_10BIT
+static std::array<DXGI_FORMAT, (size_t)SwapChainFormat::MAX_NUM> g_swapChainFormat = {
+    DXGI_FORMAT_R16G16B16A16_FLOAT, // BT709_G10_16BIT
+    DXGI_FORMAT_R8G8B8A8_UNORM,     // BT709_G22_8BIT
+    DXGI_FORMAT_R10G10B10A2_UNORM,  // BT709_G22_10BIT
+    DXGI_FORMAT_R10G10B10A2_UNORM,  // BT2020_G2084_10BIT
 };
 
-static std::array<DXGI_COLOR_SPACE_TYPE, (size_t)SwapChainFormat::MAX_NUM> g_colorSpace =
-{
-    DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709,        // BT709_G10_16BIT
-    DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709,        // BT709_G22_8BIT
-    DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709,        // BT709_G22_10BIT
-    DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020,     // BT2020_G2084_10BIT
+static std::array<DXGI_COLOR_SPACE_TYPE, (size_t)SwapChainFormat::MAX_NUM> g_colorSpace = {
+    DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709,    // BT709_G10_16BIT
+    DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709,    // BT709_G22_8BIT
+    DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709,    // BT709_G22_10BIT
+    DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020, // BT2020_G2084_10BIT
 };
 
-static uint8_t QueryLatestSwapChain(ComPtr<IDXGISwapChainBest>& in, ComPtr<IDXGISwapChainBest>& out)
-{
+static uint8_t QueryLatestSwapChain(ComPtr<IDXGISwapChainBest>& in, ComPtr<IDXGISwapChainBest>& out) {
     static const IID versions[] = {
-        __uuidof(IDXGISwapChain4),
-        __uuidof(IDXGISwapChain3),
-        __uuidof(IDXGISwapChain2),
-        __uuidof(IDXGISwapChain1),
-        __uuidof(IDXGISwapChain),
+        __uuidof(IDXGISwapChain4), __uuidof(IDXGISwapChain3), __uuidof(IDXGISwapChain2), __uuidof(IDXGISwapChain1), __uuidof(IDXGISwapChain),
     };
     const uint8_t n = (uint8_t)GetCountOf(versions);
 
     uint8_t i = 0;
-    for (; i < n; i++)
-    {
+    for (; i < n; i++) {
         HRESULT hr = in->QueryInterface(versions[i], (void**)&out);
         if (SUCCEEDED(hr))
             break;
@@ -45,8 +38,7 @@ static uint8_t QueryLatestSwapChain(ComPtr<IDXGISwapChainBest>& in, ComPtr<IDXGI
     return n - i - 1;
 }
 
-SwapChainD3D12::~SwapChainD3D12()
-{
+SwapChainD3D12::~SwapChainD3D12() {
     if (m_FrameLatencyWaitableObject)
         CloseHandle(m_FrameLatencyWaitableObject);
 
@@ -54,8 +46,7 @@ SwapChainD3D12::~SwapChainD3D12()
         Deallocate<TextureD3D12>(m_Device.GetStdAllocator(), texture);
 }
 
-Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
-{
+Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc) {
     HWND hwnd = (HWND)swapChainDesc.window.windows.hwnd;
     if (!hwnd)
         return Result::INVALID_ARGUMENT;
@@ -70,8 +61,7 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
     bool isTearingAllowed = false;
     ComPtr<IDXGIFactory5> dxgiFactory5;
     hr = m_DxgiFactory2->QueryInterface(IID_PPV_ARGS(&dxgiFactory5));
-    if (SUCCEEDED(hr))
-    {
+    if (SUCCEEDED(hr)) {
         uint32_t tearingSupport = 0;
         hr = dxgiFactory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &tearingSupport, sizeof(tearingSupport));
         isTearingAllowed = (SUCCEEDED(hr) && tearingSupport) ? true : false;
@@ -105,26 +95,23 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGIFactory::MakeWindowAssociation()");
 
     // Color space
-    if (m_Version >= 3)
-    {
+    if (m_Version >= 3) {
         uint32_t colorSpaceSupport = 0;
         hr = m_SwapChain->CheckColorSpaceSupport(colorSpace, &colorSpaceSupport);
 
-        if ( !(colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) )
+        if (!(colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
             hr = E_FAIL;
 
         if (SUCCEEDED(hr))
             hr = m_SwapChain->SetColorSpace1(colorSpace);
 
         if (FAILED(hr))
-           REPORT_WARNING(&m_Device, "IDXGISwapChain3::SetColorSpace1() - FAILED!");
-    }
-    else
+            REPORT_WARNING(&m_Device, "IDXGISwapChain3::SetColorSpace1() - FAILED!");
+    } else
         REPORT_ERROR(&m_Device, "IDXGISwapChain3::SetColorSpace1() is not supported by the OS!");
 
     // Background color
-    if (m_Version >= 1)
-    {
+    if (m_Version >= 1) {
         DXGI_RGBA color = {0.0f, 0.0f, 0.0f, 1.0f};
         hr = m_SwapChain->SetBackgroundColor(&color);
         if (FAILED(hr))
@@ -132,8 +119,7 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
     }
 
     // Maximum frame latency
-    if (m_Version >= 2)
-    {
+    if (m_Version >= 2) {
         // IMPORTANT: SetMaximumFrameLatency must be called BEFORE GetFrameLatencyWaitableObject!
         hr = m_SwapChain->SetMaximumFrameLatency(swapChainDesc.textureNum);
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain2::SetMaximumFrameLatency()");
@@ -146,8 +132,7 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
     m_SwapChainDesc = swapChainDesc;
 
     m_Textures.reserve(m_SwapChainDesc.textureNum);
-    for (uint32_t i = 0; i < m_SwapChainDesc.textureNum; i++)
-    {
+    for (uint32_t i = 0; i < m_SwapChainDesc.textureNum; i++) {
         ComPtr<ID3D12Resource> textureNative;
         hr = m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&textureNative));
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::GetBuffer()");
@@ -170,18 +155,15 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc)
 // NRI
 //================================================================================================================
 
-inline Texture* const* SwapChainD3D12::GetTextures(uint32_t& textureNum) const
-{
+inline Texture* const* SwapChainD3D12::GetTextures(uint32_t& textureNum) const {
     textureNum = m_SwapChainDesc.textureNum;
 
     return (Texture**)m_Textures.data();
 }
 
-inline uint32_t SwapChainD3D12::AcquireNextTexture()
-{
+inline uint32_t SwapChainD3D12::AcquireNextTexture() {
     // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame
-    if (m_FrameLatencyWaitableObject)
-    {
+    if (m_FrameLatencyWaitableObject) {
         uint32_t result = WaitForSingleObjectEx(m_FrameLatencyWaitableObject, DEFAULT_TIMEOUT, TRUE);
         if (result != WAIT_OBJECT_0)
             REPORT_ERROR(&m_Device, "WaitForSingleObjectEx(): failed, result = 0x%08X!", result);
@@ -190,8 +172,7 @@ inline uint32_t SwapChainD3D12::AcquireNextTexture()
     return m_SwapChain->GetCurrentBackBufferIndex();
 }
 
-inline Result SwapChainD3D12::Present()
-{
+inline Result SwapChainD3D12::Present() {
     uint32_t flags = (!m_SwapChainDesc.verticalSyncInterval && (m_Flags & DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING)) ? DXGI_PRESENT_ALLOW_TEARING : 0; // TODO: and not fullscreen
     HRESULT hr = m_SwapChain->Present(m_SwapChainDesc.verticalSyncInterval, flags);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::Present()");

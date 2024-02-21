@@ -2,44 +2,40 @@
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceD3D11;
 struct MemoryD3D11;
 struct QueryPoolD3D11;
 struct TextureD3D11;
 
-struct QueryRange
-{
+struct QueryRange {
     const QueryPoolD3D11* pool;
     uint32_t offset;
     uint32_t num;
     uint64_t bufferOffset;
 };
 
-struct BufferD3D11
-{
-    inline BufferD3D11(DeviceD3D11& device, const BufferDesc& bufferDesc) :
-        m_Device(device)
-        , m_Desc(bufferDesc)
-    {}
+struct BufferD3D11 {
+    inline BufferD3D11(DeviceD3D11& device, const BufferDesc& bufferDesc) : m_Device(device), m_Desc(bufferDesc) {
+    }
 
-    inline BufferD3D11(DeviceD3D11& device) :
-        m_Device(device)
-    {}
+    inline BufferD3D11(DeviceD3D11& device) : m_Device(device) {
+    }
 
-    inline operator ID3D11Buffer*() const
-    { return m_Buffer; }
+    inline operator ID3D11Buffer*() const {
+        return m_Buffer;
+    }
 
-    inline const BufferDesc& GetDesc() const
-    { return m_Desc; }
+    inline const BufferDesc& GetDesc() const {
+        return m_Desc;
+    }
 
-    inline DeviceD3D11& GetDevice() const
-    { return m_Device; }
+    inline DeviceD3D11& GetDevice() const {
+        return m_Device;
+    }
 
-    inline void AssignQueryPoolRange(const QueryPoolD3D11* queryPool, uint32_t offset, uint32_t num, uint64_t bufferOffset)
-    {
+    inline void AssignQueryPoolRange(const QueryPoolD3D11* queryPool, uint32_t offset, uint32_t num, uint64_t bufferOffset) {
         m_QueryRange.pool = queryPool;
         m_QueryRange.offset = offset;
         m_QueryRange.num = num;
@@ -59,14 +55,15 @@ struct BufferD3D11
     // NRI
     //================================================================================================================
 
-    inline void SetDebugName(const char* name)
-    { SET_D3D_DEBUG_OBJECT_NAME(m_Buffer, name); }
+    inline void SetDebugName(const char* name) {
+        SET_D3D_DEBUG_OBJECT_NAME(m_Buffer, name);
+    }
 
     void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
     void* Map(uint64_t offset, uint64_t size);
     void Unmap();
 
-private:
+  private:
     DeviceD3D11& m_Device;
     ComPtr<ID3D11Buffer> m_Buffer;
     TextureD3D11* m_ReadbackTexture = nullptr;
@@ -77,4 +74,4 @@ private:
     TextureDataLayoutDesc m_ReadbackDataLayoutDesc = {};
 };
 
-}
+} // namespace nri

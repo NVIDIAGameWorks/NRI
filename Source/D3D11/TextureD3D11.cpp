@@ -1,13 +1,13 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedD3D11.h"
-#include "TextureD3D11.h"
+
 #include "MemoryD3D11.h"
+#include "TextureD3D11.h"
 
 using namespace nri;
 
-Result TextureD3D11::Create(const MemoryD3D11* memory)
-{
+Result TextureD3D11::Create(const MemoryD3D11* memory) {
     const DxgiFormat& dxgiFormat = GetDxgiFormat(m_Desc.format);
 
     uint32_t bindFlags = 0;
@@ -22,15 +22,13 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
 
     uint32_t cpuAccessFlags = D3D11_CPU_ACCESS_READ;
     D3D11_USAGE usage = D3D11_USAGE_STAGING;
-    if (memory)
-    {
+    if (memory) {
         usage = (memory->GetType() == MemoryLocation::HOST_UPLOAD || memory->GetType() == MemoryLocation::DEVICE_UPLOAD) ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
         cpuAccessFlags = 0;
     }
 
     HRESULT hr = E_INVALIDARG;
-    if (m_Desc.type == TextureType::TEXTURE_1D)
-    {
+    if (m_Desc.type == TextureType::TEXTURE_1D) {
         D3D11_TEXTURE1D_DESC desc = {};
         desc.Width = m_Desc.width;
         desc.MipLevels = m_Desc.mipNum;
@@ -41,9 +39,7 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
         desc.CPUAccessFlags = cpuAccessFlags;
 
         hr = m_Device->CreateTexture1D(&desc, nullptr, (ID3D11Texture1D**)&m_Texture);
-    }
-    else if (m_Desc.type == TextureType::TEXTURE_3D)
-    {
+    } else if (m_Desc.type == TextureType::TEXTURE_3D) {
         D3D11_TEXTURE3D_DESC desc = {};
         desc.Width = m_Desc.width;
         desc.Height = m_Desc.height;
@@ -55,9 +51,7 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
         desc.CPUAccessFlags = cpuAccessFlags;
 
         hr = m_Device->CreateTexture3D(&desc, nullptr, (ID3D11Texture3D**)&m_Texture);
-    }
-    else
-    {
+    } else {
         D3D11_TEXTURE2D_DESC desc = {};
         desc.Width = m_Desc.width;
         desc.Height = m_Desc.height;
@@ -85,8 +79,7 @@ Result TextureD3D11::Create(const MemoryD3D11* memory)
     return Result::SUCCESS;
 }
 
-Result TextureD3D11::Create(const TextureD3D11Desc& textureDesc)
-{
+Result TextureD3D11::Create(const TextureD3D11Desc& textureDesc) {
     if (!GetTextureDesc(textureDesc, m_Desc))
         return Result::INVALID_ARGUMENT;
 
@@ -95,8 +88,7 @@ Result TextureD3D11::Create(const TextureD3D11Desc& textureDesc)
     return Result::SUCCESS;
 }
 
-uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, Mip_t mipNum, Mip_t mipOffset) const
-{
+uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, Mip_t mipNum, Mip_t mipOffset) const {
     if (!mipNum)
         mipNum = m_Desc.mipNum;
 
@@ -114,8 +106,7 @@ uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, Mip_
 
     uint32_t size = 0;
 
-    while (mipNum)
-    {
+    while (mipNum) {
         if (isCompressed)
             size += ((w + 3) >> 2) * ((h + 3) >> 2) * d;
         else
@@ -139,8 +130,7 @@ uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, Mip_
     const FormatProps& formatProps = GetFormatProps(m_Desc.format);
     size *= formatProps.stride;
 
-    if (!isCustom)
-    {
+    if (!isCustom) {
         size *= m_Desc.sampleNum;
         size *= m_Desc.arraySize;
     }
@@ -148,8 +138,7 @@ uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, Mip_
     return size;
 }
 
-Dim_t TextureD3D11::GetSize(Dim_t dimensionIndex, Mip_t mip) const
-{
+Dim_t TextureD3D11::GetSize(Dim_t dimensionIndex, Mip_t mip) const {
     assert(dimensionIndex < 3);
 
     Dim_t dim = m_Desc.depth;
@@ -168,8 +157,7 @@ Dim_t TextureD3D11::GetSize(Dim_t dimensionIndex, Mip_t mip) const
 // NRI
 //================================================================================================================
 
-inline void TextureD3D11::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const
-{
+inline void TextureD3D11::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
     bool isMultisampled = m_Desc.sampleNum > 1;
     uint32_t size = GetMipmappedSize();
 

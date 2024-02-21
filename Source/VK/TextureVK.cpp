@@ -1,27 +1,25 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedVK.h"
-#include "TextureVK.h"
+
 #include "CommandQueueVK.h"
+#include "TextureVK.h"
 
 using namespace nri;
 
-TextureVK::~TextureVK()
-{
+TextureVK::~TextureVK() {
     const auto& vk = m_Device.GetDispatchTable();
 
     if (!m_OwnsNativeObjects)
         return;
 
-    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
-    {
+    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
         if (m_Handles[i] != VK_NULL_HANDLE)
             vk.DestroyImage(m_Device, m_Handles[i], m_Device.GetAllocationCallbacks());
     }
 }
 
-Result TextureVK::Create(const TextureDesc& textureDesc)
-{
+Result TextureVK::Create(const TextureDesc& textureDesc) {
     m_OwnsNativeObjects = true;
     m_ImageAspectFlags = ::GetImageAspectFlags(textureDesc.format);
     m_Desc = textureDesc;
@@ -49,22 +47,18 @@ Result TextureVK::Create(const TextureDesc& textureDesc)
     info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     const auto& vk = m_Device.GetDispatchTable();
-    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
-    {
-        if ((1 << i) & nodeMask)
-        {
+    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
+        if ((1 << i) & nodeMask) {
             const VkResult result = vk.CreateImage(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handles[i]);
 
-            RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result),
-                "Can't create a texture: vkCreateImage returned %d.", (int32_t)result);
+            RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't create a texture: vkCreateImage returned %d.", (int32_t)result);
         }
     }
 
     return Result::SUCCESS;
 }
 
-Result TextureVK::Create(const TextureVKDesc& textureDesc)
-{
+Result TextureVK::Create(const TextureVKDesc& textureDesc) {
     if (!textureDesc.vkImage)
         return Result::INVALID_ARGUMENT;
 
@@ -84,8 +78,7 @@ Result TextureVK::Create(const TextureVKDesc& textureDesc)
     const VkImage handle = (VkImage)textureDesc.vkImage;
     const uint32_t nodeMask = GetNodeMask(textureDesc.nodeMask);
 
-    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++)
-    {
+    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
         if ((1 << i) & nodeMask)
             m_Handles[i] = handle;
     }
@@ -93,8 +86,7 @@ Result TextureVK::Create(const TextureVKDesc& textureDesc)
     return Result::SUCCESS;
 }
 
-Dim_t TextureVK::GetSize(Dim_t dimensionIndex, Mip_t mip) const
-{
+Dim_t TextureVK::GetSize(Dim_t dimensionIndex, Mip_t mip) const {
     assert(dimensionIndex < 3);
 
     Dim_t dim = m_Desc.depth;
@@ -106,7 +98,7 @@ Dim_t TextureVK::GetSize(Dim_t dimensionIndex, Mip_t mip) const
     dim = (Dim_t)std::max(dim >> mip, 1);
 
     // TODO: VK doesn't require manual alignment, but probably we should use it here and during texture creation
-    //dim = Align(dim, dimension < 2 ? GetFormatProps(m_Desc.format).blockWidth : 1);
+    // dim = Align(dim, dimension < 2 ? GetFormatProps(m_Desc.format).blockWidth : 1);
 
     return dim;
 }
@@ -115,8 +107,7 @@ Dim_t TextureVK::GetSize(Dim_t dimensionIndex, Mip_t mip) const
 // NRI
 //================================================================================================================
 
-inline void TextureVK::SetDebugName(const char* name)
-{
+inline void TextureVK::SetDebugName(const char* name) {
     std::array<uint64_t, PHYSICAL_DEVICE_GROUP_MAX_SIZE> handles;
     for (size_t i = 0; i < handles.size(); i++)
         handles[i] = (uint64_t)m_Handles[i];
@@ -124,34 +115,22 @@ inline void TextureVK::SetDebugName(const char* name)
     m_Device.SetDebugNameToDeviceGroupObject(VK_OBJECT_TYPE_IMAGE, handles.data(), name);
 }
 
-void TextureVK::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const
-{
+void TextureVK::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
     VkImage handle = VK_NULL_HANDLE;
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize() && handle == VK_NULL_HANDLE; i++)
         handle = m_Handles[i];
 
     const auto& vk = m_Device.GetDispatchTable();
 
-    VkMemoryDedicatedRequirements dedicatedRequirements = {
-        VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-        nullptr
-    };
+    VkMemoryDedicatedRequirements dedicatedRequirements = {VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS, nullptr};
 
-    VkMemoryRequirements2 requirements = {
-        VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
-        &dedicatedRequirements
-    };
+    VkMemoryRequirements2 requirements = {VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, &dedicatedRequirements};
 
-    VkImageMemoryRequirementsInfo2 info = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
-        nullptr,
-        handle
-    };
+    VkImageMemoryRequirementsInfo2 info = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2, nullptr, handle};
 
     vk.GetImageMemoryRequirements2(m_Device, &info, &requirements);
 
-    memoryDesc.mustBeDedicated = dedicatedRequirements.prefersDedicatedAllocation ||
-        dedicatedRequirements.requiresDedicatedAllocation;
+    memoryDesc.mustBeDedicated = dedicatedRequirements.prefersDedicatedAllocation || dedicatedRequirements.requiresDedicatedAllocation;
 
     memoryDesc.alignment = (uint32_t)requirements.memoryRequirements.alignment;
     memoryDesc.size = requirements.memoryRequirements.size;

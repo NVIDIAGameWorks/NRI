@@ -402,7 +402,8 @@ static Result NRI_CALL CreateQueryPoolVK(Device& device, const QueryPoolVKDesc& 
     return ((DeviceVal&)device).CreateQueryPoolVK(queryPoolVKDesc, queryPool);
 }
 
-static Result NRI_CALL CreateAccelerationStructureVK(Device& device, const AccelerationStructureVKDesc& accelerationStructureVKDesc, AccelerationStructure*& accelerationStructure) {
+static Result NRI_CALL
+CreateAccelerationStructureVK(Device& device, const AccelerationStructureVKDesc& accelerationStructureVKDesc, AccelerationStructure*& accelerationStructure) {
     return ((DeviceVal&)device).CreateAccelerationStructureVK(accelerationStructureVKDesc, accelerationStructure);
 }
 

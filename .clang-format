@@ -98,7 +98,7 @@ ForEachMacros:
   - BOOST_FOREACH
 IfMacros:
   - KJ_IF_MAYBE
-IncludeBlocks: Regroup
+IncludeBlocks: Preserve
 IncludeCategories:
   - Regex: ^<ext/.*\.h>
     Priority: 2
@@ -123,7 +123,7 @@ IndentCaseBlocks: false
 IndentCaseLabels: true
 IndentExternBlock: NoIndent
 IndentGotoLabels: true
-IndentPPDirectives: BeforeHash
+IndentPPDirectives: AfterHash
 IndentRequiresClause: true
 IndentWidth: 4
 IndentWrappedFunctionNames: false
@@ -186,7 +186,7 @@ RequiresClausePosition: OwnLine
 # RequiresExpressionIndentation: OuterScope
 SeparateDefinitionBlocks: Leave
 ShortNamespaceLines: 1
-SortIncludes: Never
+SortIncludes: CaseSensitive
 SortJavaStaticImport: Before
 # SortUsingDeclarations: LexicographicNumeric
 SpaceAfterCStyleCast: false

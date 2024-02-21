@@ -2,12 +2,11 @@
 
 #include "SharedExternal.h"
 #include "SharedVal.h"
-#include "BufferVal.h"
-#include "TextureVal.h"
-#include "AccelerationStructureVal.h"
-#include "MemoryVal.h"
 
-#include <algorithm>
+#include "AccelerationStructureVal.h"
+#include "BufferVal.h"
+#include "MemoryVal.h"
+#include "TextureVal.h"
 
 using namespace nri;
 

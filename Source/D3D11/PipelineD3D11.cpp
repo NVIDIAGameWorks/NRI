@@ -1,17 +1,16 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedD3D11.h"
+
 #include "PipelineD3D11.h"
 
 using namespace nri;
 
-PipelineD3D11::~PipelineD3D11()
-{
+PipelineD3D11::~PipelineD3D11() {
     Deallocate(m_Device.GetStdAllocator(), m_RasterizerStateExDesc);
 }
 
-Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc)
-{
+Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
     const InputAssemblyDesc& ia = *pipelineDesc.inputAssembly;
     const RasterizationDesc& rs = *pipelineDesc.rasterization;
     const OutputMergerDesc& om = *pipelineDesc.outputMerger;
@@ -22,37 +21,26 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc)
 
     // shaders
 
-    for (uint32_t i = 0; i < pipelineDesc.shaderNum; i++)
-    {
+    for (uint32_t i = 0; i < pipelineDesc.shaderNum; i++) {
         const ShaderDesc* shaderDesc = pipelineDesc.shaders + i;
 
-        if (shaderDesc->stage == StageBits::VERTEX_SHADER)
-        {
+        if (shaderDesc->stage == StageBits::VERTEX_SHADER) {
             vertexShader = shaderDesc;
             hr = m_Device->CreateVertexShader(shaderDesc->bytecode, (size_t)shaderDesc->size, nullptr, &m_VertexShader);
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateVertexShader()");
-        }
-        else if (shaderDesc->stage == StageBits::TESS_CONTROL_SHADER)
-        {
+        } else if (shaderDesc->stage == StageBits::TESS_CONTROL_SHADER) {
             hr = m_Device->CreateHullShader(shaderDesc->bytecode, (size_t)shaderDesc->size, nullptr, &m_TessControlShader);
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateHullShader()");
-        }
-        else if (shaderDesc->stage == StageBits::TESS_EVALUATION_SHADER)
-        {
+        } else if (shaderDesc->stage == StageBits::TESS_EVALUATION_SHADER) {
             hr = m_Device->CreateDomainShader(shaderDesc->bytecode, (size_t)shaderDesc->size, nullptr, &m_TessEvaluationShader);
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateDomainShader()");
-        }
-        else if (shaderDesc->stage == StageBits::GEOMETRY_SHADER)
-        {
+        } else if (shaderDesc->stage == StageBits::GEOMETRY_SHADER) {
             hr = m_Device->CreateGeometryShader(shaderDesc->bytecode, (size_t)shaderDesc->size, nullptr, &m_GeometryShader);
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateGeometryShader()");
-        }
-        else if (shaderDesc->stage == StageBits::FRAGMENT_SHADER)
-        {
+        } else if (shaderDesc->stage == StageBits::FRAGMENT_SHADER) {
             hr = m_Device->CreatePixelShader(shaderDesc->bytecode, (size_t)shaderDesc->size, nullptr, &m_FragmentShader);
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreatePixelShader()");
-        }
-        else
+        } else
             return Result::INVALID_ARGUMENT;
     }
 
@@ -64,21 +52,18 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc)
 
     m_Topology = GetD3D11TopologyFromTopology(ia.topology, ia.tessControlPointNum);
 
-    if (ia.attributes)
-    {
+    if (ia.attributes) {
         uint32_t maxBindingSlot = 0;
-        for (uint32_t i = 0; i < ia.streamNum; i++)
-        {
+        for (uint32_t i = 0; i < ia.streamNum; i++) {
             const VertexStreamDesc& stream = ia.streams[i];
-            if (stream.bindingSlot > maxBindingSlot )
+            if (stream.bindingSlot > maxBindingSlot)
                 maxBindingSlot = stream.bindingSlot;
         }
         m_InputAssemplyStrides.resize(maxBindingSlot + 1);
 
         D3D11_INPUT_ELEMENT_DESC* inputElements = STACK_ALLOC(D3D11_INPUT_ELEMENT_DESC, ia.attributeNum);
 
-        for (uint32_t i = 0; i < ia.attributeNum; i++)
-        {
+        for (uint32_t i = 0; i < ia.attributeNum; i++) {
             const VertexAttributeDesc& attrIn = ia.attributes[i];
             const VertexStreamDesc& stream = ia.streams[attrIn.streamIndex];
             D3D11_INPUT_ELEMENT_DESC& attrOut = inputElements[i];
@@ -90,8 +75,7 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc)
             attrOut.InputSlot = stream.bindingSlot;
             attrOut.AlignedByteOffset = attrIn.offset;
             attrOut.InstanceDataStepRate = stream.stepRate == VertexStreamStepRate::PER_VERTEX ? 0 : 1;
-            attrOut.InputSlotClass = stream.stepRate == VertexStreamStepRate::PER_VERTEX ?
-                D3D11_INPUT_PER_VERTEX_DATA : D3D11_INPUT_PER_INSTANCE_DATA;
+            attrOut.InputSlotClass = stream.stepRate == VertexStreamStepRate::PER_VERTEX ? D3D11_INPUT_PER_VERTEX_DATA : D3D11_INPUT_PER_INSTANCE_DATA;
 
             m_InputAssemplyStrides[stream.bindingSlot] = stream.stride;
         };
@@ -114,17 +98,13 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc)
     rasterizerDesc.ScissorEnable = TRUE;
     rasterizerDesc.MultisampleEnable = rs.sampleNum > 1 ? TRUE : FALSE;
     rasterizerDesc.AntialiasedLineEnable = rs.antialiasedLines;
-    rasterizerDesc.ConservativeRaster = rs.conservativeRasterization ?
-        D3D11_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D11_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+    rasterizerDesc.ConservativeRaster = rs.conservativeRasterization ? D3D11_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D11_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
     RasterizerState rasterizerState;
-    if (m_Device.GetVersion() >= 3)
-    {
+    if (m_Device.GetVersion() >= 3) {
         hr = m_Device->CreateRasterizerState2(&rasterizerDesc, &rasterizerState.ptr);
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device3::CreateRasterizerState2()");
-    }
-    else
-    {
+    } else {
         hr = m_Device->CreateRasterizerState((D3D11_RASTERIZER_DESC*)&rasterizerDesc, (ID3D11RasterizerState**)&rasterizerState.ptr);
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateRasterizerState()");
     }
@@ -169,8 +149,7 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc)
     D3D11_BLEND_DESC1 blendState1 = {};
     blendState1.AlphaToCoverageEnable = rs.alphaToCoverage;
     blendState1.IndependentBlendEnable = TRUE;
-    for (uint32_t i = 0; i < om.colorNum; i++)
-    {
+    for (uint32_t i = 0; i < om.colorNum; i++) {
         const ColorAttachmentDesc& bs = om.color[i];
         const uint8_t colorWriteMask = rs.rasterizerDiscard ? 0 : uint8_t(bs.colorWriteMask);
 
@@ -188,13 +167,11 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc)
 
     if (m_Device.GetVersion() >= 1)
         hr = m_Device->CreateBlendState1(&blendState1, &m_BlendState);
-    else
-    {
+    else {
         D3D11_BLEND_DESC blendState = {};
         blendState.AlphaToCoverageEnable = blendState1.AlphaToCoverageEnable;
         blendState.IndependentBlendEnable = blendState1.IndependentBlendEnable;
-        for (uint32_t i = 0; i < om.colorNum; i++)
-        {
+        for (uint32_t i = 0; i < om.colorNum; i++) {
             blendState.RenderTarget[i].BlendEnable = blendState1.RenderTarget[i].BlendEnable;
             blendState.RenderTarget[i].SrcBlend = blendState1.RenderTarget[i].SrcBlend;
             blendState.RenderTarget[i].DestBlend = blendState1.RenderTarget[i].DestBlend;
@@ -217,10 +194,8 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc)
     return Result::SUCCESS;
 }
 
-Result PipelineD3D11::Create(const ComputePipelineDesc& pipelineDesc)
-{
-    if (pipelineDesc.shader.bytecode)
-    {
+Result PipelineD3D11::Create(const ComputePipelineDesc& pipelineDesc) {
+    if (pipelineDesc.shader.bytecode) {
         HRESULT hr = m_Device->CreateComputeShader(pipelineDesc.shader.bytecode, (size_t)pipelineDesc.shader.size, nullptr, &m_ComputeShader);
 
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateComputeShader()");
@@ -231,37 +206,31 @@ Result PipelineD3D11::Create(const ComputePipelineDesc& pipelineDesc)
     return Result::SUCCESS;
 }
 
-void PipelineD3D11::ChangeSamplePositions(ID3D11DeviceContextBest* deferredContext, const SamplePositionsState& samplePositionState, DynamicState mode)
-{
+void PipelineD3D11::ChangeSamplePositions(ID3D11DeviceContextBest* deferredContext, const SamplePositionsState& samplePositionState, DynamicState mode) {
     if (IsCompute())
         return;
 
     size_t i = 0;
-    for (; i < m_RasterizerStates.size(); i++)
-    {
+    for (; i < m_RasterizerStates.size(); i++) {
         if (m_RasterizerStates[i].samplePositionHash == samplePositionState.positionHash)
             break;
     }
 
-    if (i == m_RasterizerStates.size())
-    {
+    if (i == m_RasterizerStates.size()) {
         RasterizerState newState = {};
         newState.samplePositionHash = samplePositionState.positionHash;
 
         m_RasterizerStateExDesc->InterleavedSamplingEnable = samplePositionState.positionNum > m_RasterizerStateExDesc->SampleCount;
-        for (uint32_t j = 0; j < samplePositionState.positionNum; j++)
-        {
+        for (uint32_t j = 0; j < samplePositionState.positionNum; j++) {
             m_RasterizerStateExDesc->SamplePositionsX[j] = samplePositionState.positions[j].x + 8;
             m_RasterizerStateExDesc->SamplePositionsY[j] = samplePositionState.positions[j].y + 8;
         }
 
-        if (m_Device.GetExt()->IsNvAPIAvailable())
-        {
+        if (m_Device.GetExt()->IsNvAPIAvailable()) {
             NvAPI_Status result = NvAPI_D3D11_CreateRasterizerState(m_Device.GetNativeObject(), m_RasterizerStateExDesc, (ID3D11RasterizerState**)&newState.ptr);
             if (result != NVAPI_OK)
                 REPORT_ERROR(&m_Device, "NvAPI_D3D11_CreateRasterizerState() - FAILED!");
-        }
-        else
+        } else
             REPORT_ERROR(&m_Device, "Programmable Sample Locations feature is only supported on NVIDIA GPUs on DX11! Ignoring...");
 
         if (!newState.ptr)
@@ -277,26 +246,21 @@ void PipelineD3D11::ChangeSamplePositions(ID3D11DeviceContextBest* deferredConte
     m_RasterizerState = newState;
 }
 
-void PipelineD3D11::ChangeStencilReference(ID3D11DeviceContextBest* deferredContext, uint8_t stencilRef, DynamicState mode)
-{
+void PipelineD3D11::ChangeStencilReference(ID3D11DeviceContextBest* deferredContext, uint8_t stencilRef, DynamicState mode) {
     if (mode == DynamicState::BIND_AND_SET && m_StencilRef != stencilRef)
         deferredContext->OMSetDepthStencilState(m_DepthStencilState, stencilRef);
 
     m_StencilRef = stencilRef;
 }
 
-void PipelineD3D11::Bind(ID3D11DeviceContextBest* deferredContext, const PipelineD3D11* currentPipeline) const
-{
+void PipelineD3D11::Bind(ID3D11DeviceContextBest* deferredContext, const PipelineD3D11* currentPipeline) const {
     if (this == currentPipeline)
         return;
 
-    if (IsCompute())
-    {
+    if (IsCompute()) {
         if (!currentPipeline || m_ComputeShader != currentPipeline->m_ComputeShader)
             deferredContext->CSSetShader(m_ComputeShader, nullptr, 0);
-    }
-    else
-    {
+    } else {
         if (!currentPipeline || m_Topology != currentPipeline->m_Topology)
             deferredContext->IASetPrimitiveTopology(m_Topology);
 
@@ -309,7 +273,8 @@ void PipelineD3D11::Bind(ID3D11DeviceContextBest* deferredContext, const Pipelin
         if (!currentPipeline || m_DepthStencilState != currentPipeline->m_DepthStencilState || m_StencilRef != currentPipeline->m_StencilRef)
             deferredContext->OMSetDepthStencilState(m_DepthStencilState, m_StencilRef);
 
-        if (!currentPipeline || m_BlendState != currentPipeline->m_BlendState || m_SampleMask != currentPipeline->m_SampleMask || memcmp(&m_BlendFactor.x, &currentPipeline->m_BlendFactor.x, sizeof(m_BlendFactor)))
+        if (!currentPipeline || m_BlendState != currentPipeline->m_BlendState || m_SampleMask != currentPipeline->m_SampleMask ||
+            memcmp(&m_BlendFactor.x, &currentPipeline->m_BlendFactor.x, sizeof(m_BlendFactor)))
             deferredContext->OMSetBlendState(m_BlendState, &m_BlendFactor.x, m_SampleMask);
 
         if (!currentPipeline || m_VertexShader != currentPipeline->m_VertexShader)
@@ -327,10 +292,9 @@ void PipelineD3D11::Bind(ID3D11DeviceContextBest* deferredContext, const Pipelin
         if (!currentPipeline || m_FragmentShader != currentPipeline->m_FragmentShader)
             deferredContext->PSSetShader(m_FragmentShader, nullptr, 0);
 
-        if (m_IsRasterizerDiscarded)
-        {
+        if (m_IsRasterizerDiscarded) {
             // no RASTERIZER_DISCARD support in DX11, below is the simplest emulation
-            D3D11_RECT rect = { -1, -1, -1, -1 };
+            D3D11_RECT rect = {-1, -1, -1, -1};
             deferredContext->RSSetScissorRects(1, &rect);
         }
     }
@@ -340,8 +304,7 @@ void PipelineD3D11::Bind(ID3D11DeviceContextBest* deferredContext, const Pipelin
 // NRI
 //================================================================================================================
 
-void PipelineD3D11::SetDebugName(const char* name)
-{
+void PipelineD3D11::SetDebugName(const char* name) {
     SET_D3D_DEBUG_OBJECT_NAME(m_VertexShader, name);
     SET_D3D_DEBUG_OBJECT_NAME(m_TessControlShader, name);
     SET_D3D_DEBUG_OBJECT_NAME(m_TessEvaluationShader, name);

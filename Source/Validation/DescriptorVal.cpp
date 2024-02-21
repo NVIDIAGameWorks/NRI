@@ -2,6 +2,7 @@
 
 #include "SharedExternal.h"
 #include "SharedVal.h"
+
 #include "DescriptorVal.h"
 
 using namespace nri;

@@ -1,22 +1,18 @@
 // © 2021 NVIDIA Corporation
 
-#include <inttypes.h>
-
 #include "SharedExternal.h"
-#include "DeviceBase.h"
-#include "DeviceVal.h"
 #include "SharedVal.h"
-#include "CommandBufferVal.h"
 
+#include "AccelerationStructureVal.h"
 #include "BufferVal.h"
-#include "DescriptorVal.h"
-#include "DescriptorSetVal.h"
+#include "CommandBufferVal.h"
 #include "DescriptorPoolVal.h"
+#include "DescriptorVal.h"
+#include "DeviceVal.h"
 #include "PipelineLayoutVal.h"
 #include "PipelineVal.h"
 #include "QueryPoolVal.h"
 #include "TextureVal.h"
-#include "AccelerationStructureVal.h"
 
 using namespace nri;
 
@@ -134,7 +130,9 @@ void CommandBufferVal::SetStencilReference(uint8_t reference) {
 
 void CommandBufferVal::SetSamplePositions(const SamplePosition* positions, uint32_t positionNum) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdSetSamplePositions: the command buffer must be in the recording state");
-    RETURN_ON_FAILURE(&m_Device, m_Device.GetDesc().isProgrammableSampleLocationsSupported, ReturnVoid(), "CmdSetSamplePositions: DeviceDesc::isProgrammableSampleLocationsSupported = false");
+    RETURN_ON_FAILURE(
+        &m_Device, m_Device.GetDesc().isProgrammableSampleLocationsSupported, ReturnVoid(), "CmdSetSamplePositions: DeviceDesc::isProgrammableSampleLocationsSupported = false"
+    );
 
     GetCoreInterface().CmdSetSamplePositions(*GetImpl(), positions, positionNum);
 }
@@ -508,8 +506,7 @@ void CommandBufferVal::BuildBottomLevelAccelerationStructure(
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "CmdBuildBottomLevelAccelerationStructure: must be called outside of 'CmdBeginRendering/CmdEndRendering'");
     RETURN_ON_FAILURE(&m_Device, geometryObjects != nullptr, ReturnVoid(), "CmdBuildBottomLevelAccelerationStructure: 'geometryObjects' is NULL");
     RETURN_ON_FAILURE(
-        &m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdBuildBottomLevelAccelerationStructure: 'scratchOffset = %" PRIu64 "' is out of bounds",
-        scratchOffset
+        &m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdBuildBottomLevelAccelerationStructure: 'scratchOffset = %llu' is out of bounds", scratchOffset
     );
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL(AccelerationStructure, &dst);
@@ -532,11 +529,11 @@ void CommandBufferVal::UpdateTopLevelAccelerationStructure(
     BufferVal& scratchVal = (BufferVal&)scratch;
 
     RETURN_ON_FAILURE(
-        &m_Device, bufferOffset < bufferVal.GetDesc().size, ReturnVoid(), "CmdUpdateTopLevelAccelerationStructure: 'bufferOffset = %" PRIu64 "' is out of bounds", bufferOffset
+        &m_Device, bufferOffset < bufferVal.GetDesc().size, ReturnVoid(), "CmdUpdateTopLevelAccelerationStructure: 'bufferOffset = %llu' is out of bounds", bufferOffset
     );
 
     RETURN_ON_FAILURE(
-        &m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdUpdateTopLevelAccelerationStructure: 'scratchOffset = %" PRIu64 "' is out of bounds", scratchOffset
+        &m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdUpdateTopLevelAccelerationStructure: 'scratchOffset = %llu' is out of bounds", scratchOffset
     );
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL(AccelerationStructure, &dst);
@@ -558,8 +555,7 @@ void CommandBufferVal::UpdateBottomLevelAccelerationStructure(
     BufferVal& scratchVal = (BufferVal&)scratch;
 
     RETURN_ON_FAILURE(
-        &m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdUpdateBottomLevelAccelerationStructure: 'scratchOffset = %" PRIu64 "' is out of bounds",
-        scratchOffset
+        &m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdUpdateBottomLevelAccelerationStructure: 'scratchOffset = %llu' is out of bounds", scratchOffset
     );
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL(AccelerationStructure, &dst);

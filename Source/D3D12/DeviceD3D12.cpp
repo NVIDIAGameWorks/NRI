@@ -1,51 +1,36 @@
 ﻿// © 2021 NVIDIA Corporation
 
-#include <dxgi1_5.h>
-
 #include "SharedD3D12.h"
-#include "CommandQueueD3D12.h"
+
+#include "AccelerationStructureD3D12.h"
+#include "BufferD3D12.h"
 #include "CommandAllocatorD3D12.h"
-#include "DescriptorSetD3D12.h"
+#include "CommandBufferD3D12.h"
+#include "CommandQueueD3D12.h"
+#include "DescriptorD3D12.h"
 #include "DescriptorPoolD3D12.h"
 #include "FenceD3D12.h"
 #include "MemoryD3D12.h"
-#include "BufferD3D12.h"
-#include "TextureD3D12.h"
-#include "DescriptorD3D12.h"
-#include "PipelineLayoutD3D12.h"
 #include "PipelineD3D12.h"
+#include "PipelineLayoutD3D12.h"
 #include "QueryPoolD3D12.h"
 #include "SwapChainD3D12.h"
-#include "AccelerationStructureD3D12.h"
-#include "CommandBufferD3D12.h"
+#include "TextureD3D12.h"
 
 using namespace nri;
 
-static uint8_t QueryLatestDevice(ComPtr<ID3D12DeviceBest>& in, ComPtr<ID3D12DeviceBest>& out)
-{
+static uint8_t QueryLatestDevice(ComPtr<ID3D12DeviceBest>& in, ComPtr<ID3D12DeviceBest>& out) {
     static const IID versions[] = {
 #ifdef NRI_USE_AGILITY_SDK
-        __uuidof(ID3D12Device13),
-        __uuidof(ID3D12Device12),
-        __uuidof(ID3D12Device11),
-        __uuidof(ID3D12Device10),
-        __uuidof(ID3D12Device9),
-        __uuidof(ID3D12Device8),
-        __uuidof(ID3D12Device7),
-        __uuidof(ID3D12Device6),
+        __uuidof(ID3D12Device13), __uuidof(ID3D12Device12), __uuidof(ID3D12Device11), __uuidof(ID3D12Device10), __uuidof(ID3D12Device9), __uuidof(ID3D12Device8),
+        __uuidof(ID3D12Device7),  __uuidof(ID3D12Device6),
 #endif
-        __uuidof(ID3D12Device5),
-        __uuidof(ID3D12Device4),
-        __uuidof(ID3D12Device3),
-        __uuidof(ID3D12Device2),
-        __uuidof(ID3D12Device1),
-        __uuidof(ID3D12Device),
+        __uuidof(ID3D12Device5),  __uuidof(ID3D12Device4),  __uuidof(ID3D12Device3),  __uuidof(ID3D12Device2),  __uuidof(ID3D12Device1), __uuidof(ID3D12Device),
     };
     const uint8_t n = (uint8_t)GetCountOf(versions);
 
     uint8_t i = 0;
-    for (; i < n; i++)
-    {
+    for (; i < n; i++) {
         HRESULT hr = in->QueryInterface(versions[i], (void**)&out);
         if (SUCCEEDED(hr))
             break;
@@ -54,14 +39,12 @@ static uint8_t QueryLatestDevice(ComPtr<ID3D12DeviceBest>& in, ComPtr<ID3D12Devi
     return n - i - 1;
 }
 
-Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device)
-{
+Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device) {
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
 
     DeviceD3D12* implementation = Allocate<DeviceD3D12>(allocator, deviceCreationDesc.callbackInterface, allocator);
     const nri::Result result = implementation->Create(deviceCreationDesc);
-    if (result != nri::Result::SUCCESS)
-    {
+    if (result != nri::Result::SUCCESS) {
         Deallocate(allocator, implementation);
         return result;
     }
@@ -71,15 +54,13 @@ Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBas
     return nri::Result::SUCCESS;
 }
 
-Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, DeviceBase*& device)
-{
+Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, DeviceBase*& device) {
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
 
     DeviceD3D12* implementation = Allocate<DeviceD3D12>(allocator, deviceCreationDesc.callbackInterface, allocator);
     const Result res = implementation->Create(deviceCreationDesc);
 
-    if (res == Result::SUCCESS)
-    {
+    if (res == Result::SUCCESS) {
         device = implementation;
         return Result::SUCCESS;
     }
@@ -89,35 +70,30 @@ Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, Devi
 }
 
 DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator)
-    : DeviceBase(callbacks, stdAllocator)
-    , m_DescriptorHeaps(GetStdAllocator())
-    , m_FreeDescriptors(GetStdAllocator())
-    , m_DrawCommandSignatures(GetStdAllocator())
-    , m_DrawIndexedCommandSignatures(GetStdAllocator())
-{
+    : DeviceBase(callbacks, stdAllocator),
+      m_DescriptorHeaps(GetStdAllocator()),
+      m_FreeDescriptors(GetStdAllocator()),
+      m_DrawCommandSignatures(GetStdAllocator()),
+      m_DrawIndexedCommandSignatures(GetStdAllocator()) {
     m_FreeDescriptors.resize(DESCRIPTOR_HEAP_TYPE_NUM, Vector<DescriptorHandle>(GetStdAllocator()));
     m_Desc.graphicsAPI = GraphicsAPI::D3D12;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
 }
 
-DeviceD3D12::~DeviceD3D12()
-{
-    for (auto& commandQueueD3D12 : m_CommandQueues)
-    {
+DeviceD3D12::~DeviceD3D12() {
+    for (auto& commandQueueD3D12 : m_CommandQueues) {
         if (commandQueueD3D12)
             Deallocate(GetStdAllocator(), commandQueueD3D12);
     }
 }
 
-template<typename Implementation, typename Interface, typename ... Args>
-Result DeviceD3D12::CreateImplementation(Interface*& entity, const Args&... args)
-{
+template <typename Implementation, typename Interface, typename... Args>
+Result DeviceD3D12::CreateImplementation(Interface*& entity, const Args&... args) {
     Implementation* implementation = Allocate<Implementation>(GetStdAllocator(), *this);
     const Result result = implementation->Create(args...);
 
-    if (result == Result::SUCCESS)
-    {
+    if (result == Result::SUCCESS) {
         entity = (Interface*)implementation;
         return Result::SUCCESS;
     }
@@ -127,8 +103,7 @@ Result DeviceD3D12::CreateImplementation(Interface*& entity, const Args&... args
     return result;
 }
 
-Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
-{
+Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc) {
     ComPtr<ID3D12DeviceBest> device = (ID3D12DeviceBest*)deviceCreationDesc.d3d12Device;
 
     // Get adapter
@@ -189,11 +164,9 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc)
     return FillFunctionTable(m_CoreInterface);
 }
 
-Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
-{
+Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc) {
     // IMPORTANT: Must be called before the D3D12 device is created, or the D3D12 runtime removes the device.
-    if (deviceCreationDesc.enableAPIValidation)
-    {
+    if (deviceCreationDesc.enableAPIValidation) {
         ComPtr<ID3D12Debug> debugController;
         if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
             debugController->EnableDebugLayer();
@@ -204,14 +177,11 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
     HRESULT hr = CreateDXGIFactory2(deviceCreationDesc.enableAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
     RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
 
-    if (deviceCreationDesc.adapterDesc)
-    {
+    if (deviceCreationDesc.adapterDesc) {
         LUID luid = *(LUID*)&deviceCreationDesc.adapterDesc->luid;
         hr = dxgiFactory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&m_Adapter));
         RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
-    }
-    else
-    {
+    } else {
         hr = dxgiFactory->EnumAdapters(0, &m_Adapter);
         RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapters()");
     }
@@ -237,20 +207,19 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
     REPORT_INFO(this, "Using ID3D12Device%u...", m_Version);
 
     // TODO: this code is currently needed to disable known false-positive errors reported by the debug layer
-    if (deviceCreationDesc.enableAPIValidation)
-    {
+    if (deviceCreationDesc.enableAPIValidation) {
         ComPtr<ID3D12InfoQueue> pInfoQueue;
         m_Device->QueryInterface(&pInfoQueue);
 
-        if (pInfoQueue)
-        {
-            #ifdef _DEBUG
-                pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
-                pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-            #endif
+        if (pInfoQueue) {
+#ifdef _DEBUG
+            pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+            pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+#endif
 
             D3D12_MESSAGE_ID disableMessageIDs[] = {
-                D3D12_MESSAGE_ID_COMMAND_LIST_STATIC_DESCRIPTOR_RESOURCE_DIMENSION_MISMATCH, // TODO: descriptor validation doesn't understand acceleration structures used outside of RAYGEN shaders
+                D3D12_MESSAGE_ID_COMMAND_LIST_STATIC_DESCRIPTOR_RESOURCE_DIMENSION_MISMATCH, // TODO: descriptor validation doesn't understand acceleration structures used outside
+                                                                                             // of RAYGEN shaders
             };
 
             D3D12_INFO_QUEUE_FILTER filter = {};
@@ -286,8 +255,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc)
     return FillFunctionTable(m_CoreInterface);
 }
 
-Result DeviceD3D12::CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type)
-{
+Result DeviceD3D12::CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type) {
     // IMPORTANT: m_FreeDescriptorLocks[type] must be acquired before calling this function
     ExclusiveScope lock(m_DescriptorHeapLock);
 
@@ -308,18 +276,16 @@ Result DeviceD3D12::CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYP
 
     auto& freeDescriptors = m_FreeDescriptors[type];
     for (uint32_t i = 0; i < desc.NumDescriptors; i++)
-        freeDescriptors.push_back( {(HeapIndexType)heapIndex, (HeapOffsetType)i} );
+        freeDescriptors.push_back({(HeapIndexType)heapIndex, (HeapOffsetType)i});
 
     return Result::SUCCESS;
 }
 
-Result DeviceD3D12::GetDescriptorHandle(D3D12_DESCRIPTOR_HEAP_TYPE type, DescriptorHandle& descriptorHandle)
-{
+Result DeviceD3D12::GetDescriptorHandle(D3D12_DESCRIPTOR_HEAP_TYPE type, DescriptorHandle& descriptorHandle) {
     ExclusiveScope lock(m_FreeDescriptorLocks[type]);
 
     auto& freeDescriptors = m_FreeDescriptors[type];
-    if (freeDescriptors.empty())
-    {
+    if (freeDescriptors.empty()) {
         Result result = CreateCpuOnlyVisibleDescriptorHeap(type);
         if (result != Result::SUCCESS)
             return result;
@@ -331,8 +297,7 @@ Result DeviceD3D12::GetDescriptorHandle(D3D12_DESCRIPTOR_HEAP_TYPE type, Descrip
     return Result::SUCCESS;
 }
 
-DescriptorPointerCPU DeviceD3D12::GetDescriptorPointerCPU(const DescriptorHandle& descriptorHandle)
-{
+DescriptorPointerCPU DeviceD3D12::GetDescriptorPointerCPU(const DescriptorHandle& descriptorHandle) {
     ExclusiveScope lock(m_DescriptorHeapLock);
 
     const DescriptorHeapDesc& descriptorHeapDesc = m_DescriptorHeaps[descriptorHandle.heapIndex];
@@ -341,8 +306,7 @@ DescriptorPointerCPU DeviceD3D12::GetDescriptorPointerCPU(const DescriptorHandle
     return descriptorPointer;
 }
 
-void DeviceD3D12::GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const
-{
+void DeviceD3D12::GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const {
     if (memoryLocation == MemoryLocation::DEVICE_UPLOAD && m_Desc.deviceUploadHeapSize == 0)
         memoryLocation = MemoryLocation::HOST_UPLOAD;
 
@@ -355,8 +319,7 @@ void DeviceD3D12::GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOU
     memoryDesc.mustBeDedicated = RequiresDedicatedAllocation(memoryDesc.type);
 }
 
-ID3D12CommandSignature* DeviceD3D12::CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride)
-{
+ID3D12CommandSignature* DeviceD3D12::CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride) {
     D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDesc = {};
     indirectArgumentDesc.Type = indirectArgumentType;
 
@@ -374,8 +337,7 @@ ID3D12CommandSignature* DeviceD3D12::CreateCommandSignature(D3D12_INDIRECT_ARGUM
     return commandSignature;
 }
 
-ID3D12CommandSignature* DeviceD3D12::GetDrawCommandSignature(uint32_t stride)
-{
+ID3D12CommandSignature* DeviceD3D12::GetDrawCommandSignature(uint32_t stride) {
     auto commandSignatureIt = m_DrawCommandSignatures.find(stride);
     if (commandSignatureIt != m_DrawCommandSignatures.end())
         return commandSignatureIt->second;
@@ -386,8 +348,7 @@ ID3D12CommandSignature* DeviceD3D12::GetDrawCommandSignature(uint32_t stride)
     return commandSignature;
 }
 
-ID3D12CommandSignature* DeviceD3D12::GetDrawIndexedCommandSignature(uint32_t stride)
-{
+ID3D12CommandSignature* DeviceD3D12::GetDrawIndexedCommandSignature(uint32_t stride) {
     auto commandSignatureIt = m_DrawIndexedCommandSignatures.find(stride);
     if (commandSignatureIt != m_DrawIndexedCommandSignatures.end())
         return commandSignatureIt->second;
@@ -398,18 +359,15 @@ ID3D12CommandSignature* DeviceD3D12::GetDrawIndexedCommandSignature(uint32_t str
     return commandSignature;
 }
 
-ID3D12CommandSignature* DeviceD3D12::GetDispatchCommandSignature() const
-{
+ID3D12CommandSignature* DeviceD3D12::GetDispatchCommandSignature() const {
     return m_DispatchCommandSignature.GetInterface();
 }
 
-MemoryType DeviceD3D12::GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const
-{
+MemoryType DeviceD3D12::GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const {
     return ::GetMemoryType(memoryLocation, resourceDesc);
 }
 
-void DeviceD3D12::FillDesc()
-{
+void DeviceD3D12::FillDesc() {
     D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
     HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
     if (FAILED(hr))
@@ -481,7 +439,7 @@ void DeviceD3D12::FillDesc()
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12, &options12, sizeof(options12));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options12) failed, result = 0x%08X!", hr);
-    m_AreEnhancedBarriersSupported = options12.EnhancedBarriersSupported;    
+    m_AreEnhancedBarriersSupported = options12.EnhancedBarriersSupported;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS13 options13 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS13, &options13, sizeof(options13));
@@ -521,11 +479,7 @@ void DeviceD3D12::FillDesc()
 #endif
 
     const std::array<D3D_FEATURE_LEVEL, 5> levelsList = {
-        D3D_FEATURE_LEVEL_11_0,
-        D3D_FEATURE_LEVEL_11_1,
-        D3D_FEATURE_LEVEL_12_0,
-        D3D_FEATURE_LEVEL_12_1,
-        D3D_FEATURE_LEVEL_12_2,
+        D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_2,
     };
 
     D3D12_FEATURE_DATA_FEATURE_LEVELS levels = {};
@@ -537,8 +491,7 @@ void DeviceD3D12::FillDesc()
     {
         CommandQueue* commandQueue = nullptr;
         Result result = GetCommandQueue(CommandQueueType::GRAPHICS, commandQueue);
-        if (result == Result::SUCCESS)
-        {
+        if (result == Result::SUCCESS) {
             ID3D12CommandQueue* commandQueueD3D12 = *(CommandQueueD3D12*)commandQueue;
             commandQueueD3D12->GetTimestampFrequency(&timestampFrequency);
         }
@@ -608,7 +561,8 @@ void DeviceD3D12::FillDesc()
     m_Desc.tessControlShaderPerVertexInputComponentMaxNum = D3D12_HS_CONTROL_POINT_PHASE_INPUT_REGISTER_COUNT * D3D12_HS_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessControlShaderPerVertexOutputComponentMaxNum = D3D12_HS_CONTROL_POINT_PHASE_OUTPUT_REGISTER_COUNT * D3D12_HS_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessControlShaderPerPatchOutputComponentMaxNum = D3D12_HS_OUTPUT_PATCH_CONSTANT_REGISTER_SCALAR_COMPONENTS;
-    m_Desc.tessControlShaderTotalOutputComponentMaxNum = m_Desc.tessControlShaderPatchPointMaxNum * m_Desc.tessControlShaderPerVertexOutputComponentMaxNum + m_Desc.tessControlShaderPerPatchOutputComponentMaxNum;
+    m_Desc.tessControlShaderTotalOutputComponentMaxNum =
+        m_Desc.tessControlShaderPatchPointMaxNum * m_Desc.tessControlShaderPerVertexOutputComponentMaxNum + m_Desc.tessControlShaderPerPatchOutputComponentMaxNum;
 
     m_Desc.tessEvaluationShaderInputComponentMaxNum = D3D12_DS_INPUT_CONTROL_POINT_REGISTER_COUNT * D3D12_DS_INPUT_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessEvaluationShaderOutputComponentMaxNum = D3D12_DS_INPUT_CONTROL_POINT_REGISTER_COUNT * D3D12_DS_INPUT_CONTROL_POINT_REGISTER_COMPONENTS;
@@ -633,8 +587,7 @@ void DeviceD3D12::FillDesc()
     m_Desc.computeShaderWorkGroupMaxDim[1] = D3D12_CS_THREAD_GROUP_MAX_Y;
     m_Desc.computeShaderWorkGroupMaxDim[2] = D3D12_CS_THREAD_GROUP_MAX_Z;
 
-    if (m_Desc.isRaytracingSupported)
-    {
+    if (m_Desc.isRaytracingSupported) {
         m_Desc.rayTracingShaderGroupIdentifierSize = D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT;
         m_Desc.rayTracingShaderTableAligment = D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
         m_Desc.rayTracingShaderTableMaxStride = std::numeric_limits<uint64_t>::max();
@@ -642,8 +595,7 @@ void DeviceD3D12::FillDesc()
         m_Desc.rayTracingGeometryObjectMaxNum = (1 << 24) - 1;
     }
 
-    if (m_Desc.isMeshShaderSupported)
-    {
+    if (m_Desc.isMeshShaderSupported) {
         m_Desc.meshControlSharedMemoryMaxSize = 32 * 1024;
         m_Desc.meshControlWorkGroupInvocationMaxNum = 128;
         m_Desc.meshControlPayloadMaxSize = 16 * 1024;
@@ -690,8 +642,7 @@ void DeviceD3D12::FillDesc()
 // DeviceBase
 //================================================================================================================
 
-void DeviceD3D12::Destroy()
-{
+void DeviceD3D12::Destroy() {
     Deallocate(GetStdAllocator(), this);
 }
 
@@ -699,23 +650,19 @@ void DeviceD3D12::Destroy()
 // NRI
 //================================================================================================================
 
-inline Result DeviceD3D12::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain)
-{
+inline Result DeviceD3D12::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
     return CreateImplementation<SwapChainD3D12>(swapChain, swapChainDesc);
 }
 
-inline void DeviceD3D12::DestroySwapChain(SwapChain& swapChain)
-{
+inline void DeviceD3D12::DestroySwapChain(SwapChain& swapChain) {
     Deallocate(GetStdAllocator(), (SwapChainD3D12*)&swapChain);
 }
 
-inline Result DeviceD3D12::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue)
-{
+inline Result DeviceD3D12::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
     ExclusiveScope lock(m_QueueLock);
 
     uint32_t queueIndex = (uint32_t)commandQueueType;
-    if (m_CommandQueues[queueIndex])
-    {
+    if (m_CommandQueues[queueIndex]) {
         commandQueue = (CommandQueue*)m_CommandQueues[queueIndex];
         return Result::SUCCESS;
     }
@@ -724,59 +671,51 @@ inline Result DeviceD3D12::GetCommandQueue(CommandQueueType commandQueueType, Co
     if (result == Result::SUCCESS)
         m_CommandQueues[queueIndex] = (CommandQueueD3D12*)commandQueue;
     else
-        REPORT_WARNING(this, "%s command queue is not supported by the device!", commandQueueType == CommandQueueType::GRAPHICS ? "GRAPHICS" :
-            (commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY"));
+        REPORT_WARNING(
+            this, "%s command queue is not supported by the device!",
+            commandQueueType == CommandQueueType::GRAPHICS ? "GRAPHICS" : (commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY")
+        );
 
     return result;
 }
 
-inline Result DeviceD3D12::CreateCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue)
-{
+inline Result DeviceD3D12::CreateCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
     return CreateImplementation<CommandQueueD3D12>(commandQueue, commandQueueType);
 }
 
-inline Result DeviceD3D12::CreateCommandQueue(void* d3d12commandQueue, CommandQueueD3D12*& commandQueue)
-{
+inline Result DeviceD3D12::CreateCommandQueue(void* d3d12commandQueue, CommandQueueD3D12*& commandQueue) {
     return CreateImplementation<CommandQueueD3D12>(commandQueue, (ID3D12CommandQueue*)d3d12commandQueue);
 }
 
-inline Result DeviceD3D12::CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator)
-{
+inline Result DeviceD3D12::CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
     return CreateImplementation<CommandAllocatorD3D12>(commandAllocator, commandQueue);
 }
 
-inline Result DeviceD3D12::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool)
-{
+inline Result DeviceD3D12::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
     return CreateImplementation<DescriptorPoolD3D12>(descriptorPool, descriptorPoolDesc);
 }
 
-inline Result DeviceD3D12::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer)
-{
+inline Result DeviceD3D12::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer) {
     return CreateImplementation<BufferD3D12>(buffer, bufferDesc);
 }
 
-inline Result DeviceD3D12::CreateTexture(const TextureDesc& textureDesc, Texture*& texture)
-{
+inline Result DeviceD3D12::CreateTexture(const TextureDesc& textureDesc, Texture*& texture) {
     return CreateImplementation<TextureD3D12>(texture, textureDesc);
 }
 
-inline Result DeviceD3D12::CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView)
-{
+inline Result DeviceD3D12::CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
     return CreateImplementation<DescriptorD3D12>(bufferView, bufferViewDesc);
 }
 
-inline Result DeviceD3D12::CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView)
-{
+inline Result DeviceD3D12::CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
     return CreateImplementation<DescriptorD3D12>(textureView, textureViewDesc);
 }
 
-inline Result DeviceD3D12::CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView)
-{
+inline Result DeviceD3D12::CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView) {
     return CreateImplementation<DescriptorD3D12>(textureView, textureViewDesc);
 }
 
-inline Result DeviceD3D12::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView)
-{
+inline Result DeviceD3D12::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView) {
     return CreateImplementation<DescriptorD3D12>(textureView, textureViewDesc);
 }
 
@@ -785,43 +724,35 @@ Result DeviceD3D12::CreateDescriptor(const AccelerationStructure& accelerationSt
     return CreateImplementation<DescriptorD3D12>(accelerationStructureView, accelerationStructure);
 }
 
-inline Result DeviceD3D12::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& sampler)
-{
+inline Result DeviceD3D12::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& sampler) {
     return CreateImplementation<DescriptorD3D12>(sampler, samplerDesc);
 }
 
-inline Result DeviceD3D12::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout)
-{
+inline Result DeviceD3D12::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout) {
     return CreateImplementation<PipelineLayoutD3D12>(pipelineLayout, pipelineLayoutDesc);
 }
 
-inline Result DeviceD3D12::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline)
-{
+inline Result DeviceD3D12::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline) {
     return CreateImplementation<PipelineD3D12>(pipeline, graphicsPipelineDesc);
 }
 
-inline Result DeviceD3D12::CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline)
-{
+inline Result DeviceD3D12::CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline) {
     return CreateImplementation<PipelineD3D12>(pipeline, computePipelineDesc);
 }
 
-inline Result DeviceD3D12::CreatePipeline(const RayTracingPipelineDesc& rayTracingPipelineDesc, Pipeline*& pipeline)
-{
+inline Result DeviceD3D12::CreatePipeline(const RayTracingPipelineDesc& rayTracingPipelineDesc, Pipeline*& pipeline) {
     return CreateImplementation<PipelineD3D12>(pipeline, rayTracingPipelineDesc);
 }
 
-inline Result DeviceD3D12::CreateFence(uint64_t initialValue, Fence*& fence)
-{
+inline Result DeviceD3D12::CreateFence(uint64_t initialValue, Fence*& fence) {
     return CreateImplementation<FenceD3D12>(fence, initialValue);
 }
 
-inline Result DeviceD3D12::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool)
-{
+inline Result DeviceD3D12::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool) {
     return CreateImplementation<QueryPoolD3D12>(queryPool, queryPoolDesc);
 }
 
-inline Result DeviceD3D12::CreateCommandBuffer(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer)
-{
+inline Result DeviceD3D12::CreateCommandBuffer(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer) {
     return CreateImplementation<CommandBufferD3D12>(commandBuffer, commandBufferDesc);
 }
 
@@ -830,70 +761,56 @@ Result DeviceD3D12::CreateBuffer(const BufferD3D12Desc& bufferDesc, Buffer*& buf
     return CreateImplementation<BufferD3D12>(buffer, bufferDesc);
 }
 
-inline Result DeviceD3D12::CreateTexture(const TextureD3D12Desc& textureDesc, Texture*& texture)
-{
+inline Result DeviceD3D12::CreateTexture(const TextureD3D12Desc& textureDesc, Texture*& texture) {
     return CreateImplementation<TextureD3D12>(texture, textureDesc);
 }
 
-inline Result DeviceD3D12::CreateMemory(const MemoryD3D12Desc& memoryDesc, Memory*& memory)
-{
+inline Result DeviceD3D12::CreateMemory(const MemoryD3D12Desc& memoryDesc, Memory*& memory) {
     return CreateImplementation<MemoryD3D12>(memory, memoryDesc);
 }
 
-inline void DeviceD3D12::DestroyCommandAllocator(CommandAllocator& commandAllocator)
-{
+inline void DeviceD3D12::DestroyCommandAllocator(CommandAllocator& commandAllocator) {
     Deallocate(GetStdAllocator(), (CommandAllocatorD3D12*)&commandAllocator);
 }
 
-inline void DeviceD3D12::DestroyDescriptorPool(DescriptorPool& descriptorPool)
-{
+inline void DeviceD3D12::DestroyDescriptorPool(DescriptorPool& descriptorPool) {
     Deallocate(GetStdAllocator(), (DescriptorPoolD3D12*)&descriptorPool);
 }
 
-inline void DeviceD3D12::DestroyBuffer(Buffer& buffer)
-{
+inline void DeviceD3D12::DestroyBuffer(Buffer& buffer) {
     Deallocate(GetStdAllocator(), (BufferD3D12*)&buffer);
 }
 
-inline void DeviceD3D12::DestroyTexture(Texture& texture)
-{
+inline void DeviceD3D12::DestroyTexture(Texture& texture) {
     Deallocate(GetStdAllocator(), (TextureD3D12*)&texture);
 }
 
-inline void DeviceD3D12::DestroyDescriptor(Descriptor& descriptor)
-{
+inline void DeviceD3D12::DestroyDescriptor(Descriptor& descriptor) {
     Deallocate(GetStdAllocator(), (DescriptorD3D12*)&descriptor);
 }
 
-inline void DeviceD3D12::DestroyPipelineLayout(PipelineLayout& pipelineLayout)
-{
+inline void DeviceD3D12::DestroyPipelineLayout(PipelineLayout& pipelineLayout) {
     Deallocate(GetStdAllocator(), (PipelineLayoutD3D12*)&pipelineLayout);
 }
 
-inline void DeviceD3D12::DestroyPipeline(Pipeline& pipeline)
-{
+inline void DeviceD3D12::DestroyPipeline(Pipeline& pipeline) {
     Deallocate(GetStdAllocator(), (PipelineD3D12*)&pipeline);
 }
 
-inline void DeviceD3D12::DestroyFence(Fence& fence)
-{
+inline void DeviceD3D12::DestroyFence(Fence& fence) {
     Deallocate(GetStdAllocator(), (FenceD3D12*)&fence);
 }
 
-inline void DeviceD3D12::DestroyQueryPool(QueryPool& queryPool)
-{
+inline void DeviceD3D12::DestroyQueryPool(QueryPool& queryPool) {
     Deallocate(GetStdAllocator(), (QueryPoolD3D12*)&queryPool);
 }
 
-inline Result DeviceD3D12::AllocateMemory(const MemoryType memoryType, uint64_t size, Memory*& memory)
-{
+inline Result DeviceD3D12::AllocateMemory(const MemoryType memoryType, uint64_t size, Memory*& memory) {
     return CreateImplementation<MemoryD3D12>(memory, memoryType, size);
 }
 
-inline Result DeviceD3D12::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum)
-{
-    for (uint32_t i = 0; i < memoryBindingDescNum; i++)
-    {
+inline Result DeviceD3D12::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
+    for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         Result result = ((BufferD3D12*)memoryBindingDescs[i].buffer)->BindMemory((MemoryD3D12*)memoryBindingDescs[i].memory, memoryBindingDescs[i].offset);
         if (result != Result::SUCCESS)
             return result;
@@ -902,10 +819,8 @@ inline Result DeviceD3D12::BindBufferMemory(const BufferMemoryBindingDesc* memor
     return Result::SUCCESS;
 }
 
-inline Result DeviceD3D12::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum)
-{
-    for (uint32_t i = 0; i < memoryBindingDescNum; i++)
-    {
+inline Result DeviceD3D12::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
+    for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         Result result = ((TextureD3D12*)memoryBindingDescs[i].texture)->BindMemory((MemoryD3D12*)memoryBindingDescs[i].memory, memoryBindingDescs[i].offset);
         if (result != Result::SUCCESS)
             return result;
@@ -914,10 +829,8 @@ inline Result DeviceD3D12::BindTextureMemory(const TextureMemoryBindingDesc* mem
     return Result::SUCCESS;
 }
 
-inline Result DeviceD3D12::BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum)
-{
-    for (uint32_t i = 0; i < memoryBindingDescNum; i++)
-    {
+inline Result DeviceD3D12::BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
+    for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         Result result = ((AccelerationStructureD3D12*)memoryBindingDescs[i].accelerationStructure)->BindMemory(memoryBindingDescs[i].memory, memoryBindingDescs[i].offset);
         if (result != Result::SUCCESS)
             return result;
@@ -926,44 +839,37 @@ inline Result DeviceD3D12::BindAccelerationStructureMemory(const AccelerationStr
     return Result::SUCCESS;
 }
 
-inline void DeviceD3D12::FreeMemory(Memory& memory)
-{
+inline void DeviceD3D12::FreeMemory(Memory& memory) {
     Deallocate(GetStdAllocator(), (MemoryD3D12*)&memory);
 }
 
-inline FormatSupportBits DeviceD3D12::GetFormatSupport(Format format) const
-{
+inline FormatSupportBits DeviceD3D12::GetFormatSupport(Format format) const {
     const uint32_t offset = std::min((uint32_t)format, (uint32_t)GetCountOf(D3D_FORMAT_SUPPORT_TABLE) - 1);
 
     return D3D_FORMAT_SUPPORT_TABLE[offset];
 }
 
-inline uint32_t DeviceD3D12::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const
-{
+inline uint32_t DeviceD3D12::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const {
     HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this, m_StdAllocator);
 
     return allocator.CalculateAllocationNumber(resourceGroupDesc);
 }
 
-inline Result DeviceD3D12::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, nri::Memory** allocations)
-{
+inline Result DeviceD3D12::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, nri::Memory** allocations) {
     HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this, m_StdAllocator);
 
     return allocator.AllocateAndBindMemory(resourceGroupDesc, allocations);
 }
 
-inline Result DeviceD3D12::CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure)
-{
+inline Result DeviceD3D12::CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
     return CreateImplementation<AccelerationStructureD3D12>(accelerationStructure, accelerationStructureDesc);
 }
 
-inline Result DeviceD3D12::CreateAccelerationStructure(const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure)
-{
+inline Result DeviceD3D12::CreateAccelerationStructure(const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
     return CreateImplementation<AccelerationStructureD3D12>(accelerationStructure, accelerationStructureDesc);
 }
 
-inline void DeviceD3D12::DestroyAccelerationStructure(AccelerationStructure& accelerationStructure)
-{
+inline void DeviceD3D12::DestroyAccelerationStructure(AccelerationStructure& accelerationStructure) {
     Deallocate(GetStdAllocator(), (AccelerationStructureD3D12*)&accelerationStructure);
 }
 

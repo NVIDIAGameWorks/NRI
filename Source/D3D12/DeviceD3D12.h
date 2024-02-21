@@ -8,71 +8,55 @@ struct ID3D12CommandSignature;
 struct D3D12_CPU_DESCRIPTOR_HANDLE;
 
 #ifdef NRI_USE_AGILITY_SDK
-    struct ID3D12Device13;
-    typedef ID3D12Device13 ID3D12DeviceBest;
+struct ID3D12Device13;
+typedef ID3D12Device13 ID3D12DeviceBest;
 #else
-    struct ID3D12Device5;
-    typedef ID3D12Device5 ID3D12DeviceBest;
+struct ID3D12Device5;
+typedef ID3D12Device5 ID3D12DeviceBest;
 #endif
 
-typedef size_t DescriptorPointerCPU;
-typedef uint64_t DescriptorPointerGPU;
-typedef uint16_t HeapIndexType;
-typedef uint16_t HeapOffsetType;
-
-namespace nri
-{
+namespace nri {
 
 struct CommandQueueD3D12;
-
-struct DescriptorHandle
-{
-    HeapIndexType heapIndex;
-    HeapOffsetType heapOffset;
-};
-
-struct DescriptorHeapDesc
-{
-    ComPtr<ID3D12DescriptorHeap> descriptorHeap;
-    DescriptorPointerCPU descriptorPointerCPU;
-    DescriptorPointerGPU descriptorPointerGPU;
-    uint32_t descriptorSize;
-};
 
 constexpr size_t DESCRIPTOR_HEAP_TYPE_NUM = D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
 constexpr uint32_t DESCRIPTORS_BATCH_SIZE = 1024;
 
-struct DeviceD3D12 final : public DeviceBase
-{
+struct DeviceD3D12 final : public DeviceBase {
     DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator);
     ~DeviceD3D12();
 
-    inline ID3D12DeviceBest* GetNativeObject() const
-    { return m_Device; }
+    inline ID3D12DeviceBest* GetNativeObject() const {
+        return m_Device;
+    }
 
-    inline ID3D12DeviceBest* operator->() const
-    { return m_Device; }
+    inline ID3D12DeviceBest* operator->() const {
+        return m_Device;
+    }
 
-    inline uint8_t GetVersion() const
-    { return m_Version; }
+    inline uint8_t GetVersion() const {
+        return m_Version;
+    }
 
-    inline IDXGIAdapter* GetAdapter() const
-    { return m_Adapter; }
+    inline IDXGIAdapter* GetAdapter() const {
+        return m_Adapter;
+    }
 
-    inline bool AreEnhancedBarriersSupported() const
-    { return m_AreEnhancedBarriersSupported; }
+    inline bool AreEnhancedBarriersSupported() const {
+        return m_AreEnhancedBarriersSupported;
+    }
 
-    inline const CoreInterface& GetCoreInterface() const
-    { return m_CoreInterface; }
+    inline const CoreInterface& GetCoreInterface() const {
+        return m_CoreInterface;
+    }
 
-    inline void FreeDescriptorHandle(D3D12_DESCRIPTOR_HEAP_TYPE type, const DescriptorHandle& descriptorHandle)
-    {
+    inline void FreeDescriptorHandle(D3D12_DESCRIPTOR_HEAP_TYPE type, const DescriptorHandle& descriptorHandle) {
         ExclusiveScope lock(m_FreeDescriptorLocks[type]);
         auto& freeDescriptors = m_FreeDescriptors[type];
         freeDescriptors.push_back(descriptorHandle);
     }
 
-    template<typename Implementation, typename Interface, typename ... Args>
+    template <typename Implementation, typename Interface, typename... Args>
     Result CreateImplementation(Interface*& entity, const Args&... args);
 
     Result Create(const DeviceCreationDesc& deviceCreationDesc);
@@ -92,8 +76,9 @@ struct DeviceD3D12 final : public DeviceBase
     // NRI
     //================================================================================================================
 
-    inline void SetDebugName(const char* name)
-    { SET_D3D_DEBUG_OBJECT_NAME(m_Device, name); }
+    inline void SetDebugName(const char* name) {
+        SET_D3D_DEBUG_OBJECT_NAME(m_Device, name);
+    }
 
     Result CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain);
     void DestroySwapChain(SwapChain& swapChain);
@@ -147,8 +132,9 @@ struct DeviceD3D12 final : public DeviceBase
     // DeviceBase
     //================================================================================================================
 
-    inline const DeviceDesc& GetDesc() const
-    { return m_Desc; }
+    inline const DeviceDesc& GetDesc() const {
+        return m_Desc;
+    }
 
     void Destroy();
     Result FillFunctionTable(CoreInterface& table) const;
@@ -158,11 +144,11 @@ struct DeviceD3D12 final : public DeviceBase
     Result FillFunctionTable(MeshShaderInterface& meshShaderInterface) const;
     Result FillFunctionTable(HelperInterface& helperInterface) const;
 
-private:
+  private:
     void FillDesc();
     MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const;
 
-private:
+  private:
     ComPtr<ID3D12DeviceBest> m_Device;
     ComPtr<IDXGIAdapter> m_Adapter;
     std::array<CommandQueueD3D12*, COMMAND_QUEUE_TYPE_NUM> m_CommandQueues = {};
@@ -180,4 +166,4 @@ private:
     Lock m_QueueLock;
 };
 
-}
+} // namespace nri

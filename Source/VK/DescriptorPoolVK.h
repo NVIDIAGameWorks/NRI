@@ -2,24 +2,23 @@
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceVK;
 struct DescriptorSetVK;
 
-struct DescriptorPoolVK
-{
-    inline DescriptorPoolVK(DeviceVK& device) :
-        m_Device(device)
-        , m_AllocatedSets(device.GetStdAllocator())
-    { m_AllocatedSets.reserve(64); }
+struct DescriptorPoolVK {
+    inline DescriptorPoolVK(DeviceVK& device) : m_Device(device), m_AllocatedSets(device.GetStdAllocator()) {
+        m_AllocatedSets.reserve(64);
+    }
 
-    inline operator VkDescriptorPool() const
-    { return m_Handle; }
+    inline operator VkDescriptorPool() const {
+        return m_Handle;
+    }
 
-    inline DeviceVK& GetDevice() const
-    { return m_Device; }
+    inline DeviceVK& GetDevice() const {
+        return m_Device;
+    }
 
     ~DescriptorPoolVK();
 
@@ -33,10 +32,12 @@ struct DescriptorPoolVK
     void SetDebugName(const char* name);
     void Reset();
 
-    Result AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets,
-        uint32_t numberOfCopies, uint32_t nodeMask, uint32_t variableDescriptorNum);
+    Result AllocateDescriptorSets(
+        const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t numberOfCopies, uint32_t nodeMask,
+        uint32_t variableDescriptorNum
+    );
 
-private:
+  private:
     DeviceVK& m_Device;
     Vector<DescriptorSetVK*> m_AllocatedSets;
     VkDescriptorPool m_Handle = VK_NULL_HANDLE;
@@ -44,4 +45,4 @@ private:
     bool m_OwnsNativeObjects = false;
 };
 
-}
+} // namespace nri

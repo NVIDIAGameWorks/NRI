@@ -2,8 +2,7 @@
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceVK;
 struct CommandQueueVK;
@@ -12,10 +11,10 @@ struct TextureVK;
 // Let's keep things simple and hide it under the hood
 constexpr uint32_t MAX_NUMBER_OF_FRAMES_IN_FLIGHT = 8;
 
-struct SwapChainVK : public DisplayDescHelper
-{
-    inline DeviceVK& GetDevice() const
-    { return m_Device; }
+struct SwapChainVK : public DisplayDescHelper {
+    inline DeviceVK& GetDevice() const {
+        return m_Device;
+    }
 
     SwapChainVK(DeviceVK& device);
     ~SwapChainVK();
@@ -26,19 +25,20 @@ struct SwapChainVK : public DisplayDescHelper
     // NRI
     //================================================================================================================
 
-    inline Result GetDisplayDesc(DisplayDesc& displayDesc)
-    { return DisplayDescHelper::GetDisplayDesc(m_SwapChainDesc.window.windows.hwnd, displayDesc); }
+    inline Result GetDisplayDesc(DisplayDesc& displayDesc) {
+        return DisplayDescHelper::GetDisplayDesc(m_SwapChainDesc.window.windows.hwnd, displayDesc);
+    }
 
     void SetDebugName(const char* name);
     Texture* const* GetTextures(uint32_t& textureNum) const;
     uint32_t AcquireNextTexture();
     Result Present();
 
-private:
+  private:
     void Destroy();
     Result CreateSurface(const SwapChainDesc& swapChainDesc);
 
-private:
+  private:
     Vector<TextureVK*> m_Textures;
     std::array<VkSemaphore, MAX_NUMBER_OF_FRAMES_IN_FLIGHT> m_Semaphores;
     SwapChainDesc m_SwapChainDesc = {};
@@ -50,4 +50,4 @@ private:
     uint32_t m_FrameIndex = 0;
 };
 
-}
+} // namespace nri

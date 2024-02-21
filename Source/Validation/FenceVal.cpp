@@ -2,8 +2,9 @@
 
 #include "SharedExternal.h"
 #include "SharedVal.h"
-#include "FenceVal.h"
+
 #include "CommandQueueVal.h"
+#include "FenceVal.h"
 
 using namespace nri;
 

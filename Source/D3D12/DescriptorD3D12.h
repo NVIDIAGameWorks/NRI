@@ -4,34 +4,37 @@
 
 struct ID3D12Resource;
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceD3D12;
 
-struct DescriptorD3D12
-{
-    inline DescriptorD3D12(DeviceD3D12& device)
-        : m_Device(device)
-    {}
+struct DescriptorD3D12 {
+    inline DescriptorD3D12(DeviceD3D12& device) : m_Device(device) {
+    }
 
-    inline ~DescriptorD3D12()
-    { m_Device.FreeDescriptorHandle(m_HeapType, m_Handle); }
+    inline ~DescriptorD3D12() {
+        m_Device.FreeDescriptorHandle(m_HeapType, m_Handle);
+    }
 
-    inline operator ID3D12Resource*() const
-    { return m_Resource; }
+    inline operator ID3D12Resource*() const {
+        return m_Resource;
+    }
 
-    inline DescriptorPointerCPU GetPointerCPU() const
-    { return m_DescriptorPointerCPU; }
+    inline DescriptorPointerCPU GetPointerCPU() const {
+        return m_DescriptorPointerCPU;
+    }
 
-    inline D3D12_GPU_VIRTUAL_ADDRESS GetBufferLocation() const
-    { return m_BufferLocation; }
+    inline D3D12_GPU_VIRTUAL_ADDRESS GetBufferLocation() const {
+        return m_BufferLocation;
+    }
 
-    inline bool IsIntegerFormat() const
-    { return m_IsIntegerFormat; }
+    inline bool IsIntegerFormat() const {
+        return m_IsIntegerFormat;
+    }
 
-    inline DeviceD3D12& GetDevice() const
-    { return m_Device; }
+    inline DeviceD3D12& GetDevice() const {
+        return m_Device;
+    }
 
     Result Create(const BufferViewDesc& bufferViewDesc);
     Result Create(const Texture1DViewDesc& textureViewDesc);
@@ -44,17 +47,18 @@ struct DescriptorD3D12
     // NRI
     //================================================================================================================
 
-    inline void SetDebugName(const char* name)
-    { MaybeUnused(name); }
+    inline void SetDebugName(const char* name) {
+        MaybeUnused(name);
+    }
 
-private:
+  private:
     Result CreateConstantBufferView(const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc);
     Result CreateShaderResourceView(ID3D12Resource* resource, const D3D12_SHADER_RESOURCE_VIEW_DESC& desc);
     Result CreateUnorderedAccessView(ID3D12Resource* resource, const D3D12_UNORDERED_ACCESS_VIEW_DESC& desc, Format format);
     Result CreateRenderTargetView(ID3D12Resource* resource, const D3D12_RENDER_TARGET_VIEW_DESC& desc);
     Result CreateDepthStencilView(ID3D12Resource* resource, const D3D12_DEPTH_STENCIL_VIEW_DESC& desc);
 
-private:
+  private:
     DeviceD3D12& m_Device;
     ID3D12Resource* m_Resource = nullptr;
     D3D12_GPU_VIRTUAL_ADDRESS m_BufferLocation = 0;
@@ -64,4 +68,4 @@ private:
     bool m_IsIntegerFormat = false;
 };
 
-}
+} // namespace nri

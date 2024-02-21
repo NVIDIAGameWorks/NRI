@@ -1,16 +1,15 @@
 #pragma once
 
-template<typename U, typename T>
+template <typename U, typename T>
 using Map = std::map<U, T, std::less<U>, StdAllocator<std::pair<const U, T>>>;
 
-struct HelperDeviceMemoryAllocator
-{
+struct HelperDeviceMemoryAllocator {
     HelperDeviceMemoryAllocator(const nri::CoreInterface& NRI, nri::Device& device, const StdAllocator<uint8_t>& stdAllocator);
 
     uint32_t CalculateAllocationNumber(const nri::ResourceGroupDesc& resourceGroupDesc);
     nri::Result AllocateAndBindMemory(const nri::ResourceGroupDesc& resourceGroupDesc, nri::Memory** allocations);
 
-private:
+  private:
     struct MemoryTypeGroup;
 
     nri::Result TryToAllocateAndBindMemory(const nri::ResourceGroupDesc& resourceGroupDesc, nri::Memory** allocations, size_t& allocationNum);
@@ -21,8 +20,7 @@ private:
     void FillMemoryBindingDescs(nri::Buffer* const* buffers, const uint64_t* bufferOffsets, uint32_t bufferNum, nri::Memory& memory);
     void FillMemoryBindingDescs(nri::Texture* const* texture, const uint64_t* textureOffsets, uint32_t textureNum, nri::Memory& memory);
 
-    struct MemoryTypeGroup
-    {
+    struct MemoryTypeGroup {
         MemoryTypeGroup(const StdAllocator<uint8_t>& stdAllocator);
 
         Vector<nri::Buffer*> buffers;
@@ -42,4 +40,3 @@ private:
     Vector<nri::BufferMemoryBindingDesc> m_BufferBindingDescs;
     Vector<nri::TextureMemoryBindingDesc> m_TextureBindingDescs;
 };
-

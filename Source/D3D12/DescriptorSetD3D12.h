@@ -2,31 +2,26 @@
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceD3D12;
 struct DescriptorPoolD3D12;
 
-struct DescriptorRangeMapping
-{
+struct DescriptorRangeMapping {
     DescriptorHeapType descriptorHeapType;
     uint32_t heapOffset;
     uint32_t descriptorNum;
 };
 
-struct DescriptorSetMapping
-{
-    inline DescriptorSetMapping(StdAllocator<uint8_t>& allocator)
-        : descriptorRangeMappings(allocator)
-    {}
+struct DescriptorSetMapping {
+    inline DescriptorSetMapping(StdAllocator<uint8_t>& allocator) : descriptorRangeMappings(allocator) {
+    }
 
     std::array<uint32_t, DescriptorHeapType::MAX_NUM> descriptorNum = {};
     Vector<DescriptorRangeMapping> descriptorRangeMappings;
 };
 
-struct DescriptorSetD3D12
-{
+struct DescriptorSetD3D12 {
     DescriptorSetD3D12(DescriptorPoolD3D12& desriptorPoolD3D12);
 
     void Initialize(const DescriptorSetMapping* descriptorSetMapping, uint16_t dynamicConstantBufferNum);
@@ -41,18 +36,19 @@ struct DescriptorSetD3D12
     // NRI
     //================================================================================================================
 
-    inline void SetDebugName(const char* name)
-    { MaybeUnused(name); }
+    inline void SetDebugName(const char* name) {
+        MaybeUnused(name);
+    }
 
     void UpdateDescriptorRanges(uint32_t rangeOffset, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs);
     void UpdateDynamicConstantBuffers(uint32_t baseBuffer, uint32_t bufferNum, const Descriptor* const* descriptors);
     void Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc);
 
-private:
+  private:
     DescriptorPoolD3D12& m_DescriptorPoolD3D12;
     Vector<DescriptorPointerGPU> m_DynamicConstantBuffers;
     std::array<uint32_t, DescriptorHeapType::MAX_NUM> m_HeapOffset = {};
     const DescriptorSetMapping* m_DescriptorSetMapping = nullptr;
 };
 
-}
+} // namespace nri

@@ -2,23 +2,22 @@
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceD3D12;
 struct BufferD3D12;
 
-struct AccelerationStructureD3D12
-{
-    inline AccelerationStructureD3D12(DeviceD3D12& device)
-        : m_Device(device)
-    {}
+struct AccelerationStructureD3D12 {
+    inline AccelerationStructureD3D12(DeviceD3D12& device) : m_Device(device) {
+    }
 
-    inline DeviceD3D12& GetDevice() const
-    { return m_Device; }
+    inline DeviceD3D12& GetDevice() const {
+        return m_Device;
+    }
 
-    inline operator BufferD3D12* () const
-    { return m_Buffer; }
+    inline operator BufferD3D12*() const {
+        return m_Buffer;
+    }
 
     ~AccelerationStructureD3D12();
 
@@ -31,7 +30,7 @@ struct AccelerationStructureD3D12
     Result CreateDescriptor(Descriptor*& descriptor) const;
 
     uint64_t GetHandle() const;
-    operator ID3D12Resource* () const;
+    operator ID3D12Resource*() const;
 
     //================================================================================================================
     // NRI
@@ -39,10 +38,10 @@ struct AccelerationStructureD3D12
 
     void SetDebugName(const char* name);
 
-private:
+  private:
     DeviceD3D12& m_Device;
     D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO m_PrebuildInfo = {};
     BufferD3D12* m_Buffer = nullptr;
 };
 
-}
+} // namespace nri

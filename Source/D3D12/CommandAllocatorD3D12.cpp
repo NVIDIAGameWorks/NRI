@@ -1,14 +1,14 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedD3D12.h"
+
 #include "CommandAllocatorD3D12.h"
-#include "CommandQueueD3D12.h"
 #include "CommandBufferD3D12.h"
+#include "CommandQueueD3D12.h"
 
 using namespace nri;
 
-Result CommandAllocatorD3D12::Create(const CommandQueue& commandQueue)
-{
+Result CommandAllocatorD3D12::Create(const CommandQueue& commandQueue) {
     const CommandQueueD3D12& commandQueueD3D12 = (CommandQueueD3D12&)commandQueue;
     m_CommandListType = commandQueueD3D12.GetType();
     HRESULT hr = m_Device->CreateCommandAllocator(m_CommandListType, IID_PPV_ARGS(&m_CommandAllocator));
@@ -21,13 +21,11 @@ Result CommandAllocatorD3D12::Create(const CommandQueue& commandQueue)
 // NRI
 //================================================================================================================
 
-inline Result CommandAllocatorD3D12::CreateCommandBuffer(CommandBuffer*& commandBuffer)
-{
+inline Result CommandAllocatorD3D12::CreateCommandBuffer(CommandBuffer*& commandBuffer) {
     CommandBufferD3D12* commandBufferD3D12 = Allocate<CommandBufferD3D12>(m_Device.GetStdAllocator(), m_Device);
     const Result result = commandBufferD3D12->Create(m_CommandListType, m_CommandAllocator);
 
-    if (result == Result::SUCCESS)
-    {
+    if (result == Result::SUCCESS) {
         commandBuffer = (CommandBuffer*)commandBufferD3D12;
         return Result::SUCCESS;
     }
@@ -37,8 +35,7 @@ inline Result CommandAllocatorD3D12::CreateCommandBuffer(CommandBuffer*& command
     return result;
 }
 
-inline void CommandAllocatorD3D12::Reset()
-{
+inline void CommandAllocatorD3D12::Reset() {
     m_CommandAllocator->Reset();
 }
 

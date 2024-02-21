@@ -1,6 +1,7 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedD3D11.h"
+
 #include "BufferD3D11.h"
 #include "MemoryD3D11.h"
 #include "QueryPoolD3D11.h"
@@ -8,14 +9,12 @@
 
 using namespace nri;
 
-BufferD3D11::~BufferD3D11()
-{
+BufferD3D11::~BufferD3D11() {
     if (m_ReadbackTexture)
         Deallocate(m_Device.GetStdAllocator(), m_ReadbackTexture);
 }
 
-Result BufferD3D11::Create(const MemoryD3D11& memory)
-{
+Result BufferD3D11::Create(const MemoryD3D11& memory) {
     MemoryLocation memoryLocation = memory.GetType();
 
     D3D11_BUFFER_DESC desc = {};
@@ -28,29 +27,21 @@ Result BufferD3D11::Create(const MemoryD3D11& memory)
     if (m_Desc.usageMask & BufferUsageBits::ARGUMENT_BUFFER)
         desc.MiscFlags |= D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
 
-    if (memoryLocation == MemoryLocation::HOST_UPLOAD || memoryLocation == MemoryLocation::DEVICE_UPLOAD)
-    {
-        if (m_Desc.usageMask == BufferUsageBits::NONE)
-        {
+    if (memoryLocation == MemoryLocation::HOST_UPLOAD || memoryLocation == MemoryLocation::DEVICE_UPLOAD) {
+        if (m_Desc.usageMask == BufferUsageBits::NONE) {
             m_Type = BufferType::UPLOAD;
             desc.Usage = D3D11_USAGE_STAGING;
             desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
-        }
-        else
-        {
+        } else {
             m_Type = BufferType::DYNAMIC;
             desc.Usage = D3D11_USAGE_DYNAMIC;
             desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
         }
-    }
-    else if (memoryLocation == MemoryLocation::HOST_READBACK)
-    {
+    } else if (memoryLocation == MemoryLocation::HOST_READBACK) {
         m_Type = BufferType::READBACK;
         desc.Usage = D3D11_USAGE_STAGING;
         desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
-    }
-    else
-    {
+    } else {
         m_Type = BufferType::DEVICE;
         desc.Usage = D3D11_USAGE_DEFAULT;
         desc.CPUAccessFlags = 0;
@@ -81,8 +72,7 @@ Result BufferD3D11::Create(const MemoryD3D11& memory)
     return Result::SUCCESS;
 }
 
-Result BufferD3D11::Create(const BufferD3D11Desc& bufferDesc)
-{
+Result BufferD3D11::Create(const BufferD3D11Desc& bufferDesc) {
     if (!GetBufferDesc(bufferDesc, m_Desc))
         return Result::INVALID_ARGUMENT;
 
@@ -102,8 +92,7 @@ Result BufferD3D11::Create(const BufferD3D11Desc& bufferDesc)
     return Result::SUCCESS;
 }
 
-void* BufferD3D11::Map(MapType mapType, uint64_t offset)
-{
+void* BufferD3D11::Map(MapType mapType, uint64_t offset) {
     D3D11_MAPPED_SUBRESOURCE mappedData = {};
     m_Device.EnterCriticalSection();
     {
@@ -117,8 +106,7 @@ void* BufferD3D11::Map(MapType mapType, uint64_t offset)
             map = D3D11_MAP_WRITE;
 
         HRESULT hr = m_Device.GetImmediateContext()->Map(m_Buffer, 0, map, 0, &mappedData);
-        if (FAILED(hr))
-        {
+        if (FAILED(hr)) {
             REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
             offset = 0;
         }
@@ -130,8 +118,7 @@ void* BufferD3D11::Map(MapType mapType, uint64_t offset)
     return ptr + offset;
 }
 
-void BufferD3D11::FinalizeQueries()
-{
+void BufferD3D11::FinalizeQueries() {
     if (!m_QueryRange.pool)
         return;
 
@@ -139,16 +126,14 @@ void BufferD3D11::FinalizeQueries()
     {
         D3D11_MAPPED_SUBRESOURCE mappedData = {};
         HRESULT hr = m_Device.GetImmediateContext()->Map(m_Buffer, 0, D3D11_MAP_WRITE, 0, &mappedData);
-        if (SUCCEEDED(hr))
-        {
+        if (SUCCEEDED(hr)) {
             uint8_t* ptr = (uint8_t*)mappedData.pData;
             ptr += m_QueryRange.bufferOffset;
 
             m_QueryRange.pool->GetData(ptr, m_QueryRange.offset, m_QueryRange.num);
 
             m_Device.GetImmediateContext()->Unmap(m_Buffer, 0);
-        }
-        else
+        } else
             REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
     }
     m_Device.LeaveCriticalSection();
@@ -156,8 +141,7 @@ void BufferD3D11::FinalizeQueries()
     m_QueryRange.pool = nullptr;
 }
 
-void BufferD3D11::FinalizeReadback()
-{
+void BufferD3D11::FinalizeReadback() {
     if (!m_IsReadbackDataChanged)
         return;
 
@@ -167,16 +151,14 @@ void BufferD3D11::FinalizeReadback()
     {
         D3D11_MAPPED_SUBRESOURCE srcData = {};
         HRESULT hr = m_Device.GetImmediateContext()->Map(*m_ReadbackTexture, 0, D3D11_MAP_READ, 0, &srcData);
-        if (FAILED(hr))
-        {
+        if (FAILED(hr)) {
             REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
             return;
         }
 
         D3D11_MAPPED_SUBRESOURCE dstData = {};
         hr = m_Device.GetImmediateContext()->Map(m_Buffer, 0, D3D11_MAP_WRITE, 0, &dstData);
-        if (FAILED(hr))
-        {
+        if (FAILED(hr)) {
             m_Device.GetImmediateContext()->Unmap(*m_ReadbackTexture, 0);
             REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
             return;
@@ -186,10 +168,8 @@ void BufferD3D11::FinalizeReadback()
         const uint32_t h = m_ReadbackTexture->GetDesc().height;
         const uint8_t* src = (uint8_t*)srcData.pData;
         uint8_t* dst = (uint8_t*)dstData.pData;
-        for (uint32_t i = 0; i < d; i++)
-        {
-            for (uint32_t j = 0; j < h; j++)
-            {
+        for (uint32_t i = 0; i < d; i++) {
+            for (uint32_t j = 0; j < h; j++) {
                 const uint8_t* s = src + j * srcData.RowPitch;
                 uint8_t* dstLocal = dst + j * m_ReadbackDataLayoutDesc.rowPitch;
                 memcpy(dstLocal, s, srcData.RowPitch);
@@ -198,27 +178,20 @@ void BufferD3D11::FinalizeReadback()
             dst += m_ReadbackDataLayoutDesc.slicePitch;
         }
 
-
         m_Device.GetImmediateContext()->Unmap(m_Buffer, 0);
         m_Device.GetImmediateContext()->Unmap(*m_ReadbackTexture, 0);
     }
     m_Device.LeaveCriticalSection();
 }
 
-TextureD3D11& BufferD3D11::RecreateReadbackTexture(const TextureD3D11& srcTexture, const TextureRegionDesc& srcRegionDesc, const TextureDataLayoutDesc& readbackDataLayoutDesc)
-{
+TextureD3D11& BufferD3D11::RecreateReadbackTexture(const TextureD3D11& srcTexture, const TextureRegionDesc& srcRegionDesc, const TextureDataLayoutDesc& readbackDataLayoutDesc) {
     bool isChanged = true;
-    if (m_ReadbackTexture)
-    {
+    if (m_ReadbackTexture) {
         const TextureDesc& curr = m_ReadbackTexture->GetDesc();
-        isChanged = curr.format != srcTexture.GetDesc().format ||
-            curr.width != srcRegionDesc.width ||
-            curr.height != srcRegionDesc.height ||
-            curr.depth != srcRegionDesc.depth;
+        isChanged = curr.format != srcTexture.GetDesc().format || curr.width != srcRegionDesc.width || curr.height != srcRegionDesc.height || curr.depth != srcRegionDesc.depth;
     }
 
-    if (isChanged)
-    {
+    if (isChanged) {
         TextureDesc textureDesc = {};
         textureDesc.mipNum = 1;
         textureDesc.sampleNum = 1;
@@ -251,8 +224,7 @@ TextureD3D11& BufferD3D11::RecreateReadbackTexture(const TextureD3D11& srcTextur
 // NRI
 //================================================================================================================
 
-inline void BufferD3D11::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const
-{
+inline void BufferD3D11::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
     const bool isConstantBuffer = (m_Desc.usageMask & BufferUsageBits::CONSTANT_BUFFER) == (uint32_t)BufferUsageBits::CONSTANT_BUFFER;
 
     uint32_t alignment = 65536;
@@ -269,19 +241,15 @@ inline void BufferD3D11::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc
     memoryDesc.mustBeDedicated = false;
 }
 
-inline void* BufferD3D11::Map(uint64_t offset, uint64_t size)
-{
+inline void* BufferD3D11::Map(uint64_t offset, uint64_t size) {
     MaybeUnused(size);
 
     return Map(MapType::DEFAULT, offset);
 }
 
-void BufferD3D11::Unmap()
-{
+void BufferD3D11::Unmap() {
     m_Device.EnterCriticalSection();
-    {
-        m_Device.GetImmediateContext()->Unmap(m_Buffer, 0);
-    }
+    { m_Device.GetImmediateContext()->Unmap(m_Buffer, 0); }
     m_Device.LeaveCriticalSection();
 }
 

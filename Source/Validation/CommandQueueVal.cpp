@@ -2,12 +2,12 @@
 
 #include "SharedExternal.h"
 #include "SharedVal.h"
-#include "CommandQueueVal.h"
 
-#include "CommandBufferVal.h"
-#include "TextureVal.h"
 #include "BufferVal.h"
+#include "CommandBufferVal.h"
+#include "CommandQueueVal.h"
 #include "QueryPoolVal.h"
+#include "TextureVal.h"
 
 using namespace nri;
 

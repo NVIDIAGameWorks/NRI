@@ -1,13 +1,12 @@
 // © 2021 NVIDIA Corporation
 
 #include "SharedD3D11.h"
-#include "DescriptorSetD3D11.h"
+
 #include "DescriptorPoolD3D11.h"
 
 using namespace nri;
 
-Result DescriptorPoolD3D11::Create(const DescriptorPoolDesc& descriptorPoolDesc)
-{
+Result DescriptorPoolD3D11::Create(const DescriptorPoolDesc& descriptorPoolDesc) {
     uint32_t descriptorNum = descriptorPoolDesc.samplerMaxNum;
     descriptorNum += descriptorPoolDesc.samplerMaxNum;
     descriptorNum += descriptorPoolDesc.constantBufferMaxNum;
@@ -29,9 +28,9 @@ Result DescriptorPoolD3D11::Create(const DescriptorPoolDesc& descriptorPoolDesc)
 // NRI
 //================================================================================================================
 
-inline Result DescriptorPoolD3D11::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets,
-    uint32_t instanceNum, uint32_t nodeMask, uint32_t variableDescriptorNum)
-{
+inline Result DescriptorPoolD3D11::AllocateDescriptorSets(
+    const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t nodeMask, uint32_t variableDescriptorNum
+) {
     MaybeUnused(nodeMask);
 
     if (variableDescriptorNum)
@@ -39,8 +38,7 @@ inline Result DescriptorPoolD3D11::AllocateDescriptorSets(const PipelineLayout& 
 
     const PipelineLayoutD3D11& pipelineLayoutD3D11 = (PipelineLayoutD3D11&)pipelineLayout;
 
-    for (uint32_t i = 0; i < instanceNum; i++)
-    {
+    for (uint32_t i = 0; i < instanceNum; i++) {
         const DescriptorD3D11** descriptors = m_DescriptorPool.data() + m_DescriptorPoolOffset;
         DescriptorSetD3D11* descriptorSet = &m_DescriptorSets[m_DescriptorSetIndex++];
         uint32_t descriptorNum = descriptorSet->Initialize(pipelineLayoutD3D11, setIndexInPipelineLayout, descriptors);

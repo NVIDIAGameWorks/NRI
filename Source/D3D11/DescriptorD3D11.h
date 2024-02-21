@@ -2,49 +2,56 @@
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct DeviceD3D11;
 
-struct DescriptorD3D11
-{
-    inline DescriptorD3D11(DeviceD3D11& device) :
-        m_Device(device)
-    {}
+struct DescriptorD3D11 {
+    inline DescriptorD3D11(DeviceD3D11& device) : m_Device(device) {
+    }
 
-    inline ~DescriptorD3D11()
-    {}
+    inline ~DescriptorD3D11() {
+    }
 
-    inline DeviceD3D11& GetDevice() const
-    { return m_Device; }
+    inline DeviceD3D11& GetDevice() const {
+        return m_Device;
+    }
 
-    inline operator void*() const
-    { return (void*)m_Descriptor.GetInterface(); }
+    inline operator void*() const {
+        return (void*)m_Descriptor.GetInterface();
+    }
 
-    inline operator ID3D11View*() const
-    { return (ID3D11View*)m_Descriptor.GetInterface(); }
+    inline operator ID3D11View*() const {
+        return (ID3D11View*)m_Descriptor.GetInterface();
+    }
 
-    inline operator ID3D11RenderTargetView*() const
-    { return (ID3D11RenderTargetView*)m_Descriptor.GetInterface(); }
+    inline operator ID3D11RenderTargetView*() const {
+        return (ID3D11RenderTargetView*)m_Descriptor.GetInterface();
+    }
 
-    inline operator ID3D11DepthStencilView*() const
-    { return (ID3D11DepthStencilView*)m_Descriptor.GetInterface(); }
+    inline operator ID3D11DepthStencilView*() const {
+        return (ID3D11DepthStencilView*)m_Descriptor.GetInterface();
+    }
 
-    inline operator ID3D11UnorderedAccessView*() const
-    { return (ID3D11UnorderedAccessView*)m_Descriptor.GetInterface(); }
+    inline operator ID3D11UnorderedAccessView*() const {
+        return (ID3D11UnorderedAccessView*)m_Descriptor.GetInterface();
+    }
 
-    inline uint32_t GetElementOffset() const
-    { return m_ElementOffset; }
+    inline uint32_t GetElementOffset() const {
+        return m_ElementOffset;
+    }
 
-    inline uint32_t GetElementNum() const
-    { return m_ElementNum; }
+    inline uint32_t GetElementNum() const {
+        return m_ElementNum;
+    }
 
-    inline uint32_t IsIntegerFormat() const
-    { return m_IsIntegerFormat; }
+    inline uint32_t IsIntegerFormat() const {
+        return m_IsIntegerFormat;
+    }
 
-    inline const SubresourceInfo& GetSubresourceInfo() const
-    { return m_SubresourceInfo; }
+    inline const SubresourceInfo& GetSubresourceInfo() const {
+        return m_SubresourceInfo;
+    }
 
     Result Create(const Texture1DViewDesc& textureViewDesc);
     Result Create(const Texture2DViewDesc& textureViewDesc);
@@ -63,10 +70,11 @@ struct DescriptorD3D11
     // NRI
     //================================================================================================================
 
-    inline void SetDebugName(const char* name)
-    { SET_D3D_DEBUG_OBJECT_NAME(m_Descriptor, name); }
+    inline void SetDebugName(const char* name) {
+        SET_D3D_DEBUG_OBJECT_NAME(m_Descriptor, name);
+    }
 
-private:
+  private:
     DeviceD3D11& m_Device;
     ComPtr<ID3D11DeviceChild> m_Descriptor;
     SubresourceInfo m_SubresourceInfo = {};
@@ -76,4 +84,4 @@ private:
     bool m_IsIntegerFormat = false;
 };
 
-}
+} // namespace nri

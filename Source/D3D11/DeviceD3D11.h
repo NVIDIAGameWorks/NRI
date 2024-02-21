@@ -5,55 +5,60 @@
 struct ID3D11Device5;
 typedef ID3D11Device5 ID3D11DeviceBest;
 
-namespace nri
-{
+namespace nri {
 
 struct CommandQueueD3D11;
 
-struct DeviceD3D11 final : public DeviceBase
-{
+struct DeviceD3D11 final : public DeviceBase {
     DeviceD3D11(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator);
     ~DeviceD3D11();
 
-    inline ID3D11DeviceBest* GetNativeObject() const
-    { return m_Device; }
+    inline ID3D11DeviceBest* GetNativeObject() const {
+        return m_Device;
+    }
 
-    inline ID3D11DeviceBest* operator->() const
-    { return m_Device; }
+    inline ID3D11DeviceBest* operator->() const {
+        return m_Device;
+    }
 
-    inline uint8_t GetVersion() const
-    { return m_Version; }
+    inline uint8_t GetVersion() const {
+        return m_Version;
+    }
 
-    inline const D3D11Extensions* GetExt() const
-    { return &m_Ext; }
+    inline const D3D11Extensions* GetExt() const {
+        return &m_Ext;
+    }
 
-    inline IDXGIAdapter* GetAdapter() const
-    { return m_Adapter; }
+    inline IDXGIAdapter* GetAdapter() const {
+        return m_Adapter;
+    }
 
-    inline ID3D11DeviceContextBest* GetImmediateContext()
-    { return m_ImmediateContext; }
+    inline ID3D11DeviceContextBest* GetImmediateContext() {
+        return m_ImmediateContext;
+    }
 
-    inline uint8_t GetImmediateContextVersion()
-    { return m_ImmediateContextVersion; }
+    inline uint8_t GetImmediateContextVersion() {
+        return m_ImmediateContextVersion;
+    }
 
-    inline const CoreInterface& GetCoreInterface() const
-    { return m_CoreInterface; }
+    inline const CoreInterface& GetCoreInterface() const {
+        return m_CoreInterface;
+    }
 
-    inline bool IsDeferredContextEmulated() const
-    { return m_IsDeferredContextEmulated; }
+    inline bool IsDeferredContextEmulated() const {
+        return m_IsDeferredContextEmulated;
+    }
 
     Result Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* precreatedDevice, AGSContext* agsContext, bool isNVAPILoadedInApp);
 
-    inline void EnterCriticalSection()
-    {
+    inline void EnterCriticalSection() {
         if (m_Multithread)
             m_Multithread->Enter();
         else
             ::EnterCriticalSection(&m_CriticalSection);
     }
 
-    inline void LeaveCriticalSection()
-    {
+    inline void LeaveCriticalSection() {
         if (m_Multithread)
             m_Multithread->Leave();
         else
@@ -64,8 +69,7 @@ struct DeviceD3D11 final : public DeviceBase
     // NRI
     //================================================================================================================
 
-    inline void SetDebugName(const char* name)
-    {
+    inline void SetDebugName(const char* name) {
         SET_D3D_DEBUG_OBJECT_NAME(m_Device, name);
         SET_D3D_DEBUG_OBJECT_NAME(m_ImmediateContext, name);
     }
@@ -109,8 +113,9 @@ struct DeviceD3D11 final : public DeviceBase
     // DeviceBase
     //================================================================================================================
 
-    const DeviceDesc& GetDesc() const
-    { return m_Desc; }
+    const DeviceDesc& GetDesc() const {
+        return m_Desc;
+    }
 
     void Destroy();
     Result FillFunctionTable(CoreInterface& table) const;
@@ -118,13 +123,13 @@ struct DeviceD3D11 final : public DeviceBase
     Result FillFunctionTable(WrapperD3D11Interface& table) const;
     Result FillFunctionTable(HelperInterface& helperInterface) const;
 
-private:
+  private:
     void FillDesc(const AGSDX11ReturnedParams& params);
 
-    template<typename Implementation, typename Interface, typename ... Args>
+    template <typename Implementation, typename Interface, typename... Args>
     Result CreateImplementation(Interface*& entity, const Args&... args);
 
-private:
+  private:
     // don't sort - ~D3D11Extensions must be called last!
     D3D11Extensions m_Ext = {};
     ComPtr<ID3D11DeviceBest> m_Device;
@@ -140,4 +145,4 @@ private:
     bool m_IsDeferredContextEmulated = false;
 };
 
-}
+} // namespace nri

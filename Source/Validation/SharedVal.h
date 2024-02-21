@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "DeviceBase.h"
 #include "DeviceVal.h"
 
 namespace nri {

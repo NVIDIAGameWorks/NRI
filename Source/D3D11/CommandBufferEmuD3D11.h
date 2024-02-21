@@ -2,24 +2,21 @@
 
 #pragma once
 
-namespace nri
-{
+namespace nri {
 
 struct PipelineD3D11;
 typedef Vector<uint32_t> PushBuffer;
 
-struct CommandBufferEmuD3D11 final : public CommandBufferHelper
-{
-    inline CommandBufferEmuD3D11(DeviceD3D11& device) :
-        m_Device(device)
-        , m_PushBuffer(device.GetStdAllocator())
-    {}
+struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
+    inline CommandBufferEmuD3D11(DeviceD3D11& device) : m_Device(device), m_PushBuffer(device.GetStdAllocator()) {
+    }
 
-    inline ~CommandBufferEmuD3D11()
-    {}
+    inline ~CommandBufferEmuD3D11() {
+    }
 
-    inline DeviceD3D11& GetDevice() const
-    { return m_Device; }
+    inline DeviceD3D11& GetDevice() const {
+        return m_Device;
+    }
 
     //================================================================================================================
     // CommandBufferHelper
@@ -34,8 +31,9 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper
     // NRI
     //================================================================================================================
 
-    inline void SetDebugName(const char* name)
-    { MaybeUnused(name); }
+    inline void SetDebugName(const char* name) {
+        MaybeUnused(name);
+    }
 
     Result Begin(const DescriptorPool* descriptorPool);
     Result End();
@@ -73,9 +71,9 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper
     void BeginAnnotation(const char* name);
     void EndAnnotation();
 
-private:
+  private:
     DeviceD3D11& m_Device;
     PushBuffer m_PushBuffer;
 };
 
-}
+} // namespace nri

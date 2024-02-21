@@ -5,18 +5,24 @@
 
 typedef AGSReturnCode (*PFN_agsInit)(AGSContext** agsContext, const AGSConfiguration* config, AGSGPUInfo* gpuInfo);
 typedef AGSReturnCode (*PFN_agsDeInit)(AGSContext* agsContext);
-typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_CreateDevice)(AGSContext* agsContext, const AGSDX11DeviceCreationParams* creationParams, const AGSDX11ExtensionParams* extensionParams, AGSDX11ReturnedParams* returnedParams);
+typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_CreateDevice)(
+    AGSContext* agsContext, const AGSDX11DeviceCreationParams* creationParams, const AGSDX11ExtensionParams* extensionParams, AGSDX11ReturnedParams* returnedParams
+);
 typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_BeginUAVOverlap)(AGSContext* agsContext, ID3D11DeviceContext* deviceContext);
 typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_EndUAVOverlap)(AGSContext* agsContext, ID3D11DeviceContext* deviceContext);
-typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect)(AGSContext* agsContext, ID3D11DeviceContext* deviceContext, unsigned int drawCount, ID3D11Buffer* pBufferForArgs, unsigned int alignedByteOffsetForArgs, unsigned int byteStrideForArgs);
+typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect)(
+    AGSContext* agsContext, ID3D11DeviceContext* deviceContext, unsigned int drawCount, ID3D11Buffer* pBufferForArgs, unsigned int alignedByteOffsetForArgs,
+    unsigned int byteStrideForArgs
+);
 typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_SetDepthBounds)(AGSContext* agsContext, ID3D11DeviceContext* deviceContext, bool enabled, float minDepth, float maxDepth);
-typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_MultiDrawInstancedIndirect)(AGSContext* agsContext, ID3D11DeviceContext* deviceContext, unsigned int drawCount, ID3D11Buffer* pBufferForArgs, unsigned int alignedByteOffsetForArgs, unsigned int byteStrideForArgs);
+typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_MultiDrawInstancedIndirect)(
+    AGSContext* agsContext, ID3D11DeviceContext* deviceContext, unsigned int drawCount, ID3D11Buffer* pBufferForArgs, unsigned int alignedByteOffsetForArgs,
+    unsigned int byteStrideForArgs
+);
 
-namespace nri
-{
+namespace nri {
 
-struct AGSFunctionTable
-{
+struct AGSFunctionTable {
     PFN_agsInit Init;
     PFN_agsDeInit DeInit;
     PFN_agsDriverExtensionsDX11_CreateDevice CreateDevice;
@@ -27,15 +33,16 @@ struct AGSFunctionTable
     PFN_agsDriverExtensionsDX11_MultiDrawInstancedIndirect MultiDrawInstancedIndirect;
 };
 
-struct D3D11Extensions
-{
+struct D3D11Extensions {
     ~D3D11Extensions();
 
-    inline bool IsNvAPIAvailable() const
-    { return m_IsNvAPIAvailable; }
+    inline bool IsNvAPIAvailable() const {
+        return m_IsNvAPIAvailable;
+    }
 
-    inline bool IsAGSAvailable() const
-    { return m_AGSContext != nullptr; }
+    inline bool IsAGSAvailable() const {
+        return m_AGSContext != nullptr;
+    }
 
     void InitializeNVExt(const nri::DeviceBase* deviceBase, bool isNVAPILoadedInApp, bool isImported);
     void InitializeAMDExt(const nri::DeviceBase* deviceBase, AGSContext* agsContext, bool isImported);
@@ -57,4 +64,4 @@ struct D3D11Extensions
     bool m_IsImported = false;
 };
 
-}
+} // namespace nri
