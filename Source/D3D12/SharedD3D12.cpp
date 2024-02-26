@@ -212,7 +212,11 @@ UINT8 nri::GetRenderTargetWriteMask(ColorWriteBits colorWriteMask) {
 }
 
 constexpr std::array<D3D12_COMPARISON_FUNC, (uint32_t)CompareFunc::MAX_NUM> COMPARISON_FUNCS = {
+#ifdef NRI_USE_AGILITY_SDK
     D3D12_COMPARISON_FUNC_NONE,          // NONE
+    #else
+    D3D12_COMPARISON_FUNC(0),            // NONE
+#endif
     D3D12_COMPARISON_FUNC_ALWAYS,        // ALWAYS
     D3D12_COMPARISON_FUNC_NEVER,         // NEVER
     D3D12_COMPARISON_FUNC_EQUAL,         // EQUAL

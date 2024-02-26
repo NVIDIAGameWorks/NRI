@@ -67,6 +67,23 @@ static void FillRasterizerState(D3D12_RASTERIZER_DESC& rasterizerDesc, const Gra
     }
 }
 
+static void FillDepthStencilState(D3D12_DEPTH_STENCIL_DESC* depthStencilDesc, const OutputMergerDesc& om) {
+    depthStencilDesc->DepthEnable = om.depth.compareFunc == CompareFunc::NONE ? FALSE : TRUE;
+    depthStencilDesc->DepthWriteMask = om.depth.write ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+    depthStencilDesc->DepthFunc = GetComparisonFunc(om.depth.compareFunc);
+    depthStencilDesc->StencilEnable = (om.stencil.front.compareFunc == CompareFunc::NONE && om.stencil.back.compareFunc == CompareFunc::NONE) ? FALSE : TRUE;
+    depthStencilDesc->StencilReadMask = (UINT8)om.stencil.front.compareMask;
+    depthStencilDesc->StencilWriteMask = (UINT8)om.stencil.front.writeMask;
+    depthStencilDesc->FrontFace.StencilFailOp = GetStencilOp(om.stencil.front.fail);
+    depthStencilDesc->FrontFace.StencilDepthFailOp = GetStencilOp(om.stencil.front.depthFail);
+    depthStencilDesc->FrontFace.StencilPassOp = GetStencilOp(om.stencil.front.pass);
+    depthStencilDesc->FrontFace.StencilFunc = GetComparisonFunc(om.stencil.front.compareFunc);
+    depthStencilDesc->BackFace.StencilFailOp = GetStencilOp(om.stencil.back.fail);
+    depthStencilDesc->BackFace.StencilDepthFailOp = GetStencilOp(om.stencil.back.depthFail);
+    depthStencilDesc->BackFace.StencilPassOp = GetStencilOp(om.stencil.back.pass);
+    depthStencilDesc->BackFace.StencilFunc = GetComparisonFunc(om.stencil.back.compareFunc);
+}
+
 #ifdef NRI_USE_AGILITY_SDK
 static void FillRasterizerState(D3D12_RASTERIZER_DESC1& rasterizerDesc, const GraphicsPipelineDesc& graphicsPipelineDesc) {
     const RasterizationDesc& r = graphicsPipelineDesc.rasterization;
@@ -85,23 +102,6 @@ static void FillRasterizerState(D3D12_RASTERIZER_DESC1& rasterizerDesc, const Gr
         rasterizerDesc.MultisampleEnable = graphicsPipelineDesc.multisample->sampleNum > 1 ? TRUE : FALSE;
         rasterizerDesc.ForcedSampleCount = graphicsPipelineDesc.multisample->sampleNum > 1 ? graphicsPipelineDesc.multisample->sampleNum : 0;
     }
-}
-
-static void FillDepthStencilState(D3D12_DEPTH_STENCIL_DESC* depthStencilDesc, const OutputMergerDesc& om) {
-    depthStencilDesc->DepthEnable = om.depth.compareFunc == CompareFunc::NONE ? FALSE : TRUE;
-    depthStencilDesc->DepthWriteMask = om.depth.write ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
-    depthStencilDesc->DepthFunc = GetComparisonFunc(om.depth.compareFunc);
-    depthStencilDesc->StencilEnable = (om.stencil.front.compareFunc == CompareFunc::NONE && om.stencil.back.compareFunc == CompareFunc::NONE) ? FALSE : TRUE;
-    depthStencilDesc->StencilReadMask = (UINT8)om.stencil.front.compareMask;
-    depthStencilDesc->StencilWriteMask = (UINT8)om.stencil.front.writeMask;
-    depthStencilDesc->FrontFace.StencilFailOp = GetStencilOp(om.stencil.front.fail);
-    depthStencilDesc->FrontFace.StencilDepthFailOp = GetStencilOp(om.stencil.front.depthFail);
-    depthStencilDesc->FrontFace.StencilPassOp = GetStencilOp(om.stencil.front.pass);
-    depthStencilDesc->FrontFace.StencilFunc = GetComparisonFunc(om.stencil.front.compareFunc);
-    depthStencilDesc->BackFace.StencilFailOp = GetStencilOp(om.stencil.back.fail);
-    depthStencilDesc->BackFace.StencilDepthFailOp = GetStencilOp(om.stencil.back.depthFail);
-    depthStencilDesc->BackFace.StencilPassOp = GetStencilOp(om.stencil.back.pass);
-    depthStencilDesc->BackFace.StencilFunc = GetComparisonFunc(om.stencil.back.compareFunc);
 }
 
 static void FillDepthStencilState(D3D12_DEPTH_STENCIL_DESC2& depthStencilDesc, const OutputMergerDesc& om) {
