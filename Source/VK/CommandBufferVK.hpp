@@ -30,8 +30,8 @@ static void NRI_CALL CmdSetDescriptorPool(CommandBuffer& commandBuffer, const De
     ((CommandBufferVK&)commandBuffer).SetDescriptorPool(descriptorPool);
 }
 
-static void NRI_CALL
-CmdSetDescriptorSet(CommandBuffer& commandBuffer, uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
+static void NRI_CALL CmdSetDescriptorSet(
+    CommandBuffer& commandBuffer, uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
     ((CommandBufferVK&)commandBuffer).SetDescriptorSet(setIndexInPipelineLayout, descriptorSet, dynamicConstantBufferOffsets);
 }
 
@@ -59,12 +59,16 @@ static void NRI_CALL CmdSetDepthBounds(CommandBuffer& commandBuffer, float bound
     ((CommandBufferVK&)commandBuffer).SetDepthBounds(boundsMin, boundsMax);
 }
 
-static void NRI_CALL CmdSetStencilReference(CommandBuffer& commandBuffer, uint8_t reference) {
-    ((CommandBufferVK&)commandBuffer).SetStencilReference(reference);
+static void NRI_CALL CmdSetStencilReference(CommandBuffer& commandBuffer, uint8_t frontRef, uint8_t backRef) {
+    ((CommandBufferVK&)commandBuffer).SetStencilReference(frontRef, backRef);
 }
 
-static void NRI_CALL CmdSetSamplePositions(CommandBuffer& commandBuffer, const SamplePosition* positions, uint32_t positionNum) {
-    ((CommandBufferVK&)commandBuffer).SetSamplePositions(positions, positionNum);
+static void NRI_CALL CmdSetSamplePositions(CommandBuffer& commandBuffer, const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
+    ((CommandBufferVK&)commandBuffer).SetSamplePositions(positions, positionNum, sampleNum);
+}
+
+static void NRI_CALL CmdSetBlendConstants(CommandBuffer& commandBuffer, const Color32f& color) {
+    ((CommandBufferVK&)commandBuffer).SetBlendConstants(color);
 }
 
 static void NRI_CALL CmdClearAttachments(CommandBuffer& commandBuffer, const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
@@ -79,12 +83,12 @@ static void NRI_CALL CmdSetVertexBuffers(CommandBuffer& commandBuffer, uint32_t 
     ((CommandBufferVK&)commandBuffer).SetVertexBuffers(baseSlot, bufferNum, buffers, offsets);
 }
 
-static void NRI_CALL CmdDraw(CommandBuffer& commandBuffer, uint32_t vertexNum, uint32_t instanceNum, uint32_t baseVertex, uint32_t baseInstance) {
-    ((CommandBufferVK&)commandBuffer).Draw(vertexNum, instanceNum, baseVertex, baseInstance);
+static void NRI_CALL CmdDraw(CommandBuffer& commandBuffer, const DrawDesc& drawDesc) {
+    ((CommandBufferVK&)commandBuffer).Draw(drawDesc);
 }
 
-static void NRI_CALL CmdDrawIndexed(CommandBuffer& commandBuffer, uint32_t indexNum, uint32_t instanceNum, uint32_t baseIndex, uint32_t baseVertex, uint32_t baseInstance) {
-    ((CommandBufferVK&)commandBuffer).DrawIndexed(indexNum, instanceNum, baseIndex, baseVertex, baseInstance);
+static void NRI_CALL CmdDrawIndexed(CommandBuffer& commandBuffer, const DrawIndexedDesc& drawIndexedDesc) {
+    ((CommandBufferVK&)commandBuffer).DrawIndexed(drawIndexedDesc);
 }
 
 static void NRI_CALL CmdDrawIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
@@ -95,8 +99,8 @@ static void NRI_CALL CmdDrawIndexedIndirect(CommandBuffer& commandBuffer, const 
     ((CommandBufferVK&)commandBuffer).DrawIndexedIndirect(buffer, offset, drawNum, stride);
 }
 
-static void NRI_CALL CmdDispatch(CommandBuffer& commandBuffer, uint32_t x, uint32_t y, uint32_t z) {
-    ((CommandBufferVK&)commandBuffer).Dispatch(x, y, z);
+static void NRI_CALL CmdDispatch(CommandBuffer& commandBuffer, const DispatchDesc& dispatchDesc) {
+    ((CommandBufferVK&)commandBuffer).Dispatch(dispatchDesc);
 }
 
 static void NRI_CALL CmdDispatchIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset) {
@@ -128,29 +132,24 @@ static void NRI_CALL CmdClearStorageTexture(CommandBuffer& commandBuffer, const 
 }
 
 static void NRI_CALL CmdCopyBuffer(
-    CommandBuffer& commandBuffer, Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size
-) {
+    CommandBuffer& commandBuffer, Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size) {
     // TODO: use dstNodeIndex and srcNodeIndex
     ((CommandBufferVK&)commandBuffer).CopyBuffer(dstBuffer, dstNodeIndex, dstOffset, srcBuffer, srcNodeIndex, srcOffset, size);
 }
 
-static void NRI_CALL CmdCopyTexture(
-    CommandBuffer& commandBuffer, Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcNodeIndex,
-    const TextureRegionDesc* srcRegionDesc
-) {
+static void NRI_CALL CmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture,
+    uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc) {
     // TODO: use dstNodeIndex and srcNodeIndex
     ((CommandBufferVK&)commandBuffer).CopyTexture(dstTexture, dstNodeIndex, dstRegionDesc, srcTexture, srcNodeIndex, srcRegionDesc);
 }
 
 static void NRI_CALL CmdUploadBufferToTexture(
-    CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc
-) {
+    CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
     ((CommandBufferVK&)commandBuffer).UploadBufferToTexture(dstTexture, dstRegionDesc, srcBuffer, srcDataLayoutDesc);
 }
 
 static void NRI_CALL CmdReadbackTextureToBuffer(
-    CommandBuffer& commandBuffer, Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc
-) {
+    CommandBuffer& commandBuffer, Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
     ((CommandBufferVK&)commandBuffer).ReadbackTextureToBuffer(dstBuffer, dstDataLayoutDesc, srcTexture, srcRegionDesc);
 }
 
@@ -181,31 +180,23 @@ static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandB
 
 #pragma region[  RayTracing  ]
 
-static void NRI_CALL CmdBuildTopLevelAccelerationStructure(
-    CommandBuffer& commandBuffer, uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
-    Buffer& scratch, uint64_t scratchOffset
-) {
+static void NRI_CALL CmdBuildTopLevelAccelerationStructure(CommandBuffer& commandBuffer, uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset,
+    AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {
     ((CommandBufferVK&)commandBuffer).BuildTopLevelAccelerationStructure(instanceNum, buffer, bufferOffset, flags, dst, scratch, scratchOffset);
 }
 
-static void NRI_CALL CmdBuildBottomLevelAccelerationStructure(
-    CommandBuffer& commandBuffer, uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
-    Buffer& scratch, uint64_t scratchOffset
-) {
+static void NRI_CALL CmdBuildBottomLevelAccelerationStructure(CommandBuffer& commandBuffer, uint32_t geometryObjectNum, const GeometryObject* geometryObjects,
+    AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {
     ((CommandBufferVK&)commandBuffer).BuildBottomLevelAccelerationStructure(geometryObjectNum, geometryObjects, flags, dst, scratch, scratchOffset);
 }
 
-static void NRI_CALL CmdUpdateTopLevelAccelerationStructure(
-    CommandBuffer& commandBuffer, uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
-    AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset
-) {
+static void NRI_CALL CmdUpdateTopLevelAccelerationStructure(CommandBuffer& commandBuffer, uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset,
+    AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
     ((CommandBufferVK&)commandBuffer).UpdateTopLevelAccelerationStructure(instanceNum, buffer, bufferOffset, flags, dst, src, scratch, scratchOffset);
 }
 
-static void NRI_CALL CmdUpdateBottomLevelAccelerationStructure(
-    CommandBuffer& commandBuffer, uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
-    AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset
-) {
+static void NRI_CALL CmdUpdateBottomLevelAccelerationStructure(CommandBuffer& commandBuffer, uint32_t geometryObjectNum, const GeometryObject* geometryObjects,
+    AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
     ((CommandBufferVK&)commandBuffer).UpdateBottomLevelAccelerationStructure(geometryObjectNum, geometryObjects, flags, dst, src, scratch, scratchOffset);
 }
 
@@ -214,8 +205,7 @@ static void NRI_CALL CmdCopyAccelerationStructure(CommandBuffer& commandBuffer, 
 }
 
 static void NRI_CALL CmdWriteAccelerationStructureSize(
-    CommandBuffer& commandBuffer, const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryOffset
-) {
+    CommandBuffer& commandBuffer, const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryOffset) {
     ((CommandBufferVK&)commandBuffer).WriteAccelerationStructureSize(accelerationStructures, accelerationStructureNum, queryPool, queryOffset);
 }
 
@@ -223,12 +213,20 @@ static void NRI_CALL CmdDispatchRays(CommandBuffer& commandBuffer, const Dispatc
     ((CommandBufferVK&)commandBuffer).DispatchRays(dispatchRaysDesc);
 }
 
+static void NRI_CALL CmdDispatchRaysIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset) {
+    ((CommandBufferVK&)commandBuffer).DispatchRaysIndirect(buffer, offset);
+}
+
 #pragma endregion
 
 #pragma region[  MeshShader  ]
 
-static void NRI_CALL CmdDispatchMeshTasks(CommandBuffer& commandBuffer, uint32_t x, uint32_t y, uint32_t z) {
-    ((CommandBufferVK&)commandBuffer).DispatchMeshTasks(x, y, z);
+static void NRI_CALL CmdDrawMeshTasks(CommandBuffer& commandBuffer, const DrawMeshTasksDesc& drawMeshTasksDesc) {
+    ((CommandBufferVK&)commandBuffer).DrawMeshTasks(drawMeshTasksDesc);
+}
+
+static void NRI_CALL CmdDrawMeshTasksIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
+    ((CommandBufferVK&)commandBuffer).DrawMeshTasksIndirect(buffer, offset, drawNum, stride);
 }
 
 #pragma endregion

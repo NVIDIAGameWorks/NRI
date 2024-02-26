@@ -210,7 +210,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         desiredPresentMode,
         VK_FALSE,
-        VK_NULL_HANDLE
+        VK_NULL_HANDLE,
     };
 
     result = vk.CreateSwapchainKHR(m_Device, &swapchainInfo, m_Device.GetAllocationCallbacks(), &m_Handle);

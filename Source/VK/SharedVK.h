@@ -45,5 +45,9 @@ constexpr bool IsHostMemory(nri::MemoryLocation location) {
 #    define IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL VK_IMAGE_LAYOUT_GENERAL
 #endif
 
+#define APPEND_EXT(desc) \
+    *tail = &desc; \
+    tail = &desc.pNext
+
 #include "ConversionVK.h"
 #include "DeviceVK.h"

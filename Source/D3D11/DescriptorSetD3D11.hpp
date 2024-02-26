@@ -6,8 +6,8 @@ static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet& descriptorSet, con
     ((DescriptorSetD3D11&)descriptorSet).SetDebugName(name);
 }
 
-static void NRI_CALL
-UpdateDescriptorRanges(DescriptorSet& descriptorSet, uint32_t nodeMask, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs) {
+static void NRI_CALL UpdateDescriptorRanges(
+    DescriptorSet& descriptorSet, uint32_t nodeMask, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs) {
     MaybeUnused(nodeMask);
 
     ((DescriptorSetD3D11&)descriptorSet).UpdateDescriptorRanges(baseRange, rangeNum, rangeUpdateDescs);

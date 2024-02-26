@@ -28,9 +28,8 @@ Result DescriptorPoolD3D11::Create(const DescriptorPoolDesc& descriptorPoolDesc)
 // NRI
 //================================================================================================================
 
-inline Result DescriptorPoolD3D11::AllocateDescriptorSets(
-    const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t nodeMask, uint32_t variableDescriptorNum
-) {
+inline Result DescriptorPoolD3D11::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets,
+    uint32_t instanceNum, uint32_t nodeMask, uint32_t variableDescriptorNum) {
     MaybeUnused(nodeMask);
 
     if (variableDescriptorNum)

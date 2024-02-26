@@ -32,8 +32,8 @@ static void NRI_CALL CmdSetDescriptorPool(CommandBuffer& commandBuffer, const De
     ((CommandBufferEmuD3D11&)commandBuffer).SetDescriptorPool(descriptorPool);
 }
 
-static void NRI_CALL
-CmdSetDescriptorSet(CommandBuffer& commandBuffer, uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
+static void NRI_CALL CmdSetDescriptorSet(
+    CommandBuffer& commandBuffer, uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
     ((CommandBufferEmuD3D11&)commandBuffer).SetDescriptorSet(setIndexInPipelineLayout, descriptorSet, dynamicConstantBufferOffsets);
 }
 
@@ -61,12 +61,16 @@ static void NRI_CALL CmdSetDepthBounds(CommandBuffer& commandBuffer, float bound
     ((CommandBufferEmuD3D11&)commandBuffer).SetDepthBounds(boundsMin, boundsMax);
 }
 
-static void NRI_CALL CmdSetStencilReference(CommandBuffer& commandBuffer, uint8_t reference) {
-    ((CommandBufferEmuD3D11&)commandBuffer).SetStencilReference(reference);
+static void NRI_CALL CmdSetStencilReference(CommandBuffer& commandBuffer, uint8_t frontRef, uint8_t backRef) {
+    ((CommandBufferEmuD3D11&)commandBuffer).SetStencilReference(frontRef, backRef);
 }
 
-static void NRI_CALL CmdSetSamplePositions(CommandBuffer& commandBuffer, const SamplePosition* positions, uint32_t positionNum) {
-    ((CommandBufferEmuD3D11&)commandBuffer).SetSamplePositions(positions, positionNum);
+static void NRI_CALL CmdSetSamplePositions(CommandBuffer& commandBuffer, const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
+    ((CommandBufferEmuD3D11&)commandBuffer).SetSamplePositions(positions, positionNum, sampleNum);
+}
+
+static void NRI_CALL CmdSetBlendConstants(CommandBuffer& commandBuffer, const Color32f& color) {
+    ((CommandBufferEmuD3D11&)commandBuffer).SetBlendConstants(color);
 }
 
 static void NRI_CALL CmdClearAttachments(CommandBuffer& commandBuffer, const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
@@ -81,12 +85,12 @@ static void NRI_CALL CmdSetVertexBuffers(CommandBuffer& commandBuffer, uint32_t 
     ((CommandBufferEmuD3D11&)commandBuffer).SetVertexBuffers(baseSlot, bufferNum, buffers, offsets);
 }
 
-static void NRI_CALL CmdDraw(CommandBuffer& commandBuffer, uint32_t vertexNum, uint32_t instanceNum, uint32_t baseVertex, uint32_t baseInstance) {
-    ((CommandBufferEmuD3D11&)commandBuffer).Draw(vertexNum, instanceNum, baseVertex, baseInstance);
+static void NRI_CALL CmdDraw(CommandBuffer& commandBuffer, const DrawDesc& drawDesc) {
+    ((CommandBufferEmuD3D11&)commandBuffer).Draw(drawDesc);
 }
 
-static void NRI_CALL CmdDrawIndexed(CommandBuffer& commandBuffer, uint32_t indexNum, uint32_t instanceNum, uint32_t baseIndex, uint32_t baseVertex, uint32_t baseInstance) {
-    ((CommandBufferEmuD3D11&)commandBuffer).DrawIndexed(indexNum, instanceNum, baseIndex, baseVertex, baseInstance);
+static void NRI_CALL CmdDrawIndexed(CommandBuffer& commandBuffer, const DrawIndexedDesc& drawIndexedDesc) {
+    ((CommandBufferEmuD3D11&)commandBuffer).DrawIndexed(drawIndexedDesc);
 }
 
 static void NRI_CALL CmdDrawIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
@@ -97,8 +101,8 @@ static void NRI_CALL CmdDrawIndexedIndirect(CommandBuffer& commandBuffer, const 
     ((CommandBufferEmuD3D11&)commandBuffer).DrawIndexedIndirect(buffer, offset, drawNum, stride);
 }
 
-static void NRI_CALL CmdDispatch(CommandBuffer& commandBuffer, uint32_t x, uint32_t y, uint32_t z) {
-    ((CommandBufferEmuD3D11&)commandBuffer).Dispatch(x, y, z);
+static void NRI_CALL CmdDispatch(CommandBuffer& commandBuffer, const DispatchDesc& dispatchDesc) {
+    ((CommandBufferEmuD3D11&)commandBuffer).Dispatch(dispatchDesc);
 }
 
 static void NRI_CALL CmdDispatchIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset) {
@@ -130,18 +134,15 @@ static void NRI_CALL CmdClearStorageTexture(CommandBuffer& commandBuffer, const 
 }
 
 static void NRI_CALL CmdCopyBuffer(
-    CommandBuffer& commandBuffer, Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size
-) {
+    CommandBuffer& commandBuffer, Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size) {
     MaybeUnused(dstNodeIndex);
     MaybeUnused(srcNodeIndex);
 
     ((CommandBufferEmuD3D11&)commandBuffer).CopyBuffer(dstBuffer, dstOffset, srcBuffer, srcOffset, size);
 }
 
-static void NRI_CALL CmdCopyTexture(
-    CommandBuffer& commandBuffer, Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcNodeIndex,
-    const TextureRegionDesc* srcRegionDesc
-) {
+static void NRI_CALL CmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture,
+    uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc) {
     MaybeUnused(dstNodeIndex);
     MaybeUnused(srcNodeIndex);
 
@@ -149,14 +150,12 @@ static void NRI_CALL CmdCopyTexture(
 }
 
 static void NRI_CALL CmdUploadBufferToTexture(
-    CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc
-) {
+    CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
     ((CommandBufferEmuD3D11&)commandBuffer).UploadBufferToTexture(dstTexture, dstRegionDesc, srcBuffer, srcDataLayoutDesc);
 }
 
 static void NRI_CALL CmdReadbackTextureToBuffer(
-    CommandBuffer& commandBuffer, Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc
-) {
+    CommandBuffer& commandBuffer, Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
     ((CommandBufferEmuD3D11&)commandBuffer).ReadbackTextureToBuffer(dstBuffer, dstDataLayoutDesc, srcTexture, srcRegionDesc);
 }
 
@@ -201,6 +200,7 @@ void Core_CommandBufferEmu_PartiallyFillFunctionTable(CoreInterface& coreInterfa
     coreInterface.CmdSetDepthBounds = ::CmdSetDepthBounds;
     coreInterface.CmdSetStencilReference = ::CmdSetStencilReference;
     coreInterface.CmdSetSamplePositions = ::CmdSetSamplePositions;
+    coreInterface.CmdSetBlendConstants = ::CmdSetBlendConstants;
     coreInterface.CmdSetIndexBuffer = ::CmdSetIndexBuffer;
     coreInterface.CmdSetVertexBuffers = ::CmdSetVertexBuffers;
     coreInterface.CmdDraw = ::CmdDraw;

@@ -120,6 +120,7 @@ struct DeviceBase {
         table.CmdSetDepthBounds = ::CmdSetDepthBounds; \
         table.CmdSetStencilReference = ::CmdSetStencilReference; \
         table.CmdSetSamplePositions = ::CmdSetSamplePositions; \
+        table.CmdSetBlendConstants = ::CmdSetBlendConstants; \
         table.CmdSetIndexBuffer = ::CmdSetIndexBuffer; \
         table.CmdSetVertexBuffers = ::CmdSetVertexBuffers; \
         table.CmdDraw = ::CmdDraw; \
@@ -213,6 +214,7 @@ struct DeviceBase {
         table.CmdCopyAccelerationStructure = ::CmdCopyAccelerationStructure; \
         table.CmdWriteAccelerationStructureSize = ::CmdWriteAccelerationStructureSize; \
         table.CmdDispatchRays = ::CmdDispatchRays; \
+        table.CmdDispatchRaysIndirect = ::CmdDispatchRaysIndirect; \
     }
 
 #define Define_RayTracing_AccelerationStructure_PartiallyFillFunctionTable(API) \
@@ -228,7 +230,8 @@ struct DeviceBase {
 
 #define Define_MeshShader_CommandBuffer_PartiallyFillFunctionTable(API) \
     void MeshShader_CommandBuffer_PartiallyFillFunctionTable##API(MeshShaderInterface& table) { \
-        table.CmdDispatchMeshTasks = ::CmdDispatchMeshTasks; \
+        table.CmdDrawMeshTasks = ::CmdDrawMeshTasks; \
+        table.CmdDrawMeshTasksIndirect = ::CmdDrawMeshTasksIndirect; \
     }
 
 #define Define_Helper_CommandQueue_PartiallyFillFunctionTable(API) \

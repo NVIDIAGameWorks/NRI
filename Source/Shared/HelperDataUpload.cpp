@@ -9,8 +9,7 @@ HelperDataUpload::HelperDataUpload(const CoreInterface& NRI, Device& device, con
 }
 
 Result HelperDataUpload::UploadData(
-    const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum
-) {
+    const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
     const DeviceDesc& deviceDesc = NRI.GetDeviceDesc(m_Device);
 
     for (uint32_t i = 0; i < textureUploadDescNum; i++) {
@@ -288,8 +287,7 @@ bool HelperDataUpload::CopyBufferContent(const BufferUploadDesc& bufferUploadDes
 
     for (uint32_t j = 0; j < m_CommandBuffers.size(); j++) {
         NRI.CmdCopyBuffer(
-            *m_CommandBuffers[j], *bufferUploadDesc.buffer, j, bufferUploadDesc.bufferOffset + bufferContentOffset, *m_UploadBuffer, 0, m_UploadBufferOffset, copySize
-        );
+            *m_CommandBuffers[j], *bufferUploadDesc.buffer, j, bufferUploadDesc.bufferOffset + bufferContentOffset, *m_UploadBuffer, 0, m_UploadBufferOffset, copySize);
     }
 
     bufferContentOffset += copySize;

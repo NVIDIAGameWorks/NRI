@@ -101,8 +101,6 @@ D3D12 only:
 
 ## AGILITY SDK
 
-IMPORTANT: NRI features requiring Agility SDK are marked as `// TODO: D3D12 requires Agility SDK` with version specification.
-
 *Overview* and *Download* sections can be found [*here*](https://devblogs.microsoft.com/directx/directx12agility/).
 
 D3D12 backend uses Agility SDK to get access to most recent D3D12 features. As soon as these features become available in the OS, installation of Agility SDK will be deprecated.

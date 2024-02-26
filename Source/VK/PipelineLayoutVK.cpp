@@ -125,13 +125,10 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
     const uint32_t bindingNum = uint32_t(bindings - bindingsBegin);
 
     VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT, nullptr, bindingNum, bindingFlagsBegin
-    };
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT, nullptr, bindingNum, bindingFlagsBegin};
 
-    VkDescriptorSetLayoutCreateInfo info = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, m_Device.m_IsDescriptorIndexingSupported ? &bindingFlagsInfo : nullptr, (VkDescriptorSetLayoutCreateFlags)0,
-        bindingNum, bindingsBegin
-    };
+    VkDescriptorSetLayoutCreateInfo info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, m_Device.m_IsDescriptorIndexingSupported ? &bindingFlagsInfo : nullptr,
+        (VkDescriptorSetLayoutCreateFlags)0, bindingNum, bindingsBegin};
 
     VkDescriptorSetLayout handle = VK_NULL_HANDLE;
     const auto& vk = m_Device.GetDispatchTable();
@@ -146,8 +143,7 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
 }
 
 void PipelineLayoutVK::FillDescriptorBindings(
-    const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags
-) const {
+    const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags) const {
     const VkDescriptorBindingFlagsEXT commonBindingFlags = descriptorSetDesc.partiallyBound ? VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT : 0;
 
     constexpr VkDescriptorBindingFlagsEXT variableSizedArrayFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
@@ -182,8 +178,7 @@ void PipelineLayoutVK::FillDescriptorBindings(
 }
 
 void PipelineLayoutVK::FillDynamicConstantBufferBindings(
-    const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags
-) const {
+    const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags) const {
     for (uint32_t i = 0; i < descriptorSetDesc.dynamicConstantBufferNum; i++) {
         const DynamicConstantBufferDesc& buffer = descriptorSetDesc.dynamicConstantBuffers[i];
 
@@ -261,10 +256,8 @@ void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipeline
         }
 
         // Copy dynamic constant buffer descs
-        destination.dynamicConstantBufferDescs.insert(
-            destination.dynamicConstantBufferDescs.end(), descriptorSetDesc.dynamicConstantBuffers,
-            descriptorSetDesc.dynamicConstantBuffers + descriptorSetDesc.dynamicConstantBufferNum
-        );
+        destination.dynamicConstantBufferDescs.insert(destination.dynamicConstantBufferDescs.end(), descriptorSetDesc.dynamicConstantBuffers,
+            descriptorSetDesc.dynamicConstantBuffers + descriptorSetDesc.dynamicConstantBufferNum);
 
         // Copy dynamic constant buffer binding offsets
         DynamicConstantBufferDesc* dynamicConstantBuffers = const_cast<DynamicConstantBufferDesc*>(destination.descriptorSetDescs[i].dynamicConstantBuffers);

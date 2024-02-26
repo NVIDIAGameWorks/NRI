@@ -17,7 +17,11 @@ static constexpr uint64_t s_nullOffsets[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUN
 
 uint8_t QueryLatestDeviceContext(ComPtr<ID3D11DeviceContextBest>& in, ComPtr<ID3D11DeviceContextBest>& out) {
     static const IID versions[] = {
-        __uuidof(ID3D11DeviceContext4), __uuidof(ID3D11DeviceContext3), __uuidof(ID3D11DeviceContext2), __uuidof(ID3D11DeviceContext1), __uuidof(ID3D11DeviceContext),
+        __uuidof(ID3D11DeviceContext4),
+        __uuidof(ID3D11DeviceContext3),
+        __uuidof(ID3D11DeviceContext2),
+        __uuidof(ID3D11DeviceContext1),
+        __uuidof(ID3D11DeviceContext),
     };
     const uint8_t n = (uint8_t)GetCountOf(versions);
 
@@ -82,12 +86,15 @@ StdAllocator<uint8_t>& CommandBufferD3D11::GetStdAllocator() const {
 //================================================================================================================
 
 Result CommandBufferD3D11::Begin(const DescriptorPool* descriptorPool) {
-    m_SamplePositionsState.Reset();
     m_CommandList = nullptr;
     m_Pipeline = nullptr;
     m_IndexBuffer = nullptr;
     m_VertexBuffer = nullptr;
+
+    // Dynamic state
+    m_SamplePositionsState.Reset();
     m_StencilRef = 0;
+    m_BlendFactor = {};
 
     if (descriptorPool)
         SetDescriptorPool(*descriptorPool);
@@ -116,8 +123,7 @@ void CommandBufferD3D11::SetScissors(const Rect* rects, uint32_t rectNum) {
         rectsD3D[i] = {rect.x, rect.y, (LONG)(rect.x + rect.width), (LONG)(rect.y + rect.height)};
     }
 
-    if (!m_Pipeline || !m_Pipeline->IsRasterizerDiscarded())
-        m_DeferredContext->RSSetScissorRects(rectNum, &rectsD3D[0]);
+    m_DeferredContext->RSSetScissorRects(rectNum, &rectsD3D[0]);
 }
 
 void CommandBufferD3D11::SetDepthBounds(float boundsMin, float boundsMax) {
@@ -129,18 +135,29 @@ void CommandBufferD3D11::SetDepthBounds(float boundsMin, float boundsMax) {
     }
 }
 
-void CommandBufferD3D11::SetStencilReference(uint8_t reference) {
-    m_StencilRef = reference;
+void CommandBufferD3D11::SetStencilReference(uint8_t frontRef, uint8_t backRef) {
+    MaybeUnused(backRef);
 
     if (m_Pipeline)
-        m_Pipeline->ChangeStencilReference(m_DeferredContext, m_StencilRef, DynamicState::BIND_AND_SET);
+        m_Pipeline->ChangeStencilReference(m_DeferredContext, frontRef);
+
+    m_StencilRef = frontRef;
 }
 
-void CommandBufferD3D11::SetSamplePositions(const SamplePosition* positions, uint32_t positionNum) {
+void CommandBufferD3D11::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
+    MaybeUnused(sampleNum); // already have this in "m_RasterizerStateExDesc"
+
     m_SamplePositionsState.Set(positions, positionNum);
 
     if (m_Pipeline)
-        m_Pipeline->ChangeSamplePositions(m_DeferredContext, m_SamplePositionsState, DynamicState::BIND_AND_SET);
+        m_Pipeline->ChangeSamplePositions(m_DeferredContext, m_SamplePositionsState);
+}
+
+void CommandBufferD3D11::SetBlendConstants(const Color32f& color) {
+    if (m_Pipeline)
+        m_Pipeline->ChangeBlendConstants(m_DeferredContext, color);
+
+    m_BlendFactor = color;
 }
 
 void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
@@ -160,8 +177,7 @@ void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t 
                     break;
                 case AttachmentContentType::DEPTH_STENCIL:
                     m_DeferredContext->ClearDepthStencilView(
-                        m_DepthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDesc.value.depthStencil.depth, clearDesc.value.depthStencil.stencil
-                    );
+                        m_DepthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDesc.value.depthStencil.depth, clearDesc.value.depthStencil.stencil);
                     break;
             }
         }
@@ -287,9 +303,7 @@ void CommandBufferD3D11::SetPipelineLayout(const PipelineLayout& pipelineLayout)
 
 void CommandBufferD3D11::SetPipeline(const Pipeline& pipeline) {
     PipelineD3D11* pipelineD3D11 = (PipelineD3D11*)&pipeline;
-    pipelineD3D11->ChangeSamplePositions(m_DeferredContext, m_SamplePositionsState, DynamicState::SET_ONLY);
-    pipelineD3D11->ChangeStencilReference(m_DeferredContext, m_StencilRef, DynamicState::SET_ONLY);
-    pipelineD3D11->Bind(m_DeferredContext, m_Pipeline);
+    pipelineD3D11->Bind(m_DeferredContext, m_Pipeline, m_StencilRef, m_BlendFactor, m_SamplePositionsState);
 
     m_Pipeline = pipelineD3D11;
 }
@@ -307,12 +321,13 @@ void CommandBufferD3D11::SetConstants(uint32_t pushConstantIndex, const void* da
     m_PipelineLayout->SetConstants(m_DeferredContext, pushConstantIndex, (const Vec4*)data, size);
 }
 
-void CommandBufferD3D11::Draw(uint32_t vertexNum, uint32_t instanceNum, uint32_t baseVertex, uint32_t baseInstance) {
-    m_DeferredContext->DrawInstanced(vertexNum, instanceNum, baseVertex, baseInstance);
+void CommandBufferD3D11::Draw(const DrawDesc& drawDesc) {
+    m_DeferredContext->DrawInstanced(drawDesc.vertexNum, drawDesc.instanceNum, drawDesc.baseVertex, drawDesc.baseInstance);
 }
 
-void CommandBufferD3D11::DrawIndexed(uint32_t indexNum, uint32_t instanceNum, uint32_t baseIndex, uint32_t baseVertex, uint32_t baseInstance) {
-    m_DeferredContext->DrawIndexedInstanced(indexNum, instanceNum, baseIndex, baseVertex, baseInstance);
+void CommandBufferD3D11::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc) {
+    m_DeferredContext->DrawIndexedInstanced(
+        drawIndexedDesc.indexNum, drawIndexedDesc.instanceNum, drawIndexedDesc.baseIndex, drawIndexedDesc.baseVertex, drawIndexedDesc.baseInstance);
 }
 
 void CommandBufferD3D11::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
@@ -373,8 +388,7 @@ void CommandBufferD3D11::CopyTexture(Texture& dstTexture, const TextureRegionDes
 }
 
 void CommandBufferD3D11::UploadBufferToTexture(
-    Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc
-) {
+    Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
     BufferD3D11& src = (BufferD3D11&)srcBuffer;
     TextureD3D11& dst = (TextureD3D11&)dstTexture;
 
@@ -414,8 +428,8 @@ void CommandBufferD3D11::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataL
     CopyTexture((Texture&)dstTemp, &dstRegionDesc, srcTexture, &srcRegionDesc);
 }
 
-void CommandBufferD3D11::Dispatch(uint32_t x, uint32_t y, uint32_t z) {
-    m_DeferredContext->Dispatch(x, y, z);
+void CommandBufferD3D11::Dispatch(const DispatchDesc& dispatchDesc) {
+    m_DeferredContext->Dispatch(dispatchDesc.x, dispatchDesc.y, dispatchDesc.z);
 }
 
 void CommandBufferD3D11::DispatchIndirect(const Buffer& buffer, uint64_t offset) {

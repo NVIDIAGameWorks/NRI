@@ -103,10 +103,12 @@ struct DispatchTable {
     VULKAN_FUNCTION(UpdateDescriptorSets);
 
     VULKAN_FUNCTION(BeginCommandBuffer);
-    VULKAN_FUNCTION(CmdSetDepthBounds);
     VULKAN_FUNCTION(CmdSetViewport);
     VULKAN_FUNCTION(CmdSetScissor);
+    VULKAN_FUNCTION(CmdSetDepthBounds);
     VULKAN_FUNCTION(CmdSetStencilReference);
+    VULKAN_FUNCTION(CmdSetSampleLocationsEXT);
+    VULKAN_FUNCTION(CmdSetBlendConstants);
     VULKAN_FUNCTION(CmdClearAttachments);
     VULKAN_FUNCTION(CmdClearColorImage);
     VULKAN_FUNCTION(CmdBeginRendering);
@@ -151,9 +153,11 @@ struct DispatchTable {
     VULKAN_FUNCTION(CmdCopyAccelerationStructureKHR);
     VULKAN_FUNCTION(CmdWriteAccelerationStructuresPropertiesKHR);
     VULKAN_FUNCTION(CmdTraceRaysKHR);
+    VULKAN_FUNCTION(CmdTraceRaysIndirect2KHR);
     VULKAN_FUNCTION(GetBufferDeviceAddress);
 
     VULKAN_FUNCTION(CmdDrawMeshTasksEXT);
+    VULKAN_FUNCTION(CmdDrawMeshTasksIndirectEXT);
 };
 
 #undef VULKAN_FUNCTION

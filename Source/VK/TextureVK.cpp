@@ -29,8 +29,14 @@ Result TextureVK::Create(const TextureDesc& textureDesc) {
     const Vector<uint32_t>& queueIndices = m_Device.GetConcurrentSharingModeQueueIndices();
     uint32_t nodeMask = GetNodeMask(textureDesc.nodeMask);
 
+    VkImageCreateFlags flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT; // typeless
+    if (textureDesc.arraySize > 1)
+        flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT | VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    if (m_Device.GetDesc().isProgrammableSampleLocationsSupported && textureDesc.format >= Format::D16_UNORM)
+        flags |= VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
+
     VkImageCreateInfo info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-    info.flags = GetImageCreateFlags(textureDesc.format);
+    info.flags = flags;
     info.imageType = imageType;
     info.format = ::GetVkFormat(textureDesc.format);
     info.extent.width = textureDesc.width;

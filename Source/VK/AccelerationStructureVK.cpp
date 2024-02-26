@@ -155,8 +155,7 @@ Result AccelerationStructureVK::FinishCreation() {
             const VkResult result = vk.CreateAccelerationStructureKHR(m_Device, &accelerationStructureCreateInfo, m_Device.GetAllocationCallbacks(), &m_Handles[i]);
 
             RETURN_ON_FAILURE(
-                &m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't create an acceleration structure: vkCreateAccelerationStructureKHR returned %d.", (int32_t)result
-            );
+                &m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't create an acceleration structure: vkCreateAccelerationStructureKHR returned %d.", (int32_t)result);
 
             VkAccelerationStructureDeviceAddressInfoKHR deviceAddressInfo = {};
             deviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;

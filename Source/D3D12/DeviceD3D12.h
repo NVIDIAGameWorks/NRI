@@ -67,9 +67,10 @@ struct DeviceD3D12 final : public DeviceBase {
     DescriptorPointerCPU GetDescriptorPointerCPU(const DescriptorHandle& descriptorHandle);
     void GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const;
 
-    ID3D12CommandSignature* CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride);
     ID3D12CommandSignature* GetDrawCommandSignature(uint32_t stride);
     ID3D12CommandSignature* GetDrawIndexedCommandSignature(uint32_t stride);
+    ID3D12CommandSignature* GetDrawMeshCommandSignature(uint32_t stride);
+    ID3D12CommandSignature* GetDispatchRaysCommandSignature() const;
     ID3D12CommandSignature* GetDispatchCommandSignature() const;
 
     //================================================================================================================
@@ -147,6 +148,7 @@ struct DeviceD3D12 final : public DeviceBase {
   private:
     void FillDesc();
     MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const;
+    ID3D12CommandSignature* CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride);
 
   private:
     ComPtr<ID3D12DeviceBest> m_Device;
@@ -157,7 +159,9 @@ struct DeviceD3D12 final : public DeviceBase {
     DeviceDesc m_Desc = {};
     UnorderedMap<uint32_t, ComPtr<ID3D12CommandSignature>> m_DrawCommandSignatures;
     UnorderedMap<uint32_t, ComPtr<ID3D12CommandSignature>> m_DrawIndexedCommandSignatures;
+    UnorderedMap<uint32_t, ComPtr<ID3D12CommandSignature>> m_DrawMeshCommandSignatures;
     ComPtr<ID3D12CommandSignature> m_DispatchCommandSignature;
+    ComPtr<ID3D12CommandSignature> m_DispatchRaysCommandSignature;
     CoreInterface m_CoreInterface = {};
     uint8_t m_Version = 0;
     bool m_AreEnhancedBarriersSupported = false;

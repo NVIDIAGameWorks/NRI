@@ -24,10 +24,6 @@ constexpr uint32_t INVALID_FAMILY_INDEX = uint32_t(-1);
 
 using namespace nri;
 
-#define APPEND_EXT(desc) \
-    *tail = &desc; \
-    tail = &desc.pNext
-
 Result CreateDeviceVK(const DeviceCreationDesc& desc, DeviceBase*& device) {
     StdAllocator<uint8_t> allocator(desc.memoryAllocatorInterface);
     DeviceVK* implementation = Allocate<DeviceVK>(allocator, desc.callbackInterface, allocator);
@@ -221,8 +217,8 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
 
-    if (IsExtensionSupported(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME, supportedExts))
-        desiredDeviceExts.push_back(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME);
+    if (IsExtensionSupported(VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME);
 
     if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
@@ -459,9 +455,9 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(shadingRateFeatures);
     }
 
-    VkPhysicalDeviceTransformFeedbackFeaturesEXT transformFeedbackFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT};
-    if (IsExtensionSupported(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME, desiredDeviceExts)) {
-        APPEND_EXT(transformFeedbackFeatures);
+    VkPhysicalDeviceLineRasterizationFeaturesEXT lineRasterizationFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(lineRasterizationFeatures);
     }
 
     VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT};
@@ -568,6 +564,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT};
         if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(conservativeRasterProps);
+        }
+
+        VkPhysicalDeviceLineRasterizationPropertiesEXT lineRasterizationProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT};
+        if (IsExtensionSupported(VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
+            APPEND_EXT(lineRasterizationProps);
         }
 
         VkPhysicalDeviceSampleLocationsPropertiesEXT sampleLocationsProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT};
@@ -721,6 +722,8 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isCopyQueueSupported = m_Queues[(uint32_t)CommandQueueType::COPY] != nullptr;
         m_Desc.isRegisterAliasingSupported = true;
         m_Desc.isFloat16Supported = features12.shaderFloat16;
+        m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = true;
+        m_Desc.isLineSmoothingSupported = lineRasterizationFeatures.smoothLines;
 
         // Copy queue timestamp
         uint32_t familyNum = 0;
@@ -749,6 +752,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.rayTracingGeometryObjectMaxNum = (uint32_t)accelerationStructureProps.maxGeometryCount;
         m_Desc.rayTracingShaderTableAligment = rayTracingProps.shaderGroupBaseAlignment;
         m_Desc.rayTracingShaderTableMaxStride = rayTracingProps.maxShaderGroupStride;
+        m_Desc.isDispatchRaysIndirectSupported = rayTracingPipelineFeatures.rayTracingPipelineTraceRaysIndirect;
 
         // Mesh shader
         m_Desc.meshControlSharedMemoryMaxSize = meshShaderProps.maxTaskSharedMemorySize;
@@ -760,6 +764,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.meshEvaluationSharedMemoryMaxSize = meshShaderProps.maxMeshSharedMemorySize;
         m_Desc.meshEvaluationWorkGroupInvocationMaxNum = meshShaderProps.maxMeshWorkGroupInvocations;
         m_Desc.isMeshShaderPipelineStatsSupported = meshShaderFeatures.meshShaderQueries == VK_TRUE;
+        m_Desc.isDrawMeshTasksIndirectSupported = true;
     }
 
     return FillFunctionTable(m_CoreInterface);
@@ -939,8 +944,7 @@ const char* GetObjectTypeName(VkObjectType objectType) {
 }
 
 VkBool32 VKAPI_PTR DebugUtilsMessenger(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData
-) {
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData) {
     MaybeUnused(messageType);
 
     /*
@@ -975,7 +979,12 @@ Result DeviceVK::CreateInstance(bool enableAPIValidation, const Vector<const cha
     };
 
     const VkValidationFeaturesEXT validationFeatures = {
-        VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT, nullptr, GetCountOf(enabledValidationFeatures), enabledValidationFeatures, 0, nullptr,
+        VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT,
+        nullptr,
+        GetCountOf(enabledValidationFeatures),
+        enabledValidationFeatures,
+        0,
+        nullptr,
     };
 
     const VkInstanceCreateInfo info = {
@@ -1381,10 +1390,11 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredInstance
     RESOLVE_DEVICE_FUNCTION(UpdateDescriptorSets);
 
     RESOLVE_DEVICE_FUNCTION(BeginCommandBuffer);
-    RESOLVE_DEVICE_FUNCTION(CmdSetDepthBounds);
     RESOLVE_DEVICE_FUNCTION(CmdSetViewport);
     RESOLVE_DEVICE_FUNCTION(CmdSetScissor);
+    RESOLVE_DEVICE_FUNCTION(CmdSetDepthBounds);
     RESOLVE_DEVICE_FUNCTION(CmdSetStencilReference);
+    RESOLVE_DEVICE_FUNCTION(CmdSetBlendConstants);
     RESOLVE_DEVICE_FUNCTION(CmdClearAttachments);
     RESOLVE_DEVICE_FUNCTION(CmdClearColorImage);
 
@@ -1422,10 +1432,16 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredInstance
 
     RESOLVE_DEVICE_FUNCTION(GetSwapchainImagesKHR);
 
+    // Instance specific
     if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, desiredInstanceExts)) {
         RESOLVE_DEVICE_FUNCTION(SetDebugUtilsObjectNameEXT);
         RESOLVE_DEVICE_FUNCTION(CmdBeginDebugUtilsLabelEXT);
         RESOLVE_DEVICE_FUNCTION(CmdEndDebugUtilsLabelEXT);
+    }
+
+    // Device specific
+    if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, desiredDeviceExts)) {
+        RESOLVE_DEVICE_FUNCTION(CmdSetSampleLocationsEXT);
     }
 
     if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, desiredDeviceExts)) {
@@ -1442,11 +1458,13 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredInstance
         RESOLVE_DEVICE_FUNCTION(CreateRayTracingPipelinesKHR);
         RESOLVE_DEVICE_FUNCTION(GetRayTracingShaderGroupHandlesKHR);
         RESOLVE_DEVICE_FUNCTION(CmdTraceRaysKHR);
-        RESOLVE_DEVICE_FUNCTION(GetBufferDeviceAddress);
+        RESOLVE_DEVICE_FUNCTION(CmdTraceRaysIndirect2KHR);
+        RESOLVE_DEVICE_FUNCTION(GetBufferDeviceAddress); // TODO: needed for RT, but why it's here?
     }
 
     if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, desiredDeviceExts)) {
         RESOLVE_DEVICE_FUNCTION(CmdDrawMeshTasksEXT);
+        RESOLVE_DEVICE_FUNCTION(CmdDrawMeshTasksIndirectEXT);
     }
 
     return Result::SUCCESS;
@@ -1468,10 +1486,8 @@ inline Result DeviceVK::GetCommandQueue(CommandQueueType commandQueueType, Comma
     ExclusiveScope sharedScope(m_Lock);
 
     if (m_FamilyIndices[(uint32_t)commandQueueType] == INVALID_FAMILY_INDEX) {
-        REPORT_WARNING(
-            this, "%s command queue is not supported by the device!",
-            commandQueueType == CommandQueueType::GRAPHICS ? "GRAPHICS" : (commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY")
-        );
+        REPORT_WARNING(this, "%s command queue is not supported by the device!",
+            commandQueueType == CommandQueueType::GRAPHICS ? "GRAPHICS" : (commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY"));
 
         return Result::UNSUPPORTED;
     }

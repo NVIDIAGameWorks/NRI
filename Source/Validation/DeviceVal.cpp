@@ -186,8 +186,7 @@ Result DeviceVal::CreateTexture(const TextureDesc& textureDesc, Texture*& textur
     Mip_t maxMipNum = GetMaxMipNum(textureDesc.width, textureDesc.height, textureDesc.depth);
 
     RETURN_ON_FAILURE(
-        this, textureDesc.format > Format::UNKNOWN && textureDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.format' is invalid"
-    );
+        this, textureDesc.format > Format::UNKNOWN && textureDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.format' is invalid");
 
     RETURN_ON_FAILURE(this, textureDesc.width != 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.width' is 0");
     RETURN_ON_FAILURE(this, textureDesc.height != 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.height' is 0");
@@ -215,16 +214,12 @@ Result DeviceVal::CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descrip
 
     const BufferDesc& bufferDesc = ((BufferVal*)bufferViewDesc.buffer)->GetDesc();
 
-    RETURN_ON_FAILURE(
-        this, bufferViewDesc.offset < bufferDesc.size, Result::INVALID_ARGUMENT,
-        "CreateBufferView: 'bufferViewDesc.offset' is invalid. (bufferViewDesc.offset=%llu, bufferDesc.size=%llu)", bufferViewDesc.offset, bufferDesc.size
-    );
+    RETURN_ON_FAILURE(this, bufferViewDesc.offset < bufferDesc.size, Result::INVALID_ARGUMENT,
+        "CreateBufferView: 'bufferViewDesc.offset' is invalid. (bufferViewDesc.offset=%llu, bufferDesc.size=%llu)", bufferViewDesc.offset, bufferDesc.size);
 
-    RETURN_ON_FAILURE(
-        this, bufferViewDesc.offset + bufferViewDesc.size <= bufferDesc.size, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, bufferViewDesc.offset + bufferViewDesc.size <= bufferDesc.size, Result::INVALID_ARGUMENT,
         "CreateBufferView: 'bufferViewDesc.size' is invalid. (bufferViewDesc.offset=%llu, bufferViewDesc.size=%llu, bufferDesc.size=%llu)", bufferViewDesc.offset,
-        bufferViewDesc.size, bufferDesc.size
-    );
+        bufferViewDesc.size, bufferDesc.size);
 
     auto bufferViewDescImpl = bufferViewDesc;
     bufferViewDescImpl.buffer = NRI_GET_IMPL(Buffer, bufferViewDesc.buffer);
@@ -244,35 +239,25 @@ Result DeviceVal::CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Des
     RETURN_ON_FAILURE(this, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT, "CreateTexture1DView: 'textureViewDesc.texture' is NULL");
     RETURN_ON_FAILURE(this, textureViewDesc.viewType < Texture1DViewType::MAX_NUM, Result::INVALID_ARGUMENT, "CreateTexture1DView: 'textureViewDesc.viewType' is invalid");
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
-        "CreateTexture1DView: 'textureViewDesc.format' is invalid"
-    );
+    RETURN_ON_FAILURE(this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
+        "CreateTexture1DView: 'textureViewDesc.format' is invalid");
 
     const TextureDesc& textureDesc = ((TextureVal*)textureViewDesc.texture)->GetDesc();
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
-        "CreateTexture1DView: 'textureViewDesc.mipOffset' is invalid (textureViewDesc.mipOffset=%hu, textureDesc.mipNum=%hu)", textureViewDesc.mipOffset, textureDesc.mipNum
-    );
+    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
+        "CreateTexture1DView: 'textureViewDesc.mipOffset' is invalid (textureViewDesc.mipOffset=%hu, textureDesc.mipNum=%hu)", textureViewDesc.mipOffset, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
         "CreateTexture1DView: 'textureViewDesc.mipNum' is invalid (textureViewDesc.mipOffset=%hu, textureViewDesc.mipNum=%hu, textureDesc.mipNum=%hu)", textureViewDesc.mipOffset,
-        textureViewDesc.mipNum, textureDesc.mipNum
-    );
+        textureViewDesc.mipNum, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.arrayOffset < textureDesc.arraySize, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.arrayOffset < textureDesc.arraySize, Result::INVALID_ARGUMENT,
         "CreateTexture1DView: 'textureViewDesc.arrayOffset' is invalid (textureViewDesc.arrayOffset=%hu, textureDesc.arraySize=%hu)", textureViewDesc.arrayOffset,
-        textureDesc.arraySize
-    );
+        textureDesc.arraySize);
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.arrayOffset + textureViewDesc.arraySize <= textureDesc.arraySize, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.arrayOffset + textureViewDesc.arraySize <= textureDesc.arraySize, Result::INVALID_ARGUMENT,
         "CreateTexture1DView: 'textureViewDesc.arraySize' is invalid (textureViewDesc.arrayOffset=%hu, textureViewDesc.arraySize=%hu, textureDesc.arraySize=%hu)",
-        textureViewDesc.arrayOffset, textureViewDesc.arraySize, textureDesc.arraySize
-    );
+        textureViewDesc.arrayOffset, textureViewDesc.arraySize, textureDesc.arraySize);
 
     auto textureViewDescImpl = textureViewDesc;
     textureViewDescImpl.texture = NRI_GET_IMPL(Texture, textureViewDesc.texture);
@@ -292,40 +277,30 @@ Result DeviceVal::CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Des
     RETURN_ON_FAILURE(this, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT, "CreateTexture2DView: 'textureViewDesc.texture' is NULL");
     RETURN_ON_FAILURE(this, textureViewDesc.viewType < Texture2DViewType::MAX_NUM, Result::INVALID_ARGUMENT, "CreateTexture2DView: 'textureViewDesc.viewType' is invalid");
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
-        "CreateTexture2DView: 'textureViewDesc.format' is invalid"
-    );
+    RETURN_ON_FAILURE(this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
+        "CreateTexture2DView: 'textureViewDesc.format' is invalid");
 
     const TextureDesc& textureDesc = ((TextureVal*)textureViewDesc.texture)->GetDesc();
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
         "CreateTexture2DView: 'textureViewDesc.mipOffset' is invalid. "
         "(textureViewDesc.mipOffset=%hu, textureDesc.mipNum=%hu)",
-        textureViewDesc.mipOffset, textureDesc.mipNum
-    );
+        textureViewDesc.mipOffset, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
         "CreateTexture2DView: 'textureViewDesc.mipNum' is invalid. "
         "(textureViewDesc.mipOffset=%hu, textureViewDesc.mipNum=%hu, textureDesc.mipNum=%hu)",
-        textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum
-    );
+        textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.arrayOffset < textureDesc.arraySize, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.arrayOffset < textureDesc.arraySize, Result::INVALID_ARGUMENT,
         "CreateTexture2DView: 'textureViewDesc.arrayOffset' is invalid. "
         "(textureViewDesc.arrayOffset=%hu, textureDesc.arraySize=%hu)",
-        textureViewDesc.arrayOffset, textureDesc.arraySize
-    );
+        textureViewDesc.arrayOffset, textureDesc.arraySize);
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.arrayOffset + textureViewDesc.arraySize <= textureDesc.arraySize, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.arrayOffset + textureViewDesc.arraySize <= textureDesc.arraySize, Result::INVALID_ARGUMENT,
         "CreateTexture2DView: 'textureViewDesc.arraySize' is invalid. "
         "(textureViewDesc.arrayOffset=%hu, textureViewDesc.arraySize=%hu, textureDesc.arraySize=%hu)",
-        textureViewDesc.arrayOffset, textureViewDesc.arraySize, textureDesc.arraySize
-    );
+        textureViewDesc.arrayOffset, textureViewDesc.arraySize, textureDesc.arraySize);
 
     auto textureViewDescImpl = textureViewDesc;
     textureViewDescImpl.texture = NRI_GET_IMPL(Texture, textureViewDesc.texture);
@@ -345,40 +320,30 @@ Result DeviceVal::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Des
     RETURN_ON_FAILURE(this, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT, "CreateTexture3DView: 'textureViewDesc.texture' is NULL");
     RETURN_ON_FAILURE(this, textureViewDesc.viewType < Texture3DViewType::MAX_NUM, Result::INVALID_ARGUMENT, "CreateTexture3DView: 'textureViewDesc.viewType' is invalid");
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
-        "CreateTexture3DView: 'textureViewDesc.format' is invalid"
-    );
+    RETURN_ON_FAILURE(this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
+        "CreateTexture3DView: 'textureViewDesc.format' is invalid");
 
     const TextureDesc& textureDesc = ((TextureVal*)textureViewDesc.texture)->GetDesc();
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
         "CreateTexture3DView: 'textureViewDesc.mipOffset' is invalid. "
         "(textureViewDesc.mipOffset=%hu, textureViewDesc.mipOffset=%hu)",
-        textureViewDesc.mipOffset, textureDesc.mipNum
-    );
+        textureViewDesc.mipOffset, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
         "CreateTexture3DView: 'textureViewDesc.mipNum' is invalid. "
         "(textureViewDesc.mipOffset=%hu, textureViewDesc.mipNum=%hu, textureDesc.mipNum=%hu)",
-        textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum
-    );
+        textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum);
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.sliceOffset < textureDesc.depth, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.sliceOffset < textureDesc.depth, Result::INVALID_ARGUMENT,
         "CreateTexture3DView: 'textureViewDesc.arrayOffset' is invalid. "
         "(textureViewDesc.sliceOffset=%hu, textureDesc.depth=%hu)",
-        textureViewDesc.sliceOffset, textureDesc.depth
-    );
+        textureViewDesc.sliceOffset, textureDesc.depth);
 
-    RETURN_ON_FAILURE(
-        this, textureViewDesc.sliceOffset + textureViewDesc.sliceNum <= textureDesc.depth, Result::INVALID_ARGUMENT,
+    RETURN_ON_FAILURE(this, textureViewDesc.sliceOffset + textureViewDesc.sliceNum <= textureDesc.depth, Result::INVALID_ARGUMENT,
         "CreateTexture3DView: 'textureViewDesc.arraySize' is invalid. "
         "(textureViewDesc.sliceOffset=%hu, textureViewDesc.sliceNum=%hu, textureDesc.depth=%hu)",
-        textureViewDesc.sliceOffset, textureViewDesc.sliceNum, textureDesc.depth
-    );
+        textureViewDesc.sliceOffset, textureViewDesc.sliceNum, textureDesc.depth);
 
     auto textureViewDescImpl = textureViewDesc;
     textureViewDescImpl.texture = NRI_GET_IMPL(Texture, textureViewDesc.texture);
@@ -424,10 +389,8 @@ Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutD
 
     RETURN_ON_FAILURE(this, pipelineLayoutDesc.shaderStages != StageBits::NONE, Result::INVALID_ARGUMENT, "CreatePipelineLayout: 'pipelineLayoutDesc.shaderStages' can't be NONE");
     RETURN_ON_FAILURE(this, supportedTypes > 0, Result::INVALID_ARGUMENT, "CreatePipelineLayout: 'pipelineLayoutDesc.shaderStages' doesn't include any shader stages");
-    RETURN_ON_FAILURE(
-        this, supportedTypes == 1, Result::INVALID_ARGUMENT,
-        "CreatePipelineLayout: 'pipelineLayoutDesc.shaderStages' is invalid, it can't be compatible with more than one type of pipeline"
-    );
+    RETURN_ON_FAILURE(this, supportedTypes == 1, Result::INVALID_ARGUMENT,
+        "CreatePipelineLayout: 'pipelineLayoutDesc.shaderStages' is invalid, it can't be compatible with more than one type of pipeline");
 
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
         const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[i];
@@ -435,31 +398,24 @@ Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutD
         for (uint32_t j = 0; j < descriptorSetDesc.rangeNum; j++) {
             const DescriptorRangeDesc& range = descriptorSetDesc.ranges[j];
 
-            RETURN_ON_FAILURE(
-                this, !range.isDescriptorNumVariable || range.isArray, Result::INVALID_ARGUMENT,
+            RETURN_ON_FAILURE(this, !range.isDescriptorNumVariable || range.isArray, Result::INVALID_ARGUMENT,
                 "CreatePipelineLayout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u]' is invalid, "
                 "'isArray' can't be false if 'isDescriptorNumVariable' is true",
-                i, j
-            );
+                i, j);
 
             RETURN_ON_FAILURE(
-                this, range.descriptorNum > 0, Result::INVALID_ARGUMENT, "CreatePipelineLayout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].descriptorNum' is 0", i, j
-            );
+                this, range.descriptorNum > 0, Result::INVALID_ARGUMENT, "CreatePipelineLayout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].descriptorNum' is 0", i, j);
 
-            RETURN_ON_FAILURE(
-                this, range.descriptorType < DescriptorType::MAX_NUM, Result::INVALID_ARGUMENT,
-                "CreatePipelineLayout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].descriptorType' is invalid", i, j
-            );
+            RETURN_ON_FAILURE(this, range.descriptorType < DescriptorType::MAX_NUM, Result::INVALID_ARGUMENT,
+                "CreatePipelineLayout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].descriptorType' is invalid", i, j);
 
             if (range.shaderStages != StageBits::ALL) {
                 const uint32_t filteredVisibilityMask = range.shaderStages & pipelineLayoutDesc.shaderStages;
 
-                RETURN_ON_FAILURE(
-                    this, (uint32_t)range.shaderStages == filteredVisibilityMask, Result::INVALID_ARGUMENT,
+                RETURN_ON_FAILURE(this, (uint32_t)range.shaderStages == filteredVisibilityMask, Result::INVALID_ARGUMENT,
                     "CreatePipelineLayout: 'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].shaderStages' is not "
                     "compatible with 'pipelineLayoutDesc.shaderStages'",
-                    i, j
-                );
+                    i, j);
             }
         }
     }
@@ -477,57 +433,41 @@ Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutD
 
 Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline) {
     RETURN_ON_FAILURE(this, graphicsPipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.pipelineLayout' is NULL");
-    RETURN_ON_FAILURE(this, graphicsPipelineDesc.outputMerger != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.outputMerger' is NULL");
-    RETURN_ON_FAILURE(this, graphicsPipelineDesc.rasterization != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.rasterization' is NULL");
     RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaders != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders' is NULL");
     RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaderNum > 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaderNum' is 0");
 
-    if (graphicsPipelineDesc.rasterization->sampleMask == 0)
-        ReportMessage(Message::TYPE_WARNING, __FILE__, __LINE__, "rasterization->sampleMask = 0: is it intentional?");
-
-    const ShaderDesc* vertexShader = nullptr;
+    const PipelineLayoutVal& pipelineLayout = *(PipelineLayoutVal*)graphicsPipelineDesc.pipelineLayout;
+    const StageBits shaderStages = pipelineLayout.GetPipelineLayoutDesc().shaderStages;
+    bool hasEntryPoint = false;
     for (uint32_t i = 0; i < graphicsPipelineDesc.shaderNum; i++) {
         const ShaderDesc* shaderDesc = graphicsPipelineDesc.shaders + i;
 
-        if (shaderDesc->stage == StageBits::VERTEX_SHADER)
-            vertexShader = shaderDesc;
+        if (shaderDesc->stage == StageBits::VERTEX_SHADER || shaderDesc->stage == StageBits::MESH_CONTROL_SHADER)
+            hasEntryPoint = true;
 
+        RETURN_ON_FAILURE(
+            this, shaderDesc->stage & shaderStages, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].stage' is not enabled in the pipeline layout", i);
         RETURN_ON_FAILURE(this, shaderDesc->bytecode != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].bytecode' is invalid", i);
         RETURN_ON_FAILURE(this, shaderDesc->size != 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].size' is 0", i);
-        RETURN_ON_FAILURE(
-            this, IsShaderStageValid(shaderDesc->stage, StageBits::GRAPHICS_SHADERS), Result::INVALID_ARGUMENT,
-            "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].stage' must include only 1 graphics shader stage", i
-        );
+        RETURN_ON_FAILURE(this, IsShaderStageValid(shaderDesc->stage, StageBits::GRAPHICS_SHADERS), Result::INVALID_ARGUMENT,
+            "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].stage' must include only 1 graphics shader stage", i);
+    }
+    RETURN_ON_FAILURE(this, hasEntryPoint, Result::INVALID_ARGUMENT, "CreatePipeline: Vertex or Mesh control shader is not provided");
+
+    for (uint32_t i = 0; i < graphicsPipelineDesc.outputMerger.colorNum; i++) {
+        const ColorAttachmentDesc* color = graphicsPipelineDesc.outputMerger.color + i;
+        RETURN_ON_FAILURE(this, color->format > Format::UNKNOWN && color->format < Format::BC1_RGBA_UNORM, Result::INVALID_ARGUMENT,
+            "CreatePipeline: 'graphicsPipelineDesc.outputMerger->color[%u].format = %u' is invalid", i, color->format);
     }
 
-    for (uint32_t i = 0; i < graphicsPipelineDesc.outputMerger->colorNum; i++) {
-        const ColorAttachmentDesc* color = graphicsPipelineDesc.outputMerger->color + i;
-        RETURN_ON_FAILURE(
-            this, color->format > Format::UNKNOWN && color->format < Format::BC1_RGBA_UNORM, Result::INVALID_ARGUMENT,
-            "CreatePipeline: 'graphicsPipelineDesc.outputMerger->color[%u].format = %u' is invalid", i, color->format
-        );
-    }
-
-    if (graphicsPipelineDesc.inputAssembly != nullptr) {
-        RETURN_ON_FAILURE(
-            this, !graphicsPipelineDesc.inputAssembly->attributes || vertexShader, Result::INVALID_ARGUMENT,
-            "CreatePipeline: vertex shader is not specified, but input assembly attributes provided"
-        );
-
-        const PipelineLayoutVal& pipelineLayout = *(PipelineLayoutVal*)graphicsPipelineDesc.pipelineLayout;
-        const StageBits shaderStages = pipelineLayout.GetPipelineLayoutDesc().shaderStages;
-
-        RETURN_ON_FAILURE(this, (shaderStages & StageBits::VERTEX_SHADER) != 0, Result::INVALID_ARGUMENT, "CreatePipeline: vertex stage is not enabled in the pipeline layout");
-
-        for (uint32_t i = 0; i < graphicsPipelineDesc.inputAssembly->attributeNum; i++) {
-            const VertexAttributeDesc* attribute = graphicsPipelineDesc.inputAssembly->attributes + i;
+    if (graphicsPipelineDesc.vertexInput) {
+        for (uint32_t i = 0; i < graphicsPipelineDesc.vertexInput->attributeNum; i++) {
+            const VertexAttributeDesc* attribute = graphicsPipelineDesc.vertexInput->attributes + i;
             uint32_t size = GetFormatProps(attribute->format).stride;
-            uint32_t stride = graphicsPipelineDesc.inputAssembly->streams[attribute->streamIndex].stride;
-            RETURN_ON_FAILURE(
-                this, attribute->offset + size <= stride, Result::INVALID_ARGUMENT,
+            uint32_t stride = graphicsPipelineDesc.vertexInput->streams[attribute->streamIndex].stride;
+            RETURN_ON_FAILURE(this, attribute->offset + size <= stride, Result::INVALID_ARGUMENT,
                 "CreatePipeline: 'graphicsPipelineDesc.inputAssembly->attributes[%u]' is out of bounds of 'graphicsPipelineDesc.inputAssembly->streams[%u]' (stride = %u)", i,
-                attribute->streamIndex, stride
-            );
+                attribute->streamIndex, stride);
         }
     }
 
@@ -550,10 +490,8 @@ Result DeviceVal::CreatePipeline(const ComputePipelineDesc& computePipelineDesc,
     RETURN_ON_FAILURE(this, computePipelineDesc.shader.size != 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'computePipelineDesc.shader.size' is 0");
     RETURN_ON_FAILURE(this, computePipelineDesc.shader.bytecode != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'computePipelineDesc.shader.bytecode' is NULL");
 
-    RETURN_ON_FAILURE(
-        this, computePipelineDesc.shader.stage == StageBits::COMPUTE_SHADER, Result::INVALID_ARGUMENT,
-        "CreatePipeline: 'computePipelineDesc.shader.stage' must be 'StageBits::COMPUTE_SHADER'"
-    );
+    RETURN_ON_FAILURE(this, computePipelineDesc.shader.stage == StageBits::COMPUTE_SHADER, Result::INVALID_ARGUMENT,
+        "CreatePipeline: 'computePipelineDesc.shader.stage' must be 'StageBits::COMPUTE_SHADER'");
 
     auto computePipelineDescImpl = computePipelineDesc;
     computePipelineDescImpl.pipelineLayout = NRI_GET_IMPL(PipelineLayout, computePipelineDesc.pipelineLayout);
@@ -692,10 +630,8 @@ Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingD
         MemoryDesc memoryDesc = {};
         buffer.GetMemoryInfo(memory.GetMemoryLocation(), memoryDesc);
 
-        RETURN_ON_FAILURE(
-            this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
-            "BindBufferMemory: 'memoryBindingDescs[%u].offset' must be zero for dedicated allocation", i
-        );
+        RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
+            "BindBufferMemory: 'memoryBindingDescs[%u].offset' must be zero for dedicated allocation", i);
 
         RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT, "BindBufferMemory: 'memoryBindingDescs[%u].alignment' is 0", i);
         RETURN_ON_FAILURE(this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT, "BindBufferMemory: 'memoryBindingDescs[%u].offset' is misaligned", i);
@@ -746,10 +682,8 @@ Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindin
         MemoryDesc memoryDesc = {};
         texture.GetMemoryInfo(memory.GetMemoryLocation(), memoryDesc);
 
-        RETURN_ON_FAILURE(
-            this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
-            "BindTextureMemory: 'memoryBindingDescs[%u].offset' must be zero for dedicated allocation", i
-        );
+        RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
+            "BindTextureMemory: 'memoryBindingDescs[%u].offset' must be zero for dedicated allocation", i);
 
         RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT, "BindTextureMemory: 'memoryBindingDescs[%u].alignment' is 0", i);
         RETURN_ON_FAILURE(this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT, "BindTextureMemory: 'memoryBindingDescs[%u].offset' is misaligned", i);
@@ -799,8 +733,7 @@ Result DeviceVal::CreateCommandQueueVK(const CommandQueueVKDesc& commandQueueVKD
     RETURN_ON_FAILURE(this, commandQueueVKDesc.vkQueue != 0, Result::INVALID_ARGUMENT, "CreateCommandQueueVK: 'commandQueueVKDesc.vkQueue' is NULL");
 
     RETURN_ON_FAILURE(
-        this, commandQueueVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "CreateCommandQueueVK: 'commandQueueVKDesc.commandQueueType' is invalid"
-    );
+        this, commandQueueVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "CreateCommandQueueVK: 'commandQueueVKDesc.commandQueueType' is invalid");
 
     CommandQueue* commandQueueImpl = nullptr;
     const Result result = m_WrapperVKAPI.CreateCommandQueueVK(m_Device, commandQueueVKDesc, commandQueueImpl);
@@ -817,10 +750,8 @@ Result DeviceVal::CreateCommandQueueVK(const CommandQueueVKDesc& commandQueueVKD
 Result DeviceVal::CreateCommandAllocatorVK(const CommandAllocatorVKDesc& commandAllocatorVKDesc, CommandAllocator*& commandAllocator) {
     RETURN_ON_FAILURE(this, commandAllocatorVKDesc.vkCommandPool != 0, Result::INVALID_ARGUMENT, "CreateCommandAllocatorVK: 'commandAllocatorVKDesc.vkCommandPool' is NULL");
 
-    RETURN_ON_FAILURE(
-        this, commandAllocatorVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
-        "CreateCommandAllocatorVK: 'commandAllocatorVKDesc.commandQueueType' is invalid"
-    );
+    RETURN_ON_FAILURE(this, commandAllocatorVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
+        "CreateCommandAllocatorVK: 'commandAllocatorVKDesc.commandQueueType' is invalid");
 
     CommandAllocator* commandAllocatorImpl = nullptr;
     const Result result = m_WrapperVKAPI.CreateCommandAllocatorVK(m_Device, commandAllocatorVKDesc, commandAllocatorImpl);
@@ -837,9 +768,8 @@ Result DeviceVal::CreateCommandAllocatorVK(const CommandAllocatorVKDesc& command
 Result DeviceVal::CreateCommandBufferVK(const CommandBufferVKDesc& commandBufferVKDesc, CommandBuffer*& commandBuffer) {
     RETURN_ON_FAILURE(this, commandBufferVKDesc.vkCommandBuffer != 0, Result::INVALID_ARGUMENT, "CreateCommandBufferVK: 'commandBufferVKDesc.vkCommandBuffer' is NULL");
 
-    RETURN_ON_FAILURE(
-        this, commandBufferVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "CreateCommandBufferVK: 'commandBufferVKDesc.commandQueueType' is invalid"
-    );
+    RETURN_ON_FAILURE(this, commandBufferVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
+        "CreateCommandBufferVK: 'commandBufferVKDesc.commandQueueType' is invalid");
 
     CommandBuffer* commandBufferImpl = nullptr;
     const Result result = m_WrapperVKAPI.CreateCommandBufferVK(m_Device, commandBufferVKDesc, commandBufferImpl);
@@ -969,10 +899,8 @@ Result DeviceVal::CreateQueryPoolVK(const QueryPoolVKDesc& queryPoolVKDesc, Quer
 }
 
 Result DeviceVal::CreateAccelerationStructureVK(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
-    RETURN_ON_FAILURE(
-        this, accelerationStructureDesc.vkAccelerationStructure != 0, Result::INVALID_ARGUMENT,
-        "CreateAccelerationStructureVK: 'accelerationStructureDesc.vkAccelerationStructure' is NULL"
-    );
+    RETURN_ON_FAILURE(this, accelerationStructureDesc.vkAccelerationStructure != 0, Result::INVALID_ARGUMENT,
+        "CreateAccelerationStructureVK: 'accelerationStructureDesc.vkAccelerationStructure' is NULL");
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
     const Result result = m_WrapperVKAPI.CreateAccelerationStructureVK(m_Device, accelerationStructureDesc, accelerationStructureImpl);
@@ -1041,8 +969,7 @@ Result DeviceVal::CreateTextureD3D11(const TextureD3D11Desc& textureDesc, Textur
 
 Result DeviceVal::CreateCommandBufferD3D12(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer) {
     RETURN_ON_FAILURE(
-        this, commandBufferDesc.d3d12CommandAllocator != nullptr, Result::INVALID_ARGUMENT, "CreateCommandBufferD3D12: 'commandBufferDesc.d3d12CommandAllocator' is NULL"
-    );
+        this, commandBufferDesc.d3d12CommandAllocator != nullptr, Result::INVALID_ARGUMENT, "CreateCommandBufferD3D12: 'commandBufferDesc.d3d12CommandAllocator' is NULL");
 
     RETURN_ON_FAILURE(this, commandBufferDesc.d3d12CommandList != nullptr, Result::INVALID_ARGUMENT, "CreateCommandBufferD3D12: 'commandBufferDesc.d3d12CommandList' is NULL");
 
@@ -1107,8 +1034,7 @@ Result DeviceVal::CreateMemoryD3D12(const MemoryD3D12Desc& memoryDesc, Memory*& 
 
 Result DeviceVal::CreateAccelerationStructureD3D12(const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
     RETURN_ON_FAILURE(
-        this, accelerationStructureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "CreateAccelerationStructureD3D12: 'accelerationStructureDesc.d3d12Resource' is NULL"
-    );
+        this, accelerationStructureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "CreateAccelerationStructureD3D12: 'accelerationStructureDesc.d3d12Resource' is NULL");
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
     const Result result = m_WrapperD3D12API.CreateAccelerationStructureD3D12(m_Device, accelerationStructureDesc, accelerationStructureImpl);
@@ -1158,16 +1084,13 @@ Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDe
     RETURN_ON_FAILURE(this, allocations != nullptr, Result::INVALID_ARGUMENT, "AllocateAndBindMemory: 'allocations' is NULL");
 
     RETURN_ON_FAILURE(
-        this, resourceGroupDesc.memoryLocation < MemoryLocation::MAX_NUM, Result::INVALID_ARGUMENT, "AllocateAndBindMemory: 'resourceGroupDesc.memoryLocation' is invalid"
-    );
+        this, resourceGroupDesc.memoryLocation < MemoryLocation::MAX_NUM, Result::INVALID_ARGUMENT, "AllocateAndBindMemory: 'resourceGroupDesc.memoryLocation' is invalid");
 
     RETURN_ON_FAILURE(
-        this, resourceGroupDesc.bufferNum == 0 || resourceGroupDesc.buffers != nullptr, Result::INVALID_ARGUMENT, "AllocateAndBindMemory: 'resourceGroupDesc.buffers' is NULL"
-    );
+        this, resourceGroupDesc.bufferNum == 0 || resourceGroupDesc.buffers != nullptr, Result::INVALID_ARGUMENT, "AllocateAndBindMemory: 'resourceGroupDesc.buffers' is NULL");
 
     RETURN_ON_FAILURE(
-        this, resourceGroupDesc.textureNum == 0 || resourceGroupDesc.textures != nullptr, Result::INVALID_ARGUMENT, "AllocateAndBindMemory: 'resourceGroupDesc.textures' is NULL"
-    );
+        this, resourceGroupDesc.textureNum == 0 || resourceGroupDesc.textures != nullptr, Result::INVALID_ARGUMENT, "AllocateAndBindMemory: 'resourceGroupDesc.textures' is NULL");
 
     Buffer** buffersImpl = STACK_ALLOC(Buffer*, resourceGroupDesc.bufferNum);
 
@@ -1226,14 +1149,11 @@ Result DeviceVal::CreateRayTracingPipeline(const RayTracingPipelineDesc& pipelin
         const ShaderDesc& shaderDesc = pipelineDesc.shaderLibrary->shaders[i];
 
         RETURN_ON_FAILURE(
-            this, shaderDesc.bytecode != nullptr, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].bytecode' is invalid", i
-        );
+            this, shaderDesc.bytecode != nullptr, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].bytecode' is invalid", i);
 
         RETURN_ON_FAILURE(this, shaderDesc.size != 0, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].size' is 0", i);
-        RETURN_ON_FAILURE(
-            this, IsShaderStageValid(shaderDesc.stage, StageBits::RAY_TRACING_SHADERS), Result::INVALID_ARGUMENT,
-            "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].stage' must include only 1 ray tracing shader stage", i
-        );
+        RETURN_ON_FAILURE(this, IsShaderStageValid(shaderDesc.stage, StageBits::RAY_TRACING_SHADERS), Result::INVALID_ARGUMENT,
+            "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].stage' must include only 1 ray tracing shader stage", i);
     }
 
     auto pipelineDescImpl = pipelineDesc;
@@ -1251,10 +1171,8 @@ Result DeviceVal::CreateRayTracingPipeline(const RayTracingPipelineDesc& pipelin
 }
 
 Result DeviceVal::CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
-    RETURN_ON_FAILURE(
-        this, accelerationStructureDesc.instanceOrGeometryObjectNum != 0, Result::INVALID_ARGUMENT,
-        "CreateAccelerationStructure: 'accelerationStructureDesc.instanceOrGeometryObjectNum' is 0"
-    );
+    RETURN_ON_FAILURE(this, accelerationStructureDesc.instanceOrGeometryObjectNum != 0, Result::INVALID_ARGUMENT,
+        "CreateAccelerationStructure: 'accelerationStructureDesc.instanceOrGeometryObjectNum' is 0");
 
     AccelerationStructureDesc accelerationStructureDescImpl = accelerationStructureDesc;
 
@@ -1291,31 +1209,25 @@ Result DeviceVal::BindAccelerationStructureMemory(const AccelerationStructureMem
         MemoryVal& memory = (MemoryVal&)*srcDesc.memory;
         AccelerationStructureVal& accelerationStructure = (AccelerationStructureVal&)*srcDesc.accelerationStructure;
 
-        RETURN_ON_FAILURE(
-            this, !accelerationStructure.IsBoundToMemory(), Result::INVALID_ARGUMENT,
-            "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].accelerationStructure' is already bound to memory", i
-        );
+        RETURN_ON_FAILURE(this, !accelerationStructure.IsBoundToMemory(), Result::INVALID_ARGUMENT,
+            "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].accelerationStructure' is already bound to memory", i);
 
         MemoryDesc memoryDesc = {};
         accelerationStructure.GetMemoryInfo(memoryDesc);
 
-        RETURN_ON_FAILURE(
-            this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
-            "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].offset' must be 0 for dedicated allocation", i
-        );
+        RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
+            "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].offset' must be 0 for dedicated allocation", i);
 
         RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT, "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].alignment' is 0", i);
 
         RETURN_ON_FAILURE(
-            this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT, "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].offset' is misaligned", i
-        );
+            this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT, "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].offset' is misaligned", i);
 
         const uint64_t rangeMax = srcDesc.offset + memoryDesc.size;
         const bool memorySizeIsUnknown = memory.GetSize() == 0;
 
         RETURN_ON_FAILURE(
-            this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].offset' is invalid", i
-        );
+            this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].offset' is invalid", i);
 
         destDesc = srcDesc;
         destDesc.memory = memory.GetImpl();

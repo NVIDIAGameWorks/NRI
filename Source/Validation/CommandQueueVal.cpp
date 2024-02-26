@@ -55,8 +55,7 @@ static bool ValidateBufferUploadDesc(DeviceVal& device, uint32_t i, const Buffer
     RETURN_ON_FAILURE(&device, bufferVal.IsBoundToMemory(), false, "UploadData: 'bufferUploadDescs[%u].buffer' is not bound to memory", i);
 
     RETURN_ON_FAILURE(
-        &device, rangeEnd <= bufferVal.GetDesc().size, false, "UploadData: 'bufferUploadDescs[%u].bufferOffset + bufferUploadDescs[%u].dataSize' is out of bounds", i, i
-    );
+        &device, rangeEnd <= bufferVal.GetDesc().size, false, "UploadData: 'bufferUploadDescs[%u].bufferOffset + bufferUploadDescs[%u].dataSize' is out of bounds", i, i);
 
     return true;
 }
@@ -78,8 +77,7 @@ void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc) {
 }
 
 Result CommandQueueVal::UploadData(
-    const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum
-) {
+    const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
     RETURN_ON_FAILURE(&m_Device, textureUploadDescNum == 0 || textureUploadDescs != nullptr, Result::INVALID_ARGUMENT, "UploadData: 'textureUploadDescs' is NULL");
     RETURN_ON_FAILURE(&m_Device, bufferUploadDescNum == 0 || bufferUploadDescs != nullptr, Result::INVALID_ARGUMENT, "UploadData: 'bufferUploadDescs' is NULL");
 

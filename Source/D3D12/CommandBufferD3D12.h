@@ -52,8 +52,9 @@ struct CommandBufferD3D12 {
     void SetViewports(const Viewport* viewports, uint32_t viewportNum);
     void SetScissors(const Rect* rects, uint32_t rectNum);
     void SetDepthBounds(float boundsMin, float boundsMax);
-    void SetStencilReference(uint8_t reference);
-    void SetSamplePositions(const SamplePosition* positions, uint32_t positionNum);
+    void SetStencilReference(uint8_t frontRef, uint8_t backRef);
+    void SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum);
+    void SetBlendConstants(const Color32f& color);
     void ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum);
     void ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc);
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);
@@ -67,15 +68,15 @@ struct CommandBufferD3D12 {
     void SetDescriptorPool(const DescriptorPool& descriptorPool);
     void SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
     void SetConstants(uint32_t pushConstantRangeIndex, const void* data, uint32_t size);
-    void Draw(uint32_t vertexNum, uint32_t instanceNum, uint32_t baseVertex, uint32_t baseInstance);
-    void DrawIndexed(uint32_t indexNum, uint32_t instanceNum, uint32_t baseIndex, uint32_t baseVertex, uint32_t baseInstance);
+    void Draw(const DrawDesc& drawDesc);
     void DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
+    void DrawIndexed(const DrawIndexedDesc& drawIndexedDesc);
     void DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
     void CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size);
     void CopyTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc);
     void UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc);
     void ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc);
-    void Dispatch(uint32_t x, uint32_t y, uint32_t z);
+    void Dispatch(const DispatchDesc& dispatchDesc);
     void DispatchIndirect(const Buffer& buffer, uint64_t offset);
     void Barrier(const BarrierGroupDesc& barrierGroupDesc);
     void BeginQuery(const QueryPool& queryPool, uint32_t offset);
@@ -84,25 +85,21 @@ struct CommandBufferD3D12 {
     void BeginAnnotation(const char* name);
     void EndAnnotation();
 
-    void BuildTopLevelAccelerationStructure(
-        uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset
-    );
-    void BuildBottomLevelAccelerationStructure(
-        uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset
-    );
-    void UpdateTopLevelAccelerationStructure(
-        uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src,
-        Buffer& scratch, uint64_t scratchOffset
-    );
-    void UpdateBottomLevelAccelerationStructure(
-        uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src,
-        Buffer& scratch, uint64_t scratchOffset
-    );
+    void BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
+        Buffer& scratch, uint64_t scratchOffset);
+    void BuildBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
+        Buffer& scratch, uint64_t scratchOffset);
+    void UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
+        AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset);
+    void UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
+        AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset);
     void CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode);
     void WriteAccelerationStructureSize(const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryOffset);
     void DispatchRays(const DispatchRaysDesc& dispatchRaysDesc);
+    void DispatchRaysIndirect(const Buffer& buffer, uint64_t offset);
 
-    void DispatchMeshTasks(uint32_t x, uint32_t y, uint32_t z);
+    void DrawMeshTasks(const DrawMeshTasksDesc& drawMeshTasksDesc);
+    void DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
 
   private:
     DeviceD3D12& m_Device;

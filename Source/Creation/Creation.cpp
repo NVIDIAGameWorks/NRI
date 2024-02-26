@@ -413,11 +413,9 @@ NRI_API bool NRI_CALL nriQueryVideoMemoryInfo(const Device& device, MemoryLocati
         return false;
 
     DXGI_QUERY_VIDEO_MEMORY_INFO info = {};
-    if (FAILED(adapter->QueryVideoMemoryInfo(
-            0,
+    if (FAILED(adapter->QueryVideoMemoryInfo(0,
             (memoryLocation == MemoryLocation::DEVICE || memoryLocation == MemoryLocation::DEVICE_UPLOAD) ? DXGI_MEMORY_SEGMENT_GROUP_LOCAL : DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL,
-            &info
-        )))
+            &info)))
         return false;
 
     static_assert(sizeof(VideoMemoryInfo) == sizeof(DXGI_QUERY_VIDEO_MEMORY_INFO));

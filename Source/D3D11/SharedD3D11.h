@@ -29,11 +29,6 @@ enum class MapType {
     READ
 };
 
-enum class DynamicState {
-    SET_ONLY,
-    BIND_AND_SET
-};
-
 enum class DescriptorTypeDX11 : uint8_t {
     // don't change order
     NO_SHADER_VISIBLE,
@@ -85,8 +80,7 @@ struct BindingState {
     std::array<ID3D11UnorderedAccessView*, D3D11_PS_CS_UAV_REGISTER_COUNT> graphicsStorageDescriptors = {};
 
     inline void TrackSubresource_UnbindIfNeeded_PostponeGraphicsStorageBinding(
-        ID3D11DeviceContextBest* deferredContext, const SubresourceInfo& subresource, void* descriptor, uint32_t slot, bool isGraphics, bool isStorage
-    ) {
+        ID3D11DeviceContextBest* deferredContext, const SubresourceInfo& subresource, void* descriptor, uint32_t slot, bool isGraphics, bool isStorage) {
         constexpr void* null = nullptr;
 
         if (isStorage) {
@@ -172,9 +166,9 @@ static inline uint64_t ComputeHash(const void* key, uint32_t len) {
 }
 
 struct SamplePositionsState {
-    std::array<SamplePosition, 16> positions;
+    std::array<SamplePosition, 32> positions;
     uint64_t positionHash;
-    uint32_t positionNum;
+    Sample_t positionNum;
 
     inline void Reset() {
         memset(&positions, 0, sizeof(positions));
@@ -182,7 +176,7 @@ struct SamplePositionsState {
         positionHash = 0;
     }
 
-    inline void Set(const SamplePosition* samplePositions, uint32_t samplePositionNum) {
+    inline void Set(const SamplePosition* samplePositions, Sample_t samplePositionNum) {
         const uint32_t size = sizeof(SamplePosition) * samplePositionNum;
 
         memcpy(&positions, samplePositions, size);

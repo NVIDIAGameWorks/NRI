@@ -22,10 +22,21 @@ using namespace nri;
 static uint8_t QueryLatestDevice(ComPtr<ID3D12DeviceBest>& in, ComPtr<ID3D12DeviceBest>& out) {
     static const IID versions[] = {
 #ifdef NRI_USE_AGILITY_SDK
-        __uuidof(ID3D12Device13), __uuidof(ID3D12Device12), __uuidof(ID3D12Device11), __uuidof(ID3D12Device10), __uuidof(ID3D12Device9), __uuidof(ID3D12Device8),
-        __uuidof(ID3D12Device7),  __uuidof(ID3D12Device6),
+        __uuidof(ID3D12Device13),
+        __uuidof(ID3D12Device12),
+        __uuidof(ID3D12Device11),
+        __uuidof(ID3D12Device10),
+        __uuidof(ID3D12Device9),
+        __uuidof(ID3D12Device8),
+        __uuidof(ID3D12Device7),
+        __uuidof(ID3D12Device6),
 #endif
-        __uuidof(ID3D12Device5),  __uuidof(ID3D12Device4),  __uuidof(ID3D12Device3),  __uuidof(ID3D12Device2),  __uuidof(ID3D12Device1), __uuidof(ID3D12Device),
+        __uuidof(ID3D12Device5),
+        __uuidof(ID3D12Device4),
+        __uuidof(ID3D12Device3),
+        __uuidof(ID3D12Device2),
+        __uuidof(ID3D12Device1),
+        __uuidof(ID3D12Device),
     };
     const uint8_t n = (uint8_t)GetCountOf(versions);
 
@@ -74,7 +85,8 @@ DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_
       m_DescriptorHeaps(GetStdAllocator()),
       m_FreeDescriptors(GetStdAllocator()),
       m_DrawCommandSignatures(GetStdAllocator()),
-      m_DrawIndexedCommandSignatures(GetStdAllocator()) {
+      m_DrawIndexedCommandSignatures(GetStdAllocator()),
+      m_DrawMeshCommandSignatures(GetStdAllocator()) {
     m_FreeDescriptors.resize(DESCRIPTOR_HEAP_TYPE_NUM, Vector<DescriptorHandle>(GetStdAllocator()));
     m_Desc.graphicsAPI = GraphicsAPI::D3D12;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
@@ -144,19 +156,9 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc) {
     if (result != Result::SUCCESS)
         return result;
 
-    { // Create dispatch command signature
-        D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDesc = {};
-        indirectArgumentDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
-
-        D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
-        commandSignatureDesc.NumArgumentDescs = 1;
-        commandSignatureDesc.pArgumentDescs = &indirectArgumentDesc;
-        commandSignatureDesc.NodeMask = NRI_TEMP_NODE_MASK;
-        commandSignatureDesc.ByteStride = 12;
-
-        hr = m_Device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&m_DispatchCommandSignature));
-        RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateCommandSignature()");
-    }
+    // Create indirect command signatures
+    m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc));
+    m_DispatchRaysCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(DispatchRaysIndirectDesc));
 
     // Fill desc
     FillDesc();
@@ -235,19 +237,9 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc) {
     if (result != Result::SUCCESS)
         return result;
 
-    { // Create dispatch command signature
-        D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDesc = {};
-        indirectArgumentDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
-
-        D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
-        commandSignatureDesc.NumArgumentDescs = 1;
-        commandSignatureDesc.pArgumentDescs = &indirectArgumentDesc;
-        commandSignatureDesc.NodeMask = NRI_TEMP_NODE_MASK;
-        commandSignatureDesc.ByteStride = 12;
-
-        hr = m_Device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&m_DispatchCommandSignature));
-        RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateCommandSignature()");
-    }
+    // Create indirect command signatures
+    m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc));
+    m_DispatchRaysCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(DispatchRaysIndirectDesc));
 
     // Fill desc
     FillDesc();
@@ -359,6 +351,21 @@ ID3D12CommandSignature* DeviceD3D12::GetDrawIndexedCommandSignature(uint32_t str
     return commandSignature;
 }
 
+ID3D12CommandSignature* DeviceD3D12::GetDrawMeshCommandSignature(uint32_t stride) {
+    auto commandSignatureIt = m_DrawMeshCommandSignatures.find(stride);
+    if (commandSignatureIt != m_DrawMeshCommandSignatures.end())
+        return commandSignatureIt->second;
+
+    ID3D12CommandSignature* commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH, stride);
+    m_DrawMeshCommandSignatures[stride] = commandSignature;
+
+    return commandSignature;
+}
+
+ID3D12CommandSignature* DeviceD3D12::GetDispatchRaysCommandSignature() const {
+    return m_DispatchRaysCommandSignature.GetInterface();
+}
+
 ID3D12CommandSignature* DeviceD3D12::GetDispatchCommandSignature() const {
     return m_DispatchCommandSignature.GetInterface();
 }
@@ -411,6 +418,8 @@ void DeviceD3D12::FillDesc() {
     m_Desc.isMeshShaderSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
 
 #ifdef NRI_USE_AGILITY_SDK
+    m_Desc.isDispatchRaysIndirectSupported = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1;
+
     // Minimum supported client: Windows 10 Build 20348 (or Agility SDK)
     D3D12_FEATURE_DATA_D3D12_OPTIONS8 options8 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS8, &options8, sizeof(options8));
@@ -422,6 +431,7 @@ void DeviceD3D12::FillDesc() {
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options9) failed, result = 0x%08X!", hr);
     m_Desc.isMeshShaderPipelineStatsSupported = options9.MeshShaderPipelineStatsSupported;
+    m_Desc.isDrawMeshTasksIndirectSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
 
     // Minimum supported client: Windows 11 Build 22000 (or Agility SDK)
     D3D12_FEATURE_DATA_D3D12_OPTIONS10 options10 = {};
@@ -479,7 +489,11 @@ void DeviceD3D12::FillDesc() {
 #endif
 
     const std::array<D3D_FEATURE_LEVEL, 5> levelsList = {
-        D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_2,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_12_0,
+        D3D_FEATURE_LEVEL_12_1,
+        D3D_FEATURE_LEVEL_12_2,
     };
 
     D3D12_FEATURE_DATA_FEATURE_LEVELS levels = {};
@@ -524,11 +538,15 @@ void DeviceD3D12::FillDesc() {
 
 #ifdef NRI_USE_AGILITY_SDK
     m_Desc.deviceUploadHeapSize = options16.GPUUploadHeapSupported ? m_Desc.adapterDesc.videoMemorySize : 0;
-#endif
-    m_Desc.memoryAllocationMaxNum = 0xFFFFFFFF;
-    m_Desc.samplerAllocationMaxNum = D3D12_REQ_SAMPLER_OBJECT_COUNT_PER_DEVICE;
+    m_Desc.uploadBufferTextureRowAlignment = options13.UnrestrictedBufferTextureCopyPitchSupported ? 1 : D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
+    m_Desc.uploadBufferTextureSliceAlignment = options13.UnrestrictedBufferTextureCopyPitchSupported ? 1 : D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
+#else
     m_Desc.uploadBufferTextureRowAlignment = D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
     m_Desc.uploadBufferTextureSliceAlignment = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
+#endif
+
+    m_Desc.memoryAllocationMaxNum = 0xFFFFFFFF;
+    m_Desc.samplerAllocationMaxNum = D3D12_REQ_SAMPLER_OBJECT_COUNT_PER_DEVICE;
     m_Desc.typedBufferOffsetAlignment = D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT;
     m_Desc.constantBufferOffsetAlignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
     m_Desc.constantBufferMaxRange = D3D12_REQ_IMMEDIATE_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
@@ -636,6 +654,10 @@ void DeviceD3D12::FillDesc() {
     m_Desc.isRegisterAliasingSupported = true;
     m_Desc.isSubsetAllocationSupported = false; // TODO: mGPU is not implemented
     m_Desc.isFloat16Supported = options4.Native16BitShaderOpsSupported;
+#ifdef NRI_USE_AGILITY_SDK
+    m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = options14.IndependentFrontAndBackStencilRefMaskSupported ? true : false;
+#endif
+    m_Desc.isLineSmoothingSupported = true;
 }
 
 //================================================================================================================
@@ -671,10 +693,8 @@ inline Result DeviceD3D12::GetCommandQueue(CommandQueueType commandQueueType, Co
     if (result == Result::SUCCESS)
         m_CommandQueues[queueIndex] = (CommandQueueD3D12*)commandQueue;
     else
-        REPORT_WARNING(
-            this, "%s command queue is not supported by the device!",
-            commandQueueType == CommandQueueType::GRAPHICS ? "GRAPHICS" : (commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY")
-        );
+        REPORT_WARNING(this, "%s command queue is not supported by the device!",
+            commandQueueType == CommandQueueType::GRAPHICS ? "GRAPHICS" : (commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY"));
 
     return result;
 }

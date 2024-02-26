@@ -55,10 +55,8 @@ struct PipelineLayoutD3D12 {
 
     Result Create(const PipelineLayoutDesc& pipelineLayoutDesc);
 
-    void SetDescriptorSet(
-        ID3D12GraphicsCommandList& graphicsCommandList, bool isGraphics, uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet,
-        const uint32_t* dynamicConstantBufferOffsets
-    ) const;
+    void SetDescriptorSet(ID3D12GraphicsCommandList& graphicsCommandList, bool isGraphics, uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet,
+        const uint32_t* dynamicConstantBufferOffsets) const;
 
     //================================================================================================================
     // NRI
@@ -71,8 +69,7 @@ struct PipelineLayoutD3D12 {
   private:
     template <bool isGraphics>
     void SetDescriptorSetImpl(
-        ID3D12GraphicsCommandList& graphicsCommandList, uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets
-    ) const;
+        ID3D12GraphicsCommandList& graphicsCommandList, uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const;
 
   private:
     ComPtr<ID3D12RootSignature> m_RootSignature;

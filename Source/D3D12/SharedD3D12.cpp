@@ -212,15 +212,15 @@ UINT8 nri::GetRenderTargetWriteMask(ColorWriteBits colorWriteMask) {
 }
 
 constexpr std::array<D3D12_COMPARISON_FUNC, (uint32_t)CompareFunc::MAX_NUM> COMPARISON_FUNCS = {
-    D3D12_COMPARISON_FUNC_NEVER,         // NONE
+    D3D12_COMPARISON_FUNC_NONE,          // NONE
     D3D12_COMPARISON_FUNC_ALWAYS,        // ALWAYS
     D3D12_COMPARISON_FUNC_NEVER,         // NEVER
+    D3D12_COMPARISON_FUNC_EQUAL,         // EQUAL
+    D3D12_COMPARISON_FUNC_NOT_EQUAL,     // NOT_EQUAL
     D3D12_COMPARISON_FUNC_LESS,          // LESS
     D3D12_COMPARISON_FUNC_LESS_EQUAL,    // LESS_EQUAL
-    D3D12_COMPARISON_FUNC_EQUAL,         // EQUAL
-    D3D12_COMPARISON_FUNC_GREATER_EQUAL, // GREATER_EQUAL
     D3D12_COMPARISON_FUNC_GREATER,       // GREATER
-    D3D12_COMPARISON_FUNC_NOT_EQUAL      // NOT_EQUAL
+    D3D12_COMPARISON_FUNC_GREATER_EQUAL, // GREATER_EQUAL
 };
 
 D3D12_COMPARISON_FUNC nri::GetComparisonFunc(CompareFunc compareFunc) {
@@ -278,13 +278,19 @@ constexpr std::array<D3D12_BLEND, (uint32_t)BlendFactor::MAX_NUM> BLENDS = {
     D3D12_BLEND_INV_DEST_ALPHA,   // ONE_MINUS_DST_ALPHA
     D3D12_BLEND_BLEND_FACTOR,     // CONSTANT_COLOR
     D3D12_BLEND_INV_BLEND_FACTOR, // ONE_MINUS_CONSTANT_COLOR
+#ifdef NRI_USE_AGILITY_SDK
+    D3D12_BLEND_ALPHA_FACTOR,     // CONSTANT_ALPHA
+    D3D12_BLEND_INV_ALPHA_FACTOR, // ONE_MINUS_CONSTANT_ALPHA
+#else
+    // Non-exposed in old SDK
     D3D12_BLEND_BLEND_FACTOR,     // CONSTANT_ALPHA
     D3D12_BLEND_INV_BLEND_FACTOR, // ONE_MINUS_CONSTANT_ALPHA
-    D3D12_BLEND_SRC_ALPHA_SAT,    // SRC_ALPHA_SATURATE
-    D3D12_BLEND_SRC1_COLOR,       // SRC1_COLOR
-    D3D12_BLEND_INV_SRC1_COLOR,   // ONE_MINUS_SRC1_COLOR
-    D3D12_BLEND_SRC1_ALPHA,       // SRC1_ALPHA
-    D3D12_BLEND_INV_SRC1_ALPHA    // ONE_MINUS_SRC1_ALPHA
+#endif
+    D3D12_BLEND_SRC_ALPHA_SAT,  // SRC_ALPHA_SATURATE
+    D3D12_BLEND_SRC1_COLOR,     // SRC1_COLOR
+    D3D12_BLEND_INV_SRC1_COLOR, // ONE_MINUS_SRC1_COLOR
+    D3D12_BLEND_SRC1_ALPHA,     // SRC1_ALPHA
+    D3D12_BLEND_INV_SRC1_ALPHA  // ONE_MINUS_SRC1_ALPHA
 };
 
 D3D12_BLEND nri::GetBlend(BlendFactor blendFactor) {
@@ -432,24 +438,15 @@ D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE nri::GetAccelerationStructureType(A
 
 D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS nri::GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits accelerationStructureBuildFlags) {
     static_assert(
-        D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE == (uint32_t)AccelerationStructureBuildBits::ALLOW_UPDATE, "Unsupported AccelerationStructureBuildBits."
-    );
-    static_assert(
-        D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION == (uint32_t)AccelerationStructureBuildBits::ALLOW_COMPACTION,
-        "Unsupported AccelerationStructureBuildBits."
-    );
-    static_assert(
-        D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_TRACE,
-        "Unsupported AccelerationStructureBuildBits."
-    );
-    static_assert(
-        D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_BUILD,
-        "Unsupported AccelerationStructureBuildBits."
-    );
-    static_assert(
-        D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY == (uint32_t)AccelerationStructureBuildBits::MINIMIZE_MEMORY,
-        "Unsupported AccelerationStructureBuildBits."
-    );
+        D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE == (uint32_t)AccelerationStructureBuildBits::ALLOW_UPDATE, "Unsupported AccelerationStructureBuildBits.");
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION == (uint32_t)AccelerationStructureBuildBits::ALLOW_COMPACTION,
+        "Unsupported AccelerationStructureBuildBits.");
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_TRACE,
+        "Unsupported AccelerationStructureBuildBits.");
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_BUILD,
+        "Unsupported AccelerationStructureBuildBits.");
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY == (uint32_t)AccelerationStructureBuildBits::MINIMIZE_MEMORY,
+        "Unsupported AccelerationStructureBuildBits.");
 
     return (D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS)accelerationStructureBuildFlags;
 }
@@ -464,8 +461,7 @@ D3D12_RAYTRACING_GEOMETRY_TYPE GetGeometryType(GeometryType geometryType) {
 D3D12_RAYTRACING_GEOMETRY_FLAGS GetGeometryFlags(BottomLevelGeometryBits geometryFlagMask) {
     static_assert(D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE == (uint32_t)BottomLevelGeometryBits::OPAQUE_GEOMETRY, "Unsupported GeometryFlagMask.");
     static_assert(
-        D3D12_RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION == (uint32_t)BottomLevelGeometryBits::NO_DUPLICATE_ANY_HIT_INVOCATION, "Unsupported GeometryFlagMask."
-    );
+        D3D12_RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION == (uint32_t)BottomLevelGeometryBits::NO_DUPLICATE_ANY_HIT_INVOCATION, "Unsupported GeometryFlagMask.");
 
     return (D3D12_RAYTRACING_GEOMETRY_FLAGS)geometryFlagMask;
 }

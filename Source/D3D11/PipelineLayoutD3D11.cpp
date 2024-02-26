@@ -150,10 +150,8 @@ void PipelineLayoutD3D11::SetConstants(ID3D11DeviceContextBest* deferredContext,
     deferredContext->UpdateSubresource(cb.buffer, 0, nullptr, data, 0, 0);
 }
 
-void PipelineLayoutD3D11::BindDescriptorSet(
-    BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndexInPipelineLayout, const DescriptorSetD3D11& descriptorSet,
-    const uint32_t* dynamicConstantBufferOffsets
-) const {
+void PipelineLayoutD3D11::BindDescriptorSet(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndexInPipelineLayout,
+    const DescriptorSetD3D11& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const {
     if (m_IsGraphicsPipelineLayout)
         BindDescriptorSetImpl<true>(currentBindingState, deferredContext, setIndexInPipelineLayout, descriptorSet, dynamicConstantBufferOffsets);
     else
@@ -161,10 +159,8 @@ void PipelineLayoutD3D11::BindDescriptorSet(
 }
 
 template <bool isGraphics>
-void PipelineLayoutD3D11::BindDescriptorSetImpl(
-    BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndexInPipelineLayout, const DescriptorSetD3D11& descriptorSet,
-    const uint32_t* dynamicConstantBufferOffsets
-) const {
+void PipelineLayoutD3D11::BindDescriptorSetImpl(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndexInPipelineLayout,
+    const DescriptorSetD3D11& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const {
     const BindingSet& bindingSet = m_BindingSets[setIndexInPipelineLayout];
     bool isStorageRebindNeededInGraphics = false;
 
@@ -198,14 +194,13 @@ void PipelineLayoutD3D11::BindDescriptorSetImpl(
 
                     constantFirst[i] = offset;
                     constantNum[i] = descriptor->GetElementNum();
-                } else if (bindingRange.descriptorType == DescriptorTypeDX11::STORAGE)
+                } else if (bindingRange.descriptorType == DescriptorTypeDX11::STORAGE) {
                     currentBindingState.TrackSubresource_UnbindIfNeeded_PostponeGraphicsStorageBinding(
-                        deferredContext, descriptor->GetSubresourceInfo(), *descriptor, bindingRange.baseSlot + i, isGraphics, true
-                    );
-                else if (bindingRange.descriptorType == DescriptorTypeDX11::RESOURCE)
+                        deferredContext, descriptor->GetSubresourceInfo(), *descriptor, bindingRange.baseSlot + i, isGraphics, true);
+                } else if (bindingRange.descriptorType == DescriptorTypeDX11::RESOURCE) {
                     currentBindingState.TrackSubresource_UnbindIfNeeded_PostponeGraphicsStorageBinding(
-                        deferredContext, descriptor->GetSubresourceInfo(), *descriptor, bindingRange.baseSlot + i, isGraphics, false
-                    );
+                        deferredContext, descriptor->GetSubresourceInfo(), *descriptor, bindingRange.baseSlot + i, isGraphics, false);
+                }
             } else {
                 descriptors[i] = nullptr;
                 constantFirst[i] = 0;

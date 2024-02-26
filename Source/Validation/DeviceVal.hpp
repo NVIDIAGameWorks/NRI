@@ -331,8 +331,8 @@ static Result NRI_CALL CreateMemoryD3D12(Device& device, const MemoryD3D12Desc& 
     return ((DeviceVal&)device).CreateMemoryD3D12(memoryD3D12Desc, memory);
 }
 
-static Result NRI_CALL
-CreateAccelerationStructureD3D12(Device& device, const AccelerationStructureD3D12Desc& accelerationStructureD3D12Desc, AccelerationStructure*& accelerationStructure) {
+static Result NRI_CALL CreateAccelerationStructureD3D12(
+    Device& device, const AccelerationStructureD3D12Desc& accelerationStructureD3D12Desc, AccelerationStructure*& accelerationStructure) {
     return ((DeviceVal&)device).CreateAccelerationStructureD3D12(accelerationStructureD3D12Desc, accelerationStructure);
 }
 
@@ -402,8 +402,8 @@ static Result NRI_CALL CreateQueryPoolVK(Device& device, const QueryPoolVKDesc& 
     return ((DeviceVal&)device).CreateQueryPoolVK(queryPoolVKDesc, queryPool);
 }
 
-static Result NRI_CALL
-CreateAccelerationStructureVK(Device& device, const AccelerationStructureVKDesc& accelerationStructureVKDesc, AccelerationStructure*& accelerationStructure) {
+static Result NRI_CALL CreateAccelerationStructureVK(
+    Device& device, const AccelerationStructureVKDesc& accelerationStructureVKDesc, AccelerationStructure*& accelerationStructure) {
     return ((DeviceVal&)device).CreateAccelerationStructureVK(accelerationStructureVKDesc, accelerationStructure);
 }
 

@@ -18,6 +18,7 @@ enum OpCode : uint32_t {
     SET_DEPTH_BOUNDS,
     SET_STENCIL_REFERENCE,
     SET_SAMPLE_POSITIONS,
+    SET_BLEND_CONSTANTS,
     CLEAR_ATTACHMENTS,
     CLEAR_STORAGE_BUFFER,
     CLEAR_STORAGE_TEXTURE,
@@ -30,8 +31,8 @@ enum OpCode : uint32_t {
     BIND_DESCRIPTOR_SET,
     SET_CONSTANTS,
     DRAW,
-    DRAW_INDEXED,
     DRAW_INDIRECT,
+    DRAW_INDEXED,
     DRAW_INDEXED_INDIRECT,
     COPY_BUFFER,
     COPY_TEXTURE,
@@ -154,17 +155,27 @@ void CommandBufferEmuD3D11::Submit() {
                 commandBuffer.SetDepthBounds(boundsMin, boundsMax);
             } break;
             case SET_STENCIL_REFERENCE: {
-                uint8_t stencilRef;
-                Read(m_PushBuffer, i, stencilRef);
+                uint8_t frontRef;
+                uint8_t backRef;
+                Read(m_PushBuffer, i, frontRef);
+                Read(m_PushBuffer, i, backRef);
 
-                commandBuffer.SetStencilReference(stencilRef);
+                commandBuffer.SetStencilReference(frontRef, backRef);
             } break;
             case SET_SAMPLE_POSITIONS: {
-                uint32_t positionNum;
                 SamplePosition* positions;
+                uint32_t positionNum;
+                Sample_t sampleNum;
                 Read(m_PushBuffer, i, positions, positionNum);
+                Read(m_PushBuffer, i, sampleNum);
 
-                commandBuffer.SetSamplePositions(positions, positionNum);
+                commandBuffer.SetSamplePositions(positions, (Sample_t)positionNum, sampleNum);
+            } break;
+            case SET_BLEND_CONSTANTS: {
+                Color32f color;
+                Read(m_PushBuffer, i, color);
+
+                commandBuffer.SetBlendConstants(color);
             } break;
             case CLEAR_ATTACHMENTS: {
                 ClearDesc* clearDescs;
@@ -261,37 +272,10 @@ void CommandBufferEmuD3D11::Submit() {
                 commandBuffer.SetConstants(pushConstantRangeIndex, data, size);
             } break;
             case DRAW: {
-                uint32_t vertexNum;
-                Read(m_PushBuffer, i, vertexNum);
+                DrawDesc drawDesc = {};
+                Read(m_PushBuffer, i, drawDesc);
 
-                uint32_t baseVertex;
-                Read(m_PushBuffer, i, baseVertex);
-
-                uint32_t instanceNum;
-                Read(m_PushBuffer, i, instanceNum);
-
-                uint32_t baseInstance;
-                Read(m_PushBuffer, i, baseInstance);
-
-                commandBuffer.Draw(vertexNum, instanceNum, baseVertex, baseInstance);
-            } break;
-            case DRAW_INDEXED: {
-                uint32_t indexNum;
-                Read(m_PushBuffer, i, indexNum);
-
-                uint32_t baseIndex;
-                Read(m_PushBuffer, i, baseIndex);
-
-                uint32_t baseVertex;
-                Read(m_PushBuffer, i, baseVertex);
-
-                uint32_t instanceNum;
-                Read(m_PushBuffer, i, instanceNum);
-
-                uint32_t baseInstance;
-                Read(m_PushBuffer, i, baseInstance);
-
-                commandBuffer.DrawIndexed(indexNum, instanceNum, baseIndex, baseVertex, baseInstance);
+                commandBuffer.Draw(drawDesc);
             } break;
             case DRAW_INDIRECT: {
                 Buffer* buffer;
@@ -307,6 +291,12 @@ void CommandBufferEmuD3D11::Submit() {
                 Read(m_PushBuffer, i, stride);
 
                 commandBuffer.DrawIndirect(*buffer, offset, drawNum, stride);
+            } break;
+            case DRAW_INDEXED: {
+                DrawIndexedDesc drawIndexedDesc = {};
+                Read(m_PushBuffer, i, drawIndexedDesc);
+
+                commandBuffer.DrawIndexed(drawIndexedDesc);
             } break;
             case DRAW_INDEXED_INDIRECT: {
                 Buffer* buffer;
@@ -387,16 +377,10 @@ void CommandBufferEmuD3D11::Submit() {
                 commandBuffer.ReadbackTextureToBuffer(*dstBuffer, dstDataLayout, *srcTexture, srcRegion);
             } break;
             case DISPATCH: {
-                uint32_t x;
-                Read(m_PushBuffer, i, x);
+                DispatchDesc dispatchDesc;
+                Read(m_PushBuffer, i, dispatchDesc);
 
-                uint32_t y;
-                Read(m_PushBuffer, i, y);
-
-                uint32_t z;
-                Read(m_PushBuffer, i, z);
-
-                commandBuffer.Dispatch(x, y, z);
+                commandBuffer.Dispatch(dispatchDesc);
             } break;
             case DISPATCH_INDIRECT: {
                 Buffer* buffer;
@@ -507,14 +491,21 @@ inline void CommandBufferEmuD3D11::SetDepthBounds(float boundsMin, float boundsM
     Push(m_PushBuffer, boundsMax);
 }
 
-inline void CommandBufferEmuD3D11::SetStencilReference(uint8_t reference) {
+inline void CommandBufferEmuD3D11::SetStencilReference(uint8_t frontRef, uint8_t backRef) {
     Push(m_PushBuffer, SET_STENCIL_REFERENCE);
-    Push(m_PushBuffer, reference);
+    Push(m_PushBuffer, frontRef);
+    Push(m_PushBuffer, backRef);
 }
 
-inline void CommandBufferEmuD3D11::SetSamplePositions(const SamplePosition* positions, uint32_t positionNum) {
+inline void CommandBufferEmuD3D11::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
     Push(m_PushBuffer, SET_SAMPLE_POSITIONS);
-    Push(m_PushBuffer, positions, positionNum);
+    Push(m_PushBuffer, positions, (uint32_t)positionNum);
+    Push(m_PushBuffer, sampleNum);
+}
+
+inline void CommandBufferEmuD3D11::SetBlendConstants(const Color32f& color) {
+    Push(m_PushBuffer, SET_BLEND_CONSTANTS);
+    Push(m_PushBuffer, color);
 }
 
 inline void CommandBufferEmuD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
@@ -586,21 +577,9 @@ inline void CommandBufferEmuD3D11::SetConstants(uint32_t pushConstantIndex, cons
     Push(m_PushBuffer, (uint8_t*)data, size);
 }
 
-inline void CommandBufferEmuD3D11::Draw(uint32_t vertexNum, uint32_t instanceNum, uint32_t baseVertex, uint32_t baseInstance) {
+inline void CommandBufferEmuD3D11::Draw(const DrawDesc& drawDesc) {
     Push(m_PushBuffer, DRAW);
-    Push(m_PushBuffer, vertexNum);
-    Push(m_PushBuffer, baseVertex);
-    Push(m_PushBuffer, instanceNum);
-    Push(m_PushBuffer, baseInstance);
-}
-
-inline void CommandBufferEmuD3D11::DrawIndexed(uint32_t indexNum, uint32_t instanceNum, uint32_t baseIndex, uint32_t baseVertex, uint32_t baseInstance) {
-    Push(m_PushBuffer, DRAW_INDEXED);
-    Push(m_PushBuffer, indexNum);
-    Push(m_PushBuffer, baseIndex);
-    Push(m_PushBuffer, baseVertex);
-    Push(m_PushBuffer, instanceNum);
-    Push(m_PushBuffer, baseInstance);
+    Push(m_PushBuffer, drawDesc);
 }
 
 inline void CommandBufferEmuD3D11::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
@@ -609,6 +588,11 @@ inline void CommandBufferEmuD3D11::DrawIndirect(const Buffer& buffer, uint64_t o
     Push(m_PushBuffer, offset);
     Push(m_PushBuffer, drawNum);
     Push(m_PushBuffer, stride);
+}
+
+inline void CommandBufferEmuD3D11::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc) {
+    Push(m_PushBuffer, DRAW_INDEXED);
+    Push(m_PushBuffer, drawIndexedDesc);
 }
 
 inline void CommandBufferEmuD3D11::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
@@ -645,8 +629,7 @@ inline void CommandBufferEmuD3D11::CopyTexture(Texture& dstTexture, const Textur
 }
 
 inline void CommandBufferEmuD3D11::UploadBufferToTexture(
-    Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc
-) {
+    Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
     Push(m_PushBuffer, UPLOAD_BUFFER_TO_TEXTURE);
     Push(m_PushBuffer, &dstTexture);
     Push(m_PushBuffer, dstRegionDesc);
@@ -655,8 +638,7 @@ inline void CommandBufferEmuD3D11::UploadBufferToTexture(
 }
 
 inline void CommandBufferEmuD3D11::ReadbackTextureToBuffer(
-    Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc
-) {
+    Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
     Push(m_PushBuffer, READBACK_TEXTURE_TO_BUFFER);
     Push(m_PushBuffer, &dstBuffer);
     Push(m_PushBuffer, dstDataLayoutDesc);
@@ -664,11 +646,9 @@ inline void CommandBufferEmuD3D11::ReadbackTextureToBuffer(
     Push(m_PushBuffer, srcRegionDesc);
 }
 
-inline void CommandBufferEmuD3D11::Dispatch(uint32_t x, uint32_t y, uint32_t z) {
+inline void CommandBufferEmuD3D11::Dispatch(const DispatchDesc& dispatchDesc) {
     Push(m_PushBuffer, DISPATCH);
-    Push(m_PushBuffer, x);
-    Push(m_PushBuffer, y);
-    Push(m_PushBuffer, z);
+    Push(m_PushBuffer, dispatchDesc);
 }
 
 inline void CommandBufferEmuD3D11::DispatchIndirect(const Buffer& buffer, uint64_t offset) {

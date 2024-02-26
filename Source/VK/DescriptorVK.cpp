@@ -71,10 +71,9 @@ template <typename T>
 void FillImageSubresourceRange(const T& textureViewDesc, VkImageSubresourceRange& subresourceRange) {
     const TextureVK& texture = *(const TextureVK*)textureViewDesc.texture;
 
-    subresourceRange = {
-        texture.GetImageAspectFlags(), textureViewDesc.mipOffset, (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : textureViewDesc.mipNum,
-        textureViewDesc.arrayOffset, (textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS) ? VK_REMAINING_ARRAY_LAYERS : textureViewDesc.arraySize
-    };
+    subresourceRange = {texture.GetImageAspectFlags(), textureViewDesc.mipOffset,
+        (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : textureViewDesc.mipNum, textureViewDesc.arrayOffset,
+        (textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS) ? VK_REMAINING_ARRAY_LAYERS : textureViewDesc.arraySize};
 }
 
 template <>
@@ -82,8 +81,7 @@ void FillImageSubresourceRange(const Texture3DViewDesc& textureViewDesc, VkImage
     const TextureVK& texture = *(const TextureVK*)textureViewDesc.texture;
 
     subresourceRange = {
-        texture.GetImageAspectFlags(), textureViewDesc.mipOffset, (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : textureViewDesc.mipNum, 0, 1
-    };
+        texture.GetImageAspectFlags(), textureViewDesc.mipOffset, (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : textureViewDesc.mipNum, 0, 1};
 }
 
 template <typename T>
@@ -145,8 +143,7 @@ Result DescriptorVK::Create(const BufferViewDesc& bufferViewDesc) {
         return Result::SUCCESS;
 
     VkBufferViewCreateInfo info = {
-        VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, nullptr, (VkBufferViewCreateFlags)0, VK_NULL_HANDLE, m_Format, bufferViewDesc.offset, m_BufferDesc.size
-    };
+        VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, nullptr, (VkBufferViewCreateFlags)0, VK_NULL_HANDLE, m_Format, bufferViewDesc.offset, m_BufferDesc.size};
 
     const auto& vk = m_Device.GetDispatchTable();
 
@@ -178,26 +175,11 @@ Result DescriptorVK::Create(const Texture3DViewDesc& textureViewDesc) {
 Result DescriptorVK::Create(const SamplerDesc& samplerDesc) {
     m_Type = DescriptorTypeVK::SAMPLER;
 
-    const VkSamplerCreateInfo samplerInfo = {
-        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        nullptr,
-        (VkSamplerCreateFlags)0,
-        GetFilter(samplerDesc.filters.mag),
-        GetFilter(samplerDesc.filters.min),
-        GetSamplerMipmapMode(samplerDesc.filters.mip),
-        GetSamplerAddressMode(samplerDesc.addressModes.u),
-        GetSamplerAddressMode(samplerDesc.addressModes.v),
-        GetSamplerAddressMode(samplerDesc.addressModes.w),
-        samplerDesc.mipBias,
-        VkBool32(samplerDesc.anisotropy > 1.0f),
-        (float)samplerDesc.anisotropy,
-        VkBool32(samplerDesc.compareFunc != CompareFunc::NONE),
-        GetCompareOp(samplerDesc.compareFunc),
-        samplerDesc.mipMin,
-        samplerDesc.mipMax,
-        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
-        false
-    };
+    const VkSamplerCreateInfo samplerInfo = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, nullptr, (VkSamplerCreateFlags)0, GetFilter(samplerDesc.filters.mag),
+        GetFilter(samplerDesc.filters.min), GetSamplerMipmapMode(samplerDesc.filters.mip), GetSamplerAddressMode(samplerDesc.addressModes.u),
+        GetSamplerAddressMode(samplerDesc.addressModes.v), GetSamplerAddressMode(samplerDesc.addressModes.w), samplerDesc.mipBias, VkBool32(samplerDesc.anisotropy > 1.0f),
+        (float)samplerDesc.anisotropy, VkBool32(samplerDesc.compareFunc != CompareFunc::NONE), GetCompareOp(samplerDesc.compareFunc), samplerDesc.mipMin, samplerDesc.mipMax,
+        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, false};
 
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult result = vk.CreateSampler(m_Device, &samplerInfo, m_Device.GetAllocationCallbacks(), &m_Sampler);

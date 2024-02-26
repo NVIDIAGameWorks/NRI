@@ -7,8 +7,7 @@
 using namespace nri;
 
 void nri::ConvertGeometryObjectSizesVK(
-    uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, uint32_t* primitiveNums, const GeometryObject* sourceObjects, uint32_t objectNum
-) {
+    uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, uint32_t* primitiveNums, const GeometryObject* sourceObjects, uint32_t objectNum) {
     for (uint32_t i = 0; i < objectNum; i++) {
         const GeometryObject& geometrySrc = sourceObjects[i];
 
@@ -35,9 +34,8 @@ void nri::ConvertGeometryObjectSizesVK(
     }
 }
 
-void nri::ConvertGeometryObjectsVK(
-    uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, VkAccelerationStructureBuildRangeInfoKHR* ranges, const GeometryObject* sourceObjects, uint32_t objectNum
-) {
+void nri::ConvertGeometryObjectsVK(uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, VkAccelerationStructureBuildRangeInfoKHR* ranges,
+    const GeometryObject* sourceObjects, uint32_t objectNum) {
     for (uint32_t i = 0; i < objectNum; i++) {
         const GeometryObject& geometrySrc = sourceObjects[i];
 

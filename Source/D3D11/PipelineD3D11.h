@@ -27,23 +27,17 @@ struct PipelineD3D11 {
         return m_InputAssemplyStrides[bindingSlot];
     }
 
-    inline bool IsCompute() const {
-        return m_ComputeShader != nullptr;
-    }
-
-    inline bool IsRasterizerDiscarded() const {
-        return m_IsRasterizerDiscarded;
-    }
-
     ~PipelineD3D11();
 
     Result Create(const GraphicsPipelineDesc& pipelineDesc);
     Result Create(const ComputePipelineDesc& pipelineDesc);
-    void Bind(ID3D11DeviceContextBest* deferredContext, const PipelineD3D11* currentPipeline) const;
+    void Bind(ID3D11DeviceContextBest* deferredContext, const PipelineD3D11* currentPipeline, uint8_t stencilRef, const Color32f& blendFactor,
+        const SamplePositionsState& samplePositionState);
 
-    // dynamic state
-    void ChangeSamplePositions(ID3D11DeviceContextBest* deferredContext, const SamplePositionsState& samplePositionState, DynamicState mode);
-    void ChangeStencilReference(ID3D11DeviceContextBest* deferredContext, uint8_t stencilRef, DynamicState mode);
+    // Dynamic state
+    void ChangeSamplePositions(ID3D11DeviceContextBest* deferredContext, const SamplePositionsState& samplePositionState);
+    void ChangeStencilReference(ID3D11DeviceContextBest* deferredContext, uint8_t stencilRef);
+    void ChangeBlendConstants(ID3D11DeviceContextBest* deferredContext, const Color32f& color);
 
     //================================================================================================================
     // NRI
@@ -52,11 +46,15 @@ struct PipelineD3D11 {
     void SetDebugName(const char* name);
 
   private:
-    DeviceD3D11& m_Device;
+    inline bool IsCompute() const {
+        return m_ComputeShader != nullptr;
+    }
 
+  private:
+    DeviceD3D11& m_Device;
+    const PipelineLayoutD3D11* m_PipelineLayout = nullptr;
     Vector<uint32_t> m_InputAssemplyStrides;
     Vector<RasterizerState> m_RasterizerStates;
-
     ComPtr<ID3D11VertexShader> m_VertexShader;
     ComPtr<ID3D11HullShader> m_TessControlShader;
     ComPtr<ID3D11DomainShader> m_TessEvaluationShader;
@@ -66,16 +64,9 @@ struct PipelineD3D11 {
     ComPtr<ID3D11InputLayout> m_InputLayout;
     ComPtr<ID3D11DepthStencilState> m_DepthStencilState;
     ComPtr<ID3D11BlendState1> m_BlendState;
-
-    ID3D11RasterizerState2* m_RasterizerState = nullptr;
     NvAPI_D3D11_RASTERIZER_DESC_EX* m_RasterizerStateExDesc = nullptr;
-
     D3D11_PRIMITIVE_TOPOLOGY m_Topology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    Color32f m_BlendFactor = {};
-    uint32_t m_SampleMask = 0;
-    uint8_t m_StencilRef = uint8_t(-1);
-    bool m_IsRasterizerDiscarded = false;
-    const PipelineLayoutD3D11* m_PipelineLayout = nullptr;
+    uint32_t m_SampleMask = uint32_t(-1);
 };
 
 } // namespace nri

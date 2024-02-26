@@ -24,7 +24,11 @@ static std::array<DXGI_COLOR_SPACE_TYPE, (size_t)SwapChainFormat::MAX_NUM> g_col
 
 static uint8_t QueryLatestSwapChain(ComPtr<IDXGISwapChainBest>& in, ComPtr<IDXGISwapChainBest>& out) {
     static const IID versions[] = {
-        __uuidof(IDXGISwapChain4), __uuidof(IDXGISwapChain3), __uuidof(IDXGISwapChain2), __uuidof(IDXGISwapChain1), __uuidof(IDXGISwapChain),
+        __uuidof(IDXGISwapChain4),
+        __uuidof(IDXGISwapChain3),
+        __uuidof(IDXGISwapChain2),
+        __uuidof(IDXGISwapChain1),
+        __uuidof(IDXGISwapChain),
     };
     const uint8_t n = (uint8_t)GetCountOf(versions);
 

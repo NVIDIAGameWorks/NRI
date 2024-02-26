@@ -14,9 +14,8 @@ static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDe
 
 #pragma region[  Helper  ]
 
-static Result NRI_CALL UploadData(
-    CommandQueue& commandQueue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum
-) {
+static Result NRI_CALL UploadData(CommandQueue& commandQueue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs,
+    uint32_t bufferUploadDescNum) {
     return ((CommandQueueD3D12&)commandQueue).UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
 }
 

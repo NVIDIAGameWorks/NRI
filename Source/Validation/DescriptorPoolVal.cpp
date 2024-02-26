@@ -83,23 +83,19 @@ void DescriptorPoolVal::IncrementDescriptorNum(const DescriptorRangeDesc& rangeD
     }
 }
 
-Result DescriptorPoolVal::AllocateDescriptorSets(
-    const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t nodeMask, uint32_t variableDescriptorNum
-) {
+Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum,
+    uint32_t nodeMask, uint32_t variableDescriptorNum) {
     const PipelineLayoutVal& pipelineLayoutVal = (const PipelineLayoutVal&)pipelineLayout;
     const PipelineLayoutDesc& pipelineLayoutDesc = pipelineLayoutVal.GetPipelineLayoutDesc();
 
     RETURN_ON_FAILURE(&m_Device, instanceNum != 0, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: 'instanceNum' is 0");
 
-    RETURN_ON_FAILURE(
-        &m_Device, m_DescriptorSetsNum + instanceNum <= m_Desc.descriptorSetMaxNum, Result::INVALID_ARGUMENT,
-        "AllocateDescriptorSets: the maximum number of descriptor sets exceeded"
-    );
+    RETURN_ON_FAILURE(&m_Device, m_DescriptorSetsNum + instanceNum <= m_Desc.descriptorSetMaxNum, Result::INVALID_ARGUMENT,
+        "AllocateDescriptorSets: the maximum number of descriptor sets exceeded");
 
     if (!m_SkipValidation) {
         RETURN_ON_FAILURE(
-            &m_Device, setIndexInPipelineLayout < pipelineLayoutDesc.descriptorSetNum, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: 'setIndexInPipelineLayout' is invalid"
-        );
+            &m_Device, setIndexInPipelineLayout < pipelineLayoutDesc.descriptorSetNum, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: 'setIndexInPipelineLayout' is invalid");
 
         const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[setIndexInPipelineLayout];
 
@@ -107,10 +103,8 @@ Result DescriptorPoolVal::AllocateDescriptorSets(
             const DescriptorRangeDesc& rangeDesc = descriptorSetDesc.ranges[i];
             bool enoughDescriptors = CheckDescriptorRange(rangeDesc, variableDescriptorNum);
 
-            RETURN_ON_FAILURE(
-                &m_Device, enoughDescriptors, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: the maximum number of descriptors exceeded ('%s')",
-                GetDescriptorTypeName(rangeDesc.descriptorType)
-            );
+            RETURN_ON_FAILURE(&m_Device, enoughDescriptors, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: the maximum number of descriptors exceeded ('%s')",
+                GetDescriptorTypeName(rangeDesc.descriptorType));
         }
 
         bool enoughDescriptors = m_DynamicConstantBufferNum + descriptorSetDesc.dynamicConstantBufferNum <= m_Desc.dynamicConstantBufferMaxNum;

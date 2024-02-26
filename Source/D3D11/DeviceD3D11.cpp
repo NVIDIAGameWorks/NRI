@@ -22,7 +22,12 @@ uint8_t QueryLatestDeviceContext(ComPtr<ID3D11DeviceContextBest>& in, ComPtr<ID3
 
 static uint8_t QueryLatestDevice(ComPtr<ID3D11DeviceBest>& in, ComPtr<ID3D11DeviceBest>& out) {
     static const IID versions[] = {
-        __uuidof(ID3D11Device5), __uuidof(ID3D11Device4), __uuidof(ID3D11Device3), __uuidof(ID3D11Device2), __uuidof(ID3D11Device1), __uuidof(ID3D11Device),
+        __uuidof(ID3D11Device5),
+        __uuidof(ID3D11Device4),
+        __uuidof(ID3D11Device3),
+        __uuidof(ID3D11Device2),
+        __uuidof(ID3D11Device1),
+        __uuidof(ID3D11Device),
     };
     const uint8_t n = (uint8_t)GetCountOf(versions);
 
@@ -152,14 +157,12 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
                 return Result::FAILURE;
         } else {
             hr = D3D11CreateDevice(
-                m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr
-            );
+                m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
 
             // If Debug Layer is not available, try without D3D11_CREATE_DEVICE_DEBUG
             if (flags && (uint32_t)hr == 0x887a002d)
                 hr = D3D11CreateDevice(
-                    m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr
-                );
+                    m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
 
             RETURN_ON_BAD_HRESULT(this, hr, "D3D11CreateDevice()");
         }
@@ -376,6 +379,7 @@ void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params) {
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isDepthBoundsTestSupported = params.extensionsSupported.depthBoundsDeferredContexts;
     m_Desc.isProgrammableSampleLocationsSupported = m_Desc.adapterDesc.vendor == Vendor::NVIDIA;
+    m_Desc.isLineSmoothingSupported = true;
 }
 
 template <typename Implementation, typename Interface, typename... Args>

@@ -43,7 +43,15 @@ inline DeviceVal& GetDeviceVal(T& object) {
 uint64_t GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc);
 
 constexpr const char* DESCRIPTOR_TYPE_NAME[] = {
-    "SAMPLER", "CONSTANT_BUFFER", "TEXTURE", "STORAGE_TEXTURE", "BUFFER", "STORAGE_BUFFER", "STRUCTURED_BUFFER", "STORAGE_STRUCTURED_BUFFER", "ACCELERATION_STRUCTURE",
+    "SAMPLER",
+    "CONSTANT_BUFFER",
+    "TEXTURE",
+    "STORAGE_TEXTURE",
+    "BUFFER",
+    "STORAGE_BUFFER",
+    "STRUCTURED_BUFFER",
+    "STORAGE_STRUCTURED_BUFFER",
+    "ACCELERATION_STRUCTURE",
 };
 static_assert(GetCountOf(DESCRIPTOR_TYPE_NAME) == (uint32_t)nri::DescriptorType::MAX_NUM, "descriptor type name array is out of date");
 

@@ -6,8 +6,8 @@ static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet& descriptorSet, con
     ((DescriptorSetVal&)descriptorSet).SetDebugName(name);
 }
 
-static void NRI_CALL
-UpdateDescriptorRanges(DescriptorSet& descriptorSet, uint32_t nodeMask, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs) {
+static void NRI_CALL UpdateDescriptorRanges(
+    DescriptorSet& descriptorSet, uint32_t nodeMask, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs) {
     ((DescriptorSetVal&)descriptorSet).UpdateDescriptorRanges(nodeMask, baseRange, rangeNum, rangeUpdateDescs);
 }
 

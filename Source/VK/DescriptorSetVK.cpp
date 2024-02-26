@@ -30,9 +30,8 @@ struct SlabAllocator {
     uint8_t* m_Memory;
 };
 
-static bool WriteTextures(
-    uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab
-) {
+static bool WriteTextures(uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset,
+    VkWriteDescriptorSet& write, SlabAllocator& slab) {
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
     uint32_t itemNumForWriting = totalItemNum;
     VkDescriptorImageInfo* infoArray = slab.Allocate<VkDescriptorImageInfo>(itemNumForWriting);
@@ -53,9 +52,8 @@ static bool WriteTextures(
     return itemNumForWriting == totalItemNum;
 }
 
-static bool WriteTypedBuffers(
-    uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab
-) {
+static bool WriteTypedBuffers(uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset,
+    VkWriteDescriptorSet& write, SlabAllocator& slab) {
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
     uint32_t itemNumForWriting = totalItemNum;
     VkBufferView* viewArray = slab.Allocate<VkBufferView>(itemNumForWriting);
@@ -73,9 +71,8 @@ static bool WriteTypedBuffers(
     return itemNumForWriting == totalItemNum;
 }
 
-static bool WriteBuffers(
-    uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab
-) {
+static bool WriteBuffers(uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write,
+    SlabAllocator& slab) {
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
     uint32_t itemNumForWriting = totalItemNum;
     VkDescriptorBufferInfo* infoArray = slab.Allocate<VkDescriptorBufferInfo>(itemNumForWriting);
@@ -93,9 +90,8 @@ static bool WriteBuffers(
     return itemNumForWriting == totalItemNum;
 }
 
-static bool WriteSamplers(
-    uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab
-) {
+static bool WriteSamplers(uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset,
+    VkWriteDescriptorSet& write, SlabAllocator& slab) {
     MaybeUnused(rangeDesc);
     MaybeUnused(nodeIndex);
 
@@ -118,9 +114,8 @@ static bool WriteSamplers(
     return itemNumForWriting == totalItemNum;
 }
 
-static bool WriteAccelerationStructures(
-    uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab
-) {
+static bool WriteAccelerationStructures(uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset,
+    VkWriteDescriptorSet& write, SlabAllocator& slab) {
     MaybeUnused(rangeDesc);
 
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
@@ -152,9 +147,8 @@ static bool WriteAccelerationStructures(
     return itemNumForWriting == totalItemNum;
 }
 
-typedef bool (*WriteDescriptorsFunc)(
-    uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab
-);
+typedef bool (*WriteDescriptorsFunc)(uint32_t nodeIndex, const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset,
+    VkWriteDescriptorSet& write, SlabAllocator& slab);
 
 constexpr std::array<WriteDescriptorsFunc, (uint32_t)DescriptorType::MAX_NUM> WRITE_FUNCS = {
     (WriteDescriptorsFunc)&WriteSamplers,               // SAMPLER
@@ -262,8 +256,8 @@ inline void DescriptorSetVK::UpdateDynamicConstantBuffers(uint32_t nodeMask, uin
             const DescriptorVK& descriptorImpl = *(const DescriptorVK*)descriptors[j];
             descriptorImpl.GetBufferInfo(i, bufferInfo);
 
-            writes[writeNum++] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,    nullptr, m_Handles[i], bufferDesc.registerIndex, 0, 1,
-                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, nullptr, &bufferInfo};
+            writes[writeNum++] = {
+                VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, m_Handles[i], bufferDesc.registerIndex, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, nullptr, &bufferInfo};
         }
     }
 
@@ -290,8 +284,8 @@ inline void DescriptorSetVK::Copy(const DescriptorSetCopyDesc& descriptorSetCopy
             const DescriptorRangeDesc& srcRangeDesc = srcSetImpl.m_Desc->ranges[descriptorSetCopyDesc.baseSrcRange + j];
             const DescriptorRangeDesc& dstRangeDesc = m_Desc->ranges[descriptorSetCopyDesc.baseDstRange + j];
 
-            copies[copyNum++] = {VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET, nullptr, srcSetImpl.GetHandle(i),   srcRangeDesc.baseRegisterIndex, 0, m_Handles[i],
-                                 dstRangeDesc.baseRegisterIndex,        0,       dstRangeDesc.descriptorNum};
+            copies[copyNum++] = {VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET, nullptr, srcSetImpl.GetHandle(i), srcRangeDesc.baseRegisterIndex, 0, m_Handles[i],
+                dstRangeDesc.baseRegisterIndex, 0, dstRangeDesc.descriptorNum};
         }
 
         for (uint32_t j = 0; j < descriptorSetCopyDesc.dynamicConstantBufferNum; j++) {

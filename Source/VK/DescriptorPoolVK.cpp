@@ -55,15 +55,14 @@ Result DescriptorPoolVK::Create(const DescriptorPoolDesc& descriptorPoolDesc) {
     AddDescriptorPoolSize(descriptorPoolSizeArray, poolSizeCount, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, descriptorPoolDesc.bufferMaxNum);
     AddDescriptorPoolSize(descriptorPoolSizeArray, poolSizeCount, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, descriptorPoolDesc.storageBufferMaxNum);
     AddDescriptorPoolSize(
-        descriptorPoolSizeArray, poolSizeCount, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, descriptorPoolDesc.structuredBufferMaxNum + descriptorPoolDesc.storageStructuredBufferMaxNum
-    );
+        descriptorPoolSizeArray, poolSizeCount, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, descriptorPoolDesc.structuredBufferMaxNum + descriptorPoolDesc.storageStructuredBufferMaxNum);
     AddDescriptorPoolSize(descriptorPoolSizeArray, poolSizeCount, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, descriptorPoolDesc.accelerationStructureMaxNum);
 
     for (uint32_t i = 0; i < poolSizeCount; i++)
         descriptorPoolSizeArray[i].descriptorCount *= nodeNum;
 
-    const VkDescriptorPoolCreateInfo info = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,    nullptr,       VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-                                             descriptorPoolDesc.descriptorSetMaxNum * nodeNum, poolSizeCount, descriptorPoolSizeArray};
+    const VkDescriptorPoolCreateInfo info = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, nullptr, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+        descriptorPoolDesc.descriptorSetMaxNum * nodeNum, poolSizeCount, descriptorPoolSizeArray};
 
     const VkResult result = vk.CreateDescriptorPool(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
 
@@ -87,10 +86,8 @@ inline void DescriptorPoolVK::SetDebugName(const char* name) {
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_DESCRIPTOR_POOL, (uint64_t)m_Handle, name);
 }
 
-inline Result DescriptorPoolVK::AllocateDescriptorSets(
-    const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t numberOfCopies, uint32_t nodeMask,
-    uint32_t variableDescriptorNum
-) {
+inline Result DescriptorPoolVK::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets,
+    uint32_t numberOfCopies, uint32_t nodeMask, uint32_t variableDescriptorNum) {
     const PipelineLayoutVK& pipelineLayoutVK = (const PipelineLayoutVK&)pipelineLayout;
 
     const uint32_t freeSetNum = (uint32_t)m_AllocatedSets.size() - m_UsedSets;
@@ -133,8 +130,7 @@ inline Result DescriptorPoolVK::AllocateDescriptorSets(
     }
 
     const VkDescriptorSetAllocateInfo info = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, hasVariableDescriptorNum ? &variableDescriptorCountInfo : nullptr, m_Handle, phyicalDeviceNum, setLayoutArray.data()
-    };
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, hasVariableDescriptorNum ? &variableDescriptorCountInfo : nullptr, m_Handle, phyicalDeviceNum, setLayoutArray.data()};
 
     const auto& vk = m_Device.GetDispatchTable();
 

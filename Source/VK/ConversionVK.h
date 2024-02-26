@@ -218,97 +218,6 @@ constexpr std::array<VkFormat, (uint32_t)Format::MAX_NUM> VK_IMAGE_VIEW_FORMAT =
     VK_FORMAT_D32_SFLOAT_S8_UINT   // D32_SFLOAT_X8_TYPLESS_X24_TYPELESS
 };
 
-constexpr std::array<VkImageCreateFlags, (size_t)Format::MAX_NUM> IMAGE_CREATE_FLAGS = {
-    0, // UNKNOWN,
-
-    0, // R8_UNORM,
-    0, // R8_SNORM,
-    0, // R8_UINT,
-    0, // R8_SINT,
-
-    0, // RG8_UNORM,
-    0, // RG8_SNORM,
-    0, // RG8_UINT,
-    0, // RG8_SINT,
-
-    0,                                  // BGRA8_UNORM,
-    VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT, // BGRA8_SRGB,
-
-    0,                                  // RGBA8_UNORM,
-    0,                                  // RGBA8_SNORM,
-    0,                                  // RGBA8_UINT,
-    0,                                  // RGBA8_SINT,
-    VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT, // RGBA8_SRGB,
-
-    0, // R16_UNORM,
-    0, // R16_SNORM,
-    0, // R16_UINT,
-    0, // R16_SINT,
-    0, // R16_SFLOAT,
-
-    0, // RG16_UNORM,
-    0, // RG16_SNORM,
-    0, // RG16_UINT,
-    0, // RG16_SINT,
-    0, // RG16_SFLOAT,
-
-    0, // RGBA16_UNORM,
-    0, // RGBA16_SNORM,
-    0, // RGBA16_UINT,
-    0, // RGBA16_SINT,
-    0, // RGBA16_SFLOAT,
-
-    0, // R32_UINT,
-    0, // R32_SINT,
-    0, // R32_SFLOAT,
-
-    0, // RG32_UINT,
-    0, // RG32_SINT,
-    0, // RG32_SFLOAT,
-
-    0, // RGB32_UINT,
-    0, // RGB32_SINT,
-    0, // RGB32_SFLOAT,
-
-    0, // RGBA32_UINT,
-    0, // RGBA32_SINT,
-    0, // RGBA32_SFLOAT,
-
-    0, // R10_G10_B10_A2_UNORM,
-    0, // R10_G10_B10_A2_UINT,
-    0, // R11_G11_B10_UFLOAT,
-    0, // R9_G9_B9_E5_UFLOAT,
-
-    0, // BC1_RGBA_UNORM,
-    0, // BC1_RGBA_SRGB,
-    0, // BC2_RGBA_UNORM,
-    0, // BC2_RGBA_SRGB,
-    0, // BC3_RGBA_UNORM,
-    0, // BC3_RGBA_SRGB,
-    0, // BC4_R_UNORM,
-    0, // BC4_R_SNORM,
-    0, // BC5_RG_UNORM,
-    0, // BC5_RG_SNORM,
-    0, // BC6H_RGB_UFLOAT,
-    0, // BC6H_RGB_SFLOAT,
-    0, // BC7_RGBA_UNORM,
-    0, // BC7_RGBA_SRGB,
-
-    0, // D16_UNORM,
-    0, // D24_UNORM_S8_UINT,
-    0, // D32_SFLOAT,
-    0, // D32_SFLOAT_S8_UINT_X24,
-
-    0, // R24_UNORM_X8,
-    0, // X24_R8_UINT,
-    0, // X32_R8_UINT_X24,
-    0  // R32_SFLOAT_X8_X24,
-};
-
-constexpr VkImageCreateFlags GetImageCreateFlags(Format format) {
-    return IMAGE_CREATE_FLAGS[(size_t)format];
-}
-
 inline VkFormat GetVkFormat(Format format) {
     return (VkFormat)NRIFormatToVKFormat(format);
 }
@@ -353,20 +262,16 @@ constexpr VkPolygonMode GetPolygonMode(FillMode fillMode) {
     return POLYGON_MODES[(uint32_t)fillMode];
 }
 
-constexpr float GetDepthOffset(int32_t) {
-    return 0.0f; // TODO: implement correct conversion
-}
-
 constexpr std::array<VkCompareOp, (uint32_t)CompareFunc::MAX_NUM> COMPARE_OP = {
-    VK_COMPARE_OP_NEVER,            // NONE
+    VK_COMPARE_OP_ALWAYS,           // NONE
     VK_COMPARE_OP_ALWAYS,           // ALWAYS
     VK_COMPARE_OP_NEVER,            // NEVER
+    VK_COMPARE_OP_EQUAL,            // EQUAL
+    VK_COMPARE_OP_NOT_EQUAL,        // NOT_EQUAL
     VK_COMPARE_OP_LESS,             // LESS
     VK_COMPARE_OP_LESS_OR_EQUAL,    // LESS_EQUAL
-    VK_COMPARE_OP_EQUAL,            // EQUAL
-    VK_COMPARE_OP_GREATER_OR_EQUAL, // GREATER_EQUAL
     VK_COMPARE_OP_GREATER,          // GREATER
-    VK_COMPARE_OP_NOT_EQUAL,        // NOT_EQUAL
+    VK_COMPARE_OP_GREATER_OR_EQUAL, // GREATER_EQUAL
 };
 
 constexpr VkCompareOp GetCompareOp(CompareFunc compareFunc) {
@@ -675,11 +580,9 @@ constexpr VkCopyAccelerationStructureModeKHR GetCopyMode(CopyMode copyMode) {
 }
 
 void ConvertGeometryObjectSizesVK(
-    uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, uint32_t* primitiveNums, const GeometryObject* sourceObjects, uint32_t objectNum
-);
+    uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, uint32_t* primitiveNums, const GeometryObject* sourceObjects, uint32_t objectNum);
 void ConvertGeometryObjectsVK(
-    uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, VkAccelerationStructureBuildRangeInfoKHR* ranges, const GeometryObject* sourceObjects, uint32_t objectNum
-);
+    uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, VkAccelerationStructureBuildRangeInfoKHR* ranges, const GeometryObject* sourceObjects, uint32_t objectNum);
 
 constexpr std::array<TextureType, (uint32_t)TextureType::MAX_NUM> TEXTURE_TYPE_TABLE = {
     TextureType::TEXTURE_1D, // VK_IMAGE_TYPE_1D
