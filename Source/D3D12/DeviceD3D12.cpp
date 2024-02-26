@@ -161,11 +161,8 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc) {
 
     // Create indirect command signatures
     m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc));
-
-#ifdef NRI_USE_AGILITY_SDK
     if (m_Desc.isDispatchRaysIndirectSupported)
         m_DispatchRaysCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(DispatchRaysIndirectDesc));
-#endif
 
     return FillFunctionTable(m_CoreInterface);
 }
@@ -246,11 +243,8 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc) {
 
     // Create indirect command signatures
     m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc));
-
-#ifdef NRI_USE_AGILITY_SDK
     if (m_Desc.isDispatchRaysIndirectSupported)
         m_DispatchRaysCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(DispatchRaysIndirectDesc));
-#endif
 
     return FillFunctionTable(m_CoreInterface);
 }
@@ -413,6 +407,7 @@ void DeviceD3D12::FillDesc() {
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options5) failed, result = 0x%08X!", hr);
     m_Desc.isRaytracingSupported = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0;
+    m_Desc.isDispatchRaysIndirectSupported = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS6 options6 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &options6, sizeof(options6));
@@ -424,10 +419,9 @@ void DeviceD3D12::FillDesc() {
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options7) failed, result = 0x%08X!", hr);
     m_Desc.isMeshShaderSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
+    m_Desc.isDrawMeshTasksIndirectSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
 
 #ifdef NRI_USE_AGILITY_SDK
-    m_Desc.isDispatchRaysIndirectSupported = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1;
-
     // Minimum supported client: Windows 10 Build 20348 (or Agility SDK)
     D3D12_FEATURE_DATA_D3D12_OPTIONS8 options8 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS8, &options8, sizeof(options8));
@@ -439,7 +433,6 @@ void DeviceD3D12::FillDesc() {
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options9) failed, result = 0x%08X!", hr);
     m_Desc.isMeshShaderPipelineStatsSupported = options9.MeshShaderPipelineStatsSupported;
-    m_Desc.isDrawMeshTasksIndirectSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
 
     // Minimum supported client: Windows 11 Build 22000 (or Agility SDK)
     D3D12_FEATURE_DATA_D3D12_OPTIONS10 options10 = {};

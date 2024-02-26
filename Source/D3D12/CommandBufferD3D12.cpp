@@ -916,15 +916,10 @@ inline void CommandBufferD3D12::DispatchRays(const DispatchRaysDesc& dispatchRay
 }
 
 inline void CommandBufferD3D12::DispatchRaysIndirect(const Buffer& buffer, uint64_t offset) {
-    MaybeUnused(buffer);
-    MaybeUnused(offset);
-
-#ifdef NRI_USE_AGILITY_SDK
     static_assert(sizeof(DispatchRaysIndirectDesc) == sizeof(D3D12_DISPATCH_RAYS_DESC));
 
     if (m_Version >= 4)
         m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDispatchRaysCommandSignature(), 1, (BufferD3D12&)buffer, offset, nullptr, 0);
-#endif
 }
 
 inline void CommandBufferD3D12::DrawMeshTasks(const DrawMeshTasksDesc& drawMeshTasksDesc) {
@@ -933,17 +928,10 @@ inline void CommandBufferD3D12::DrawMeshTasks(const DrawMeshTasksDesc& drawMeshT
 }
 
 inline void CommandBufferD3D12::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    MaybeUnused(buffer);
-    MaybeUnused(offset);
-    MaybeUnused(drawNum);
-    MaybeUnused(stride);
-
-#ifdef NRI_USE_AGILITY_SDK
     static_assert(sizeof(DrawMeshTasksDesc) == sizeof(D3D12_DISPATCH_MESH_ARGUMENTS));
 
     if (m_Version >= 6)
         m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDrawMeshCommandSignature(stride), drawNum, (BufferD3D12&)buffer, offset, nullptr, 0);
-#endif
 }
 
 #include "CommandBufferD3D12.hpp"
