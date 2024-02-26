@@ -156,12 +156,16 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc) {
     if (result != Result::SUCCESS)
         return result;
 
-    // Create indirect command signatures
-    m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc));
-    m_DispatchRaysCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(DispatchRaysIndirectDesc));
-
     // Fill desc
     FillDesc();
+
+    // Create indirect command signatures
+    m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc));
+
+#ifdef NRI_USE_AGILITY_SDK
+    if (m_Desc.isDispatchRaysIndirectSupported)
+        m_DispatchRaysCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(DispatchRaysIndirectDesc));
+#endif
 
     return FillFunctionTable(m_CoreInterface);
 }
@@ -237,12 +241,16 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc) {
     if (result != Result::SUCCESS)
         return result;
 
-    // Create indirect command signatures
-    m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc));
-    m_DispatchRaysCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(DispatchRaysIndirectDesc));
-
     // Fill desc
     FillDesc();
+
+    // Create indirect command signatures
+    m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc));
+
+#ifdef NRI_USE_AGILITY_SDK
+    if (m_Desc.isDispatchRaysIndirectSupported)
+        m_DispatchRaysCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(DispatchRaysIndirectDesc));
+#endif
 
     return FillFunctionTable(m_CoreInterface);
 }
