@@ -81,7 +81,7 @@ D3D11_STENCIL_OP nri::GetD3D11StencilOpFromStencilFunc(StencilFunc stencilFunc) 
 }
 
 constexpr std::array<D3D11_COMPARISON_FUNC, (size_t)CompareFunc::MAX_NUM> COMPARE_FUNC_TABLE = {
-    D3D11_COMPARISON_ALWAYS,        // NONE,
+    D3D11_COMPARISON_FUNC(0),       // NONE,
     D3D11_COMPARISON_ALWAYS,        // ALWAYS,
     D3D11_COMPARISON_NEVER,         // NEVER,
     D3D11_COMPARISON_EQUAL,         // EQUAL,

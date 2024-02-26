@@ -263,7 +263,7 @@ constexpr VkPolygonMode GetPolygonMode(FillMode fillMode) {
 }
 
 constexpr std::array<VkCompareOp, (uint32_t)CompareFunc::MAX_NUM> COMPARE_OP = {
-    VK_COMPARE_OP_ALWAYS,           // NONE
+    VK_COMPARE_OP_NEVER,            // NONE
     VK_COMPARE_OP_ALWAYS,           // ALWAYS
     VK_COMPARE_OP_NEVER,            // NEVER
     VK_COMPARE_OP_EQUAL,            // EQUAL
