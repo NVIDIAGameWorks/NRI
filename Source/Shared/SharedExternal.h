@@ -73,7 +73,7 @@ constexpr void MaybeUnused([[maybe_unused]] const Args&... args) {
 }
 
 constexpr uint32_t GetNodeMask(uint32_t mask) {
-    return mask == nri::ALL_NODES ? 0xff : mask;
+    return mask == nri::ALL_NODES ? 0xFF : mask;
 }
 
 inline nri::Vendor GetVendorFromID(uint32_t vendorID) {

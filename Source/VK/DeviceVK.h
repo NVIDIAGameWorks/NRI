@@ -156,6 +156,7 @@ struct DeviceVK final : public DeviceBase {
   public:
     bool m_IsDescriptorIndexingSupported = false;
     bool m_IsDeviceAddressSupported = false;
+    bool m_IsSwapChainMutableFormatSupported = false;
 
   private:
     Vector<VkPhysicalDevice> m_PhysicalDevices;

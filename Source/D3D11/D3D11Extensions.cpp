@@ -12,7 +12,7 @@ D3D11Extensions::~D3D11Extensions() {
 
     if (m_AGSContext) {
         if (!m_IsImported)
-            m_AGS.DeInit(m_AGSContext);
+            m_AGS.Deinitialize(m_AGSContext);
         m_AGSContext = nullptr;
 
         FreeLibrary(m_AGSLibrary);
@@ -49,15 +49,15 @@ void D3D11Extensions::InitializeAMDExt(const nri::DeviceBase* deviceBase, AGSCon
         return;
     }
 
-    m_AGS.Init = (PFN_agsInit)GetProcAddress(m_AGSLibrary, "agsInit");
-    m_AGS.DeInit = (PFN_agsDeInit)GetProcAddress(m_AGSLibrary, "agsDeInit");
-    m_AGS.CreateDevice = (PFN_agsDriverExtensionsDX11_CreateDevice)GetProcAddress(m_AGSLibrary, "agsDriverExtensionsDX11_CreateDevice");
-    m_AGS.BeginUAVOverlap = (PFN_agsDriverExtensionsDX11_BeginUAVOverlap)GetProcAddress(m_AGSLibrary, "agsDriverExtensionsDX11_BeginUAVOverlap");
-    m_AGS.EndUAVOverlap = (PFN_agsDriverExtensionsDX11_EndUAVOverlap)GetProcAddress(m_AGSLibrary, "agsDriverExtensionsDX11_EndUAVOverlap");
+    m_AGS.Initialize = (AGS_INITIALIZE)GetProcAddress(m_AGSLibrary, "agsInitialize");
+    m_AGS.Deinitialize = (AGS_DEINITIALIZE)GetProcAddress(m_AGSLibrary, "agsDeInitialize");
+    m_AGS.CreateDevice = (AGS_DRIVEREXTENSIONSDX11_CREATEDEVICE)GetProcAddress(m_AGSLibrary, "agsDriverExtensionsDX11_CreateDevice");
+    m_AGS.BeginUAVOverlap = (AGS_DRIVEREXTENSIONSDX11_BEGINUAVOVERLAP)GetProcAddress(m_AGSLibrary, "agsDriverExtensionsDX11_BeginUAVOverlap");
+    m_AGS.EndUAVOverlap = (AGS_DRIVEREXTENSIONSDX11_ENDUAVOVERLAP)GetProcAddress(m_AGSLibrary, "agsDriverExtensionsDX11_EndUAVOverlap");
     m_AGS.MultiDrawIndexedInstancedIndirect =
-        (PFN_agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect)GetProcAddress(m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect");
-    m_AGS.SetDepthBounds = (PFN_agsDriverExtensionsDX11_SetDepthBounds)GetProcAddress(m_AGSLibrary, "agsDriverExtensionsDX11_SetDepthBounds");
-    m_AGS.MultiDrawInstancedIndirect = (PFN_agsDriverExtensionsDX11_MultiDrawInstancedIndirect)GetProcAddress(m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawInstancedIndirect");
+        (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECT)GetProcAddress(m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect");
+    m_AGS.SetDepthBounds = (AGS_DRIVEREXTENSIONSDX11_SETDEPTHBOUNDS)GetProcAddress(m_AGSLibrary, "agsDriverExtensionsDX11_SetDepthBounds");
+    m_AGS.MultiDrawInstancedIndirect = (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINSTANCEDINDIRECT)GetProcAddress(m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawInstancedIndirect");
 
     const void** functionArray = (const void**)&m_AGS;
     const size_t functionArraySize = sizeof(AGSFunctionTable) / sizeof(void*);
@@ -73,8 +73,10 @@ void D3D11Extensions::InitializeAMDExt(const nri::DeviceBase* deviceBase, AGSCon
         return;
     }
 
+    AGSGPUInfo gpuInfo = {};
+    AGSConfiguration config = {};
     if (!agsContext) {
-        const AGSReturnCode result = m_AGS.Init(&agsContext, nullptr, nullptr);
+        const AGSReturnCode result = m_AGS.Initialize(AGS_CURRENT_VERSION, &config, &agsContext, &gpuInfo);
         if (result != AGS_SUCCESS || !agsContext) {
             REPORT_ERROR(m_DeviceBase, "Failed to initialize AMDAGS: %d", (int32_t)result);
             FreeLibrary(m_AGSLibrary);
@@ -110,8 +112,7 @@ void D3D11Extensions::WaitForDrain(ID3D11DeviceContext* deviceContext, uint32_t 
         const NvAPI_Status res = NvAPI_D3D11_BeginUAVOverlapEx(deviceContext, flags);
         RETURN_ON_FAILURE(m_DeviceBase, res == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_BeginUAVOverlap() - FAILED!");
     } else if (m_AGSContext) {
-        REPORT_WARNING(m_DeviceBase, "Verify that this code actually works on AMD!");
-
+        // TODO: Verify that this code actually works on AMD!
         const AGSReturnCode res1 = m_AGS.EndUAVOverlap(m_AGSContext, deviceContext);
         RETURN_ON_FAILURE(m_DeviceBase, res1 == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_EndUAVOverlap() - FAILED!");
         const AGSReturnCode res2 = m_AGS.BeginUAVOverlap(m_AGSContext, deviceContext);
@@ -132,12 +133,12 @@ void D3D11Extensions::SetDepthBounds(ID3D11DeviceContext* deviceContext, float m
 }
 
 void D3D11Extensions::MultiDrawIndirect(ID3D11DeviceContext* deviceContext, ID3D11Buffer* buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) const {
-    if (m_IsNvAPIAvailable) {
+    if (m_IsNvAPIAvailable && drawNum > 1) {
         const NvAPI_Status status = NvAPI_D3D11_MultiDrawInstancedIndirect(deviceContext, drawNum, buffer, (uint32_t)offset, stride);
         RETURN_ON_FAILURE(m_DeviceBase, status == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_MultiDrawInstancedIndirect() - FAILED!");
-    } else if (m_AGSContext) {
+    } else if (m_AGSContext && drawNum > 1) {
         const AGSReturnCode res = m_AGS.MultiDrawInstancedIndirect(m_AGSContext, deviceContext, drawNum, buffer, (uint32_t)offset, stride);
-        RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect() - FAILED!");
+        RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_MultiDrawInstancedIndirect() - FAILED!");
     } else {
         for (uint32_t i = 0; i < drawNum; i++) {
             deviceContext->DrawInstancedIndirect(buffer, (uint32_t)offset);
@@ -147,10 +148,10 @@ void D3D11Extensions::MultiDrawIndirect(ID3D11DeviceContext* deviceContext, ID3D
 }
 
 void D3D11Extensions::MultiDrawIndexedIndirect(ID3D11DeviceContext* deviceContext, ID3D11Buffer* buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) const {
-    if (m_IsNvAPIAvailable) {
+    if (m_IsNvAPIAvailable && drawNum > 1) {
         const NvAPI_Status status = NvAPI_D3D11_MultiDrawIndexedInstancedIndirect(deviceContext, drawNum, buffer, (uint32_t)offset, stride);
-        RETURN_ON_FAILURE(m_DeviceBase, status == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_MultiDrawInstancedIndirect() - FAILED!");
-    } else if (m_AGSContext) {
+        RETURN_ON_FAILURE(m_DeviceBase, status == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_MultiDrawIndexedInstancedIndirect() - FAILED!");
+    } else if (m_AGSContext && drawNum > 1) {
         const AGSReturnCode res = m_AGS.MultiDrawIndexedInstancedIndirect(m_AGSContext, deviceContext, drawNum, buffer, (uint32_t)offset, stride);
         RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect() - FAILED!");
     } else {
@@ -161,8 +162,8 @@ void D3D11Extensions::MultiDrawIndexedIndirect(ID3D11DeviceContext* deviceContex
     }
 }
 
-void D3D11Extensions::CreateDeviceUsingAGS(IDXGIAdapter* adapter, const D3D_FEATURE_LEVEL* featureLevels, const size_t featureLevelNum, UINT flags, AGSDX11ReturnedParams& params) {
-    CHECK(m_AGSContext != nullptr, "Can't create a device using AGS: AGS is not available.");
+void D3D11Extensions::CreateDeviceUsingAGS(IDXGIAdapter* adapter, const D3D_FEATURE_LEVEL* featureLevels, size_t featureLevelNum, UINT flags, AGSDX11ReturnedParams& params) {
+    CHECK(m_AGSContext != nullptr, "AMDAGS is not available");
 
     AGSDX11DeviceCreationParams deviceCreationParams = {};
     deviceCreationParams.pAdapter = adapter;
@@ -173,7 +174,7 @@ void D3D11Extensions::CreateDeviceUsingAGS(IDXGIAdapter* adapter, const D3D_FEAT
     deviceCreationParams.SDKVersion = D3D11_SDK_VERSION;
 
     AGSDX11ExtensionParams extensionsParams = {};
-    extensionsParams.uavSlot = 63; // TODO: move to a header, share with NVAPI
+    extensionsParams.uavSlot = SHADER_EXT_UAV_SLOT;
 
     AGSReturnCode result = m_AGS.CreateDevice(m_AGSContext, &deviceCreationParams, &extensionsParams, &params);
     if (flags != 0 && result != AGS_SUCCESS) {

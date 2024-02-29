@@ -137,7 +137,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     // Device
     AGSDX11ReturnedParams params = {};
     if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA) {
-        // Tricky part: AGSDX11ReturnedParams is used to properly propagate depthBoundsTest support
+        // Tricky part: AGSDX11ReturnedParams struct is used to properly propagate depthBoundsTest support
         params.extensionsSupported.depthBoundsDeferredContexts = true;
         params.extensionsSupported.depthBoundsTest = true;
         params.extensionsSupported.uavOverlap = true;
@@ -149,7 +149,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         const UINT flags = deviceCreationDesc.enableAPIValidation ? D3D11_CREATE_DEVICE_DEBUG : 0;
         const std::array<D3D_FEATURE_LEVEL, 2> levels = {D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
 
-        if (m_Ext.IsAGSAvailable()) {
+        if (m_Ext.HasAGS()) {
             m_Ext.CreateDeviceUsingAGS(m_Adapter, levels.data(), levels.size(), flags, params);
 
             device = params.pDevice;
@@ -178,6 +178,10 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     m_ImmediateContextVersion = QueryLatestDeviceContext(immediateContext, m_ImmediateContext);
     REPORT_INFO(this, "Using ID3D11DeviceContext%u...", m_ImmediateContextVersion);
 
+    // Set ShaderExt UAV slot
+    if (m_Ext.HasNVAPI())
+        NvAPI_D3D11_SetNvShaderExtnSlot(m_Device, SHADER_EXT_UAV_SLOT);
+
     // Skip UAV barriers by default on the immediate context
     GetExt()->BeginUAVOverlap(m_ImmediateContext);
 
@@ -187,7 +191,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     if (FAILED(hr) || !threadingCaps.DriverConcurrentCreates)
         REPORT_WARNING(this, "Concurrent resource creation is not supported by the driver!");
 
-    m_IsDeferredContextEmulated = !m_Ext.IsNvAPIAvailable() || deviceCreationDesc.enableD3D11CommandBufferEmulation;
+    m_IsDeferredContextEmulated = !m_Ext.HasNVAPI() || deviceCreationDesc.enableD3D11CommandBufferEmulation;
     if (!threadingCaps.DriverCommandLists) {
         REPORT_WARNING(this, "Deferred Contexts are not supported by the driver and will be emulated!");
         m_IsDeferredContextEmulated = true;

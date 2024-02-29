@@ -25,8 +25,8 @@ Non-goals:
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 122
-#define NRI_VERSION_DATE "26 February 2024"
+#define NRI_VERSION_MINOR 123
+#define NRI_VERSION_DATE "29 February 2024"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -105,7 +105,7 @@ NRI_STRUCT(CoreInterface)
         void (NRI_CALL *CmdSetPipeline)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Pipeline) pipeline);
         void (NRI_CALL *CmdSetConstants)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t pushConstantIndex, const void* data, uint32_t size);
 
-        // Barrier (can be used inside "Graphics" but with limited functionality)
+        // Barrier (can be used inside "Graphics" with limited functionality)
         void (NRI_CALL *CmdBarrier)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(BarrierGroupDesc) barrierGroupDesc);
 
         // Mandatory state, if enabled (can be set only once)
@@ -155,7 +155,7 @@ NRI_STRUCT(CoreInterface)
         void (NRI_CALL *CmdClearStorageTexture)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(ClearStorageTextureDesc) clearDesc);
 
         // Query
-        void (NRI_CALL *CmdResetQueries)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(QueryPool) queryPool, uint32_t offset, uint32_t num); // TODO: delete
+        void (NRI_CALL *CmdResetQueries)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(QueryPool) queryPool, uint32_t offset, uint32_t num);
         void (NRI_CALL *CmdBeginQuery)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(QueryPool) queryPool, uint32_t offset);
         void (NRI_CALL *CmdEndQuery)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(QueryPool) queryPool, uint32_t offset);
         void (NRI_CALL *CmdCopyQueries)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(QueryPool) queryPool, uint32_t offset, uint32_t num, NRI_NAME_REF(Buffer) dstBuffer, uint64_t dstOffset);

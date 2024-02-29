@@ -8,6 +8,44 @@
 
 using namespace nri;
 
+constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits bufferUsageBits, uint32_t structureStride) {
+    VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+    if (bufferUsageBits & BufferUsageBits::VERTEX_BUFFER)
+        flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+    if (bufferUsageBits & BufferUsageBits::INDEX_BUFFER)
+        flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+
+    if (bufferUsageBits & BufferUsageBits::CONSTANT_BUFFER)
+        flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+
+    if (bufferUsageBits & BufferUsageBits::ARGUMENT_BUFFER)
+        flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+
+    if (bufferUsageBits & BufferUsageBits::RAY_TRACING_BUFFER) // TODO: add more usage bits?
+        flags |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+    if (bufferUsageBits & BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_READ)
+        flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+
+    if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE) {
+        if (structureStride == 0)
+            flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+        else
+            flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    }
+
+    if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE_STORAGE) {
+        if (structureStride == 0 && (bufferUsageBits & BufferUsageBits::RAY_TRACING_BUFFER) == 0)
+            flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+        else
+            flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    }
+
+    return flags;
+}
+
 BufferVK::~BufferVK() {
     const auto& vk = m_Device.GetDispatchTable();
 
@@ -39,14 +77,14 @@ Result BufferVK::Create(const BufferDesc& bufferDesc) {
     info.queueFamilyIndexCount = (uint32_t)queueIndices.size();
     info.pQueueFamilyIndices = queueIndices.data();
 
+    if (m_Device.m_IsDeviceAddressSupported)
+        info.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
     const auto& vk = m_Device.GetDispatchTable();
-
     const uint32_t nodeMask = GetNodeMask(bufferDesc.nodeMask);
-
     for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
         if ((1 << i) & nodeMask) {
             const VkResult result = vk.CreateBuffer(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handles[i]);
-
             RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't create a buffer: vkCreateBuffer returned %d.", (int32_t)result);
         }
     }

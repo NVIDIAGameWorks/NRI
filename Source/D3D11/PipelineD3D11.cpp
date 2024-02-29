@@ -6,10 +6,6 @@
 
 using namespace nri;
 
-PipelineD3D11::~PipelineD3D11() {
-    Deallocate(m_Device.GetStdAllocator(), m_RasterizerStateExDesc);
-}
-
 Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
     const ShaderDesc* vertexShader = nullptr;
     HRESULT hr;
@@ -95,6 +91,7 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
         const RasterizationDesc& r = pipelineDesc.rasterization;
 
         D3D11_RASTERIZER_DESC2 rasterizerDesc = {};
+        // D3D11_RASTERIZER_DESC
         rasterizerDesc.FillMode = r.fillMode == FillMode::SOLID ? D3D11_FILL_SOLID : D3D11_FILL_WIREFRAME;
         rasterizerDesc.CullMode = GetD3D11CullModeFromCullMode(r.cullMode);
         rasterizerDesc.FrontCounterClockwise = r.frontCounterClockwise;
@@ -104,14 +101,19 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
         rasterizerDesc.DepthClipEnable = r.depthClamp;
         rasterizerDesc.ScissorEnable = TRUE;
         rasterizerDesc.AntialiasedLineEnable = r.antialiasedLines;
-        rasterizerDesc.ConservativeRaster = r.conservativeRasterization ? D3D11_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D11_CONSERVATIVE_RASTERIZATION_MODE_OFF;
         rasterizerDesc.MultisampleEnable = sampleNum > 1 ? TRUE : FALSE;
+        // D3D11_RASTERIZER_DESC1
         rasterizerDesc.ForcedSampleCount = sampleNum;
+        // D3D11_RASTERIZER_DESC2
+        rasterizerDesc.ConservativeRaster = r.conservativeRasterization ? D3D11_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D11_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
         RasterizerState rasterizerState = {};
         if (m_Device.GetVersion() >= 3) {
             hr = m_Device->CreateRasterizerState2(&rasterizerDesc, &rasterizerState.ptr);
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device3::CreateRasterizerState2()");
+        } else if (m_Device.GetVersion() >= 1) {
+            hr = m_Device->CreateRasterizerState1((D3D11_RASTERIZER_DESC1*)&rasterizerDesc, (ID3D11RasterizerState1**)&rasterizerState.ptr);
+            RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device3::CreateRasterizerState1()");
         } else {
             hr = m_Device->CreateRasterizerState((D3D11_RASTERIZER_DESC*)&rasterizerDesc, (ID3D11RasterizerState**)&rasterizerState.ptr);
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateRasterizerState()");
@@ -119,12 +121,12 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
         m_RasterizerStates.push_back(rasterizerState);
 
         // Ex
-        m_RasterizerStateExDesc = Allocate<NvAPI_D3D11_RASTERIZER_DESC_EX>(m_Device.GetStdAllocator());
-        memset(m_RasterizerStateExDesc, 0, sizeof(*m_RasterizerStateExDesc));
-        memcpy(m_RasterizerStateExDesc, &rasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
-        m_RasterizerStateExDesc->ConservativeRasterEnable = r.conservativeRasterization;
-        m_RasterizerStateExDesc->ProgrammableSamplePositionsEnable = true;
-        m_RasterizerStateExDesc->SampleCount = sampleNum;
+        memcpy(&m_RasterizerStateExDesc, &rasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
+        m_RasterizerStateExDesc.ForcedSampleCount = sampleNum;
+        m_RasterizerStateExDesc.ProgrammableSamplePositionsEnable = true;
+        m_RasterizerStateExDesc.SampleCount = sampleNum;
+        m_RasterizerStateExDesc.ConservativeRasterEnable = r.conservativeRasterization;
+        m_RasterizerStateExDesc.TargetIndepentRasterWithDepth = true;
     }
 
     { // Depth-stencil
@@ -227,14 +229,14 @@ void PipelineD3D11::ChangeSamplePositions(ID3D11DeviceContextBest* deferredConte
         RasterizerState newState = {};
         newState.samplePositionHash = samplePositionState.positionHash;
 
-        m_RasterizerStateExDesc->InterleavedSamplingEnable = samplePositionState.positionNum > m_RasterizerStateExDesc->SampleCount;
+        m_RasterizerStateExDesc.InterleavedSamplingEnable = samplePositionState.positionNum > m_RasterizerStateExDesc.SampleCount;
         for (uint32_t j = 0; j < samplePositionState.positionNum; j++) {
-            m_RasterizerStateExDesc->SamplePositionsX[j] = samplePositionState.positions[j].x + 8;
-            m_RasterizerStateExDesc->SamplePositionsY[j] = samplePositionState.positions[j].y + 8;
+            m_RasterizerStateExDesc.SamplePositionsX[j] = samplePositionState.positions[j].x + 8;
+            m_RasterizerStateExDesc.SamplePositionsY[j] = samplePositionState.positions[j].y + 8;
         }
 
-        if (m_Device.GetExt()->IsNvAPIAvailable()) {
-            NvAPI_Status result = NvAPI_D3D11_CreateRasterizerState(m_Device.GetNativeObject(), m_RasterizerStateExDesc, (ID3D11RasterizerState**)&newState.ptr);
+        if (m_Device.GetExt()->HasNVAPI()) {
+            NvAPI_Status result = NvAPI_D3D11_CreateRasterizerState(m_Device.GetNativeObject(), &m_RasterizerStateExDesc, (ID3D11RasterizerState**)&newState.ptr);
             if (result != NVAPI_OK)
                 REPORT_ERROR(&m_Device, "NvAPI_D3D11_CreateRasterizerState() - FAILED!");
         }

@@ -189,13 +189,14 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         desiredPresentMode = presentModes[0];
     }
 
+    // Swap chain
     const uint32_t familyIndex = m_CommandQueue->GetFamilyIndex();
     const uint32_t minImageNum = std::max<uint32_t>(capabilites.minImageCount, swapChainDesc.textureNum);
 
-    const VkSwapchainCreateInfoKHR swapchainInfo = {
+    VkSwapchainCreateInfoKHR swapchainInfo = {
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         nullptr,
-        (VkSwapchainCreateFlagsKHR)0,
+        m_Device.m_IsSwapChainMutableFormatSupported ? VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR : (VkSwapchainCreateFlagsKHR)0,
         m_Surface,
         minImageNum,
         surfaceFormat.format,
@@ -213,9 +214,36 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         VK_NULL_HANDLE,
     };
 
+    // Swap chain: mutable formats
+    VkFormat mutableFormats[2];
+    uint32_t mutableFormatNum = 0;
+    mutableFormats[mutableFormatNum++] = surfaceFormat.format;
+    switch (surfaceFormat.format) {
+        case VK_FORMAT_R8G8B8A8_UNORM:
+            mutableFormats[mutableFormatNum++] = VK_FORMAT_R8G8B8A8_SRGB;
+            break;
+        case VK_FORMAT_R8G8B8A8_SRGB:
+            mutableFormats[mutableFormatNum++] = VK_FORMAT_R8G8B8A8_UNORM;
+            break;
+        case VK_FORMAT_B8G8R8A8_UNORM:
+            mutableFormats[mutableFormatNum++] = VK_FORMAT_B8G8R8A8_SRGB;
+            break;
+        case VK_FORMAT_B8G8R8A8_SRGB:
+            mutableFormats[mutableFormatNum++] = VK_FORMAT_B8G8R8A8_UNORM;
+            break;
+    }
+
+    VkImageFormatListCreateInfo imageFormatListCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO};
+    imageFormatListCreateInfo.pViewFormats = mutableFormats;
+    imageFormatListCreateInfo.viewFormatCount = mutableFormatNum;
+
+    if (m_Device.m_IsSwapChainMutableFormatSupported)
+        swapchainInfo.pNext = &imageFormatListCreateInfo;
+
     result = vk.CreateSwapchainKHR(m_Device, &swapchainInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateSwapchainKHR returned %d", (int32_t)result);
 
+    // Swap chain images
     uint32_t imageNum = 0;
     vk.GetSwapchainImagesKHR(m_Device, m_Handle, &imageNum, nullptr);
 

@@ -190,7 +190,6 @@ void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t 
 
         if (m_Version >= 1) {
             // https://learn.microsoft.com/en-us/windows/win32/api/d3d11_1/nf-d3d11_1-id3d11devicecontext1-clearview
-
             FLOAT color[4] = {};
             for (uint32_t i = 0; i < clearDescNum; i++) {
                 const ClearDesc& clearDesc = clearDescs[i];
@@ -204,7 +203,7 @@ void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t 
                         m_DeferredContext->ClearView(m_DepthStencil, color, rectsD3D, rectNum);
                         break;
                     case AttachmentContentType::STENCIL:
-                        color[0] = clearDesc.value.depthStencil.stencil; // TODO: should work, no?
+                        color[0] = clearDesc.value.depthStencil.stencil;
                         m_DeferredContext->ClearView(m_DepthStencil, color, rectsD3D, rectNum);
                         break;
                 }

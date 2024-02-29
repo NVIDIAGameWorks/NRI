@@ -11,6 +11,8 @@ struct AGSContext;
 struct ID3D11DeviceContext4;
 typedef ID3D11DeviceContext4 ID3D11DeviceContextBest;
 
+#define SHADER_EXT_UAV_SLOT 63 // TODO: D3D 11.1 assumed
+
 namespace nri {
 
 struct D3D11Extensions;

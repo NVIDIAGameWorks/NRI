@@ -26,46 +26,6 @@ constexpr VkImageLayout GetImageLayout(Layout layout) {
     return LAYOUT_TABLE[(uint32_t)layout];
 }
 
-constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits bufferUsageBits, uint32_t structureStride) {
-    VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-
-    if (bufferUsageBits & BufferUsageBits::VERTEX_BUFFER)
-        flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-
-    if (bufferUsageBits & BufferUsageBits::INDEX_BUFFER)
-        flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-
-    if (bufferUsageBits & BufferUsageBits::CONSTANT_BUFFER)
-        flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-
-    if (bufferUsageBits & BufferUsageBits::ARGUMENT_BUFFER)
-        flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-
-    // TODO: add more usage bits
-    if (bufferUsageBits & BufferUsageBits::RAY_TRACING_BUFFER) {
-        flags |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    }
-
-    if (bufferUsageBits & BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_READ)
-        flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
-
-    if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE) {
-        if (structureStride == 0)
-            flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-        else
-            flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    }
-
-    if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE_STORAGE) {
-        if (structureStride == 0 && (bufferUsageBits & BufferUsageBits::RAY_TRACING_BUFFER) == 0)
-            flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-        else
-            flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    }
-
-    return flags;
-}
-
 constexpr std::array<VkDescriptorType, (uint32_t)DescriptorType::MAX_NUM> DESCRIPTOR_TYPES = {
     VK_DESCRIPTOR_TYPE_SAMPLER,                    // SAMPLER
     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             // CONSTANT_BUFFER

@@ -3,39 +3,27 @@
 #include "amdags/ags_lib/inc/amd_ags.h"
 #include "nvapi/nvapi.h"
 
-typedef AGSReturnCode (*PFN_agsInit)(AGSContext** agsContext, const AGSConfiguration* config, AGSGPUInfo* gpuInfo);
-typedef AGSReturnCode (*PFN_agsDeInit)(AGSContext* agsContext);
-typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_CreateDevice)(
-    AGSContext* agsContext, const AGSDX11DeviceCreationParams* creationParams, const AGSDX11ExtensionParams* extensionParams, AGSDX11ReturnedParams* returnedParams);
-typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_BeginUAVOverlap)(AGSContext* agsContext, ID3D11DeviceContext* deviceContext);
-typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_EndUAVOverlap)(AGSContext* agsContext, ID3D11DeviceContext* deviceContext);
-typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect)(AGSContext* agsContext, ID3D11DeviceContext* deviceContext, unsigned int drawCount,
-    ID3D11Buffer* pBufferForArgs, unsigned int alignedByteOffsetForArgs, unsigned int byteStrideForArgs);
-typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_SetDepthBounds)(AGSContext* agsContext, ID3D11DeviceContext* deviceContext, bool enabled, float minDepth, float maxDepth);
-typedef AGSReturnCode (*PFN_agsDriverExtensionsDX11_MultiDrawInstancedIndirect)(AGSContext* agsContext, ID3D11DeviceContext* deviceContext, unsigned int drawCount,
-    ID3D11Buffer* pBufferForArgs, unsigned int alignedByteOffsetForArgs, unsigned int byteStrideForArgs);
-
 namespace nri {
 
 struct AGSFunctionTable {
-    PFN_agsInit Init;
-    PFN_agsDeInit DeInit;
-    PFN_agsDriverExtensionsDX11_CreateDevice CreateDevice;
-    PFN_agsDriverExtensionsDX11_BeginUAVOverlap BeginUAVOverlap;
-    PFN_agsDriverExtensionsDX11_EndUAVOverlap EndUAVOverlap;
-    PFN_agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect MultiDrawIndexedInstancedIndirect;
-    PFN_agsDriverExtensionsDX11_SetDepthBounds SetDepthBounds;
-    PFN_agsDriverExtensionsDX11_MultiDrawInstancedIndirect MultiDrawInstancedIndirect;
+    AGS_INITIALIZE Initialize;
+    AGS_DEINITIALIZE Deinitialize;
+    AGS_DRIVEREXTENSIONSDX11_CREATEDEVICE CreateDevice;
+    AGS_DRIVEREXTENSIONSDX11_BEGINUAVOVERLAP BeginUAVOverlap;
+    AGS_DRIVEREXTENSIONSDX11_ENDUAVOVERLAP EndUAVOverlap;
+    AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECT MultiDrawIndexedInstancedIndirect;
+    AGS_DRIVEREXTENSIONSDX11_SETDEPTHBOUNDS SetDepthBounds;
+    AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINSTANCEDINDIRECT MultiDrawInstancedIndirect;
 };
 
 struct D3D11Extensions {
     ~D3D11Extensions();
 
-    inline bool IsNvAPIAvailable() const {
+    inline bool HasNVAPI() const {
         return m_IsNvAPIAvailable;
     }
 
-    inline bool IsAGSAvailable() const {
+    inline bool HasAGS() const {
         return m_AGSContext != nullptr;
     }
 
@@ -49,7 +37,7 @@ struct D3D11Extensions {
     void MultiDrawIndirect(ID3D11DeviceContext* deviceContext, ID3D11Buffer* buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) const;
     void MultiDrawIndexedIndirect(ID3D11DeviceContext* deviceContext, ID3D11Buffer* buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) const;
 
-    void CreateDeviceUsingAGS(IDXGIAdapter* adapter, const D3D_FEATURE_LEVEL* featureLevels, const size_t featureLevelNum, UINT flags, AGSDX11ReturnedParams& params);
+    void CreateDeviceUsingAGS(IDXGIAdapter* adapter, const D3D_FEATURE_LEVEL* featureLevels, size_t featureLevelNum, UINT flags, AGSDX11ReturnedParams& params);
 
     const nri::DeviceBase* m_DeviceBase = nullptr;
     AGSContext* m_AGSContext = nullptr;

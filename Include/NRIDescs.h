@@ -1273,7 +1273,7 @@ NRI_STRUCT(DrawDesc)
 {
     uint32_t vertexNum;
     uint32_t instanceNum;
-    uint32_t baseVertex; // vertex buffer offset = offset + baseVertex * stride
+    uint32_t baseVertex; // vertex buffer offset = CmdSetVertexBuffers.offset + baseVertex * VertexStreamDesc::stride
     uint32_t baseInstance;
 };
 
@@ -1281,7 +1281,7 @@ NRI_STRUCT(DrawIndexedDesc)
 {
     uint32_t indexNum;
     uint32_t instanceNum;
-    uint32_t baseIndex; // index buffer offset = offset + baseIndex * sizeof(index)
+    uint32_t baseIndex; // index buffer offset = CmdSetIndexBuffer.offset + baseIndex * sizeof(CmdSetIndexBuffer.indexType)
     int32_t baseVertex; // index += baseVertex
     uint32_t baseInstance;
 };

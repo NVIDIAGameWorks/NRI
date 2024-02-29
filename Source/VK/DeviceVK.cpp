@@ -180,11 +180,8 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     for (const VkExtensionProperties& props : supportedExts)
         REPORT_INFO(this, "    %s (v%u)", props.extensionName, props.specVersion);
 
-    // Mandatory // TODO: review
+    // Mandatory
     desiredDeviceExts.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
-
-    if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, supportedExts))
-        desiredDeviceExts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
 #ifdef __APPLE__
     if (IsExtensionSupported(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, supportedExts))
@@ -194,7 +191,13 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
         desiredDeviceExts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
 #endif
 
-    // Optional (KHR, not in core)
+    // Optional (KHR)
+    if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME);
+
     if (IsExtensionSupported(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 
@@ -596,11 +599,13 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
 
         m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevices.front(), &props);
 
-        // Fill
-        const VkPhysicalDeviceLimits& limits = props.properties.limits;
-
+        // Internal features
         m_IsDescriptorIndexingSupported = features12.descriptorIndexing ? true : false;
         m_IsDeviceAddressSupported = features12.bufferDeviceAddress ? true : false;
+        m_IsSwapChainMutableFormatSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, desiredDeviceExts);
+
+        // Fill
+        const VkPhysicalDeviceLimits& limits = props.properties.limits;
 
         m_Desc.viewportMaxNum = limits.maxViewports;
         m_Desc.viewportSubPixelBits = limits.viewportSubPixelBits;

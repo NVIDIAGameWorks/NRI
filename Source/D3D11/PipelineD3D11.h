@@ -19,6 +19,9 @@ struct PipelineD3D11 {
     inline PipelineD3D11(DeviceD3D11& device) : m_Device(device), m_InputAssemplyStrides(device.GetStdAllocator()), m_RasterizerStates(device.GetStdAllocator()) {
     }
 
+    inline ~PipelineD3D11() {
+    }
+
     inline DeviceD3D11& GetDevice() const {
         return m_Device;
     }
@@ -26,8 +29,6 @@ struct PipelineD3D11 {
     inline uint32_t GetInputAssemblyStride(uint32_t bindingSlot) const {
         return m_InputAssemplyStrides[bindingSlot];
     }
-
-    ~PipelineD3D11();
 
     Result Create(const GraphicsPipelineDesc& pipelineDesc);
     Result Create(const ComputePipelineDesc& pipelineDesc);
@@ -64,7 +65,7 @@ struct PipelineD3D11 {
     ComPtr<ID3D11InputLayout> m_InputLayout;
     ComPtr<ID3D11DepthStencilState> m_DepthStencilState;
     ComPtr<ID3D11BlendState1> m_BlendState;
-    NvAPI_D3D11_RASTERIZER_DESC_EX* m_RasterizerStateExDesc = nullptr;
+    NvAPI_D3D11_RASTERIZER_DESC_EX m_RasterizerStateExDesc = {};
     D3D11_PRIMITIVE_TOPOLOGY m_Topology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
     uint32_t m_SampleMask = uint32_t(-1);
 };
