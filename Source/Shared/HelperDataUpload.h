@@ -1,7 +1,7 @@
 #pragma once
 
 struct HelperDataUpload {
-    HelperDataUpload(const nri::CoreInterface& NRI, nri::Device& device, const StdAllocator<uint8_t>& stdAllocator, nri::CommandQueue& commandQueue);
+    HelperDataUpload(const nri::CoreInterface& NRI, nri::Device& device, nri::CommandQueue& commandQueue);
 
     nri::Result UploadData(const nri::TextureUploadDesc* textureDataDescs, uint32_t textureDataDescNum, const nri::BufferUploadDesc* bufferDataDescs, uint32_t bufferDataDescNum);
 
@@ -20,10 +20,10 @@ struct HelperDataUpload {
     template <bool isInitialTransition>
     void DoTransition(const nri::BufferUploadDesc* bufferDataDescs, uint32_t bufferDataDescNum);
 
-    Vector<nri::CommandBuffer*> m_CommandBuffers;
     const nri::CoreInterface& NRI;
     nri::Device& m_Device;
     nri::CommandQueue& m_CommandQueue;
+    nri::CommandBuffer* m_CommandBuffer = nullptr;
     nri::Fence* m_Fence = nullptr;
     nri::CommandAllocator* m_CommandAllocators = nullptr;
     nri::Buffer* m_UploadBuffer = nullptr;

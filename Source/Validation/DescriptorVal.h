@@ -29,8 +29,8 @@ struct DescriptorVal : public DeviceObjectVal<Descriptor> {
     DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Texture3DViewDesc& textureViewDesc);
     DescriptorVal(DeviceVal& device, Descriptor* descriptor);
 
-    inline uint64_t GetNativeObject(uint32_t nodeIndex) const {
-        return GetCoreInterface().GetDescriptorNativeObject(*GetImpl(), nodeIndex);
+    inline uint64_t GetNativeObject() const {
+        return GetCoreInterface().GetDescriptorNativeObject(*GetImpl());
     }
 
     inline bool IsBufferView() const {

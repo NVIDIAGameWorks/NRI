@@ -220,9 +220,12 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc) {
             pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
 #endif
 
+            // TODO: keep an eye on this
             D3D12_MESSAGE_ID disableMessageIDs[] = {
-                D3D12_MESSAGE_ID_COMMAND_LIST_STATIC_DESCRIPTOR_RESOURCE_DIMENSION_MISMATCH, // TODO: descriptor validation doesn't understand acceleration structures used outside
-                                                                                             // of RAYGEN shaders
+                // It's almost impossible to match. Doesn't hurt perf on modern HW
+                D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE,
+                // Descriptor validation doesn't understand acceleration structures used outside of RAYGEN shaders
+                D3D12_MESSAGE_ID_COMMAND_LIST_STATIC_DESCRIPTOR_RESOURCE_DIMENSION_MISMATCH,
             };
 
             D3D12_INFO_QUEUE_FILTER filter = {};
@@ -258,7 +261,7 @@ Result DeviceD3D12::CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYP
         return Result::OUT_OF_MEMORY;
 
     ComPtr<ID3D12DescriptorHeap> descriptorHeap;
-    D3D12_DESCRIPTOR_HEAP_DESC desc = {type, DESCRIPTORS_BATCH_SIZE, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, NRI_TEMP_NODE_MASK};
+    D3D12_DESCRIPTOR_HEAP_DESC desc = {type, DESCRIPTORS_BATCH_SIZE, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, NRI_NODE_MASK};
     HRESULT hr = m_Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap));
     RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateDescriptorHeap()");
 
@@ -306,7 +309,7 @@ void DeviceD3D12::GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOU
 
     memoryDesc.type = GetMemoryType(memoryLocation, resourceDesc);
 
-    D3D12_RESOURCE_ALLOCATION_INFO resourceAllocationInfo = m_Device->GetResourceAllocationInfo(NRI_TEMP_NODE_MASK, 1, &resourceDesc);
+    D3D12_RESOURCE_ALLOCATION_INFO resourceAllocationInfo = m_Device->GetResourceAllocationInfo(NRI_NODE_MASK, 1, &resourceDesc);
     memoryDesc.size = (uint64_t)resourceAllocationInfo.SizeInBytes;
     memoryDesc.alignment = (uint32_t)resourceAllocationInfo.Alignment;
 
@@ -320,7 +323,7 @@ ID3D12CommandSignature* DeviceD3D12::CreateCommandSignature(D3D12_INDIRECT_ARGUM
     D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
     commandSignatureDesc.NumArgumentDescs = 1;
     commandSignatureDesc.pArgumentDescs = &indirectArgumentDesc;
-    commandSignatureDesc.NodeMask = NRI_TEMP_NODE_MASK;
+    commandSignatureDesc.NodeMask = NRI_NODE_MASK;
     commandSignatureDesc.ByteStride = stride;
 
     ID3D12CommandSignature* commandSignature = nullptr;
@@ -553,7 +556,7 @@ void DeviceD3D12::FillDesc() {
     m_Desc.constantBufferMaxRange = D3D12_REQ_IMMEDIATE_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
     m_Desc.storageBufferOffsetAlignment = D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT;
     m_Desc.storageBufferMaxRange = (1 << D3D12_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP) - 1;
-    m_Desc.bufferTextureGranularity = 1; // TODO: 64KB?
+    m_Desc.bufferTextureGranularity = D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT; // TODO: 1024 in VK
     m_Desc.bufferMaxSize = D3D12_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_C_TERM * 1024ull * 1024ull;
     m_Desc.pushConstantsMaxSize = D3D12_REQ_IMMEDIATE_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
 
@@ -643,7 +646,6 @@ void DeviceD3D12::FillDesc() {
     m_Desc.cullDistanceMaxNum = D3D12_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.combinedClipAndCullDistanceMaxNum = D3D12_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.conservativeRasterTier = (uint8_t)options.ConservativeRasterizationTier;
-    m_Desc.nodeNum = (uint8_t)m_Device->GetNodeCount();
 
     m_Desc.isTextureFilterMinMaxSupported = levels.MaxSupportedFeatureLevel >= D3D_FEATURE_LEVEL_11_1 ? true : false;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
@@ -653,7 +655,6 @@ void DeviceD3D12::FillDesc() {
     m_Desc.isCopyQueueSupported = true;
     m_Desc.isCopyQueueTimestampSupported = options3.CopyQueueTimestampQueriesSupported != 0;
     m_Desc.isRegisterAliasingSupported = true;
-    m_Desc.isSubsetAllocationSupported = false; // TODO: mGPU is not implemented
     m_Desc.isFloat16Supported = options4.Native16BitShaderOpsSupported;
 #ifdef NRI_USE_AGILITY_SDK
     m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = options14.IndependentFrontAndBackStencilRefMaskSupported ? true : false;

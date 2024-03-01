@@ -31,7 +31,7 @@ struct CommandBufferVK {
     //================================================================================================================
 
     void SetDebugName(const char* name);
-    Result Begin(const DescriptorPool* descriptorPool, uint32_t nodeIndex);
+    Result Begin(const DescriptorPool* descriptorPool);
     Result End();
 
     void SetPipeline(const Pipeline& pipeline);
@@ -68,10 +68,9 @@ struct CommandBufferVK {
 
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);
 
-    void CopyBuffer(Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size);
+    void CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size);
 
-    void CopyTexture(Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcNodeIndex,
-        const TextureRegionDesc* srcRegionDesc);
+    void CopyTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc);
 
     void UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc);
 
@@ -104,7 +103,7 @@ struct CommandBufferVK {
     void DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
 
   private:
-    void CopyWholeTexture(const TextureVK& dstTexture, uint32_t dstNodeIndex, const TextureVK& srcTexture, uint32_t srcNodeIndex);
+    void CopyWholeTexture(const TextureVK& dstTexture, const TextureVK& srcTexture);
 
   private:
     DeviceVK& m_Device;
@@ -115,7 +114,6 @@ struct CommandBufferVK {
     CommandQueueType m_Type = (CommandQueueType)0;
     VkPipelineBindPoint m_CurrentPipelineBindPoint = VK_PIPELINE_BIND_POINT_MAX_ENUM;
     VkPipelineLayout m_CurrentPipelineLayoutHandle = VK_NULL_HANDLE;
-    uint32_t m_PhysicalDeviceIndex = 0;
     Dim_t m_RenderLayerNum = 0;
     Dim_t m_RenderWidth = 0;
     Dim_t m_RenderHeight = 0;

@@ -31,8 +31,8 @@ struct DescriptorPoolVal : public DeviceObjectVal<DescriptorPool> {
     void SetDebugName(const char* name);
     void Reset();
 
-    Result AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t nodeMask,
-        uint32_t variableDescriptorNum);
+    Result AllocateDescriptorSets(
+        const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
 
   private:
     bool CheckDescriptorRange(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum);

@@ -11,8 +11,6 @@ typedef uint64_t DescriptorPointerGPU;
 typedef uint16_t HeapIndexType;
 typedef uint16_t HeapOffsetType;
 
-#define NRI_TEMP_NODE_MASK 0x1
-
 namespace nri {
 enum DescriptorHeapType : uint32_t {
     RESOURCE = 0,

@@ -35,7 +35,7 @@ Result QueryPoolD3D12::Create(const QueryPoolDesc& queryPoolDesc) {
         return Result::INVALID_ARGUMENT;
 
     desc.Count = queryPoolDesc.capacity;
-    desc.NodeMask = NRI_TEMP_NODE_MASK;
+    desc.NodeMask = NRI_NODE_MASK;
 
     HRESULT hr = m_Device->CreateQueryHeap(&desc, IID_PPV_ARGS(&m_QueryHeap));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateQueryHeap()");

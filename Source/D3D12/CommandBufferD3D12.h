@@ -110,7 +110,7 @@ struct CommandBufferD3D12 {
     const PipelineLayoutD3D12* m_PipelineLayout = nullptr;
     PipelineD3D12* m_Pipeline = nullptr;
     D3D12_PRIMITIVE_TOPOLOGY m_PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    std::array<DescriptorSetD3D12*, 64> m_DescriptorSets = {}; // TODO: 64?
+    std::array<DescriptorSetD3D12*, 64> m_DescriptorSets = {}; // in VK "maxBoundDescriptorSets" is 32
     uint32_t m_RenderTargetNum = 0;
     uint8_t m_Version = 0;
     bool m_IsGraphicsPipelineLayout = false;

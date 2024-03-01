@@ -377,8 +377,6 @@ void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params) {
     m_Desc.rayTracingGeometryObjectMaxNum = 0;
     m_Desc.conservativeRasterTier = (uint8_t)options2.ConservativeRasterizationTier;
 
-    m_Desc.nodeNum = 1; // TODO: is there a way to query it in D3D11?
-
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isDepthBoundsTestSupported = params.extensionsSupported.depthBoundsDeferredContexts;

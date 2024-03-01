@@ -47,9 +47,7 @@ typedef uint32_t DXGI_FORMAT;
     }
 
 #define REPORT_INFO(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
-
 #define REPORT_WARNING(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_WARNING, __FILE__, __LINE__, format, ##__VA_ARGS__)
-
 #define REPORT_ERROR(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
 
 #define CHECK(condition, message) assert(condition&& message)
@@ -58,9 +56,10 @@ typedef uint32_t DXGI_FORMAT;
     if (obj) \
     obj->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)std::strlen(name), name)
 
+#define NRI_NODE_MASK 0x1 // mGPU is not planned
+
 #include "DeviceBase.h"
 
-constexpr uint32_t PHYSICAL_DEVICE_GROUP_MAX_SIZE = 4;
 constexpr uint32_t COMMAND_QUEUE_TYPE_NUM = (uint32_t)nri::CommandQueueType::MAX_NUM;
 constexpr uint32_t DEFAULT_TIMEOUT = 5000; // 5 sec
 constexpr uint64_t VK_DEFAULT_TIMEOUT = DEFAULT_TIMEOUT * 1000000ull;
@@ -70,10 +69,6 @@ constexpr void ReturnVoid() {
 
 template <typename... Args>
 constexpr void MaybeUnused([[maybe_unused]] const Args&... args) {
-}
-
-constexpr uint32_t GetNodeMask(uint32_t mask) {
-    return mask == nri::ALL_NODES ? 0xFF : mask;
 }
 
 inline nri::Vendor GetVendorFromID(uint32_t vendorID) {

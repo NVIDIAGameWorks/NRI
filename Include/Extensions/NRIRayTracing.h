@@ -148,7 +148,6 @@ NRI_STRUCT(AccelerationStructureDesc)
     NRI_NAME(AccelerationStructureType) type;
     NRI_NAME(AccelerationStructureBuildBits) flags;
     uint32_t instanceOrGeometryObjectNum;
-    uint32_t nodeMask;
     const NRI_NAME(GeometryObject)* geometryObjects;
 };
 
@@ -157,7 +156,6 @@ NRI_STRUCT(AccelerationStructureMemoryBindingDesc)
     NRI_NAME(Memory)* memory;
     NRI_NAME(AccelerationStructure)* accelerationStructure;
     uint64_t offset;
-    uint32_t nodeMask;
 };
 
 NRI_STRUCT(StridedBufferRegion)
@@ -208,12 +206,12 @@ NRI_STRUCT(RayTracingInterface)
     void (NRI_CALL *GetAccelerationStructureMemoryInfo)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure, NRI_NAME_REF(MemoryDesc) memoryDesc);
     uint64_t (NRI_CALL *GetAccelerationStructureUpdateScratchBufferSize)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure);
     uint64_t (NRI_CALL *GetAccelerationStructureBuildScratchBufferSize)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure);
-    uint64_t (NRI_CALL *GetAccelerationStructureHandle)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure, uint32_t nodeIndex);
+    uint64_t (NRI_CALL *GetAccelerationStructureHandle)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure);
 
     // Create
     NRI_NAME(Result) (NRI_CALL *CreateRayTracingPipeline)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(RayTracingPipelineDesc) rayTracingPipelineDesc, NRI_NAME_REF(Pipeline*) pipeline);
     NRI_NAME(Result) (NRI_CALL *CreateAccelerationStructure)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(AccelerationStructureDesc) accelerationStructureDesc, NRI_NAME_REF(AccelerationStructure*) accelerationStructure);
-    NRI_NAME(Result) (NRI_CALL *CreateAccelerationStructureDescriptor)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure, uint32_t nodeMask, NRI_NAME_REF(Descriptor*) descriptor);
+    NRI_NAME(Result) (NRI_CALL *CreateAccelerationStructureDescriptor)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure, NRI_NAME_REF(Descriptor*) descriptor);
 
     // Destroy
     void (NRI_CALL *DestroyAccelerationStructure)(NRI_NAME_REF(AccelerationStructure) accelerationStructure);
@@ -244,7 +242,7 @@ NRI_STRUCT(RayTracingInterface)
     void (NRI_CALL *SetAccelerationStructureDebugName)(NRI_NAME_REF(AccelerationStructure) accelerationStructure, const char* name);
 
     // Native object
-    uint64_t (NRI_CALL* GetAccelerationStructureNativeObject)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure, uint32_t nodeIndex); // ID3D12Resource* or VkAccelerationStructureKHR
+    uint64_t (NRI_CALL* GetAccelerationStructureNativeObject)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure); // ID3D12Resource* or VkAccelerationStructureKHR
 };
 
 NRI_NAMESPACE_END

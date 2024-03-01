@@ -539,10 +539,9 @@ constexpr VkCopyAccelerationStructureModeKHR GetCopyMode(CopyMode copyMode) {
     return (VkCopyAccelerationStructureModeKHR)copyMode;
 }
 
-void ConvertGeometryObjectSizesVK(
-    uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, uint32_t* primitiveNums, const GeometryObject* sourceObjects, uint32_t objectNum);
+void ConvertGeometryObjectSizesVK(VkAccelerationStructureGeometryKHR* destObjects, uint32_t* primitiveNums, const GeometryObject* sourceObjects, uint32_t objectNum);
 void ConvertGeometryObjectsVK(
-    uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, VkAccelerationStructureBuildRangeInfoKHR* ranges, const GeometryObject* sourceObjects, uint32_t objectNum);
+    VkAccelerationStructureGeometryKHR* destObjects, VkAccelerationStructureBuildRangeInfoKHR* ranges, const GeometryObject* sourceObjects, uint32_t objectNum);
 
 constexpr std::array<TextureType, (uint32_t)TextureType::MAX_NUM> TEXTURE_TYPE_TABLE = {
     TextureType::TEXTURE_1D, // VK_IMAGE_TYPE_1D

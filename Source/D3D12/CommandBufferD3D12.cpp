@@ -213,7 +213,7 @@ static void AddResourceBarrier(
 
 Result CommandBufferD3D12::Create(D3D12_COMMAND_LIST_TYPE commandListType, ID3D12CommandAllocator* commandAllocator) {
     ComPtr<ID3D12GraphicsCommandListBest> graphicsCommandList;
-    HRESULT hr = m_Device->CreateCommandList(NRI_TEMP_NODE_MASK, commandListType, commandAllocator, nullptr, __uuidof(ID3D12GraphicsCommandList), (void**)&graphicsCommandList);
+    HRESULT hr = m_Device->CreateCommandList(NRI_NODE_MASK, commandListType, commandAllocator, nullptr, __uuidof(ID3D12GraphicsCommandList), (void**)&graphicsCommandList);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateCommandList()");
 
     m_Version = QueryLatestGraphicsCommandList(graphicsCommandList, m_GraphicsCommandList);

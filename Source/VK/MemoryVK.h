@@ -14,8 +14,8 @@ struct MemoryVK {
     inline MemoryVK(DeviceVK& device) : m_Device(device) {
     }
 
-    inline VkDeviceMemory GetHandle(uint32_t nodeIndex) const {
-        return m_Handles[nodeIndex];
+    inline VkDeviceMemory GetHandle() const {
+        return m_Handle;
     }
 
     inline DeviceVK& GetDevice() const {
@@ -26,16 +26,16 @@ struct MemoryVK {
         return m_Type;
     }
 
-    inline uint8_t* GetMappedMemory(uint32_t nodeIndex) const {
-        return m_MappedMemory[nodeIndex];
+    inline uint8_t* GetMappedMemory() const {
+        return m_MappedMemory;
     }
 
     ~MemoryVK();
 
-    Result Create(uint32_t nodeMask, const MemoryType memoryType, uint64_t size);
+    Result Create(const MemoryType memoryType, uint64_t size);
     Result Create(const MemoryVKDesc& memoryDesc);
-    Result CreateDedicated(BufferVK& buffer, uint32_t nodeMask);
-    Result CreateDedicated(TextureVK& texture, uint32_t nodeMask);
+    Result CreateDedicated(BufferVK& buffer);
+    Result CreateDedicated(TextureVK& texture);
 
     //================================================================================================================
     // NRI
@@ -45,8 +45,8 @@ struct MemoryVK {
 
   private:
     DeviceVK& m_Device;
-    std::array<VkDeviceMemory, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_Handles = {};
-    std::array<uint8_t*, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_MappedMemory = {};
+    VkDeviceMemory m_Handle = VK_NULL_HANDLE;
+    uint8_t* m_MappedMemory = nullptr;
     MemoryType m_Type = std::numeric_limits<MemoryType>::max();
     bool m_OwnsNativeObjects = false;
 };

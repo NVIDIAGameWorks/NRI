@@ -6,9 +6,7 @@ static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* 
     ((DescriptorD3D11&)descriptor).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor, uint32_t nodeIndex) {
-    MaybeUnused(nodeIndex);
-
+static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor) {
     if (!(&descriptor))
         return 0;
 

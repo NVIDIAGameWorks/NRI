@@ -99,7 +99,7 @@ struct DeviceVal final : public DeviceBase {
     void DestroyPipeline(Pipeline& pipeline);
     void DestroyQueryPool(QueryPool& queryPool);
     void DestroyFence(Fence& queueSemaphore);
-    Result AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory);
+    Result AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     void FreeMemory(Memory& memory);

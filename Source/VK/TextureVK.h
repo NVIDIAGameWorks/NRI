@@ -10,8 +10,8 @@ struct TextureVK {
     inline TextureVK(DeviceVK& device) : m_Device(device) {
     }
 
-    inline VkImage GetHandle(uint32_t nodeIndex) const {
-        return m_Handles[nodeIndex];
+    inline VkImage GetHandle() const {
+        return m_Handle;
     }
 
     inline DeviceVK& GetDevice() const {
@@ -30,11 +30,6 @@ struct TextureVK {
         return m_Desc;
     }
 
-    inline void ClearHandle() {
-        for (uint32_t i = 0; i < GetCountOf(m_Handles); i++)
-            m_Handles[i] = VK_NULL_HANDLE;
-    }
-
     ~TextureVK();
 
     Result Create(const TextureDesc& textureDesc);
@@ -50,7 +45,7 @@ struct TextureVK {
 
   private:
     DeviceVK& m_Device;
-    std::array<VkImage, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_Handles = {};
+    VkImage m_Handle = VK_NULL_HANDLE;
     TextureDesc m_Desc = {};
     VkImageAspectFlags m_ImageAspectFlags = (VkImageAspectFlags)0;
     bool m_OwnsNativeObjects = false;

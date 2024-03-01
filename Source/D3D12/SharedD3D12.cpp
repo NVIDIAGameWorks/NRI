@@ -213,9 +213,9 @@ UINT8 nri::GetRenderTargetWriteMask(ColorWriteBits colorWriteMask) {
 
 constexpr std::array<D3D12_COMPARISON_FUNC, (uint32_t)CompareFunc::MAX_NUM> COMPARISON_FUNCS = {
 #ifdef NRI_USE_AGILITY_SDK
-    D3D12_COMPARISON_FUNC_NONE,          // NONE
+    D3D12_COMPARISON_FUNC_NONE, // NONE
 #else
-    D3D12_COMPARISON_FUNC(0),            // NONE
+    D3D12_COMPARISON_FUNC(0), // NONE
 #endif
     D3D12_COMPARISON_FUNC_ALWAYS,        // ALWAYS
     D3D12_COMPARISON_FUNC_NEVER,         // NEVER
@@ -396,7 +396,6 @@ bool nri::GetTextureDesc(const TextureD3D12Desc& textureD3D12Desc, TextureDesc& 
     textureDesc.mipNum = (Mip_t)desc.MipLevels;
     textureDesc.arraySize = textureDesc.type == TextureType::TEXTURE_3D ? 1 : (Dim_t)desc.DepthOrArraySize;
     textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
-    textureDesc.nodeMask = ALL_NODES; // TODO: not in D3D12_RESOURCE_DESC...
 
     if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
         textureDesc.usageMask |= TextureUsageBits::COLOR_ATTACHMENT;
@@ -423,7 +422,6 @@ bool nri::GetBufferDesc(const BufferD3D12Desc& bufferD3D12Desc, BufferDesc& buff
 
     bufferDesc.size = desc.Width;
     bufferDesc.structureStride = bufferD3D12Desc.structureStride;
-    bufferDesc.nodeMask = ALL_NODES; // TODO: not in D3D12_RESOURCE_DESC...
 
     if (!(desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
         bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE;

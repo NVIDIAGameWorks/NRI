@@ -74,13 +74,13 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
     pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRanges;
 
     const auto& vk = m_Device.GetDispatchTable();
-    const VkResult result = vk.CreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
+    VkResult result = vk.CreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
 
     // Cleanup
     FREE_SCRATCH(m_Device, pushConstantRanges, pipelineLayoutDesc.pushConstantNum);
     FREE_SCRATCH(m_Device, descriptorSetLayouts, setNum);
 
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, Result::FAILURE, "Can't create a pipeline layout: vkCreatePipelineLayout returned %d.", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, Result::FAILURE, "vkCreatePipelineLayout returned %d", (int32_t)result);
 
     FillRuntimeBindingInfo(pipelineLayoutDesc, bindingOffsets);
 
@@ -132,12 +132,13 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
 
     VkDescriptorSetLayout handle = VK_NULL_HANDLE;
     const auto& vk = m_Device.GetDispatchTable();
-    const VkResult result = vk.CreateDescriptorSetLayout(m_Device, &info, m_Device.GetAllocationCallbacks(), &handle);
+    VkResult result = vk.CreateDescriptorSetLayout(m_Device, &info, m_Device.GetAllocationCallbacks(), &handle);
 
+    // Cleanup
     FREE_SCRATCH(m_Device, bindingsBegin, bindingMaxNum);
     FREE_SCRATCH(m_Device, bindingFlagsBegin, bindingMaxNum);
 
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, 0, "Can't create the descriptor set layout: vkCreateDescriptorSetLayout returned %d.", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, 0, "vkCreateDescriptorSetLayout returned %d", (int32_t)result);
 
     return handle;
 }

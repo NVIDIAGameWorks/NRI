@@ -4,8 +4,8 @@ using namespace nri;
 
 constexpr size_t BASE_UPLOAD_BUFFER_SIZE = 65536;
 
-HelperDataUpload::HelperDataUpload(const CoreInterface& NRI, Device& device, const StdAllocator<uint8_t>& stdAllocator, CommandQueue& commandQueue)
-    : NRI(NRI), m_Device(device), m_CommandQueue(commandQueue), m_CommandBuffers(stdAllocator), m_UploadBufferSize(BASE_UPLOAD_BUFFER_SIZE) {
+HelperDataUpload::HelperDataUpload(const CoreInterface& NRI, Device& device, CommandQueue& commandQueue)
+    : NRI(NRI), m_Device(device), m_CommandQueue(commandQueue), m_UploadBufferSize(BASE_UPLOAD_BUFFER_SIZE) {
 }
 
 Result HelperDataUpload::UploadData(
@@ -52,7 +52,7 @@ Result HelperDataUpload::Create() {
     MemoryDesc memoryDesc = {};
     NRI.GetBufferMemoryInfo(*m_UploadBuffer, MemoryLocation::HOST_UPLOAD, memoryDesc);
 
-    result = NRI.AllocateMemory(m_Device, ALL_NODES, memoryDesc.type, memoryDesc.size, m_UploadBufferMemory);
+    result = NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, m_UploadBufferMemory);
     if (result != Result::SUCCESS)
         return result;
 
@@ -65,28 +65,20 @@ Result HelperDataUpload::Create() {
     if (result != Result::SUCCESS)
         return result;
 
-    const DeviceDesc& deviceDesc = NRI.GetDeviceDesc(m_Device);
-    m_CommandBuffers.resize(deviceDesc.nodeNum);
-
     result = NRI.CreateCommandAllocator(m_CommandQueue, m_CommandAllocators);
     if (result != Result::SUCCESS)
         return result;
 
-    for (uint32_t i = 0; i < m_CommandBuffers.size(); i++) {
-        result = NRI.CreateCommandBuffer(*m_CommandAllocators, m_CommandBuffers[i]);
-        if (result != Result::SUCCESS)
-            return result;
-    }
+    result = NRI.CreateCommandBuffer(*m_CommandAllocators, m_CommandBuffer);
+    if (result != Result::SUCCESS)
+        return result;
 
     return result;
 }
 
 void HelperDataUpload::Destroy() {
-    for (uint32_t i = 0; i < m_CommandBuffers.size(); i++) {
-        NRI.DestroyCommandBuffer(*m_CommandBuffers[i]);
-        NRI.DestroyCommandAllocator(*m_CommandAllocators);
-    }
-
+    NRI.DestroyCommandBuffer(*m_CommandBuffer);
+    NRI.DestroyCommandAllocator(*m_CommandAllocators);
     NRI.DestroyFence(*m_Fence);
     NRI.DestroyBuffer(*m_UploadBuffer);
     NRI.FreeMemory(*m_UploadBufferMemory);
@@ -173,35 +165,24 @@ Result HelperDataUpload::UploadBuffers(const BufferUploadDesc* bufferUploadDescs
 }
 
 Result HelperDataUpload::BeginCommandBuffers() {
-    Result result = Result::SUCCESS;
-
-    for (uint32_t i = 0; i < m_CommandBuffers.size() && result == Result::SUCCESS; i++)
-        result = NRI.BeginCommandBuffer(*m_CommandBuffers[i], nullptr, i);
-
-    return result;
+    return NRI.BeginCommandBuffer(*m_CommandBuffer, nullptr);
 }
 
 Result HelperDataUpload::EndCommandBuffersAndSubmit() {
-    for (uint32_t i = 0; i < m_CommandBuffers.size(); i++) {
-        const Result result = NRI.EndCommandBuffer(*m_CommandBuffers[i]);
-        if (result != Result::SUCCESS)
-            return result;
-    }
+    const Result result = NRI.EndCommandBuffer(*m_CommandBuffer);
+    if (result != Result::SUCCESS)
+        return result;
 
     QueueSubmitDesc queueSubmitDesc = {};
     queueSubmitDesc.commandBufferNum = 1;
+    queueSubmitDesc.commandBuffers = &m_CommandBuffer;
 
-    for (uint32_t i = 0; i < m_CommandBuffers.size(); i++) {
-        queueSubmitDesc.commandBuffers = &m_CommandBuffers[i];
-        queueSubmitDesc.nodeIndex = i;
+    NRI.QueueSubmit(m_CommandQueue, queueSubmitDesc);
 
-        NRI.QueueSubmit(m_CommandQueue, queueSubmitDesc);
+    NRI.QueueSignal(m_CommandQueue, *m_Fence, m_FenceValue);
+    NRI.Wait(*m_Fence, m_FenceValue);
 
-        NRI.QueueSignal(m_CommandQueue, *m_Fence, m_FenceValue);
-        NRI.Wait(*m_Fence, m_FenceValue);
-
-        m_FenceValue++;
-    }
+    m_FenceValue++;
 
     NRI.ResetCommandAllocator(*m_CommandAllocators);
 
@@ -241,8 +222,7 @@ bool HelperDataUpload::CopyTextureContent(const TextureUploadDesc& textureUpload
             dstRegion.arrayOffset = arrayOffset;
             dstRegion.mipOffset = mipOffset;
 
-            for (uint32_t k = 0; k < m_CommandBuffers.size(); k++)
-                NRI.CmdUploadBufferToTexture(*m_CommandBuffers[k], *textureUploadDesc.texture, dstRegion, *m_UploadBuffer, srcDataLayout);
+            NRI.CmdUploadBufferToTexture(*m_CommandBuffer, *textureUploadDesc.texture, dstRegion, *m_UploadBuffer, srcDataLayout);
 
             m_UploadBufferOffset = Align(m_UploadBufferOffset + mipLevelContentSize, COPY_ALIGMENT);
         }
@@ -258,7 +238,7 @@ bool HelperDataUpload::CopyTextureContent(const TextureUploadDesc& textureUpload
 void HelperDataUpload::CopyTextureSubresourceContent(const TextureSubresourceUploadDesc& subresource, uint64_t alignedRowPitch, uint64_t alignedSlicePitch) {
     const uint32_t sliceRowNum = subresource.slicePitch / subresource.rowPitch;
 
-    // TODO: D3D11 does not allow to call CmdUploadBufferToTexture() while the upload buffer is mapped.
+    // TODO: D3D11 does not allow to call CmdUploadBufferToTexture() while the upload buffer is mapped
     m_MappedMemory = (uint8_t*)NRI.MapBuffer(*m_UploadBuffer, m_UploadBufferOffset, subresource.sliceNum * alignedSlicePitch);
 
     uint8_t* slices = m_MappedMemory;
@@ -285,10 +265,7 @@ bool HelperDataUpload::CopyBufferContent(const BufferUploadDesc& bufferUploadDes
 
     memcpy(m_MappedMemory + m_UploadBufferOffset, (uint8_t*)bufferUploadDesc.data + bufferContentOffset, (size_t)copySize);
 
-    for (uint32_t j = 0; j < m_CommandBuffers.size(); j++) {
-        NRI.CmdCopyBuffer(
-            *m_CommandBuffers[j], *bufferUploadDesc.buffer, j, bufferUploadDesc.bufferOffset + bufferContentOffset, *m_UploadBuffer, 0, m_UploadBufferOffset, copySize);
-    }
+    NRI.CmdCopyBuffer(*m_CommandBuffer, *bufferUploadDesc.buffer, bufferUploadDesc.bufferOffset + bufferContentOffset, *m_UploadBuffer, m_UploadBufferOffset, copySize);
 
     bufferContentOffset += copySize;
     m_UploadBufferOffset += copySize;
@@ -331,8 +308,7 @@ void HelperDataUpload::DoTransition(const TextureUploadDesc* textureUploadDescs,
         barrierGroup.textures = textureBarriers;
         barrierGroup.textureNum = uint16_t(passEnd - passBegin);
 
-        for (uint32_t j = 0; j < m_CommandBuffers.size(); j++)
-            NRI.CmdBarrier(*m_CommandBuffers[j], barrierGroup);
+        NRI.CmdBarrier(*m_CommandBuffer, barrierGroup);
     }
 }
 
@@ -362,7 +338,6 @@ void HelperDataUpload::DoTransition(const BufferUploadDesc* bufferUploadDescs, u
         barrierGroup.buffers = bufferBarriers;
         barrierGroup.bufferNum = uint16_t(passEnd - passBegin);
 
-        for (uint32_t j = 0; j < m_CommandBuffers.size(); j++)
-            NRI.CmdBarrier(*m_CommandBuffers[j], barrierGroup);
+        NRI.CmdBarrier(*m_CommandBuffer, barrierGroup);
     }
 }

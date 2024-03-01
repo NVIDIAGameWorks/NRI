@@ -23,9 +23,8 @@ Result CommandAllocatorVK::Create(const CommandQueue& commandQueue) {
     const VkCommandPoolCreateInfo info = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, commandQueueImpl.GetFamilyIndex()};
 
     const auto& vk = m_Device.GetDispatchTable();
-    const VkResult result = vk.CreateCommandPool(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't create a command pool: vkCreateCommandPool returned %d.", (int32_t)result);
+    VkResult result = vk.CreateCommandPool(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateCommandPool returned %d", (int32_t)result);
 
     return Result::SUCCESS;
 }
@@ -52,9 +51,8 @@ inline Result CommandAllocatorVK::CreateCommandBuffer(CommandBuffer*& commandBuf
     VkCommandBuffer commandBufferHandle = VK_NULL_HANDLE;
 
     const auto& vk = m_Device.GetDispatchTable();
-    const VkResult result = vk.AllocateCommandBuffers(m_Device, &info, &commandBufferHandle);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't create the command buffer: vkAllocateCommandBuffers returned %d.", (int32_t)result);
+    VkResult result = vk.AllocateCommandBuffers(m_Device, &info, &commandBufferHandle);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkAllocateCommandBuffers returned %d", (int32_t)result);
 
     CommandBufferVK* commandBufferImpl = Allocate<CommandBufferVK>(m_Device.GetStdAllocator(), m_Device);
     commandBufferImpl->Create(m_Handle, commandBufferHandle, m_Type);
@@ -66,9 +64,8 @@ inline Result CommandAllocatorVK::CreateCommandBuffer(CommandBuffer*& commandBuf
 
 inline void CommandAllocatorVK::Reset() {
     const auto& vk = m_Device.GetDispatchTable();
-    const VkResult result = vk.ResetCommandPool(m_Device, m_Handle, (VkCommandPoolResetFlags)0);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(), "Can't reset a command pool. vkResetCommandPool returned %d.", (int32_t)result);
+    VkResult result = vk.ResetCommandPool(m_Device, m_Handle, (VkCommandPoolResetFlags)0);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(), "vkResetCommandPool returned %d", (int32_t)result);
 }
 
 #include "CommandAllocatorVK.hpp"

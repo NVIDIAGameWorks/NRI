@@ -217,7 +217,7 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
 
     Stream stream = {};
     stream.rootSignature = *m_PipelineLayout;
-    stream.nodeMask = NRI_TEMP_NODE_MASK;
+    stream.nodeMask = NRI_NODE_MASK;
 
     // Shaders
     for (uint32_t i = 0; i < graphicsPipelineDesc.shaderNum; i++) {
@@ -308,7 +308,7 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
         return CreateFromStream(graphicsPipelineDesc);
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipleineStateDesc = {};
-    graphicsPipleineStateDesc.NodeMask = NRI_TEMP_NODE_MASK;
+    graphicsPipleineStateDesc.NodeMask = NRI_NODE_MASK;
     graphicsPipleineStateDesc.pRootSignature = *m_PipelineLayout;
 
     // Shaders
@@ -381,7 +381,7 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
 
 Result PipelineD3D12::Create(const ComputePipelineDesc& computePipelineDesc) {
     D3D12_COMPUTE_PIPELINE_STATE_DESC computePipleineStateDesc = {};
-    computePipleineStateDesc.NodeMask = NRI_TEMP_NODE_MASK;
+    computePipleineStateDesc.NodeMask = NRI_NODE_MASK;
 
     m_PipelineLayout = (const PipelineLayoutD3D12*)computePipelineDesc.pipelineLayout;
 
@@ -430,7 +430,7 @@ Result PipelineD3D12::Create(const RayTracingPipelineDesc& rayTracingPipelineDes
 
     D3D12_NODE_MASK nodeMask = {};
     {
-        nodeMask.NodeMask = NRI_TEMP_NODE_MASK;
+        nodeMask.NodeMask = NRI_NODE_MASK;
 
         stateSubobjects[stateSubobjectNum].Type = D3D12_STATE_SUBOBJECT_TYPE_NODE_MASK;
         stateSubobjects[stateSubobjectNum].pDesc = &nodeMask;

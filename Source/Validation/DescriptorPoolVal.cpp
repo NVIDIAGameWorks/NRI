@@ -83,8 +83,8 @@ void DescriptorPoolVal::IncrementDescriptorNum(const DescriptorRangeDesc& rangeD
     }
 }
 
-Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum,
-    uint32_t nodeMask, uint32_t variableDescriptorNum) {
+Result DescriptorPoolVal::AllocateDescriptorSets(
+    const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
     const PipelineLayoutVal& pipelineLayoutVal = (const PipelineLayoutVal&)pipelineLayout;
     const PipelineLayoutDesc& pipelineLayoutDesc = pipelineLayoutVal.GetPipelineLayoutDesc();
 
@@ -114,8 +114,7 @@ Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineL
 
     PipelineLayout* pipelineLayoutImpl = NRI_GET_IMPL(PipelineLayout, &pipelineLayout);
 
-    Result result =
-        GetCoreInterface().AllocateDescriptorSets(*GetImpl(), *pipelineLayoutImpl, setIndexInPipelineLayout, descriptorSets, instanceNum, nodeMask, variableDescriptorNum);
+    Result result = GetCoreInterface().AllocateDescriptorSets(*GetImpl(), *pipelineLayoutImpl, setIndexInPipelineLayout, descriptorSets, instanceNum, variableDescriptorNum);
 
     if (result != Result::SUCCESS)
         return result;

@@ -89,7 +89,7 @@ struct BindingState {
             for (uint32_t i = 0; i < (uint32_t)resources.size(); i++) {
                 const SubresourceAndSlot& subresourceAndSlot = resources[i];
                 if (subresourceAndSlot.subresource == subresource) {
-                    // TODO: store visibility to unbind only in a necessary stage
+                    // TODO: store visibility to unbind only for necessary stages
                     deferredContext->VSSetShaderResources(subresourceAndSlot.slot, 1, (ID3D11ShaderResourceView**)&null);
                     deferredContext->HSSetShaderResources(subresourceAndSlot.slot, 1, (ID3D11ShaderResourceView**)&null);
                     deferredContext->DSSetShaderResources(subresourceAndSlot.slot, 1, (ID3D11ShaderResourceView**)&null);
@@ -129,7 +129,7 @@ struct BindingState {
         constexpr void* null = nullptr;
 
         for (const SubresourceAndSlot& subresourceAndSlot : resources) {
-            // TODO: store visibility to unbind only in a necessary stage
+            // TODO: store visibility to unbind only for necessary stages
             deferredContext->VSSetShaderResources(subresourceAndSlot.slot, 1, (ID3D11ShaderResourceView**)&null);
             deferredContext->HSSetShaderResources(subresourceAndSlot.slot, 1, (ID3D11ShaderResourceView**)&null);
             deferredContext->DSSetShaderResources(subresourceAndSlot.slot, 1, (ID3D11ShaderResourceView**)&null);

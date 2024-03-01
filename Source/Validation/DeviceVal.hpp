@@ -146,8 +146,8 @@ static void NRI_CALL DestroyFence(Fence& fence) {
     GetDeviceVal(fence).DestroyFence(fence);
 }
 
-static Result NRI_CALL AllocateMemory(Device& device, uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory) {
-    return ((DeviceVal&)device).AllocateMemory(nodeMask, memoryType, size, memory);
+static Result NRI_CALL AllocateMemory(Device& device, MemoryType memoryType, uint64_t size, Memory*& memory) {
+    return ((DeviceVal&)device).AllocateMemory(memoryType, size, memory);
 }
 
 static Result NRI_CALL BindBufferMemory(Device& device, const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {

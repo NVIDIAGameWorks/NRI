@@ -11,12 +11,12 @@ struct BufferVK {
     inline BufferVK(DeviceVK& device) : m_Device(device) {
     }
 
-    inline VkBuffer GetHandle(uint32_t nodeIndex) const {
-        return m_Handles[nodeIndex];
+    inline VkBuffer GetHandle() const {
+        return m_Handle;
     }
 
-    inline VkDeviceAddress GetDeviceAddress(uint32_t nodeIndex) const {
-        return m_DeviceAddresses[nodeIndex];
+    inline VkDeviceAddress GetDeviceAddress() const {
+        return m_DeviceAddress;
     }
 
     inline DeviceVK& GetDevice() const {
@@ -45,8 +45,8 @@ struct BufferVK {
 
   private:
     DeviceVK& m_Device;
-    std::array<VkBuffer, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_Handles = {};
-    std::array<VkDeviceAddress, PHYSICAL_DEVICE_GROUP_MAX_SIZE> m_DeviceAddresses = {};
+    VkBuffer m_Handle = VK_NULL_HANDLE;
+    VkDeviceAddress m_DeviceAddress = {};
     BufferDesc m_Desc = {};
     MemoryVK* m_Memory = nullptr;
     uint64_t m_MappedMemoryOffset = 0;
@@ -55,10 +55,10 @@ struct BufferVK {
     bool m_OwnsNativeObjects = false;
 };
 
-inline VkDeviceAddress GetBufferDeviceAddress(const Buffer* buffer, uint32_t nodeIndex) {
+inline VkDeviceAddress GetBufferDeviceAddress(const Buffer* buffer) {
     const BufferVK* bufferVK = (const BufferVK*)buffer;
 
-    return bufferVK != nullptr ? bufferVK->GetDeviceAddress(nodeIndex) : 0;
+    return bufferVK != nullptr ? bufferVK->GetDeviceAddress() : 0;
 }
 
 } // namespace nri

@@ -34,18 +34,15 @@ SwapChainVK::~SwapChainVK() {
 }
 
 void SwapChainVK::Destroy() {
-    const auto& vk = m_Device.GetDispatchTable();
-
-    for (size_t i = 0; i < m_Textures.size(); i++) {
-        m_Textures[i]->ClearHandle();
+    for (size_t i = 0; i < m_Textures.size(); i++)
         Deallocate(m_Device.GetStdAllocator(), m_Textures[i]);
-    }
     m_Textures.clear();
 
-    if (m_Handle != VK_NULL_HANDLE)
+    const auto& vk = m_Device.GetDispatchTable();
+    if (m_Handle)
         vk.DestroySwapchainKHR(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
 
-    if (m_Surface != VK_NULL_HANDLE)
+    if (m_Surface)
         vk.DestroySurfaceKHR(m_Device, m_Surface, m_Device.GetAllocationCallbacks());
 
     for (VkSemaphore& semaphore : m_Semaphores)
@@ -57,8 +54,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc) {
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
     if (swapChainDesc.window.windows.hwnd) {
-        VkWin32SurfaceCreateInfoKHR win32SurfaceInfo = {};
-        win32SurfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+        VkWin32SurfaceCreateInfoKHR win32SurfaceInfo = {VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
         win32SurfaceInfo.hwnd = (HWND)swapChainDesc.window.windows.hwnd;
 
         VkResult result = vk.CreateWin32SurfaceKHR(m_Device, &win32SurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
@@ -69,8 +65,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc) {
 #endif
 #ifdef VK_USE_PLATFORM_METAL_EXT
     if (swapChainDesc.window.metal.caMetalLayer) {
-        VkMetalSurfaceCreateInfoEXT metalSurfaceCreateInfo = {};
-        metalSurfaceCreateInfo.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
+        VkMetalSurfaceCreateInfoEXT metalSurfaceCreateInfo = {VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT};
         metalSurfaceCreateInfo.pLayer = (CAMetalLayer*)swapChainDesc.window.metal.caMetalLayer;
 
         VkResult result = vk.CreateMetalSurfaceEXT(m_Device, &metalSurfaceCreateInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
@@ -81,8 +76,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc) {
 #endif
 #ifdef VK_USE_PLATFORM_XLIB_KHR
     if (swapChainDesc.window.x11.dpy && swapChainDesc.window.x11.window) {
-        VkXlibSurfaceCreateInfoKHR xlibSurfaceInfo = {};
-        xlibSurfaceInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+        VkXlibSurfaceCreateInfoKHR xlibSurfaceInfo = {VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR};
         xlibSurfaceInfo.dpy = (::Display*)swapChainDesc.window.x11.dpy;
         xlibSurfaceInfo.window = (::Window)swapChainDesc.window.x11.window;
 
@@ -94,8 +88,7 @@ Result SwapChainVK::CreateSurface(const SwapChainDesc& swapChainDesc) {
 #endif
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
     if (swapChainDesc.window.wayland.display && swapChainDesc.window.wayland.surface) {
-        VkWaylandSurfaceCreateInfoKHR waylandSurfaceInfo = {};
-        waylandSurfaceInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
+        VkWaylandSurfaceCreateInfoKHR waylandSurfaceInfo = {VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR};
         waylandSurfaceInfo.display = (wl_display*)swapChainDesc.window.wayland.display;
         waylandSurfaceInfo.surface = (wl_surface*)swapChainDesc.window.wayland.surface;
 
@@ -263,7 +256,6 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         desc.mipNum = 1;
         desc.arraySize = 1;
         desc.sampleNum = 1;
-        desc.nodeMask = 1; // TODO: or ALL_NODES?
 
         TextureVK* texture = Allocate<TextureVK>(m_Device.GetStdAllocator(), m_Device);
         texture->Create(desc);

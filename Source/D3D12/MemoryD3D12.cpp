@@ -12,8 +12,8 @@ Result MemoryD3D12::Create(const MemoryType memoryType, uint64_t size) {
     heapDesc.Properties.Type = GetHeapType(memoryType);
     heapDesc.Properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
     heapDesc.Properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-    heapDesc.Properties.CreationNodeMask = NRI_TEMP_NODE_MASK;
-    heapDesc.Properties.VisibleNodeMask = NRI_TEMP_NODE_MASK;
+    heapDesc.Properties.CreationNodeMask = NRI_NODE_MASK;
+    heapDesc.Properties.VisibleNodeMask = NRI_NODE_MASK;
     heapDesc.Alignment = 0;
     heapDesc.Flags = (size ? GetHeapFlags(memoryType) : D3D12_HEAP_FLAG_NONE) | D3D12_HEAP_FLAG_CREATE_NOT_ZEROED;
 

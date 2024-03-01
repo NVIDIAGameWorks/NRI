@@ -6,9 +6,7 @@ static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name) {
     ((BufferD3D12&)buffer).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer, uint32_t nodeIndex) {
-    MaybeUnused(nodeIndex);
-
+static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer) {
     if (!(&buffer))
         return 0;
 

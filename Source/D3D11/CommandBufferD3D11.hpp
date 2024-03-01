@@ -6,9 +6,7 @@ static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, con
     ((CommandBufferD3D11&)commandBuffer).SetDebugName(name);
 }
 
-static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool, uint32_t nodeIndex) {
-    MaybeUnused(nodeIndex);
-
+static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool) {
     return ((CommandBufferD3D11&)commandBuffer).Begin(descriptorPool);
 }
 
@@ -133,19 +131,12 @@ static void NRI_CALL CmdClearStorageTexture(CommandBuffer& commandBuffer, const 
     ((CommandBufferD3D11&)commandBuffer).ClearStorageTexture(clearDesc);
 }
 
-static void NRI_CALL CmdCopyBuffer(
-    CommandBuffer& commandBuffer, Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size) {
-    MaybeUnused(dstNodeIndex);
-    MaybeUnused(srcNodeIndex);
-
+static void NRI_CALL CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
     ((CommandBufferD3D11&)commandBuffer).CopyBuffer(dstBuffer, dstOffset, srcBuffer, srcOffset, size);
 }
 
-static void NRI_CALL CmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture,
-    uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc) {
-    MaybeUnused(dstNodeIndex);
-    MaybeUnused(srcNodeIndex);
-
+static void NRI_CALL CmdCopyTexture(
+    CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
     ((CommandBufferD3D11&)commandBuffer).CopyTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
 }
 

@@ -16,8 +16,8 @@ struct TextureVal : public DeviceObjectVal<Texture> {
         return GetCoreInterface().GetTextureDesc(*GetImpl());
     }
 
-    inline uint64_t GetNativeObject(uint32_t nodeIndex) const {
-        return GetCoreInterface().GetTextureNativeObject(*GetImpl(), nodeIndex);
+    inline uint64_t GetNativeObject() const {
+        return GetCoreInterface().GetTextureNativeObject(*GetImpl());
     }
 
     inline bool IsBoundToMemory() const {

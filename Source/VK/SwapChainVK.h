@@ -40,7 +40,7 @@ struct SwapChainVK : public DisplayDescHelper {
 
   private:
     Vector<TextureVK*> m_Textures;
-    std::array<VkSemaphore, MAX_NUMBER_OF_FRAMES_IN_FLIGHT> m_Semaphores;
+    std::array<VkSemaphore, MAX_NUMBER_OF_FRAMES_IN_FLIGHT> m_Semaphores = {VK_NULL_HANDLE};
     SwapChainDesc m_SwapChainDesc = {};
     VkSwapchainKHR m_Handle = VK_NULL_HANDLE;
     VkSurfaceKHR m_Surface = VK_NULL_HANDLE;

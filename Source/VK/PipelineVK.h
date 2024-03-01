@@ -40,7 +40,6 @@ struct PipelineVK {
 
   private:
     Result SetupShaderStage(VkPipelineShaderStageCreateInfo& stage, const ShaderDesc& shaderDesc, VkShaderModule*& modules);
-    void FillGroupIndices(const RayTracingPipelineDesc& rayTracingPipelineDesc, uint32_t* groupIndices);
 
   private:
     DeviceVK& m_Device;

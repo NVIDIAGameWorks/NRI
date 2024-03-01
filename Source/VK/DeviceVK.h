@@ -14,7 +14,7 @@ struct DeviceVK final : public DeviceBase {
     }
 
     inline operator VkPhysicalDevice() const {
-        return m_PhysicalDevices.front();
+        return m_PhysicalDevice;
     }
 
     inline operator VkInstance() const {
@@ -41,10 +41,6 @@ struct DeviceVK final : public DeviceBase {
         return m_CoreInterface;
     }
 
-    inline uint32_t GetPhysicalDeviceGroupSize() const {
-        return m_Desc.nodeNum;
-    }
-
     inline bool IsConcurrentSharingModeEnabledForBuffers() const {
         return m_ConcurrentSharingModeQueueIndices.size() > 1;
     }
@@ -64,7 +60,6 @@ struct DeviceVK final : public DeviceBase {
     bool GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const;
     bool GetMemoryTypeByIndex(uint32_t index, MemoryTypeInfo& memoryTypeInfo) const;
     void SetDebugNameToTrivialObject(VkObjectType objectType, uint64_t handle, const char* name);
-    void SetDebugNameToDeviceGroupObject(VkObjectType objectType, const uint64_t* handles, const char* name);
 
     //================================================================================================================
     // NRI
@@ -111,7 +106,7 @@ struct DeviceVK final : public DeviceBase {
     void DestroyFence(Fence& fence);
     void DestroySwapChain(SwapChain& swapChain);
     void DestroyAccelerationStructure(AccelerationStructure& accelerationStructure);
-    Result AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory);
+    Result AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
@@ -145,7 +140,7 @@ struct DeviceVK final : public DeviceBase {
     void ReportDeviceGroupInfo();
     void GetAdapterDesc();
     Result CreateInstance(bool enableAPIValidation, const Vector<const char*>& desiredInstanceExts);
-    Result FindPhysicalDeviceGroup(const AdapterDesc* physicalDeviceGroup, bool enableMGPU);
+    Result FindPhysicalDeviceGroup(const AdapterDesc* physicalDeviceGroup);
     Result ResolvePreInstanceDispatchTable();
     Result ResolveInstanceDispatchTable();
     Result ResolveDispatchTable(const Vector<const char*>& desiredInstanceExts, const Vector<const char*>& desiredDeviceExts);
@@ -159,9 +154,8 @@ struct DeviceVK final : public DeviceBase {
     bool m_IsSwapChainMutableFormatSupported = false;
 
   private:
-    Vector<VkPhysicalDevice> m_PhysicalDevices;
-    Vector<uint32_t> m_PhysicalDeviceIndices;
     Vector<uint32_t> m_ConcurrentSharingModeQueueIndices;
+    VkPhysicalDevice m_PhysicalDevice = nullptr;
     std::array<uint32_t, COMMAND_QUEUE_TYPE_NUM> m_FamilyIndices = {};
     std::array<CommandQueueVK*, COMMAND_QUEUE_TYPE_NUM> m_Queues = {};
     DispatchTable m_VK = {};

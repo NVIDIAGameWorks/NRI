@@ -2,9 +2,7 @@
 
 #pragma region[  RayTracing  ]
 
-static Result NRI_CALL CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex, Descriptor*& descriptor) {
-    MaybeUnused(nodeIndex); // TODO: use it
-
+static Result NRI_CALL CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, Descriptor*& descriptor) {
     return ((AccelerationStructureD3D12&)accelerationStructure).CreateDescriptor(descriptor);
 }
 
@@ -20,9 +18,7 @@ static uint64_t NRI_CALL GetAccelerationStructureBuildScratchBufferSize(const Ac
     return ((AccelerationStructureD3D12&)accelerationStructure).GetBuildScratchBufferSize();
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex) {
-    MaybeUnused(nodeIndex); // TODO: use it
-
+static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure) {
     return ((AccelerationStructureD3D12&)accelerationStructure).GetHandle();
 }
 
@@ -30,9 +26,7 @@ static void NRI_CALL SetAccelerationStructureDebugName(AccelerationStructure& ac
     ((AccelerationStructureD3D12&)accelerationStructure).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const AccelerationStructure& accelerationStructure, uint32_t nodeIndex) {
-    MaybeUnused(nodeIndex); // TODO: use it
-
+static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const AccelerationStructure& accelerationStructure) {
     return uint64_t((ID3D12Resource*)((AccelerationStructureD3D12&)accelerationStructure));
 }
 

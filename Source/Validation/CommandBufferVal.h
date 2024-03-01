@@ -26,7 +26,7 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     // NRI
     //================================================================================================================
     void SetDebugName(const char* name);
-    Result Begin(const DescriptorPool* descriptorPool, uint32_t nodeIndex);
+    Result Begin(const DescriptorPool* descriptorPool);
     Result End();
     void SetViewports(const Viewport* viewports, uint32_t viewportNum);
     void SetScissors(const Rect* rects, uint32_t rectNum);
@@ -50,9 +50,8 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     void DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
     void DrawIndexed(const DrawIndexedDesc& drawIndexedDesc);
     void DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
-    void CopyBuffer(Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size);
-    void CopyTexture(Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcNodeIndex,
-        const TextureRegionDesc* srcRegionDesc);
+    void CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size);
+    void CopyTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc);
     void UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc);
     void ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc);
     void Dispatch(const DispatchDesc& dispatchDesc);

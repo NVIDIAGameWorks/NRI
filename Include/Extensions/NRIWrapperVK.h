@@ -33,7 +33,7 @@ NRI_STRUCT(DeviceCreationVKDesc)
     NRI_NAME(VulkanExtensions) enabledExtensions;
     NRIVkInstance vkInstance;
     NRIVkDevice vkDevice;
-    const NRIVkPhysicalDevice* vkPhysicalDevices;
+    NRIVkPhysicalDevice vkPhysicalDevice;
     uint32_t deviceGroupSize;
     const uint32_t* queueFamilyIndices;
     uint32_t queueFamilyIndexNum;
@@ -73,7 +73,6 @@ NRI_STRUCT(BufferVKDesc)
     uint64_t memoryOffset;
     uint64_t deviceAddress;
     uint32_t structureStride;
-    uint32_t nodeMask;
 };
 
 NRI_STRUCT(TextureVKDesc)
@@ -88,7 +87,6 @@ NRI_STRUCT(TextureVKDesc)
     NRI_NAME(Mip_t) mipNum;
     NRI_NAME(Dim_t) arraySize;
     NRI_NAME(Sample_t) sampleNum;
-    uint32_t nodeMask;
 };
 
 NRI_STRUCT(MemoryVKDesc)
@@ -96,14 +94,12 @@ NRI_STRUCT(MemoryVKDesc)
     NRIVkDeviceMemory vkDeviceMemory;
     uint64_t size;
     uint32_t memoryTypeIndex;
-    uint32_t nodeMask;
 };
 
 NRI_STRUCT(QueryPoolVKDesc)
 {
     NRIVkQueryPool vkQueryPool;
     uint32_t vkQueryType;
-    uint32_t nodeMask;
 };
 
 NRI_STRUCT(AccelerationStructureVKDesc)
@@ -111,7 +107,6 @@ NRI_STRUCT(AccelerationStructureVKDesc)
     NRIVkAccelerationStructureKHR vkAccelerationStructure;
     uint64_t buildScratchSize;
     uint64_t updateScratchSize;
-    uint32_t nodeMask;
 };
 
 NRI_STRUCT(WrapperVKInterface)

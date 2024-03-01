@@ -16,19 +16,15 @@ DescriptorVK::~DescriptorVK() {
         case DescriptorTypeVK::ACCELERATION_STRUCTURE:
             break;
         case DescriptorTypeVK::BUFFER_VIEW:
-            for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
-                if (m_BufferViews[i] != VK_NULL_HANDLE)
-                    vk.DestroyBufferView(m_Device, m_BufferViews[i], m_Device.GetAllocationCallbacks());
-            }
+            if (m_BufferView)
+                vk.DestroyBufferView(m_Device, m_BufferView, m_Device.GetAllocationCallbacks());
             break;
         case DescriptorTypeVK::IMAGE_VIEW:
-            for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
-                if (m_ImageViews[i] != VK_NULL_HANDLE)
-                    vk.DestroyImageView(m_Device, m_ImageViews[i], m_Device.GetAllocationCallbacks());
-            }
+            if (m_ImageView)
+                vk.DestroyImageView(m_Device, m_ImageView, m_Device.GetAllocationCallbacks());
             break;
         case DescriptorTypeVK::SAMPLER:
-            if (m_Sampler != VK_NULL_HANDLE)
+            if (m_Sampler)
                 vk.DestroySampler(m_Device, m_Sampler, m_Device.GetAllocationCallbacks());
             break;
     }
@@ -88,38 +84,27 @@ template <typename T>
 Result DescriptorVK::CreateTextureView(const T& textureViewDesc) {
     const TextureVK& texture = *(const TextureVK*)textureViewDesc.texture;
 
-    VkImageViewUsageCreateInfo imageViewUsageCreateInfo = {};
-    imageViewUsageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
+    VkImageViewUsageCreateInfo imageViewUsageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO};
     imageViewUsageCreateInfo.usage = GetImageViewUsage(textureViewDesc.viewType);
 
     m_Type = DescriptorTypeVK::IMAGE_VIEW;
     m_Format = ::GetVkImageViewFormat(textureViewDesc.format);
     FillTextureDesc(textureViewDesc, m_TextureDesc);
+    m_TextureDesc.handle = texture.GetHandle();
 
-    VkImageSubresourceRange subresource;
+    VkImageSubresourceRange subresource = {};
     FillImageSubresourceRange(textureViewDesc, subresource);
 
-    VkImageViewCreateInfo imageViewCreateInfo = {};
-    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    VkImageViewCreateInfo imageViewCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     imageViewCreateInfo.pNext = &imageViewUsageCreateInfo;
     imageViewCreateInfo.viewType = GetImageViewType(textureViewDesc.viewType);
     imageViewCreateInfo.format = m_Format;
     imageViewCreateInfo.subresourceRange = subresource;
+    imageViewCreateInfo.image = texture.GetHandle();
 
     const auto& vk = m_Device.GetDispatchTable();
-
-    const uint32_t nodeMask = GetNodeMask(textureViewDesc.nodeMask);
-
-    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
-        if ((1 << i) & nodeMask) {
-            m_TextureDesc.handles[i] = texture.GetHandle(i);
-            imageViewCreateInfo.image = texture.GetHandle(i);
-
-            const VkResult result = vk.CreateImageView(m_Device, &imageViewCreateInfo, m_Device.GetAllocationCallbacks(), &m_ImageViews[i]);
-
-            RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't create a texture view: vkCreateImageView returned %d.", (int32_t)result);
-        }
-    }
+    VkResult result = vk.CreateImageView(m_Device, &imageViewCreateInfo, m_Device.GetAllocationCallbacks(), &m_ImageView);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateImageView returned %d", (int32_t)result);
 
     return Result::SUCCESS;
 }
@@ -131,31 +116,17 @@ Result DescriptorVK::Create(const BufferViewDesc& bufferViewDesc) {
     m_Format = GetVkFormat((nri::Format)bufferViewDesc.format);
     m_BufferDesc.offset = bufferViewDesc.offset;
     m_BufferDesc.size = (bufferViewDesc.size == WHOLE_SIZE) ? VK_WHOLE_SIZE : bufferViewDesc.size;
-
-    const uint32_t nodeMask = GetNodeMask(bufferViewDesc.nodeMask);
-
-    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
-        if ((1 << i) & nodeMask)
-            m_BufferDesc.handles[i] = buffer.GetHandle(i);
-    }
+    m_BufferDesc.handle = buffer.GetHandle();
 
     if (bufferViewDesc.format == Format::UNKNOWN)
         return Result::SUCCESS;
 
     VkBufferViewCreateInfo info = {
-        VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, nullptr, (VkBufferViewCreateFlags)0, VK_NULL_HANDLE, m_Format, bufferViewDesc.offset, m_BufferDesc.size};
+        VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, nullptr, (VkBufferViewCreateFlags)0, buffer.GetHandle(), m_Format, bufferViewDesc.offset, m_BufferDesc.size};
 
     const auto& vk = m_Device.GetDispatchTable();
-
-    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
-        if ((1 << i) & nodeMask) {
-            info.buffer = buffer.GetHandle(i);
-
-            const VkResult result = vk.CreateBufferView(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_BufferViews[i]);
-
-            RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't create a buffer view: vkCreateBufferView returned %d.", (int32_t)result);
-        }
-    }
+    VkResult result = vk.CreateBufferView(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_BufferView);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateBufferView returned %d", (int32_t)result);
 
     return Result::SUCCESS;
 }
@@ -182,22 +153,15 @@ Result DescriptorVK::Create(const SamplerDesc& samplerDesc) {
         VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, false};
 
     const auto& vk = m_Device.GetDispatchTable();
-    const VkResult result = vk.CreateSampler(m_Device, &samplerInfo, m_Device.GetAllocationCallbacks(), &m_Sampler);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't create a sampler: vkCreateSampler returned %d.", (int32_t)result);
+    VkResult result = vk.CreateSampler(m_Device, &samplerInfo, m_Device.GetAllocationCallbacks(), &m_Sampler);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateSampler returned %d", (int32_t)result);
 
     return Result::SUCCESS;
 }
 
-Result DescriptorVK::Create(const VkAccelerationStructureKHR* accelerationStructures, uint32_t nodeMask) {
+Result DescriptorVK::Create(VkAccelerationStructureKHR accelerationStructure) {
     m_Type = DescriptorTypeVK::ACCELERATION_STRUCTURE;
-
-    nodeMask = GetNodeMask(nodeMask);
-
-    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
-        if ((1 << i) & nodeMask)
-            m_AccelerationStructures[i] = accelerationStructures[i];
-    }
+    m_AccelerationStructure = accelerationStructure;
 
     return Result::SUCCESS;
 }
@@ -207,19 +171,13 @@ Result DescriptorVK::Create(const VkAccelerationStructureKHR* accelerationStruct
 //================================================================================================================
 
 inline void DescriptorVK::SetDebugName(const char* name) {
-    std::array<uint64_t, PHYSICAL_DEVICE_GROUP_MAX_SIZE> handles;
-
     switch (m_Type) {
         case DescriptorTypeVK::BUFFER_VIEW:
-            for (size_t i = 0; i < handles.size(); i++)
-                handles[i] = (uint64_t)m_BufferViews[i];
-            m_Device.SetDebugNameToDeviceGroupObject(VK_OBJECT_TYPE_BUFFER_VIEW, handles.data(), name);
+            m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_BUFFER_VIEW, (uint64_t)m_BufferView, name);
             break;
 
         case DescriptorTypeVK::IMAGE_VIEW:
-            for (size_t i = 0; i < handles.size(); i++)
-                handles[i] = (uint64_t)m_ImageViews[i];
-            m_Device.SetDebugNameToDeviceGroupObject(VK_OBJECT_TYPE_IMAGE_VIEW, handles.data(), name);
+            m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)m_ImageView, name);
             break;
 
         case DescriptorTypeVK::SAMPLER:
@@ -227,9 +185,7 @@ inline void DescriptorVK::SetDebugName(const char* name) {
             break;
 
         case DescriptorTypeVK::ACCELERATION_STRUCTURE:
-            for (size_t i = 0; i < handles.size(); i++)
-                handles[i] = (uint64_t)m_AccelerationStructures[i];
-            m_Device.SetDebugNameToDeviceGroupObject(VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, handles.data(), name);
+            m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, (uint64_t)m_AccelerationStructure, name);
             break;
 
         default:

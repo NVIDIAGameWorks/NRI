@@ -579,7 +579,7 @@ void DeviceVal::DestroyFence(Fence& fence) {
     Deallocate(GetStdAllocator(), (FenceVal*)&fence);
 }
 
-Result DeviceVal::AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory) {
+Result DeviceVal::AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory) {
     RETURN_ON_FAILURE(this, size > 0, Result::INVALID_ARGUMENT, "AllocateMemory: 'size' is 0");
 
     std::unordered_map<MemoryType, MemoryLocation>::iterator it;
@@ -593,7 +593,7 @@ Result DeviceVal::AllocateMemory(uint32_t nodeMask, MemoryType memoryType, uint6
     RETURN_ON_FAILURE(this, it != end, Result::FAILURE, "AllocateMemory: 'memoryType' is invalid");
 
     Memory* memoryImpl;
-    const Result result = m_CoreAPI.AllocateMemory(m_Device, nodeMask, memoryType, size, memoryImpl);
+    const Result result = m_CoreAPI.AllocateMemory(m_Device, memoryType, size, memoryImpl);
 
     if (result == Result::SUCCESS) {
         RETURN_ON_FAILURE(this, memoryImpl != nullptr, Result::FAILURE, "AllocateMemory: 'impl' is NULL");

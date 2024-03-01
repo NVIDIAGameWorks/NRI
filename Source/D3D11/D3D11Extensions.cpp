@@ -112,7 +112,7 @@ void D3D11Extensions::WaitForDrain(ID3D11DeviceContext* deviceContext, uint32_t 
         const NvAPI_Status res = NvAPI_D3D11_BeginUAVOverlapEx(deviceContext, flags);
         RETURN_ON_FAILURE(m_DeviceBase, res == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_BeginUAVOverlap() - FAILED!");
     } else if (m_AGSContext) {
-        // TODO: Verify that this code actually works on AMD!
+        // TODO: verify that this code actually works on AMD!
         const AGSReturnCode res1 = m_AGS.EndUAVOverlap(m_AGSContext, deviceContext);
         RETURN_ON_FAILURE(m_DeviceBase, res1 == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_EndUAVOverlap() - FAILED!");
         const AGSReturnCode res2 = m_AGS.BeginUAVOverlap(m_AGSContext, deviceContext);

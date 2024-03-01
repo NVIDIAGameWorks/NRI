@@ -152,9 +152,7 @@ static void NRI_CALL DestroyFence(Fence& fence) {
     device.DestroyFence(fence);
 }
 
-static Result NRI_CALL AllocateMemory(Device& device, uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory) {
-    MaybeUnused(nodeMask);
-
+static Result NRI_CALL AllocateMemory(Device& device, MemoryType memoryType, uint64_t size, Memory*& memory) {
     return ((DeviceD3D11&)device).AllocateMemory(memoryType, size, memory);
 }
 

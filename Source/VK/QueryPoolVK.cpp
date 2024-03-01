@@ -9,13 +9,8 @@ using namespace nri;
 QueryPoolVK::~QueryPoolVK() {
     const auto& vk = m_Device.GetDispatchTable();
 
-    if (!m_OwnsNativeObjects)
-        return;
-
-    for (uint32_t i = 0; i < GetCountOf(m_Handles); i++) {
-        if (m_Handles[i] != VK_NULL_HANDLE)
-            vk.DestroyQueryPool(m_Device, m_Handles[i], m_Device.GetAllocationCallbacks());
-    }
+    if (m_OwnsNativeObjects)
+        vk.DestroyQueryPool(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
 }
 
 Result QueryPoolVK::Create(const QueryPoolDesc& queryPoolDesc) {
@@ -39,21 +34,14 @@ Result QueryPoolVK::Create(const QueryPoolDesc& queryPoolDesc) {
         VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT |
         VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
 
-    if (m_Device.GetDesc().isMeshShaderSupported) {
+    if (m_Device.GetDesc().isMeshShaderSupported)
         pipelineStatistics |= VK_QUERY_PIPELINE_STATISTIC_TASK_SHADER_INVOCATIONS_BIT_EXT | VK_QUERY_PIPELINE_STATISTIC_MESH_SHADER_INVOCATIONS_BIT_EXT;
-    }
 
     const VkQueryPoolCreateInfo poolInfo = {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, nullptr, (VkQueryPoolCreateFlags)0, m_Type, queryPoolDesc.capacity, pipelineStatistics};
 
     const auto& vk = m_Device.GetDispatchTable();
-
-    uint32_t nodeMask = GetNodeMask(queryPoolDesc.nodeMask);
-    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
-        if ((1 << i) & nodeMask) {
-            VkResult result = vk.CreateQueryPool(m_Device, &poolInfo, m_Device.GetAllocationCallbacks(), &m_Handles[i]);
-            RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't create a query pool: vkCreateQueryPool returned %d.", (int32_t)result);
-        }
-    }
+    VkResult result = vk.CreateQueryPool(m_Device, &poolInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateQueryPool returned %d", (int32_t)result);
 
     m_QuerySize = (m_Type == VK_QUERY_TYPE_PIPELINE_STATISTICS ? (m_Device.GetDesc().isMeshShaderSupported ? 13 : 11) : 1) * sizeof(uint64_t);
 
@@ -63,15 +51,7 @@ Result QueryPoolVK::Create(const QueryPoolDesc& queryPoolDesc) {
 Result QueryPoolVK::Create(const QueryPoolVKDesc& queryPoolDesc) {
     m_OwnsNativeObjects = false;
     m_Type = (VkQueryType)queryPoolDesc.vkQueryType;
-
-    VkQueryPool handle = (VkQueryPool)queryPoolDesc.vkQueryPool;
-
-    uint32_t nodeMask = GetNodeMask(queryPoolDesc.nodeMask);
-    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
-        if ((1 << i) & nodeMask)
-            m_Handles[i] = handle;
-    }
-
+    m_Handle = (VkQueryPool)queryPoolDesc.vkQueryPool;
     m_QuerySize = (m_Type == VK_QUERY_TYPE_PIPELINE_STATISTICS ? (m_Device.GetDesc().isMeshShaderSupported ? 13 : 11) : 1) * sizeof(uint64_t);
 
     return Result::SUCCESS;
@@ -82,11 +62,7 @@ Result QueryPoolVK::Create(const QueryPoolVKDesc& queryPoolDesc) {
 //================================================================================================================
 
 inline void QueryPoolVK::SetDebugName(const char* name) {
-    std::array<uint64_t, PHYSICAL_DEVICE_GROUP_MAX_SIZE> handles;
-    for (size_t i = 0; i < handles.size(); i++)
-        handles[i] = (uint64_t)m_Handles[i];
-
-    m_Device.SetDebugNameToDeviceGroupObject(VK_OBJECT_TYPE_QUERY_POOL, handles.data(), name);
+    m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_QUERY_POOL, (uint64_t)m_Handle, name);
 }
 
 #include "QueryPoolVK.hpp"

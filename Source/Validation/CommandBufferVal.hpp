@@ -6,8 +6,8 @@ static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, con
     ((CommandBufferVal&)commandBuffer).SetDebugName(name);
 }
 
-static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool, uint32_t nodeIndex) {
-    return ((CommandBufferVal&)commandBuffer).Begin(descriptorPool, nodeIndex);
+static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool) {
+    return ((CommandBufferVal&)commandBuffer).Begin(descriptorPool);
 }
 
 static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
@@ -131,14 +131,13 @@ static void NRI_CALL CmdClearStorageTexture(CommandBuffer& commandBuffer, const 
     ((CommandBufferVal&)commandBuffer).ClearStorageTexture(clearDesc);
 }
 
-static void NRI_CALL CmdCopyBuffer(
-    CommandBuffer& commandBuffer, Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size) {
-    ((CommandBufferVal&)commandBuffer).CopyBuffer(dstBuffer, dstNodeIndex, dstOffset, srcBuffer, srcNodeIndex, srcOffset, size);
+static void NRI_CALL CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
+    ((CommandBufferVal&)commandBuffer).CopyBuffer(dstBuffer, dstOffset, srcBuffer, srcOffset, size);
 }
 
-static void NRI_CALL CmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture,
-    uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc) {
-    ((CommandBufferVal&)commandBuffer).CopyTexture(dstTexture, dstNodeIndex, dstRegionDesc, srcTexture, srcNodeIndex, srcRegionDesc);
+static void NRI_CALL CmdCopyTexture(
+    CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
+    ((CommandBufferVal&)commandBuffer).CopyTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
 }
 
 static void NRI_CALL CmdUploadBufferToTexture(

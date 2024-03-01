@@ -6,7 +6,7 @@ static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* 
     ((DescriptorVK&)descriptor).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor, uint32_t nodeIndex) {
+static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor) {
     if (!(&descriptor))
         return 0;
 
@@ -14,13 +14,13 @@ static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor,
 
     uint64_t handle = 0;
     if (d.GetType() == DescriptorTypeVK::BUFFER_VIEW)
-        handle = (uint64_t)d.GetBufferView(nodeIndex);
+        handle = (uint64_t)d.GetBufferView();
     else if (d.GetType() == DescriptorTypeVK::IMAGE_VIEW)
-        handle = (uint64_t)d.GetImageView(nodeIndex);
+        handle = (uint64_t)d.GetImageView();
     else if (d.GetType() == DescriptorTypeVK::SAMPLER)
         handle = (uint64_t)d.GetSampler();
     else if (d.GetType() == DescriptorTypeVK::ACCELERATION_STRUCTURE)
-        handle = (uint64_t)d.GetAccelerationStructure(nodeIndex);
+        handle = (uint64_t)d.GetAccelerationStructure();
 
     return handle;
 }

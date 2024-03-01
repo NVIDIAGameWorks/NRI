@@ -6,9 +6,7 @@ static void NRI_CALL SetTextureDebugName(Texture& texture, const char* name) {
     ((TextureD3D11&)texture).SetDebugName(name);
 }
 
-static uint64_t NRI_CALL GetTextureNativeObject(const Texture& texture, uint32_t nodeIndex) {
-    MaybeUnused(nodeIndex);
-
+static uint64_t NRI_CALL GetTextureNativeObject(const Texture& texture) {
     if (!(&texture))
         return 0;
 

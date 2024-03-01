@@ -7,8 +7,8 @@ static void NRI_CALL SetDescriptorPoolDebugName(DescriptorPool& descriptorPool, 
 }
 
 static Result NRI_CALL AllocateDescriptorSets(DescriptorPool& descriptorPool, const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout,
-    DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t nodeMask, uint32_t variableDescriptorNum) {
-    return ((DescriptorPoolVK&)descriptorPool).AllocateDescriptorSets(pipelineLayout, setIndexInPipelineLayout, descriptorSets, instanceNum, nodeMask, variableDescriptorNum);
+    DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
+    return ((DescriptorPoolVK&)descriptorPool).AllocateDescriptorSets(pipelineLayout, setIndexInPipelineLayout, descriptorSets, instanceNum, variableDescriptorNum);
 }
 
 static void NRI_CALL ResetDescriptorPool(DescriptorPool& descriptorPool) {

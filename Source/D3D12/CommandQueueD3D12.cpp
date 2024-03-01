@@ -11,7 +11,7 @@ Result CommandQueueD3D12::Create(CommandQueueType queueType) {
     D3D12_COMMAND_QUEUE_DESC commandQueueDesc = {};
     commandQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
     commandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-    commandQueueDesc.NodeMask = NRI_TEMP_NODE_MASK;
+    commandQueueDesc.NodeMask = NRI_NODE_MASK;
     commandQueueDesc.Type = GetCommandListType(queueType);
 
     HRESULT hr = m_Device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&m_CommandQueue));
@@ -47,7 +47,7 @@ inline void CommandQueueD3D12::Submit(const QueueSubmitDesc& queueSubmitDesc) {
 
 inline Result CommandQueueD3D12::UploadData(
     const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
-    HelperDataUpload helperDataUpload(m_Device.GetCoreInterface(), (Device&)m_Device, m_Device.GetStdAllocator(), (CommandQueue&)*this);
+    HelperDataUpload helperDataUpload(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
 
     return helperDataUpload.UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
 }

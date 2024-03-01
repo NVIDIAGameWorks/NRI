@@ -33,7 +33,6 @@ static const NRI_NAME(Dim_t) NRI_CONST_NAME(REMAINING_ARRAY_LAYERS) = 0; // only
 static const NRI_NAME(Mip_t) NRI_CONST_NAME(REMAINING_MIP_LEVELS) = 0; // only for "mipNum"
 static const NRI_NAME(Dim_t) NRI_CONST_NAME(WHOLE_SIZE) = 0; // only for "Dim_t" and "size"
 static const uint32_t NRI_CONST_NAME(ALL_SAMPLES) = 0; // only for "sampleMask"
-static const uint32_t NRI_CONST_NAME(ALL_NODES) = 0; // only for "nodeNum"
 static const uint32_t NRI_CONST_NAME(ONE_VIEWPORT) = 0; // only for "viewportNum"
 static const bool NRI_CONST_NAME(VARIABLE_DESCRIPTOR_NUM) = true;
 static const bool NRI_CONST_NAME(DESCRIPTOR_ARRAY) = true;
@@ -463,7 +462,6 @@ NRI_STRUCT(TextureDesc)
     NRI_NAME(Mip_t) mipNum;
     NRI_NAME(Dim_t) arraySize;
     NRI_NAME(Sample_t) sampleNum;
-    uint32_t nodeMask;
 };
 
 NRI_STRUCT(BufferDesc)
@@ -471,7 +469,6 @@ NRI_STRUCT(BufferDesc)
     uint64_t size;
     uint32_t structureStride;
     NRI_NAME(BufferUsageBits) usageMask;
-    uint32_t nodeMask;
 };
 
 // Descriptors (Views)
@@ -484,7 +481,6 @@ NRI_STRUCT(Texture1DViewDesc)
     NRI_NAME(Mip_t) mipNum;
     NRI_NAME(Dim_t) arrayOffset;
     NRI_NAME(Dim_t) arraySize;
-    uint32_t nodeMask;
     NRI_NAME(ResourceViewBits) flags;
 };
 
@@ -497,7 +493,6 @@ NRI_STRUCT(Texture2DViewDesc)
     NRI_NAME(Mip_t) mipNum;
     NRI_NAME(Dim_t) arrayOffset;
     NRI_NAME(Dim_t) arraySize;
-    uint32_t nodeMask;
     NRI_NAME(ResourceViewBits) flags;
 };
 
@@ -510,7 +505,6 @@ NRI_STRUCT(Texture3DViewDesc)
     NRI_NAME(Mip_t) mipNum;
     NRI_NAME(Dim_t) sliceOffset;
     NRI_NAME(Dim_t) sliceNum;
-    uint32_t nodeMask;
     NRI_NAME(ResourceViewBits) flags;
 };
 
@@ -521,7 +515,6 @@ NRI_STRUCT(BufferViewDesc)
     NRI_NAME(Format) format;
     uint64_t offset;
     uint64_t size;
-    uint32_t nodeMask;
 };
 
 // Descriptor pool
@@ -538,7 +531,6 @@ NRI_STRUCT(DescriptorPoolDesc)
     uint32_t structuredBufferMaxNum;
     uint32_t storageStructuredBufferMaxNum;
     uint32_t accelerationStructureMaxNum;
-    uint32_t nodeMask;
 };
 
 #pragma endregion
@@ -1201,7 +1193,6 @@ NRI_STRUCT(QueueSubmitDesc)
 {
     const NRI_NAME(CommandBuffer)* const* commandBuffers;
     uint32_t commandBufferNum;
-    uint32_t nodeIndex;
 };
 
 // Memory
@@ -1210,7 +1201,6 @@ NRI_STRUCT(BufferMemoryBindingDesc)
     NRI_NAME(Memory)* memory;
     NRI_NAME(Buffer)* buffer;
     uint64_t offset;
-    uint32_t nodeMask;
 };
 
 NRI_STRUCT(TextureMemoryBindingDesc)
@@ -1218,7 +1208,6 @@ NRI_STRUCT(TextureMemoryBindingDesc)
     NRI_NAME(Memory)* memory;
     NRI_NAME(Texture)* texture;
     uint64_t offset;
-    uint32_t nodeMask;
 };
 
 NRI_STRUCT(MemoryDesc)
@@ -1265,7 +1254,6 @@ NRI_STRUCT(DescriptorSetCopyDesc)
     uint32_t baseSrcDynamicConstantBuffer;
     uint32_t baseDstDynamicConstantBuffer;
     uint32_t dynamicConstantBufferNum;
-    uint32_t nodeMask;
 };
 
 // Command signatures
@@ -1316,7 +1304,6 @@ NRI_STRUCT(QueryPoolDesc)
 {
     NRI_NAME(QueryType) queryType;
     uint32_t capacity;
-    uint32_t nodeMask;
 };
 
 // Data layout for QueryType::PIPELINE_STATISTICS
@@ -1499,9 +1486,6 @@ NRI_STRUCT(DeviceDesc)
     uint32_t combinedClipAndCullDistanceMaxNum;
     uint8_t conservativeRasterTier;
 
-    // mGPU
-    uint8_t nodeNum;
-
     // Features support
     uint32_t isTextureFilterMinMaxSupported : 1;
     uint32_t isLogicOpSupported : 1;
@@ -1511,7 +1495,6 @@ NRI_STRUCT(DeviceDesc)
     uint32_t isCopyQueueSupported : 1;
     uint32_t isCopyQueueTimestampSupported : 1;
     uint32_t isRegisterAliasingSupported : 1;
-    uint32_t isSubsetAllocationSupported : 1; // mGPU
     uint32_t isFloat16Supported : 1;
     uint32_t isRaytracingSupported : 1;
     uint32_t isDispatchRaysIndirectSupported : 1;

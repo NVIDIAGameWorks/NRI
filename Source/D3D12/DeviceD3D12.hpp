@@ -152,9 +152,7 @@ static void NRI_CALL DestroyQueryPool(QueryPool& queryPool) {
     device.DestroyQueryPool(queryPool);
 }
 
-static Result NRI_CALL AllocateMemory(Device& device, uint32_t nodeMask, MemoryType memoryType, uint64_t size, Memory*& memory) {
-    MaybeUnused(nodeMask); // TODO: use it
-
+static Result NRI_CALL AllocateMemory(Device& device, MemoryType memoryType, uint64_t size, Memory*& memory) {
     return ((DeviceD3D12&)device).AllocateMemory(memoryType, size, memory);
 }
 

@@ -6,8 +6,7 @@
 
 using namespace nri;
 
-void nri::ConvertGeometryObjectSizesVK(
-    uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, uint32_t* primitiveNums, const GeometryObject* sourceObjects, uint32_t objectNum) {
+void nri::ConvertGeometryObjectSizesVK(VkAccelerationStructureGeometryKHR* destObjects, uint32_t* primitiveNums, const GeometryObject* sourceObjects, uint32_t objectNum) {
     for (uint32_t i = 0; i < objectNum; i++) {
         const GeometryObject& geometrySrc = sourceObjects[i];
 
@@ -17,11 +16,10 @@ void nri::ConvertGeometryObjectSizesVK(
         const uint32_t boxNum = geometrySrc.boxes.boxNum;
         primitiveNums[i] = geometrySrc.type == GeometryType::TRIANGLES ? triangleNum : boxNum;
 
-        const VkDeviceAddress transform = GetBufferDeviceAddress(geometrySrc.triangles.transformBuffer, nodeIndex) + geometrySrc.triangles.transformOffset;
+        const VkDeviceAddress transform = GetBufferDeviceAddress(geometrySrc.triangles.transformBuffer) + geometrySrc.triangles.transformOffset;
 
         VkAccelerationStructureGeometryKHR& geometryDst = destObjects[i];
-        geometryDst = {};
-        geometryDst.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+        geometryDst = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
         geometryDst.flags = GetGeometryFlags(geometrySrc.flags);
         geometryDst.geometryType = GetGeometryType(geometrySrc.type);
         geometryDst.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
@@ -34,8 +32,8 @@ void nri::ConvertGeometryObjectSizesVK(
     }
 }
 
-void nri::ConvertGeometryObjectsVK(uint32_t nodeIndex, VkAccelerationStructureGeometryKHR* destObjects, VkAccelerationStructureBuildRangeInfoKHR* ranges,
-    const GeometryObject* sourceObjects, uint32_t objectNum) {
+void nri::ConvertGeometryObjectsVK(
+    VkAccelerationStructureGeometryKHR* destObjects, VkAccelerationStructureBuildRangeInfoKHR* ranges, const GeometryObject* sourceObjects, uint32_t objectNum) {
     for (uint32_t i = 0; i < objectNum; i++) {
         const GeometryObject& geometrySrc = sourceObjects[i];
 
@@ -47,17 +45,13 @@ void nri::ConvertGeometryObjectsVK(uint32_t nodeIndex, VkAccelerationStructureGe
         ranges[i] = {};
         ranges[i].primitiveCount = geometrySrc.type == GeometryType::TRIANGLES ? triangleNum : boxNum;
 
-        const VkDeviceAddress aabbs = GetBufferDeviceAddress(geometrySrc.boxes.buffer, nodeIndex) + geometrySrc.boxes.offset;
-
-        const VkDeviceAddress vertices = GetBufferDeviceAddress(geometrySrc.triangles.vertexBuffer, nodeIndex) + geometrySrc.triangles.vertexOffset;
-
-        const VkDeviceAddress indices = GetBufferDeviceAddress(geometrySrc.triangles.indexBuffer, nodeIndex) + geometrySrc.triangles.indexOffset;
-
-        const VkDeviceAddress transform = GetBufferDeviceAddress(geometrySrc.triangles.transformBuffer, nodeIndex) + geometrySrc.triangles.transformOffset;
+        const VkDeviceAddress aabbs = GetBufferDeviceAddress(geometrySrc.boxes.buffer) + geometrySrc.boxes.offset;
+        const VkDeviceAddress vertices = GetBufferDeviceAddress(geometrySrc.triangles.vertexBuffer) + geometrySrc.triangles.vertexOffset;
+        const VkDeviceAddress indices = GetBufferDeviceAddress(geometrySrc.triangles.indexBuffer) + geometrySrc.triangles.indexOffset;
+        const VkDeviceAddress transform = GetBufferDeviceAddress(geometrySrc.triangles.transformBuffer) + geometrySrc.triangles.transformOffset;
 
         VkAccelerationStructureGeometryKHR& geometryDst = destObjects[i];
-        geometryDst = {};
-        geometryDst.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+        geometryDst = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
         geometryDst.flags = GetGeometryFlags(geometrySrc.flags);
         geometryDst.geometryType = GetGeometryType(geometrySrc.type);
         geometryDst.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;

@@ -51,12 +51,12 @@ void CommandBufferVal::SetDebugName(const char* name) {
     GetCoreInterface().SetCommandBufferDebugName(*GetImpl(), name);
 }
 
-Result CommandBufferVal::Begin(const DescriptorPool* descriptorPool, uint32_t nodeIndex) {
+Result CommandBufferVal::Begin(const DescriptorPool* descriptorPool) {
     RETURN_ON_FAILURE(&m_Device, !m_IsRecordingStarted, Result::FAILURE, "BeginCommandBuffer: already in the recording state");
 
     DescriptorPool* descriptorPoolImpl = NRI_GET_IMPL(DescriptorPool, descriptorPool);
 
-    Result result = GetCoreInterface().BeginCommandBuffer(*GetImpl(), descriptorPoolImpl, nodeIndex);
+    Result result = GetCoreInterface().BeginCommandBuffer(*GetImpl(), descriptorPoolImpl);
     if (result == Result::SUCCESS)
         m_IsRecordingStarted = true;
 
@@ -274,7 +274,7 @@ void CommandBufferVal::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset
     GetCoreInterface().CmdDrawIndexedIndirect(*GetImpl(), *bufferImpl, offset, drawNum, stride);
 }
 
-void CommandBufferVal::CopyBuffer(Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size) {
+void CommandBufferVal::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdCopyBuffer: the command buffer must be in the recording state");
 
     if (size == WHOLE_SIZE) {
@@ -288,11 +288,10 @@ void CommandBufferVal::CopyBuffer(Buffer& dstBuffer, uint32_t dstNodeIndex, uint
     Buffer* dstBufferImpl = NRI_GET_IMPL(Buffer, &dstBuffer);
     Buffer* srcBufferImpl = NRI_GET_IMPL(Buffer, &srcBuffer);
 
-    GetCoreInterface().CmdCopyBuffer(*GetImpl(), *dstBufferImpl, dstNodeIndex, dstOffset, *srcBufferImpl, srcNodeIndex, srcOffset, size);
+    GetCoreInterface().CmdCopyBuffer(*GetImpl(), *dstBufferImpl, dstOffset, *srcBufferImpl, srcOffset, size);
 }
 
-void CommandBufferVal::CopyTexture(
-    Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc) {
+void CommandBufferVal::CopyTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdCopyTexture: the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "CmdCopyTexture: must be called outside of 'CmdBeginRendering/CmdEndRendering'");
     RETURN_ON_FAILURE(&m_Device, (dstRegionDesc == nullptr && srcRegionDesc == nullptr) || (dstRegionDesc != nullptr && srcRegionDesc != nullptr), ReturnVoid(),
@@ -301,7 +300,7 @@ void CommandBufferVal::CopyTexture(
     Texture* dstTextureImpl = NRI_GET_IMPL(Texture, &dstTexture);
     Texture* srcTextureImpl = NRI_GET_IMPL(Texture, &srcTexture);
 
-    GetCoreInterface().CmdCopyTexture(*GetImpl(), *dstTextureImpl, dstNodeIndex, dstRegionDesc, *srcTextureImpl, srcNodeIndex, srcRegionDesc);
+    GetCoreInterface().CmdCopyTexture(*GetImpl(), *dstTextureImpl, dstRegionDesc, *srcTextureImpl, srcRegionDesc);
 }
 
 void CommandBufferVal::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {

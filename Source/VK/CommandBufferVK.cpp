@@ -47,24 +47,14 @@ inline void CommandBufferVK::SetDebugName(const char* name) {
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)m_Handle, name);
 }
 
-inline Result CommandBufferVK::Begin(const DescriptorPool* descriptorPool, uint32_t nodeIndex) {
+inline Result CommandBufferVK::Begin(const DescriptorPool* descriptorPool) {
     MaybeUnused(descriptorPool);
 
-    m_PhysicalDeviceIndex = nodeIndex;
-
-    VkCommandBufferBeginInfo info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr, (VkCommandBufferUsageFlagBits)0, nullptr};
-
-    VkDeviceGroupCommandBufferBeginInfo deviceGroupInfo;
-    if (m_Device.GetPhysicalDeviceGroupSize() > 1) {
-        deviceGroupInfo = {VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO, nullptr, 1u << nodeIndex};
-
-        info.pNext = &deviceGroupInfo;
-    }
+    VkCommandBufferBeginInfo info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr};
 
     const auto& vk = m_Device.GetDispatchTable();
-    const VkResult result = vk.BeginCommandBuffer(m_Handle, &info);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't begin a command buffer: vkBeginCommandBuffer returned %d.", (int32_t)result);
+    VkResult result = vk.BeginCommandBuffer(m_Handle, &info);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkBeginCommandBuffer returned %d", (int32_t)result);
 
     m_CurrentPipelineBindPoint = VK_PIPELINE_BIND_POINT_MAX_ENUM;
     m_CurrentPipelineLayoutHandle = VK_NULL_HANDLE;
@@ -76,9 +66,8 @@ inline Result CommandBufferVK::Begin(const DescriptorPool* descriptorPool, uint3
 
 inline Result CommandBufferVK::End() {
     const auto& vk = m_Device.GetDispatchTable();
-    const VkResult result = vk.EndCommandBuffer(m_Handle);
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't end a command buffer: vkEndCommandBuffer returned %d.", (int32_t)result);
+    VkResult result = vk.EndCommandBuffer(m_Handle);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkEndCommandBuffer returned %d", (int32_t)result);
 
     return Result::SUCCESS;
 }
@@ -216,7 +205,7 @@ inline void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, uint3
 inline void CommandBufferVK::ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc) {
     const DescriptorVK& descriptor = *(const DescriptorVK*)clearDesc.storageBuffer;
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdFillBuffer(m_Handle, descriptor.GetBuffer(m_PhysicalDeviceIndex), 0, VK_WHOLE_SIZE, clearDesc.value);
+    vk.CmdFillBuffer(m_Handle, descriptor.GetBuffer(), 0, VK_WHOLE_SIZE, clearDesc.value);
 }
 
 inline void CommandBufferVK::ClearStorageTexture(const ClearStorageTextureDesc& clearDesc) {
@@ -227,7 +216,7 @@ inline void CommandBufferVK::ClearStorageTexture(const ClearStorageTextureDesc& 
     descriptor.GetImageSubresourceRange(range);
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdClearColorImage(m_Handle, descriptor.GetImage(m_PhysicalDeviceIndex), VK_IMAGE_LAYOUT_GENERAL, value, 1, &range);
+    vk.CmdClearColorImage(m_Handle, descriptor.GetImage(), VK_IMAGE_LAYOUT_GENERAL, value, 1, &range);
 }
 
 inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
@@ -244,9 +233,8 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
             const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.colors[i];
 
             VkRenderingAttachmentInfo& color = colors[i];
-            color.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-            color.pNext = nullptr;
-            color.imageView = descriptor.GetImageView(m_PhysicalDeviceIndex);
+            color = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+            color.imageView = descriptor.GetImageView();
             color.imageLayout = descriptor.GetImageLayout();
             color.resolveMode = VK_RESOLVE_MODE_NONE;
             color.resolveImageView = VK_NULL_HANDLE;
@@ -265,13 +253,11 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
         }
     }
 
-    VkRenderingAttachmentInfo depthStencil = {};
+    VkRenderingAttachmentInfo depthStencil = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
     if (attachmentsDesc.depthStencil) {
         const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.depthStencil;
 
-        depthStencil.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        depthStencil.pNext = nullptr;
-        depthStencil.imageView = descriptor.GetImageView(m_PhysicalDeviceIndex);
+        depthStencil.imageView = descriptor.GetImageView();
         depthStencil.imageLayout = descriptor.GetImageLayout();
         depthStencil.resolveMode = VK_RESOLVE_MODE_NONE;
         depthStencil.resolveImageView = VK_NULL_HANDLE;
@@ -323,14 +309,14 @@ inline void CommandBufferVK::SetVertexBuffers(uint32_t baseSlot, uint32_t buffer
     VkBuffer* bufferHandles = STACK_ALLOC(VkBuffer, bufferNum);
 
     for (uint32_t i = 0; i < bufferNum; i++)
-        bufferHandles[i] = GetVulkanHandle<VkBuffer, BufferVK>(buffers[i], m_PhysicalDeviceIndex);
+        bufferHandles[i] = GetVulkanHandle<VkBuffer, BufferVK>(buffers[i]);
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBindVertexBuffers(m_Handle, baseSlot, bufferNum, bufferHandles, offsets);
 }
 
 inline void CommandBufferVK::SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType) {
-    const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer, m_PhysicalDeviceIndex);
+    const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer);
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBindIndexBuffer(m_Handle, bufferHandle, offset, GetIndexType(indexType));
 }
@@ -360,7 +346,7 @@ inline void CommandBufferVK::SetDescriptorPool(const DescriptorPool& descriptorP
 
 inline void CommandBufferVK::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
     const DescriptorSetVK& descriptorSetImpl = (DescriptorSetVK&)descriptorSet;
-    VkDescriptorSet vkDescriptorSet = descriptorSetImpl.GetHandle(m_PhysicalDeviceIndex);
+    VkDescriptorSet vkDescriptorSet = descriptorSetImpl.GetHandle();
 
     uint32_t space = m_CurrentPipelineLayout->GetDescriptorSetSpace(setIndexInPipelineLayout);
     uint32_t dynamicOffsetNum = descriptorSetImpl.GetDynamicConstantBufferNum();
@@ -390,7 +376,7 @@ inline void CommandBufferVK::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc)
 inline void CommandBufferVK::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
     static_assert(sizeof(DrawDesc) == sizeof(VkDrawIndirectCommand));
 
-    const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer, m_PhysicalDeviceIndex);
+    const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer);
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdDrawIndirect(m_Handle, bufferHandle, offset, drawNum, (uint32_t)stride);
 }
@@ -398,29 +384,27 @@ inline void CommandBufferVK::DrawIndirect(const Buffer& buffer, uint64_t offset,
 inline void CommandBufferVK::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
     static_assert(sizeof(DrawIndexedDesc) == sizeof(VkDrawIndexedIndirectCommand));
 
-    const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer, m_PhysicalDeviceIndex);
+    const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer);
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdDrawIndexedIndirect(m_Handle, bufferHandle, offset, drawNum, (uint32_t)stride);
 }
 
-inline void CommandBufferVK::CopyBuffer(
-    Buffer& dstBuffer, uint32_t dstNodeIndex, uint64_t dstOffset, const Buffer& srcBuffer, uint32_t srcNodeIndex, uint64_t srcOffset, uint64_t size) {
+inline void CommandBufferVK::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
     const BufferVK& srcBufferImpl = (const BufferVK&)srcBuffer;
     const BufferVK& dstBufferImpl = (const BufferVK&)dstBuffer;
 
     const VkBufferCopy region = {srcOffset, dstOffset, size == WHOLE_SIZE ? srcBufferImpl.GetDesc().size : size};
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyBuffer(m_Handle, srcBufferImpl.GetHandle(srcNodeIndex), dstBufferImpl.GetHandle(dstNodeIndex), 1, &region);
+    vk.CmdCopyBuffer(m_Handle, srcBufferImpl.GetHandle(), dstBufferImpl.GetHandle(), 1, &region);
 }
 
-inline void CommandBufferVK::CopyTexture(
-    Texture& dstTexture, uint32_t dstNodeIndex, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, uint32_t srcNodeIndex, const TextureRegionDesc* srcRegionDesc) {
+inline void CommandBufferVK::CopyTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
     const TextureVK& srcTextureImpl = (const TextureVK&)srcTexture;
     const TextureVK& dstTextureImpl = (const TextureVK&)dstTexture;
 
     if (srcRegionDesc == nullptr && dstRegionDesc == nullptr) {
-        CopyWholeTexture(dstTextureImpl, dstNodeIndex, srcTextureImpl, srcNodeIndex);
+        CopyWholeTexture(dstTextureImpl, srcTextureImpl);
         return;
     }
 
@@ -454,8 +438,7 @@ inline void CommandBufferVK::CopyTexture(
     }
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyImage(
-        m_Handle, srcTextureImpl.GetHandle(dstNodeIndex), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTextureImpl.GetHandle(srcNodeIndex), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vk.CmdCopyImage(m_Handle, srcTextureImpl.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTextureImpl.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 inline void CommandBufferVK::UploadBufferToTexture(
@@ -484,7 +467,7 @@ inline void CommandBufferVK::UploadBufferToTexture(
     };
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyBufferToImage(m_Handle, srcBufferImpl.GetHandle(0), dstTextureImpl.GetHandle(m_PhysicalDeviceIndex), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vk.CmdCopyBufferToImage(m_Handle, srcBufferImpl.GetHandle(), dstTextureImpl.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 inline void CommandBufferVK::ReadbackTextureToBuffer(
@@ -513,7 +496,7 @@ inline void CommandBufferVK::ReadbackTextureToBuffer(
     };
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyImageToBuffer(m_Handle, srcTextureImpl.GetHandle(m_PhysicalDeviceIndex), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstBufferImpl.GetHandle(0), 1, &region);
+    vk.CmdCopyImageToBuffer(m_Handle, srcTextureImpl.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstBufferImpl.GetHandle(), 1, &region);
 }
 
 inline void CommandBufferVK::Dispatch(const DispatchDesc& dispatchDesc) {
@@ -526,7 +509,7 @@ inline void CommandBufferVK::DispatchIndirect(const Buffer& buffer, uint64_t off
 
     const BufferVK& bufferImpl = (const BufferVK&)buffer;
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdDispatchIndirect(m_Handle, bufferImpl.GetHandle(m_PhysicalDeviceIndex), offset);
+    vk.CmdDispatchIndirect(m_Handle, bufferImpl.GetHandle(), offset);
 }
 
 static inline VkPipelineStageFlags2 GetPipelineStageFlags(StageBits stageBits) {
@@ -643,8 +626,7 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
         const GlobalBarrierDesc& in = barrierGroupDesc.globals[i];
 
         VkMemoryBarrier2& out = memoryBarriers[i];
-        out.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
-        out.pNext = nullptr;
+        out = {VK_STRUCTURE_TYPE_MEMORY_BARRIER_2};
         out.srcStageMask = GetPipelineStageFlags(in.before.stages);
         out.srcAccessMask = GetAccessFlags(in.before.access);
         out.dstStageMask = GetPipelineStageFlags(in.after.stages);
@@ -658,15 +640,14 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
         const BufferVK& bufferImpl = *(const BufferVK*)in.buffer;
 
         VkBufferMemoryBarrier2& out = bufferBarriers[i];
-        out.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
-        out.pNext = nullptr;
+        out = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2};
         out.srcStageMask = GetPipelineStageFlags(in.before.stages);
         out.srcAccessMask = GetAccessFlags(in.before.access);
         out.dstStageMask = GetPipelineStageFlags(in.after.stages);
         out.dstAccessMask = GetAccessFlags(in.after.access);
         out.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         out.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        out.buffer = bufferImpl.GetHandle(m_PhysicalDeviceIndex);
+        out.buffer = bufferImpl.GetHandle();
         out.offset = 0;
         out.size = VK_WHOLE_SIZE;
     }
@@ -678,8 +659,7 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
         const TextureVK& textureImpl = *(const TextureVK*)in.texture;
 
         VkImageMemoryBarrier2& out = textureBarriers[i];
-        out.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-        out.pNext = nullptr;
+        out = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2};
         out.srcStageMask = GetPipelineStageFlags(in.before.stages);
         out.srcAccessMask = in.before.layout == Layout::PRESENT ? VK_ACCESS_2_MEMORY_READ_BIT : GetAccessFlags(in.before.access);
         out.dstStageMask = GetPipelineStageFlags(in.after.stages);
@@ -688,7 +668,7 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
         out.newLayout = GetImageLayout(in.after.layout);
         out.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         out.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        out.image = textureImpl.GetHandle(m_PhysicalDeviceIndex);
+        out.image = textureImpl.GetHandle();
         out.subresourceRange = {
             textureImpl.GetImageAspectFlags(),
             in.mipOffset,
@@ -714,7 +694,7 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
 inline void CommandBufferVK::BeginQuery(const QueryPool& queryPool, uint32_t offset) {
     const QueryPoolVK& queryPoolImpl = (const QueryPoolVK&)queryPool;
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdBeginQuery(m_Handle, queryPoolImpl.GetHandle(m_PhysicalDeviceIndex), offset, (VkQueryControlFlagBits)0);
+    vk.CmdBeginQuery(m_Handle, queryPoolImpl.GetHandle(), offset, (VkQueryControlFlagBits)0);
 }
 
 inline void CommandBufferVK::EndQuery(const QueryPool& queryPool, uint32_t offset) {
@@ -722,9 +702,9 @@ inline void CommandBufferVK::EndQuery(const QueryPool& queryPool, uint32_t offse
     const auto& vk = m_Device.GetDispatchTable();
 
     if (queryPoolImpl.GetType() == VK_QUERY_TYPE_TIMESTAMP)
-        vk.CmdWriteTimestamp(m_Handle, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, queryPoolImpl.GetHandle(m_PhysicalDeviceIndex), offset);
+        vk.CmdWriteTimestamp(m_Handle, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, queryPoolImpl.GetHandle(), offset);
     else
-        vk.CmdEndQuery(m_Handle, queryPoolImpl.GetHandle(m_PhysicalDeviceIndex), offset);
+        vk.CmdEndQuery(m_Handle, queryPoolImpl.GetHandle(), offset);
 }
 
 inline void CommandBufferVK::CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset) {
@@ -735,15 +715,14 @@ inline void CommandBufferVK::CopyQueries(const QueryPool& queryPool, uint32_t of
     VkQueryResultFlags flags = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT;
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyQueryPoolResults(
-        m_Handle, queryPoolImpl.GetHandle(m_PhysicalDeviceIndex), offset, num, bufferImpl.GetHandle(m_PhysicalDeviceIndex), dstOffset, queryPoolImpl.GetQuerySize(), flags);
+    vk.CmdCopyQueryPoolResults(m_Handle, queryPoolImpl.GetHandle(), offset, num, bufferImpl.GetHandle(), dstOffset, queryPoolImpl.GetQuerySize(), flags);
 }
 
 inline void CommandBufferVK::ResetQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num) {
     const QueryPoolVK& queryPoolImpl = (const QueryPoolVK&)queryPool;
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdResetQueryPool(m_Handle, queryPoolImpl.GetHandle(m_PhysicalDeviceIndex), offset, num);
+    vk.CmdResetQueryPool(m_Handle, queryPoolImpl.GetHandle(), offset, num);
 }
 
 inline void CommandBufferVK::BeginAnnotation(const char* name) {
@@ -765,7 +744,7 @@ inline void CommandBufferVK::EndAnnotation() {
     vk.CmdEndDebugUtilsLabelEXT(m_Handle);
 }
 
-inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, uint32_t dstNodeIndex, const TextureVK& srcTexture, uint32_t srcNodeIndex) {
+inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, const TextureVK& srcTexture) {
     const TextureDesc& dstTextureDesc = dstTexture.GetDesc();
     const TextureDesc& srcTextureDesc = srcTexture.GetDesc();
 
@@ -782,26 +761,23 @@ inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, uint3
     }
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyImage(m_Handle, srcTexture.GetHandle(srcNodeIndex), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTexture.GetHandle(dstNodeIndex), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        dstTextureDesc.mipNum, regions);
+    vk.CmdCopyImage(m_Handle, srcTexture.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTexture.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstTextureDesc.mipNum, regions);
 }
 
 inline void CommandBufferVK::BuildTopLevelAccelerationStructure(
     uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {
-    const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle(m_PhysicalDeviceIndex);
-    const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress(m_PhysicalDeviceIndex) + scratchOffset;
-    const VkDeviceAddress bufferAddress = ((BufferVK&)buffer).GetDeviceAddress(m_PhysicalDeviceIndex) + bufferOffset;
+    const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
+    const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress() + scratchOffset;
+    const VkDeviceAddress bufferAddress = ((BufferVK&)buffer).GetDeviceAddress() + bufferOffset;
 
-    VkAccelerationStructureGeometryKHR geometry = {};
-    geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    VkAccelerationStructureGeometryKHR geometry = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
     geometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
     geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
     geometry.geometry.aabbs.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR;
     geometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
     geometry.geometry.instances.data.deviceAddress = bufferAddress;
 
-    VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo = {};
-    buildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
     buildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
     buildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
     buildGeometryInfo.flags = GetAccelerationStructureBuildFlags(flags);
@@ -821,16 +797,15 @@ inline void CommandBufferVK::BuildTopLevelAccelerationStructure(
 
 inline void CommandBufferVK::BuildBottomLevelAccelerationStructure(
     uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {
-    const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle(m_PhysicalDeviceIndex);
-    const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress(m_PhysicalDeviceIndex) + scratchOffset;
+    const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
+    const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress() + scratchOffset;
 
     VkAccelerationStructureGeometryKHR* geometries = ALLOCATE_SCRATCH(m_Device, VkAccelerationStructureGeometryKHR, geometryObjectNum);
     VkAccelerationStructureBuildRangeInfoKHR* ranges = ALLOCATE_SCRATCH(m_Device, VkAccelerationStructureBuildRangeInfoKHR, geometryObjectNum);
 
-    ConvertGeometryObjectsVK(m_PhysicalDeviceIndex, geometries, ranges, geometryObjects, geometryObjectNum);
+    ConvertGeometryObjectsVK(geometries, ranges, geometryObjects, geometryObjectNum);
 
-    VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo = {};
-    buildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
     buildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
     buildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
     buildGeometryInfo.flags = GetAccelerationStructureBuildFlags(flags);
@@ -850,21 +825,19 @@ inline void CommandBufferVK::BuildBottomLevelAccelerationStructure(
 
 inline void CommandBufferVK::UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags,
     AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
-    const VkAccelerationStructureKHR srcASHandle = ((const AccelerationStructureVK&)src).GetHandle(m_PhysicalDeviceIndex);
-    const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle(m_PhysicalDeviceIndex);
-    const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress(m_PhysicalDeviceIndex) + scratchOffset;
-    const VkDeviceAddress bufferAddress = ((BufferVK&)buffer).GetDeviceAddress(m_PhysicalDeviceIndex) + bufferOffset;
+    const VkAccelerationStructureKHR srcASHandle = ((const AccelerationStructureVK&)src).GetHandle();
+    const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
+    const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress() + scratchOffset;
+    const VkDeviceAddress bufferAddress = ((BufferVK&)buffer).GetDeviceAddress() + bufferOffset;
 
-    VkAccelerationStructureGeometryKHR geometry = {};
-    geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    VkAccelerationStructureGeometryKHR geometry = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
     geometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
     geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
     geometry.geometry.aabbs.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR;
     geometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
     geometry.geometry.instances.data.deviceAddress = bufferAddress;
 
-    VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo = {};
-    buildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
     buildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
     buildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
     buildGeometryInfo.flags = GetAccelerationStructureBuildFlags(flags);
@@ -885,17 +858,16 @@ inline void CommandBufferVK::UpdateTopLevelAccelerationStructure(uint32_t instan
 
 inline void CommandBufferVK::UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags,
     AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
-    const VkAccelerationStructureKHR srcASHandle = ((const AccelerationStructureVK&)src).GetHandle(m_PhysicalDeviceIndex);
-    const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle(m_PhysicalDeviceIndex);
-    const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress(m_PhysicalDeviceIndex) + scratchOffset;
+    const VkAccelerationStructureKHR srcASHandle = ((const AccelerationStructureVK&)src).GetHandle();
+    const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
+    const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress() + scratchOffset;
 
     VkAccelerationStructureGeometryKHR* geometries = ALLOCATE_SCRATCH(m_Device, VkAccelerationStructureGeometryKHR, geometryObjectNum);
     VkAccelerationStructureBuildRangeInfoKHR* ranges = ALLOCATE_SCRATCH(m_Device, VkAccelerationStructureBuildRangeInfoKHR, geometryObjectNum);
 
-    ConvertGeometryObjectsVK(m_PhysicalDeviceIndex, geometries, ranges, geometryObjects, geometryObjectNum);
+    ConvertGeometryObjectsVK(geometries, ranges, geometryObjects, geometryObjectNum);
 
-    VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo = {};
-    buildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
     buildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
     buildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
     buildGeometryInfo.flags = GetAccelerationStructureBuildFlags(flags);
@@ -915,11 +887,10 @@ inline void CommandBufferVK::UpdateBottomLevelAccelerationStructure(uint32_t geo
 }
 
 inline void CommandBufferVK::CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode) {
-    const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle(m_PhysicalDeviceIndex);
-    const VkAccelerationStructureKHR srcASHandle = ((const AccelerationStructureVK&)src).GetHandle(m_PhysicalDeviceIndex);
+    const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
+    const VkAccelerationStructureKHR srcASHandle = ((const AccelerationStructureVK&)src).GetHandle();
 
-    VkCopyAccelerationStructureInfoKHR info = {};
-    info.sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR;
+    VkCopyAccelerationStructureInfoKHR info = {VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR};
     info.src = srcASHandle;
     info.dst = dstASHandle;
     info.mode = GetCopyMode(copyMode);
@@ -933,9 +904,9 @@ inline void CommandBufferVK::WriteAccelerationStructureSize(
     VkAccelerationStructureKHR* ASes = ALLOCATE_SCRATCH(m_Device, VkAccelerationStructureKHR, accelerationStructureNum);
 
     for (uint32_t i = 0; i < accelerationStructureNum; i++)
-        ASes[i] = ((const AccelerationStructureVK*)accelerationStructures[i])->GetHandle(m_PhysicalDeviceIndex);
+        ASes[i] = ((const AccelerationStructureVK*)accelerationStructures[i])->GetHandle();
 
-    const VkQueryPool queryPoolHandle = ((const QueryPoolVK&)queryPool).GetHandle(m_PhysicalDeviceIndex);
+    const VkQueryPool queryPoolHandle = ((const QueryPoolVK&)queryPool).GetHandle();
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdWriteAccelerationStructuresPropertiesKHR(
@@ -946,22 +917,22 @@ inline void CommandBufferVK::WriteAccelerationStructureSize(
 
 inline void CommandBufferVK::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc) {
     VkStridedDeviceAddressRegionKHR raygen = {};
-    raygen.deviceAddress = GetBufferDeviceAddress(dispatchRaysDesc.raygenShader.buffer, m_PhysicalDeviceIndex) + dispatchRaysDesc.raygenShader.offset;
+    raygen.deviceAddress = GetBufferDeviceAddress(dispatchRaysDesc.raygenShader.buffer) + dispatchRaysDesc.raygenShader.offset;
     raygen.size = dispatchRaysDesc.raygenShader.size;
     raygen.stride = dispatchRaysDesc.raygenShader.stride;
 
     VkStridedDeviceAddressRegionKHR miss = {};
-    miss.deviceAddress = GetBufferDeviceAddress(dispatchRaysDesc.missShaders.buffer, m_PhysicalDeviceIndex) + dispatchRaysDesc.missShaders.offset;
+    miss.deviceAddress = GetBufferDeviceAddress(dispatchRaysDesc.missShaders.buffer) + dispatchRaysDesc.missShaders.offset;
     miss.size = dispatchRaysDesc.missShaders.size;
     miss.stride = dispatchRaysDesc.missShaders.stride;
 
     VkStridedDeviceAddressRegionKHR hit = {};
-    hit.deviceAddress = GetBufferDeviceAddress(dispatchRaysDesc.hitShaderGroups.buffer, m_PhysicalDeviceIndex) + dispatchRaysDesc.hitShaderGroups.offset;
+    hit.deviceAddress = GetBufferDeviceAddress(dispatchRaysDesc.hitShaderGroups.buffer) + dispatchRaysDesc.hitShaderGroups.offset;
     hit.size = dispatchRaysDesc.hitShaderGroups.size;
     hit.stride = dispatchRaysDesc.hitShaderGroups.stride;
 
     VkStridedDeviceAddressRegionKHR callable = {};
-    callable.deviceAddress = GetBufferDeviceAddress(dispatchRaysDesc.callableShaders.buffer, m_PhysicalDeviceIndex) + dispatchRaysDesc.callableShaders.offset;
+    callable.deviceAddress = GetBufferDeviceAddress(dispatchRaysDesc.callableShaders.buffer) + dispatchRaysDesc.callableShaders.offset;
     callable.size = dispatchRaysDesc.callableShaders.size;
     callable.stride = dispatchRaysDesc.callableShaders.stride;
 
@@ -972,7 +943,7 @@ inline void CommandBufferVK::DispatchRays(const DispatchRaysDesc& dispatchRaysDe
 inline void CommandBufferVK::DispatchRaysIndirect(const Buffer& buffer, uint64_t offset) {
     static_assert(sizeof(DispatchRaysIndirectDesc) == sizeof(VkTraceRaysIndirectCommand2KHR));
 
-    uint64_t deviceAddress = GetBufferDeviceAddress(&buffer, m_PhysicalDeviceIndex) + offset;
+    uint64_t deviceAddress = GetBufferDeviceAddress(&buffer) + offset;
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdTraceRaysIndirect2KHR(m_Handle, deviceAddress);
@@ -989,7 +960,7 @@ inline void CommandBufferVK::DrawMeshTasksIndirect(const Buffer& buffer, uint64_
     const BufferVK& bufferImpl = (const BufferVK&)buffer;
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdDrawMeshTasksIndirectEXT(m_Handle, bufferImpl.GetHandle(m_PhysicalDeviceIndex), offset, drawNum, stride);
+    vk.CmdDrawMeshTasksIndirectEXT(m_Handle, bufferImpl.GetHandle(), offset, drawNum, stride);
 }
 
 #include "CommandBufferVK.hpp"

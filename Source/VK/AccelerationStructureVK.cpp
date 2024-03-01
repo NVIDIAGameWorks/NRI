@@ -16,12 +16,9 @@ AccelerationStructureVK::~AccelerationStructureVK() {
     if (!m_OwnsNativeObjects)
         return;
 
-    for (uint32_t i = 0; i < GetCountOf(m_Handles); i++) {
-        if (m_Handles[i] != VK_NULL_HANDLE)
-            vk.DestroyAccelerationStructureKHR(m_Device, m_Handles[i], m_Device.GetAllocationCallbacks());
-    }
+    vk.DestroyAccelerationStructureKHR(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
 
-    if (m_Buffer != nullptr)
+    if (m_Buffer)
         m_Device.DestroyBuffer(*(Buffer*)m_Buffer);
 }
 
@@ -29,7 +26,6 @@ Result AccelerationStructureVK::Create(const AccelerationStructureDesc& accelera
     m_OwnsNativeObjects = true;
     m_Type = GetAccelerationStructureType(accelerationStructureDesc.type);
     m_BuildFlags = GetAccelerationStructureBuildFlags(accelerationStructureDesc.flags);
-    m_PhysicalDeviceMask = GetNodeMask(accelerationStructureDesc.nodeMask);
 
     if (accelerationStructureDesc.type == AccelerationStructureType::BOTTOM_LEVEL)
         PrecreateBottomLevel(accelerationStructureDesc);
@@ -37,7 +33,6 @@ Result AccelerationStructureVK::Create(const AccelerationStructureDesc& accelera
         PrecreateTopLevel(accelerationStructureDesc);
 
     BufferDesc bufferDesc = {};
-    bufferDesc.nodeMask = m_PhysicalDeviceMask;
     bufferDesc.size = m_AccelerationStructureSize;
     bufferDesc.usageMask = BufferUsageBits::RAY_TRACING_BUFFER;
 
@@ -50,13 +45,8 @@ Result AccelerationStructureVK::Create(const AccelerationStructureDesc& accelera
 
 Result AccelerationStructureVK::Create(const AccelerationStructureVKDesc& accelerationStructureDesc) {
     m_OwnsNativeObjects = false;
-    m_Type = VK_ACCELERATION_STRUCTURE_TYPE_MAX_ENUM_KHR;
-    m_BuildFlags = 0;
 
-    uint32_t nodeMask = GetNodeMask(accelerationStructureDesc.nodeMask);
-
-    VkAccelerationStructureDeviceAddressInfoKHR deviceAddressInfo = {};
-    deviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+    VkAccelerationStructureDeviceAddressInfoKHR deviceAddressInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR};
     deviceAddressInfo.accelerationStructure = (VkAccelerationStructureKHR)accelerationStructureDesc.vkAccelerationStructure;
 
     const auto& vk = m_Device.GetDispatchTable();
@@ -65,13 +55,10 @@ Result AccelerationStructureVK::Create(const AccelerationStructureVKDesc& accele
     if (deviceAddress == 0)
         return Result::FAILURE;
 
-    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
-        if ((1 << i) & nodeMask) {
-            m_Handles[i] = (VkAccelerationStructureKHR)accelerationStructureDesc.vkAccelerationStructure;
-            m_DeviceAddresses[i] = deviceAddress;
-        }
-    }
-
+    m_Type = VK_ACCELERATION_STRUCTURE_TYPE_MAX_ENUM_KHR;
+    m_BuildFlags = 0;
+    m_Handle = (VkAccelerationStructureKHR)accelerationStructureDesc.vkAccelerationStructure;
+    m_DeviceAddress = deviceAddress;
     m_BuildScratchSize = accelerationStructureDesc.buildScratchSize;
     m_UpdateScratchSize = accelerationStructureDesc.updateScratchSize;
 
@@ -81,20 +68,18 @@ Result AccelerationStructureVK::Create(const AccelerationStructureVKDesc& accele
 void AccelerationStructureVK::PrecreateBottomLevel(const AccelerationStructureDesc& accelerationStructureDesc) {
     const auto buildType = VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR;
 
-    VkAccelerationStructureBuildGeometryInfoKHR buildInfo = {};
-    buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    VkAccelerationStructureBuildGeometryInfoKHR buildInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
     buildInfo.type = m_Type;
     buildInfo.flags = m_BuildFlags;
     buildInfo.geometryCount = accelerationStructureDesc.instanceOrGeometryObjectNum;
 
-    VkAccelerationStructureBuildSizesInfoKHR sizeInfo = {};
-    sizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+    VkAccelerationStructureBuildSizesInfoKHR sizeInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
 
     Vector<VkAccelerationStructureGeometryKHR> geometries(m_Device.GetStdAllocator());
     uint32_t* primitiveMaxNums = ALLOCATE_SCRATCH(m_Device, uint32_t, accelerationStructureDesc.instanceOrGeometryObjectNum);
 
     geometries.resize(accelerationStructureDesc.instanceOrGeometryObjectNum);
-    ConvertGeometryObjectSizesVK(0, geometries.data(), primitiveMaxNums, accelerationStructureDesc.geometryObjects, (uint32_t)geometries.size());
+    ConvertGeometryObjectSizesVK(geometries.data(), primitiveMaxNums, accelerationStructureDesc.geometryObjects, (uint32_t)geometries.size());
     buildInfo.pGeometries = geometries.data();
 
     const auto& vk = m_Device.GetDispatchTable();
@@ -110,15 +95,13 @@ void AccelerationStructureVK::PrecreateBottomLevel(const AccelerationStructureDe
 void AccelerationStructureVK::PrecreateTopLevel(const AccelerationStructureDesc& accelerationStructureDesc) {
     const auto buildType = VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR;
 
-    VkAccelerationStructureGeometryKHR geometry = {};
-    geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    VkAccelerationStructureGeometryKHR geometry = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
     geometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
     geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
     geometry.geometry.aabbs.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR;
     geometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
 
-    VkAccelerationStructureBuildGeometryInfoKHR buildInfo = {};
-    buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    VkAccelerationStructureBuildGeometryInfoKHR buildInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
     buildInfo.type = m_Type;
     buildInfo.flags = m_BuildFlags;
     buildInfo.geometryCount = 1;
@@ -126,8 +109,7 @@ void AccelerationStructureVK::PrecreateTopLevel(const AccelerationStructureDesc&
 
     const uint32_t instanceMaxNum = accelerationStructureDesc.instanceOrGeometryObjectNum;
 
-    VkAccelerationStructureBuildSizesInfoKHR sizeInfo = {};
-    sizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+    VkAccelerationStructureBuildSizesInfoKHR sizeInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.GetAccelerationStructureBuildSizesKHR(m_Device, buildType, &buildInfo, &instanceMaxNum, &sizeInfo);
@@ -138,32 +120,22 @@ void AccelerationStructureVK::PrecreateTopLevel(const AccelerationStructureDesc&
 }
 
 Result AccelerationStructureVK::FinishCreation() {
-    if (m_Buffer == nullptr)
+    if (!m_Buffer)
         return Result::FAILURE;
 
-    VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo = {};
-    accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+    VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
     accelerationStructureCreateInfo.type = m_Type;
     accelerationStructureCreateInfo.size = m_AccelerationStructureSize;
+    accelerationStructureCreateInfo.buffer = m_Buffer->GetHandle();
 
     const auto& vk = m_Device.GetDispatchTable();
+    VkResult result = vk.CreateAccelerationStructureKHR(m_Device, &accelerationStructureCreateInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateAccelerationStructureKHR returned %d", (int32_t)result);
 
-    for (uint32_t i = 0; i < m_Device.GetPhysicalDeviceGroupSize(); i++) {
-        if ((1 << i) & m_PhysicalDeviceMask) {
-            accelerationStructureCreateInfo.buffer = m_Buffer->GetHandle(i);
+    VkAccelerationStructureDeviceAddressInfoKHR deviceAddressInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR};
+    deviceAddressInfo.accelerationStructure = m_Handle;
 
-            const VkResult result = vk.CreateAccelerationStructureKHR(m_Device, &accelerationStructureCreateInfo, m_Device.GetAllocationCallbacks(), &m_Handles[i]);
-
-            RETURN_ON_FAILURE(
-                &m_Device, result == VK_SUCCESS, GetReturnCode(result), "Can't create an acceleration structure: vkCreateAccelerationStructureKHR returned %d.", (int32_t)result);
-
-            VkAccelerationStructureDeviceAddressInfoKHR deviceAddressInfo = {};
-            deviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
-            deviceAddressInfo.accelerationStructure = m_Handles[i];
-
-            m_DeviceAddresses[i] = vk.GetAccelerationStructureDeviceAddressKHR(m_Device, &deviceAddressInfo);
-        }
-    }
+    m_DeviceAddress = vk.GetAccelerationStructureDeviceAddressKHR(m_Device, &deviceAddressInfo);
 
     return Result::SUCCESS;
 }
@@ -173,11 +145,7 @@ Result AccelerationStructureVK::FinishCreation() {
 //================================================================================================================
 
 inline void AccelerationStructureVK::SetDebugName(const char* name) {
-    std::array<uint64_t, PHYSICAL_DEVICE_GROUP_MAX_SIZE> handles;
-    for (size_t i = 0; i < handles.size(); i++)
-        handles[i] = (uint64_t)m_Handles[i];
-
-    m_Device.SetDebugNameToDeviceGroupObject(VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, handles.data(), name);
+    m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, (uint64_t)m_Handle, name);
     m_Buffer->SetDebugName(name);
 }
 
@@ -185,9 +153,9 @@ inline void AccelerationStructureVK::GetMemoryInfo(MemoryDesc& memoryDesc) const
     m_Buffer->GetMemoryInfo(MemoryLocation::DEVICE, memoryDesc);
 }
 
-inline Result AccelerationStructureVK::CreateDescriptor(uint32_t nodeMask, Descriptor*& descriptor) const {
+inline Result AccelerationStructureVK::CreateDescriptor(Descriptor*& descriptor) const {
     DescriptorVK& descriptorImpl = *Allocate<DescriptorVK>(m_Device.GetStdAllocator(), m_Device);
-    descriptorImpl.Create(m_Handles.data(), nodeMask);
+    descriptorImpl.Create(m_Handle);
     descriptor = (Descriptor*)&descriptorImpl;
 
     return Result::SUCCESS;

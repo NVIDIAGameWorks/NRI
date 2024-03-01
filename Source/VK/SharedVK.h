@@ -25,8 +25,8 @@ union MemoryTypeUnpack {
 };
 
 template <typename HandleType, typename ImplType, typename NRIType>
-constexpr HandleType GetVulkanHandle(NRIType* object, uint32_t nodeIndex) {
-    return (object != nullptr) ? (*(ImplType*)object).GetHandle(nodeIndex) : HandleType(VK_NULL_HANDLE);
+constexpr HandleType GetVulkanHandle(NRIType* object) {
+    return (object != nullptr) ? (*(ImplType*)object).GetHandle() : HandleType(VK_NULL_HANDLE);
 }
 
 constexpr bool IsHostVisibleMemory(nri::MemoryLocation location) {
