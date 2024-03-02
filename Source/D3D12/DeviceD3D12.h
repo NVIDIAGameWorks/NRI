@@ -148,7 +148,7 @@ struct DeviceD3D12 final : public DeviceBase {
   private:
     void FillDesc();
     MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const;
-    ID3D12CommandSignature* CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride);
+    ComPtr<ID3D12CommandSignature> CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride);
 
   private:
     ComPtr<ID3D12DeviceBest> m_Device;
