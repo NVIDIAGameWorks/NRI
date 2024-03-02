@@ -316,7 +316,7 @@ void DeviceD3D12::GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOU
     memoryDesc.mustBeDedicated = RequiresDedicatedAllocation(memoryDesc.type);
 }
 
-ID3D12CommandSignature* DeviceD3D12::CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride) {
+ComPtr<ID3D12CommandSignature> DeviceD3D12::CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride) {
     D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDesc = {};
     indirectArgumentDesc.Type = indirectArgumentType;
 
@@ -326,7 +326,7 @@ ID3D12CommandSignature* DeviceD3D12::CreateCommandSignature(D3D12_INDIRECT_ARGUM
     commandSignatureDesc.NodeMask = NRI_NODE_MASK;
     commandSignatureDesc.ByteStride = stride;
 
-    ID3D12CommandSignature* commandSignature = nullptr;
+    ComPtr<ID3D12CommandSignature> commandSignature = nullptr;
     HRESULT hr = m_Device->CreateCommandSignature(&commandSignatureDesc, nullptr, IID_PPV_ARGS(&commandSignature));
     if (FAILED(hr))
         REPORT_ERROR(this, "ID3D12Device::CreateCommandSignature() failed, result = 0x%08X!", hr);
@@ -339,7 +339,7 @@ ID3D12CommandSignature* DeviceD3D12::GetDrawCommandSignature(uint32_t stride) {
     if (commandSignatureIt != m_DrawCommandSignatures.end())
         return commandSignatureIt->second;
 
-    ID3D12CommandSignature* commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW, stride);
+    ComPtr<ID3D12CommandSignature> commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW, stride);
     m_DrawCommandSignatures[stride] = commandSignature;
 
     return commandSignature;
@@ -350,7 +350,7 @@ ID3D12CommandSignature* DeviceD3D12::GetDrawIndexedCommandSignature(uint32_t str
     if (commandSignatureIt != m_DrawIndexedCommandSignatures.end())
         return commandSignatureIt->second;
 
-    ID3D12CommandSignature* commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED, stride);
+    ComPtr<ID3D12CommandSignature> commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED, stride);
     m_DrawIndexedCommandSignatures[stride] = commandSignature;
 
     return commandSignature;
@@ -361,7 +361,7 @@ ID3D12CommandSignature* DeviceD3D12::GetDrawMeshCommandSignature(uint32_t stride
     if (commandSignatureIt != m_DrawMeshCommandSignatures.end())
         return commandSignatureIt->second;
 
-    ID3D12CommandSignature* commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH, stride);
+    ComPtr<ID3D12CommandSignature> commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH, stride);
     m_DrawMeshCommandSignatures[stride] = commandSignature;
 
     return commandSignature;
