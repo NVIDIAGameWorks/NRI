@@ -1101,23 +1101,32 @@ void DeviceVK::FillFamilyIndices(bool useEnabledFamilyIndices, const uint32_t* e
         bool protect = flags & VK_QUEUE_PROTECTED_BIT;
         bool video = flags & (VK_QUEUE_VIDEO_DECODE_BIT_KHR | VK_QUEUE_VIDEO_ENCODE_BIT_KHR);
         bool opticalFlow = flags & VK_QUEUE_OPTICAL_FLOW_BIT_NV;
+        bool taken = false;
 
+        // Mandatory prerequisites
+        if (!graphics && !compute && !copy)
+            continue;
+
+        // Scores
         score = (graphics ? 100 : 0) + (compute ? 10 : 0) + (copy ? 10 : 0) + (sparse ? 5 : 0) + (opticalFlow ? 2 : 0) + (video ? 1 : 0) + (protect ? 1 : 0);
-        if (score > scores[(uint32_t)CommandQueueType::GRAPHICS]) {
+        if (!taken && score > scores[(uint32_t)CommandQueueType::GRAPHICS]) {
             m_FamilyIndices[(uint32_t)CommandQueueType::GRAPHICS] = i;
             scores[(uint32_t)CommandQueueType::GRAPHICS] = score;
+            taken = true;
         }
 
         score = (!graphics ? 10 : 0) + (compute ? 100 : 0) + (!copy ? 10 : 0) + (sparse ? 5 : 0) + (opticalFlow ? 2 : 0) + (video ? 1 : 0) + (protect ? 1 : 0);
-        if (score > scores[(uint32_t)CommandQueueType::COMPUTE]) {
+        if (!taken && score > scores[(uint32_t)CommandQueueType::COMPUTE]) {
             m_FamilyIndices[(uint32_t)CommandQueueType::COMPUTE] = i;
             scores[(uint32_t)CommandQueueType::COMPUTE] = score;
+            taken = true;
         }
 
         score = (!graphics ? 10 : 0) + (!compute ? 10 : 0) + (copy ? 100 : 0) + (sparse ? 5 : 0) + (opticalFlow ? 2 : 0) + (video ? 1 : 0) + (protect ? 1 : 0);
-        if (score > scores[(uint32_t)CommandQueueType::COPY]) {
+        if (!taken && score > scores[(uint32_t)CommandQueueType::COPY]) {
             m_FamilyIndices[(uint32_t)CommandQueueType::COPY] = i;
             scores[(uint32_t)CommandQueueType::COPY] = score;
+            taken = true;
         }
     }
 }
@@ -1437,7 +1446,7 @@ inline void DeviceVK::SetDebugName(const char* name) {
 }
 
 inline Result DeviceVK::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
-    ExclusiveScope sharedScope(m_Lock);
+    ExclusiveScope lock(m_Lock);
 
     if (m_FamilyIndices[(uint32_t)commandQueueType] == INVALID_FAMILY_INDEX) {
         REPORT_WARNING(this, "%s command queue is not supported by the device!",
@@ -1520,10 +1529,9 @@ inline Result DeviceVK::CreateAccelerationStructure(const AccelerationStructureD
 }
 
 inline Result DeviceVK::CreateCommandQueue(const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue) {
+    ExclusiveScope lock(m_Lock);
+
     const uint32_t commandQueueTypeIndex = (uint32_t)commandQueueVKDesc.commandQueueType;
-
-    ExclusiveScope exclusiveScope(m_Lock);
-
     const bool isFamilyIndexSame = m_FamilyIndices[commandQueueTypeIndex] == commandQueueVKDesc.familyIndex;
     const bool isQueueSame = (VkQueue)m_Queues[commandQueueTypeIndex] == (VkQueue)commandQueueVKDesc.vkQueue;
     if (isFamilyIndexSame && isQueueSame) {

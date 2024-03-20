@@ -439,6 +439,8 @@ Result DeviceVK::FillFunctionTable(HelperInterface& helperInterface) const {
 
 Result DeviceVK::FillFunctionTable(LowLatencyInterface& lowLatencyInterface) const {
     lowLatencyInterface = {};
+    if (!m_Desc.isLowLatencySupported)
+        return Result::UNSUPPORTED;
 
     LowLatency_CommandQueue_PartiallyFillFunctionTableVK(lowLatencyInterface);
     LowLatency_SwapChain_PartiallyFillFunctionTableVK(lowLatencyInterface);

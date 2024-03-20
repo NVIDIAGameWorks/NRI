@@ -12,7 +12,7 @@ Versioning rules:
 */
 
 #define VERSION_MAJOR                   1
-#define VERSION_MINOR                   125
+#define VERSION_MINOR                   126
 #define VERSION_BUILD                   0
 #define VERSION_REVISION                0
 
