@@ -7,8 +7,8 @@ namespace nri {
 struct TextureVal;
 
 struct SwapChainVal : public DeviceObjectVal<SwapChain> {
-    SwapChainVal(DeviceVal& device, SwapChain* swapChain, const SwapChainDesc& swapChainDesc)
-        : DeviceObjectVal(device, swapChain), m_SwapChainAPI(device.GetSwapChainInterface()), m_Textures(device.GetStdAllocator()), m_SwapChainDesc(swapChainDesc) {
+    SwapChainVal(DeviceVal& device, SwapChain* swapChain, const SwapChainDesc& swapChainDesc) :
+        DeviceObjectVal(device, swapChain), m_Textures(device.GetStdAllocator()), m_SwapChainDesc(swapChainDesc) {
     }
 
     ~SwapChainVal();
@@ -17,14 +17,19 @@ struct SwapChainVal : public DeviceObjectVal<SwapChain> {
     // NRI
     //================================================================================================================
     void SetDebugName(const char* name);
-    Texture* const* GetTextures(uint32_t& textureNum) const;
+    Texture* const* GetTextures(uint32_t& textureNum);
     uint32_t AcquireNextTexture();
+    Result WaitForPresent();
     Result Present();
     Result GetDisplayDesc(DisplayDesc& displayDesc) const;
 
-  private:
-    const SwapChainInterface& m_SwapChainAPI;
-    mutable Vector<TextureVal*> m_Textures;
+    Result SetLatencySleepMode(const LatencySleepMode& latencySleepMode);
+    Result SetLatencyMarker(LatencyMarker latencyMarker);
+    Result LatencySleep();
+    Result GetLatencyReport(LatencyReport& latencyReport);
+
+private:
+    Vector<TextureVal*> m_Textures;
     SwapChainDesc m_SwapChainDesc = {};
 };
 

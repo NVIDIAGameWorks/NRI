@@ -1,9 +1,10 @@
 // © 2021 NVIDIA Corporation
 
-Declare_PartiallyFillFunctionTable_Functions(VK)
+Declare_PartiallyFillFunctionTable_Functions(VK);
+
 #pragma region[  Core  ]
 
-    static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device) {
+static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device) {
     return ((DeviceVK&)device).GetDesc();
 }
 
@@ -379,7 +380,7 @@ static void NRI_CALL DestroyAccelerationStructure(AccelerationStructure& acceler
 void FillFunctionTablePipelineVK(RayTracingInterface& rayTracingInterface);
 
 Result DeviceVK::FillFunctionTable(RayTracingInterface& rayTracingInterface) const {
-    if (!m_Desc.isRaytracingSupported)
+    if (!m_Desc.isRayTracingSupported)
         return Result::UNSUPPORTED;
 
     rayTracingInterface = {};
@@ -430,6 +431,86 @@ Result DeviceVK::FillFunctionTable(HelperInterface& helperInterface) const {
     Helper_CommandQueue_PartiallyFillFunctionTableVK(helperInterface);
 
     return ValidateFunctionTable(helperInterface);
+}
+
+#pragma endregion
+
+#pragma region[  LowLatency  ]
+
+Result DeviceVK::FillFunctionTable(LowLatencyInterface& lowLatencyInterface) const {
+    lowLatencyInterface = {};
+
+    LowLatency_CommandQueue_PartiallyFillFunctionTableVK(lowLatencyInterface);
+    LowLatency_SwapChain_PartiallyFillFunctionTableVK(lowLatencyInterface);
+
+    return ValidateFunctionTable(lowLatencyInterface);
+}
+
+#pragma endregion
+
+#pragma region[  Streamer  ]
+
+static Result CreateStreamer(Device& device, const StreamerDesc& streamerDesc, Streamer*& streamer) {
+    DeviceVK& deviceVK = (DeviceVK&)device;
+
+    StreamerImpl* implementation = Allocate<StreamerImpl>(deviceVK.GetStdAllocator(), device, deviceVK.GetCoreInterface());
+    Result res = implementation->Create(streamerDesc);
+
+    if (res == Result::SUCCESS) {
+        streamer = (Streamer*)implementation;
+        return Result::SUCCESS;
+    }
+
+    Deallocate(deviceVK.GetStdAllocator(), implementation);
+
+    return res;
+}
+
+static void DestroyStreamer(Streamer& streamer) {
+    Deallocate(((DeviceBase&)((StreamerImpl&)streamer).GetDevice()).GetStdAllocator(), (StreamerImpl*)&streamer);
+}
+
+static Buffer* GetStreamerConstantBuffer(Streamer& streamer) {
+    return ((StreamerImpl&)streamer).GetConstantBuffer();
+}
+
+static uint32_t UpdateStreamerConstantBuffer(Streamer& streamer, const void* data, uint32_t dataSize) {
+    return ((StreamerImpl&)streamer).UpdateStreamerConstantBuffer(data, dataSize);
+}
+
+static uint64_t AddStreamerBufferUpdateRequest(Streamer& streamer, const BufferUpdateRequestDesc& bufferUpdateRequestDesc) {
+    return ((StreamerImpl&)streamer).AddStreamerBufferUpdateRequest(bufferUpdateRequestDesc);
+}
+
+static uint64_t AddStreamerTextureUpdateRequest(Streamer& streamer, const TextureUpdateRequestDesc& textureUpdateRequestDesc) {
+    return ((StreamerImpl&)streamer).AddStreamerTextureUpdateRequest(textureUpdateRequestDesc);
+}
+
+static Result CopyStreamerUpdateRequests(Streamer& streamer) {
+    return ((StreamerImpl&)streamer).CopyStreamerUpdateRequests();
+}
+
+static Buffer* GetStreamerDynamicBuffer(Streamer& streamer) {
+    return ((StreamerImpl&)streamer).GetDynamicBuffer();
+}
+
+static void CmdUploadStreamerUpdateRequests(CommandBuffer& commandBuffer, Streamer& streamer) {
+    ((StreamerImpl&)streamer).CmdUploadStreamerUpdateRequests(commandBuffer);
+}
+
+Result DeviceVK::FillFunctionTable(StreamerInterface& streamerInterface) const {
+    streamerInterface = {};
+    streamerInterface.CreateStreamer = ::CreateStreamer;
+    streamerInterface.DestroyStreamer = ::DestroyStreamer;
+    streamerInterface.GetStreamerConstantBuffer = ::GetStreamerConstantBuffer;
+    streamerInterface.UpdateStreamerConstantBuffer = ::UpdateStreamerConstantBuffer;
+    streamerInterface.AddStreamerBufferUpdateRequest = ::AddStreamerBufferUpdateRequest;
+    streamerInterface.AddStreamerTextureUpdateRequest = ::AddStreamerTextureUpdateRequest;
+    streamerInterface.CopyStreamerUpdateRequests = ::CopyStreamerUpdateRequests;
+    streamerInterface.GetStreamerDynamicBuffer = ::GetStreamerDynamicBuffer;
+    streamerInterface.CmdUploadStreamerUpdateRequests = ::CmdUploadStreamerUpdateRequests;
+
+    return ValidateFunctionTable(streamerInterface);
 }
 
 #pragma endregion

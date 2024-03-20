@@ -17,4 +17,4 @@ static void NRI_CALL ResetDescriptorPool(DescriptorPool& descriptorPool) {
 
 #pragma endregion
 
-Define_Core_DescriptorPool_PartiallyFillFunctionTable(D3D11)
+Define_Core_DescriptorPool_PartiallyFillFunctionTable(D3D11);

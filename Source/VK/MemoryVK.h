@@ -43,7 +43,7 @@ struct MemoryVK {
 
     void SetDebugName(const char* name);
 
-  private:
+private:
     DeviceVK& m_Device;
     VkDeviceMemory m_Handle = VK_NULL_HANDLE;
     uint8_t* m_MappedMemory = nullptr;

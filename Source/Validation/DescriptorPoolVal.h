@@ -7,10 +7,10 @@
 namespace nri {
 
 struct DescriptorPoolVal : public DeviceObjectVal<DescriptorPool> {
-    DescriptorPoolVal(DeviceVal& device, DescriptorPool* descriptorPool, uint32_t descriptorSetMaxNum)
-        : DeviceObjectVal(device, descriptorPool),
-          m_DescriptorSets(device.GetStdAllocator()),
-          m_SkipValidation(true) // TODO: we have to request "DescriptorPoolDesc" in "DescriptorPoolVKDesc"
+    DescriptorPoolVal(DeviceVal& device, DescriptorPool* descriptorPool, uint32_t descriptorSetMaxNum) :
+        DeviceObjectVal(device, descriptorPool),
+        m_DescriptorSets(device.GetStdAllocator()),
+        m_SkipValidation(true) // TODO: we have to request "DescriptorPoolDesc" in "DescriptorPoolVKDesc"
     {
         m_Desc.descriptorSetMaxNum = descriptorSetMaxNum;
         m_DescriptorSets.reserve(m_Desc.descriptorSetMaxNum);
@@ -18,8 +18,8 @@ struct DescriptorPoolVal : public DeviceObjectVal<DescriptorPool> {
             m_DescriptorSets.emplace_back(DescriptorSetVal(device));
     }
 
-    DescriptorPoolVal(DeviceVal& device, DescriptorPool* descriptorPool, const DescriptorPoolDesc& descriptorPoolDesc)
-        : DeviceObjectVal(device, descriptorPool), m_DescriptorSets(device.GetStdAllocator()), m_Desc(descriptorPoolDesc) {
+    DescriptorPoolVal(DeviceVal& device, DescriptorPool* descriptorPool, const DescriptorPoolDesc& descriptorPoolDesc) :
+        DeviceObjectVal(device, descriptorPool), m_DescriptorSets(device.GetStdAllocator()), m_Desc(descriptorPoolDesc) {
         m_DescriptorSets.reserve(m_Desc.descriptorSetMaxNum);
         for (uint32_t i = 0; i < m_Desc.descriptorSetMaxNum; i++)
             m_DescriptorSets.emplace_back(DescriptorSetVal(device));
@@ -34,7 +34,7 @@ struct DescriptorPoolVal : public DeviceObjectVal<DescriptorPool> {
     Result AllocateDescriptorSets(
         const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
 
-  private:
+private:
     bool CheckDescriptorRange(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum);
     void IncrementDescriptorNum(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum);
 

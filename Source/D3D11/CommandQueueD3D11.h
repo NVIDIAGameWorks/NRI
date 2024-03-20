@@ -29,7 +29,7 @@ struct CommandQueueD3D11 {
     Result UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum);
     Result WaitForIdle();
 
-  private:
+private:
     DeviceD3D11& m_Device;
 };
 

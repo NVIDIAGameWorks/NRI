@@ -1,9 +1,10 @@
 // © 2021 NVIDIA Corporation
 
-Declare_PartiallyFillFunctionTable_Functions(D3D12)
+Declare_PartiallyFillFunctionTable_Functions(D3D12);
+
 #pragma region[  Core  ]
 
-    static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device) {
+static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device) {
     return ((const DeviceD3D12&)device).GetDesc();
 }
 
@@ -255,28 +256,24 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& coreInterface) const {
 
 #pragma endregion
 
-#pragma region[  SwapChain  ]
+#pragma region[  Helper  ]
 
-static Result NRI_CALL CreateSwapChain(Device& device, const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
-    return ((DeviceD3D12&)device).CreateSwapChain(swapChainDesc, swapChain);
+static uint32_t NRI_CALL CountAllocationNum(Device& device, const ResourceGroupDesc& resourceGroupDesc) {
+    return ((DeviceD3D12&)device).CalculateAllocationNumber(resourceGroupDesc);
 }
 
-static void NRI_CALL DestroySwapChain(SwapChain& swapChain) {
-    if (!(&swapChain))
-        return;
-
-    DeviceD3D12& device = ((SwapChainD3D12&)swapChain).GetDevice();
-    device.DestroySwapChain(swapChain);
+static Result NRI_CALL AllocateAndBindMemory(Device& device, const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
+    return ((DeviceD3D12&)device).AllocateAndBindMemory(resourceGroupDesc, allocations);
 }
 
-Result DeviceD3D12::FillFunctionTable(SwapChainInterface& swapChainInterface) const {
-    swapChainInterface = {};
-    swapChainInterface.CreateSwapChain = ::CreateSwapChain;
-    swapChainInterface.DestroySwapChain = ::DestroySwapChain;
+Result DeviceD3D12::FillFunctionTable(HelperInterface& helperInterface) const {
+    helperInterface = {};
+    helperInterface.CalculateAllocationNumber = ::CountAllocationNum;
+    helperInterface.AllocateAndBindMemory = ::AllocateAndBindMemory;
 
-    SwapChain_PartiallyFillFunctionTableD3D12(swapChainInterface);
+    Helper_CommandQueue_PartiallyFillFunctionTableD3D12(helperInterface);
 
-    return ValidateFunctionTable(swapChainInterface);
+    return ValidateFunctionTable(helperInterface);
 }
 
 #pragma endregion
@@ -316,6 +313,35 @@ Result DeviceD3D12::FillFunctionTable(WrapperD3D12Interface& wrapperD3D12Interfa
 
 #pragma endregion
 
+#pragma region[  SwapChain  ]
+
+static Result NRI_CALL CreateSwapChain(Device& device, const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
+    return ((DeviceD3D12&)device).CreateSwapChain(swapChainDesc, swapChain);
+}
+
+static void NRI_CALL DestroySwapChain(SwapChain& swapChain) {
+    if (!(&swapChain))
+        return;
+
+    DeviceD3D12& device = ((SwapChainD3D12&)swapChain).GetDevice();
+    device.DestroySwapChain(swapChain);
+}
+
+Result DeviceD3D12::FillFunctionTable(SwapChainInterface& swapChainInterface) const {
+    swapChainInterface = {};
+    if (!m_Desc.isSwapChainSupported)
+        return Result::UNSUPPORTED;
+
+    swapChainInterface.CreateSwapChain = ::CreateSwapChain;
+    swapChainInterface.DestroySwapChain = ::DestroySwapChain;
+
+    SwapChain_PartiallyFillFunctionTableD3D12(swapChainInterface);
+
+    return ValidateFunctionTable(swapChainInterface);
+}
+
+#pragma endregion
+
 #pragma region[  RayTracing  ]
 
 static Result NRI_CALL CreateRayTracingPipeline(Device& device, const RayTracingPipelineDesc& rayTracingPipelineDesc, Pipeline*& pipeline) {
@@ -342,8 +368,7 @@ void FillFunctionTablePipelineD3D12(RayTracingInterface& rayTracingInterface);
 
 Result DeviceD3D12::FillFunctionTable(RayTracingInterface& rayTracingInterface) const {
     rayTracingInterface = {};
-
-    if (!m_Desc.isRaytracingSupported)
+    if (!m_Desc.isRayTracingSupported)
         return Result::UNSUPPORTED;
 
     FillFunctionTablePipelineD3D12(rayTracingInterface);
@@ -363,10 +388,9 @@ Result DeviceD3D12::FillFunctionTable(RayTracingInterface& rayTracingInterface) 
 #pragma region[  MeshShader  ]
 
 Result DeviceD3D12::FillFunctionTable(MeshShaderInterface& meshShaderInterface) const {
+    meshShaderInterface = {};
     if (!m_Desc.isMeshShaderSupported)
         return Result::UNSUPPORTED;
-
-    meshShaderInterface = {};
 
     MeshShader_CommandBuffer_PartiallyFillFunctionTableD3D12(meshShaderInterface);
 
@@ -375,24 +399,84 @@ Result DeviceD3D12::FillFunctionTable(MeshShaderInterface& meshShaderInterface) 
 
 #pragma endregion
 
-#pragma region[  Helper  ]
+#pragma region[  LowLatency  ]
 
-static uint32_t NRI_CALL CountAllocationNum(Device& device, const ResourceGroupDesc& resourceGroupDesc) {
-    return ((DeviceD3D12&)device).CalculateAllocationNumber(resourceGroupDesc);
+Result DeviceD3D12::FillFunctionTable(LowLatencyInterface& lowLatencyInterface) const {
+    lowLatencyInterface = {};
+    if (!m_Desc.isLowLatencySupported)
+        return Result::UNSUPPORTED;
+
+    LowLatency_CommandQueue_PartiallyFillFunctionTableD3D12(lowLatencyInterface);
+    LowLatency_SwapChain_PartiallyFillFunctionTableD3D12(lowLatencyInterface);
+
+    return ValidateFunctionTable(lowLatencyInterface);
 }
 
-static Result NRI_CALL AllocateAndBindMemory(Device& device, const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
-    return ((DeviceD3D12&)device).AllocateAndBindMemory(resourceGroupDesc, allocations);
+#pragma endregion
+
+#pragma region[  Streamer  ]
+
+static Result CreateStreamer(Device& device, const StreamerDesc& streamerDesc, Streamer*& streamer) {
+    DeviceD3D12& deviceD3D12 = (DeviceD3D12&)device;
+
+    StreamerImpl* implementation = Allocate<StreamerImpl>(deviceD3D12.GetStdAllocator(), device, deviceD3D12.GetCoreInterface());
+    Result res = implementation->Create(streamerDesc);
+
+    if (res == Result::SUCCESS) {
+        streamer = (Streamer*)implementation;
+        return Result::SUCCESS;
+    }
+
+    Deallocate(deviceD3D12.GetStdAllocator(), implementation);
+
+    return res;
 }
 
-Result DeviceD3D12::FillFunctionTable(HelperInterface& helperInterface) const {
-    helperInterface = {};
-    helperInterface.CalculateAllocationNumber = ::CountAllocationNum;
-    helperInterface.AllocateAndBindMemory = ::AllocateAndBindMemory;
+static void DestroyStreamer(Streamer& streamer) {
+    Deallocate(((DeviceBase&)((StreamerImpl&)streamer).GetDevice()).GetStdAllocator(), (StreamerImpl*)&streamer);
+}
 
-    Helper_CommandQueue_PartiallyFillFunctionTableD3D12(helperInterface);
+static Buffer* GetStreamerConstantBuffer(Streamer& streamer) {
+    return ((StreamerImpl&)streamer).GetConstantBuffer();
+}
 
-    return ValidateFunctionTable(helperInterface);
+static uint32_t UpdateStreamerConstantBuffer(Streamer& streamer, const void* data, uint32_t dataSize) {
+    return ((StreamerImpl&)streamer).UpdateStreamerConstantBuffer(data, dataSize);
+}
+
+static uint64_t AddStreamerBufferUpdateRequest(Streamer& streamer, const BufferUpdateRequestDesc& bufferUpdateRequestDesc) {
+    return ((StreamerImpl&)streamer).AddStreamerBufferUpdateRequest(bufferUpdateRequestDesc);
+}
+
+static uint64_t AddStreamerTextureUpdateRequest(Streamer& streamer, const TextureUpdateRequestDesc& textureUpdateRequestDesc) {
+    return ((StreamerImpl&)streamer).AddStreamerTextureUpdateRequest(textureUpdateRequestDesc);
+}
+
+static Result CopyStreamerUpdateRequests(Streamer& streamer) {
+    return ((StreamerImpl&)streamer).CopyStreamerUpdateRequests();
+}
+
+static Buffer* GetStreamerDynamicBuffer(Streamer& streamer) {
+    return ((StreamerImpl&)streamer).GetDynamicBuffer();
+}
+
+static void CmdUploadStreamerUpdateRequests(CommandBuffer& commandBuffer, Streamer& streamer) {
+    ((StreamerImpl&)streamer).CmdUploadStreamerUpdateRequests(commandBuffer);
+}
+
+Result DeviceD3D12::FillFunctionTable(StreamerInterface& streamerInterface) const {
+    streamerInterface = {};
+    streamerInterface.CreateStreamer = ::CreateStreamer;
+    streamerInterface.DestroyStreamer = ::DestroyStreamer;
+    streamerInterface.GetStreamerConstantBuffer = ::GetStreamerConstantBuffer;
+    streamerInterface.UpdateStreamerConstantBuffer = ::UpdateStreamerConstantBuffer;
+    streamerInterface.AddStreamerBufferUpdateRequest = ::AddStreamerBufferUpdateRequest;
+    streamerInterface.AddStreamerTextureUpdateRequest = ::AddStreamerTextureUpdateRequest;
+    streamerInterface.CopyStreamerUpdateRequests = ::CopyStreamerUpdateRequests;
+    streamerInterface.GetStreamerDynamicBuffer = ::GetStreamerDynamicBuffer;
+    streamerInterface.CmdUploadStreamerUpdateRequests = ::CmdUploadStreamerUpdateRequests;
+
+    return ValidateFunctionTable(streamerInterface);
 }
 
 #pragma endregion

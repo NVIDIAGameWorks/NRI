@@ -10,8 +10,8 @@ struct CommandQueueVK {
     inline CommandQueueVK(DeviceVK& device) : m_Device(device) {
     }
 
-    inline CommandQueueVK(DeviceVK& device, VkQueue queue, uint32_t familyIndex, CommandQueueType type)
-        : m_Device(device), m_FamilyIndex(familyIndex), m_Type(type), m_Handle(queue) {
+    inline CommandQueueVK(DeviceVK& device, VkQueue queue, uint32_t familyIndex, CommandQueueType type) :
+        m_Device(device), m_FamilyIndex(familyIndex), m_Type(type), m_Handle(queue) {
     }
 
     inline operator VkQueue() const {
@@ -41,11 +41,11 @@ struct CommandQueueVK {
     //================================================================================================================
 
     void SetDebugName(const char* name);
-    void Submit(const QueueSubmitDesc& queueSubmitDesc);
+    void Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain);
     Result UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum);
     Result WaitForIdle();
 
-  private:
+private:
     DeviceVK& m_Device;
     VkQueue m_Handle = VK_NULL_HANDLE;
     uint32_t m_FamilyIndex = (uint32_t)-1;

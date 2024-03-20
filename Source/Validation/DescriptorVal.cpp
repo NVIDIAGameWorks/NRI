@@ -10,8 +10,8 @@ using namespace nri;
 DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, ResourceType resourceType) : DeviceObjectVal(device, descriptor), m_ResourceType(resourceType) {
 }
 
-DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const BufferViewDesc& bufferViewDesc)
-    : DeviceObjectVal(device, descriptor), m_ResourceType(ResourceType::BUFFER) {
+DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const BufferViewDesc& bufferViewDesc) :
+    DeviceObjectVal(device, descriptor), m_ResourceType(ResourceType::BUFFER) {
     switch (bufferViewDesc.viewType) {
         case BufferViewType::CONSTANT:
             m_ResourceViewType = ResourceViewType::CONSTANT_BUFFER_VIEW;
@@ -28,8 +28,8 @@ DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Bu
     }
 }
 
-DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Texture1DViewDesc& textureViewDesc)
-    : DeviceObjectVal(device, descriptor), m_ResourceType(ResourceType::TEXTURE) {
+DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Texture1DViewDesc& textureViewDesc) :
+    DeviceObjectVal(device, descriptor), m_ResourceType(ResourceType::TEXTURE) {
     switch (textureViewDesc.viewType) {
         case Texture1DViewType::SHADER_RESOURCE_1D:
         case Texture1DViewType::SHADER_RESOURCE_1D_ARRAY:
@@ -51,8 +51,8 @@ DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Te
     }
 }
 
-DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Texture2DViewDesc& textureViewDesc)
-    : DeviceObjectVal(device, descriptor), m_ResourceType(ResourceType::TEXTURE) {
+DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Texture2DViewDesc& textureViewDesc) :
+    DeviceObjectVal(device, descriptor), m_ResourceType(ResourceType::TEXTURE) {
     switch (textureViewDesc.viewType) {
         case Texture2DViewType::SHADER_RESOURCE_2D:
         case Texture2DViewType::SHADER_RESOURCE_2D_ARRAY:
@@ -76,8 +76,8 @@ DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Te
     }
 }
 
-DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Texture3DViewDesc& textureViewDesc)
-    : DeviceObjectVal(device, descriptor), m_ResourceType(ResourceType::TEXTURE) {
+DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Texture3DViewDesc& textureViewDesc) :
+    DeviceObjectVal(device, descriptor), m_ResourceType(ResourceType::TEXTURE) {
     switch (textureViewDesc.viewType) {
         case Texture3DViewType::SHADER_RESOURCE_3D:
             m_ResourceViewType = ResourceViewType::SHADER_RESOURCE;

@@ -40,7 +40,7 @@ struct MemoryD3D12 {
         SET_D3D_DEBUG_OBJECT_NAME(m_Heap, name);
     }
 
-  private:
+private:
     DeviceD3D12& m_Device;
     ComPtr<ID3D12Heap> m_Heap;
     D3D12_HEAP_DESC m_HeapDesc = {};

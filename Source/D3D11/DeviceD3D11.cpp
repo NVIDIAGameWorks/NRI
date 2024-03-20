@@ -9,10 +9,12 @@
 #include "DescriptorPoolD3D11.h"
 #include "DeviceD3D11.h"
 #include "FenceD3D11.h"
+#include "HelperDeviceMemoryAllocator.h"
 #include "MemoryD3D11.h"
 #include "PipelineD3D11.h"
 #include "PipelineLayoutD3D11.h"
 #include "QueryPoolD3D11.h"
+#include "Streamer.h"
 #include "SwapChainD3D11.h"
 #include "TextureD3D11.h"
 
@@ -45,11 +47,11 @@ Result CreateDeviceD3D11(const DeviceCreationDesc& deviceCreationDesc, DeviceBas
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
 
     DeviceD3D11* implementation = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    const nri::Result result = implementation->Create(deviceCreationDesc, nullptr, nullptr, false);
+    Result result = implementation->Create(deviceCreationDesc, nullptr, nullptr, false);
 
-    if (result == nri::Result::SUCCESS) {
+    if (result == Result::SUCCESS) {
         device = (DeviceBase*)implementation;
-        return nri::Result::SUCCESS;
+        return Result::SUCCESS;
     }
 
     Deallocate(allocator, implementation);
@@ -66,12 +68,11 @@ Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc,
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
 
     DeviceD3D11* implementation = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    const nri::Result result =
-        implementation->Create(deviceCreationDesc, deviceCreationD3D11Desc.d3d11Device, deviceCreationD3D11Desc.agsContext, deviceCreationD3D11Desc.isNVAPILoaded);
+    Result result = implementation->Create(deviceCreationDesc, deviceCreationD3D11Desc.d3d11Device, deviceCreationD3D11Desc.agsContext, deviceCreationD3D11Desc.isNVAPILoaded);
 
-    if (result == nri::Result::SUCCESS) {
+    if (result == Result::SUCCESS) {
         device = (DeviceBase*)implementation;
-        return nri::Result::SUCCESS;
+        return Result::SUCCESS;
     }
 
     Deallocate(allocator, implementation);
@@ -210,7 +211,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     // Other
     FillDesc(params);
 
-    for (uint32_t i = 0; i < COMMAND_QUEUE_TYPE_NUM; i++)
+    for (uint32_t i = 0; i < (uint32_t)CommandQueueType::MAX_NUM; i++)
         m_CommandQueues.emplace_back(*this);
 
     return FillFunctionTable(m_CoreInterface);
@@ -370,24 +371,22 @@ void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params) {
     m_Desc.clipDistanceMaxNum = D3D11_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.cullDistanceMaxNum = D3D11_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.combinedClipAndCullDistanceMaxNum = D3D11_CLIP_OR_CULL_DISTANCE_COUNT;
-    m_Desc.rayTracingShaderGroupIdentifierSize = 0;
-    m_Desc.rayTracingShaderTableAligment = 0;
-    m_Desc.rayTracingShaderTableMaxStride = 0;
-    m_Desc.rayTracingShaderRecursionMaxDepth = 0;
-    m_Desc.rayTracingGeometryObjectMaxNum = 0;
     m_Desc.conservativeRasterTier = (uint8_t)options2.ConservativeRasterizationTier;
 
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isDepthBoundsTestSupported = params.extensionsSupported.depthBoundsDeferredContexts;
-    m_Desc.isProgrammableSampleLocationsSupported = m_Desc.adapterDesc.vendor == Vendor::NVIDIA;
+    m_Desc.isProgrammableSampleLocationsSupported = m_Ext.HasNVAPI();
     m_Desc.isLineSmoothingSupported = true;
+
+    m_Desc.isSwapChainSupported = HasOutput();
+    m_Desc.isLowLatencySupported = m_Ext.HasNVAPI();
 }
 
 template <typename Implementation, typename Interface, typename... Args>
 Result DeviceD3D11::CreateImplementation(Interface*& entity, const Args&... args) {
     Implementation* implementation = Allocate<Implementation>(GetStdAllocator(), *this);
-    const Result result = implementation->Create(args...);
+    Result result = implementation->Create(args...);
 
     if (result == Result::SUCCESS) {
         entity = (Interface*)implementation;
@@ -476,11 +475,11 @@ inline Result DeviceD3D11::CreateDescriptor(const SamplerDesc& samplerDesc, Desc
 
 inline Result DeviceD3D11::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout) {
     PipelineLayoutD3D11* implementation = Allocate<PipelineLayoutD3D11>(GetStdAllocator(), *this);
-    const nri::Result res = implementation->Create(pipelineLayoutDesc);
+    Result res = implementation->Create(pipelineLayoutDesc);
 
-    if (res == nri::Result::SUCCESS) {
+    if (res == Result::SUCCESS) {
         pipelineLayout = (PipelineLayout*)implementation;
-        return nri::Result::SUCCESS;
+        return Result::SUCCESS;
     }
 
     Deallocate(GetStdAllocator(), implementation);
@@ -490,11 +489,11 @@ inline Result DeviceD3D11::CreatePipelineLayout(const PipelineLayoutDesc& pipeli
 
 inline Result DeviceD3D11::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline) {
     PipelineD3D11* implementation = Allocate<PipelineD3D11>(GetStdAllocator(), *this);
-    const nri::Result res = implementation->Create(graphicsPipelineDesc);
+    Result res = implementation->Create(graphicsPipelineDesc);
 
-    if (res == nri::Result::SUCCESS) {
+    if (res == Result::SUCCESS) {
         pipeline = (Pipeline*)implementation;
-        return nri::Result::SUCCESS;
+        return Result::SUCCESS;
     }
 
     Deallocate(GetStdAllocator(), implementation);
@@ -504,11 +503,11 @@ inline Result DeviceD3D11::CreatePipeline(const GraphicsPipelineDesc& graphicsPi
 
 inline Result DeviceD3D11::CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline) {
     PipelineD3D11* implementation = Allocate<PipelineD3D11>(GetStdAllocator(), *this);
-    const nri::Result res = implementation->Create(computePipelineDesc);
+    Result res = implementation->Create(computePipelineDesc);
 
-    if (res == nri::Result::SUCCESS) {
+    if (res == Result::SUCCESS) {
         pipeline = (Pipeline*)implementation;
-        return nri::Result::SUCCESS;
+        return Result::SUCCESS;
     }
 
     Deallocate(GetStdAllocator(), implementation);
@@ -522,11 +521,11 @@ inline Result DeviceD3D11::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, Q
 
 inline Result DeviceD3D11::CreateFence(uint64_t initialValue, Fence*& fence) {
     FenceD3D11* implementation = Allocate<FenceD3D11>(GetStdAllocator(), *this);
-    const nri::Result res = implementation->Create(initialValue);
+    Result res = implementation->Create(initialValue);
 
-    if (res == nri::Result::SUCCESS) {
+    if (res == Result::SUCCESS) {
         fence = (Fence*)implementation;
-        return nri::Result::SUCCESS;
+        return Result::SUCCESS;
     }
 
     Deallocate(GetStdAllocator(), implementation);
@@ -611,15 +610,19 @@ inline FormatSupportBits DeviceD3D11::GetFormatSupport(Format format) const {
 }
 
 inline uint32_t DeviceD3D11::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const {
-    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this, m_StdAllocator);
+    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this);
 
     return allocator.CalculateAllocationNumber(resourceGroupDesc);
 }
 
-inline Result DeviceD3D11::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, nri::Memory** allocations) {
-    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this, m_StdAllocator);
+inline Result DeviceD3D11::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
+    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this);
 
     return allocator.AllocateAndBindMemory(resourceGroupDesc, allocations);
+}
+
+namespace d3d11 {
+#include "D3DExt.hpp"
 }
 
 #include "DeviceD3D11.hpp"

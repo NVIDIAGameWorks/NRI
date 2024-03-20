@@ -482,7 +482,7 @@ void CommandBufferVal::BuildTopLevelAccelerationStructure(
     Buffer& scratchImpl = *NRI_GET_IMPL(Buffer, &scratch);
     Buffer& bufferImpl = *NRI_GET_IMPL(Buffer, &buffer);
 
-    m_RayTracingAPI.CmdBuildTopLevelAccelerationStructure(*GetImpl(), instanceNum, bufferImpl, bufferOffset, flags, dstImpl, scratchImpl, scratchOffset);
+    GetRayTracingInterface().CmdBuildTopLevelAccelerationStructure(*GetImpl(), instanceNum, bufferImpl, bufferOffset, flags, dstImpl, scratchImpl, scratchOffset);
 }
 
 void CommandBufferVal::BuildBottomLevelAccelerationStructure(
@@ -501,7 +501,7 @@ void CommandBufferVal::BuildBottomLevelAccelerationStructure(
     Vector<GeometryObject> objectImplArray(geometryObjectNum, m_Device.GetStdAllocator());
     ConvertGeometryObjectsVal(objectImplArray.data(), geometryObjects, geometryObjectNum);
 
-    m_RayTracingAPI.CmdBuildBottomLevelAccelerationStructure(*GetImpl(), geometryObjectNum, objectImplArray.data(), flags, dstImpl, scratchImpl, scratchOffset);
+    GetRayTracingInterface().CmdBuildBottomLevelAccelerationStructure(*GetImpl(), geometryObjectNum, objectImplArray.data(), flags, dstImpl, scratchImpl, scratchOffset);
 }
 
 void CommandBufferVal::UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags,
@@ -523,7 +523,7 @@ void CommandBufferVal::UpdateTopLevelAccelerationStructure(uint32_t instanceNum,
     Buffer& scratchImpl = *NRI_GET_IMPL(Buffer, &scratch);
     Buffer& bufferImpl = *NRI_GET_IMPL(Buffer, &buffer);
 
-    m_RayTracingAPI.CmdUpdateTopLevelAccelerationStructure(*GetImpl(), instanceNum, bufferImpl, bufferOffset, flags, dstImpl, srcImpl, scratchImpl, scratchOffset);
+    GetRayTracingInterface().CmdUpdateTopLevelAccelerationStructure(*GetImpl(), instanceNum, bufferImpl, bufferOffset, flags, dstImpl, srcImpl, scratchImpl, scratchOffset);
 }
 
 void CommandBufferVal::UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags,
@@ -544,7 +544,7 @@ void CommandBufferVal::UpdateBottomLevelAccelerationStructure(uint32_t geometryO
     Vector<GeometryObject> objectImplArray(geometryObjectNum, m_Device.GetStdAllocator());
     ConvertGeometryObjectsVal(objectImplArray.data(), geometryObjects, geometryObjectNum);
 
-    m_RayTracingAPI.CmdUpdateBottomLevelAccelerationStructure(*GetImpl(), geometryObjectNum, objectImplArray.data(), flags, dstImpl, srcImpl, scratchImpl, scratchOffset);
+    GetRayTracingInterface().CmdUpdateBottomLevelAccelerationStructure(*GetImpl(), geometryObjectNum, objectImplArray.data(), flags, dstImpl, srcImpl, scratchImpl, scratchOffset);
 }
 
 void CommandBufferVal::CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode) {
@@ -555,7 +555,7 @@ void CommandBufferVal::CopyAccelerationStructure(AccelerationStructure& dst, Acc
     AccelerationStructure& dstImpl = *NRI_GET_IMPL(AccelerationStructure, &dst);
     AccelerationStructure& srcImpl = *NRI_GET_IMPL(AccelerationStructure, &src);
 
-    m_RayTracingAPI.CmdCopyAccelerationStructure(*GetImpl(), dstImpl, srcImpl, copyMode);
+    GetRayTracingInterface().CmdCopyAccelerationStructure(*GetImpl(), dstImpl, srcImpl, copyMode);
 }
 
 void CommandBufferVal::WriteAccelerationStructureSize(
@@ -573,7 +573,7 @@ void CommandBufferVal::WriteAccelerationStructureSize(
 
     QueryPool& queryPoolImpl = *NRI_GET_IMPL(QueryPool, &queryPool);
 
-    m_RayTracingAPI.CmdWriteAccelerationStructureSize(*GetImpl(), accelerationStructures, accelerationStructureNum, queryPoolImpl, queryOffset);
+    GetRayTracingInterface().CmdWriteAccelerationStructureSize(*GetImpl(), accelerationStructures, accelerationStructureNum, queryPoolImpl, queryOffset);
 }
 
 void CommandBufferVal::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc) {
@@ -593,7 +593,7 @@ void CommandBufferVal::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc) {
     dispatchRaysDescImpl.hitShaderGroups.buffer = NRI_GET_IMPL(Buffer, dispatchRaysDesc.hitShaderGroups.buffer);
     dispatchRaysDescImpl.callableShaders.buffer = NRI_GET_IMPL(Buffer, dispatchRaysDesc.callableShaders.buffer);
 
-    m_RayTracingAPI.CmdDispatchRays(*GetImpl(), dispatchRaysDescImpl);
+    GetRayTracingInterface().CmdDispatchRays(*GetImpl(), dispatchRaysDescImpl);
 }
 
 void CommandBufferVal::DispatchRaysIndirect(const Buffer& buffer, uint64_t offset) {
@@ -601,11 +601,11 @@ void CommandBufferVal::DispatchRaysIndirect(const Buffer& buffer, uint64_t offse
     RETURN_ON_FAILURE(&m_Device, offset < bufferDesc.size, ReturnVoid(), "CmdDrawMeshTasksIndirect: offset is greater than the buffer size");
 
     Buffer* bufferImpl = NRI_GET_IMPL(Buffer, &buffer);
-    m_RayTracingAPI.CmdDispatchRaysIndirect(*GetImpl(), *bufferImpl, offset);
+    GetRayTracingInterface().CmdDispatchRaysIndirect(*GetImpl(), *bufferImpl, offset);
 }
 
 void CommandBufferVal::DrawMeshTasks(const DrawMeshTasksDesc& drawMeshTasksDesc) {
-    m_MeshShaderAPI.CmdDrawMeshTasks(*GetImpl(), drawMeshTasksDesc);
+    GetMeshShaderInterface().CmdDrawMeshTasks(*GetImpl(), drawMeshTasksDesc);
 }
 
 void CommandBufferVal::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
@@ -613,7 +613,7 @@ void CommandBufferVal::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offs
     RETURN_ON_FAILURE(&m_Device, offset < bufferDesc.size, ReturnVoid(), "CmdDrawMeshTasksIndirect: offset is greater than the buffer size");
 
     Buffer* bufferImpl = NRI_GET_IMPL(Buffer, &buffer);
-    m_MeshShaderAPI.CmdDrawMeshTasksIndirect(*GetImpl(), *bufferImpl, offset, drawNum, stride);
+    GetMeshShaderInterface().CmdDrawMeshTasksIndirect(*GetImpl(), *bufferImpl, offset, drawNum, stride);
 }
 
 template <typename Command>

@@ -33,11 +33,11 @@ struct FenceD3D11 {
     }
 
     uint64_t GetFenceValue() const;
-    void QueueSignal(CommandQueueD3D11& commandQueue, uint64_t value);
-    void QueueWait(CommandQueueD3D11& commandQueue, uint64_t value);
+    void QueueSignal(uint64_t value);
+    void QueueWait(uint64_t value);
     void Wait(uint64_t value);
 
-  private:
+private:
     DeviceD3D11& m_Device;
     ComPtr<ID3D11Query> m_Query;
     ComPtr<ID3D11Fence> m_Fence;

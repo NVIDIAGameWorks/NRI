@@ -30,7 +30,7 @@ struct alignas(LOCK_CACHELINE_SIZE) Lock {
         m_Atomic.store(0, std::memory_order_release);
     }
 
-  private:
+private:
     std::atomic_uint32_t m_Atomic;
 };
 
@@ -43,6 +43,6 @@ struct ExclusiveScope {
         m_Lock.Release();
     }
 
-  private:
+private:
     Lock& m_Lock;
 };

@@ -7,8 +7,8 @@
 
 using namespace nri;
 
-QueryPoolVal::QueryPoolVal(DeviceVal& device, QueryPool* queryPool, QueryType queryType, uint32_t queryNum)
-    : DeviceObjectVal(device, queryPool), m_DeviceState(device.GetStdAllocator()), m_QueryType(queryType) {
+QueryPoolVal::QueryPoolVal(DeviceVal& device, QueryPool* queryPool, QueryType queryType, uint32_t queryNum) :
+    DeviceObjectVal(device, queryPool), m_DeviceState(device.GetStdAllocator()), m_QueryType(queryType) {
     m_QueryNum = queryNum;
 
     if (queryNum != 0) {
@@ -26,8 +26,7 @@ uint32_t QueryPoolVal::GetQuerySize() const {
     return GetCoreInterface().GetQuerySize(*GetImpl());
 }
 
-bool QueryPoolVal::SetQueryState(uint32_t offset, bool state) // TODO: not inline
-{
+bool QueryPoolVal::SetQueryState(uint32_t offset, bool state) { // TODO: not inline
     const size_t batchIndex = offset >> 6;
     const uint64_t batchValue = m_DeviceState[batchIndex];
     const size_t bitIndex = 1ull << (offset & 63);

@@ -38,7 +38,7 @@ struct DescriptorSetD3D11 {
     void UpdateDynamicConstantBuffers(uint32_t baseBuffer, uint32_t bufferNum, const Descriptor* const* descriptors);
     void Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc);
 
-  private:
+private:
     Vector<OffsetNum> m_Ranges;
     const DescriptorD3D11** m_Descriptors = nullptr;
     uint32_t m_DynamicConstantBuffersNum = 0;

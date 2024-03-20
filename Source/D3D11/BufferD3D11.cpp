@@ -10,8 +10,7 @@
 using namespace nri;
 
 BufferD3D11::~BufferD3D11() {
-    if (m_ReadbackTexture)
-        Deallocate(m_Device.GetStdAllocator(), m_ReadbackTexture);
+    Deallocate(m_Device.GetStdAllocator(), m_ReadbackTexture);
 }
 
 Result BufferD3D11::Create(const MemoryD3D11& memory) {
@@ -207,8 +206,7 @@ TextureD3D11& BufferD3D11::RecreateReadbackTexture(const TextureD3D11& srcTextur
         else if (srcRegionDesc.height == 1)
             textureDesc.type = TextureType::TEXTURE_1D;
 
-        if (m_ReadbackTexture)
-            Deallocate(m_Device.GetStdAllocator(), m_ReadbackTexture);
+        Deallocate(m_Device.GetStdAllocator(), m_ReadbackTexture);
 
         m_ReadbackTexture = Allocate<TextureD3D11>(m_Device.GetStdAllocator(), m_Device, textureDesc);
         m_ReadbackTexture->Create(nullptr);

@@ -1,22 +1,26 @@
 #include "SharedExternal.h"
 
+#include "HelperWaitIdle.h"
+
 using namespace nri;
 
-HelperWaitIdle::HelperWaitIdle(const CoreInterface& NRI, Device& device, CommandQueue& commandQueue) : NRI(NRI), m_Device(device), m_CommandQueue(commandQueue) {
-    NRI.CreateFence(device, 0, m_Fence);
-}
+Result WaitIdle(const CoreInterface& NRI, Device& device, CommandQueue& commandQueue) {
+    Fence* fence = nullptr;
+    Result result = NRI.CreateFence(device, 0, fence);
+    if (result != Result::SUCCESS)
+        return result;
 
-HelperWaitIdle::~HelperWaitIdle() {
-    if (m_Fence)
-        NRI.DestroyFence(*m_Fence);
-}
+    FenceSubmitDesc fenceSubmitDesc = {};
+    fenceSubmitDesc.fence = fence;
+    fenceSubmitDesc.value = 1;
 
-Result HelperWaitIdle::WaitIdle() {
-    if (!m_Fence)
-        return Result::FAILURE;
+    QueueSubmitDesc queueSubmitDesc = {};
+    queueSubmitDesc.signalFences = &fenceSubmitDesc;
+    queueSubmitDesc.signalFenceNum = 1;
 
-    NRI.QueueSignal(m_CommandQueue, *m_Fence, 1);
-    NRI.Wait(*m_Fence, 1);
+    NRI.QueueSubmit(commandQueue, queueSubmitDesc);
+    NRI.Wait(*fence, 1);
+    NRI.DestroyFence(*fence);
 
     return Result::SUCCESS;
 }

@@ -74,7 +74,7 @@ struct DescriptorD3D11 {
         SET_D3D_DEBUG_OBJECT_NAME(m_Descriptor, name);
     }
 
-  private:
+private:
     DeviceD3D11& m_Device;
     ComPtr<ID3D11DeviceChild> m_Descriptor;
     SubresourceInfo m_SubresourceInfo = {};

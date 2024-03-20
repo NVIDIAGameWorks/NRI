@@ -45,10 +45,13 @@ struct TextureD3D11 {
         return regionDesc.mipOffset + regionDesc.arrayOffset * m_Desc.mipNum;
     }
 
+    inline Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const {
+        return GetDimension(GraphicsAPI::D3D11, m_Desc, dimensionIndex, mip);
+    }
+
     Result Create(const MemoryD3D11* memory);
     Result Create(const TextureD3D11Desc& textureDesc);
     uint32_t GetMipmappedSize(uint32_t w = 0, uint32_t h = 0, uint32_t d = 0, Mip_t mipNum = 0, Mip_t mipOffset = 0) const;
-    Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const;
 
     //================================================================================================================
     // NRI
@@ -60,7 +63,7 @@ struct TextureD3D11 {
 
     void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
-  private:
+private:
     DeviceD3D11& m_Device;
     ComPtr<ID3D11Resource> m_Texture;
     TextureDesc m_Desc = {};

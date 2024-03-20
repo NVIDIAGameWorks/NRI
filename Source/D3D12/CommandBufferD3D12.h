@@ -6,8 +6,8 @@ struct ID3D12CommandAllocator;
 struct ID3D12Resource;
 
 #ifdef NRI_USE_AGILITY_SDK
-struct ID3D12GraphicsCommandList9;
-typedef ID3D12GraphicsCommandList9 ID3D12GraphicsCommandListBest;
+struct ID3D12GraphicsCommandList10;
+typedef ID3D12GraphicsCommandList10 ID3D12GraphicsCommandListBest;
 #else
 struct ID3D12GraphicsCommandList6;
 typedef ID3D12GraphicsCommandList6 ID3D12GraphicsCommandListBest;
@@ -101,7 +101,7 @@ struct CommandBufferD3D12 {
     void DrawMeshTasks(const DrawMeshTasksDesc& drawMeshTasksDesc);
     void DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
 
-  private:
+private:
     DeviceD3D12& m_Device;
     ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
     ComPtr<ID3D12GraphicsCommandListBest> m_GraphicsCommandList;

@@ -8,7 +8,7 @@
 
 using namespace nri;
 
-inline D3D11_TEXTURE_ADDRESS_MODE GetD3D11AdressMode(nri::AddressMode mode) {
+inline D3D11_TEXTURE_ADDRESS_MODE GetD3D11AdressMode(AddressMode mode) {
     return (D3D11_TEXTURE_ADDRESS_MODE)(D3D11_TEXTURE_ADDRESS_WRAP + (uint32_t)mode);
 }
 
@@ -477,8 +477,8 @@ DescriptorD3D11::DescriptorD3D11(DeviceD3D11& device, ID3D11DepthStencilView* de
     m_Type = DescriptorTypeDX11::NO_SHADER_VISIBLE;
 }
 
-DescriptorD3D11::DescriptorD3D11(DeviceD3D11& device, ID3D11Buffer* constantBuffer, uint32_t elementOffset, uint32_t elementNum)
-    : m_Descriptor(constantBuffer), m_ElementOffset(elementOffset), m_ElementNum(elementNum), m_Device(device) {
+DescriptorD3D11::DescriptorD3D11(DeviceD3D11& device, ID3D11Buffer* constantBuffer, uint32_t elementOffset, uint32_t elementNum) :
+    m_Descriptor(constantBuffer), m_ElementOffset(elementOffset), m_ElementNum(elementNum), m_Device(device) {
     m_Type = DescriptorTypeDX11::CONSTANT;
 }
 

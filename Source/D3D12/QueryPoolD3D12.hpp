@@ -12,4 +12,4 @@ static uint32_t NRI_CALL GetQuerySize(const QueryPool& queryPool) {
 
 #pragma endregion
 
-Define_Core_QueryPool_PartiallyFillFunctionTable(D3D12)
+Define_Core_QueryPool_PartiallyFillFunctionTable(D3D12);

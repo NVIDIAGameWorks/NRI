@@ -16,4 +16,4 @@ static void NRI_CALL ResetCommandAllocator(CommandAllocator& commandAllocator) {
 
 #pragma endregion
 
-Define_Core_CommandAllocator_PartiallyFillFunctionTable(D3D11)
+Define_Core_CommandAllocator_PartiallyFillFunctionTable(D3D11);

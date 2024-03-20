@@ -21,11 +21,11 @@ Result CreateCommandBuffer(DeviceD3D11& device, ID3D11DeviceContext* precreatedC
     else
         impl = Allocate<CommandBufferD3D11>(device.GetStdAllocator(), device);
 
-    const nri::Result result = ((CommandBufferHelper*)impl)->Create(precreatedContext);
+    const Result result = ((CommandBufferHelper*)impl)->Create(precreatedContext);
 
-    if (result == nri::Result::SUCCESS) {
+    if (result == Result::SUCCESS) {
         commandBuffer = (CommandBuffer*)impl;
-        return nri::Result::SUCCESS;
+        return Result::SUCCESS;
     }
 
     if (isImmediate)

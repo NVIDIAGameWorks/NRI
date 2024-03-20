@@ -12,7 +12,11 @@ static uint32_t NRI_CALL AcquireNextSwapChainTexture(SwapChain& swapChain) {
     return ((SwapChainVK&)swapChain).AcquireNextTexture();
 }
 
-static Result NRI_CALL SwapChainPresent(SwapChain& swapChain) {
+static Result NRI_CALL WaitForPresent(SwapChain& swapChain) {
+    return ((SwapChainVK&)swapChain).WaitForPresent();
+}
+
+static Result NRI_CALL QueuePresent(SwapChain& swapChain) {
     return ((SwapChainVK&)swapChain).Present();
 }
 
@@ -20,4 +24,25 @@ static Result NRI_CALL GetDisplayDesc(SwapChain& swapChain, DisplayDesc& display
     return ((SwapChainVK&)swapChain).GetDisplayDesc(displayDesc);
 }
 
-Define_SwapChain_PartiallyFillFunctionTable(VK)
+#pragma region[  Low latency  ]
+
+static Result SetLatencySleepMode(SwapChain& swapChain, const LatencySleepMode& latencySleepMode) {
+    return ((SwapChainVK&)swapChain).SetLatencySleepMode(latencySleepMode);
+}
+
+static Result SetLatencyMarker(SwapChain& swapChain, LatencyMarker latencyMarker) {
+    return ((SwapChainVK&)swapChain).SetLatencyMarker(latencyMarker);
+}
+
+static Result LatencySleep(SwapChain& swapChain) {
+    return ((SwapChainVK&)swapChain).LatencySleep();
+}
+
+static Result GetLatencyReport(const SwapChain& swapChain, LatencyReport& latencyReport) {
+    return ((SwapChainVK&)swapChain).GetLatencyReport(latencyReport);
+}
+
+#pragma endregion
+
+Define_SwapChain_PartiallyFillFunctionTable(VK);
+Define_LowLatency_SwapChain_PartiallyFillFunctionTable(VK);

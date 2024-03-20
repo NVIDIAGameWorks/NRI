@@ -11,11 +11,7 @@ struct AGSContext;
 struct ID3D11DeviceContext4;
 typedef ID3D11DeviceContext4 ID3D11DeviceContextBest;
 
-#define SHADER_EXT_UAV_SLOT 63 // TODO: D3D 11.1 assumed
-
 namespace nri {
-
-struct D3D11Extensions;
 
 constexpr Mip_t NULL_TEXTURE_REGION_DESC = Mip_t(-1);
 
@@ -189,5 +185,11 @@ struct SamplePositionsState {
 
 } // namespace nri
 
-#include "D3D11Extensions.h"
+#include "amdags/ags_lib/inc/amd_ags.h"
+#include "nvapi/nvapi.h"
+
+namespace d3d11 {
+#include "D3DExt.h"
+}
+
 #include "DeviceD3D11.h"

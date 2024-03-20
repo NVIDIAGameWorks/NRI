@@ -4,6 +4,9 @@
 
 #include "CommandBufferVK.h"
 #include "CommandQueueVK.h"
+#include "FenceVK.h"
+#include "HelperDataUpload.h"
+#include "SwapChainVK.h"
 
 using namespace nri;
 
@@ -23,17 +26,48 @@ inline void CommandQueueVK::SetDebugName(const char* name) {
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_QUEUE, (uint64_t)m_Handle, name);
 }
 
-inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc) {
+inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
     ExclusiveScope lock(m_Lock);
 
-    VkCommandBuffer* commandBuffers = STACK_ALLOC(VkCommandBuffer, queueSubmitDesc.commandBufferNum);
-    for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++)
-        commandBuffers[i] = *(CommandBufferVK*)queueSubmitDesc.commandBuffers[i];
+    VkSemaphoreSubmitInfo* waitSemaphores = STACK_ALLOC(VkSemaphoreSubmitInfo, queueSubmitDesc.waitFenceNum);
+    for (uint32_t i = 0; i < queueSubmitDesc.waitFenceNum; i++) {
+        waitSemaphores[i] = {VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO};
+        waitSemaphores[i].semaphore = *(FenceVK*)queueSubmitDesc.waitFences[i].fence;
+        waitSemaphores[i].value = queueSubmitDesc.waitFences[i].value;
+        waitSemaphores[i].stageMask = GetPipelineStageFlags(queueSubmitDesc.waitFences[i].stages);
+    }
 
-    VkSubmitInfo submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0, nullptr, nullptr, queueSubmitDesc.commandBufferNum, commandBuffers, 0, nullptr};
+    VkCommandBufferSubmitInfo* commandBuffers = STACK_ALLOC(VkCommandBufferSubmitInfo, queueSubmitDesc.commandBufferNum);
+    for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++) {
+        commandBuffers[i] = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO};
+        commandBuffers[i].commandBuffer = *(CommandBufferVK*)queueSubmitDesc.commandBuffers[i];
+        commandBuffers[i].deviceMask = NRI_NODE_MASK;
+    }
+
+    VkSemaphoreSubmitInfo* signalSemaphores = STACK_ALLOC(VkSemaphoreSubmitInfo, queueSubmitDesc.signalFenceNum);
+    for (uint32_t i = 0; i < queueSubmitDesc.signalFenceNum; i++) {
+        signalSemaphores[i] = {VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO};
+        signalSemaphores[i].semaphore = *(FenceVK*)queueSubmitDesc.signalFences[i].fence;
+        signalSemaphores[i].value = queueSubmitDesc.signalFences[i].value;
+        signalSemaphores[i].stageMask = GetPipelineStageFlags(queueSubmitDesc.signalFences[i].stages);
+    }
+
+    VkSubmitInfo2 submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO_2};
+    submitInfo.waitSemaphoreInfoCount = queueSubmitDesc.waitFenceNum;
+    submitInfo.pWaitSemaphoreInfos = waitSemaphores;
+    submitInfo.commandBufferInfoCount = queueSubmitDesc.commandBufferNum;
+    submitInfo.pCommandBufferInfos = commandBuffers;
+    submitInfo.signalSemaphoreInfoCount = queueSubmitDesc.signalFenceNum;
+    submitInfo.pSignalSemaphoreInfos = signalSemaphores;
+
+    VkLatencySubmissionPresentIdNV presentId = {VK_STRUCTURE_TYPE_LATENCY_SUBMISSION_PRESENT_ID_NV};
+    if (swapChain && m_Device.m_IsPresentIdSupported) {
+        presentId.presentID = ((const SwapChainVK*)swapChain)->GetPresentId();
+        submitInfo.pNext = &presentId;
+    }
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.QueueSubmit(m_Handle, 1, &submitInfo, VK_NULL_HANDLE);
+    VkResult result = vk.QueueSubmit2(m_Handle, 1, &submitInfo, VK_NULL_HANDLE);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(), "Submit: vkQueueSubmit returned %d", (int32_t)result);
 }
 

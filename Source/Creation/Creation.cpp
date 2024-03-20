@@ -2,9 +2,6 @@
 
 #include "SharedExternal.h"
 
-#define NRI_STRINGIFY_(token) #token
-#define NRI_STRINGIFY(token) NRI_STRINGIFY_(token)
-
 using namespace nri;
 
 #if NRI_USE_D3D11
@@ -38,10 +35,10 @@ NRI_API Result NRI_CALL nriGetInterface(const Device& device, const char* interf
         realInterfaceSize = sizeof(CoreInterface);
         if (realInterfaceSize == interfaceSize)
             result = deviceBase.FillFunctionTable(*(CoreInterface*)interfacePtr);
-    } else if (hash == Hash(NRI_STRINGIFY(nri::SwapChainInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(SwapChainInterface)))) {
-        realInterfaceSize = sizeof(SwapChainInterface);
+    } else if (hash == Hash(NRI_STRINGIFY(nri::HelperInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(HelperInterface)))) {
+        realInterfaceSize = sizeof(HelperInterface);
         if (realInterfaceSize == interfaceSize)
-            result = deviceBase.FillFunctionTable(*(SwapChainInterface*)interfacePtr);
+            result = deviceBase.FillFunctionTable(*(HelperInterface*)interfacePtr);
     } else if (hash == Hash(NRI_STRINGIFY(nri::WrapperD3D11Interface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(WrapperD3D11Interface)))) {
         realInterfaceSize = sizeof(WrapperD3D11Interface);
         if (realInterfaceSize == interfaceSize)
@@ -54,6 +51,10 @@ NRI_API Result NRI_CALL nriGetInterface(const Device& device, const char* interf
         realInterfaceSize = sizeof(WrapperVKInterface);
         if (realInterfaceSize == interfaceSize)
             result = deviceBase.FillFunctionTable(*(WrapperVKInterface*)interfacePtr);
+    } else if (hash == Hash(NRI_STRINGIFY(nri::SwapChainInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(SwapChainInterface)))) {
+        realInterfaceSize = sizeof(SwapChainInterface);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(SwapChainInterface*)interfacePtr);
     } else if (hash == Hash(NRI_STRINGIFY(nri::RayTracingInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(RayTracingInterface)))) {
         realInterfaceSize = sizeof(RayTracingInterface);
         if (realInterfaceSize == interfaceSize)
@@ -62,10 +63,14 @@ NRI_API Result NRI_CALL nriGetInterface(const Device& device, const char* interf
         realInterfaceSize = sizeof(MeshShaderInterface);
         if (realInterfaceSize == interfaceSize)
             result = deviceBase.FillFunctionTable(*(MeshShaderInterface*)interfacePtr);
-    } else if (hash == Hash(NRI_STRINGIFY(nri::HelperInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(HelperInterface)))) {
-        realInterfaceSize = sizeof(HelperInterface);
+    } else if (hash == Hash(NRI_STRINGIFY(nri::LowLatencyInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(LowLatencyInterface)))) {
+        realInterfaceSize = sizeof(LowLatencyInterface);
         if (realInterfaceSize == interfaceSize)
-            result = deviceBase.FillFunctionTable(*(HelperInterface*)interfacePtr);
+            result = deviceBase.FillFunctionTable(*(LowLatencyInterface*)interfacePtr);
+    } else if (hash == Hash(NRI_STRINGIFY(nri::StreamerInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(StreamerInterface)))) {
+        realInterfaceSize = sizeof(StreamerInterface);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(StreamerInterface*)interfacePtr);
     }
 
     if (result == Result::INVALID_ARGUMENT)

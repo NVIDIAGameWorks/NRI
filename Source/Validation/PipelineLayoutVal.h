@@ -16,7 +16,7 @@ struct PipelineLayoutVal : public DeviceObjectVal<PipelineLayout> {
     //================================================================================================================
     void SetDebugName(const char* name);
 
-  private:
+private:
     PipelineLayoutDesc m_PipelineLayoutDesc;
     Vector<DescriptorSetDesc> m_DescriptorSetDescs;
     Vector<PushConstantDesc> m_PushConstantDescs;

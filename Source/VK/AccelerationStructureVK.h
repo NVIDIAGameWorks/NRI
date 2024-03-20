@@ -49,11 +49,11 @@ struct AccelerationStructureVK {
     void GetMemoryInfo(MemoryDesc& memoryDesc) const;
     Result CreateDescriptor(Descriptor*& descriptor) const;
 
-  private:
+private:
     void PrecreateBottomLevel(const AccelerationStructureDesc& accelerationStructureDesc);
     void PrecreateTopLevel(const AccelerationStructureDesc& accelerationStructureDesc);
 
-  private:
+private:
     DeviceVK& m_Device;
     VkAccelerationStructureKHR m_Handle = VK_NULL_HANDLE;
     VkDeviceAddress m_DeviceAddress = 0;

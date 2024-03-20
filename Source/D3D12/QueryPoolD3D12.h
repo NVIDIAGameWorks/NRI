@@ -45,7 +45,7 @@ struct QueryPoolD3D12 {
         return m_QuerySize;
     }
 
-  private:
+private:
     Result CreateReadbackBuffer(const QueryPoolDesc& queryPoolDesc);
 
     DeviceD3D12& m_Device;

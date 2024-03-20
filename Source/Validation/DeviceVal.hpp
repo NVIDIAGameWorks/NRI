@@ -1,9 +1,10 @@
 // © 2021 NVIDIA Corporation
 
-Declare_PartiallyFillFunctionTable_Functions(Val)
+Declare_PartiallyFillFunctionTable_Functions(Val);
+
 #pragma region[  Core  ]
 
-    static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device) {
+static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device) {
     return ((const DeviceVal&)device).GetDesc();
 }
 
@@ -248,34 +249,6 @@ Result DeviceVal::FillFunctionTable(CoreInterface& coreInterface) const {
 
 #pragma endregion
 
-#pragma region[  SwapChain  ]
-
-static Result NRI_CALL CreateSwapChain(Device& device, const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
-    return ((DeviceVal&)device).CreateSwapChain(swapChainDesc, swapChain);
-}
-
-static void NRI_CALL DestroySwapChain(SwapChain& swapChain) {
-    if (!(&swapChain))
-        return;
-
-    GetDeviceVal(swapChain).DestroySwapChain(swapChain);
-}
-
-Result DeviceVal::FillFunctionTable(SwapChainInterface& swapChainInterface) const {
-    if (!m_IsSwapChainSupported)
-        return Result::UNSUPPORTED;
-
-    swapChainInterface = {};
-    swapChainInterface.CreateSwapChain = ::CreateSwapChain;
-    swapChainInterface.DestroySwapChain = ::DestroySwapChain;
-
-    SwapChain_PartiallyFillFunctionTableVal(swapChainInterface);
-
-    return ValidateFunctionTable(swapChainInterface);
-}
-
-#pragma endregion
-
 #pragma region[  WrapperD3D11  ]
 
 #if NRI_USE_D3D11
@@ -295,18 +268,41 @@ static Result NRI_CALL CreateTextureD3D11(Device& device, const TextureD3D11Desc
 #endif
 
 Result DeviceVal::FillFunctionTable(WrapperD3D11Interface& wrapperD3D11Interface) const {
-#if NRI_USE_D3D11
     wrapperD3D11Interface = {};
+#if NRI_USE_D3D11
+    if (!m_IsWrapperD3D11Supported)
+        return Result::UNSUPPORTED;
+
     wrapperD3D11Interface.CreateCommandBufferD3D11 = ::CreateCommandBufferD3D11;
     wrapperD3D11Interface.CreateBufferD3D11 = ::CreateBufferD3D11;
     wrapperD3D11Interface.CreateTextureD3D11 = ::CreateTextureD3D11;
 
     return ValidateFunctionTable(wrapperD3D11Interface);
 #else
-    MaybeUnused(wrapperD3D11Interface);
-
     return Result::UNSUPPORTED;
 #endif
+}
+
+#pragma endregion
+
+#pragma region[  Helper  ]
+
+static uint32_t NRI_CALL CountAllocationNum(Device& device, const ResourceGroupDesc& resourceGroupDesc) {
+    return ((DeviceVal&)device).CalculateAllocationNumber(resourceGroupDesc);
+}
+
+static Result NRI_CALL AllocateAndBindMemory(Device& device, const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
+    return ((DeviceVal&)device).AllocateAndBindMemory(resourceGroupDesc, allocations);
+}
+
+Result DeviceVal::FillFunctionTable(HelperInterface& helperInterface) const {
+    helperInterface = {};
+    helperInterface.CalculateAllocationNumber = ::CountAllocationNum;
+    helperInterface.AllocateAndBindMemory = ::AllocateAndBindMemory;
+
+    Helper_CommandQueue_PartiallyFillFunctionTableVal(helperInterface);
+
+    return ValidateFunctionTable(helperInterface);
 }
 
 #pragma endregion
@@ -339,8 +335,11 @@ static Result NRI_CALL CreateAccelerationStructureD3D12(
 #endif
 
 Result DeviceVal::FillFunctionTable(WrapperD3D12Interface& wrapperD3D12Interface) const {
-#if NRI_USE_D3D12
     wrapperD3D12Interface = {};
+#if NRI_USE_D3D12
+    if (!m_IsWrapperD3D12Supported)
+        return Result::UNSUPPORTED;
+
     wrapperD3D12Interface.CreateCommandBufferD3D12 = ::CreateCommandBufferD3D12;
     wrapperD3D12Interface.CreateBufferD3D12 = ::CreateBufferD3D12;
     wrapperD3D12Interface.CreateTextureD3D12 = ::CreateTextureD3D12;
@@ -350,8 +349,6 @@ Result DeviceVal::FillFunctionTable(WrapperD3D12Interface& wrapperD3D12Interface
     return ValidateFunctionTable(wrapperD3D12Interface);
 
 #else
-    MaybeUnused(wrapperD3D12Interface);
-
     return Result::UNSUPPORTED;
 #endif
 }
@@ -408,26 +405,29 @@ static Result NRI_CALL CreateAccelerationStructureVK(
 }
 
 static NRIVkPhysicalDevice NRI_CALL GetVkPhysicalDevice(const Device& device) {
-    return ((DeviceVal&)device).GetVkPhysicalDevice();
+    return ((DeviceVal&)device).GetWrapperVKInterface().GetVkPhysicalDevice(((DeviceVal&)device).GetImpl());
 }
 
 static NRIVkInstance NRI_CALL GetVkInstance(const Device& device) {
-    return ((DeviceVal&)device).GetVkInstance();
+    return ((DeviceVal&)device).GetWrapperVKInterface().GetVkInstance(((DeviceVal&)device).GetImpl());
 }
 
 static NRIVkInstance NRI_CALL GetVkGetInstanceProcAddr(const Device& device) {
-    return ((DeviceVal&)device).GetVkGetInstanceProcAddr();
+    return ((DeviceVal&)device).GetWrapperVKInterface().GetVkGetInstanceProcAddr(((DeviceVal&)device).GetImpl());
 }
 
 static NRIVkInstance NRI_CALL GetVkGetDeviceProcAddr(const Device& device) {
-    return ((DeviceVal&)device).GetVkGetDeviceProcAddr();
+    return ((DeviceVal&)device).GetWrapperVKInterface().GetVkGetDeviceProcAddr(((DeviceVal&)device).GetImpl());
 }
 
 #endif
 
 Result DeviceVal::FillFunctionTable(WrapperVKInterface& wrapperVKInterface) const {
-#if NRI_USE_VULKAN
     wrapperVKInterface = {};
+#if NRI_USE_VULKAN
+    if (!m_IsWrapperVKSupported)
+        return Result::UNSUPPORTED;
+
     wrapperVKInterface.CreateCommandQueueVK = ::CreateCommandQueueVK;
     wrapperVKInterface.CreateCommandAllocatorVK = ::CreateCommandAllocatorVK;
     wrapperVKInterface.CreateCommandBufferVK = ::CreateCommandBufferVK;
@@ -447,10 +447,36 @@ Result DeviceVal::FillFunctionTable(WrapperVKInterface& wrapperVKInterface) cons
 
     return ValidateFunctionTable(wrapperVKInterface);
 #else
-    MaybeUnused(wrapperVKInterface);
-
     return Result::UNSUPPORTED;
 #endif
+}
+
+#pragma endregion
+
+#pragma region[  SwapChain  ]
+
+static Result NRI_CALL CreateSwapChain(Device& device, const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
+    return ((DeviceVal&)device).CreateSwapChain(swapChainDesc, swapChain);
+}
+
+static void NRI_CALL DestroySwapChain(SwapChain& swapChain) {
+    if (!(&swapChain))
+        return;
+
+    GetDeviceVal(swapChain).DestroySwapChain(swapChain);
+}
+
+Result DeviceVal::FillFunctionTable(SwapChainInterface& swapChainInterface) const {
+    swapChainInterface = {};
+    if (!m_IsSwapChainSupported)
+        return Result::UNSUPPORTED;
+
+    swapChainInterface.CreateSwapChain = ::CreateSwapChain;
+    swapChainInterface.DestroySwapChain = ::DestroySwapChain;
+
+    SwapChain_PartiallyFillFunctionTableVal(swapChainInterface);
+
+    return ValidateFunctionTable(swapChainInterface);
 }
 
 #pragma endregion
@@ -479,10 +505,10 @@ static void NRI_CALL DestroyAccelerationStructure(AccelerationStructure& acceler
 void FillFunctionTablePipelineVal(RayTracingInterface& rayTracingInterface);
 
 Result DeviceVal::FillFunctionTable(RayTracingInterface& rayTracingInterface) const {
+    rayTracingInterface = {};
     if (!m_IsRayTracingSupported)
         return Result::UNSUPPORTED;
 
-    rayTracingInterface = {};
     rayTracingInterface.CreateRayTracingPipeline = ::CreateRayTracingPipeline;
     rayTracingInterface.CreateAccelerationStructure = ::CreateAccelerationStructure;
     rayTracingInterface.BindAccelerationStructureMemory = ::BindAccelerationStructureMemory;
@@ -500,10 +526,9 @@ Result DeviceVal::FillFunctionTable(RayTracingInterface& rayTracingInterface) co
 #pragma region[  MeshShader  ]
 
 Result DeviceVal::FillFunctionTable(MeshShaderInterface& meshShaderInterface) const {
-    if (!m_IsMeshShaderExtSupported)
-        return Result::UNSUPPORTED;
-
     meshShaderInterface = {};
+    if (!m_IsMeshShaderSupported)
+        return Result::UNSUPPORTED;
 
     MeshShader_CommandBuffer_PartiallyFillFunctionTableVal(meshShaderInterface);
 
@@ -512,24 +537,159 @@ Result DeviceVal::FillFunctionTable(MeshShaderInterface& meshShaderInterface) co
 
 #pragma endregion
 
-#pragma region[  Helper  ]
+#pragma region[  LowLatency  ]
 
-static uint32_t NRI_CALL CountAllocationNum(Device& device, const ResourceGroupDesc& resourceGroupDesc) {
-    return ((DeviceVal&)device).CalculateAllocationNumber(resourceGroupDesc);
+Result DeviceVal::FillFunctionTable(LowLatencyInterface& lowLatencyInterface) const {
+    lowLatencyInterface = {};
+    if (!m_IsLowLatencySupported)
+        return Result::UNSUPPORTED;
+
+    LowLatency_CommandQueue_PartiallyFillFunctionTableVal(lowLatencyInterface);
+    LowLatency_SwapChain_PartiallyFillFunctionTableVal(lowLatencyInterface);
+
+    return ValidateFunctionTable(lowLatencyInterface);
 }
 
-static Result NRI_CALL AllocateAndBindMemory(Device& device, const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
-    return ((DeviceVal&)device).AllocateAndBindMemory(resourceGroupDesc, allocations);
+#pragma endregion
+
+#pragma region[  Streamer  ]
+
+struct StreamerVal : DeviceObjectVal<Streamer> {
+    inline StreamerVal(DeviceVal& device, Streamer* impl) : DeviceObjectVal(device, impl) {
+    }
+
+    BufferVal* constantBuffer = nullptr;
+    BufferVal* dynamicBuffer = nullptr;
+    bool isDynamicBufferValid = false;
+};
+
+static Result CreateStreamer(Device& device, const StreamerDesc& streamerDesc, Streamer*& streamer) {
+    DeviceVal& deviceVal = (DeviceVal&)device;
+    bool isUpload = (streamerDesc.constantBufferMemoryLocation == MemoryLocation::HOST_UPLOAD || streamerDesc.constantBufferMemoryLocation == MemoryLocation::DEVICE_UPLOAD) &&
+                    (streamerDesc.dynamicBufferMemoryLocation == MemoryLocation::HOST_UPLOAD || streamerDesc.dynamicBufferMemoryLocation == MemoryLocation::DEVICE_UPLOAD);
+    RETURN_ON_FAILURE(&deviceVal, isUpload, Result::INVALID_ARGUMENT, "CreateStreamer: memory location must be an UPLOAD heap");
+
+    Streamer* impl = nullptr;
+    Result result = deviceVal.GetStreamerInterface().CreateStreamer(deviceVal.GetImpl(), streamerDesc, impl);
+
+    if (result == Result::SUCCESS) {
+        RETURN_ON_FAILURE(&deviceVal, impl != nullptr, Result::FAILURE, "CreateStreamer: 'impl' is NULL");
+        streamer = (Streamer*)Allocate<StreamerVal>(deviceVal.GetStdAllocator(), deviceVal, impl);
+    }
+
+    return result;
 }
 
-Result DeviceVal::FillFunctionTable(HelperInterface& helperInterface) const {
-    helperInterface = {};
-    helperInterface.CalculateAllocationNumber = ::CountAllocationNum;
-    helperInterface.AllocateAndBindMemory = ::AllocateAndBindMemory;
+static void DestroyStreamer(Streamer& streamer) {
+    DeviceVal& deviceVal = GetDeviceVal(streamer);
+    StreamerVal& streamerVal = (StreamerVal&)streamer;
 
-    Helper_CommandQueue_PartiallyFillFunctionTableVal(helperInterface);
+    streamerVal.GetStreamerInterface().DestroyStreamer(*NRI_GET_IMPL(Streamer, &streamer));
 
-    return ValidateFunctionTable(helperInterface);
+    Deallocate(deviceVal.GetStdAllocator(), streamerVal.constantBuffer);
+    Deallocate(deviceVal.GetStdAllocator(), streamerVal.dynamicBuffer);
+    Deallocate(deviceVal.GetStdAllocator(), &streamerVal);
+}
+
+static Buffer* GetStreamerConstantBuffer(Streamer& streamer) {
+    DeviceVal& deviceVal = GetDeviceVal(streamer);
+    StreamerVal& streamerVal = (StreamerVal&)streamer;
+    Buffer* buffer = streamerVal.GetStreamerInterface().GetStreamerConstantBuffer(*NRI_GET_IMPL(Streamer, &streamer));
+
+    if (!streamerVal.constantBuffer)
+        streamerVal.constantBuffer = Allocate<BufferVal>(deviceVal.GetStdAllocator(), deviceVal, buffer);
+
+    return (Buffer*)streamerVal.constantBuffer;
+}
+
+static uint32_t UpdateStreamerConstantBuffer(Streamer& streamer, const void* data, uint32_t dataSize) {
+    DeviceVal& deviceVal = GetDeviceVal(streamer);
+    StreamerVal& streamerVal = (StreamerVal&)streamer;
+
+    if (!dataSize)
+        REPORT_WARNING(&deviceVal, "UpdateStreamerConstantBuffer: 'dataSize = 0'");
+
+    return streamerVal.GetStreamerInterface().UpdateStreamerConstantBuffer(*NRI_GET_IMPL(Streamer, &streamer), data, dataSize);
+}
+
+static uint64_t AddStreamerBufferUpdateRequest(Streamer& streamer, const BufferUpdateRequestDesc& bufferUpdateRequestDesc) {
+    DeviceVal& deviceVal = GetDeviceVal(streamer);
+    StreamerVal& streamerVal = (StreamerVal&)streamer;
+    streamerVal.isDynamicBufferValid = false;
+
+    if (!bufferUpdateRequestDesc.dataSize)
+        REPORT_WARNING(&deviceVal, "AddStreamerBufferUpdateRequest: 'bufferUpdateRequestDesc.dataSize = 0'");
+
+    BufferUpdateRequestDesc bufferUpdateRequestDescImpl = bufferUpdateRequestDesc;
+    bufferUpdateRequestDescImpl.dstBuffer = NRI_GET_IMPL(Buffer, bufferUpdateRequestDesc.dstBuffer);
+
+    return streamerVal.GetStreamerInterface().AddStreamerBufferUpdateRequest(*NRI_GET_IMPL(Streamer, &streamer), bufferUpdateRequestDescImpl);
+}
+
+static uint64_t AddStreamerTextureUpdateRequest(Streamer& streamer, const TextureUpdateRequestDesc& textureUpdateRequestDesc) {
+    DeviceVal& deviceVal = GetDeviceVal(streamer);
+    StreamerVal& streamerVal = (StreamerVal&)streamer;
+    streamerVal.isDynamicBufferValid = false;
+
+    if (!textureUpdateRequestDesc.dstTexture)
+        REPORT_ERROR(&deviceVal, "AddStreamerTextureUpdateRequest: 'textureUpdateRequestDesc.dstTexture' is NULL");
+    if (!textureUpdateRequestDesc.dataRowPitch)
+        REPORT_WARNING(&deviceVal, "AddStreamerTextureUpdateRequest: 'textureUpdateRequestDesc.dataRowPitch = 0'");
+    if (!textureUpdateRequestDesc.dataSlicePitch)
+        REPORT_WARNING(&deviceVal, "AddStreamerTextureUpdateRequest: 'textureUpdateRequestDesc.dataSlicePitch = 0'");
+
+    TextureUpdateRequestDesc textureUpdateRequestDescImpl = textureUpdateRequestDesc;
+    textureUpdateRequestDescImpl.dstTexture = NRI_GET_IMPL(Texture, textureUpdateRequestDesc.dstTexture);
+
+    return streamerVal.GetStreamerInterface().AddStreamerTextureUpdateRequest(*NRI_GET_IMPL(Streamer, &streamer), textureUpdateRequestDescImpl);
+}
+
+static Result CopyStreamerUpdateRequests(Streamer& streamer) {
+    StreamerVal& streamerVal = (StreamerVal&)streamer;
+    streamerVal.isDynamicBufferValid = true;
+
+    return streamerVal.GetStreamerInterface().CopyStreamerUpdateRequests(*NRI_GET_IMPL(Streamer, &streamer));
+}
+
+static Buffer* GetStreamerDynamicBuffer(Streamer& streamer) {
+    DeviceVal& deviceVal = GetDeviceVal(streamer);
+    StreamerVal& streamerVal = (StreamerVal&)streamer;
+
+    if (!streamerVal.isDynamicBufferValid)
+        REPORT_ERROR(&deviceVal, "'GetStreamerDynamicBuffer' must be called after 'CopyStreamerUpdateRequests'");
+
+    Buffer* buffer = streamerVal.GetStreamerInterface().GetStreamerDynamicBuffer(*NRI_GET_IMPL(Streamer, &streamer));
+
+    if (NRI_GET_IMPL(Buffer, streamerVal.dynamicBuffer) != buffer) {
+        Deallocate(deviceVal.GetStdAllocator(), streamerVal.dynamicBuffer);
+        streamerVal.dynamicBuffer = nullptr;
+    }
+
+    if (!streamerVal.dynamicBuffer)
+        streamerVal.dynamicBuffer = Allocate<BufferVal>(deviceVal.GetStdAllocator(), deviceVal, buffer);
+
+    return (Buffer*)streamerVal.dynamicBuffer;
+}
+
+static void CmdUploadStreamerUpdateRequests(CommandBuffer& commandBuffer, Streamer& streamer) {
+    StreamerVal& streamerVal = (StreamerVal&)streamer;
+
+    streamerVal.GetStreamerInterface().CmdUploadStreamerUpdateRequests(*NRI_GET_IMPL(CommandBuffer, &commandBuffer), *NRI_GET_IMPL(Streamer, &streamer));
+}
+
+Result DeviceVal::FillFunctionTable(StreamerInterface& streamerInterface) const {
+    streamerInterface = {};
+    streamerInterface.CreateStreamer = ::CreateStreamer;
+    streamerInterface.DestroyStreamer = ::DestroyStreamer;
+    streamerInterface.GetStreamerConstantBuffer = ::GetStreamerConstantBuffer;
+    streamerInterface.UpdateStreamerConstantBuffer = ::UpdateStreamerConstantBuffer;
+    streamerInterface.AddStreamerBufferUpdateRequest = ::AddStreamerBufferUpdateRequest;
+    streamerInterface.AddStreamerTextureUpdateRequest = ::AddStreamerTextureUpdateRequest;
+    streamerInterface.CopyStreamerUpdateRequests = ::CopyStreamerUpdateRequests;
+    streamerInterface.GetStreamerDynamicBuffer = ::GetStreamerDynamicBuffer;
+    streamerInterface.CmdUploadStreamerUpdateRequests = ::CmdUploadStreamerUpdateRequests;
+
+    return ValidateFunctionTable(streamerInterface);
 }
 
 #pragma endregion

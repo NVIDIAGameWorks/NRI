@@ -38,10 +38,10 @@ struct PipelineVK {
     void SetDebugName(const char* name);
     Result WriteShaderGroupIdentifiers(uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer) const;
 
-  private:
+private:
     Result SetupShaderStage(VkPipelineShaderStageCreateInfo& stage, const ShaderDesc& shaderDesc, VkShaderModule*& modules);
 
-  private:
+private:
     DeviceVK& m_Device;
     VkPipeline m_Handle = VK_NULL_HANDLE;
     VkPipelineBindPoint m_BindPoint = (VkPipelineBindPoint)0;

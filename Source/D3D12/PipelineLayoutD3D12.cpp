@@ -37,11 +37,11 @@ D3D12_ROOT_SIGNATURE_FLAGS GetRootSignatureStageFlags(const PipelineLayoutDesc& 
     return flags;
 }
 
-PipelineLayoutD3D12::PipelineLayoutD3D12(DeviceD3D12& device)
-    : m_DescriptorSetMappings(device.GetStdAllocator()),
-      m_DescriptorSetRootMappings(device.GetStdAllocator()),
-      m_DynamicConstantBufferMappings(device.GetStdAllocator()),
-      m_Device(device) {
+PipelineLayoutD3D12::PipelineLayoutD3D12(DeviceD3D12& device) :
+    m_DescriptorSetMappings(device.GetStdAllocator()),
+    m_DescriptorSetRootMappings(device.GetStdAllocator()),
+    m_DynamicConstantBufferMappings(device.GetStdAllocator()),
+    m_Device(device) {
 }
 
 Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {

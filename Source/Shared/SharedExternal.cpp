@@ -367,6 +367,30 @@ nri::Result DisplayDescHelper::GetDisplayDesc(void* hwnd, nri::DisplayDesc& disp
     return nri::Result::SUCCESS;
 }
 
+bool HasOutput() {
+    ComPtr<IDXGIFactory> factory;
+    HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&factory));
+    if (FAILED(hr))
+        return false;
+
+    uint32_t i = 0;
+    while (true) {
+        // Get adapter
+        ComPtr<IDXGIAdapter> adapter;
+        hr = factory->EnumAdapters(i++, &adapter);
+        if (hr == DXGI_ERROR_NOT_FOUND)
+            break;
+
+        // Check if there is an output
+        ComPtr<IDXGIOutput> output;
+        hr = adapter->EnumOutputs(0, &output);
+        if (hr != DXGI_ERROR_NOT_FOUND)
+            return true;
+    }
+
+    return false;
+}
+
 #else
 
 uint32_t NRIFormatToDXGIFormat(nri::Format format) {
@@ -950,4 +974,9 @@ void ConvertWcharToChar(const wchar_t* in, char* out, size_t outLength) {
         *out++ = char(*in++);
 
     *out = 0;
+}
+
+uint64_t GetSwapChainId() {
+    static uint64_t id = 0;
+    return id++ << PRESENT_INDEX_BIT_NUM;
 }

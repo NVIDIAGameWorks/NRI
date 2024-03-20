@@ -7,8 +7,8 @@ namespace nri {
 struct MemoryVal;
 
 struct AccelerationStructureVal final : public DeviceObjectVal<AccelerationStructure> {
-    AccelerationStructureVal(DeviceVal& device, AccelerationStructure* accelerationStructure, bool isBoundToMemory)
-        : DeviceObjectVal(device, accelerationStructure), m_RayTracingAPI(device.GetRayTracingInterface()), m_IsBoundToMemory(isBoundToMemory) {
+    AccelerationStructureVal(DeviceVal& device, AccelerationStructure* accelerationStructure, bool isBoundToMemory) :
+        DeviceObjectVal(device, accelerationStructure), m_IsBoundToMemory(isBoundToMemory) {
     }
 
     ~AccelerationStructureVal();
@@ -33,8 +33,7 @@ struct AccelerationStructureVal final : public DeviceObjectVal<AccelerationStruc
     Result CreateDescriptor(Descriptor*& descriptor);
     void SetDebugName(const char* name);
 
-  private:
-    const RayTracingInterface& m_RayTracingAPI;
+private:
     MemoryVal* m_Memory = nullptr;
     bool m_IsBoundToMemory = false;
 };

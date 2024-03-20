@@ -27,4 +27,4 @@ static void NRI_CALL UnmapBuffer(Buffer& buffer) {
 
 #pragma endregion
 
-Define_Core_Buffer_PartiallyFillFunctionTable(VK)
+Define_Core_Buffer_PartiallyFillFunctionTable(VK);

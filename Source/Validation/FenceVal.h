@@ -18,8 +18,6 @@ struct FenceVal : public DeviceObjectVal<Fence> {
     //================================================================================================================
 
     uint64_t GetFenceValue() const;
-    void QueueSignal(CommandQueueVal& commandQueue, uint64_t value);
-    void QueueWait(CommandQueueVal& commandQueue, uint64_t value);
     void Wait(uint64_t value);
     void SetDebugName(const char* name);
 };

@@ -138,21 +138,6 @@ uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, Mip_
     return size;
 }
 
-Dim_t TextureD3D11::GetSize(Dim_t dimensionIndex, Mip_t mip) const {
-    assert(dimensionIndex < 3);
-
-    Dim_t dim = m_Desc.depth;
-    if (dimensionIndex == 0)
-        dim = m_Desc.width;
-    else if (dimensionIndex == 1)
-        dim = m_Desc.height;
-
-    dim = (Dim_t)std::max(dim >> mip, 1);
-    dim = Align(dim, dimensionIndex < 2 ? GetFormatProps(m_Desc.format).blockWidth : 1);
-
-    return dim;
-}
-
 //================================================================================================================
 // NRI
 //================================================================================================================

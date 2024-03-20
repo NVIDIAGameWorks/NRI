@@ -36,7 +36,7 @@ struct FenceD3D12 {
     void QueueWait(CommandQueueD3D12& commandQueue, uint64_t value);
     void Wait(uint64_t value);
 
-  private:
+private:
     DeviceD3D12& m_Device;
     ComPtr<ID3D12Fence> m_Fence;
     HANDLE m_Event = 0;

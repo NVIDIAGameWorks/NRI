@@ -31,7 +31,7 @@ struct CommandAllocatorVK {
     Result CreateCommandBuffer(CommandBuffer*& commandBuffer);
     void Reset();
 
-  private:
+private:
     DeviceVK& m_Device;
     VkCommandPool m_Handle = VK_NULL_HANDLE;
     CommandQueueType m_Type = (CommandQueueType)0;

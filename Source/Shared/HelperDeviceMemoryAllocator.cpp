@@ -1,20 +1,21 @@
 #include "SharedExternal.h"
 
+#include "HelperDeviceMemoryAllocator.h"
+
 using namespace nri;
 
-HelperDeviceMemoryAllocator::MemoryTypeGroup::MemoryTypeGroup(const StdAllocator<uint8_t>& stdAllocator)
-    : buffers(stdAllocator), bufferOffsets(stdAllocator), textures(stdAllocator), textureOffsets(stdAllocator), memoryOffset(0) {
+HelperDeviceMemoryAllocator::MemoryTypeGroup::MemoryTypeGroup(const StdAllocator<uint8_t>& stdAllocator) :
+    buffers(stdAllocator), bufferOffsets(stdAllocator), textures(stdAllocator), textureOffsets(stdAllocator), memoryOffset(0) {
 }
 
-HelperDeviceMemoryAllocator::HelperDeviceMemoryAllocator(const CoreInterface& NRI, Device& device, const StdAllocator<uint8_t>& stdAllocator)
-    : m_NRI(NRI),
-      m_Device(device),
-      m_StdAllocator(stdAllocator),
-      m_Map(stdAllocator),
-      m_DedicatedBuffers(stdAllocator),
-      m_DedicatedTextures(stdAllocator),
-      m_BufferBindingDescs(stdAllocator),
-      m_TextureBindingDescs(stdAllocator) {
+HelperDeviceMemoryAllocator::HelperDeviceMemoryAllocator(const CoreInterface& NRI, Device& device) :
+    m_NRI(NRI),
+    m_Device(device),
+    m_Map(((DeviceBase&)device).GetStdAllocator()),
+    m_DedicatedBuffers(((DeviceBase&)device).GetStdAllocator()),
+    m_DedicatedTextures(((DeviceBase&)device).GetStdAllocator()),
+    m_BufferBindingDescs(((DeviceBase&)device).GetStdAllocator()),
+    m_TextureBindingDescs(((DeviceBase&)device).GetStdAllocator()) {
 }
 
 uint32_t HelperDeviceMemoryAllocator::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) {
@@ -134,7 +135,7 @@ void HelperDeviceMemoryAllocator::GroupByMemoryType(MemoryLocation memoryLocatio
         if (memoryDesc.mustBeDedicated)
             m_DedicatedBuffers.push_back(buffer);
         else {
-            MemoryTypeGroup& group = m_Map.try_emplace(memoryDesc.type, m_StdAllocator).first->second;
+            MemoryTypeGroup& group = m_Map.try_emplace(memoryDesc.type, ((DeviceBase&)m_Device).GetStdAllocator()).first->second;
 
             uint64_t offset = Align(group.memoryOffset, memoryDesc.alignment);
 
@@ -157,7 +158,7 @@ void HelperDeviceMemoryAllocator::GroupByMemoryType(MemoryLocation memoryLocatio
         if (memoryDesc.mustBeDedicated)
             m_DedicatedTextures.push_back(texture);
         else {
-            MemoryTypeGroup& group = m_Map.try_emplace(memoryDesc.type, m_StdAllocator).first->second;
+            MemoryTypeGroup& group = m_Map.try_emplace(memoryDesc.type, ((DeviceBase&)m_Device).GetStdAllocator()).first->second;
 
             if (group.textures.empty() && group.memoryOffset > 0)
                 group.memoryOffset = Align(group.memoryOffset, deviceDesc.bufferTextureGranularity);

@@ -1,9 +1,10 @@
 // © 2021 NVIDIA Corporation
 
-Declare_PartiallyFillFunctionTable_Functions(D3D11)
+Declare_PartiallyFillFunctionTable_Functions(D3D11);
+
 #pragma region[  Core  ]
 
-    static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device) {
+static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device) {
     return ((const DeviceD3D11&)device).GetDesc();
 }
 
@@ -287,57 +288,6 @@ Result DeviceD3D11::FillFunctionTable(SwapChainInterface& swapChainInterface) co
 
 #pragma endregion
 
-#pragma region[  WrapperD3D11  ]
-
-static Result NRI_CALL CreateCommandBuffer(Device& device, const CommandBufferD3D11Desc& commandBufferD3D11Desc, CommandBuffer*& commandBuffer) {
-    DeviceD3D11& deviceD3D11 = (DeviceD3D11&)device;
-
-    return ::CreateCommandBuffer(deviceD3D11, commandBufferD3D11Desc.d3d11DeviceContext, commandBuffer);
-}
-
-static Result NRI_CALL CreateBuffer(Device& device, const BufferD3D11Desc& bufferD3D11Desc, Buffer*& buffer) {
-    DeviceD3D11& deviceD3D11 = (DeviceD3D11&)device;
-
-    BufferD3D11* implementation = Allocate<BufferD3D11>(deviceD3D11.GetStdAllocator(), deviceD3D11);
-    const nri::Result res = implementation->Create(bufferD3D11Desc);
-
-    if (res == nri::Result::SUCCESS) {
-        buffer = (Buffer*)implementation;
-        return nri::Result::SUCCESS;
-    }
-
-    Deallocate(deviceD3D11.GetStdAllocator(), implementation);
-
-    return res;
-}
-
-static Result NRI_CALL CreateTexture(Device& device, const TextureD3D11Desc& textureD3D11Desc, Texture*& texture) {
-    DeviceD3D11& deviceD3D11 = (DeviceD3D11&)device;
-
-    TextureD3D11* implementation = Allocate<TextureD3D11>(deviceD3D11.GetStdAllocator(), deviceD3D11);
-    const nri::Result res = implementation->Create(textureD3D11Desc);
-
-    if (res == nri::Result::SUCCESS) {
-        texture = (Texture*)implementation;
-        return nri::Result::SUCCESS;
-    }
-
-    Deallocate(deviceD3D11.GetStdAllocator(), implementation);
-
-    return res;
-}
-
-Result DeviceD3D11::FillFunctionTable(WrapperD3D11Interface& wrapperD3D11Interface) const {
-    wrapperD3D11Interface = {};
-    wrapperD3D11Interface.CreateCommandBufferD3D11 = ::CreateCommandBuffer;
-    wrapperD3D11Interface.CreateTextureD3D11 = ::CreateTexture;
-    wrapperD3D11Interface.CreateBufferD3D11 = ::CreateBuffer;
-
-    return ValidateFunctionTable(wrapperD3D11Interface);
-}
-
-#pragma endregion
-
 #pragma region[  Helper  ]
 
 static uint32_t NRI_CALL CountAllocationNum(Device& device, const ResourceGroupDesc& resourceGroupDesc) {
@@ -356,6 +306,139 @@ Result DeviceD3D11::FillFunctionTable(HelperInterface& helperInterface) const {
     Helper_CommandQueue_PartiallyFillFunctionTableD3D11(helperInterface);
 
     return ValidateFunctionTable(helperInterface);
+}
+
+#pragma endregion
+
+#pragma region[  WrapperD3D11  ]
+
+static Result NRI_CALL CreateCommandBuffer(Device& device, const CommandBufferD3D11Desc& commandBufferD3D11Desc, CommandBuffer*& commandBuffer) {
+    DeviceD3D11& deviceD3D11 = (DeviceD3D11&)device;
+
+    return ::CreateCommandBuffer(deviceD3D11, commandBufferD3D11Desc.d3d11DeviceContext, commandBuffer);
+}
+
+static Result NRI_CALL CreateBuffer(Device& device, const BufferD3D11Desc& bufferD3D11Desc, Buffer*& buffer) {
+    DeviceD3D11& deviceD3D11 = (DeviceD3D11&)device;
+
+    BufferD3D11* implementation = Allocate<BufferD3D11>(deviceD3D11.GetStdAllocator(), deviceD3D11);
+    Result res = implementation->Create(bufferD3D11Desc);
+
+    if (res == Result::SUCCESS) {
+        buffer = (Buffer*)implementation;
+        return Result::SUCCESS;
+    }
+
+    Deallocate(deviceD3D11.GetStdAllocator(), implementation);
+
+    return res;
+}
+
+static Result NRI_CALL CreateTexture(Device& device, const TextureD3D11Desc& textureD3D11Desc, Texture*& texture) {
+    DeviceD3D11& deviceD3D11 = (DeviceD3D11&)device;
+
+    TextureD3D11* implementation = Allocate<TextureD3D11>(deviceD3D11.GetStdAllocator(), deviceD3D11);
+    Result res = implementation->Create(textureD3D11Desc);
+
+    if (res == Result::SUCCESS) {
+        texture = (Texture*)implementation;
+        return Result::SUCCESS;
+    }
+
+    Deallocate(deviceD3D11.GetStdAllocator(), implementation);
+
+    return res;
+}
+
+Result DeviceD3D11::FillFunctionTable(WrapperD3D11Interface& wrapperD3D11Interface) const {
+    wrapperD3D11Interface = {};
+    wrapperD3D11Interface.CreateCommandBufferD3D11 = ::CreateCommandBuffer;
+    wrapperD3D11Interface.CreateTextureD3D11 = ::CreateTexture;
+    wrapperD3D11Interface.CreateBufferD3D11 = ::CreateBuffer;
+
+    return ValidateFunctionTable(wrapperD3D11Interface);
+}
+
+#pragma endregion
+
+#pragma region[  LowLatency  ]
+
+Result DeviceD3D11::FillFunctionTable(LowLatencyInterface& lowLatencyInterface) const {
+    lowLatencyInterface = {};
+    if (!m_Desc.isLowLatencySupported)
+        return Result::UNSUPPORTED;
+
+    LowLatency_CommandQueue_PartiallyFillFunctionTableD3D11(lowLatencyInterface);
+    LowLatency_SwapChain_PartiallyFillFunctionTableD3D11(lowLatencyInterface);
+
+    return ValidateFunctionTable(lowLatencyInterface);
+}
+
+#pragma endregion
+
+#pragma region[  Streamer  ]
+
+static Result CreateStreamer(Device& device, const StreamerDesc& streamerDesc, Streamer*& streamer) {
+    DeviceD3D11& deviceD3D11 = (DeviceD3D11&)device;
+
+    StreamerImpl* implementation = Allocate<StreamerImpl>(deviceD3D11.GetStdAllocator(), device, deviceD3D11.GetCoreInterface());
+    Result res = implementation->Create(streamerDesc);
+
+    if (res == Result::SUCCESS) {
+        streamer = (Streamer*)implementation;
+        return Result::SUCCESS;
+    }
+
+    Deallocate(deviceD3D11.GetStdAllocator(), implementation);
+
+    return res;
+}
+
+static void DestroyStreamer(Streamer& streamer) {
+    Deallocate(((DeviceBase&)((StreamerImpl&)streamer).GetDevice()).GetStdAllocator(), (StreamerImpl*)&streamer);
+}
+
+static Buffer* GetStreamerConstantBuffer(Streamer& streamer) {
+    return ((StreamerImpl&)streamer).GetConstantBuffer();
+}
+
+static uint32_t UpdateStreamerConstantBuffer(Streamer& streamer, const void* data, uint32_t dataSize) {
+    return ((StreamerImpl&)streamer).UpdateStreamerConstantBuffer(data, dataSize);
+}
+
+static uint64_t AddStreamerBufferUpdateRequest(Streamer& streamer, const BufferUpdateRequestDesc& bufferUpdateRequestDesc) {
+    return ((StreamerImpl&)streamer).AddStreamerBufferUpdateRequest(bufferUpdateRequestDesc);
+}
+
+static uint64_t AddStreamerTextureUpdateRequest(Streamer& streamer, const TextureUpdateRequestDesc& textureUpdateRequestDesc) {
+    return ((StreamerImpl&)streamer).AddStreamerTextureUpdateRequest(textureUpdateRequestDesc);
+}
+
+static Result CopyStreamerUpdateRequests(Streamer& streamer) {
+    return ((StreamerImpl&)streamer).CopyStreamerUpdateRequests();
+}
+
+static Buffer* GetStreamerDynamicBuffer(Streamer& streamer) {
+    return ((StreamerImpl&)streamer).GetDynamicBuffer();
+}
+
+static void CmdUploadStreamerUpdateRequests(CommandBuffer& commandBuffer, Streamer& streamer) {
+    ((StreamerImpl&)streamer).CmdUploadStreamerUpdateRequests(commandBuffer);
+}
+
+Result DeviceD3D11::FillFunctionTable(StreamerInterface& streamerInterface) const {
+    streamerInterface = {};
+    streamerInterface.CreateStreamer = ::CreateStreamer;
+    streamerInterface.DestroyStreamer = ::DestroyStreamer;
+    streamerInterface.GetStreamerConstantBuffer = ::GetStreamerConstantBuffer;
+    streamerInterface.UpdateStreamerConstantBuffer = ::UpdateStreamerConstantBuffer;
+    streamerInterface.AddStreamerBufferUpdateRequest = ::AddStreamerBufferUpdateRequest;
+    streamerInterface.AddStreamerTextureUpdateRequest = ::AddStreamerTextureUpdateRequest;
+    streamerInterface.CopyStreamerUpdateRequests = ::CopyStreamerUpdateRequests;
+    streamerInterface.GetStreamerDynamicBuffer = ::GetStreamerDynamicBuffer;
+    streamerInterface.CmdUploadStreamerUpdateRequests = ::CmdUploadStreamerUpdateRequests;
+
+    return ValidateFunctionTable(streamerInterface);
 }
 
 #pragma endregion

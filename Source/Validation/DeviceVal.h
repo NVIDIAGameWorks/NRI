@@ -13,12 +13,20 @@ struct DeviceVal final : public DeviceBase {
     bool Create();
     void RegisterMemoryType(MemoryType memoryType, MemoryLocation memoryLocation);
 
+    inline Device& GetImpl() const {
+        return m_Device;
+    }
+
     inline const CoreInterface& GetCoreInterface() const {
         return m_CoreAPI;
     }
 
-    inline const SwapChainInterface& GetSwapChainInterface() const {
-        return m_SwapChainAPI;
+    inline const HelperInterface& GetHelperInterface() const {
+        return m_HelperAPI;
+    }
+
+    inline const StreamerInterface& GetStreamerInterface() const {
+        return m_StreamerAPI;
     }
 
     inline const WrapperD3D11Interface& GetWrapperD3D11Interface() const {
@@ -33,6 +41,10 @@ struct DeviceVal final : public DeviceBase {
         return m_WrapperVKAPI;
     }
 
+    inline const SwapChainInterface& GetSwapChainInterface() const {
+        return m_SwapChainAPI;
+    }
+
     inline const RayTracingInterface& GetRayTracingInterface() const {
         return m_RayTracingAPI;
     }
@@ -41,28 +53,12 @@ struct DeviceVal final : public DeviceBase {
         return m_MeshShaderAPI;
     }
 
-    inline const HelperInterface& GetHelperInterface() const {
-        return m_HelperAPI;
+    inline const LowLatencyInterface& GetLowLatencyInterface() const {
+        return m_LowLatencyAPI;
     }
 
     inline void* GetNativeObject() const {
         return m_CoreAPI.GetDeviceNativeObject(m_Device);
-    }
-
-    NRIVkPhysicalDevice GetVkPhysicalDevice() const {
-        return m_WrapperVKAPI.GetVkPhysicalDevice(m_Device);
-    }
-
-    NRIVkInstance GetVkInstance() const {
-        return m_WrapperVKAPI.GetVkInstance(m_Device);
-    }
-
-    void* GetVkGetInstanceProcAddr() const {
-        return m_WrapperVKAPI.GetVkGetInstanceProcAddr(m_Device);
-    }
-
-    void* GetVkGetDeviceProcAddr() const {
-        return m_WrapperVKAPI.GetVkGetDeviceProcAddr(m_Device);
     }
 
     inline Lock& GetLock() {
@@ -142,33 +138,38 @@ struct DeviceVal final : public DeviceBase {
 
     void Destroy();
     Result FillFunctionTable(CoreInterface& table) const;
-    Result FillFunctionTable(SwapChainInterface& table) const;
+    Result FillFunctionTable(HelperInterface& table) const;
+    Result FillFunctionTable(StreamerInterface& streamerInterface) const;
     Result FillFunctionTable(WrapperD3D11Interface& table) const;
     Result FillFunctionTable(WrapperD3D12Interface& table) const;
     Result FillFunctionTable(WrapperVKInterface& table) const;
+    Result FillFunctionTable(SwapChainInterface& table) const;
     Result FillFunctionTable(RayTracingInterface& table) const;
     Result FillFunctionTable(MeshShaderInterface& table) const;
-    Result FillFunctionTable(HelperInterface& table) const;
+    Result FillFunctionTable(LowLatencyInterface& table) const;
 
-  private:
+private:
     Device& m_Device;
     String m_Name;
     CoreInterface m_CoreAPI = {};
-    SwapChainInterface m_SwapChainAPI = {};
+    HelperInterface m_HelperAPI = {};
+    StreamerInterface m_StreamerAPI = {};
     WrapperD3D11Interface m_WrapperD3D11API = {};
     WrapperD3D12Interface m_WrapperD3D12API = {};
     WrapperVKInterface m_WrapperVKAPI = {};
+    SwapChainInterface m_SwapChainAPI = {};
     RayTracingInterface m_RayTracingAPI = {};
     MeshShaderInterface m_MeshShaderAPI = {};
-    HelperInterface m_HelperAPI = {};
-    std::array<CommandQueueVal*, COMMAND_QUEUE_TYPE_NUM> m_CommandQueues = {};
+    LowLatencyInterface m_LowLatencyAPI = {};
+    std::array<CommandQueueVal*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     UnorderedMap<MemoryType, MemoryLocation> m_MemoryTypeMap;
-    bool m_IsSwapChainSupported = false;
     bool m_IsWrapperD3D11Supported = false;
     bool m_IsWrapperD3D12Supported = false;
     bool m_IsWrapperVKSupported = false;
+    bool m_IsSwapChainSupported = false;
     bool m_IsRayTracingSupported = false;
-    bool m_IsMeshShaderExtSupported = false;
+    bool m_IsMeshShaderSupported = false;
+    bool m_IsLowLatencySupported = false;
     Lock m_Lock;
 };
 

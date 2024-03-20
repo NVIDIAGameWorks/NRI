@@ -53,10 +53,10 @@ struct PipelineD3D12 {
 
     Result WriteShaderGroupIdentifiers(uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer) const;
 
-  private:
+private:
     Result CreateFromStream(const GraphicsPipelineDesc& graphicsPipelineDesc);
 
-  private:
+private:
     DeviceD3D12& m_Device;
     ComPtr<ID3D12PipelineState> m_PipelineState;
     ComPtr<ID3D12StateObject> m_StateObject;

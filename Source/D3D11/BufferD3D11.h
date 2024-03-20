@@ -63,7 +63,7 @@ struct BufferD3D11 {
     void* Map(uint64_t offset, uint64_t size);
     void Unmap();
 
-  private:
+private:
     DeviceD3D11& m_Device;
     ComPtr<ID3D11Buffer> m_Buffer;
     TextureD3D11* m_ReadbackTexture = nullptr;

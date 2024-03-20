@@ -35,9 +35,7 @@ inline uint64_t FenceD3D11::GetFenceValue() const {
     return m_Value;
 }
 
-inline void FenceD3D11::QueueSignal(CommandQueueD3D11& commandQueue, uint64_t value) {
-    MaybeUnused(commandQueue);
-
+void FenceD3D11::QueueSignal(uint64_t value) {
     if (m_Fence) {
         HRESULT hr = m_Device.GetImmediateContext()->Signal(m_Fence, value);
         RETURN_ON_FAILURE(&m_Device, hr == S_OK, ReturnVoid(), "D3D11DeviceContext4::Signal() - FAILED!");
@@ -47,9 +45,7 @@ inline void FenceD3D11::QueueSignal(CommandQueueD3D11& commandQueue, uint64_t va
     }
 }
 
-inline void FenceD3D11::QueueWait(CommandQueueD3D11& commandQueue, uint64_t value) {
-    MaybeUnused(commandQueue);
-
+void FenceD3D11::QueueWait(uint64_t value) {
     if (m_Fence) {
         HRESULT hr = m_Device.GetImmediateContext()->Wait(m_Fence, value);
         RETURN_ON_FAILURE(&m_Device, hr == S_OK, ReturnVoid(), "D3D11DeviceContext4::Wait() - FAILED!");
@@ -65,7 +61,7 @@ inline void FenceD3D11::Wait(uint64_t value) {
             HRESULT hr = m_Fence->SetEventOnCompletion(value, m_Event);
             RETURN_ON_FAILURE(&m_Device, hr == S_OK, ReturnVoid(), "ID3D12Fence::SetEventOnCompletion() - FAILED!");
 
-            uint32_t result = WaitForSingleObjectEx(m_Event, DEFAULT_TIMEOUT, TRUE);
+            uint32_t result = WaitForSingleObjectEx(m_Event, TIMEOUT_FENCE, TRUE);
             RETURN_ON_FAILURE(&m_Device, result == WAIT_OBJECT_0, ReturnVoid(), "WaitForSingleObjectEx() - FAILED!");
         }
     } else {

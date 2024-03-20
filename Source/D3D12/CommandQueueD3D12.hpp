@@ -28,4 +28,16 @@ static Result NRI_CALL WaitForIdle(CommandQueue& commandQueue) {
 
 #pragma endregion
 
-Define_Core_CommandQueue_PartiallyFillFunctionTable(D3D12) Define_Helper_CommandQueue_PartiallyFillFunctionTable(D3D12)
+#pragma region[  Low latency  ]
+
+static void NRI_CALL QueueSubmitTrackable(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc, const SwapChain& swapChain) {
+    MaybeUnused(swapChain);
+
+    ((CommandQueueD3D12&)commandQueue).Submit(workSubmissionDesc);
+}
+
+#pragma endregion
+
+Define_Core_CommandQueue_PartiallyFillFunctionTable(D3D12);
+Define_Helper_CommandQueue_PartiallyFillFunctionTable(D3D12);
+Define_LowLatency_CommandQueue_PartiallyFillFunctionTable(D3D12);

@@ -35,7 +35,7 @@ struct MemoryVal : public DeviceObjectVal<Memory> {
 
     void SetDebugName(const char* name);
 
-  private:
+private:
     std::vector<BufferVal*> m_Buffers;
     std::vector<TextureVal*> m_Textures;
     std::vector<AccelerationStructureVal*> m_AccelerationStructures;

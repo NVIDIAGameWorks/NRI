@@ -11,7 +11,12 @@ Result QueryPoolD3D12::Create(const QueryPoolDesc& queryPoolDesc) {
     if (queryPoolDesc.queryType == QueryType::TIMESTAMP) {
         m_QuerySize = sizeof(uint64_t);
         m_QueryType = D3D12_QUERY_TYPE_TIMESTAMP;
-        desc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP; // TODO: D3D12_QUERY_HEAP_TYPE_COPY_QUEUE_TIMESTAMP for copy queues...
+        desc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+    } else if (queryPoolDesc.queryType == QueryType::TIMESTAMP_COPY_QUEUE) {
+        // Prerequisite: D3D12_FEATURE_D3D12_OPTIONS3
+        m_QuerySize = sizeof(uint64_t);
+        m_QueryType = D3D12_QUERY_TYPE_TIMESTAMP;
+        desc.Type = D3D12_QUERY_HEAP_TYPE_COPY_QUEUE_TIMESTAMP;
     } else if (queryPoolDesc.queryType == QueryType::OCCLUSION) {
         m_QuerySize = sizeof(uint64_t);
         m_QueryType = D3D12_QUERY_TYPE_OCCLUSION;

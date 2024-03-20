@@ -47,10 +47,14 @@ NRI_STRUCT(ResourceGroupDesc)
 
 NRI_STRUCT(HelperInterface)
 {
+    // Optimized memory allocation for a group of resources
     uint32_t (NRI_CALL *CalculateAllocationNumber)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(ResourceGroupDesc) resourceGroupDesc);
     NRI_NAME(Result) (NRI_CALL *AllocateAndBindMemory)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(ResourceGroupDesc) resourceGroupDesc, NRI_NAME(Memory)** allocations);
-    NRI_NAME(Result) (NRI_CALL *UploadData)(NRI_NAME_REF(CommandQueue) commandQueue, const NRI_NAME(TextureUploadDesc)* textureUploadDescs, uint32_t textureUploadDescNum,
-        const NRI_NAME(BufferUploadDesc)* bufferUploadDescs, uint32_t bufferUploadDescNum);
+
+    // Populate resources with data (not for streaming data)
+    NRI_NAME(Result) (NRI_CALL *UploadData)(NRI_NAME_REF(CommandQueue) commandQueue, const NRI_NAME(TextureUploadDesc)* textureUploadDescs, uint32_t textureUploadDescNum, const NRI_NAME(BufferUploadDesc)* bufferUploadDescs, uint32_t bufferUploadDescNum);
+
+    // WFI
     NRI_NAME(Result) (NRI_CALL *WaitForIdle)(NRI_NAME_REF(CommandQueue) commandQueue);
 };
 
@@ -97,7 +101,11 @@ static inline NRI_NAME(Format) NRI_FUNC_NAME(GetSupportedDepthFormat)(const NRI_
     return NRI_ENUM_MEMBER(Format, UNKNOWN);
 }
 
-static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture1D)(NRI_NAME(Format) format, uint16_t width, NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(1), NRI_NAME(Dim_t) arraySize NRI_DEFAULT_VALUE(1),
+// "TextureDesc" constructors
+static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture1D)(NRI_NAME(Format) format,
+    uint16_t width,
+    NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(1),
+    NRI_NAME(Dim_t) arraySize NRI_DEFAULT_VALUE(1),
     NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)))
 {
     NRI_NAME(TextureDesc) textureDesc = NRI_ZERO_INIT;
@@ -114,8 +122,13 @@ static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture1D)(NRI_NAME(Format) fo
     return textureDesc;
 }
 
-static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture2D)(NRI_NAME(Format) format, NRI_NAME(Dim_t) width, NRI_NAME(Dim_t) height, NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(1), NRI_NAME(Dim_t) arraySize NRI_DEFAULT_VALUE(1),
-    NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)), NRI_NAME(Sample_t) sampleNum NRI_DEFAULT_VALUE(1))
+static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture2D)(NRI_NAME(Format) format,
+    NRI_NAME(Dim_t) width,
+    NRI_NAME(Dim_t) height,
+    NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(1),
+    NRI_NAME(Dim_t) arraySize NRI_DEFAULT_VALUE(1),
+    NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)),
+    NRI_NAME(Sample_t) sampleNum NRI_DEFAULT_VALUE(1))
 {
     NRI_NAME(TextureDesc) textureDesc = NRI_ZERO_INIT;
     textureDesc.type = NRI_ENUM_MEMBER(TextureType, TEXTURE_2D);
@@ -131,7 +144,11 @@ static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture2D)(NRI_NAME(Format) fo
     return textureDesc;
 }
 
-static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture3D)(NRI_NAME(Format) format, NRI_NAME(Dim_t) width, NRI_NAME(Dim_t) height, uint16_t depth, NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(1),
+static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture3D)(NRI_NAME(Format) format,
+    NRI_NAME(Dim_t) width,
+    NRI_NAME(Dim_t) height,
+    uint16_t depth,
+    NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(1),
     NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)))
 {
     NRI_NAME(TextureDesc) textureDesc = NRI_ZERO_INIT;
@@ -148,8 +165,13 @@ static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture3D)(NRI_NAME(Format) fo
     return textureDesc;
 }
 
-static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrier)(NRI_NAME(Texture)* texture, NRI_NAME(AccessLayoutStage) before, NRI_NAME(AccessLayoutStage) after,
-    NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0), NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)), NRI_NAME(Dim_t) arrayOffset NRI_DEFAULT_VALUE(0),
+// "TextureBarrierDesc" constructors
+static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrier)(NRI_NAME(Texture)* texture,
+    NRI_NAME(AccessLayoutStage) before,
+    NRI_NAME(AccessLayoutStage) after,
+    NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0),
+    NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)),
+    NRI_NAME(Dim_t) arrayOffset NRI_DEFAULT_VALUE(0),
     NRI_NAME(Dim_t) arraySize NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_ARRAY_LAYERS)))
 {
     NRI_NAME(TextureBarrierDesc) textureBarrierDesc = NRI_ZERO_INIT;
@@ -164,8 +186,11 @@ static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrier)(NRI_NAM
     return textureBarrierDesc;
 }
 
-static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrierFromUnknown)(NRI_NAME(Texture)* texture, NRI_NAME(AccessLayoutStage) after,
-    NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0), NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)), NRI_NAME(Dim_t) arrayOffset NRI_DEFAULT_VALUE(0),
+static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrierFromUnknown)(NRI_NAME(Texture)* texture,
+    NRI_NAME(AccessLayoutStage) after,
+    NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0),
+    NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)),
+    NRI_NAME(Dim_t) arrayOffset NRI_DEFAULT_VALUE(0),
     NRI_NAME(Dim_t) arraySize NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_ARRAY_LAYERS)))
 {
     NRI_NAME(TextureBarrierDesc) textureBarrierDesc = NRI_ZERO_INIT;
@@ -182,8 +207,10 @@ static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrierFromUnkno
     return textureBarrierDesc;
 }
 
-static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrierFromState)(NRI_NAME_REF(TextureBarrierDesc) prevState, NRI_NAME(AccessLayoutStage) after,
-    NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0), NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)))
+static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrierFromState)(NRI_NAME_REF(TextureBarrierDesc) prevState,
+    NRI_NAME(AccessLayoutStage) after,
+    NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0),
+    NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIP_LEVELS)))
 {
     NRI_REF_ACCESS(prevState)->mipOffset = mipOffset;
     NRI_REF_ACCESS(prevState)->mipNum = mipNum;

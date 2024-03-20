@@ -29,7 +29,7 @@ struct DeviceVK final : public DeviceBase {
         return m_AllocationCallbackPtr;
     }
 
-    inline const std::array<uint32_t, COMMAND_QUEUE_TYPE_NUM>& GetQueueFamilyIndices() const {
+    inline const std::array<uint32_t, (uint32_t)CommandQueueType::MAX_NUM>& GetQueueFamilyIndices() const {
         return m_FamilyIndices;
     }
 
@@ -130,8 +130,10 @@ struct DeviceVK final : public DeviceBase {
     Result FillFunctionTable(RayTracingInterface& rayTracingInterface) const;
     Result FillFunctionTable(MeshShaderInterface& meshShaderInterface) const;
     Result FillFunctionTable(HelperInterface& helperInterface) const;
+    Result FillFunctionTable(LowLatencyInterface& lowLatencyInterface) const;
+    Result FillFunctionTable(StreamerInterface& streamerInterface) const;
 
-  private:
+private:
     void FilterInstanceLayers(Vector<const char*>& layers);
     void ProcessInstanceExtensions(Vector<const char*>& desiredInstanceExts);
     void ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, bool disableRayTracing);
@@ -142,22 +144,25 @@ struct DeviceVK final : public DeviceBase {
     Result CreateInstance(bool enableAPIValidation, const Vector<const char*>& desiredInstanceExts);
     Result FindPhysicalDeviceGroup(const AdapterDesc* physicalDeviceGroup);
     Result ResolvePreInstanceDispatchTable();
-    Result ResolveInstanceDispatchTable();
-    Result ResolveDispatchTable(const Vector<const char*>& desiredInstanceExts, const Vector<const char*>& desiredDeviceExts);
+    Result ResolveInstanceDispatchTable(const Vector<const char*>& desiredInstanceExts);
+    Result ResolveDispatchTable(const Vector<const char*>& desiredDeviceExts);
 
     template <typename Implementation, typename Interface, typename... Args>
     Result CreateImplementation(Interface*& entity, const Args&... args);
 
-  public:
+public:
     bool m_IsDescriptorIndexingSupported = false;
     bool m_IsDeviceAddressSupported = false;
     bool m_IsSwapChainMutableFormatSupported = false;
+    bool m_IsPresentIdSupported = false;
+    bool m_IsPresentWaitSupported = false;
+    bool m_IsLowLatencySupported = false;
 
-  private:
+private:
     Vector<uint32_t> m_ConcurrentSharingModeQueueIndices;
     VkPhysicalDevice m_PhysicalDevice = nullptr;
-    std::array<uint32_t, COMMAND_QUEUE_TYPE_NUM> m_FamilyIndices = {};
-    std::array<CommandQueueVK*, COMMAND_QUEUE_TYPE_NUM> m_Queues = {};
+    std::array<uint32_t, (uint32_t)CommandQueueType::MAX_NUM> m_FamilyIndices = {};
+    std::array<CommandQueueVK*, (uint32_t)CommandQueueType::MAX_NUM> m_Queues = {};
     DispatchTable m_VK = {};
     DeviceDesc m_Desc = {};
     VkPhysicalDeviceMemoryProperties m_MemoryProps = {};

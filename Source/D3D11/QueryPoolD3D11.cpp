@@ -8,14 +8,14 @@ using namespace nri;
 
 Result QueryPoolD3D11::Create(const QueryPoolDesc& queryPoolDesc) {
     D3D11_QUERY_DESC queryDesc = {};
-    if (queryPoolDesc.queryType == QueryType::TIMESTAMP)
+    if (queryPoolDesc.queryType == QueryType::TIMESTAMP || queryPoolDesc.queryType == QueryType::TIMESTAMP_COPY_QUEUE)
         queryDesc.Query = D3D11_QUERY_TIMESTAMP;
     else if (queryPoolDesc.queryType == QueryType::OCCLUSION)
         queryDesc.Query = D3D11_QUERY_OCCLUSION;
     else if (queryPoolDesc.queryType == QueryType::PIPELINE_STATISTICS)
         queryDesc.Query = D3D11_QUERY_PIPELINE_STATISTICS;
     else
-        return Result::INVALID_ARGUMENT;
+        return queryPoolDesc.queryType < QueryType::MAX_NUM ? Result::UNSUPPORTED : Result::INVALID_ARGUMENT;
 
     m_Type = queryPoolDesc.queryType;
 

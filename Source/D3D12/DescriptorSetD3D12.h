@@ -44,7 +44,7 @@ struct DescriptorSetD3D12 {
     void UpdateDynamicConstantBuffers(uint32_t baseBuffer, uint32_t bufferNum, const Descriptor* const* descriptors);
     void Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc);
 
-  private:
+private:
     DescriptorPoolD3D12& m_DescriptorPoolD3D12;
     Vector<DescriptorPointerGPU> m_DynamicConstantBuffers;
     std::array<uint32_t, DescriptorHeapType::MAX_NUM> m_HeapOffset = {};

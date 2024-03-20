@@ -27,4 +27,4 @@ static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor)
 
 #pragma endregion
 
-Define_Core_Descriptor_PartiallyFillFunctionTable(VK)
+Define_Core_Descriptor_PartiallyFillFunctionTable(VK);

@@ -27,7 +27,43 @@ struct DeviceObjectVal {
         return m_Device.GetCoreInterface();
     }
 
-  protected:
+    inline const HelperInterface& GetHelperInterface() const {
+        return m_Device.GetHelperInterface();
+    }
+
+    inline const StreamerInterface& GetStreamerInterface() const {
+        return m_Device.GetStreamerInterface();
+    }
+
+    inline const WrapperD3D11Interface& GetWrapperD3D11Interface() const {
+        return m_Device.GetWrapperD3D11Interface();
+    }
+
+    inline const WrapperD3D12Interface& GetWrapperD3D12Interface() const {
+        return m_Device.GetWrapperD3D12Interface();
+    }
+
+    inline const WrapperVKInterface& GetWrapperVKInterface() const {
+        return m_Device.GetWrapperVKInterface();
+    }
+
+    inline const SwapChainInterface& GetSwapChainInterface() const {
+        return m_Device.GetSwapChainInterface();
+    }
+
+    inline const RayTracingInterface& GetRayTracingInterface() const {
+        return m_Device.GetRayTracingInterface();
+    }
+
+    inline const MeshShaderInterface& GetMeshShaderInterface() const {
+        return m_Device.GetMeshShaderInterface();
+    }
+
+    inline const LowLatencyInterface& GetLowLatencyInterface() const {
+        return m_Device.GetLowLatencyInterface();
+    }
+
+protected:
     String m_Name;
     DeviceVal& m_Device;
     T* m_Impl = nullptr;

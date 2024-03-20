@@ -28,7 +28,7 @@ struct QueryPoolVal : public DeviceObjectVal<QueryPool> {
     void SetDebugName(const char* name);
     uint32_t GetQuerySize() const;
 
-  private:
+private:
     Vector<uint64_t> m_DeviceState;
     uint32_t m_QueryNum;
     QueryType m_QueryType;

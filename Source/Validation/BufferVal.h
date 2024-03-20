@@ -41,7 +41,7 @@ struct BufferVal final : public DeviceObjectVal<Buffer> {
     void* Map(uint64_t offset, uint64_t size);
     void Unmap();
 
-  private:
+private:
     MemoryVal* m_Memory = nullptr;
     bool m_IsBoundToMemory = false;
     bool m_IsMapped = false;

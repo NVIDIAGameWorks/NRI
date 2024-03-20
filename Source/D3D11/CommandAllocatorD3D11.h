@@ -30,7 +30,7 @@ struct CommandAllocatorD3D11 {
 
     Result CreateCommandBuffer(CommandBuffer*& commandBuffer);
 
-  private:
+private:
     DeviceD3D11& m_Device;
 };
 

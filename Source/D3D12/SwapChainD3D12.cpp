@@ -85,7 +85,9 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc) {
     desc.Scaling = DXGI_SCALING_NONE;
     desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
-    desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+
+    if (swapChainDesc.waitable)
+        desc.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
     if (isTearingAllowed)
         desc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
@@ -123,20 +125,32 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc) {
     }
 
     // Maximum frame latency
-    if (m_Version >= 2) {
+    uint8_t queuedFrameNum = swapChainDesc.queuedFrameNum;
+    if (queuedFrameNum == 0)
+        queuedFrameNum = swapChainDesc.waitable ? 1 : 2;
+
+    if (swapChainDesc.waitable && m_Version >= 2) {
+        // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame
         // IMPORTANT: SetMaximumFrameLatency must be called BEFORE GetFrameLatencyWaitableObject!
-        hr = m_SwapChain->SetMaximumFrameLatency(swapChainDesc.textureNum);
+        hr = m_SwapChain->SetMaximumFrameLatency(queuedFrameNum);
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain2::SetMaximumFrameLatency()");
 
         m_FrameLatencyWaitableObject = m_SwapChain->GetFrameLatencyWaitableObject();
+    } else {
+        ComPtr<IDXGIDevice1> dxgiDevice1;
+        hr = m_Device->QueryInterface(IID_PPV_ARGS(&dxgiDevice1));
+        if (SUCCEEDED(hr))
+            dxgiDevice1->SetMaximumFrameLatency(queuedFrameNum);
     }
 
     // Finalize
+    m_PresentId = GetSwapChainId();
     m_Flags = desc.Flags;
-    m_SwapChainDesc = swapChainDesc;
+    m_Desc = swapChainDesc;
+    m_Desc.allowLowLatency = swapChainDesc.allowLowLatency && m_Device.GetExt()->HasNVAPI();
 
-    m_Textures.reserve(m_SwapChainDesc.textureNum);
-    for (uint32_t i = 0; i < m_SwapChainDesc.textureNum; i++) {
+    m_Textures.reserve(m_Desc.textureNum);
+    for (uint32_t i = 0; i < m_Desc.textureNum; i++) {
         ComPtr<ID3D12Resource> textureNative;
         hr = m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&textureNative));
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::GetBuffer()");
@@ -160,28 +174,93 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc) {
 //================================================================================================================
 
 inline Texture* const* SwapChainD3D12::GetTextures(uint32_t& textureNum) const {
-    textureNum = m_SwapChainDesc.textureNum;
+    textureNum = m_Desc.textureNum;
 
     return (Texture**)m_Textures.data();
 }
 
 inline uint32_t SwapChainD3D12::AcquireNextTexture() {
-    // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame
-    if (m_FrameLatencyWaitableObject) {
-        uint32_t result = WaitForSingleObjectEx(m_FrameLatencyWaitableObject, DEFAULT_TIMEOUT, TRUE);
-        if (result != WAIT_OBJECT_0)
-            REPORT_ERROR(&m_Device, "WaitForSingleObjectEx(): failed, result = 0x%08X!", result);
-    }
-
     return m_SwapChain->GetCurrentBackBufferIndex();
 }
 
+inline Result SwapChainD3D12::WaitForPresent() {
+    if (m_FrameLatencyWaitableObject) {
+        uint32_t result = WaitForSingleObjectEx(m_FrameLatencyWaitableObject, TIMEOUT_PRESENT, TRUE);
+        return result == WAIT_OBJECT_0 ? Result::SUCCESS : Result::FAILURE;
+    }
+
+    return Result::UNSUPPORTED;
+}
+
 inline Result SwapChainD3D12::Present() {
-    uint32_t flags = (!m_SwapChainDesc.verticalSyncInterval && (m_Flags & DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING)) ? DXGI_PRESENT_ALLOW_TEARING : 0; // TODO: and not fullscreen
-    HRESULT hr = m_SwapChain->Present(m_SwapChainDesc.verticalSyncInterval, flags);
+    if (m_Desc.allowLowLatency)
+        SetLatencyMarker((LatencyMarker)PRESENT_START);
+
+    uint32_t flags = (!m_Desc.verticalSyncInterval && (m_Flags & DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING)) ? DXGI_PRESENT_ALLOW_TEARING : 0;
+    HRESULT hr = m_SwapChain->Present(m_Desc.verticalSyncInterval, flags);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::Present()");
 
+    if (m_Desc.allowLowLatency)
+        SetLatencyMarker((LatencyMarker)PRESENT_END);
+
+    m_PresentId++;
+
     return Result::SUCCESS;
+}
+
+inline Result SwapChainD3D12::SetLatencySleepMode(const LatencySleepMode& latencySleepMode) {
+    NV_SET_SLEEP_MODE_PARAMS params = {NV_SET_SLEEP_MODE_PARAMS_VER};
+    params.bLowLatencyMode = latencySleepMode.lowLatencyMode;
+    params.bLowLatencyBoost = latencySleepMode.lowLatencyBoost;
+    params.minimumIntervalUs = latencySleepMode.minIntervalUs;
+    params.bUseMarkersToOptimize = true;
+
+    NvAPI_Status status = NvAPI_D3D_SetSleepMode(m_Device.GetNativeObject(), &params);
+
+    return status == NVAPI_OK ? Result::SUCCESS : Result::FAILURE;
+}
+
+inline Result SwapChainD3D12::SetLatencyMarker(LatencyMarker latencyMarker) {
+    NV_LATENCY_MARKER_PARAMS params = {NV_LATENCY_MARKER_PARAMS_VER};
+    params.frameID = m_PresentId;
+    params.markerType = (NV_LATENCY_MARKER_TYPE)latencyMarker;
+
+    NvAPI_Status status = NvAPI_D3D_SetLatencyMarker(m_Device.GetNativeObject(), &params);
+
+    return status == NVAPI_OK ? Result::SUCCESS : Result::FAILURE;
+}
+
+inline Result SwapChainD3D12::LatencySleep() {
+    NvAPI_Status status = NvAPI_D3D_Sleep(m_Device.GetNativeObject());
+
+    return status == NVAPI_OK ? Result::SUCCESS : Result::FAILURE;
+}
+
+inline Result SwapChainD3D12::GetLatencyReport(LatencyReport& latencyReport) {
+    NV_LATENCY_RESULT_PARAMS params = {NV_LATENCY_RESULT_PARAMS_VER};
+    NvAPI_Status status = NvAPI_D3D_GetLatency(m_Device.GetNativeObject(), &params);
+
+    latencyReport = {};
+    if (status == NVAPI_OK) {
+        const uint32_t i = 63; // the most recent frame
+        latencyReport.inputSampleTimeUs = params.frameReport[i].inputSampleTime;
+        latencyReport.simulationStartTimeUs = params.frameReport[i].simStartTime;
+        latencyReport.simulationEndTimeUs = params.frameReport[i].simEndTime;
+        latencyReport.renderSubmitStartTimeUs = params.frameReport[i].renderSubmitStartTime;
+        latencyReport.renderSubmitEndTimeUs = params.frameReport[i].renderSubmitEndTime;
+        latencyReport.presentStartTimeUs = params.frameReport[i].presentStartTime;
+        latencyReport.presentEndTimeUs = params.frameReport[i].presentEndTime;
+        latencyReport.driverStartTimeUs = params.frameReport[i].driverStartTime;
+        latencyReport.driverEndTimeUs = params.frameReport[i].driverEndTime;
+        latencyReport.osRenderQueueStartTimeUs = params.frameReport[i].osRenderQueueStartTime;
+        latencyReport.osRenderQueueEndTimeUs = params.frameReport[i].osRenderQueueEndTime;
+        latencyReport.gpuRenderStartTimeUs = params.frameReport[i].gpuRenderStartTime;
+        latencyReport.gpuRenderEndTimeUs = params.frameReport[i].gpuRenderEndTime;
+
+        return Result::SUCCESS;
+    }
+
+    return Result::FAILURE;
 }
 
 #include "SwapChainD3D12.hpp"

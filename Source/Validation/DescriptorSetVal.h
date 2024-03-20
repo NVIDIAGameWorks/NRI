@@ -25,7 +25,7 @@ struct DescriptorSetVal : public DeviceObjectVal<DescriptorSet> {
     void UpdateDynamicConstantBuffers(uint32_t baseBuffer, uint32_t bufferNum, const Descriptor* const* descriptors);
     void Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc);
 
-  private:
+private:
     const DescriptorSetDesc* m_Desc = nullptr;
 };
 

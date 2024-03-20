@@ -227,5 +227,6 @@ static void NRI_CALL CmdDrawMeshTasksIndirect(CommandBuffer& commandBuffer, cons
 
 #pragma endregion
 
-Define_Core_CommandBuffer_PartiallyFillFunctionTable(Val) Define_RayTracing_CommandBuffer_PartiallyFillFunctionTable(Val)
-    Define_MeshShader_CommandBuffer_PartiallyFillFunctionTable(Val)
+Define_Core_CommandBuffer_PartiallyFillFunctionTable(Val);
+Define_RayTracing_CommandBuffer_PartiallyFillFunctionTable(Val);
+Define_MeshShader_CommandBuffer_PartiallyFillFunctionTable(Val);

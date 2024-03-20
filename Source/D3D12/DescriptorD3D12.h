@@ -51,14 +51,14 @@ struct DescriptorD3D12 {
         MaybeUnused(name);
     }
 
-  private:
+private:
     Result CreateConstantBufferView(const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc);
     Result CreateShaderResourceView(ID3D12Resource* resource, const D3D12_SHADER_RESOURCE_VIEW_DESC& desc);
     Result CreateUnorderedAccessView(ID3D12Resource* resource, const D3D12_UNORDERED_ACCESS_VIEW_DESC& desc, Format format);
     Result CreateRenderTargetView(ID3D12Resource* resource, const D3D12_RENDER_TARGET_VIEW_DESC& desc);
     Result CreateDepthStencilView(ID3D12Resource* resource, const D3D12_DEPTH_STENCIL_VIEW_DESC& desc);
 
-  private:
+private:
     DeviceD3D12& m_Device;
     ID3D12Resource* m_Resource = nullptr;
     D3D12_GPU_VIRTUAL_ADDRESS m_BufferLocation = 0;

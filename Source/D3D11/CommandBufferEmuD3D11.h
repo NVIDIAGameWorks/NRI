@@ -72,7 +72,7 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
     void BeginAnnotation(const char* name);
     void EndAnnotation();
 
-  private:
+private:
     DeviceD3D11& m_Device;
     PushBuffer m_PushBuffer;
 };

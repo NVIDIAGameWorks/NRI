@@ -8,8 +8,7 @@
 using namespace nri;
 
 AccelerationStructureD3D12::~AccelerationStructureD3D12() {
-    if (m_Buffer)
-        Deallocate(m_Device.GetStdAllocator(), m_Buffer);
+    Deallocate(m_Device.GetStdAllocator(), m_Buffer);
 }
 
 Result AccelerationStructureD3D12::Create(const AccelerationStructureD3D12Desc& accelerationStructureDesc) {

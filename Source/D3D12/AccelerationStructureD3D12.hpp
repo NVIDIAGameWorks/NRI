@@ -32,4 +32,4 @@ static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const Acceleration
 
 #pragma endregion
 
-Define_RayTracing_AccelerationStructure_PartiallyFillFunctionTable(D3D12)
+Define_RayTracing_AccelerationStructure_PartiallyFillFunctionTable(D3D12);

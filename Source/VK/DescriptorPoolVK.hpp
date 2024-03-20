@@ -17,4 +17,4 @@ static void NRI_CALL ResetDescriptorPool(DescriptorPool& descriptorPool) {
 
 #pragma endregion
 
-Define_Core_DescriptorPool_PartiallyFillFunctionTable(VK)
+Define_Core_DescriptorPool_PartiallyFillFunctionTable(VK);

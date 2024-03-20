@@ -32,7 +32,7 @@ constexpr std::array<VkDescriptorType, (uint32_t)DescriptorType::MAX_NUM> DESCRI
     VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,              // TEXTURE
     VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              // STORAGE_TEXTURE
     VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,       // BUFFER
-    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             // STORAGE_BUFFER
+    VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,       // STORAGE_BUFFER
     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             // STRUCTURED_BUFFER
     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             // STORAGE_STRUCTURED_BUFFER
     VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, // ACCELERATION_STRUCTURE
@@ -40,6 +40,65 @@ constexpr std::array<VkDescriptorType, (uint32_t)DescriptorType::MAX_NUM> DESCRI
 
 constexpr VkDescriptorType GetDescriptorType(DescriptorType type) {
     return DESCRIPTOR_TYPES[(uint32_t)type];
+}
+
+constexpr VkPipelineStageFlags2 GetPipelineStageFlags(StageBits stageBits) {
+    // Check non-mask values first
+    if (stageBits == StageBits::ALL)
+        return VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+
+    if (stageBits == StageBits::NONE)
+        return VK_PIPELINE_STAGE_2_NONE;
+
+    // Gather bits
+    VkPipelineStageFlags2 flags = 0;
+
+    if (stageBits & StageBits::INDEX_INPUT)
+        flags |= VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT;
+
+    if (stageBits & StageBits::VERTEX_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+
+    if (stageBits & StageBits::TESS_CONTROL_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT;
+
+    if (stageBits & StageBits::TESS_EVALUATION_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT;
+
+    if (stageBits & StageBits::GEOMETRY_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT;
+
+    if (stageBits & StageBits::MESH_CONTROL_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT;
+
+    if (stageBits & StageBits::MESH_EVALUATION_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT;
+
+    if (stageBits & StageBits::FRAGMENT_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+
+    if (stageBits & StageBits::DEPTH_STENCIL_ATTACHMENT)
+        flags |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+
+    if (stageBits & StageBits::COLOR_ATTACHMENT)
+        flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+    if (stageBits & StageBits::COMPUTE_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+
+    if (stageBits & StageBits::RAY_TRACING_SHADERS)
+        flags |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+
+    if (stageBits & StageBits::INDIRECT)
+        flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
+
+    if (stageBits & (StageBits::COPY | StageBits::CLEAR_STORAGE))
+        flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+
+    if (stageBits & StageBits::ACCELERATION_STRUCTURE)
+        flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+
+    return flags;
 }
 
 constexpr VkShaderStageFlags GetShaderStageFlags(StageBits stage) {

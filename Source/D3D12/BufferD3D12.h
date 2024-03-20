@@ -54,7 +54,7 @@ struct BufferD3D12 {
     void* Map(uint64_t offset, uint64_t size);
     void Unmap();
 
-  private:
+private:
     DeviceD3D12& m_Device;
     ComPtr<ID3D12ResourceBest> m_Buffer;
     BufferDesc m_Desc = {};

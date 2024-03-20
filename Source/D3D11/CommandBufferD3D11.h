@@ -75,7 +75,7 @@ struct CommandBufferD3D11 final : public CommandBufferHelper {
     void BeginAnnotation(const char* name);
     void EndAnnotation();
 
-  private:
+private:
     DeviceD3D11& m_Device;
     ComPtr<ID3D11DeviceContextBest> m_DeferredContext; // can be immediate to redirect data from emulation
     ComPtr<ID3D11CommandList> m_CommandList;

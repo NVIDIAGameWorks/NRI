@@ -6,7 +6,9 @@
 #include "BufferVal.h"
 #include "CommandBufferVal.h"
 #include "CommandQueueVal.h"
+#include "FenceVal.h"
 #include "QueryPoolVal.h"
+#include "SwapChainVal.h"
 #include "TextureVal.h"
 
 using namespace nri;
@@ -65,15 +67,35 @@ void CommandQueueVal::SetDebugName(const char* name) {
     GetCoreInterface().SetCommandQueueDebugName(*GetImpl(), name);
 }
 
-void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc) {
+void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
     ProcessValidationCommands((const CommandBufferVal* const*)queueSubmitDesc.commandBuffers, queueSubmitDesc.commandBufferNum);
 
     auto queueSubmitDescImpl = queueSubmitDesc;
-    queueSubmitDescImpl.commandBuffers = STACK_ALLOC(CommandBuffer*, queueSubmitDesc.commandBufferNum);
-    for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++)
-        ((CommandBuffer**)queueSubmitDescImpl.commandBuffers)[i] = NRI_GET_IMPL(CommandBuffer, queueSubmitDesc.commandBuffers[i]);
 
-    GetCoreInterface().QueueSubmit(*GetImpl(), queueSubmitDescImpl);
+    FenceSubmitDesc* waitFences = STACK_ALLOC(FenceSubmitDesc, queueSubmitDesc.waitFenceNum);
+    for (uint32_t i = 0; i < queueSubmitDesc.waitFenceNum; i++) {
+        waitFences[i] = queueSubmitDesc.waitFences[i];
+        waitFences[i].fence = NRI_GET_IMPL(Fence, waitFences[i].fence);
+    }
+    queueSubmitDescImpl.waitFences = waitFences;
+
+    CommandBuffer** commandBuffers = STACK_ALLOC(CommandBuffer*, queueSubmitDesc.commandBufferNum);
+    for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++)
+        commandBuffers[i] = NRI_GET_IMPL(CommandBuffer, queueSubmitDesc.commandBuffers[i]);
+    queueSubmitDescImpl.commandBuffers = commandBuffers;
+
+    FenceSubmitDesc* signalFences = STACK_ALLOC(FenceSubmitDesc, queueSubmitDesc.signalFenceNum);
+    for (uint32_t i = 0; i < queueSubmitDesc.signalFenceNum; i++) {
+        signalFences[i] = queueSubmitDesc.signalFences[i];
+        signalFences[i].fence = NRI_GET_IMPL(Fence, signalFences[i].fence);
+    }
+    queueSubmitDescImpl.signalFences = signalFences;
+
+    if (swapChain) {
+        SwapChain* swapChainImpl = NRI_GET_IMPL(SwapChain, swapChain);
+        m_Device.GetLowLatencyInterface().QueueSubmitTrackable(*GetImpl(), queueSubmitDescImpl, *swapChainImpl);
+    } else
+        GetCoreInterface().QueueSubmit(*GetImpl(), queueSubmitDescImpl);
 }
 
 Result CommandQueueVal::UploadData(
@@ -105,11 +127,11 @@ Result CommandQueueVal::UploadData(
         bufferUploadDescsImpl[i].buffer = bufferVal->GetImpl();
     }
 
-    return m_HelperAPI.UploadData(*GetImpl(), textureUploadDescsImpl, textureUploadDescNum, bufferUploadDescsImpl, bufferUploadDescNum);
+    return GetHelperInterface().UploadData(*GetImpl(), textureUploadDescsImpl, textureUploadDescNum, bufferUploadDescsImpl, bufferUploadDescNum);
 }
 
 Result CommandQueueVal::WaitForIdle() {
-    return m_HelperAPI.WaitForIdle(*GetImpl());
+    return GetHelperInterface().WaitForIdle(*GetImpl());
 }
 
 template <typename Command>

@@ -31,19 +31,26 @@ struct SwapChainD3D11 : public DisplayDescHelper {
     }
 
     inline Result GetDisplayDesc(DisplayDesc& displayDesc) {
-        return DisplayDescHelper::GetDisplayDesc(m_SwapChainDesc.window.windows.hwnd, displayDesc);
+        return DisplayDescHelper::GetDisplayDesc(m_Desc.window.windows.hwnd, displayDesc);
     }
 
     Texture* const* GetTextures(uint32_t& textureNum) const;
     uint32_t AcquireNextTexture();
+    Result WaitForPresent();
     Result Present();
 
-  private:
+    Result SetLatencySleepMode(const LatencySleepMode& latencySleepMode);
+    Result SetLatencyMarker(LatencyMarker latencyMarker);
+    Result LatencySleep();
+    Result GetLatencyReport(LatencyReport& latencyReport);
+
+private:
     DeviceD3D11& m_Device;
     ComPtr<IDXGISwapChainBest> m_SwapChain;
     Vector<TextureD3D11*> m_Textures;
-    SwapChainDesc m_SwapChainDesc = {};
+    SwapChainDesc m_Desc = {};
     HANDLE m_FrameLatencyWaitableObject = nullptr;
+    uint64_t m_PresentId = 0;
     UINT m_Flags = 0;
     uint8_t m_Version = 0;
 };

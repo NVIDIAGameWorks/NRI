@@ -66,12 +66,12 @@ struct PipelineLayoutD3D12 {
         SET_D3D_DEBUG_OBJECT_NAME(m_RootSignature, name);
     }
 
-  private:
+private:
     template <bool isGraphics>
     void SetDescriptorSetImpl(
         ID3D12GraphicsCommandList& graphicsCommandList, uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const;
 
-  private:
+private:
     ComPtr<ID3D12RootSignature> m_RootSignature;
     bool m_IsGraphicsPipelineLayout = false;
     uint32_t m_PushConstantsBaseIndex = 0;

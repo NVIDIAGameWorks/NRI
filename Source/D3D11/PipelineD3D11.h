@@ -46,12 +46,12 @@ struct PipelineD3D11 {
 
     void SetDebugName(const char* name);
 
-  private:
+private:
     inline bool IsCompute() const {
         return m_ComputeShader != nullptr;
     }
 
-  private:
+private:
     DeviceD3D11& m_Device;
     const PipelineLayoutD3D11* m_PipelineLayout = nullptr;
     Vector<uint32_t> m_InputAssemplyStrides;

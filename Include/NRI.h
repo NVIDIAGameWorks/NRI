@@ -25,8 +25,8 @@ Non-goals:
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 124
-#define NRI_VERSION_DATE "1 March 2024"
+#define NRI_VERSION_MINOR 125
+#define NRI_VERSION_DATE "19 March 2024"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -123,7 +123,7 @@ NRI_STRUCT(CoreInterface)
             void (NRI_CALL *CmdSetScissors)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME(Rect)* rects, uint32_t rectNum);
 
             // Mandatory state, if enabled (can be set only once)
-            void (NRI_CALL *CmdSetStencilReference)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint8_t frontRef, uint8_t backRef);
+            void (NRI_CALL *CmdSetStencilReference)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint8_t frontRef, uint8_t backRef); // "backRef" requires "isIndependentFrontAndBackStencilReferenceAndMasksSupported"
             void (NRI_CALL *CmdSetDepthBounds)(NRI_NAME_REF(CommandBuffer) commandBuffer, float boundsMin, float boundsMax);
             void (NRI_CALL *CmdSetBlendConstants)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Color32f) color);
 
@@ -168,11 +168,9 @@ NRI_STRUCT(CoreInterface)
 
     // Synchronization
     uint64_t (NRI_CALL *GetFenceValue)(NRI_NAME_REF(Fence) fence);
-    void (NRI_CALL *QueueSignal)(NRI_NAME_REF(CommandQueue) commandQueue, NRI_NAME_REF(Fence) fence, uint64_t value);
-    void (NRI_CALL *QueueWait)(NRI_NAME_REF(CommandQueue) commandQueue, NRI_NAME_REF(Fence) fence, uint64_t value);
     void (NRI_CALL *Wait)(NRI_NAME_REF(Fence) fence, uint64_t value);
 
-    // Work submission
+    // Work submission (with queue synchronization)
     void (NRI_CALL *QueueSubmit)(NRI_NAME_REF(CommandQueue) commandQueue, const NRI_NAME_REF(QueueSubmitDesc) queueSubmitDesc);
 
     // Descriptor set

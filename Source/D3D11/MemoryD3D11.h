@@ -40,7 +40,7 @@ struct MemoryD3D11 {
         MaybeUnused(name);
     }
 
-  private:
+private:
     DeviceD3D11& m_Device;
     MemoryLocation m_Location;
     MemoryResidencyPriority m_ResidencyPriority = MemoryResidencyPriority::DEFAULT;

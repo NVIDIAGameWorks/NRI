@@ -37,7 +37,7 @@ struct QueryPoolVK {
         return m_QuerySize;
     }
 
-  private:
+private:
     DeviceVK& m_Device;
     VkQueryPool m_Handle = VK_NULL_HANDLE;
     VkQueryType m_Type = (VkQueryType)0;

@@ -25,7 +25,7 @@ struct DeviceD3D11 final : public DeviceBase {
         return m_Version;
     }
 
-    inline const D3D11Extensions* GetExt() const {
+    inline const d3d11::Ext* GetExt() const {
         return &m_Ext;
     }
 
@@ -122,16 +122,17 @@ struct DeviceD3D11 final : public DeviceBase {
     Result FillFunctionTable(SwapChainInterface& table) const;
     Result FillFunctionTable(WrapperD3D11Interface& table) const;
     Result FillFunctionTable(HelperInterface& helperInterface) const;
+    Result FillFunctionTable(LowLatencyInterface& lowLatencyInterface) const;
+    Result FillFunctionTable(StreamerInterface& streamerInterface) const;
 
-  private:
+private:
     void FillDesc(const AGSDX11ReturnedParams& params);
 
     template <typename Implementation, typename Interface, typename... Args>
     Result CreateImplementation(Interface*& entity, const Args&... args);
 
-  private:
-    // don't sort - ~D3D11Extensions must be called last!
-    D3D11Extensions m_Ext = {};
+private:
+    d3d11::Ext m_Ext = {}; // don't sort: destructor must be called last!
     ComPtr<ID3D11DeviceBest> m_Device;
     ComPtr<IDXGIAdapter> m_Adapter;
     ComPtr<ID3D11DeviceContextBest> m_ImmediateContext;

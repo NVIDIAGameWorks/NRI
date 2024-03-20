@@ -7,7 +7,7 @@ static void NRI_CALL SetCommandQueueDebugName(CommandQueue& commandQueue, const 
 }
 
 static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc) {
-    ((CommandQueueVK&)commandQueue).Submit(workSubmissionDesc);
+    ((CommandQueueVK&)commandQueue).Submit(workSubmissionDesc, nullptr);
 }
 
 #pragma endregion
@@ -28,4 +28,14 @@ static Result NRI_CALL WaitForIdle(CommandQueue& commandQueue) {
 
 #pragma endregion
 
-Define_Core_CommandQueue_PartiallyFillFunctionTable(VK) Define_Helper_CommandQueue_PartiallyFillFunctionTable(VK)
+#pragma region[  Low latency  ]
+
+static void NRI_CALL QueueSubmitTrackable(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc, const SwapChain& swapChain) {
+    ((CommandQueueVK&)commandQueue).Submit(workSubmissionDesc, &swapChain);
+}
+
+#pragma endregion
+
+Define_Core_CommandQueue_PartiallyFillFunctionTable(VK);
+Define_Helper_CommandQueue_PartiallyFillFunctionTable(VK);
+Define_LowLatency_CommandQueue_PartiallyFillFunctionTable(VK);

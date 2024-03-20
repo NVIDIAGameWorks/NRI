@@ -5,13 +5,8 @@
 namespace nri {
 
 struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
-    CommandBufferVal(DeviceVal& device, CommandBuffer* commandBuffer, bool isWrapped)
-        : DeviceObjectVal(device, commandBuffer),
-          m_ValidationCommands(device.GetStdAllocator()),
-          m_RayTracingAPI(device.GetRayTracingInterface()),
-          m_MeshShaderAPI(device.GetMeshShaderInterface()),
-          m_IsRecordingStarted(isWrapped),
-          m_IsWrapped(isWrapped) {
+    CommandBufferVal(DeviceVal& device, CommandBuffer* commandBuffer, bool isWrapped) :
+        DeviceObjectVal(device, commandBuffer), m_ValidationCommands(device.GetStdAllocator()), m_IsRecordingStarted(isWrapped), m_IsWrapped(isWrapped) {
     }
 
     inline const Vector<uint8_t>& GetValidationCommands() const {
@@ -83,13 +78,11 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     void DrawMeshTasks(const DrawMeshTasksDesc& drawMeshTasksDesc);
     void DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
 
-  private:
+private:
     template <typename Command>
     Command& AllocateValidationCommand();
 
     Vector<uint8_t> m_ValidationCommands;
-    const RayTracingInterface& m_RayTracingAPI;
-    const MeshShaderInterface& m_MeshShaderAPI;
     int32_t m_AnnotationStack = 0;
     bool m_IsRecordingStarted = false;
     bool m_IsWrapped = false;

@@ -34,7 +34,6 @@ NRI_STRUCT(DeviceCreationVKDesc)
     NRIVkInstance vkInstance;
     NRIVkDevice vkDevice;
     NRIVkPhysicalDevice vkPhysicalDevice;
-    uint32_t deviceGroupSize;
     const uint32_t* queueFamilyIndices;
     uint32_t queueFamilyIndexNum;
     const char* vulkanLoaderPath;

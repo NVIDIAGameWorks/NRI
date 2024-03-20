@@ -24,7 +24,7 @@ struct SlabAllocator {
         m_CurrentOffset = m_Memory;
     }
 
-  private:
+private:
     uint8_t* m_CurrentOffset;
     size_t m_End;
     uint8_t* m_Memory;

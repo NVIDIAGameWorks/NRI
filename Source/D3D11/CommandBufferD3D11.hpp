@@ -174,4 +174,4 @@ static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandB
 
 #pragma endregion
 
-Define_Core_CommandBuffer_PartiallyFillFunctionTable(D3D11)
+Define_Core_CommandBuffer_PartiallyFillFunctionTable(D3D11);

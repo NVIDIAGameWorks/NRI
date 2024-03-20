@@ -6,8 +6,10 @@
 
 #include "Extensions/NRIDeviceCreation.h"
 #include "Extensions/NRIHelper.h"
+#include "Extensions/NRILowLatency.h"
 #include "Extensions/NRIMeshShader.h"
 #include "Extensions/NRIRayTracing.h"
+#include "Extensions/NRIStreamer.h"
 #include "Extensions/NRISwapChain.h"
 #include "Extensions/NRIWrapperD3D11.h"
 #include "Extensions/NRIWrapperD3D12.h"
@@ -24,15 +26,14 @@
 typedef nri::MemoryAllocatorInterface MemoryAllocatorInterface;
 #include "StdAllocator.h"
 
-#include "HelperDataUpload.h"
-#include "HelperDeviceMemoryAllocator.h"
-#include "HelperWaitIdle.h"
-
 #ifdef _WIN32
 #    include <dxgi1_6.h>
 #else
 typedef uint32_t DXGI_FORMAT;
 #endif
+
+#define NRI_STRINGIFY_(token) #token
+#define NRI_STRINGIFY(token) NRI_STRINGIFY_(token)
 
 #define RETURN_ON_BAD_HRESULT(deviceBase, hr, msg) \
     if (FAILED(hr)) { \
@@ -58,11 +59,18 @@ typedef uint32_t DXGI_FORMAT;
 
 #define NRI_NODE_MASK 0x1 // mGPU is not planned
 
+#define SHADER_EXT_UAV_SLOT 63 // TODO: D3D 11.1 assumed
+
 #include "DeviceBase.h"
 
-constexpr uint32_t COMMAND_QUEUE_TYPE_NUM = (uint32_t)nri::CommandQueueType::MAX_NUM;
-constexpr uint32_t DEFAULT_TIMEOUT = 5000; // 5 sec
-constexpr uint64_t VK_DEFAULT_TIMEOUT = DEFAULT_TIMEOUT * 1000000ull;
+constexpr uint32_t TIMEOUT_PRESENT = 1000; // 1 sec
+constexpr uint32_t TIMEOUT_FENCE = 5000;   // 5 sec
+
+constexpr uint64_t PRESENT_INDEX_BIT_NUM = 56ull;
+
+constexpr uint64_t MsToUs(uint32_t x) {
+    return x * 1000000ull;
+}
 
 constexpr void ReturnVoid() {
 }
@@ -71,19 +79,7 @@ template <typename... Args>
 constexpr void MaybeUnused([[maybe_unused]] const Args&... args) {
 }
 
-inline nri::Vendor GetVendorFromID(uint32_t vendorID) {
-    switch (vendorID) {
-        case 0x10DE:
-            return nri::Vendor::NVIDIA;
-        case 0x1002:
-            return nri::Vendor::AMD;
-        case 0x8086:
-            return nri::Vendor::INTEL;
-    }
-
-    return nri::Vendor::UNKNOWN;
-}
-
+// Format conversion
 struct DxgiFormat {
     DXGI_FORMAT typeless;
     DXGI_FORMAT typed;
@@ -98,17 +94,61 @@ struct FormatProps {
 const DxgiFormat& GetDxgiFormat(nri::Format format);
 const FormatProps& GetFormatProps(nri::Format format);
 
-void CheckAndSetDefaultCallbacks(nri::CallbackInterface& callbackInterface);
-void ConvertCharToWchar(const char* in, wchar_t* out, size_t outLen);
-void ConvertWcharToChar(const wchar_t* in, char* out, size_t outLen);
-nri::Result GetResultFromHRESULT(long result);
-
 nri::Format DXGIFormatToNRIFormat(uint32_t dxgiFormat);
 nri::Format VKFormatToNRIFormat(uint32_t vkFormat);
 
 uint32_t NRIFormatToDXGIFormat(nri::Format format);
 uint32_t NRIFormatToVKFormat(nri::Format format);
 
+// Misc
+inline nri::Vendor GetVendorFromID(uint32_t vendorID) {
+    switch (vendorID) {
+        case 0x10DE:
+            return nri::Vendor::NVIDIA;
+        case 0x1002:
+            return nri::Vendor::AMD;
+        case 0x8086:
+            return nri::Vendor::INTEL;
+    }
+
+    return nri::Vendor::UNKNOWN;
+}
+
+nri::Result GetResultFromHRESULT(long result);
+
+inline nri::Dim_t GetDimension(nri::GraphicsAPI api, const nri::TextureDesc& textureDesc, nri::Dim_t dimensionIndex, nri::Mip_t mip) {
+    assert(dimensionIndex < 3);
+
+    nri::Dim_t dim = textureDesc.depth;
+    if (dimensionIndex == 0)
+        dim = textureDesc.width;
+    else if (dimensionIndex == 1)
+        dim = textureDesc.height;
+
+    dim = (nri::Dim_t)std::max(dim >> mip, 1);
+
+    // TODO: VK doesn't require manual alignment, but probably we should use it here and during texture creation
+    if (api != nri::GraphicsAPI::VULKAN)
+        dim = Align(dim, dimensionIndex < 2 ? GetFormatProps(textureDesc.format).blockWidth : 1);
+
+    return dim;
+}
+
+// String conversion
+void ConvertCharToWchar(const char* in, wchar_t* out, size_t outLen);
+void ConvertWcharToChar(const wchar_t* in, char* out, size_t outLen);
+
+// Callbacks setup
+void CheckAndSetDefaultCallbacks(nri::CallbackInterface& callbackInterface);
+
+// Swap chain ID
+uint64_t GetSwapChainId();
+
+inline uint64_t GetPresentIndex(uint64_t presentId) {
+    return presentId & ((1ull << PRESENT_INDEX_BIT_NUM) - 1ull);
+}
+
+// Shared library
 struct Library;
 Library* LoadSharedLibrary(const char* path);
 void* GetSharedLibraryFunction(Library& library, const char* name);
@@ -215,7 +255,7 @@ struct ComPtr {
         return m_ComPtr == lComPtr;
     }
 
-  protected:
+protected:
     T* m_ComPtr;
 };
 
@@ -318,11 +358,13 @@ constexpr nri::FormatSupportBits D3D_FORMAT_SUPPORT_TABLE[] = {
 
 static_assert(GetCountOf(D3D_FORMAT_SUPPORT_TABLE) == (size_t)nri::Format::MAX_NUM, "some format is missing");
 
+bool HasOutput();
+
 struct DisplayDescHelper {
-  public:
+public:
     nri::Result GetDisplayDesc(void* hwnd, nri::DisplayDesc& displayDesc);
 
-  protected:
+protected:
     ComPtr<IDXGIFactory2> m_DxgiFactory2;
     nri::DisplayDesc m_DisplayDesc = {};
     bool m_HasDisplayDesc = false;

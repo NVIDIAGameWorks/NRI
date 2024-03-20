@@ -8,8 +8,8 @@ struct ID3D12CommandSignature;
 struct D3D12_CPU_DESCRIPTOR_HANDLE;
 
 #ifdef NRI_USE_AGILITY_SDK
-struct ID3D12Device13;
-typedef ID3D12Device13 ID3D12DeviceBest;
+struct ID3D12Device14;
+typedef ID3D12Device14 ID3D12DeviceBest;
 #else
 struct ID3D12Device5;
 typedef ID3D12Device5 ID3D12DeviceBest;
@@ -36,6 +36,10 @@ struct DeviceD3D12 final : public DeviceBase {
 
     inline uint8_t GetVersion() const {
         return m_Version;
+    }
+
+    inline const d3d12::Ext* GetExt() const {
+        return &m_Ext;
     }
 
     inline IDXGIAdapter* GetAdapter() const {
@@ -144,16 +148,19 @@ struct DeviceD3D12 final : public DeviceBase {
     Result FillFunctionTable(RayTracingInterface& rayTracingInterface) const;
     Result FillFunctionTable(MeshShaderInterface& meshShaderInterface) const;
     Result FillFunctionTable(HelperInterface& helperInterface) const;
+    Result FillFunctionTable(LowLatencyInterface& lowLatencyInterface) const;
+    Result FillFunctionTable(StreamerInterface& streamerInterface) const;
 
-  private:
+private:
     void FillDesc();
     MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const;
     ComPtr<ID3D12CommandSignature> CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride);
 
-  private:
+private:
+    d3d12::Ext m_Ext = {}; // don't sort: destructor must be called last!
     ComPtr<ID3D12DeviceBest> m_Device;
     ComPtr<IDXGIAdapter> m_Adapter;
-    std::array<CommandQueueD3D12*, COMMAND_QUEUE_TYPE_NUM> m_CommandQueues = {};
+    std::array<CommandQueueD3D12*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     Vector<DescriptorHeapDesc> m_DescriptorHeaps;
     Vector<Vector<DescriptorHandle>> m_FreeDescriptors;
     DeviceDesc m_Desc = {};

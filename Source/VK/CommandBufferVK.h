@@ -102,10 +102,10 @@ struct CommandBufferVK {
     void DrawMeshTasks(const DrawMeshTasksDesc& drawMeshTasksDesc);
     void DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
 
-  private:
+private:
     void CopyWholeTexture(const TextureVK& dstTexture, const TextureVK& srcTexture);
 
-  private:
+private:
     DeviceVK& m_Device;
     const PipelineVK* m_CurrentPipeline = nullptr;
     const PipelineLayoutVK* m_CurrentPipelineLayout = nullptr;

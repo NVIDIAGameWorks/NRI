@@ -90,7 +90,6 @@ inline Result DescriptorPoolVK::AllocateDescriptorSets(
 
         for (size_t i = 0; i < newSetNum; i++) {
             m_AllocatedSets[prevSetNum + i] = (DescriptorSetVK*)lowLevelAllocator.Allocate(lowLevelAllocator.userArg, sizeof(DescriptorSetVK), alignof(DescriptorSetVK));
-
             Construct(m_AllocatedSets[prevSetNum + i], 1, m_Device);
         }
     }
@@ -103,23 +102,24 @@ inline Result DescriptorPoolVK::AllocateDescriptorSets(
     const DescriptorSetDesc& setDesc = pipelineLayoutVK.GetRuntimeBindingInfo().descriptorSetDescs[setIndexInPipelineLayout];
     const bool hasVariableDescriptorNum = pipelineLayoutVK.GetRuntimeBindingInfo().hasVariableDescriptorNum[setIndexInPipelineLayout];
 
-    VkDescriptorSetVariableDescriptorCountAllocateInfoEXT variableDescriptorCountInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT};
+    VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO};
     variableDescriptorCountInfo.descriptorSetCount = 1;
     variableDescriptorCountInfo.pDescriptorCounts = &variableDescriptorNum;
 
-    const VkDescriptorSetAllocateInfo info = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, hasVariableDescriptorNum ? &variableDescriptorCountInfo : nullptr, m_Handle, 1, &setLayout};
+    VkDescriptorSetAllocateInfo info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+    info.pNext = hasVariableDescriptorNum ? &variableDescriptorCountInfo : nullptr;
+    info.descriptorPool = m_Handle;
+    info.descriptorSetCount = 1;
+    info.pSetLayouts = &setLayout;
 
     const auto& vk = m_Device.GetDispatchTable();
-
-    VkResult result = VK_SUCCESS;
-    for (uint32_t i = 0; i < numberOfCopies && result == VK_SUCCESS; i++) {
+    for (uint32_t i = 0; i < numberOfCopies; i++) {
         VkDescriptorSet handle = VK_NULL_HANDLE;
-        result = vk.AllocateDescriptorSets(m_Device, &info, &handle);
+        VkResult result = vk.AllocateDescriptorSets(m_Device, &info, &handle);
+        RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkAllocateDescriptorSets returned %d", (int32_t)result);
+
         ((DescriptorSetVK*)descriptorSets[i])->Create(handle, setDesc);
     }
-
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkAllocateDescriptorSets returned %d", (int32_t)result);
 
     return Result::SUCCESS;
 }

@@ -20,4 +20,4 @@ static void NRI_CALL CopyDescriptorSet(DescriptorSet& descriptorSet, const Descr
 
 #pragma endregion
 
-Define_Core_DescriptorSet_PartiallyFillFunctionTable(VK)
+Define_Core_DescriptorSet_PartiallyFillFunctionTable(VK);

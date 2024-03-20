@@ -16,7 +16,7 @@ QueryPoolVK::~QueryPoolVK() {
 Result QueryPoolVK::Create(const QueryPoolDesc& queryPoolDesc) {
     m_OwnsNativeObjects = true;
 
-    if (queryPoolDesc.queryType == QueryType::TIMESTAMP)
+    if (queryPoolDesc.queryType == QueryType::TIMESTAMP || queryPoolDesc.queryType == QueryType::TIMESTAMP_COPY_QUEUE)
         m_Type = VK_QUERY_TYPE_TIMESTAMP;
     else if (queryPoolDesc.queryType == QueryType::OCCLUSION)
         m_Type = VK_QUERY_TYPE_OCCLUSION;

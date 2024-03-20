@@ -20,8 +20,7 @@ struct PipelineVal : public DeviceObjectVal<Pipeline> {
     void SetDebugName(const char* name);
     Result WriteShaderGroupIdentifiers(uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer);
 
-  private:
-    const RayTracingInterface& m_RayTracingAPI;
+private:
     const PipelineLayout* m_PipelineLayout = nullptr;
 };
 

@@ -113,7 +113,7 @@ Result DescriptorVK::Create(const BufferViewDesc& bufferViewDesc) {
     const BufferVK& buffer = *(const BufferVK*)bufferViewDesc.buffer;
 
     m_Type = DescriptorTypeVK::BUFFER_VIEW;
-    m_Format = GetVkFormat((nri::Format)bufferViewDesc.format);
+    m_Format = GetVkFormat((Format)bufferViewDesc.format);
     m_BufferDesc.offset = bufferViewDesc.offset;
     m_BufferDesc.size = (bufferViewDesc.size == WHOLE_SIZE) ? VK_WHOLE_SIZE : bufferViewDesc.size;
     m_BufferDesc.handle = buffer.GetHandle();

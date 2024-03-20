@@ -43,7 +43,7 @@ struct BufferVK {
     void* Map(uint64_t offset, uint64_t size);
     void Unmap();
 
-  private:
+private:
     DeviceVK& m_Device;
     VkBuffer m_Handle = VK_NULL_HANDLE;
     VkDeviceAddress m_DeviceAddress = {};

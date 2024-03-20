@@ -7,12 +7,12 @@
 
 using namespace nri;
 
-PipelineLayoutVal::PipelineLayoutVal(DeviceVal& device, PipelineLayout* pipelineLayout, const PipelineLayoutDesc& pipelineLayoutDesc)
-    : DeviceObjectVal(device, pipelineLayout),
-      m_DescriptorSetDescs(device.GetStdAllocator()),
-      m_PushConstantDescs(device.GetStdAllocator()),
-      m_DescriptorRangeDescs(device.GetStdAllocator()),
-      m_DynamicConstantBufferDescs(device.GetStdAllocator()) {
+PipelineLayoutVal::PipelineLayoutVal(DeviceVal& device, PipelineLayout* pipelineLayout, const PipelineLayoutDesc& pipelineLayoutDesc) :
+    DeviceObjectVal(device, pipelineLayout),
+    m_DescriptorSetDescs(device.GetStdAllocator()),
+    m_PushConstantDescs(device.GetStdAllocator()),
+    m_DescriptorRangeDescs(device.GetStdAllocator()),
+    m_DynamicConstantBufferDescs(device.GetStdAllocator()) {
     uint32_t descriptorRangeDescNum = 0;
     uint32_t dynamicConstantBufferDescNum = 0;
 

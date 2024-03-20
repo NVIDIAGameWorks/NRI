@@ -1,6 +1,6 @@
 ---
 BasedOnStyle: Google
-AccessModifierOffset: -2
+AccessModifierOffset: -4
 AlignAfterOpenBracket: DontAlign
 AlignArrayOfStructures: None
 AlignConsecutiveAssignments:
@@ -77,7 +77,7 @@ BreakBeforeBraces: Attach
 BreakBeforeConceptDeclarations: Always
 # BreakBeforeInlineASMColon: OnlyMultiline
 BreakBeforeTernaryOperators: true
-BreakConstructorInitializers: BeforeColon
+BreakConstructorInitializers: AfterColon
 BreakInheritanceList: BeforeColon
 BreakStringLiterals: true
 ColumnLimit: 180

@@ -39,7 +39,7 @@ struct TextureVal : public DeviceObjectVal<Texture> {
     void SetDebugName(const char* name);
     void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
-  private:
+private:
     MemoryVal* m_Memory = nullptr;
     bool m_IsBoundToMemory = false;
 };

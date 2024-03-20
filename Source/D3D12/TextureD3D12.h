@@ -40,10 +40,13 @@ struct TextureD3D12 {
         return arrayOffset * m_Desc.mipNum + mipOffset;
     }
 
+    inline Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const {
+        return GetDimension(GraphicsAPI::D3D12, m_Desc, dimensionIndex, mip);
+    }
+
     Result Create(const TextureDesc& textureDesc);
     Result Create(const TextureD3D12Desc& textureDesc);
     Result BindMemory(const MemoryD3D12* memory, uint64_t offset);
-    Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const;
 
     //================================================================================================================
     // NRI
@@ -55,7 +58,7 @@ struct TextureD3D12 {
 
     void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
-  private:
+private:
     DeviceD3D12& m_Device;
     TextureDesc m_Desc = {};
     ComPtr<ID3D12ResourceBest> m_Texture;

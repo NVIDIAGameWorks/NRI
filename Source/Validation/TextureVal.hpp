@@ -19,4 +19,4 @@ static void NRI_CALL GetTextureMemoryInfo(const Texture& texture, MemoryLocation
 
 #pragma endregion
 
-Define_Core_Texture_PartiallyFillFunctionTable(Val)
+Define_Core_Texture_PartiallyFillFunctionTable(Val);

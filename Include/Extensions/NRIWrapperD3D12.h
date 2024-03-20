@@ -21,9 +21,11 @@ NRI_STRUCT(DeviceCreationD3D12Desc)
     ID3D12CommandQueue* d3d12GraphicsQueue;
     ID3D12CommandQueue* d3d12ComputeQueue;
     ID3D12CommandQueue* d3d12CopyQueue;
+    AGSContext* agsContext; // can be NULL
     NRI_NAME(CallbackInterface) callbackInterface;
     NRI_NAME(MemoryAllocatorInterface) memoryAllocatorInterface;
     bool enableNRIValidation;
+    bool isNVAPILoaded; // At least NVAPI requires calling "NvAPI_Initialize" in DLL/EXE where the device is created in addition to NRI
 };
 
 NRI_STRUCT(CommandBufferD3D12Desc)

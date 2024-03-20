@@ -32,7 +32,7 @@ struct QueryPoolD3D11 {
         return m_Type == QueryType::PIPELINE_STATISTICS ? sizeof(D3D11_QUERY_DATA_PIPELINE_STATISTICS) : sizeof(uint64_t);
     }
 
-  private:
+private:
     DeviceD3D11& m_Device;
     Vector<ComPtr<ID3D11Query>> m_QueryPool;
     QueryType m_Type = QueryType::MAX_NUM;

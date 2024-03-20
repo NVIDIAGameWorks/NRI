@@ -11,10 +11,12 @@
 #include "DescriptorSetVK.h"
 #include "DescriptorVK.h"
 #include "FenceVK.h"
+#include "HelperDeviceMemoryAllocator.h"
 #include "MemoryVK.h"
 #include "PipelineLayoutVK.h"
 #include "PipelineVK.h"
 #include "QueryPoolVK.h"
+#include "Streamer.h"
 #include "SwapChainVK.h"
 #include "TextureVK.h"
 
@@ -141,26 +143,33 @@ void DeviceVK::ProcessInstanceExtensions(Vector<const char*>& desiredInstanceExt
     for (const VkExtensionProperties& props : supportedExts)
         REPORT_INFO(this, "    %s (v%u)", props.extensionName, props.specVersion);
 
-    // Mandatory // TODO: review
-    desiredInstanceExts.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-    desiredInstanceExts.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-#endif
-#ifdef VK_USE_PLATFORM_METAL_EXT
-    desiredInstanceExts.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
-#endif
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-    desiredInstanceExts.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-#endif
-#ifdef VK_USE_PLATFORM_WAYLAND_KHR
-    desiredInstanceExts.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
-#endif
+    // Mandatory
+    if (IsExtensionSupported(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME, supportedExts))
+        desiredInstanceExts.push_back(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
+
 #ifdef __APPLE__
     desiredInstanceExts.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
     desiredInstanceExts.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 #endif
 
     // Optional
+    if (IsExtensionSupported(VK_KHR_SURFACE_EXTENSION_NAME, supportedExts)) {
+        desiredInstanceExts.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+        desiredInstanceExts.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#endif
+#ifdef VK_USE_PLATFORM_METAL_EXT
+        desiredInstanceExts.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
+#endif
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+        desiredInstanceExts.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+#endif
+#ifdef VK_USE_PLATFORM_WAYLAND_KHR
+        desiredInstanceExts.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
+#endif
+    }
+
     if (IsExtensionSupported(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME, supportedExts))
         desiredInstanceExts.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
 
@@ -195,6 +204,12 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
+    if (IsExtensionSupported(VK_KHR_PRESENT_ID_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_PRESENT_ID_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_PRESENT_WAIT_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_PRESENT_WAIT_EXTENSION_NAME);
+
     if (IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME);
 
@@ -210,7 +225,22 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
 
+    if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, supportedExts) && !disableRayTracing)
+        desiredDeviceExts.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, supportedExts) && !disableRayTracing)
+        desiredDeviceExts.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_RAY_QUERY_EXTENSION_NAME, supportedExts) && !disableRayTracing)
+        desiredDeviceExts.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME, supportedExts) && !disableRayTracing)
+        desiredDeviceExts.push_back(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
+
     // Optional (EXT)
+    if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts) && !disableRayTracing)
+        desiredDeviceExts.push_back(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME);
+
     if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME);
 
@@ -223,26 +253,9 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
 
-    // Ray tracing
-    // It consumes CPU memory: enable if supported and not disabled
-    if (!disableRayTracing) {
-        // Mandatory
-        if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, supportedExts))
-            desiredDeviceExts.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
-
-        if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, supportedExts))
-            desiredDeviceExts.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-
-        // Optional
-        if (IsExtensionSupported(VK_KHR_RAY_QUERY_EXTENSION_NAME, supportedExts))
-            desiredDeviceExts.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
-
-        if (IsExtensionSupported(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME, supportedExts))
-            desiredDeviceExts.push_back(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
-
-        if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts))
-            desiredDeviceExts.push_back(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME);
-    }
+    // Optional
+    if (IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
 }
 
 template <typename Implementation, typename Interface, typename... Args>
@@ -259,8 +272,8 @@ Result DeviceVK::CreateImplementation(Interface*& entity, const Args&... args) {
     return result;
 }
 
-DeviceVK::DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator)
-    : DeviceBase(callbacks, stdAllocator), m_ConcurrentSharingModeQueueIndices(GetStdAllocator()) {
+DeviceVK::DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator) :
+    DeviceBase(callbacks, stdAllocator), m_ConcurrentSharingModeQueueIndices(GetStdAllocator()) {
     m_Desc.graphicsAPI = GraphicsAPI::VULKAN;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
@@ -386,7 +399,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
                 return res;
         }
 
-        res = ResolveInstanceDispatchTable();
+        res = ResolveInstanceDispatchTable(desiredInstanceExts);
         if (res != Result::SUCCESS)
             return res;
     }
@@ -449,6 +462,16 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     VkPhysicalDeviceFragmentShadingRateFeaturesKHR shadingRateFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR};
     if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(shadingRateFeatures);
+    }
+
+    VkPhysicalDevicePresentIdFeaturesKHR presentIdFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_PRESENT_ID_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(presentIdFeatures);
+    }
+
+    VkPhysicalDevicePresentWaitFeaturesKHR presentWaitFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_PRESENT_WAIT_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(presentWaitFeatures);
     }
 
     VkPhysicalDeviceLineRasterizationFeaturesEXT lineRasterizationFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT};
@@ -520,7 +543,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkCreateDevice returned %d", (int32_t)result);
         }
 
-        Result res = ResolveDispatchTable(desiredInstanceExts, desiredDeviceExts);
+        Result res = ResolveDispatchTable(desiredDeviceExts);
         if (res != Result::SUCCESS)
             return res;
     }
@@ -567,7 +590,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         VkPhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
         if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(accelerationStructureProps);
-            m_Desc.isRaytracingSupported = true;
+            m_Desc.isRayTracingSupported = true;
         }
 
         VkPhysicalDeviceMeshShaderPropertiesEXT meshShaderProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT};
@@ -579,11 +602,14 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevice, &props);
 
         // Internal features
-        m_IsDescriptorIndexingSupported = features12.descriptorIndexing ? true : false;
-        m_IsDeviceAddressSupported = features12.bufferDeviceAddress ? true : false;
+        m_IsDescriptorIndexingSupported = features12.descriptorIndexing;
+        m_IsDeviceAddressSupported = features12.bufferDeviceAddress;
         m_IsSwapChainMutableFormatSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, desiredDeviceExts);
+        m_IsPresentIdSupported = presentIdFeatures.presentId;
+        m_IsPresentWaitSupported = m_IsPresentIdSupported && presentWaitFeatures.presentWait;
+        m_IsLowLatencySupported = m_IsPresentIdSupported && IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
 
-        // Fill
+        // Fill desc
         const VkPhysicalDeviceLimits& limits = props.properties.limits;
 
         m_Desc.viewportMaxNum = limits.maxViewports;
@@ -628,7 +654,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.storageBufferOffsetAlignment = (uint32_t)limits.minStorageBufferOffsetAlignment;
         m_Desc.storageBufferMaxRange = limits.maxStorageBufferRange;
         m_Desc.pushConstantsMaxSize = limits.maxPushConstantsSize;
-        m_Desc.bufferMaxSize = std::numeric_limits<uint64_t>::max();
+        m_Desc.bufferMaxSize = props13.maxBufferSize;
         m_Desc.bufferTextureGranularity = (uint32_t)limits.bufferImageGranularity;
 
         m_Desc.boundDescriptorSetMaxNum = limits.maxBoundDescriptorSets;
@@ -706,19 +732,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isFloat16Supported = features12.shaderFloat16;
         m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = true;
         m_Desc.isLineSmoothingSupported = lineRasterizationFeatures.smoothLines;
-
-        // Copy queue timestamp
-        uint32_t familyNum = 0;
-        m_VK.GetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &familyNum, nullptr);
-
-        Vector<VkQueueFamilyProperties> familyProperties(familyNum, m_StdAllocator);
-        m_VK.GetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &familyNum, familyProperties.data());
-
-        uint32_t copyQueueTimestampValidBits = 0;
-        const uint32_t copyQueueFamilyIndex = m_FamilyIndices[(uint32_t)CommandQueueType::COPY];
-        if (copyQueueFamilyIndex != INVALID_FAMILY_INDEX)
-            copyQueueTimestampValidBits = familyProperties[copyQueueFamilyIndex].timestampValidBits;
-        m_Desc.isCopyQueueTimestampSupported = copyQueueTimestampValidBits == 64;
+        m_Desc.isCopyQueueTimestampSupported = limits.timestampComputeAndGraphics;
 
         // Conservative raster
         if (conservativeRasterProps.fullyCoveredFragmentShaderInputVariable && conservativeRasterProps.primitiveOverestimationSize <= (1.0 / 256.0f))
@@ -747,6 +761,9 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.meshEvaluationWorkGroupInvocationMaxNum = meshShaderProps.maxMeshWorkGroupInvocations;
         m_Desc.isMeshShaderPipelineStatsSupported = meshShaderFeatures.meshShaderQueries == VK_TRUE;
         m_Desc.isDrawMeshTasksIndirectSupported = true;
+
+        m_Desc.isSwapChainSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, desiredDeviceExts);
+        m_Desc.isLowLatencySupported = IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
     }
 
     return FillFunctionTable(m_CoreInterface);
@@ -1062,13 +1079,9 @@ void DeviceVK::FillFamilyIndices(bool useEnabledFamilyIndices, const uint32_t* e
     m_VK.GetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &familyNum, familyProps.data());
 
     memset(m_FamilyIndices.data(), INVALID_FAMILY_INDEX, m_FamilyIndices.size() * sizeof(uint32_t));
+    std::array<uint8_t, (uint32_t)CommandQueueType::MAX_NUM> scores = {};
 
     for (uint32_t i = 0; i < familyProps.size(); i++) {
-        const VkQueueFlags mask = familyProps[i].queueFlags;
-        const bool graphics = mask & VK_QUEUE_GRAPHICS_BIT;
-        const bool compute = mask & VK_QUEUE_COMPUTE_BIT;
-        const bool copy = mask & VK_QUEUE_TRANSFER_BIT;
-
         if (useEnabledFamilyIndices) {
             bool isFamilyEnabled = false;
             for (uint32_t j = 0; j < familyIndexNum && !isFamilyEnabled; j++)
@@ -1078,12 +1091,34 @@ void DeviceVK::FillFamilyIndices(bool useEnabledFamilyIndices, const uint32_t* e
                 continue;
         }
 
-        if (graphics)
+        VkQueueFlags flags = familyProps[i].queueFlags;
+        uint8_t score;
+
+        bool graphics = flags & VK_QUEUE_GRAPHICS_BIT;
+        bool compute = flags & VK_QUEUE_COMPUTE_BIT;
+        bool copy = flags & VK_QUEUE_TRANSFER_BIT;
+        bool sparse = flags & VK_QUEUE_SPARSE_BINDING_BIT;
+        bool protect = flags & VK_QUEUE_PROTECTED_BIT;
+        bool video = flags & (VK_QUEUE_VIDEO_DECODE_BIT_KHR | VK_QUEUE_VIDEO_ENCODE_BIT_KHR);
+        bool opticalFlow = flags & VK_QUEUE_OPTICAL_FLOW_BIT_NV;
+
+        score = (graphics ? 100 : 0) + (compute ? 10 : 0) + (copy ? 10 : 0) + (sparse ? 5 : 0) + (opticalFlow ? 2 : 0) + (video ? 1 : 0) + (protect ? 1 : 0);
+        if (score > scores[(uint32_t)CommandQueueType::GRAPHICS]) {
             m_FamilyIndices[(uint32_t)CommandQueueType::GRAPHICS] = i;
-        else if (compute)
+            scores[(uint32_t)CommandQueueType::GRAPHICS] = score;
+        }
+
+        score = (!graphics ? 10 : 0) + (compute ? 100 : 0) + (!copy ? 10 : 0) + (sparse ? 5 : 0) + (opticalFlow ? 2 : 0) + (video ? 1 : 0) + (protect ? 1 : 0);
+        if (score > scores[(uint32_t)CommandQueueType::COMPUTE]) {
             m_FamilyIndices[(uint32_t)CommandQueueType::COMPUTE] = i;
-        else if (copy)
+            scores[(uint32_t)CommandQueueType::COMPUTE] = score;
+        }
+
+        score = (!graphics ? 10 : 0) + (!compute ? 10 : 0) + (copy ? 100 : 0) + (sparse ? 5 : 0) + (opticalFlow ? 2 : 0) + (video ? 1 : 0) + (protect ? 1 : 0);
+        if (score > scores[(uint32_t)CommandQueueType::COPY]) {
             m_FamilyIndices[(uint32_t)CommandQueueType::COPY] = i;
+            scores[(uint32_t)CommandQueueType::COPY] = score;
+        }
     }
 }
 
@@ -1160,33 +1195,33 @@ void DeviceVK::ReportDeviceGroupInfo() {
     }
 }
 
-#define RESOLVE_OPTIONAL_DEVICE_FUNCTION(name) m_VK.name = (PFN_vk##name)m_VK.GetDeviceProcAddr(m_Device, "vk" #name)
+#define MERGE_TOKENS2(a, b) a##b
+#define MERGE_TOKENS3(a, b, c) a##b##c
 
-#define RESOLVE_DEVICE_FUNCTION(name) \
-    RESOLVE_OPTIONAL_DEVICE_FUNCTION(name); \
+#define GET_DEVICE_OPTIONAL_CORE_OR_KHR_PROC(name) \
+    m_VK.name = (PFN_vk##name)m_VK.GetDeviceProcAddr(m_Device, NRI_STRINGIFY(MERGE_TOKENS2(vk, name))); \
     if (!m_VK.name) { \
-        REPORT_ERROR(this, "Failed to get device function: '%s'.", #name); \
+        m_VK.name = (PFN_vk##name)m_VK.GetDeviceProcAddr(m_Device, NRI_STRINGIFY(MERGE_TOKENS3(vk, name, KHR))); \
+    }
+
+#define GET_DEVICE_CORE_OR_KHR_PROC(name) \
+    GET_DEVICE_OPTIONAL_CORE_OR_KHR_PROC(name) \
+    if (!m_VK.name) { \
+        REPORT_ERROR(this, "Failed to get device function: '%s'", NRI_STRINGIFY(MERGE_TOKENS2(vk, name))); \
         return Result::UNSUPPORTED; \
     }
 
-#define RESOLVE_DEVICE_FUNCTION_WITH_OTHER_NAME(functionName, otherName) \
-    m_VK.functionName = (PFN_vk##functionName)m_VK.GetDeviceProcAddr(m_Device, otherName); \
-    if (!m_VK.functionName) { \
-        REPORT_ERROR(this, "Failed to get device function: '" otherName "'."); \
+#define GET_DEVICE_PROC(name) \
+    m_VK.name = (PFN_vk##name)m_VK.GetDeviceProcAddr(m_Device, NRI_STRINGIFY(MERGE_TOKENS2(vk, name))); \
+    if (!m_VK.name) { \
+        REPORT_ERROR(this, "Failed to get device function: '%s'", NRI_STRINGIFY(MERGE_TOKENS2(vk, name))); \
         return Result::UNSUPPORTED; \
     }
 
-#define RESOLVE_INSTANCE_FUNCTION(name) \
-    m_VK.name = (PFN_vk##name)m_VK.GetInstanceProcAddr(m_Instance, "vk" #name); \
+#define GET_INSTANCE_PROC(name) \
+    m_VK.name = (PFN_vk##name)m_VK.GetInstanceProcAddr(m_Instance, NRI_STRINGIFY(MERGE_TOKENS2(vk, name))); \
     if (!m_VK.name) { \
-        REPORT_ERROR(this, "Failed to get instance function: '%s'.", #name); \
-        return Result::UNSUPPORTED; \
-    }
-
-#define RESOLVE_PRE_INSTANCE_FUNCTION(name) \
-    m_VK.name = (PFN_vk##name)m_VK.GetInstanceProcAddr(VK_NULL_HANDLE, "vk" #name); \
-    if (!m_VK.name) { \
-        REPORT_ERROR(this, "Failed to get instance function: '%s'.", #name); \
+        REPORT_ERROR(this, "Failed to get instance function: '%s'", NRI_STRINGIFY(MERGE_TOKENS2(vk, name))); \
         return Result::UNSUPPORTED; \
     }
 
@@ -1195,199 +1230,195 @@ Result DeviceVK::ResolvePreInstanceDispatchTable() {
 
     m_VK.GetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)GetSharedLibraryFunction(*m_Loader, "vkGetInstanceProcAddr");
     if (!m_VK.GetInstanceProcAddr) {
-        REPORT_ERROR(this, "Failed to get vkGetInstanceProcAddr.");
+        REPORT_ERROR(this, "Failed to get 'vkGetInstanceProcAddr'");
         return Result::UNSUPPORTED;
     }
 
-    RESOLVE_PRE_INSTANCE_FUNCTION(CreateInstance);
-    RESOLVE_PRE_INSTANCE_FUNCTION(EnumerateInstanceExtensionProperties);
-    RESOLVE_PRE_INSTANCE_FUNCTION(EnumerateInstanceLayerProperties);
+    GET_INSTANCE_PROC(CreateInstance);
+    GET_INSTANCE_PROC(EnumerateInstanceExtensionProperties);
+    GET_INSTANCE_PROC(EnumerateInstanceLayerProperties);
 
     return Result::SUCCESS;
 }
 
-Result DeviceVK::ResolveInstanceDispatchTable() {
-    RESOLVE_INSTANCE_FUNCTION(GetDeviceProcAddr);
-    RESOLVE_INSTANCE_FUNCTION(DestroyInstance);
-    RESOLVE_INSTANCE_FUNCTION(DestroyDevice);
-    RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceMemoryProperties);
-    RESOLVE_INSTANCE_FUNCTION(GetDeviceGroupPeerMemoryFeatures);
-    RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceFormatProperties);
-    RESOLVE_INSTANCE_FUNCTION(CreateDevice);
-    RESOLVE_INSTANCE_FUNCTION(GetDeviceQueue);
-    RESOLVE_INSTANCE_FUNCTION(EnumeratePhysicalDeviceGroups);
-    RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceProperties2);
-    RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceFeatures2);
-    RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceQueueFamilyProperties);
-    RESOLVE_INSTANCE_FUNCTION(EnumerateDeviceExtensionProperties);
-    RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceSurfaceFormatsKHR);
-    RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceSurfaceSupportKHR);
-    RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceSurfaceCapabilitiesKHR);
-    RESOLVE_INSTANCE_FUNCTION(GetPhysicalDeviceSurfacePresentModesKHR);
-    RESOLVE_INSTANCE_FUNCTION(DestroySurfaceKHR);
+Result DeviceVK::ResolveInstanceDispatchTable(const Vector<const char*>& desiredInstanceExts) {
+    GET_INSTANCE_PROC(GetDeviceProcAddr);
+    GET_INSTANCE_PROC(DestroyInstance);
+    GET_INSTANCE_PROC(DestroyDevice);
+    GET_INSTANCE_PROC(GetPhysicalDeviceMemoryProperties);
+    GET_INSTANCE_PROC(GetDeviceGroupPeerMemoryFeatures);
+    GET_INSTANCE_PROC(GetPhysicalDeviceFormatProperties);
+    GET_INSTANCE_PROC(CreateDevice);
+    GET_INSTANCE_PROC(GetDeviceQueue);
+    GET_INSTANCE_PROC(EnumeratePhysicalDeviceGroups);
+    GET_INSTANCE_PROC(GetPhysicalDeviceProperties2);
+    GET_INSTANCE_PROC(GetPhysicalDeviceFeatures2);
+    GET_INSTANCE_PROC(GetPhysicalDeviceQueueFamilyProperties);
+    GET_INSTANCE_PROC(EnumerateDeviceExtensionProperties);
+
+    if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, desiredInstanceExts)) {
+        GET_INSTANCE_PROC(SetDebugUtilsObjectNameEXT);
+        GET_INSTANCE_PROC(CmdBeginDebugUtilsLabelEXT);
+        GET_INSTANCE_PROC(CmdEndDebugUtilsLabelEXT);
+    }
+
+    if (IsExtensionSupported(VK_KHR_SURFACE_EXTENSION_NAME, desiredInstanceExts)) {
+        GET_INSTANCE_PROC(GetPhysicalDeviceSurfaceFormatsKHR);
+        GET_INSTANCE_PROC(GetPhysicalDeviceSurfaceSupportKHR);
+        GET_INSTANCE_PROC(GetPhysicalDeviceSurfaceCapabilities2KHR);
+        GET_INSTANCE_PROC(GetPhysicalDeviceSurfacePresentModesKHR);
+        GET_INSTANCE_PROC(DestroySurfaceKHR);
 
 #if VK_USE_PLATFORM_WIN32_KHR
-    RESOLVE_INSTANCE_FUNCTION(CreateWin32SurfaceKHR);
-    RESOLVE_INSTANCE_FUNCTION(GetMemoryWin32HandlePropertiesKHR);
+        GET_INSTANCE_PROC(CreateWin32SurfaceKHR);
+        GET_INSTANCE_PROC(GetMemoryWin32HandlePropertiesKHR);
 #endif
 #if VK_USE_PLATFORM_METAL_EXT
-    RESOLVE_INSTANCE_FUNCTION(CreateMetalSurfaceEXT);
+        GET_INSTANCE_PROC(CreateMetalSurfaceEXT);
 #endif
 #if VK_USE_PLATFORM_XLIB_KHR
-    RESOLVE_INSTANCE_FUNCTION(CreateXlibSurfaceKHR);
+        GET_INSTANCE_PROC(CreateXlibSurfaceKHR);
 #endif
 #if VK_USE_PLATFORM_WAYLAND_KHR
-    RESOLVE_INSTANCE_FUNCTION(CreateWaylandSurfaceKHR);
+        GET_INSTANCE_PROC(CreateWaylandSurfaceKHR);
 #endif
+    }
 
     return Result::SUCCESS;
 }
 
-Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredInstanceExts, const Vector<const char*>& desiredDeviceExts) {
-    RESOLVE_DEVICE_FUNCTION(CreateBuffer);
-    RESOLVE_DEVICE_FUNCTION(CreateImage);
-    RESOLVE_DEVICE_FUNCTION(CreateBufferView);
-    RESOLVE_DEVICE_FUNCTION(CreateImageView);
-    RESOLVE_DEVICE_FUNCTION(CreateSampler);
-    RESOLVE_DEVICE_FUNCTION(CreateFramebuffer);
-    RESOLVE_DEVICE_FUNCTION(CreateQueryPool);
-    RESOLVE_DEVICE_FUNCTION(CreateCommandPool);
-    RESOLVE_DEVICE_FUNCTION(CreateSemaphore);
-    RESOLVE_DEVICE_FUNCTION(CreateDescriptorPool);
-    RESOLVE_DEVICE_FUNCTION(CreatePipelineLayout);
-    RESOLVE_DEVICE_FUNCTION(CreateDescriptorSetLayout);
-    RESOLVE_DEVICE_FUNCTION(CreateShaderModule);
-    RESOLVE_DEVICE_FUNCTION(CreateGraphicsPipelines);
-    RESOLVE_DEVICE_FUNCTION(CreateComputePipelines);
-    RESOLVE_DEVICE_FUNCTION(DestroyBuffer);
-    RESOLVE_DEVICE_FUNCTION(DestroyImage);
-    RESOLVE_DEVICE_FUNCTION(DestroyBufferView);
-    RESOLVE_DEVICE_FUNCTION(DestroyImageView);
-    RESOLVE_DEVICE_FUNCTION(DestroySampler);
-    RESOLVE_DEVICE_FUNCTION(DestroyFramebuffer);
-    RESOLVE_DEVICE_FUNCTION(DestroyQueryPool);
-    RESOLVE_DEVICE_FUNCTION(DestroyCommandPool);
-    RESOLVE_DEVICE_FUNCTION(DestroySemaphore);
-    RESOLVE_DEVICE_FUNCTION(DestroyDescriptorPool);
-    RESOLVE_DEVICE_FUNCTION(DestroyPipelineLayout);
-    RESOLVE_DEVICE_FUNCTION(DestroyDescriptorSetLayout);
-    RESOLVE_DEVICE_FUNCTION(DestroyShaderModule);
-    RESOLVE_DEVICE_FUNCTION(DestroyPipeline);
-    RESOLVE_DEVICE_FUNCTION(AllocateMemory);
-    RESOLVE_DEVICE_FUNCTION(MapMemory);
-    RESOLVE_DEVICE_FUNCTION(UnmapMemory);
-    RESOLVE_DEVICE_FUNCTION(FreeMemory);
-    RESOLVE_DEVICE_FUNCTION(QueueWaitIdle);
-    RESOLVE_DEVICE_FUNCTION(AcquireNextImageKHR);
-    RESOLVE_DEVICE_FUNCTION(QueueSubmit);
-    RESOLVE_DEVICE_FUNCTION(QueuePresentKHR);
-    RESOLVE_DEVICE_FUNCTION(GetSemaphoreCounterValue);
-    RESOLVE_DEVICE_FUNCTION(WaitSemaphores);
-    RESOLVE_DEVICE_FUNCTION(ResetCommandPool);
-    RESOLVE_DEVICE_FUNCTION(ResetDescriptorPool);
-    RESOLVE_DEVICE_FUNCTION(AllocateCommandBuffers);
-    RESOLVE_DEVICE_FUNCTION(AllocateDescriptorSets);
-    RESOLVE_DEVICE_FUNCTION(FreeCommandBuffers);
-    RESOLVE_DEVICE_FUNCTION(FreeDescriptorSets);
-    RESOLVE_DEVICE_FUNCTION(UpdateDescriptorSets);
-    RESOLVE_DEVICE_FUNCTION(BeginCommandBuffer);
-    RESOLVE_DEVICE_FUNCTION(CmdSetViewport);
-    RESOLVE_DEVICE_FUNCTION(CmdSetScissor);
-    RESOLVE_DEVICE_FUNCTION(CmdSetDepthBounds);
-    RESOLVE_DEVICE_FUNCTION(CmdSetStencilReference);
-    RESOLVE_DEVICE_FUNCTION(CmdSetBlendConstants);
-    RESOLVE_DEVICE_FUNCTION(CmdClearAttachments);
-    RESOLVE_DEVICE_FUNCTION(CmdClearColorImage);
-    RESOLVE_DEVICE_FUNCTION(CmdBindVertexBuffers);
-    RESOLVE_DEVICE_FUNCTION(CmdBindIndexBuffer);
-    RESOLVE_DEVICE_FUNCTION(CmdBindPipeline);
-    RESOLVE_DEVICE_FUNCTION(CmdBindDescriptorSets);
-    RESOLVE_DEVICE_FUNCTION(CmdPushConstants);
-    RESOLVE_DEVICE_FUNCTION(CmdDispatch);
-    RESOLVE_DEVICE_FUNCTION(CmdDispatchIndirect);
-    RESOLVE_DEVICE_FUNCTION(CmdDraw);
-    RESOLVE_DEVICE_FUNCTION(CmdDrawIndexed);
-    RESOLVE_DEVICE_FUNCTION(CmdDrawIndirect);
-    RESOLVE_DEVICE_FUNCTION(CmdDrawIndexedIndirect);
-    RESOLVE_DEVICE_FUNCTION(CmdCopyBuffer);
-    RESOLVE_DEVICE_FUNCTION(CmdCopyImage);
-    RESOLVE_DEVICE_FUNCTION(CmdCopyBufferToImage);
-    RESOLVE_DEVICE_FUNCTION(CmdCopyImageToBuffer);
-    RESOLVE_DEVICE_FUNCTION(CmdPipelineBarrier2);
-    RESOLVE_DEVICE_FUNCTION(CmdBeginQuery);
-    RESOLVE_DEVICE_FUNCTION(CmdEndQuery);
-    RESOLVE_DEVICE_FUNCTION(CmdWriteTimestamp);
-    RESOLVE_DEVICE_FUNCTION(CmdCopyQueryPoolResults);
-    RESOLVE_DEVICE_FUNCTION(CmdResetQueryPool);
-    RESOLVE_DEVICE_FUNCTION(CmdFillBuffer);
-    RESOLVE_DEVICE_FUNCTION(EndCommandBuffer);
+Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceExts) {
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateBuffer);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateImage);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateBufferView);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateImageView);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateSampler);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateFramebuffer);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateQueryPool);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateCommandPool);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateSemaphore);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateDescriptorPool);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreatePipelineLayout);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateDescriptorSetLayout);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateShaderModule);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateGraphicsPipelines);
+    GET_DEVICE_CORE_OR_KHR_PROC(CreateComputePipelines);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroyBuffer);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroyImage);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroyBufferView);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroyImageView);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroySampler);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroyFramebuffer);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroyQueryPool);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroyCommandPool);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroySemaphore);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroyDescriptorPool);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroyPipelineLayout);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroyDescriptorSetLayout);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroyShaderModule);
+    GET_DEVICE_CORE_OR_KHR_PROC(DestroyPipeline);
+    GET_DEVICE_CORE_OR_KHR_PROC(AllocateMemory);
+    GET_DEVICE_CORE_OR_KHR_PROC(MapMemory);
+    GET_DEVICE_CORE_OR_KHR_PROC(UnmapMemory);
+    GET_DEVICE_CORE_OR_KHR_PROC(FreeMemory);
+    GET_DEVICE_CORE_OR_KHR_PROC(QueueWaitIdle);
+    GET_DEVICE_CORE_OR_KHR_PROC(QueueSubmit2);
+    GET_DEVICE_CORE_OR_KHR_PROC(GetSemaphoreCounterValue);
+    GET_DEVICE_CORE_OR_KHR_PROC(WaitSemaphores);
+    GET_DEVICE_CORE_OR_KHR_PROC(ResetCommandPool);
+    GET_DEVICE_CORE_OR_KHR_PROC(ResetDescriptorPool);
+    GET_DEVICE_CORE_OR_KHR_PROC(AllocateCommandBuffers);
+    GET_DEVICE_CORE_OR_KHR_PROC(AllocateDescriptorSets);
+    GET_DEVICE_CORE_OR_KHR_PROC(FreeCommandBuffers);
+    GET_DEVICE_CORE_OR_KHR_PROC(FreeDescriptorSets);
+    GET_DEVICE_CORE_OR_KHR_PROC(UpdateDescriptorSets);
+    GET_DEVICE_CORE_OR_KHR_PROC(BindBufferMemory2);
+    GET_DEVICE_CORE_OR_KHR_PROC(BindImageMemory2);
+    GET_DEVICE_CORE_OR_KHR_PROC(GetBufferMemoryRequirements2);
+    GET_DEVICE_CORE_OR_KHR_PROC(GetImageMemoryRequirements2);
+    GET_DEVICE_CORE_OR_KHR_PROC(BeginCommandBuffer);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdSetViewport);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdSetScissor);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdSetDepthBounds);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdSetStencilReference);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdSetBlendConstants);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdClearAttachments);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdClearColorImage);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdBindVertexBuffers);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdBindIndexBuffer);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdBindPipeline);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdBindDescriptorSets);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdPushConstants);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdDispatch);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdDispatchIndirect);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdDraw);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndexed);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndirect);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndexedIndirect);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyBuffer);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyImage);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyBufferToImage);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyImageToBuffer);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdPipelineBarrier2);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdBeginQuery);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdEndQuery);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdWriteTimestamp);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyQueryPoolResults);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdResetQueryPool);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdFillBuffer);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdBeginRendering);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdEndRendering);
+    GET_DEVICE_CORE_OR_KHR_PROC(EndCommandBuffer);
 
-    RESOLVE_DEVICE_FUNCTION(CreateSwapchainKHR);
-    RESOLVE_DEVICE_FUNCTION(DestroySwapchainKHR);
-    RESOLVE_DEVICE_FUNCTION(GetSwapchainImagesKHR);
-
-    RESOLVE_OPTIONAL_DEVICE_FUNCTION(CmdBeginRendering);
-    if (!m_VK.CmdBeginRendering)
-        RESOLVE_DEVICE_FUNCTION_WITH_OTHER_NAME(CmdBeginRendering, "vkCmdBeginRenderingKHR");
-
-    RESOLVE_OPTIONAL_DEVICE_FUNCTION(CmdEndRendering);
-    if (!m_VK.CmdEndRendering)
-        RESOLVE_DEVICE_FUNCTION_WITH_OTHER_NAME(CmdEndRendering, "vkCmdEndRenderingKHR");
-
-    RESOLVE_OPTIONAL_DEVICE_FUNCTION(BindBufferMemory2);
-    if (!m_VK.BindBufferMemory2)
-        RESOLVE_DEVICE_FUNCTION_WITH_OTHER_NAME(BindBufferMemory2, "vkBindBufferMemory2KHR");
-
-    RESOLVE_OPTIONAL_DEVICE_FUNCTION(BindImageMemory2);
-    if (!m_VK.BindImageMemory2)
-        RESOLVE_DEVICE_FUNCTION_WITH_OTHER_NAME(BindImageMemory2, "vkBindImageMemory2KHR");
-
-    RESOLVE_OPTIONAL_DEVICE_FUNCTION(GetBufferMemoryRequirements2);
-    if (!m_VK.GetBufferMemoryRequirements2)
-        RESOLVE_DEVICE_FUNCTION_WITH_OTHER_NAME(GetBufferMemoryRequirements2, "vkGetBufferMemoryRequirements2KHR");
-
-    RESOLVE_OPTIONAL_DEVICE_FUNCTION(GetImageMemoryRequirements2);
-    if (!m_VK.GetImageMemoryRequirements2)
-        RESOLVE_DEVICE_FUNCTION_WITH_OTHER_NAME(GetImageMemoryRequirements2, "vkGetImageMemoryRequirements2KHR");
-
-    RESOLVE_OPTIONAL_DEVICE_FUNCTION(GetBufferDeviceAddress);
-    if (!m_VK.GetBufferDeviceAddress)
-        RESOLVE_DEVICE_FUNCTION_WITH_OTHER_NAME(GetBufferDeviceAddress, "vkGetBufferDeviceAddressKHR");
+    GET_DEVICE_OPTIONAL_CORE_OR_KHR_PROC(GetBufferDeviceAddress);
     if (!m_VK.GetBufferDeviceAddress)
         m_IsDeviceAddressSupported = false;
 
-    // Instance specific
-    if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, desiredInstanceExts)) {
-        RESOLVE_DEVICE_FUNCTION(SetDebugUtilsObjectNameEXT);
-        RESOLVE_DEVICE_FUNCTION(CmdBeginDebugUtilsLabelEXT);
-        RESOLVE_DEVICE_FUNCTION(CmdEndDebugUtilsLabelEXT);
+    // IMPORTANT: {} is mandatory here!
+
+    if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, desiredDeviceExts)) {
+        GET_DEVICE_PROC(AcquireNextImageKHR);
+        GET_DEVICE_PROC(QueuePresentKHR);
+        GET_DEVICE_PROC(CreateSwapchainKHR);
+        GET_DEVICE_PROC(DestroySwapchainKHR);
+        GET_DEVICE_PROC(GetSwapchainImagesKHR);
     }
 
-    // Device specific
-    if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, desiredDeviceExts)) {
-        RESOLVE_DEVICE_FUNCTION(CmdSetSampleLocationsEXT);
+    if (IsExtensionSupported(VK_KHR_PRESENT_WAIT_EXTENSION_NAME, desiredDeviceExts)) {
+        GET_DEVICE_PROC(WaitForPresentKHR);
     }
 
     if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, desiredDeviceExts)) {
-        RESOLVE_DEVICE_FUNCTION(CreateAccelerationStructureKHR);
-        RESOLVE_DEVICE_FUNCTION(DestroyAccelerationStructureKHR);
-        RESOLVE_DEVICE_FUNCTION(GetAccelerationStructureDeviceAddressKHR);
-        RESOLVE_DEVICE_FUNCTION(GetAccelerationStructureBuildSizesKHR);
-        RESOLVE_DEVICE_FUNCTION(CmdBuildAccelerationStructuresKHR);
-        RESOLVE_DEVICE_FUNCTION(CmdCopyAccelerationStructureKHR);
-        RESOLVE_DEVICE_FUNCTION(CmdWriteAccelerationStructuresPropertiesKHR);
+        GET_DEVICE_PROC(CreateAccelerationStructureKHR);
+        GET_DEVICE_PROC(DestroyAccelerationStructureKHR);
+        GET_DEVICE_PROC(GetAccelerationStructureDeviceAddressKHR);
+        GET_DEVICE_PROC(GetAccelerationStructureBuildSizesKHR);
+        GET_DEVICE_PROC(CmdBuildAccelerationStructuresKHR);
+        GET_DEVICE_PROC(CmdCopyAccelerationStructureKHR);
+        GET_DEVICE_PROC(CmdWriteAccelerationStructuresPropertiesKHR);
     }
 
     if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, desiredDeviceExts)) {
-        RESOLVE_DEVICE_FUNCTION(CreateRayTracingPipelinesKHR);
-        RESOLVE_DEVICE_FUNCTION(GetRayTracingShaderGroupHandlesKHR);
-        RESOLVE_DEVICE_FUNCTION(CmdTraceRaysKHR);
-        RESOLVE_DEVICE_FUNCTION(CmdTraceRaysIndirect2KHR);
+        GET_DEVICE_PROC(CreateRayTracingPipelinesKHR);
+        GET_DEVICE_PROC(GetRayTracingShaderGroupHandlesKHR);
+        GET_DEVICE_PROC(CmdTraceRaysKHR);
+        GET_DEVICE_PROC(CmdTraceRaysIndirect2KHR);
+    }
+
+    if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, desiredDeviceExts)) {
+        GET_DEVICE_PROC(CmdSetSampleLocationsEXT);
     }
 
     if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, desiredDeviceExts)) {
-        RESOLVE_DEVICE_FUNCTION(CmdDrawMeshTasksEXT);
-        RESOLVE_DEVICE_FUNCTION(CmdDrawMeshTasksIndirectEXT);
+        GET_DEVICE_PROC(CmdDrawMeshTasksEXT);
+        GET_DEVICE_PROC(CmdDrawMeshTasksIndirectEXT);
+    }
+
+    if (IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts)) {
+        GET_DEVICE_PROC(GetLatencyTimingsNV);
+        GET_DEVICE_PROC(LatencySleepNV);
+        GET_DEVICE_PROC(SetLatencyMarkerNV);
+        GET_DEVICE_PROC(SetLatencySleepModeNV);
     }
 
     return Result::SUCCESS;
@@ -1428,8 +1459,7 @@ inline Result DeviceVK::CreateDescriptorPool(const DescriptorPoolDesc& descripto
     return CreateImplementation<DescriptorPoolVK>(descriptorPool, descriptorPoolDesc);
 }
 
-Result DeviceVK::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer) // TODO: not inline
-{
+Result DeviceVK::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer) { // TODO: not inline
     return CreateImplementation<BufferVK>(buffer, bufferDesc);
 }
 
@@ -1502,9 +1532,7 @@ inline Result DeviceVK::CreateCommandQueue(const CommandQueueVKDesc& commandQueu
     }
 
     CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVKDesc);
-
-    if (m_Queues[commandQueueTypeIndex] != nullptr)
-        Deallocate(GetStdAllocator(), m_Queues[commandQueueTypeIndex]);
+    Deallocate(GetStdAllocator(), m_Queues[commandQueueTypeIndex]);
 
     m_FamilyIndices[commandQueueTypeIndex] = commandQueueVKDesc.familyIndex;
     m_Queues[commandQueueTypeIndex] = (CommandQueueVK*)commandQueue;
@@ -1580,8 +1608,7 @@ inline void DeviceVK::DestroyDescriptorPool(DescriptorPool& descriptorPool) {
     Deallocate(GetStdAllocator(), (DescriptorPoolVK*)&descriptorPool);
 }
 
-void DeviceVK::DestroyBuffer(Buffer& buffer) // TODO: not inline
-{
+void DeviceVK::DestroyBuffer(Buffer& buffer) { // TODO: not inline
     Deallocate(GetStdAllocator(), (BufferVK*)&buffer);
 }
 
@@ -1766,13 +1793,13 @@ inline FormatSupportBits DeviceVK::GetFormatSupport(Format format) const {
 }
 
 inline uint32_t DeviceVK::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const {
-    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this, m_StdAllocator);
+    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this);
 
     return allocator.CalculateAllocationNumber(resourceGroupDesc);
 }
 
-inline Result DeviceVK::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, nri::Memory** allocations) {
-    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this, m_StdAllocator);
+inline Result DeviceVK::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
+    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this);
 
     return allocator.AllocateAndBindMemory(resourceGroupDesc, allocations);
 }

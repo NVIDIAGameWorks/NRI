@@ -38,7 +38,7 @@ struct AccelerationStructureD3D12 {
 
     void SetDebugName(const char* name);
 
-  private:
+private:
     DeviceD3D12& m_Device;
     D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO m_PrebuildInfo = {};
     BufferD3D12* m_Buffer = nullptr;

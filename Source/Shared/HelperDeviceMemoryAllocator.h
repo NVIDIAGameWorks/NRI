@@ -4,12 +4,12 @@ template <typename U, typename T>
 using Map = std::map<U, T, std::less<U>, StdAllocator<std::pair<const U, T>>>;
 
 struct HelperDeviceMemoryAllocator {
-    HelperDeviceMemoryAllocator(const nri::CoreInterface& NRI, nri::Device& device, const StdAllocator<uint8_t>& stdAllocator);
+    HelperDeviceMemoryAllocator(const nri::CoreInterface& NRI, nri::Device& device);
 
     uint32_t CalculateAllocationNumber(const nri::ResourceGroupDesc& resourceGroupDesc);
     nri::Result AllocateAndBindMemory(const nri::ResourceGroupDesc& resourceGroupDesc, nri::Memory** allocations);
 
-  private:
+private:
     struct MemoryTypeGroup;
 
     nri::Result TryToAllocateAndBindMemory(const nri::ResourceGroupDesc& resourceGroupDesc, nri::Memory** allocations, size_t& allocationNum);
@@ -32,7 +32,6 @@ struct HelperDeviceMemoryAllocator {
 
     const nri::CoreInterface& m_NRI;
     nri::Device& m_Device;
-    const StdAllocator<uint8_t>& m_StdAllocator;
 
     Map<nri::MemoryType, MemoryTypeGroup> m_Map;
     Vector<nri::Buffer*> m_DedicatedBuffers;

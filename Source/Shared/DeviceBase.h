@@ -11,61 +11,80 @@ struct DeviceBase {
         return m_StdAllocator;
     }
 
-    void ReportMessage(nri::Message messageType, const char* file, uint32_t line, const char* format, ...) const;
+    void ReportMessage(Message messageType, const char* file, uint32_t line, const char* format, ...) const;
 
     template <typename T>
-    nri::Result ValidateFunctionTable(const T& table) const {
+    Result ValidateFunctionTable(const T& table) const {
         const void* const* const begin = (void**)&table;
         const void* const* const end = (void**)(&table + 1);
         for (const void* const* current = begin; current != end; current++) {
             if (*current == nullptr) {
                 REPORT_ERROR(this, "Invalid function table: function #%u is NULL!", uint32_t(current - begin));
-                return nri::Result::FAILURE;
+                return Result::FAILURE;
             }
         }
 
-        return nri::Result::SUCCESS;
+        return Result::SUCCESS;
     }
 
     virtual ~DeviceBase() {
     }
+
     virtual const DeviceDesc& GetDesc() const = 0;
     virtual void Destroy() = 0;
+
     virtual Result FillFunctionTable(CoreInterface& table) const {
         table = {};
         return Result::UNSUPPORTED;
     }
-    virtual Result FillFunctionTable(SwapChainInterface& table) const {
-        table = {};
-        return Result::UNSUPPORTED;
-    }
-    virtual Result FillFunctionTable(WrapperD3D11Interface& table) const {
-        table = {};
-        return Result::UNSUPPORTED;
-    }
-    virtual Result FillFunctionTable(WrapperD3D12Interface& table) const {
-        table = {};
-        return Result::UNSUPPORTED;
-    }
-    virtual Result FillFunctionTable(WrapperVKInterface& table) const {
-        table = {};
-        return Result::UNSUPPORTED;
-    }
-    virtual Result FillFunctionTable(RayTracingInterface& table) const {
-        table = {};
-        return Result::UNSUPPORTED;
-    }
-    virtual Result FillFunctionTable(MeshShaderInterface& table) const {
-        table = {};
-        return Result::UNSUPPORTED;
-    }
+
     virtual Result FillFunctionTable(HelperInterface& table) const {
         table = {};
         return Result::UNSUPPORTED;
     }
 
-  protected:
-    nri::CallbackInterface m_CallbackInterface = {};
+    virtual Result FillFunctionTable(StreamerInterface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
+    virtual Result FillFunctionTable(WrapperD3D11Interface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
+    virtual Result FillFunctionTable(WrapperD3D12Interface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
+    virtual Result FillFunctionTable(WrapperVKInterface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
+    virtual Result FillFunctionTable(SwapChainInterface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
+    virtual Result FillFunctionTable(RayTracingInterface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
+    virtual Result FillFunctionTable(MeshShaderInterface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
+    virtual Result FillFunctionTable(LowLatencyInterface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
+protected:
+    CallbackInterface m_CallbackInterface = {};
     StdAllocator<uint8_t> m_StdAllocator;
 };
 } // namespace nri
@@ -85,7 +104,9 @@ struct DeviceBase {
     void RayTracing_CommandBuffer_PartiallyFillFunctionTable##API(RayTracingInterface& table); \
     void RayTracing_AccelerationStructure_PartiallyFillFunctionTable##API(RayTracingInterface& table); \
     void MeshShader_CommandBuffer_PartiallyFillFunctionTable##API(MeshShaderInterface& table); \
-    void Helper_CommandQueue_PartiallyFillFunctionTable##API(HelperInterface& table);
+    void Helper_CommandQueue_PartiallyFillFunctionTable##API(HelperInterface& table); \
+    void LowLatency_SwapChain_PartiallyFillFunctionTable##API(LowLatencyInterface& table); \
+    void LowLatency_CommandQueue_PartiallyFillFunctionTable##API(LowLatencyInterface& table)
 
 #define Define_Core_Buffer_PartiallyFillFunctionTable(API) \
     void Core_Buffer_PartiallyFillFunctionTable##API(CoreInterface& table) { \
@@ -177,8 +198,6 @@ struct DeviceBase {
 #define Define_Core_Fence_PartiallyFillFunctionTable(API) \
     void Core_Fence_PartiallyFillFunctionTable##API(CoreInterface& table) { \
         table.GetFenceValue = ::GetFenceValue; \
-        table.QueueSignal = ::QueueSignal; \
-        table.QueueWait = ::QueueWait; \
         table.Wait = ::Wait; \
         table.SetFenceDebugName = ::SetFenceDebugName; \
     }
@@ -201,7 +220,8 @@ struct DeviceBase {
         table.SetSwapChainDebugName = ::SetSwapChainDebugName; \
         table.GetSwapChainTextures = ::GetSwapChainTextures; \
         table.AcquireNextSwapChainTexture = ::AcquireNextSwapChainTexture; \
-        table.SwapChainPresent = ::SwapChainPresent; \
+        table.WaitForPresent = ::WaitForPresent; \
+        table.QueuePresent = ::QueuePresent; \
         table.GetDisplayDesc = ::GetDisplayDesc; \
     }
 
@@ -238,4 +258,17 @@ struct DeviceBase {
     void Helper_CommandQueue_PartiallyFillFunctionTable##API(HelperInterface& table) { \
         table.UploadData = ::UploadData; \
         table.WaitForIdle = ::WaitForIdle; \
+    }
+
+#define Define_LowLatency_SwapChain_PartiallyFillFunctionTable(API) \
+    void LowLatency_SwapChain_PartiallyFillFunctionTable##API(LowLatencyInterface& table) { \
+        table.SetLatencySleepMode = ::SetLatencySleepMode; \
+        table.SetLatencyMarker = ::SetLatencyMarker; \
+        table.LatencySleep = ::LatencySleep; \
+        table.GetLatencyReport = ::GetLatencyReport; \
+    }
+
+#define Define_LowLatency_CommandQueue_PartiallyFillFunctionTable(API) \
+    void LowLatency_CommandQueue_PartiallyFillFunctionTable##API(LowLatencyInterface& table) { \
+        table.QueueSubmitTrackable = ::QueueSubmitTrackable; \
     }

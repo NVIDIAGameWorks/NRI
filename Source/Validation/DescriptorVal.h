@@ -74,7 +74,7 @@ struct DescriptorVal : public DeviceObjectVal<Descriptor> {
     //================================================================================================================
     void SetDebugName(const char* name);
 
-  private:
+private:
     ResourceType m_ResourceType = ResourceType::NONE;
     ResourceViewType m_ResourceViewType = ResourceViewType::NONE;
 };

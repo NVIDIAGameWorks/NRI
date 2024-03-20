@@ -15,4 +15,4 @@ static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor)
 
 #pragma endregion
 
-Define_Core_Descriptor_PartiallyFillFunctionTable(D3D12)
+Define_Core_Descriptor_PartiallyFillFunctionTable(D3D12);

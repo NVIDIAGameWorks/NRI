@@ -30,7 +30,7 @@ struct DescriptorSetVK {
     void UpdateDynamicConstantBuffers(uint32_t bufferOffset, uint32_t descriptorNum, const Descriptor* const* descriptors);
     void Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc);
 
-  private:
+private:
     DeviceVK& m_Device;
     VkDescriptorSet m_Handle = VK_NULL_HANDLE;
     const DescriptorSetDesc* m_Desc = nullptr;

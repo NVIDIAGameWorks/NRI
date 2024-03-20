@@ -30,11 +30,14 @@ struct TextureVK {
         return m_Desc;
     }
 
+    inline Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const {
+        return GetDimension(GraphicsAPI::VULKAN, m_Desc, dimensionIndex, mip);
+    }
+
     ~TextureVK();
 
     Result Create(const TextureDesc& textureDesc);
     Result Create(const TextureVKDesc& textureDesc);
-    Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const;
 
     //================================================================================================================
     // NRI
@@ -43,7 +46,7 @@ struct TextureVK {
     void SetDebugName(const char* name);
     void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
-  private:
+private:
     DeviceVK& m_Device;
     VkImage m_Handle = VK_NULL_HANDLE;
     TextureDesc m_Desc = {};

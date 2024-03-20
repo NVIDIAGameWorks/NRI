@@ -4,6 +4,9 @@
 
 #include "CommandBufferD3D12.h"
 #include "CommandQueueD3D12.h"
+#include "FenceD3D12.h"
+#include "HelperDataUpload.h"
+#include "HelperWaitIdle.h"
 
 using namespace nri;
 
@@ -36,12 +39,24 @@ Result CommandQueueD3D12::Create(ID3D12CommandQueue* commandQueue) {
 //================================================================================================================
 
 inline void CommandQueueD3D12::Submit(const QueueSubmitDesc& queueSubmitDesc) {
+    for (uint32_t i = 0; i < queueSubmitDesc.waitFenceNum; i++) {
+        const FenceSubmitDesc& fenceSubmitDesc = queueSubmitDesc.waitFences[i];
+        FenceD3D12* fence = (FenceD3D12*)fenceSubmitDesc.fence;
+        fence->QueueWait(*this, fenceSubmitDesc.value);
+    }
+
     if (queueSubmitDesc.commandBufferNum) {
         ID3D12CommandList** commandLists = STACK_ALLOC(ID3D12CommandList*, queueSubmitDesc.commandBufferNum);
         for (uint32_t j = 0; j < queueSubmitDesc.commandBufferNum; j++)
             commandLists[j] = *(CommandBufferD3D12*)queueSubmitDesc.commandBuffers[j];
 
         m_CommandQueue->ExecuteCommandLists(queueSubmitDesc.commandBufferNum, commandLists);
+    }
+
+    for (uint32_t i = 0; i < queueSubmitDesc.signalFenceNum; i++) {
+        const FenceSubmitDesc& fenceSubmitDesc = queueSubmitDesc.signalFences[i];
+        FenceD3D12* fence = (FenceD3D12*)fenceSubmitDesc.fence;
+        fence->QueueSignal(*this, fenceSubmitDesc.value);
     }
 }
 
@@ -53,9 +68,7 @@ inline Result CommandQueueD3D12::UploadData(
 }
 
 inline Result CommandQueueD3D12::WaitForIdle() {
-    HelperWaitIdle helperWaitIdle(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
-
-    return helperWaitIdle.WaitIdle();
+    return WaitIdle(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
 }
 
 #include "CommandQueueD3D12.hpp"

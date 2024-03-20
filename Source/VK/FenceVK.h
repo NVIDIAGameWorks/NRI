@@ -11,6 +11,10 @@ struct FenceVK {
     inline FenceVK(DeviceVK& device) : m_Device(device) {
     }
 
+    inline operator VkSemaphore() const {
+        return m_Handle;
+    }
+
     inline DeviceVK& GetDevice() const {
         return m_Device;
     }
@@ -25,13 +29,11 @@ struct FenceVK {
 
     void SetDebugName(const char* name);
     uint64_t GetFenceValue() const;
-    void QueueSignal(CommandQueueVK& commandQueue, uint64_t value);
-    void QueueWait(CommandQueueVK& commandQueue, uint64_t value);
     void Wait(uint64_t value);
 
-  private:
+private:
     DeviceVK& m_Device;
-    VkSemaphore m_Fence = VK_NULL_HANDLE;
+    VkSemaphore m_Handle = VK_NULL_HANDLE;
 };
 
 } // namespace nri

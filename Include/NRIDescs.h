@@ -37,7 +37,6 @@ static const uint32_t NRI_CONST_NAME(ONE_VIEWPORT) = 0; // only for "viewportNum
 static const bool NRI_CONST_NAME(VARIABLE_DESCRIPTOR_NUM) = true;
 static const bool NRI_CONST_NAME(DESCRIPTOR_ARRAY) = true;
 static const bool NRI_CONST_NAME(PARTIALLY_BOUND) = true;
-static const uint32_t NRI_CONST_NAME(OUT_OF_DATE) = (uint32_t)(-1); // VK only: swap chain is out of date
 
 //===============================================================================================================================
 // Common
@@ -302,7 +301,7 @@ NRI_STRUCT(DepthStencil)
 };
 
 NRI_STRUCT(SamplePosition)
-{    
+{
     int8_t x, y; // [-8; 7]
 };
 
@@ -937,7 +936,7 @@ NRI_STRUCT(DepthAttachmentDesc)
 NRI_STRUCT(StencilAttachmentDesc)
 {
     NRI_NAME(StencilDesc) front;
-    NRI_NAME(StencilDesc) back;
+    NRI_NAME(StencilDesc) back; // "back.writeMask" requires "isIndependentFrontAndBackStencilReferenceAndMasksSupported"
 };
 
 NRI_STRUCT(OutputMergerDesc)
@@ -1188,11 +1187,22 @@ NRI_STRUCT(TextureDataLayoutDesc)
     uint32_t slicePitch;
 };
 
-// Submit work to queue
+// Work submission
+NRI_STRUCT(FenceSubmitDesc)
+{
+    NRI_NAME(Fence)* fence;
+    uint64_t value;
+    NRI_NAME(StageBits) stages;
+};
+
 NRI_STRUCT(QueueSubmitDesc)
 {
+    const NRI_NAME(FenceSubmitDesc)* waitFences;
+    uint32_t waitFenceNum;
     const NRI_NAME(CommandBuffer)* const* commandBuffers;
     uint32_t commandBufferNum;
+    const NRI_NAME(FenceSubmitDesc)* signalFences;
+    uint32_t signalFenceNum;
 };
 
 // Memory
@@ -1293,6 +1303,7 @@ NRI_ENUM
     QueryType, uint8_t,
 
     TIMESTAMP,
+    TIMESTAMP_COPY_QUEUE, // requires "isCopyQueueTimestampSupported"
     OCCLUSION,
     PIPELINE_STATISTICS,
     ACCELERATION_STRUCTURE_COMPACTED_SIZE,
@@ -1486,23 +1497,27 @@ NRI_STRUCT(DeviceDesc)
     uint32_t combinedClipAndCullDistanceMaxNum;
     uint8_t conservativeRasterTier;
 
-    // Features support
+    // Features
+    uint32_t isComputeQueueSupported : 1;
+    uint32_t isCopyQueueSupported : 1;
     uint32_t isTextureFilterMinMaxSupported : 1;
     uint32_t isLogicOpSupported : 1;
     uint32_t isDepthBoundsTestSupported : 1;
     uint32_t isProgrammableSampleLocationsSupported : 1;
-    uint32_t isComputeQueueSupported : 1;
-    uint32_t isCopyQueueSupported : 1;
-    uint32_t isCopyQueueTimestampSupported : 1;
     uint32_t isRegisterAliasingSupported : 1;
     uint32_t isFloat16Supported : 1;
-    uint32_t isRaytracingSupported : 1;
+    uint32_t isIndependentFrontAndBackStencilReferenceAndMasksSupported : 1;
+    uint32_t isLineSmoothingSupported : 1;
+    uint32_t isCopyQueueTimestampSupported : 1;
     uint32_t isDispatchRaysIndirectSupported : 1;
-    uint32_t isMeshShaderSupported : 1;
     uint32_t isDrawMeshTasksIndirectSupported : 1;
     uint32_t isMeshShaderPipelineStatsSupported : 1;
-    uint32_t isIndependentFrontAndBackStencilReferenceAndMasksSupported : 1; // if not supported: only front face ref and masks are used
-    uint32_t isLineSmoothingSupported : 1;
+
+    // Extensions (unexposed are always supported)
+    uint32_t isSwapChainSupported : 1; // NRISwapChain
+    uint32_t isRayTracingSupported : 1; // NRIRayTracing
+    uint32_t isMeshShaderSupported : 1; // NRIMeshShader
+    uint32_t isLowLatencySupported : 1; // NRILowLatency
 };
 
 #pragma endregion

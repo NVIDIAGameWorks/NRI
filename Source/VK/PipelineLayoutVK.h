@@ -24,8 +24,8 @@ struct RuntimeBindingInfo {
 };
 
 struct PipelineLayoutVK {
-    inline PipelineLayoutVK(DeviceVK& device)
-        : m_Device(device), m_RuntimeBindingInfo(device.GetStdAllocator()), m_DescriptorSetLayouts(device.GetStdAllocator()), m_DescriptorSetSpaces(device.GetStdAllocator()) {
+    inline PipelineLayoutVK(DeviceVK& device) :
+        m_Device(device), m_RuntimeBindingInfo(device.GetStdAllocator()), m_DescriptorSetLayouts(device.GetStdAllocator()), m_DescriptorSetSpaces(device.GetStdAllocator()) {
     }
 
     inline operator VkPipelineLayout() const {
@@ -62,19 +62,12 @@ struct PipelineLayoutVK {
 
     void SetDebugName(const char* name);
 
-  private:
+private:
     void FillBindingOffsets(bool ignoreGlobalSPIRVOffsets, uint32_t* bindingOffsets);
+    void FillRuntimeBindingInfo(const PipelineLayoutDesc& pipelineLayoutDesc, const uint32_t* bindingOffsets);
     VkDescriptorSetLayout CreateSetLayout(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets);
 
-    void FillDescriptorBindings(
-        const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags) const;
-    void FillDynamicConstantBufferBindings(
-        const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags) const;
-
-    void FillPushConstantRanges(const PipelineLayoutDesc& pipelineLayoutDesc, VkPushConstantRange* pushConstantRanges) const;
-    void FillRuntimeBindingInfo(const PipelineLayoutDesc& pipelineLayoutDesc, const uint32_t* bindingOffsets);
-
-  private:
+private:
     DeviceVK& m_Device;
     VkPipelineLayout m_Handle = VK_NULL_HANDLE;
     VkPipelineBindPoint m_PipelineBindPoint = VK_PIPELINE_BIND_POINT_MAX_ENUM;

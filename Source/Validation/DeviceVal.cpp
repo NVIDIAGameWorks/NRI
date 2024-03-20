@@ -35,15 +35,13 @@ static inline bool IsShaderStageValid(StageBits shaderStages, StageBits allowedS
 void ConvertGeometryObjectsVal(GeometryObject* destObjects, const GeometryObject* sourceObjects, uint32_t objectNum);
 QueryType GetQueryTypeVK(uint32_t queryTypeVK);
 
-DeviceVal::DeviceVal(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator, DeviceBase& device)
-    : DeviceBase(callbacks, stdAllocator), m_Device(*(Device*)&device), m_Name(GetStdAllocator()), m_MemoryTypeMap(GetStdAllocator()) {
+DeviceVal::DeviceVal(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator, DeviceBase& device) :
+    DeviceBase(callbacks, stdAllocator), m_Device(*(Device*)&device), m_Name(GetStdAllocator()), m_MemoryTypeMap(GetStdAllocator()) {
 }
 
 DeviceVal::~DeviceVal() {
-    for (size_t i = 0; i < m_CommandQueues.size(); i++) {
-        if (m_CommandQueues[i])
-            Deallocate(GetStdAllocator(), m_CommandQueues[i]);
-    }
+    for (size_t i = 0; i < m_CommandQueues.size(); i++)
+        Deallocate(GetStdAllocator(), m_CommandQueues[i]);
     ((DeviceBase*)&m_Device)->Destroy();
 }
 
@@ -55,13 +53,23 @@ bool DeviceVal::Create() {
         return false;
     }
 
-    m_IsSwapChainSupported = deviceBase.FillFunctionTable(m_SwapChainAPI) == Result::SUCCESS;
+    if (deviceBase.FillFunctionTable(m_HelperAPI) != Result::SUCCESS) {
+        REPORT_ERROR(this, "Failed to get 'HelperInterface' interface");
+        return false;
+    }
+
+    if (deviceBase.FillFunctionTable(m_StreamerAPI) != Result::SUCCESS) {
+        REPORT_ERROR(this, "Failed to get 'StreamerInterface' interface");
+        return false;
+    }
+
     m_IsWrapperD3D11Supported = deviceBase.FillFunctionTable(m_WrapperD3D11API) == Result::SUCCESS;
     m_IsWrapperD3D12Supported = deviceBase.FillFunctionTable(m_WrapperD3D12API) == Result::SUCCESS;
     m_IsWrapperVKSupported = deviceBase.FillFunctionTable(m_WrapperVKAPI) == Result::SUCCESS;
+    m_IsSwapChainSupported = deviceBase.FillFunctionTable(m_SwapChainAPI) == Result::SUCCESS;
     m_IsRayTracingSupported = deviceBase.FillFunctionTable(m_RayTracingAPI) == Result::SUCCESS;
-    m_IsMeshShaderExtSupported = deviceBase.FillFunctionTable(m_MeshShaderAPI) == Result::SUCCESS;
-    deviceBase.FillFunctionTable(m_HelperAPI);
+    m_IsMeshShaderSupported = deviceBase.FillFunctionTable(m_MeshShaderAPI) == Result::SUCCESS;
+    m_IsLowLatencySupported = deviceBase.FillFunctionTable(m_LowLatencyAPI) == Result::SUCCESS;
 
     return true;
 }

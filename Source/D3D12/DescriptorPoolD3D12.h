@@ -36,7 +36,7 @@ struct DescriptorPoolD3D12 {
         const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
     void Reset();
 
-  private:
+private:
     DeviceD3D12& m_Device;
     std::array<DescriptorHeapDesc, DescriptorHeapType::MAX_NUM> m_DescriptorHeapDescs;
     std::array<uint32_t, DescriptorHeapType::MAX_NUM> m_DescriptorNum = {};

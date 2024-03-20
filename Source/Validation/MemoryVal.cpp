@@ -12,8 +12,8 @@
 
 using namespace nri;
 
-MemoryVal::MemoryVal(DeviceVal& device, Memory* memory, uint64_t size, MemoryLocation memoryLocation)
-    : DeviceObjectVal(device, memory), m_Size(size), m_MemoryLocation(memoryLocation) {
+MemoryVal::MemoryVal(DeviceVal& device, Memory* memory, uint64_t size, MemoryLocation memoryLocation) :
+    DeviceObjectVal(device, memory), m_Size(size), m_MemoryLocation(memoryLocation) {
 }
 
 #if NRI_USE_D3D12

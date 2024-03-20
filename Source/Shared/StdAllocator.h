@@ -135,7 +135,7 @@ struct StdAllocator {
     template <typename U>
     using other = StdAllocator<U>;
 
-  private:
+private:
     MemoryAllocatorInterface m_Interface = {};
 };
 

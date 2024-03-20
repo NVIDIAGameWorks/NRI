@@ -117,11 +117,11 @@ struct DescriptorVK {
 
     void SetDebugName(const char* name);
 
-  private:
+private:
     template <typename T>
     Result CreateTextureView(const T& textureViewDesc);
 
-  private:
+private:
     DeviceVK& m_Device;
     union {
         VkBufferView m_BufferView = VK_NULL_HANDLE;

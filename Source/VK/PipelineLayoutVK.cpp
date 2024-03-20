@@ -7,6 +7,72 @@
 
 using namespace nri;
 
+static void FillDescriptorBindings(
+    const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlags*& bindingFlags) {
+    const VkDescriptorBindingFlags commonBindingFlags = descriptorSetDesc.partiallyBound ? VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT : 0;
+    constexpr VkDescriptorBindingFlags variableSizedArrayFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+
+    for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++) {
+        const DescriptorRangeDesc& range = descriptorSetDesc.ranges[i];
+
+        const uint32_t baseBindingIndex = range.baseRegisterIndex + bindingOffsets[(uint32_t)range.descriptorType];
+
+        if (range.isArray) {
+            *(bindingFlags++) = commonBindingFlags | (range.isDescriptorNumVariable ? variableSizedArrayFlags : 0);
+
+            VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
+            descriptorBinding = {};
+            descriptorBinding.binding = baseBindingIndex;
+            descriptorBinding.descriptorType = GetDescriptorType(range.descriptorType);
+            descriptorBinding.descriptorCount = range.descriptorNum;
+            descriptorBinding.stageFlags = GetShaderStageFlags(range.shaderStages);
+        } else {
+            for (uint32_t j = 0; j < range.descriptorNum; j++) {
+                *(bindingFlags++) = commonBindingFlags;
+
+                VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
+                descriptorBinding = {};
+                descriptorBinding.binding = baseBindingIndex + j;
+                descriptorBinding.descriptorType = GetDescriptorType(range.descriptorType);
+                descriptorBinding.descriptorCount = 1;
+                descriptorBinding.stageFlags = GetShaderStageFlags(range.shaderStages);
+            }
+        }
+    }
+}
+
+static void FillDynamicConstantBufferBindings(
+    const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlags*& bindingFlags) {
+    for (uint32_t i = 0; i < descriptorSetDesc.dynamicConstantBufferNum; i++) {
+        const DynamicConstantBufferDesc& buffer = descriptorSetDesc.dynamicConstantBuffers[i];
+
+        *(bindingFlags++) = 0;
+
+        VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
+        descriptorBinding = {};
+        descriptorBinding.binding = buffer.registerIndex + bindingOffsets[(uint32_t)DescriptorType::CONSTANT_BUFFER];
+        descriptorBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        descriptorBinding.descriptorCount = 1;
+        descriptorBinding.stageFlags = GetShaderStageFlags(buffer.shaderStages);
+    }
+}
+
+static void FillPushConstantRanges(const PipelineLayoutDesc& pipelineLayoutDesc, VkPushConstantRange* pushConstantRanges) {
+    uint32_t offset = 0;
+
+    for (uint32_t i = 0; i < pipelineLayoutDesc.pushConstantNum; i++) {
+        const PushConstantDesc& pushConstantDesc = pipelineLayoutDesc.pushConstants[i];
+
+        VkPushConstantRange& range = pushConstantRanges[i];
+        range = {};
+        range.stageFlags = GetShaderStageFlags(pushConstantDesc.shaderStages);
+        range.offset = offset;
+        range.size = pushConstantDesc.size;
+
+        offset += pushConstantDesc.size;
+    }
+}
+
 PipelineLayoutVK::~PipelineLayoutVK() {
     const auto& vk = m_Device.GetDispatchTable();
     const auto allocationCallbacks = m_Device.GetAllocationCallbacks();
@@ -115,20 +181,23 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
     }
 
     VkDescriptorSetLayoutBinding* bindings = ALLOCATE_SCRATCH(m_Device, VkDescriptorSetLayoutBinding, bindingMaxNum);
-    VkDescriptorBindingFlagsEXT* bindingFlags = ALLOCATE_SCRATCH(m_Device, VkDescriptorBindingFlagsEXT, bindingMaxNum);
+    VkDescriptorBindingFlags* bindingFlags = ALLOCATE_SCRATCH(m_Device, VkDescriptorBindingFlags, bindingMaxNum);
     VkDescriptorSetLayoutBinding* bindingsBegin = bindings;
-    VkDescriptorBindingFlagsEXT* bindingFlagsBegin = bindingFlags;
+    VkDescriptorBindingFlags* bindingFlagsBegin = bindingFlags;
 
     FillDescriptorBindings(descriptorSetDesc, bindingOffsets, bindings, bindingFlags);
     FillDynamicConstantBufferBindings(descriptorSetDesc, bindingOffsets, bindings, bindingFlags);
 
     const uint32_t bindingNum = uint32_t(bindings - bindingsBegin);
 
-    VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT, nullptr, bindingNum, bindingFlagsBegin};
+    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO};
+    bindingFlagsInfo.bindingCount = bindingNum;
+    bindingFlagsInfo.pBindingFlags = bindingFlagsBegin;
 
-    VkDescriptorSetLayoutCreateInfo info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, m_Device.m_IsDescriptorIndexingSupported ? &bindingFlagsInfo : nullptr,
-        (VkDescriptorSetLayoutCreateFlags)0, bindingNum, bindingsBegin};
+    VkDescriptorSetLayoutCreateInfo info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    info.pNext = m_Device.m_IsDescriptorIndexingSupported ? &bindingFlagsInfo : nullptr;
+    info.bindingCount = bindingNum;
+    info.pBindings = bindingsBegin;
 
     VkDescriptorSetLayout handle = VK_NULL_HANDLE;
     const auto& vk = m_Device.GetDispatchTable();
@@ -141,73 +210,6 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, 0, "vkCreateDescriptorSetLayout returned %d", (int32_t)result);
 
     return handle;
-}
-
-void PipelineLayoutVK::FillDescriptorBindings(
-    const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags) const {
-    const VkDescriptorBindingFlagsEXT commonBindingFlags = descriptorSetDesc.partiallyBound ? VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT : 0;
-
-    constexpr VkDescriptorBindingFlagsEXT variableSizedArrayFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
-
-    for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++) {
-        const DescriptorRangeDesc& range = descriptorSetDesc.ranges[i];
-
-        const uint32_t baseBindingIndex = range.baseRegisterIndex + bindingOffsets[(uint32_t)range.descriptorType];
-
-        if (range.isArray) {
-            *(bindingFlags++) = commonBindingFlags | (range.isDescriptorNumVariable ? variableSizedArrayFlags : 0);
-
-            VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
-            descriptorBinding = {};
-            descriptorBinding.binding = baseBindingIndex;
-            descriptorBinding.descriptorType = GetDescriptorType(range.descriptorType);
-            descriptorBinding.descriptorCount = range.descriptorNum;
-            descriptorBinding.stageFlags = GetShaderStageFlags(range.shaderStages);
-        } else {
-            for (uint32_t j = 0; j < range.descriptorNum; j++) {
-                *(bindingFlags++) = commonBindingFlags;
-
-                VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
-                descriptorBinding = {};
-                descriptorBinding.binding = baseBindingIndex + j;
-                descriptorBinding.descriptorType = GetDescriptorType(range.descriptorType);
-                descriptorBinding.descriptorCount = 1;
-                descriptorBinding.stageFlags = GetShaderStageFlags(range.shaderStages);
-            }
-        }
-    }
-}
-
-void PipelineLayoutVK::FillDynamicConstantBufferBindings(
-    const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlagsEXT*& bindingFlags) const {
-    for (uint32_t i = 0; i < descriptorSetDesc.dynamicConstantBufferNum; i++) {
-        const DynamicConstantBufferDesc& buffer = descriptorSetDesc.dynamicConstantBuffers[i];
-
-        *(bindingFlags++) = 0;
-
-        VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
-        descriptorBinding = {};
-        descriptorBinding.binding = buffer.registerIndex + bindingOffsets[(uint32_t)DescriptorType::CONSTANT_BUFFER];
-        descriptorBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        descriptorBinding.descriptorCount = 1;
-        descriptorBinding.stageFlags = GetShaderStageFlags(buffer.shaderStages);
-    }
-}
-
-void PipelineLayoutVK::FillPushConstantRanges(const PipelineLayoutDesc& pipelineLayoutDesc, VkPushConstantRange* pushConstantRanges) const {
-    uint32_t offset = 0;
-
-    for (uint32_t i = 0; i < pipelineLayoutDesc.pushConstantNum; i++) {
-        const PushConstantDesc& pushConstantDesc = pipelineLayoutDesc.pushConstants[i];
-
-        VkPushConstantRange& range = pushConstantRanges[i];
-        range = {};
-        range.stageFlags = GetShaderStageFlags(pushConstantDesc.shaderStages);
-        range.offset = offset;
-        range.size = pushConstantDesc.size;
-
-        offset += pushConstantDesc.size;
-    }
 }
 
 void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipelineLayoutDesc, const uint32_t* bindingOffsets) {
@@ -267,13 +269,13 @@ void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipeline
     }
 }
 
-RuntimeBindingInfo::RuntimeBindingInfo(StdAllocator<uint8_t>& allocator)
-    : hasVariableDescriptorNum(allocator),
-      descriptorSetRangeDescs(allocator),
-      dynamicConstantBufferDescs(allocator),
-      descriptorSetDescs(allocator),
-      pushConstantDescs(allocator),
-      pushConstantBindings(allocator) {
+RuntimeBindingInfo::RuntimeBindingInfo(StdAllocator<uint8_t>& allocator) :
+    hasVariableDescriptorNum(allocator),
+    descriptorSetRangeDescs(allocator),
+    dynamicConstantBufferDescs(allocator),
+    descriptorSetDescs(allocator),
+    pushConstantDescs(allocator),
+    pushConstantBindings(allocator) {
 }
 
 //================================================================================================================
