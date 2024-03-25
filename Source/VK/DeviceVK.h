@@ -142,7 +142,6 @@ private:
     void ReportDeviceGroupInfo();
     void GetAdapterDesc();
     Result CreateInstance(bool enableAPIValidation, const Vector<const char*>& desiredInstanceExts);
-    Result FindPhysicalDeviceGroup(const AdapterDesc* physicalDeviceGroup);
     Result ResolvePreInstanceDispatchTable();
     Result ResolveInstanceDispatchTable(const Vector<const char*>& desiredInstanceExts);
     Result ResolveDispatchTable(const Vector<const char*>& desiredDeviceExts);

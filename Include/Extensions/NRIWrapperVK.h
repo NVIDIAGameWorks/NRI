@@ -37,6 +37,7 @@ NRI_STRUCT(DeviceCreationVKDesc)
     const uint32_t* queueFamilyIndices;
     uint32_t queueFamilyIndexNum;
     const char* vulkanLoaderPath;
+    bool isVulkan12;
 };
 
 NRI_STRUCT(CommandQueueVKDesc)

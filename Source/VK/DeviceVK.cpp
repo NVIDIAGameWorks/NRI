@@ -404,13 +404,53 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             return res;
     }
 
+    uint32_t minorVersion = 0;
     { // Group
         if (isWrapper) {
             m_PhysicalDevice = (VkPhysicalDevice)deviceCreationVKDesc.vkPhysicalDevice;
+
+            minorVersion = deviceCreationVKDesc.isVulkan12 ? 2 : 3;
         } else {
-            Result res = FindPhysicalDeviceGroup(deviceCreationDesc.adapterDesc);
-            if (res != Result::SUCCESS)
-                return res;
+            uint32_t deviceGroupNum = 0;
+            m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, nullptr);
+
+            VkPhysicalDeviceGroupProperties* deviceGroups = STACK_ALLOC(VkPhysicalDeviceGroupProperties, deviceGroupNum);
+            VkResult result = m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, deviceGroups);
+            RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkEnumeratePhysicalDevices returned %d", (int32_t)result);
+
+            VkPhysicalDeviceProperties2 props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+
+            VkPhysicalDeviceIDProperties idProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
+            props.pNext = &idProps;
+
+            uint32_t i = 0;
+            for (; i < deviceGroupNum; i++) {
+                const VkPhysicalDeviceGroupProperties& group = deviceGroups[i];
+                m_VK.GetPhysicalDeviceProperties2(group.physicalDevices[0], &props);
+
+                uint32_t majorVersion = VK_VERSION_MAJOR(props.properties.apiVersion);
+                minorVersion = VK_VERSION_MINOR(props.properties.apiVersion);
+
+                bool isSupported = majorVersion * 10 + minorVersion >= 12;
+                if (deviceCreationDesc.adapterDesc) {
+                    const uint64_t luid = *(uint64_t*)idProps.deviceLUID;
+                    if (luid == deviceCreationDesc.adapterDesc->luid) {
+                        RETURN_ON_FAILURE(this, isSupported, Result::UNSUPPORTED, "Can't create a device: the specified physical device does not support Vulkan 1.2+!");
+                        break;
+                    }
+                } else if (isSupported)
+                    break;
+            }
+
+            RETURN_ON_FAILURE(this, i != deviceGroupNum, Result::INVALID_ARGUMENT, "Can't create a device: physical device not found");
+
+            const VkPhysicalDeviceGroupProperties& group = deviceGroups[i];
+            if (group.physicalDeviceCount > 1) {
+                if (group.subsetAllocation == VK_FALSE)
+                    REPORT_WARNING(this, "The device group does not support memory allocation on a subset of the physical devices");
+            }
+
+            m_PhysicalDevice = group.physicalDevices[0];
         }
 
         m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &m_MemoryProps);
@@ -445,7 +485,9 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     APPEND_EXT(features12);
 
     VkPhysicalDeviceVulkan13Features features13 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
-    APPEND_EXT(features13);
+    if (minorVersion >= 3) {
+        APPEND_EXT(features13);
+    }
 
 #ifdef __APPLE__
     VkPhysicalDevicePortabilitySubsetFeaturesKHR portabilitySubsetFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR};
@@ -564,7 +606,9 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(props12);
 
         VkPhysicalDeviceVulkan13Properties props13 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES};
-        APPEND_EXT(props13);
+        if (minorVersion >= 3) {
+            APPEND_EXT(props13);
+        }
 
         VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT};
         if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
@@ -971,35 +1015,27 @@ Result DeviceVK::CreateInstance(bool enableAPIValidation, const Vector<const cha
 
     FilterInstanceLayers(layers);
 
-    const VkApplicationInfo appInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr, nullptr, 0, nullptr, 0, VK_API_VERSION_1_3};
+    VkApplicationInfo appInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
+    appInfo.apiVersion = VK_API_VERSION_1_3;
 
     const VkValidationFeatureEnableEXT enabledValidationFeatures[] = {
         VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
     };
 
-    const VkValidationFeaturesEXT validationFeatures = {
-        VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT,
-        nullptr,
-        GetCountOf(enabledValidationFeatures),
-        enabledValidationFeatures,
-        0,
-        nullptr,
-    };
+    VkValidationFeaturesEXT validationFeatures = {VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT};
+    validationFeatures.enabledValidationFeatureCount = GetCountOf(enabledValidationFeatures);
+    validationFeatures.pEnabledValidationFeatures = enabledValidationFeatures;
 
-    const VkInstanceCreateInfo info = {
-        VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        enableAPIValidation ? &validationFeatures : nullptr,
+    VkInstanceCreateInfo info = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
+    info.pNext = enableAPIValidation ? &validationFeatures : nullptr;
 #ifdef __APPLE__
-        (VkInstanceCreateFlags)VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
-#else
-        (VkInstanceCreateFlags)0,
+    info.flags = (VkInstanceCreateFlags)VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
 #endif
-        &appInfo,
-        (uint32_t)layers.size(),
-        layers.data(),
-        (uint32_t)desiredInstanceExts.size(),
-        desiredInstanceExts.data(),
-    };
+    info.pApplicationInfo = &appInfo;
+    info.enabledLayerCount = (uint32_t)layers.size();
+    info.ppEnabledLayerNames = layers.data();
+    info.enabledExtensionCount = (uint32_t)desiredInstanceExts.size();
+    info.ppEnabledExtensionNames = desiredInstanceExts.data();
 
     VkResult result = m_VK.CreateInstance(&info, m_AllocationCallbackPtr, &m_Instance);
     RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkCreateInstance returned %d", (int32_t)result);
@@ -1021,52 +1057,6 @@ Result DeviceVK::CreateInstance(bool enableAPIValidation, const Vector<const cha
 
         RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkCreateDebugUtilsMessengerEXT returned %d", (int32_t)result);
     }
-
-    return Result::SUCCESS;
-}
-
-Result DeviceVK::FindPhysicalDeviceGroup(const AdapterDesc* adapterDesc) {
-    uint32_t deviceGroupNum = 0;
-    m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, nullptr);
-
-    VkPhysicalDeviceGroupProperties* deviceGroups = STACK_ALLOC(VkPhysicalDeviceGroupProperties, deviceGroupNum);
-    // deviceGroups->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES;
-    VkResult result = m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, deviceGroups);
-    RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkEnumeratePhysicalDevices returned %d", (int32_t)result);
-
-    VkPhysicalDeviceIDProperties idProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
-
-    VkPhysicalDeviceProperties2 props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
-    props.pNext = &idProps;
-
-    uint32_t i = 0;
-    for (; i < deviceGroupNum; i++) {
-        const VkPhysicalDeviceGroupProperties& group = deviceGroups[i];
-        m_VK.GetPhysicalDeviceProperties2(group.physicalDevices[0], &props);
-
-        uint32_t majorVersion = VK_VERSION_MAJOR(props.properties.apiVersion);
-        uint32_t minorVersion = VK_VERSION_MINOR(props.properties.apiVersion);
-        bool isSupported = majorVersion * 10 + minorVersion >= 12;
-
-        if (adapterDesc) {
-            const uint64_t luid = *(uint64_t*)idProps.deviceLUID;
-            if (luid == adapterDesc->luid) {
-                RETURN_ON_FAILURE(this, isSupported, Result::UNSUPPORTED, "Can't create a device: the specified physical device does not support Vulkan 1.2!");
-                break;
-            }
-        } else if (isSupported)
-            break;
-    }
-
-    RETURN_ON_FAILURE(this, i != deviceGroupNum, Result::UNSUPPORTED, "Can't create a device: physical device not found.");
-
-    const VkPhysicalDeviceGroupProperties& group = deviceGroups[i];
-    if (group.physicalDeviceCount > 1) {
-        if (group.subsetAllocation == VK_FALSE)
-            REPORT_WARNING(this, "The device group does not support memory allocation on a subset of the physical devices.");
-    }
-
-    m_PhysicalDevice = group.physicalDevices[0];
 
     return Result::SUCCESS;
 }
@@ -1103,27 +1093,23 @@ void DeviceVK::FillFamilyIndices(bool useEnabledFamilyIndices, const uint32_t* e
         bool opticalFlow = flags & VK_QUEUE_OPTICAL_FLOW_BIT_NV;
         bool taken = false;
 
-        // Mandatory prerequisites
-        if (!graphics && !compute && !copy)
-            continue;
-
         // Scores
         score = (graphics ? 100 : 0) + (compute ? 10 : 0) + (copy ? 10 : 0) + (sparse ? 5 : 0) + (opticalFlow ? 2 : 0) + (video ? 1 : 0) + (protect ? 1 : 0);
-        if (!taken && score > scores[(uint32_t)CommandQueueType::GRAPHICS]) {
+        if (!taken && graphics && score > scores[(uint32_t)CommandQueueType::GRAPHICS]) {
             m_FamilyIndices[(uint32_t)CommandQueueType::GRAPHICS] = i;
             scores[(uint32_t)CommandQueueType::GRAPHICS] = score;
             taken = true;
         }
 
         score = (!graphics ? 10 : 0) + (compute ? 100 : 0) + (!copy ? 10 : 0) + (sparse ? 5 : 0) + (opticalFlow ? 2 : 0) + (video ? 1 : 0) + (protect ? 1 : 0);
-        if (!taken && score > scores[(uint32_t)CommandQueueType::COMPUTE]) {
+        if (!taken && compute && score > scores[(uint32_t)CommandQueueType::COMPUTE]) {
             m_FamilyIndices[(uint32_t)CommandQueueType::COMPUTE] = i;
             scores[(uint32_t)CommandQueueType::COMPUTE] = score;
             taken = true;
         }
 
         score = (!graphics ? 10 : 0) + (!compute ? 10 : 0) + (copy ? 100 : 0) + (sparse ? 5 : 0) + (opticalFlow ? 2 : 0) + (video ? 1 : 0) + (protect ? 1 : 0);
-        if (!taken && score > scores[(uint32_t)CommandQueueType::COPY]) {
+        if (!taken && copy && score > scores[(uint32_t)CommandQueueType::COPY]) {
             m_FamilyIndices[(uint32_t)CommandQueueType::COPY] = i;
             scores[(uint32_t)CommandQueueType::COPY] = score;
             taken = true;
