@@ -95,10 +95,13 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
             rootParameter.DescriptorTable.pDescriptorRanges = &descriptorRanges[totalRangeNum];
 
             D3D12_DESCRIPTOR_RANGE_FLAGS descriptorRangeFlags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
-            if (descriptorSetDesc.partiallyBound && rangeType != D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER) 
+            if (descriptorSetDesc.partiallyBound) 
             {
                 descriptorRangeFlags |= D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE;
-                descriptorRangeFlags |= D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE;
+                if (rangeType != D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER)
+                {
+                    descriptorRangeFlags |= D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE;
+                }
             }
 
             D3D12_DESCRIPTOR_RANGE1& descriptorRange = descriptorRanges[totalRangeNum + groupedRangeNum];
