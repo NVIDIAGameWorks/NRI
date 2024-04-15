@@ -70,9 +70,6 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
         D3D12_ROOT_PARAMETER1 rootParameter = {};
         rootParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 
-        D3D12_DESCRIPTOR_RANGE_FLAGS descriptorRangeFlags =
-            descriptorSetDesc.partiallyBound ? D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE | D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE : D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
-
         uint32_t groupedRangeNum = 0;
         D3D12_DESCRIPTOR_RANGE_TYPE groupedRangeType = {};
         for (uint32_t j = 0; j < descriptorSetDesc.rangeNum; j++) {
@@ -96,6 +93,16 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
 
             rootParameter.ShaderVisibility = shaderVisibility;
             rootParameter.DescriptorTable.pDescriptorRanges = &descriptorRanges[totalRangeNum];
+
+            D3D12_DESCRIPTOR_RANGE_FLAGS descriptorRangeFlags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
+            if (descriptorSetDesc.partiallyBound) 
+            {
+                descriptorRangeFlags |= D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE;
+                if (rangeType != D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER)
+                {
+                    descriptorRangeFlags |= D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE;
+                }
+            }
 
             D3D12_DESCRIPTOR_RANGE1& descriptorRange = descriptorRanges[totalRangeNum + groupedRangeNum];
             descriptorRange.RangeType = rangeType;
