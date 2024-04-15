@@ -51,7 +51,7 @@ NRI_STRUCT(MetalWindow)
     void* caMetalLayer; // CAMetalLayer*
 };
 
-NRI_UNION(Window)
+NRI_STRUCT(Window)
 {
     // Only one entity must be initialized
     NRI_NAME(WindowsWindow) windows;
