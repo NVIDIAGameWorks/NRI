@@ -54,10 +54,10 @@ constexpr VkPipelineStageFlags2 GetPipelineStageFlags(StageBits stageBits) {
     VkPipelineStageFlags2 flags = 0;
 
     if (stageBits & StageBits::INDEX_INPUT)
-        flags |= VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT;
+        flags |= VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
 
     if (stageBits & StageBits::VERTEX_SHADER)
-        flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+        flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT;
 
     if (stageBits & StageBits::TESS_CONTROL_SHADER)
         flags |= VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT;
