@@ -25,7 +25,7 @@ Result TextureVK::Create(const TextureDesc& textureDesc) {
 
     VkImageCreateFlags flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT; // typeless
     if (textureDesc.arraySize > 1)
-        flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT | VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+        flags |= (textureDesc.type == nri::TextureType::TEXTURE_3D) ? VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT : VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     if (m_Device.GetDesc().isProgrammableSampleLocationsSupported && textureDesc.format >= Format::D16_UNORM)
         flags |= VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
 
