@@ -23,9 +23,14 @@ Result TextureVK::Create(const TextureDesc& textureDesc) {
     const VkSharingMode sharingMode = m_Device.IsConcurrentSharingModeEnabledForImages() ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
     const Vector<uint32_t>& queueIndices = m_Device.GetConcurrentSharingModeQueueIndices();
 
-    VkImageCreateFlags flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT; // typeless
-    if (textureDesc.arraySize > 1)
-        flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT | VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+   VkImageCreateFlags flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT; // typeless
+    const FormatProps& formatProps = GetFormatProps(textureDesc.format);
+    if (formatProps.blockWidth > 1)
+        flags |= VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT; // format can be used to create a view with an uncompressed format (1 texel covers 1 block)
+    if (textureDesc.arraySize >= 6 && textureDesc.width == textureDesc.height)
+        flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT; // allow cube maps
+    if (textureDesc.type == nri::TextureType::TEXTURE_3D)
+        flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT; // allow 3D demotion to a set of layers // TODO: hook up "VK_EXT_image_2d_view_of_3d"?
     if (m_Device.GetDesc().isProgrammableSampleLocationsSupported && textureDesc.format >= Format::D16_UNORM)
         flags |= VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
 
