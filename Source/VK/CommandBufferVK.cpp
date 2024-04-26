@@ -374,16 +374,12 @@ inline void CommandBufferVK::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc)
 }
 
 inline void CommandBufferVK::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    static_assert(sizeof(DrawDesc) == sizeof(VkDrawIndirectCommand));
-
     const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer);
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdDrawIndirect(m_Handle, bufferHandle, offset, drawNum, (uint32_t)stride);
 }
 
 inline void CommandBufferVK::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    static_assert(sizeof(DrawIndexedDesc) == sizeof(VkDrawIndexedIndirectCommand));
-
     const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer);
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdDrawIndexedIndirect(m_Handle, bufferHandle, offset, drawNum, (uint32_t)stride);

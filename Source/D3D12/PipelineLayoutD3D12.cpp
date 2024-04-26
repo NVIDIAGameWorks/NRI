@@ -61,6 +61,22 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     m_DescriptorSetRootMappings.resize(pipelineLayoutDesc.descriptorSetNum, DescriptorSetRootMapping(allocator));
     m_DynamicConstantBufferMappings.resize(pipelineLayoutDesc.descriptorSetNum);
 
+    D3D12_ROOT_PARAMETER1 rootParameterLocal = {};
+
+    bool enableBaseAttributesEmulation = 
+        m_Device.IsDrawParametersEmulationEnabled() &&
+        pipelineLayoutDesc.enableBaseAttributesEmulation && 
+        (pipelineLayoutDesc.shaderStages & nri::StageBits::VERTEX_SHADER);
+    
+    if (enableBaseAttributesEmulation) {
+        rootParameterLocal.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+        rootParameterLocal.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+        rootParameterLocal.Constants.ShaderRegister = 0;
+        rootParameterLocal.Constants.RegisterSpace = 0;
+        rootParameterLocal.Constants.Num32BitValues = 2;
+        rootParameters.push_back(rootParameterLocal);
+    }
+
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
         const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[i];
         DescriptorSetD3D12::BuildDescriptorSetMapping(descriptorSetDesc, m_DescriptorSetMappings[i]);
@@ -118,7 +134,6 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
         }
 
         if (descriptorSetDesc.dynamicConstantBufferNum) {
-            D3D12_ROOT_PARAMETER1 rootParameterLocal = {};
             rootParameterLocal.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
             rootParameterLocal.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_NONE;
             m_DynamicConstantBufferMappings[i].constantNum = (uint16_t)descriptorSetDesc.dynamicConstantBufferNum;
@@ -138,14 +153,19 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
 
     if (pipelineLayoutDesc.pushConstantNum) {
         m_PushConstantsBaseIndex = (uint32_t)rootParameters.size();
-
-        D3D12_ROOT_PARAMETER1 rootParameterLocal = {};
         rootParameterLocal.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+
         for (uint32_t i = 0; i < pipelineLayoutDesc.pushConstantNum; i++) {
-            rootParameterLocal.ShaderVisibility = GetShaderVisibility(pipelineLayoutDesc.pushConstants[i].shaderStages);
-            rootParameterLocal.Constants.ShaderRegister = pipelineLayoutDesc.pushConstants[i].registerIndex;
+            const nri::PushConstantDesc& pushConstantDesc = pipelineLayoutDesc.pushConstants[i];
+            if (enableBaseAttributesEmulation && pushConstantDesc.registerIndex == 0) {
+                REPORT_ERROR(&m_Device, "Register 0 in push constants is reserved for draw parameters, use another register");
+                return Result::INVALID_ARGUMENT;
+            }
+
+            rootParameterLocal.ShaderVisibility = GetShaderVisibility(pushConstantDesc.shaderStages);
+            rootParameterLocal.Constants.ShaderRegister = pushConstantDesc.registerIndex;
             rootParameterLocal.Constants.RegisterSpace = 0;
-            rootParameterLocal.Constants.Num32BitValues = pipelineLayoutDesc.pushConstants[i].size / 4;
+            rootParameterLocal.Constants.Num32BitValues = pushConstantDesc.size / 4;
             rootParameters.push_back(rootParameterLocal);
         }
     }
@@ -159,10 +179,18 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     ComPtr<ID3DBlob> rootSignatureBlob;
     ComPtr<ID3DBlob> errorBlob;
     HRESULT hr = D3D12SerializeVersionedRootSignature(&rootSignatureDesc, &rootSignatureBlob, &errorBlob);
+    if (errorBlob) {
+        printf("%s", (char*)errorBlob->GetBufferPointer());
+    }
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "D3D12SerializeVersionedRootSignature()");
 
     hr = m_Device->CreateRootSignature(NRI_NODE_MASK, rootSignatureBlob->GetBufferPointer(), rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateRootSignature()");
+
+    if (pipelineLayoutDesc.shaderStages & nri::StageBits::VERTEX_SHADER) {
+        RETURN_ON_FAILURE(&m_Device, m_Device.CreateDefaultDrawSignatures(m_RootSignature.GetInterface(), enableBaseAttributesEmulation) != nri::Result::FAILURE,
+            nri::Result::FAILURE, "Failed to create draw signature for pipeline layout");
+    }
 
     return Result::SUCCESS;
 }
