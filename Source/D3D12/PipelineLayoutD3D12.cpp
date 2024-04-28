@@ -187,6 +187,7 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     hr = m_Device->CreateRootSignature(NRI_NODE_MASK, rootSignatureBlob->GetBufferPointer(), rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateRootSignature()");
 
+    m_BaseAttributeEmulation = enableBaseAttributesEmulation;
     if (pipelineLayoutDesc.shaderStages & nri::StageBits::VERTEX_SHADER) {
         RETURN_ON_FAILURE(&m_Device, m_Device.CreateDefaultDrawSignatures(m_RootSignature.GetInterface(), enableBaseAttributesEmulation) != nri::Result::FAILURE,
             nri::Result::FAILURE, "Failed to create draw signature for pipeline layout");

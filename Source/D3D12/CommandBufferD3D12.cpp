@@ -456,6 +456,11 @@ inline void CommandBufferD3D12::Draw(const DrawDesc& drawDesc) {
 }
 
 inline void CommandBufferD3D12::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc) {
+    if (m_PipelineLayout->IsBaseAttributeEmulationEnabled()) {
+        uint32_t rootConstants[2] = {(uint32_t)drawIndexedDesc.baseVertex, drawIndexedDesc.baseInstance};
+        m_GraphicsCommandList->SetGraphicsRoot32BitConstants(0, 2, rootConstants, 0);
+    }
+
     m_GraphicsCommandList->DrawIndexedInstanced(
         drawIndexedDesc.indexNum, drawIndexedDesc.instanceNum, drawIndexedDesc.baseIndex, drawIndexedDesc.baseVertex, drawIndexedDesc.baseInstance);
 }

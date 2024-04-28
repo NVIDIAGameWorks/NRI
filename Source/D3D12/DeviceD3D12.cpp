@@ -960,7 +960,7 @@ Result DeviceD3D12::CreateDefaultDrawSignatures(ID3D12RootSignature* rootSignatu
     }
 
     m_DrawCommandSignatures.emplace(drawStride + (uint64_t)rootSignature, drawCommandSignature);
-    m_DrawCommandSignatures.emplace(drawIndexedStride + (uint64_t)rootSignature, drawIndexedCommandSignature);
+    m_DrawIndexedCommandSignatures.emplace(drawIndexedStride + (uint64_t)rootSignature, drawIndexedCommandSignature);
 
     return nri::Result::SUCCESS;
 }
