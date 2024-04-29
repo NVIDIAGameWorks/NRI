@@ -50,10 +50,6 @@ struct DeviceD3D12 final : public DeviceBase {
         return m_AreEnhancedBarriersSupported;
     }   
     
-    inline bool IsDrawParametersEmulationEnabled() const {
-        return m_DrawParametersEmulation;
-    }
-
     inline const CoreInterface& GetCoreInterface() const {
         return m_CoreInterface;
     }
@@ -70,6 +66,7 @@ struct DeviceD3D12 final : public DeviceBase {
     Result Create(const DeviceCreationDesc& deviceCreationDesc);
     Result Create(const DeviceCreationD3D12Desc& deviceCreationDesc);
 
+    Result CreateDefaultDrawSignatures(ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation);
     Result CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type);
     Result GetDescriptorHandle(D3D12_DESCRIPTOR_HEAP_TYPE type, DescriptorHandle& descriptorHandle);
     DescriptorPointerCPU GetDescriptorPointerCPU(const DescriptorHandle& descriptorHandle);
@@ -137,8 +134,6 @@ struct DeviceD3D12 final : public DeviceBase {
     Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     void DestroyAccelerationStructure(AccelerationStructure& accelerationStructure);
 
-    Result CreateDefaultDrawSignatures(ID3D12RootSignature* rootSignature, bool enableBaseAttributesEmulation);
-
     //================================================================================================================
     // DeviceBase
     //================================================================================================================
@@ -158,10 +153,10 @@ struct DeviceD3D12 final : public DeviceBase {
     Result FillFunctionTable(StreamerInterface& streamerInterface) const;
 
 private:
-    void FillDesc();
+    void FillDesc(bool enableDrawParametersEmulation);
     MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const;
     ComPtr<ID3D12CommandSignature> CreateCommandSignature(
-        D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableBaseAttributesEmulation = false);
+        D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation = false);
 
 private:
     d3d12::Ext m_Ext = {}; // don't sort: destructor must be called last!
@@ -179,7 +174,6 @@ private:
     CoreInterface m_CoreInterface = {};
     uint8_t m_Version = 0;
     bool m_AreEnhancedBarriersSupported = false;
-    bool m_DrawParametersEmulation = false;
     std::array<Lock, DESCRIPTOR_HEAP_TYPE_NUM> m_FreeDescriptorLocks;
     Lock m_DescriptorHeapLock;
     Lock m_QueueLock;

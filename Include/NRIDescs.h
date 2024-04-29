@@ -34,9 +34,9 @@ static const NRI_NAME(Mip_t) NRI_CONST_NAME(REMAINING_MIP_LEVELS) = 0; // only f
 static const NRI_NAME(Dim_t) NRI_CONST_NAME(WHOLE_SIZE) = 0; // only for "Dim_t" and "size"
 static const uint32_t NRI_CONST_NAME(ALL_SAMPLES) = 0; // only for "sampleMask"
 static const uint32_t NRI_CONST_NAME(ONE_VIEWPORT) = 0; // only for "viewportNum"
-static const bool NRI_CONST_NAME(VARIABLE_DESCRIPTOR_NUM) = true;
-static const bool NRI_CONST_NAME(DESCRIPTOR_ARRAY) = true;
-static const bool NRI_CONST_NAME(PARTIALLY_BOUND) = true;
+static const bool NRI_CONST_NAME(VARIABLE_DESCRIPTOR_NUM) = true; // helper for "DescriptorRangeDesc::isDescriptorNumVariable"
+static const bool NRI_CONST_NAME(DESCRIPTOR_ARRAY) = true; // helper for "DescriptorRangeDesc::isArray"
+static const bool NRI_CONST_NAME(PARTIALLY_BOUND) = true; // helper for "DescriptorSetDesc::partiallyBound"
 
 //===============================================================================================================================
 // Common
@@ -580,7 +580,7 @@ NRI_STRUCT(PipelineLayoutDesc)
     uint32_t pushConstantNum;
     NRI_NAME(StageBits) shaderStages;
     bool ignoreGlobalSPIRVOffsets;
-    bool enableBaseAttributesEmulation;
+    bool enableDrawParametersEmulation;
 };
 
 #pragma endregion
@@ -1267,8 +1267,9 @@ NRI_STRUCT(DescriptorSetCopyDesc)
     uint32_t dynamicConstantBufferNum;
 };
 
-// Command signatures
-NRI_STRUCT(DrawDesc)
+// Command signatures (default)
+// To fill commands for indirect drawing in a shader use one of "NRI_FILL_X_DESC" macros
+NRI_STRUCT(DrawDesc) // see NRI_FILL_DRAW_COMMAND
 {
     uint32_t vertexNum;
     uint32_t instanceNum;
@@ -1276,30 +1277,8 @@ NRI_STRUCT(DrawDesc)
     uint32_t baseInstance;
 };
 
-NRI_STRUCT(DrawIndexedDesc)
+NRI_STRUCT(DrawIndexedDesc) // see NRI_FILL_DRAW_INDEXED_COMMAND
 {
-    uint32_t indexNum;
-    uint32_t instanceNum;
-    uint32_t baseIndex; // index buffer offset = CmdSetIndexBuffer.offset + baseIndex * sizeof(CmdSetIndexBuffer.indexType)
-    int32_t baseVertex; // index += baseVertex
-    uint32_t baseInstance;
-};
-
-// For D3D12 base attributes emulation
-NRI_STRUCT(DrawBaseDesc) 
-{
-    uint32_t indirectBaseVertex;        // root constant
-    uint32_t indirectBaseInstance;      // root constant
-    uint32_t vertexNum;
-    uint32_t instanceNum;
-    uint32_t baseVertex; // vertex buffer offset = CmdSetVertexBuffers.offset + baseVertex * VertexStreamDesc::stride
-    uint32_t baseInstance;
-};
-
-NRI_STRUCT(DrawBaseIndexedDesc) 
-{
-    uint32_t indirectBaseVertex;        // root constant
-    uint32_t indirectBaseInstance;      // root constant
     uint32_t indexNum;
     uint32_t instanceNum;
     uint32_t baseIndex; // index buffer offset = CmdSetIndexBuffer.offset + baseIndex * sizeof(CmdSetIndexBuffer.indexType)
@@ -1312,6 +1291,31 @@ NRI_STRUCT(DispatchDesc)
     uint32_t x;
     uint32_t y;
     uint32_t z;
+};
+
+// Modified draw command signatures (D3D12 only)
+//  If "DeviceDesc::isDrawParametersEmulationEnabled = true" (emulation globally enabled and allowed) and if a shader has "PipelineLayout::enableDrawParametersEmulation = true" (emulation requested)
+//  - the following structs must be used instead
+// - "NRI_ENABLE_DRAW_PARAMETERS_EMULATION" must be defined prior inclusion of "NRICompatibility.hlsli"
+NRI_STRUCT(DrawBaseDesc) // see NRI_FILL_DRAW_COMMAND
+{
+    uint32_t shaderEmulatedBaseVertex; // root constant
+    uint32_t shaderEmulatedBaseInstance; // root constant
+    uint32_t vertexNum;
+    uint32_t instanceNum;
+    uint32_t baseVertex; // vertex buffer offset = CmdSetVertexBuffers.offset + baseVertex * VertexStreamDesc::stride
+    uint32_t baseInstance;
+};
+
+NRI_STRUCT(DrawIndexedBaseDesc) // see NRI_FILL_DRAW_INDEXED_COMMAND
+{
+    int32_t shaderEmulatedBaseVertex; // root constant
+    uint32_t shaderEmulatedBaseInstance; // root constant
+    uint32_t indexNum;
+    uint32_t instanceNum;
+    uint32_t baseIndex; // index buffer offset = CmdSetIndexBuffer.offset + baseIndex * sizeof(CmdSetIndexBuffer.indexType)
+    int32_t baseVertex; // index += baseVertex
+    uint32_t baseInstance;
 };
 
 #pragma endregion
@@ -1535,6 +1539,7 @@ NRI_STRUCT(DeviceDesc)
     uint32_t isDispatchRaysIndirectSupported : 1;
     uint32_t isDrawMeshTasksIndirectSupported : 1;
     uint32_t isMeshShaderPipelineStatsSupported : 1;
+    uint32_t isDrawParametersEmulationEnabled : 1;
 
     // Extensions (unexposed are always supported)
     uint32_t isSwapChainSupported : 1; // NRISwapChain
