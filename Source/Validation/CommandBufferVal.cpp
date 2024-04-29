@@ -275,8 +275,8 @@ void CommandBufferVal::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset
 }
 
 void CommandBufferVal::DrawIndirectCount(const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {
-    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdDrawIndirect: the command buffer must be in the recording state");
-    RETURN_ON_FAILURE(&m_Device, m_IsRenderPass, ReturnVoid(), "CmdDrawIndirect: must be called inside 'CmdBeginRendering/CmdEndRendering'");
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdDrawIndirectCount: the command buffer must be in the recording state");
+    RETURN_ON_FAILURE(&m_Device, m_IsRenderPass, ReturnVoid(), "CmdDrawIndirectCount: must be called inside 'CmdBeginRendering/CmdEndRendering'");
 
     Buffer* bufferImpl = NRI_GET_IMPL(Buffer, &buffer);
     Buffer* countBufferImpl = NRI_GET_IMPL(Buffer, &countBuffer);
@@ -285,8 +285,8 @@ void CommandBufferVal::DrawIndirectCount(const Buffer& buffer, uint64_t offset, 
 }
 
 void CommandBufferVal::DrawIndexedIndirectCount(const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {
-    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdDrawIndexedIndirect: the command buffer must be in the recording state");
-    RETURN_ON_FAILURE(&m_Device, m_IsRenderPass, ReturnVoid(), "CmdDrawIndexedIndirect: must be called inside 'CmdBeginRendering/CmdEndRendering'");
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdDrawIndexedIndirectCount: the command buffer must be in the recording state");
+    RETURN_ON_FAILURE(&m_Device, m_IsRenderPass, ReturnVoid(), "CmdDrawIndexedIndirectCount: must be called inside 'CmdBeginRendering/CmdEndRendering'");
 
     Buffer* bufferImpl = NRI_GET_IMPL(Buffer, &buffer);
     Buffer* countBufferImpl = NRI_GET_IMPL(Buffer, &countBuffer);
