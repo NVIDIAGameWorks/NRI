@@ -74,40 +74,46 @@ Draw parameters:
     #define NRI_SHADER_MODEL (__SHADER_TARGET_MAJOR * 10 + __SHADER_TARGET_MINOR)
 #endif
 
+#ifdef NRI_USE_BYTE_ADDRESS_BUFFER
+#define NRI_BUFFER_WRITE(buffer, offset, index, value) buffer.Store(offset * 4 + index * 4, value)
+#else
+#define NRI_BUFFER_WRITE(buffer, offset, index, value) buffer[offset + index] = value
+#endif
+
 // Indirect commands filling // TODO: change to StructuredBuffers?
 #define NRI_DRAW_DESC_SIZE (4 * 4) // "DrawDesc"
 #define NRI_FILL_DRAW_DESC(buffer, cmdIndex, vertexNum, instanceNum, baseVertex, baseInstance) \
-    buffer.Store(cmdIndex * NRI_DRAW_DESC_SIZE + 0, vertexNum); \
-    buffer.Store(cmdIndex * NRI_DRAW_DESC_SIZE + 4, instanceNum); \
-    buffer.Store(cmdIndex * NRI_DRAW_DESC_SIZE + 8, baseVertex); \
-    buffer.Store(cmdIndex * NRI_DRAW_DESC_SIZE + 12, baseInstance)
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 4, 0, vertexNum); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 4, 1, instanceNum); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 4, 2, baseVertex); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 4, 3, baseInstance)
 
 #define NRI_DRAW_INDEXED_DESC_SIZE (5 * 4) // see "DrawIndexedDesc"
 #define NRI_FILL_DRAW_INDEXED_DESC(buffer, cmdIndex, indexNum, instanceNum, baseIndex, baseVertex, baseInstance) \
-    buffer.Store(cmdIndex * NRI_DRAW_INDEXED_DESC_SIZE + 0, indexNum); \
-    buffer.Store(cmdIndex * NRI_DRAW_INDEXED_DESC_SIZE + 4, instanceNum); \
-    buffer.Store(cmdIndex * NRI_DRAW_INDEXED_DESC_SIZE + 8, baseIndex); \
-    buffer.Store(cmdIndex * NRI_DRAW_INDEXED_DESC_SIZE + 12, baseVertex); \
-    buffer.Store(cmdIndex * NRI_DRAW_INDEXED_DESC_SIZE + 16, baseInstance)
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 5, 0, indexNum); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 5, 1, instanceNum); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 5, 2, baseIndex); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 5, 3, baseVertex); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 5, 4, baseInstance)
 
 #define NRI_DRAW_BASE_DESC_SIZE (6 * 4) // see "DrawBaseDesc"
 #define NRI_FILL_DRAW_BASE_DESC(buffer, cmdIndex, vertexNum, instanceNum, baseVertex, baseInstance) \
-    buffer.Store(cmdIndex * NRI_DRAW_DESC_SIZE + 0, baseVertex); /* root constant */ \
-    buffer.Store(cmdIndex * NRI_DRAW_DESC_SIZE + 4, baseInstance); /* root constant */ \
-    buffer.Store(cmdIndex * NRI_DRAW_DESC_SIZE + 8, vertexNum); \
-    buffer.Store(cmdIndex * NRI_DRAW_DESC_SIZE + 12, instanceNum); \
-    buffer.Store(cmdIndex * NRI_DRAW_DESC_SIZE + 16, baseVertex); \
-    buffer.Store(cmdIndex * NRI_DRAW_DESC_SIZE + 20, baseInstance)
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 6, 0, baseVertex); /* root constant */ \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 6, 1, baseInstance); /* root constant */ \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 6, 2, vertexNum); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 6, 3, instanceNum); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 6, 4, baseVertex); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 6, 5, baseInstance)
 
 #define NRI_DRAW_INDEXED_BASE_DESC_SIZE (7 * 4) // see "DrawIndexedBaseDesc"
 #define NRI_FILL_DRAW_INDEXED_BASE_DESC(buffer, cmdIndex, indexNum, instanceNum, baseIndex, baseVertex, baseInstance) \
-    buffer.Store(cmdIndex * NRI_DRAW_INDEXED_DESC_SIZE + 0, baseVertex); /* root constant */ \
-    buffer.Store(cmdIndex * NRI_DRAW_INDEXED_DESC_SIZE + 4, baseInstance); /* root constant */ \
-    buffer.Store(cmdIndex * NRI_DRAW_INDEXED_DESC_SIZE + 8, indexNum); \
-    buffer.Store(cmdIndex * NRI_DRAW_INDEXED_DESC_SIZE + 12, instanceNum); \
-    buffer.Store(cmdIndex * NRI_DRAW_INDEXED_DESC_SIZE + 16, baseIndex); \
-    buffer.Store(cmdIndex * NRI_DRAW_INDEXED_DESC_SIZE + 20, baseVertex); \
-    buffer.Store(cmdIndex * NRI_DRAW_INDEXED_DESC_SIZE + 24, baseInstance)
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 0, baseVertex); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 1, baseInstance); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 2, indexNum); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 3, instanceNum); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 4, baseIndex); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 5, baseVertex); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 6, baseInstance)
 
 // SPIRV
 #ifdef NRI_SPIRV
