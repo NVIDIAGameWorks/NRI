@@ -48,8 +48,8 @@ struct DeviceD3D12 final : public DeviceBase {
 
     inline bool AreEnhancedBarriersSupported() const {
         return m_AreEnhancedBarriersSupported;
-    }
-
+    }   
+    
     inline const CoreInterface& GetCoreInterface() const {
         return m_CoreInterface;
     }
@@ -66,13 +66,14 @@ struct DeviceD3D12 final : public DeviceBase {
     Result Create(const DeviceCreationDesc& deviceCreationDesc);
     Result Create(const DeviceCreationD3D12Desc& deviceCreationDesc);
 
+    Result CreateDefaultDrawSignatures(ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation);
     Result CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type);
     Result GetDescriptorHandle(D3D12_DESCRIPTOR_HEAP_TYPE type, DescriptorHandle& descriptorHandle);
     DescriptorPointerCPU GetDescriptorPointerCPU(const DescriptorHandle& descriptorHandle);
     void GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const;
 
-    ID3D12CommandSignature* GetDrawCommandSignature(uint32_t stride);
-    ID3D12CommandSignature* GetDrawIndexedCommandSignature(uint32_t stride);
+    ID3D12CommandSignature* GetDrawCommandSignature(uint32_t stride, ID3D12RootSignature* rootSignature);
+    ID3D12CommandSignature* GetDrawIndexedCommandSignature(uint32_t stride, ID3D12RootSignature* rootSignature);
     ID3D12CommandSignature* GetDrawMeshCommandSignature(uint32_t stride);
     ID3D12CommandSignature* GetDispatchRaysCommandSignature() const;
     ID3D12CommandSignature* GetDispatchCommandSignature() const;
@@ -152,9 +153,10 @@ struct DeviceD3D12 final : public DeviceBase {
     Result FillFunctionTable(StreamerInterface& streamerInterface) const;
 
 private:
-    void FillDesc();
+    void FillDesc(bool enableDrawParametersEmulation);
     MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const;
-    ComPtr<ID3D12CommandSignature> CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride);
+    ComPtr<ID3D12CommandSignature> CreateCommandSignature(
+        D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation = false);
 
 private:
     d3d12::Ext m_Ext = {}; // don't sort: destructor must be called last!
@@ -164,8 +166,8 @@ private:
     Vector<DescriptorHeapDesc> m_DescriptorHeaps;
     Vector<Vector<DescriptorHandle>> m_FreeDescriptors;
     DeviceDesc m_Desc = {};
-    UnorderedMap<uint32_t, ComPtr<ID3D12CommandSignature>> m_DrawCommandSignatures;
-    UnorderedMap<uint32_t, ComPtr<ID3D12CommandSignature>> m_DrawIndexedCommandSignatures;
+    UnorderedMap<uint64_t, ComPtr<ID3D12CommandSignature>> m_DrawCommandSignatures;
+    UnorderedMap<uint64_t, ComPtr<ID3D12CommandSignature>> m_DrawIndexedCommandSignatures;
     UnorderedMap<uint32_t, ComPtr<ID3D12CommandSignature>> m_DrawMeshCommandSignatures;
     ComPtr<ID3D12CommandSignature> m_DispatchCommandSignature;
     ComPtr<ID3D12CommandSignature> m_DispatchRaysCommandSignature;

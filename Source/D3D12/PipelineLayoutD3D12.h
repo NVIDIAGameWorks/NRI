@@ -37,6 +37,10 @@ struct PipelineLayoutD3D12 {
         return m_IsGraphicsPipelineLayout;
     }
 
+    inline bool IsDrawParametersEmulationEnabled() const {
+        return m_DrawParametersEmulation;
+    }
+
     inline const DescriptorSetMapping& GetDescriptorSetMapping(uint32_t setIndexInPipelineLayout) const {
         return m_DescriptorSetMappings[setIndexInPipelineLayout];
     }
@@ -74,6 +78,7 @@ private:
 private:
     ComPtr<ID3D12RootSignature> m_RootSignature;
     bool m_IsGraphicsPipelineLayout = false;
+    bool m_DrawParametersEmulation = false;
     uint32_t m_PushConstantsBaseIndex = 0;
     Vector<DescriptorSetMapping> m_DescriptorSetMappings;
     Vector<DescriptorSetRootMapping> m_DescriptorSetRootMappings;

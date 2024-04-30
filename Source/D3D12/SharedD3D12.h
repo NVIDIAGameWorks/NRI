@@ -11,6 +11,8 @@ typedef uint64_t DescriptorPointerGPU;
 typedef uint16_t HeapIndexType;
 typedef uint16_t HeapOffsetType;
 
+#define BASE_ATTRIBUTES_EMULATION_SPACE 999 // see NRI_ENABLE_DRAW_PARAMETERS
+
 namespace nri {
 enum DescriptorHeapType : uint32_t {
     RESOURCE = 0,

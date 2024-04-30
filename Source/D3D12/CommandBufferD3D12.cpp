@@ -452,24 +452,38 @@ inline void CommandBufferD3D12::SetConstants(uint32_t pushConstantRangeIndex, co
 }
 
 inline void CommandBufferD3D12::Draw(const DrawDesc& drawDesc) {
+    if (m_PipelineLayout->IsDrawParametersEmulationEnabled()) {
+        struct BaseVertexInstance {
+            uint32_t baseVertex;
+            uint32_t baseInstance;
+        } baseVertexInstance = {drawDesc.baseVertex, drawDesc.baseInstance};
+
+        m_GraphicsCommandList->SetGraphicsRoot32BitConstants(0, 2, &baseVertexInstance, 0);
+    }
+
     m_GraphicsCommandList->DrawInstanced(drawDesc.vertexNum, drawDesc.instanceNum, drawDesc.baseVertex, drawDesc.baseInstance);
 }
 
 inline void CommandBufferD3D12::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc) {
+    if (m_PipelineLayout->IsDrawParametersEmulationEnabled()) {
+        struct BaseVertexInstance {
+            int32_t baseVertex;
+            uint32_t baseInstance;
+        } baseVertexInstance = {drawIndexedDesc.baseVertex, drawIndexedDesc.baseInstance};
+
+        m_GraphicsCommandList->SetGraphicsRoot32BitConstants(0, 2, &baseVertexInstance, 0);
+    }
+
     m_GraphicsCommandList->DrawIndexedInstanced(
         drawIndexedDesc.indexNum, drawIndexedDesc.instanceNum, drawIndexedDesc.baseIndex, drawIndexedDesc.baseVertex, drawIndexedDesc.baseInstance);
 }
 
 inline void CommandBufferD3D12::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    static_assert(sizeof(DrawDesc) == sizeof(D3D12_DRAW_ARGUMENTS));
-
-    m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDrawCommandSignature(stride), drawNum, (BufferD3D12&)buffer, offset, nullptr, 0);
+    m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDrawCommandSignature(stride, *m_PipelineLayout), drawNum, (BufferD3D12&)buffer, offset, nullptr, 0);
 }
 
 inline void CommandBufferD3D12::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    static_assert(sizeof(DrawIndexedDesc) == sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
-
-    m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDrawIndexedCommandSignature(stride), drawNum, (BufferD3D12&)buffer, offset, nullptr, 0);
+    m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDrawIndexedCommandSignature(stride, *m_PipelineLayout), drawNum, (BufferD3D12&)buffer, offset, nullptr, 0);
 }
 
 inline void CommandBufferD3D12::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {

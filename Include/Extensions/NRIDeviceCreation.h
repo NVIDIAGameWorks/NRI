@@ -56,6 +56,7 @@ NRI_STRUCT(DeviceCreationDesc)
     NRI_NAME(GraphicsAPI) graphicsAPI;
     bool enableNRIValidation;
     bool enableAPIValidation;
+    bool enableD3D12DrawParametersEmulation;
     bool enableD3D11CommandBufferEmulation; // force enable, but why?
     bool disableVulkanRayTracing; // to save some CPU memory
 };
