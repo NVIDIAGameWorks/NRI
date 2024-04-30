@@ -648,6 +648,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         // Internal features
         m_IsDescriptorIndexingSupported = features12.descriptorIndexing;
         m_IsDeviceAddressSupported = features12.bufferDeviceAddress;
+        m_IsIndirectDrawCountSupported = features12.drawIndirectCount;
         m_IsSwapChainMutableFormatSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, desiredDeviceExts);
         m_IsPresentIdSupported = presentIdFeatures.presentId;
         m_IsPresentWaitSupported = m_IsPresentIdSupported && presentWaitFeatures.presentWait;
@@ -1350,6 +1351,13 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
     GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndexed);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndirect);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndexedIndirect);
+
+    GET_DEVICE_OPTIONAL_CORE_OR_KHR_PROC(CmdDrawIndirectCount);
+    GET_DEVICE_OPTIONAL_CORE_OR_KHR_PROC(CmdDrawIndexedIndirectCount);
+    if (m_VK.CmdDrawIndexedIndirectCount == nullptr || m_VK.CmdDrawIndirectCount == nullptr) {
+        m_IsIndirectDrawCountSupported = false;
+    }
+
     GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyBuffer);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyImage);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyBufferToImage);

@@ -137,6 +137,10 @@ NRI_STRUCT(CoreInterface)
 
             void (NRI_CALL *CmdDrawIndexed)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(DrawIndexedDesc) drawIndexedDesc);
             void (NRI_CALL *CmdDrawIndexedIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, uint32_t drawNum, uint32_t stride); // buffer contains "DrawIndexedDesc" commands
+            
+            void (NRI_CALL *CmdDrawIndirectCount)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, const NRI_NAME_REF(Buffer) countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride); // buffer contains "DrawDesc" commands
+            void (NRI_CALL *CmdDrawIndexedIndirectCount)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset,
+                const NRI_NAME_REF(Buffer) countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride); // buffer contains "DrawIndexedDesc" commands
         // }
         void (NRI_CALL *CmdEndRendering)(NRI_NAME_REF(CommandBuffer) commandBuffer);
 

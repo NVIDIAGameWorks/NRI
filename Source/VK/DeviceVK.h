@@ -151,6 +151,7 @@ private:
 
 public:
     bool m_IsDescriptorIndexingSupported = false;
+    bool m_IsIndirectDrawCountSupported = false;
     bool m_IsDeviceAddressSupported = false;
     bool m_IsSwapChainMutableFormatSupported = false;
     bool m_IsPresentIdSupported = false;

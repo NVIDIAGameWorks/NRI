@@ -99,6 +99,26 @@ static void NRI_CALL CmdDrawIndexedIndirect(CommandBuffer& commandBuffer, const 
     ((CommandBufferEmuD3D11&)commandBuffer).DrawIndexedIndirect(buffer, offset, drawNum, stride);
 }
 
+static void NRI_CALL CmdDrawIndirectCount(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {
+    (void)commandBuffer;
+    (void)buffer;
+    (void)offset;
+    (void)countBuffer;
+    (void)countBufferOffset;
+    (void)drawNum;
+    (void)stride;
+}
+
+static void NRI_CALL CmdDrawIndexedIndirectCount(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {
+    (void)commandBuffer;
+    (void)buffer;
+    (void)offset;
+    (void)countBuffer;
+    (void)countBufferOffset;
+    (void)drawNum;
+    (void)stride;
+}
+
 static void NRI_CALL CmdDispatch(CommandBuffer& commandBuffer, const DispatchDesc& dispatchDesc) {
     ((CommandBufferEmuD3D11&)commandBuffer).Dispatch(dispatchDesc);
 }
@@ -198,6 +218,8 @@ void Core_CommandBufferEmu_PartiallyFillFunctionTable(CoreInterface& coreInterfa
     coreInterface.CmdDrawIndexed = ::CmdDrawIndexed;
     coreInterface.CmdDrawIndirect = ::CmdDrawIndirect;
     coreInterface.CmdDrawIndexedIndirect = ::CmdDrawIndexedIndirect;
+    coreInterface.CmdDrawIndirectCount = ::CmdDrawIndirectCount;
+    coreInterface.CmdDrawIndexedIndirectCount = ::CmdDrawIndexedIndirectCount;
     coreInterface.CmdEndRendering = ::CmdEndRendering;
     coreInterface.CmdDispatch = ::CmdDispatch;
     coreInterface.CmdDispatchIndirect = ::CmdDispatchIndirect;

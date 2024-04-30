@@ -148,6 +148,8 @@ protected:
         table.CmdDrawIndexed = ::CmdDrawIndexed; \
         table.CmdDrawIndirect = ::CmdDrawIndirect; \
         table.CmdDrawIndexedIndirect = ::CmdDrawIndexedIndirect; \
+        table.CmdDrawIndirectCount = ::CmdDrawIndirectCount; \
+        table.CmdDrawIndexedIndirectCount = ::CmdDrawIndexedIndirectCount; \
         table.CmdEndRendering = ::CmdEndRendering; \
         table.CmdDispatch = ::CmdDispatch; \
         table.CmdDispatchIndirect = ::CmdDispatchIndirect; \

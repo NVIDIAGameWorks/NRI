@@ -172,6 +172,26 @@ static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandB
     return ((CommandBufferD3D11&)commandBuffer).GetNativeObject();
 }
 
+// Unsupported on D3D11 (no such thing as 
+static void NRI_CALL CmdDrawIndirectCount(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {
+    (void)commandBuffer;
+    (void)buffer;
+    (void)offset;
+    (void)countBuffer;
+    (void)countBufferOffset;
+    (void)drawNum;
+    (void)stride;
+}
+static void NRI_CALL CmdDrawIndexedIndirectCount(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {   
+    (void)commandBuffer;
+    (void)buffer;
+    (void)offset;
+    (void)countBuffer;
+    (void)countBufferOffset;
+    (void)drawNum;
+    (void)stride;
+}
+
 #pragma endregion
 
 Define_Core_CommandBuffer_PartiallyFillFunctionTable(D3D11);

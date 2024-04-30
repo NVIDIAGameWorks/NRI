@@ -486,6 +486,14 @@ inline void CommandBufferD3D12::DrawIndexedIndirect(const Buffer& buffer, uint64
     m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDrawIndexedCommandSignature(stride, *m_PipelineLayout), drawNum, (BufferD3D12&)buffer, offset, nullptr, 0);
 }
 
+inline void CommandBufferD3D12::DrawIndirectCount(const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {
+    m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDrawCommandSignature(stride, *m_PipelineLayout), drawNum, (BufferD3D12&)buffer, offset, (BufferD3D12&)countBuffer, countBufferOffset);
+
+}
+inline void CommandBufferD3D12::DrawIndexedIndirectCount(const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) { 
+    m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDrawIndexedCommandSignature(stride, *m_PipelineLayout), drawNum, (BufferD3D12&)buffer, offset, (BufferD3D12&)countBuffer, countBufferOffset);
+}
+
 inline void CommandBufferD3D12::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
     if (size == WHOLE_SIZE)
         size = ((BufferD3D12&)srcBuffer).GetDesc().size;

@@ -385,6 +385,20 @@ inline void CommandBufferVK::DrawIndexedIndirect(const Buffer& buffer, uint64_t 
     vk.CmdDrawIndexedIndirect(m_Handle, bufferHandle, offset, drawNum, (uint32_t)stride);
 }
 
+inline void CommandBufferVK::DrawIndirectCount(const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {
+    const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer);
+    const VkBuffer countBufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&countBuffer);
+    const auto& vk = m_Device.GetDispatchTable();
+    vk.CmdDrawIndirectCount(m_Handle, bufferHandle, offset, countBufferHandle, countBufferOffset, drawNum, (uint32_t)stride);
+}
+
+inline void CommandBufferVK::DrawIndexedIndirectCount(const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {
+    const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer);
+    const VkBuffer countBufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&countBuffer);
+    const auto& vk = m_Device.GetDispatchTable();
+    vk.CmdDrawIndexedIndirectCount(m_Handle, bufferHandle, offset, countBufferHandle, countBufferOffset, drawNum, (uint32_t)stride);
+}
+
 inline void CommandBufferVK::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
     const BufferVK& srcBufferImpl = (const BufferVK&)srcBuffer;
     const BufferVK& dstBufferImpl = (const BufferVK&)dstBuffer;
