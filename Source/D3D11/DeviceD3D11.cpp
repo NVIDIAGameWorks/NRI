@@ -372,11 +372,12 @@ void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params) {
     m_Desc.cullDistanceMaxNum = D3D11_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.combinedClipAndCullDistanceMaxNum = D3D11_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.conservativeRasterTier = (uint8_t)options2.ConservativeRasterizationTier;
+    m_Desc.programmableSampleLocationsTier = m_Ext.HasNVAPI() ? 2 : 0; // TODO: best guess
 
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isDepthBoundsTestSupported = params.extensionsSupported.depthBoundsDeferredContexts;
-    m_Desc.isProgrammableSampleLocationsSupported = m_Ext.HasNVAPI();
+    m_Desc.isDrawIndirectCountSupported = m_Ext.HasAGS(); // surprised?
     m_Desc.isLineSmoothingSupported = true;
 
     m_Desc.isSwapChainSupported = HasOutput();

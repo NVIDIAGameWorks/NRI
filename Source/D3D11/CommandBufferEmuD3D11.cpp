@@ -31,8 +31,8 @@ enum OpCode : uint32_t {
     BIND_DESCRIPTOR_SET,
     SET_CONSTANTS,
     DRAW,
-    DRAW_INDIRECT,
     DRAW_INDEXED,
+    DRAW_INDIRECT,
     DRAW_INDEXED_INDIRECT,
     COPY_BUFFER,
     COPY_TEXTURE,
@@ -277,6 +277,12 @@ void CommandBufferEmuD3D11::Submit() {
 
                 commandBuffer.Draw(drawDesc);
             } break;
+            case DRAW_INDEXED: {
+                DrawIndexedDesc drawIndexedDesc = {};
+                Read(m_PushBuffer, i, drawIndexedDesc);
+
+                commandBuffer.DrawIndexed(drawIndexedDesc);
+            } break;
             case DRAW_INDIRECT: {
                 Buffer* buffer;
                 Read(m_PushBuffer, i, buffer);
@@ -290,13 +296,13 @@ void CommandBufferEmuD3D11::Submit() {
                 uint32_t stride;
                 Read(m_PushBuffer, i, stride);
 
-                commandBuffer.DrawIndirect(*buffer, offset, drawNum, stride);
-            } break;
-            case DRAW_INDEXED: {
-                DrawIndexedDesc drawIndexedDesc = {};
-                Read(m_PushBuffer, i, drawIndexedDesc);
+                Buffer* countBuffer;
+                Read(m_PushBuffer, i, countBuffer);
 
-                commandBuffer.DrawIndexed(drawIndexedDesc);
+                uint64_t countBufferOffset;
+                Read(m_PushBuffer, i, countBufferOffset);
+
+                commandBuffer.DrawIndirect(*buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
             } break;
             case DRAW_INDEXED_INDIRECT: {
                 Buffer* buffer;
@@ -311,7 +317,13 @@ void CommandBufferEmuD3D11::Submit() {
                 uint32_t stride;
                 Read(m_PushBuffer, i, stride);
 
-                commandBuffer.DrawIndexedIndirect(*buffer, offset, drawNum, stride);
+                Buffer* countBuffer;
+                Read(m_PushBuffer, i, countBuffer);
+
+                uint64_t countBufferOffset;
+                Read(m_PushBuffer, i, countBufferOffset);
+
+                commandBuffer.DrawIndexedIndirect(*buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
             } break;
             case COPY_BUFFER: {
                 Buffer* dstBuffer;
@@ -582,25 +594,29 @@ inline void CommandBufferEmuD3D11::Draw(const DrawDesc& drawDesc) {
     Push(m_PushBuffer, drawDesc);
 }
 
-inline void CommandBufferEmuD3D11::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    Push(m_PushBuffer, DRAW_INDIRECT);
-    Push(m_PushBuffer, &buffer);
-    Push(m_PushBuffer, offset);
-    Push(m_PushBuffer, drawNum);
-    Push(m_PushBuffer, stride);
-}
-
 inline void CommandBufferEmuD3D11::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc) {
     Push(m_PushBuffer, DRAW_INDEXED);
     Push(m_PushBuffer, drawIndexedDesc);
 }
 
-inline void CommandBufferEmuD3D11::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
+inline void CommandBufferEmuD3D11::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+    Push(m_PushBuffer, DRAW_INDIRECT);
+    Push(m_PushBuffer, &buffer);
+    Push(m_PushBuffer, offset);
+    Push(m_PushBuffer, drawNum);
+    Push(m_PushBuffer, stride);
+    Push(m_PushBuffer, countBuffer);
+    Push(m_PushBuffer, countBufferOffset);
+}
+
+inline void CommandBufferEmuD3D11::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
     Push(m_PushBuffer, DRAW_INDEXED_INDIRECT);
     Push(m_PushBuffer, &buffer);
     Push(m_PushBuffer, offset);
     Push(m_PushBuffer, drawNum);
     Push(m_PushBuffer, stride);
+    Push(m_PushBuffer, countBuffer);
+    Push(m_PushBuffer, countBufferOffset);
 }
 
 inline void CommandBufferEmuD3D11::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {

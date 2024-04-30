@@ -91,20 +91,12 @@ static void NRI_CALL CmdDrawIndexed(CommandBuffer& commandBuffer, const DrawInde
     ((CommandBufferVal&)commandBuffer).DrawIndexed(drawIndexedDesc);
 }
 
-static void NRI_CALL CmdDrawIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    ((CommandBufferVal&)commandBuffer).DrawIndirect(buffer, offset, drawNum, stride);
+static void NRI_CALL CmdDrawIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+    ((CommandBufferVal&)commandBuffer).DrawIndirect(buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
 }
 
-static void NRI_CALL CmdDrawIndexedIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    ((CommandBufferVal&)commandBuffer).DrawIndexedIndirect(buffer, offset, drawNum, stride);
-}
-
-static void NRI_CALL CmdDrawIndirectCount(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {
-    ((CommandBufferVal&)commandBuffer).DrawIndirectCount(buffer, offset, countBuffer, countBufferOffset, drawNum, stride);
-}
-
-static void NRI_CALL CmdDrawIndexedIndirectCount(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {
-    ((CommandBufferVal&)commandBuffer).DrawIndexedIndirectCount(buffer, offset, countBuffer, countBufferOffset, drawNum, stride);
+static void NRI_CALL CmdDrawIndexedIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+    ((CommandBufferVal&)commandBuffer).DrawIndexedIndirect(buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
 }
 
 static void NRI_CALL CmdDispatch(CommandBuffer& commandBuffer, const DispatchDesc& dispatchDesc) {

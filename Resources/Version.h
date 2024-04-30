@@ -3,16 +3,8 @@
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-/*
-Versioning rules:
-- give version to someone - increment version before and after for tracking
-- BUILD - preserves binary compatibility
-- MINOR - settings & descs change
-- MAJOR - major feature update, API change
-*/
-
 #define VERSION_MAJOR                   1
-#define VERSION_MINOR                   128
+#define VERSION_MINOR                   129
 #define VERSION_BUILD                   0
 #define VERSION_REVISION                0
 

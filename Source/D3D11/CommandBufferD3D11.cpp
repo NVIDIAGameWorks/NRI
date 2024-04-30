@@ -329,12 +329,22 @@ void CommandBufferD3D11::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc) {
         drawIndexedDesc.indexNum, drawIndexedDesc.instanceNum, drawIndexedDesc.baseIndex, drawIndexedDesc.baseVertex, drawIndexedDesc.baseInstance);
 }
 
-void CommandBufferD3D11::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    m_Device.GetExt()->MultiDrawIndirect(m_DeferredContext, (BufferD3D11&)buffer, offset, drawNum, stride);
+void CommandBufferD3D11::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+    MaybeUnused(countBuffer, countBufferOffset);
+
+    if (countBuffer && m_Device.GetDesc().isDrawIndirectCountSupported)
+        m_Device.GetExt()->DrawIndirect(m_DeferredContext, (BufferD3D11&)buffer, offset, drawNum, stride, *(BufferD3D11*)countBuffer, (uint32_t)countBufferOffset);
+    else
+        m_Device.GetExt()->DrawIndirect(m_DeferredContext, (BufferD3D11&)buffer, offset, drawNum, stride, nullptr, 0);
 }
 
-void CommandBufferD3D11::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    m_Device.GetExt()->MultiDrawIndexedIndirect(m_DeferredContext, (BufferD3D11&)buffer, offset, drawNum, stride);
+void CommandBufferD3D11::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+    MaybeUnused(countBuffer, countBufferOffset);
+
+    if (countBuffer && m_Device.GetDesc().isDrawIndirectCountSupported)
+        m_Device.GetExt()->DrawIndexedIndirect(m_DeferredContext, (BufferD3D11&)buffer, offset, drawNum, stride, *(BufferD3D11*)countBuffer, (uint32_t)countBufferOffset);
+    else
+        m_Device.GetExt()->DrawIndexedIndirect(m_DeferredContext, (BufferD3D11&)buffer, offset, drawNum, stride, nullptr, 0);
 }
 
 void CommandBufferD3D11::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {

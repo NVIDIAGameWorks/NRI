@@ -37,7 +37,7 @@ typedef uint32_t DXGI_FORMAT;
 
 #define RETURN_ON_BAD_HRESULT(deviceBase, hr, msg) \
     if (FAILED(hr)) { \
-        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, msg##" failed, result = 0x%08X!", hr); \
+        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, msg " failed, result = 0x%08X!", hr); \
         return GetResultFromHRESULT(hr); \
     }
 

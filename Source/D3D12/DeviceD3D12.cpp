@@ -55,7 +55,7 @@ static uint8_t QueryLatestDevice(ComPtr<ID3D12DeviceBest>& in, ComPtr<ID3D12Devi
 
 static inline uint64_t HashRootSignatureAndStride(ID3D12RootSignature* rootSignature, uint32_t stride) {
     assert(stride < 4096);
-    return ((uint64_t)rootSignature && ((1ull<<52) - 1)) | stride;
+    return ((uint64_t)stride << 52ull) | ((uint64_t)rootSignature & ((1ull << 52) - 1));
 }
 
 Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device) {
@@ -173,7 +173,7 @@ Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc) {
         return result;
 
     // Fill desc
-    FillDesc(deviceCreationDesc.enableDrawParametersEmulation);
+    FillDesc(deviceCreationDesc.enableD3D12DrawParametersEmulation);
 
     // Create indirect command signatures
     m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc), nullptr);
@@ -703,14 +703,14 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation) {
     m_Desc.cullDistanceMaxNum = D3D12_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.combinedClipAndCullDistanceMaxNum = D3D12_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.conservativeRasterTier = (uint8_t)options.ConservativeRasterizationTier;
+    m_Desc.programmableSampleLocationsTier = (uint8_t)options2.ProgrammableSamplePositionsTier;
 
     m_Desc.isTextureFilterMinMaxSupported = levels.MaxSupportedFeatureLevel >= D3D_FEATURE_LEVEL_11_1 ? true : false;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isDepthBoundsTestSupported = options2.DepthBoundsTestSupported != 0;
-    m_Desc.isProgrammableSampleLocationsSupported = options2.ProgrammableSamplePositionsTier != D3D12_PROGRAMMABLE_SAMPLE_POSITIONS_TIER_NOT_SUPPORTED;
     m_Desc.isComputeQueueSupported = true;
     m_Desc.isCopyQueueSupported = true;
-    m_Desc.isRegisterAliasingSupported = true;
+    m_Desc.isDrawIndirectCountSupported = true;
     m_Desc.isFloat16Supported = options4.Native16BitShaderOpsSupported;
 #ifdef NRI_USE_AGILITY_SDK
     m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = options14.IndependentFrontAndBackStencilRefMaskSupported ? true : false;

@@ -65,7 +65,7 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
 
     bool enableDrawParametersEmulation = 
         m_Device.GetDesc().isDrawParametersEmulationEnabled &&
-        pipelineLayoutDesc.enableDrawParametersEmulation && 
+        pipelineLayoutDesc.enableD3D12DrawParametersEmulation && 
         (pipelineLayoutDesc.shaderStages & nri::StageBits::VERTEX_SHADER);
     
     if (enableDrawParametersEmulation) {

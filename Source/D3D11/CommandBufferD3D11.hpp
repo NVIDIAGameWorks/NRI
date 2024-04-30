@@ -91,12 +91,12 @@ static void NRI_CALL CmdDrawIndexed(CommandBuffer& commandBuffer, const DrawInde
     ((CommandBufferD3D11&)commandBuffer).DrawIndexed(drawIndexedDesc);
 }
 
-static void NRI_CALL CmdDrawIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    ((CommandBufferD3D11&)commandBuffer).DrawIndirect(buffer, offset, drawNum, stride);
+static void NRI_CALL CmdDrawIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+    ((CommandBufferD3D11&)commandBuffer).DrawIndirect(buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
 }
 
-static void NRI_CALL CmdDrawIndexedIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    ((CommandBufferD3D11&)commandBuffer).DrawIndexedIndirect(buffer, offset, drawNum, stride);
+static void NRI_CALL CmdDrawIndexedIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+    ((CommandBufferD3D11&)commandBuffer).DrawIndexedIndirect(buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
 }
 
 static void NRI_CALL CmdDispatch(CommandBuffer& commandBuffer, const DispatchDesc& dispatchDesc) {
@@ -170,26 +170,6 @@ static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandB
         return nullptr;
 
     return ((CommandBufferD3D11&)commandBuffer).GetNativeObject();
-}
-
-// Unsupported on D3D11 (no such thing as 
-static void NRI_CALL CmdDrawIndirectCount(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {
-    (void)commandBuffer;
-    (void)buffer;
-    (void)offset;
-    (void)countBuffer;
-    (void)countBufferOffset;
-    (void)drawNum;
-    (void)stride;
-}
-static void NRI_CALL CmdDrawIndexedIndirectCount(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, const Buffer& countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride) {   
-    (void)commandBuffer;
-    (void)buffer;
-    (void)offset;
-    (void)countBuffer;
-    (void)countBufferOffset;
-    (void)drawNum;
-    (void)stride;
 }
 
 #pragma endregion

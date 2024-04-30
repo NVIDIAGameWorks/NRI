@@ -25,8 +25,8 @@ Non-goals:
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 128
-#define NRI_VERSION_DATE "15 April 2024"
+#define NRI_VERSION_MINOR 129
+#define NRI_VERSION_DATE "30 April 2024"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -133,14 +133,15 @@ NRI_STRUCT(CoreInterface)
 
             // Draw
             void (NRI_CALL *CmdDraw)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(DrawDesc) drawDesc);
-            void (NRI_CALL *CmdDrawIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, uint32_t drawNum, uint32_t stride); // buffer contains "DrawDesc" commands
-
             void (NRI_CALL *CmdDrawIndexed)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(DrawIndexedDesc) drawIndexedDesc);
-            void (NRI_CALL *CmdDrawIndexedIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, uint32_t drawNum, uint32_t stride); // buffer contains "DrawIndexedDesc" commands
-            
-            void (NRI_CALL *CmdDrawIndirectCount)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, const NRI_NAME_REF(Buffer) countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride); // buffer contains "DrawDesc" commands
-            void (NRI_CALL *CmdDrawIndexedIndirectCount)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset,
-                const NRI_NAME_REF(Buffer) countBuffer, uint64_t countBufferOffset, uint32_t drawNum, uint32_t stride); // buffer contains "DrawIndexedDesc" commands
+
+            // Draw indirect:
+            //  - drawNum = min(drawNum, countBuffer ? countBuffer[countBufferOffset] : INF)
+            //  - CmdDrawIndirect: "buffer" contains "Draw(Base)Desc" commands
+            //  - CmdDrawIndexedIndirect: "buffer" contains "DrawIndexed(Base)Desc" commands
+            //  - see "Modified draw command signatures"
+            void (NRI_CALL *CmdDrawIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const NRI_NAME(Buffer)* countBuffer, uint64_t countBufferOffset);
+            void (NRI_CALL *CmdDrawIndexedIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const NRI_NAME(Buffer)* countBuffer, uint64_t countBufferOffset);            
         // }
         void (NRI_CALL *CmdEndRendering)(NRI_NAME_REF(CommandBuffer) commandBuffer);
 

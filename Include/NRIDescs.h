@@ -580,7 +580,7 @@ NRI_STRUCT(PipelineLayoutDesc)
     uint32_t pushConstantNum;
     NRI_NAME(StageBits) shaderStages;
     bool ignoreGlobalSPIRVOffsets;
-    bool enableDrawParametersEmulation;
+    bool enableD3D12DrawParametersEmulation; // implicitly expects "enableD3D12DrawParametersEmulation" passed during device creation
 };
 
 #pragma endregion
@@ -1523,6 +1523,7 @@ NRI_STRUCT(DeviceDesc)
     uint32_t cullDistanceMaxNum;
     uint32_t combinedClipAndCullDistanceMaxNum;
     uint8_t conservativeRasterTier;
+    uint8_t programmableSampleLocationsTier;
 
     // Features
     uint32_t isComputeQueueSupported : 1;
@@ -1530,8 +1531,7 @@ NRI_STRUCT(DeviceDesc)
     uint32_t isTextureFilterMinMaxSupported : 1;
     uint32_t isLogicOpSupported : 1;
     uint32_t isDepthBoundsTestSupported : 1;
-    uint32_t isProgrammableSampleLocationsSupported : 1;
-    uint32_t isRegisterAliasingSupported : 1;
+    uint32_t isDrawIndirectCountSupported : 1;
     uint32_t isFloat16Supported : 1;
     uint32_t isIndependentFrontAndBackStencilReferenceAndMasksSupported : 1;
     uint32_t isLineSmoothingSupported : 1;
@@ -1539,6 +1539,8 @@ NRI_STRUCT(DeviceDesc)
     uint32_t isDispatchRaysIndirectSupported : 1;
     uint32_t isDrawMeshTasksIndirectSupported : 1;
     uint32_t isMeshShaderPipelineStatsSupported : 1;
+
+    // Emulated features
     uint32_t isDrawParametersEmulationEnabled : 1;
 
     // Extensions (unexposed are always supported)

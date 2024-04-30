@@ -623,7 +623,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         VkPhysicalDeviceSampleLocationsPropertiesEXT sampleLocationsProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT};
         if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(sampleLocationsProps);
-            m_Desc.isProgrammableSampleLocationsSupported = true;
         }
 
         VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
@@ -648,7 +647,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         // Internal features
         m_IsDescriptorIndexingSupported = features12.descriptorIndexing;
         m_IsDeviceAddressSupported = features12.bufferDeviceAddress;
-        m_IsIndirectDrawCountSupported = features12.drawIndirectCount;
         m_IsSwapChainMutableFormatSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, desiredDeviceExts);
         m_IsPresentIdSupported = presentIdFeatures.presentId;
         m_IsPresentWaitSupported = m_IsPresentIdSupported && presentWaitFeatures.presentWait;
@@ -773,7 +771,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isDepthBoundsTestSupported = features.features.depthBounds;
         m_Desc.isComputeQueueSupported = m_Queues[(uint32_t)CommandQueueType::COMPUTE] != nullptr;
         m_Desc.isCopyQueueSupported = m_Queues[(uint32_t)CommandQueueType::COPY] != nullptr;
-        m_Desc.isRegisterAliasingSupported = true;
+        m_Desc.isDrawIndirectCountSupported = features12.drawIndirectCount;
         m_Desc.isFloat16Supported = features12.shaderFloat16;
         m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = true;
         m_Desc.isLineSmoothingSupported = lineRasterizationFeatures.smoothLines;
@@ -786,6 +784,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             m_Desc.conservativeRasterTier = 2;
         else
             m_Desc.conservativeRasterTier = 1;
+
+        // PSL
+        m_Desc.programmableSampleLocationsTier = 0;
+        if (sampleLocationsProps.sampleLocationSampleCounts)
+            m_Desc.programmableSampleLocationsTier = sampleLocationsProps.variableSampleLocations ? 2 : 1; // TODO: best guess
 
         // Ray tracing
         m_Desc.rayTracingShaderGroupIdentifierSize = rayTracingProps.shaderGroupHandleSize;
@@ -1350,14 +1353,9 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
     GET_DEVICE_CORE_OR_KHR_PROC(CmdDraw);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndexed);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndirect);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndirectCount);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndexedIndirect);
-
-    GET_DEVICE_OPTIONAL_CORE_OR_KHR_PROC(CmdDrawIndirectCount);
-    GET_DEVICE_OPTIONAL_CORE_OR_KHR_PROC(CmdDrawIndexedIndirectCount);
-    if (m_VK.CmdDrawIndexedIndirectCount == nullptr || m_VK.CmdDrawIndirectCount == nullptr) {
-        m_IsIndirectDrawCountSupported = false;
-    }
-
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndexedIndirectCount);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyBuffer);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyImage);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyBufferToImage);

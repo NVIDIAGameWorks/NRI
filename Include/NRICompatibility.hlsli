@@ -74,21 +74,21 @@ Draw parameters:
     #define NRI_SHADER_MODEL (__SHADER_TARGET_MAJOR * 10 + __SHADER_TARGET_MINOR)
 #endif
 
+// Indirect commands filling // TODO: change to StructuredBuffers?
 #ifdef NRI_USE_BYTE_ADDRESS_BUFFER
-#define NRI_BUFFER_WRITE(buffer, offset, index, value) buffer.Store(offset * 4 + index * 4, value)
+    #define NRI_BUFFER_WRITE(buffer, offset, index, value) buffer.Store(offset * 4 + index * 4, value)
 #else
-#define NRI_BUFFER_WRITE(buffer, offset, index, value) buffer[offset + index] = value
+    #define NRI_BUFFER_WRITE(buffer, offset, index, value) buffer[offset + index] = value
 #endif
 
-// Indirect commands filling // TODO: change to StructuredBuffers?
-#define NRI_DRAW_DESC_SIZE (4 * 4) // "DrawDesc"
+// "DrawDesc"
 #define NRI_FILL_DRAW_DESC(buffer, cmdIndex, vertexNum, instanceNum, baseVertex, baseInstance) \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 4, 0, vertexNum); \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 4, 1, instanceNum); \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 4, 2, baseVertex); \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 4, 3, baseInstance)
 
-#define NRI_DRAW_INDEXED_DESC_SIZE (5 * 4) // see "DrawIndexedDesc"
+// see "DrawIndexedDesc"
 #define NRI_FILL_DRAW_INDEXED_DESC(buffer, cmdIndex, indexNum, instanceNum, baseIndex, baseVertex, baseInstance) \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 5, 0, indexNum); \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 5, 1, instanceNum); \
@@ -96,7 +96,7 @@ Draw parameters:
     NRI_BUFFER_WRITE(buffer, cmdIndex * 5, 3, baseVertex); \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 5, 4, baseInstance)
 
-#define NRI_DRAW_BASE_DESC_SIZE (6 * 4) // see "DrawBaseDesc"
+// see "DrawBaseDesc"
 #define NRI_FILL_DRAW_BASE_DESC(buffer, cmdIndex, vertexNum, instanceNum, baseVertex, baseInstance) \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 6, 0, baseVertex); /* root constant */ \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 6, 1, baseInstance); /* root constant */ \
@@ -105,10 +105,10 @@ Draw parameters:
     NRI_BUFFER_WRITE(buffer, cmdIndex * 6, 4, baseVertex); \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 6, 5, baseInstance)
 
-#define NRI_DRAW_INDEXED_BASE_DESC_SIZE (7 * 4) // see "DrawIndexedBaseDesc"
+// see "DrawIndexedBaseDesc"
 #define NRI_FILL_DRAW_INDEXED_BASE_DESC(buffer, cmdIndex, indexNum, instanceNum, baseIndex, baseVertex, baseInstance) \
-    NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 0, baseVertex); \
-    NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 1, baseInstance); \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 0, baseVertex); /* root constant */ \
+    NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 1, baseInstance); /* root constant */ \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 2, indexNum); \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 3, instanceNum); \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 4, baseIndex); \
@@ -164,14 +164,10 @@ Draw parameters:
             #define NRI_VERTEX_ID_OFFSET (NRI_BASE_VERTEX + NRI_VERTEX_ID)
             #define NRI_INSTANCE_ID_OFFSET (NRI_BASE_INSTANCE + NRI_INSTANCE_ID)
 
-            #undef NRI_DRAW_DESC_SIZE
             #undef NRI_FILL_DRAW_DESC
-            #define NRI_DRAW_DESC_SIZE NRI_DRAW_BASE_DESC_SIZE
             #define NRI_FILL_DRAW_DESC NRI_FILL_DRAW_BASE_DESC
 
-            #undef NRI_DRAW_INDEXED_DESC_SIZE
             #undef NRI_FILL_DRAW_INDEXED_DESC
-            #define NRI_DRAW_INDEXED_DESC_SIZE NRI_DRAW_INDEXED_BASE_DESC_SIZE
             #define NRI_FILL_DRAW_INDEXED_DESC NRI_FILL_DRAW_INDEXED_BASE_DESC
         #else
             // Partial support
