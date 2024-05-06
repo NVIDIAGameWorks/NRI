@@ -37,7 +37,7 @@ Result TextureVK::Create(const TextureDesc& textureDesc) {
     VkImageCreateInfo info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     info.flags = flags;
     info.imageType = imageType;
-    info.format = ::GetVkFormat(textureDesc.format);
+    info.format = ::GetVkFormat(textureDesc.format, true);
     info.extent.width = textureDesc.width;
     info.extent.height = textureDesc.height;
     info.extent.depth = textureDesc.depth;

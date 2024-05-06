@@ -271,10 +271,10 @@ constexpr std::array<const char*, (size_t)Format::MAX_NUM> formatStrings = {
     "BGRA8_UNORM",
     "BGRA8_SRGB",
     "RGBA8_UNORM",
+    "RGBA8_SRGB",
     "RGBA8_SNORM",
     "RGBA8_UINT",
     "RGBA8_SINT",
-    "RGBA8_SRGB",
     "R16_UNORM",
     "R16_SNORM",
     "R16_UINT",
@@ -302,6 +302,9 @@ constexpr std::array<const char*, (size_t)Format::MAX_NUM> formatStrings = {
     "RGBA32_UINT",
     "RGBA32_SINT",
     "RGBA32_SFLOAT",
+    "B5_G6_R5_UNORM",
+    "B5_G5_R5_A1_UNORM",
+    "B4_G4_R4_A4_UNORM",
     "R10_G10_B10_A2_UNORM",
     "R10_G10_B10_A2_UINT",
     "R11_G11_B10_UFLOAT",
@@ -325,9 +328,9 @@ constexpr std::array<const char*, (size_t)Format::MAX_NUM> formatStrings = {
     "D32_SFLOAT",
     "D32_SFLOAT_S8_UINT_X24",
     "R24_UNORM_X8",
-    "X24_R8_UINT",
-    "X32_R8_UINT_X24",
+    "X24_G8_UINT",
     "R32_SFLOAT_X8_X24",
+    "X32_G8_UINT_X24",
 };
 
 NRI_API const char* NRI_CALL nriGetFormatString(Format format) {

@@ -89,6 +89,7 @@ struct FormatProps {
     uint16_t stride;
     uint8_t blockWidth;
     bool isInteger;
+    bool isSrgb;
 };
 
 const DxgiFormat& GetDxgiFormat(nri::Format format);
@@ -258,105 +259,6 @@ struct ComPtr {
 protected:
     T* m_ComPtr;
 };
-
-constexpr nri::FormatSupportBits COMMON_SUPPORT = nri::FormatSupportBits::TEXTURE | nri::FormatSupportBits::STORAGE_TEXTURE | nri::FormatSupportBits::BUFFER |
-                                                  nri::FormatSupportBits::STORAGE_BUFFER | nri::FormatSupportBits::COLOR_ATTACHMENT | nri::FormatSupportBits::VERTEX_BUFFER;
-
-constexpr nri::FormatSupportBits COMMON_SUPPORT_WITHOUT_VERTEX = nri::FormatSupportBits::TEXTURE | nri::FormatSupportBits::STORAGE_TEXTURE | nri::FormatSupportBits::BUFFER |
-                                                                 nri::FormatSupportBits::STORAGE_BUFFER | nri::FormatSupportBits::COLOR_ATTACHMENT;
-
-constexpr nri::FormatSupportBits D3D_FORMAT_SUPPORT_TABLE[] = {
-    nri::FormatSupportBits::UNSUPPORTED, // UNKNOWN,
-
-    COMMON_SUPPORT_WITHOUT_VERTEX, // R8_UNORM,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // R8_SNORM,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // R8_UINT,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // R8_SINT,
-
-    COMMON_SUPPORT_WITHOUT_VERTEX, // RG8_UNORM,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // RG8_SNORM,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // RG8_UINT,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // RG8_SINT,
-
-    COMMON_SUPPORT_WITHOUT_VERTEX, // BGRA8_UNORM,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // BGRA8_SRGB,
-
-    COMMON_SUPPORT_WITHOUT_VERTEX, // RGBA8_UNORM,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // RGBA8_SNORM,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // RGBA8_UINT,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // RGBA8_SINT,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // RGBA8_SRGB,
-
-    COMMON_SUPPORT, // R16_UNORM,
-    COMMON_SUPPORT, // R16_SNORM,
-    COMMON_SUPPORT, // R16_UINT,
-    COMMON_SUPPORT, // R16_SINT,
-    COMMON_SUPPORT, // R16_SFLOAT,
-
-    COMMON_SUPPORT, // RG16_UNORM,
-    COMMON_SUPPORT, // RG16_SNORM,
-    COMMON_SUPPORT, // RG16_UINT,
-    COMMON_SUPPORT, // RG16_SINT,
-    COMMON_SUPPORT, // RG16_SFLOAT,
-
-    COMMON_SUPPORT, // RGBA16_UNORM,
-    COMMON_SUPPORT, // RGBA16_SNORM,
-    COMMON_SUPPORT, // RGBA16_UINT,
-    COMMON_SUPPORT, // RGBA16_SINT,
-    COMMON_SUPPORT, // RGBA16_SFLOAT,
-
-    COMMON_SUPPORT, // R32_UINT,
-    COMMON_SUPPORT, // R32_SINT,
-    COMMON_SUPPORT, // R32_SFLOAT,
-
-    COMMON_SUPPORT, // RG32_UINT,
-    COMMON_SUPPORT, // RG32_SINT,
-    COMMON_SUPPORT, // RG32_SFLOAT,
-
-    COMMON_SUPPORT, // RGB32_UINT,
-    COMMON_SUPPORT, // RGB32_SINT,
-    COMMON_SUPPORT, // RGB32_SFLOAT,
-
-    COMMON_SUPPORT, // RGBA32_UINT,
-    COMMON_SUPPORT, // RGBA32_SINT,
-    COMMON_SUPPORT, // RGBA32_SFLOAT,
-
-    COMMON_SUPPORT_WITHOUT_VERTEX, // R10_G10_B10_A2_UNORM,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // R10_G10_B10_A2_UINT,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // R11_G11_B10_UFLOAT,
-    COMMON_SUPPORT_WITHOUT_VERTEX, // R9_G9_B9_E5_UFLOAT,
-
-    nri::FormatSupportBits::TEXTURE, // BC1_RGBA_UNORM,
-    nri::FormatSupportBits::TEXTURE, // BC1_RGBA_SRGB,
-    nri::FormatSupportBits::TEXTURE, // BC2_RGBA_UNORM,
-    nri::FormatSupportBits::TEXTURE, // BC2_RGBA_SRGB,
-    nri::FormatSupportBits::TEXTURE, // BC3_RGBA_UNORM,
-    nri::FormatSupportBits::TEXTURE, // BC3_RGBA_SRGB,
-    nri::FormatSupportBits::TEXTURE, // BC4_R_UNORM,
-    nri::FormatSupportBits::TEXTURE, // BC4_R_SNORM,
-    nri::FormatSupportBits::TEXTURE, // BC5_RG_UNORM,
-    nri::FormatSupportBits::TEXTURE, // BC5_RG_SNORM,
-    nri::FormatSupportBits::TEXTURE, // BC6H_RGB_UFLOAT,
-    nri::FormatSupportBits::TEXTURE, // BC6H_RGB_SFLOAT,
-    nri::FormatSupportBits::TEXTURE, // BC7_RGBA_UNORM,
-    nri::FormatSupportBits::TEXTURE, // BC7_RGBA_SRGB,
-
-    // DEPTH_STENCIL_ATTACHMENT views
-    nri::FormatSupportBits::DEPTH_STENCIL_ATTACHMENT, // D16_UNORM,
-    nri::FormatSupportBits::DEPTH_STENCIL_ATTACHMENT, // D24_UNORM_S8_UINT,
-    nri::FormatSupportBits::DEPTH_STENCIL_ATTACHMENT, // D32_SFLOAT,
-    nri::FormatSupportBits::DEPTH_STENCIL_ATTACHMENT, // D32_SFLOAT_S8_UINT_X24,
-
-    // Depth-stencil specific SHADER_RESOURCE views
-    nri::FormatSupportBits::TEXTURE, // R24_UNORM_X8,
-    nri::FormatSupportBits::TEXTURE, // X24_R8_UINT,
-    nri::FormatSupportBits::TEXTURE, // X32_R8_UINT_X24,
-    nri::FormatSupportBits::TEXTURE, // R32_SFLOAT_X8_X24,
-
-    // MAX_NUM
-};
-
-static_assert(GetCountOf(D3D_FORMAT_SUPPORT_TABLE) == (size_t)nri::Format::MAX_NUM, "some format is missing");
 
 bool HasOutput();
 

@@ -377,8 +377,18 @@ void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params) {
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isDepthBoundsTestSupported = params.extensionsSupported.depthBoundsDeferredContexts;
-    m_Desc.isDrawIndirectCountSupported = m_Ext.HasAGS(); // surprised?
+    m_Desc.isDrawIndirectCountSupported = m_Ext.HasAGS(); // TODO: surprised?
     m_Desc.isLineSmoothingSupported = true;
+
+    m_Desc.isShaderNativeI32Supported = true;
+    m_Desc.isShaderNativeF32Supported = true;
+    m_Desc.isShaderNativeF64Supported = options.ExtendedDoublesShaderInstructions;
+
+    m_Desc.isShaderAtomicsF16Supported = m_Ext.HasNVAPI();
+    m_Desc.isShaderAtomicsI32Supported = true;
+    m_Desc.isShaderAtomicsF32Supported = m_Ext.HasNVAPI();
+    m_Desc.isShaderAtomicsI64Supported = m_Ext.HasNVAPI() || m_Ext.HasAGS();
+    m_Desc.isShaderAtomicsF64Supported = m_Ext.HasNVAPI();
 
     m_Desc.isSwapChainSupported = HasOutput();
     m_Desc.isLowLatencySupported = m_Ext.HasNVAPI();
@@ -605,9 +615,51 @@ inline void DeviceD3D11::FreeMemory(Memory& memory) {
 }
 
 inline FormatSupportBits DeviceD3D11::GetFormatSupport(Format format) const {
-    const uint32_t offset = std::min((uint32_t)format, (uint32_t)GetCountOf(D3D_FORMAT_SUPPORT_TABLE) - 1);
+    FormatSupportBits mask = FormatSupportBits::UNSUPPORTED;
 
-    return D3D_FORMAT_SUPPORT_TABLE[offset];
+    D3D11_FEATURE_DATA_FORMAT_SUPPORT formatSupport = {GetDxgiFormat(format).typed};
+    HRESULT hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_FORMAT_SUPPORT, &formatSupport, sizeof(formatSupport));
+
+#define UPDATE_SUPPORT_BITS(required, optional, bit) \
+    if ((formatSupport.OutFormatSupport & (required)) == (required) && ((formatSupport.OutFormatSupport & (optional)) != 0 || (optional) == 0)) \
+        mask |= bit;
+
+    if (SUCCEEDED(hr)) {
+        UPDATE_SUPPORT_BITS(0, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE | D3D11_FORMAT_SUPPORT_SHADER_LOAD, FormatSupportBits::TEXTURE);
+        UPDATE_SUPPORT_BITS(D3D11_FORMAT_SUPPORT_TYPED_UNORDERED_ACCESS_VIEW, 0, FormatSupportBits::STORAGE_TEXTURE);
+        UPDATE_SUPPORT_BITS(D3D11_FORMAT_SUPPORT_RENDER_TARGET, 0, FormatSupportBits::COLOR_ATTACHMENT);
+        UPDATE_SUPPORT_BITS(D3D11_FORMAT_SUPPORT_DEPTH_STENCIL, 0, FormatSupportBits::DEPTH_STENCIL_ATTACHMENT);
+        UPDATE_SUPPORT_BITS(D3D11_FORMAT_SUPPORT_BLENDABLE, 0, FormatSupportBits::BLEND);
+
+        UPDATE_SUPPORT_BITS(D3D11_FORMAT_SUPPORT_BUFFER, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE | D3D11_FORMAT_SUPPORT_SHADER_LOAD, FormatSupportBits::BUFFER);
+        UPDATE_SUPPORT_BITS(D3D11_FORMAT_SUPPORT_BUFFER | D3D11_FORMAT_SUPPORT_TYPED_UNORDERED_ACCESS_VIEW, 0, FormatSupportBits::STORAGE_BUFFER);
+        UPDATE_SUPPORT_BITS(D3D11_FORMAT_SUPPORT_IA_VERTEX_BUFFER, 0, FormatSupportBits::VERTEX_BUFFER);
+    }
+
+#undef UPDATE_SUPPORT_BITS
+
+    D3D11_FEATURE_DATA_FORMAT_SUPPORT2 formatSupport2 = {GetDxgiFormat(format).typed};
+    hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_FORMAT_SUPPORT2, &formatSupport2, sizeof(formatSupport2));
+
+#define UPDATE_SUPPORT_BITS(optional, bit) \
+    if ((formatSupport2.OutFormatSupport2 & (optional)) != 0) \
+        mask |= bit;
+
+    const uint32_t anyAtomics = D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_ADD | D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_BITWISE_OPS |
+                                D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_COMPARE_STORE_OR_COMPARE_EXCHANGE | D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_EXCHANGE |
+                                D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_SIGNED_MIN_OR_MAX | D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_UNSIGNED_MIN_OR_MAX;
+
+    if (SUCCEEDED(hr)) {
+        if (mask & FormatSupportBits::STORAGE_TEXTURE)
+            UPDATE_SUPPORT_BITS(anyAtomics, FormatSupportBits::STORAGE_TEXTURE_ATOMICS);
+
+        if (mask & FormatSupportBits::STORAGE_BUFFER)
+            UPDATE_SUPPORT_BITS(anyAtomics, FormatSupportBits::STORAGE_BUFFER_ATOMICS);
+    }
+
+#undef UPDATE_SUPPORT_BITS
+
+    return mask;
 }
 
 inline uint32_t DeviceD3D11::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const {

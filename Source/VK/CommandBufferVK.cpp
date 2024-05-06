@@ -698,12 +698,9 @@ inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, const
     const TextureDesc& srcTextureDesc = srcTexture.GetDesc();
 
     VkImageCopy* regions = STACK_ALLOC(VkImageCopy, dstTextureDesc.mipNum);
-
     for (Mip_t i = 0; i < dstTextureDesc.mipNum; i++) {
         regions[i].srcSubresource = {srcTexture.GetImageAspectFlags(), i, 0, srcTextureDesc.arraySize};
-
         regions[i].dstSubresource = {dstTexture.GetImageAspectFlags(), i, 0, dstTextureDesc.arraySize};
-
         regions[i].dstOffset = {};
         regions[i].srcOffset = {};
         regions[i].extent = dstTexture.GetExtent();

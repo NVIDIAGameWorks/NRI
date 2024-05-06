@@ -128,6 +128,7 @@ Samples:
 - CTest - very simple example of C interface usage
 - Triangle - simple textured triangle rendering
 - SceneViewer - loading & rendering of meshes with materials
+- BindlessSceneViewer - bindless GPU-driven rendering test
 - Readback - getting data from the GPU back to the CPU
 - AsyncCompute - demonstrates parallel execution of graphic and compute workloads
 - MultiThreading - shows advantages of multi-threaded command buffer recording

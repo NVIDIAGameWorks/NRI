@@ -29,7 +29,7 @@ Result AccelerationStructureD3D12::Create(const AccelerationStructureDesc& accel
     accelerationStructureInputs.Type = GetAccelerationStructureType(accelerationStructureDesc.type);
     accelerationStructureInputs.Flags = GetAccelerationStructureBuildFlags(accelerationStructureDesc.flags);
     accelerationStructureInputs.NumDescs = accelerationStructureDesc.instanceOrGeometryObjectNum;
-    accelerationStructureInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY; // TODO:
+    accelerationStructureInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY; // TODO: D3D12_ELEMENTS_LAYOUT_ARRAY_OF_POINTERS support?
 
     Vector<D3D12_RAYTRACING_GEOMETRY_DESC> geometryDescs(accelerationStructureDesc.instanceOrGeometryObjectNum, m_Device.GetStdAllocator());
     if (accelerationStructureInputs.Type == D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL && accelerationStructureDesc.instanceOrGeometryObjectNum) {

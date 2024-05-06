@@ -39,8 +39,8 @@ void FillTextureDesc(const T& textureViewDesc, DescriptorTextureDesc& descriptor
     const Dim_t arrayLayersLeft = textureDesc.arraySize - descriptorTextureDesc.arrayOffset;
 
     descriptorTextureDesc.texture = &texture;
-    descriptorTextureDesc.layout = GetImageLayoutForView(textureViewDesc.viewType);
-    descriptorTextureDesc.aspectFlags = texture.GetImageAspectFlags();
+    descriptorTextureDesc.layout = ::GetImageLayoutForView(textureViewDesc.viewType);
+    descriptorTextureDesc.aspectFlags = ::GetImageAspectFlags(textureViewDesc.format);
     descriptorTextureDesc.arrayOffset = textureViewDesc.arrayOffset;
     descriptorTextureDesc.arraySize = (textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS) ? arrayLayersLeft : textureViewDesc.arraySize;
     descriptorTextureDesc.mipOffset = textureViewDesc.mipOffset;
@@ -55,8 +55,8 @@ void FillTextureDesc(const Texture3DViewDesc& textureViewDesc, DescriptorTexture
     const Mip_t mipLevelsLeft = textureDesc.mipNum - textureViewDesc.mipOffset;
 
     descriptorTextureDesc.texture = &texture;
-    descriptorTextureDesc.layout = GetImageLayoutForView(textureViewDesc.viewType);
-    descriptorTextureDesc.aspectFlags = texture.GetImageAspectFlags();
+    descriptorTextureDesc.layout = ::GetImageLayoutForView(textureViewDesc.viewType);
+    descriptorTextureDesc.aspectFlags = ::GetImageAspectFlags(textureViewDesc.format);
     descriptorTextureDesc.arrayOffset = 0;
     descriptorTextureDesc.arraySize = 1;
     descriptorTextureDesc.mipOffset = textureViewDesc.mipOffset;
@@ -65,19 +65,15 @@ void FillTextureDesc(const Texture3DViewDesc& textureViewDesc, DescriptorTexture
 
 template <typename T>
 void FillImageSubresourceRange(const T& textureViewDesc, VkImageSubresourceRange& subresourceRange) {
-    const TextureVK& texture = *(const TextureVK*)textureViewDesc.texture;
-
-    subresourceRange = {texture.GetImageAspectFlags(), textureViewDesc.mipOffset,
+    subresourceRange = {::GetImageAspectFlags(textureViewDesc.format), textureViewDesc.mipOffset,
         (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : textureViewDesc.mipNum, textureViewDesc.arrayOffset,
         (textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS) ? VK_REMAINING_ARRAY_LAYERS : textureViewDesc.arraySize};
 }
 
 template <>
 void FillImageSubresourceRange(const Texture3DViewDesc& textureViewDesc, VkImageSubresourceRange& subresourceRange) {
-    const TextureVK& texture = *(const TextureVK*)textureViewDesc.texture;
-
-    subresourceRange = {
-        texture.GetImageAspectFlags(), textureViewDesc.mipOffset, (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : textureViewDesc.mipNum, 0, 1};
+    subresourceRange = {::GetImageAspectFlags(textureViewDesc.format), textureViewDesc.mipOffset,
+        (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : textureViewDesc.mipNum, 0, 1};
 }
 
 template <typename T>
@@ -88,12 +84,12 @@ Result DescriptorVK::CreateTextureView(const T& textureViewDesc) {
     imageViewUsageCreateInfo.usage = GetImageViewUsage(textureViewDesc.viewType);
 
     m_Type = DescriptorTypeVK::IMAGE_VIEW;
-    m_Format = ::GetVkImageViewFormat(textureViewDesc.format);
-    FillTextureDesc(textureViewDesc, m_TextureDesc);
+    m_Format = ::GetVkFormat(textureViewDesc.format);
+    ::FillTextureDesc(textureViewDesc, m_TextureDesc);
     m_TextureDesc.handle = texture.GetHandle();
 
     VkImageSubresourceRange subresource = {};
-    FillImageSubresourceRange(textureViewDesc, subresource);
+    ::FillImageSubresourceRange(textureViewDesc, subresource);
 
     VkImageViewCreateInfo imageViewCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     imageViewCreateInfo.pNext = &imageViewUsageCreateInfo;
@@ -113,7 +109,7 @@ Result DescriptorVK::Create(const BufferViewDesc& bufferViewDesc) {
     const BufferVK& buffer = *(const BufferVK*)bufferViewDesc.buffer;
 
     m_Type = DescriptorTypeVK::BUFFER_VIEW;
-    m_Format = GetVkFormat((Format)bufferViewDesc.format);
+    m_Format = GetVkFormat(bufferViewDesc.format);
     m_BufferDesc.offset = bufferViewDesc.offset;
     m_BufferDesc.size = (bufferViewDesc.size == WHOLE_SIZE) ? VK_WHOLE_SIZE : bufferViewDesc.size;
     m_BufferDesc.handle = buffer.GetHandle();

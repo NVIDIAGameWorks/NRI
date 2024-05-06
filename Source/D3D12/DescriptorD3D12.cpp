@@ -9,59 +9,19 @@
 
 using namespace nri;
 
-Result DescriptorD3D12::Create(const BufferViewDesc& bufferViewDesc) {
-    const BufferD3D12& buffer = *((BufferD3D12*)bufferViewDesc.buffer);
-    DXGI_FORMAT format = GetDxgiFormat(bufferViewDesc.format).typed;
-    uint64_t size = bufferViewDesc.size == WHOLE_SIZE ? buffer.GetDesc().size : bufferViewDesc.size;
-    uint32_t elementSize = GetFormatProps(bufferViewDesc.format).stride;
-    uint64_t elementOffset;
-    uint32_t elementNum;
-
-    uint32_t structureStride = buffer.GetDesc().structureStride;
-    if (structureStride) // structured buffer
-    {
-        elementOffset = bufferViewDesc.offset / structureStride;
-        elementNum = (uint32_t)(size / structureStride);
-    } else {
-        elementOffset = bufferViewDesc.offset / elementSize;
-        elementNum = (uint32_t)(size / elementSize);
+static inline DXGI_FORMAT GetShaderFormatForDepth(DXGI_FORMAT format) {
+    switch (format) {
+        case DXGI_FORMAT_D16_UNORM:
+            return DXGI_FORMAT_R16_UNORM;
+        case DXGI_FORMAT_D24_UNORM_S8_UINT:
+            return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+        case DXGI_FORMAT_D32_FLOAT:
+            return DXGI_FORMAT_R32_FLOAT;
+        case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+            return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+        default:
+            return format;
     }
-
-    switch (bufferViewDesc.viewType) {
-        case BufferViewType::CONSTANT: {
-            D3D12_CONSTANT_BUFFER_VIEW_DESC desc;
-            desc.BufferLocation = buffer.GetPointerGPU() + bufferViewDesc.offset;
-            desc.SizeInBytes = (uint32_t)size;
-
-            return CreateConstantBufferView(desc);
-        }
-        case BufferViewType::SHADER_RESOURCE: {
-            D3D12_SHADER_RESOURCE_VIEW_DESC desc;
-            desc.Format = format;
-            desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-            desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            desc.Buffer.FirstElement = elementOffset;
-            desc.Buffer.NumElements = elementNum;
-            desc.Buffer.StructureByteStride = structureStride;
-            desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-
-            return CreateShaderResourceView(buffer, desc);
-        }
-        case BufferViewType::SHADER_RESOURCE_STORAGE: {
-            D3D12_UNORDERED_ACCESS_VIEW_DESC desc;
-            desc.Format = format;
-            desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-            desc.Buffer.FirstElement = elementOffset;
-            desc.Buffer.NumElements = elementNum;
-            desc.Buffer.StructureByteStride = structureStride;
-            desc.Buffer.CounterOffsetInBytes = 0;
-            desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
-
-            return CreateUnorderedAccessView(buffer, desc, bufferViewDesc.format);
-        }
-    }
-
-    return Result::FAILURE;
 }
 
 Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
@@ -74,7 +34,7 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
 
     switch (textureViewDesc.viewType) {
         case Texture1DViewType::SHADER_RESOURCE_1D: {
-            D3D12_SHADER_RESOURCE_VIEW_DESC desc;
+            D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
             desc.Format = format;
             desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -85,7 +45,7 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
             return CreateShaderResourceView(texture, desc);
         }
         case Texture1DViewType::SHADER_RESOURCE_1D_ARRAY: {
-            D3D12_SHADER_RESOURCE_VIEW_DESC desc;
+            D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
             desc.Format = format;
             desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -98,7 +58,7 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
             return CreateShaderResourceView(texture, desc);
         }
         case Texture1DViewType::SHADER_RESOURCE_STORAGE_1D: {
-            D3D12_UNORDERED_ACCESS_VIEW_DESC desc;
+            D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
             desc.Format = format;
             desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
             desc.Texture1D.MipSlice = textureViewDesc.mipOffset;
@@ -106,7 +66,7 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
             return CreateUnorderedAccessView(texture, desc, textureViewDesc.format);
         }
         case Texture1DViewType::SHADER_RESOURCE_STORAGE_1D_ARRAY: {
-            D3D12_UNORDERED_ACCESS_VIEW_DESC desc;
+            D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
             desc.Format = format;
             desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
             desc.Texture1DArray.MipSlice = textureViewDesc.mipOffset;
@@ -116,7 +76,7 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
             return CreateUnorderedAccessView(texture, desc, textureViewDesc.format);
         }
         case Texture1DViewType::COLOR_ATTACHMENT: {
-            D3D12_RENDER_TARGET_VIEW_DESC desc;
+            D3D12_RENDER_TARGET_VIEW_DESC desc = {};
             desc.Format = format;
             desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1DARRAY;
             desc.Texture1DArray.MipSlice = textureViewDesc.mipOffset;
@@ -126,7 +86,7 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
             return CreateRenderTargetView(texture, desc);
         }
         case Texture1DViewType::DEPTH_STENCIL_ATTACHMENT: {
-            D3D12_DEPTH_STENCIL_VIEW_DESC desc;
+            D3D12_DEPTH_STENCIL_VIEW_DESC desc = {};
             desc.Format = format;
             desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
             desc.Flags = D3D12_DSV_FLAG_NONE;
@@ -148,9 +108,9 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
 
 Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
     const TextureD3D12& texture = (TextureD3D12&)*textureViewDesc.texture;
-    const TextureDesc& textureDesc = texture.GetDesc();
     DXGI_FORMAT format = GetDxgiFormat(textureViewDesc.format).typed;
-    bool isMultisampled = textureDesc.sampleNum > 1 ? true : false;
+
+    const TextureDesc& textureDesc = texture.GetDesc();
     Mip_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
     Dim_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
 
@@ -159,7 +119,7 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
             D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
             desc.Format = GetShaderFormatForDepth(format);
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            if (isMultisampled) {
+            if (textureDesc.sampleNum > 1) {
                 desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
             } else {
                 desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
@@ -173,9 +133,9 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
         }
         case Texture2DViewType::SHADER_RESOURCE_2D_ARRAY: {
             D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
-            desc.Format = format;
+            desc.Format = GetShaderFormatForDepth(format);
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            if (isMultisampled) {
+            if (textureDesc.sampleNum > 1) {
                 desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
                 desc.Texture2DMSArray.FirstArraySlice = textureViewDesc.arrayOffset;
                 desc.Texture2DMSArray.ArraySize = remainingArrayLayers;
@@ -193,7 +153,7 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
         }
         case Texture2DViewType::SHADER_RESOURCE_CUBE: {
             D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
-            desc.Format = format;
+            desc.Format = GetShaderFormatForDepth(format);
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
             desc.TextureCube.MostDetailedMip = textureViewDesc.mipOffset;
@@ -203,7 +163,7 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
         }
         case Texture2DViewType::SHADER_RESOURCE_CUBE_ARRAY: {
             D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
-            desc.Format = format;
+            desc.Format = GetShaderFormatForDepth(format);
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
             desc.TextureCubeArray.MostDetailedMip = textureViewDesc.mipOffset;
@@ -274,7 +234,7 @@ Result DescriptorD3D12::Create(const Texture3DViewDesc& textureViewDesc) {
 
     switch (textureViewDesc.viewType) {
         case Texture3DViewType::SHADER_RESOURCE_3D: {
-            D3D12_SHADER_RESOURCE_VIEW_DESC desc;
+            D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
             desc.Format = format;
             desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -285,7 +245,7 @@ Result DescriptorD3D12::Create(const Texture3DViewDesc& textureViewDesc) {
             return CreateShaderResourceView(texture, desc);
         }
         case Texture3DViewType::SHADER_RESOURCE_STORAGE_3D: {
-            D3D12_UNORDERED_ACCESS_VIEW_DESC desc;
+            D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
             desc.Format = format;
             desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
             desc.Texture3D.MipSlice = textureViewDesc.mipOffset;
@@ -295,7 +255,7 @@ Result DescriptorD3D12::Create(const Texture3DViewDesc& textureViewDesc) {
             return CreateUnorderedAccessView(texture, desc, textureViewDesc.format);
         }
         case Texture3DViewType::COLOR_ATTACHMENT: {
-            D3D12_RENDER_TARGET_VIEW_DESC desc;
+            D3D12_RENDER_TARGET_VIEW_DESC desc = {};
             desc.Format = format;
             desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
             desc.Texture3D.MipSlice = textureViewDesc.mipOffset;
@@ -303,6 +263,54 @@ Result DescriptorD3D12::Create(const Texture3DViewDesc& textureViewDesc) {
             desc.Texture3D.WSize = textureViewDesc.sliceNum;
 
             return CreateRenderTargetView(texture, desc);
+        }
+    }
+
+    return Result::FAILURE;
+}
+
+Result DescriptorD3D12::Create(const BufferViewDesc& bufferViewDesc) {
+    const BufferD3D12& buffer = *((BufferD3D12*)bufferViewDesc.buffer);
+    const BufferDesc& bufferDesc = buffer.GetDesc();
+    uint64_t size = bufferViewDesc.size == WHOLE_SIZE ? bufferDesc.size : bufferViewDesc.size;
+
+    DXGI_FORMAT format = GetDxgiFormat(bufferViewDesc.format).typed;
+    const FormatProps& formatProps = GetFormatProps(bufferViewDesc.format);
+    uint32_t elementSize = bufferDesc.structureStride ? bufferDesc.structureStride : formatProps.stride;
+    uint64_t elementOffset = (uint32_t)(bufferViewDesc.offset / elementSize);
+    uint32_t elementNum = (uint32_t)(size / elementSize);
+
+    switch (bufferViewDesc.viewType) {
+        case BufferViewType::CONSTANT: {
+            D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
+            desc.BufferLocation = buffer.GetPointerGPU() + bufferViewDesc.offset;
+            desc.SizeInBytes = (uint32_t)size;
+
+            return CreateConstantBufferView(desc);
+        }
+        case BufferViewType::SHADER_RESOURCE: {
+            D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
+            desc.Format = format;
+            desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+            desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            desc.Buffer.FirstElement = elementOffset;
+            desc.Buffer.NumElements = elementNum;
+            desc.Buffer.StructureByteStride = bufferDesc.structureStride;
+            desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+
+            return CreateShaderResourceView(buffer, desc);
+        }
+        case BufferViewType::SHADER_RESOURCE_STORAGE: {
+            D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
+            desc.Format = format;
+            desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+            desc.Buffer.FirstElement = elementOffset;
+            desc.Buffer.NumElements = elementNum;
+            desc.Buffer.StructureByteStride = bufferDesc.structureStride;
+            desc.Buffer.CounterOffsetInBytes = 0;
+            desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+
+            return CreateUnorderedAccessView(buffer, desc, bufferViewDesc.format);
         }
     }
 

@@ -358,21 +358,6 @@ void nri::ConvertRects(D3D12_RECT* rectsD3D12, const Rect* rects, uint32_t rectN
     }
 }
 
-DXGI_FORMAT nri::GetShaderFormatForDepth(DXGI_FORMAT format) {
-    switch (format) {
-        case DXGI_FORMAT_D16_UNORM:
-            return DXGI_FORMAT_R16_UNORM;
-        case DXGI_FORMAT_D24_UNORM_S8_UINT:
-            return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-        case DXGI_FORMAT_D32_FLOAT:
-            return DXGI_FORMAT_R32_FLOAT;
-        case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
-            return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
-        default:
-            return format;
-    }
-}
-
 uint64_t nri::GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc) {
     return memoryD3D12Desc.d3d12Heap->GetDesc().SizeInBytes;
 }

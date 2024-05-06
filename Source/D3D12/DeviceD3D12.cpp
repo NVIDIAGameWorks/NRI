@@ -231,7 +231,6 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc) {
     m_Version = QueryLatestDevice(device, m_Device);
     REPORT_INFO(this, "Using ID3D12Device%u...", m_Version);
 
-    // TODO: this code is currently needed to disable known false-positive errors reported by the debug layer
     if (deviceCreationDesc.enableAPIValidation) {
         ComPtr<ID3D12InfoQueue> pInfoQueue;
         m_Device->QueryInterface(&pInfoQueue);
@@ -242,7 +241,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc) {
             pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
 #endif
 
-            // TODO: keep an eye on this
+            // TODO: this code is currently needed to disable known false-positive errors reported by the debug layer
             D3D12_MESSAGE_ID disableMessageIDs[] = {
                 // It's almost impossible to match. Doesn't hurt perf on modern HW
                 D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE,
@@ -340,14 +339,13 @@ void DeviceD3D12::GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOU
 
 ComPtr<ID3D12CommandSignature> DeviceD3D12::CreateCommandSignature(
     D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation) {
-    const bool isDrawArgument = enableDrawParametersEmulation && 
-        (indirectArgumentType == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW ||
-        indirectArgumentType == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED);
+    const bool isDrawArgument =
+        enableDrawParametersEmulation && (indirectArgumentType == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW || indirectArgumentType == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED);
 
     D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDescs[2] = {};
     if (isDrawArgument) {
         // Draw base parameters emulation
-        // Base on: https://github.com/google/dawn/blob/e72fa969ad72e42064cd33bd99572ea12b0bcdaf/src/dawn/native/d3d12/PipelineLayoutD3D12.cpp#L504 
+        // Base on: https://github.com/google/dawn/blob/e72fa969ad72e42064cd33bd99572ea12b0bcdaf/src/dawn/native/d3d12/PipelineLayoutD3D12.cpp#L504
         indirectArgumentDescs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT;
         indirectArgumentDescs[0].Constant.RootParameterIndex = 0;
         indirectArgumentDescs[0].Constant.DestOffsetIn32BitValues = 0;
@@ -711,12 +709,28 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation) {
     m_Desc.isComputeQueueSupported = true;
     m_Desc.isCopyQueueSupported = true;
     m_Desc.isDrawIndirectCountSupported = true;
-    m_Desc.isFloat16Supported = options4.Native16BitShaderOpsSupported;
 #ifdef NRI_USE_AGILITY_SDK
     m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = options14.IndependentFrontAndBackStencilRefMaskSupported ? true : false;
 #endif
     m_Desc.isLineSmoothingSupported = true;
     m_Desc.isDrawParametersEmulationEnabled = enableDrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
+
+    m_Desc.isShaderNativeI16Supported = options4.Native16BitShaderOpsSupported;
+    m_Desc.isShaderNativeF16Supported = options4.Native16BitShaderOpsSupported;
+    m_Desc.isShaderNativeI32Supported = true;
+    m_Desc.isShaderNativeF32Supported = true;
+    m_Desc.isShaderNativeI64Supported = options1.Int64ShaderOps;
+    m_Desc.isShaderNativeF64Supported = options.DoublePrecisionFloatShaderOps;
+
+    m_Desc.isShaderAtomicsF16Supported = m_Ext.HasNVAPI();
+    m_Desc.isShaderAtomicsI32Supported = true;
+    m_Desc.isShaderAtomicsF32Supported = m_Ext.HasNVAPI();
+#ifdef NRI_USE_AGILITY_SDK
+    m_Desc.isShaderAtomicsI64Supported = m_Ext.HasNVAPI() || m_Ext.HasAGS() || options9.AtomicInt64OnTypedResourceSupported || options9.AtomicInt64OnGroupSharedSupported || options11.AtomicInt64OnDescriptorHeapResourceSupported;
+#else
+    m_Desc.isShaderAtomicsI64Supported = m_Ext.HasNVAPI() || m_Ext.HasAGS();
+#endif
+    m_Desc.isShaderAtomicsF64Supported = m_Ext.HasNVAPI();
 
     m_Desc.isSwapChainSupported = HasOutput();
     m_Desc.isLowLatencySupported = m_Ext.HasNVAPI();
@@ -924,9 +938,46 @@ inline void DeviceD3D12::FreeMemory(Memory& memory) {
 }
 
 inline FormatSupportBits DeviceD3D12::GetFormatSupport(Format format) const {
-    const uint32_t offset = std::min((uint32_t)format, (uint32_t)GetCountOf(D3D_FORMAT_SUPPORT_TABLE) - 1);
+    FormatSupportBits mask = FormatSupportBits::UNSUPPORTED;
 
-    return D3D_FORMAT_SUPPORT_TABLE[offset];
+    D3D12_FEATURE_DATA_FORMAT_SUPPORT formatSupport = {GetDxgiFormat(format).typed};
+    HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &formatSupport, sizeof(formatSupport));
+
+    if (SUCCEEDED(hr)) {
+#define UPDATE_SUPPORT_BITS(required, optional, bit) \
+    if ((formatSupport.Support1 & (required)) == (required) && ((formatSupport.Support1 & (optional)) != 0 || (optional) == 0)) \
+        mask |= bit;
+
+        UPDATE_SUPPORT_BITS(0, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE | D3D12_FORMAT_SUPPORT1_SHADER_LOAD, FormatSupportBits::TEXTURE);
+        UPDATE_SUPPORT_BITS(D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW, 0, FormatSupportBits::STORAGE_TEXTURE);
+        UPDATE_SUPPORT_BITS(D3D12_FORMAT_SUPPORT1_RENDER_TARGET, 0, FormatSupportBits::COLOR_ATTACHMENT);
+        UPDATE_SUPPORT_BITS(D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL, 0, FormatSupportBits::DEPTH_STENCIL_ATTACHMENT);
+        UPDATE_SUPPORT_BITS(D3D12_FORMAT_SUPPORT1_BLENDABLE, 0, FormatSupportBits::BLEND);
+
+        UPDATE_SUPPORT_BITS(D3D12_FORMAT_SUPPORT1_BUFFER, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE | D3D12_FORMAT_SUPPORT1_SHADER_LOAD, FormatSupportBits::BUFFER);
+        UPDATE_SUPPORT_BITS(D3D12_FORMAT_SUPPORT1_BUFFER | D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW, 0, FormatSupportBits::STORAGE_BUFFER);
+        UPDATE_SUPPORT_BITS(D3D12_FORMAT_SUPPORT1_IA_VERTEX_BUFFER, 0, FormatSupportBits::VERTEX_BUFFER);
+
+#undef UPDATE_SUPPORT_BITS
+
+#define UPDATE_SUPPORT_BITS(optional, bit) \
+    if ((formatSupport.Support2 & (optional)) != 0) \
+        mask |= bit;
+
+        const uint32_t anyAtomics = D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_ADD | D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_BITWISE_OPS |
+                                    D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_COMPARE_STORE_OR_COMPARE_EXCHANGE | D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_EXCHANGE |
+                                    D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_SIGNED_MIN_OR_MAX | D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_UNSIGNED_MIN_OR_MAX;
+
+        if (mask & FormatSupportBits::STORAGE_TEXTURE)
+            UPDATE_SUPPORT_BITS(anyAtomics, FormatSupportBits::STORAGE_TEXTURE_ATOMICS);
+
+        if (mask & FormatSupportBits::STORAGE_BUFFER)
+            UPDATE_SUPPORT_BITS(anyAtomics, FormatSupportBits::STORAGE_BUFFER_ATOMICS);
+
+#undef UPDATE_SUPPORT_BITS
+    }
+
+    return mask;
 }
 
 inline uint32_t DeviceD3D12::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const {
@@ -965,7 +1016,8 @@ Result DeviceD3D12::CreateDefaultDrawSignatures(ID3D12RootSignature* rootSignatu
     auto key = HashRootSignatureAndStride(rootSignature, drawStride);
     m_DrawCommandSignatures.emplace(key, drawCommandSignature);
 
-    ComPtr<ID3D12CommandSignature> drawIndexedCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED, drawIndexedStride, rootSignature, drawParametersEmulation);
+    ComPtr<ID3D12CommandSignature> drawIndexedCommandSignature =
+        CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED, drawIndexedStride, rootSignature, drawParametersEmulation);
     if (!drawIndexedCommandSignature)
         return nri::Result::FAILURE;
 

@@ -32,8 +32,6 @@ struct DescriptorHeapDesc {
     uint32_t descriptorSize;
 };
 
-DXGI_FORMAT GetShaderFormatForDepth(DXGI_FORMAT format);
-
 MemoryType GetMemoryType(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags);
 MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc);
 

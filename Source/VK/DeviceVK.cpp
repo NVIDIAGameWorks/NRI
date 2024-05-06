@@ -253,6 +253,12 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
 
+    if (IsExtensionSupported(VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME);
+
     // Optional
     if (IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
@@ -551,6 +557,16 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(micromapFeatures);
     }
 
+    VkPhysicalDeviceShaderAtomicFloatFeaturesEXT shaderAtomicFloatFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(shaderAtomicFloatFeatures);
+    }
+
+    VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT shaderAtomicFloat2Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(shaderAtomicFloat2Features);
+    }
+
     m_VK.GetPhysicalDeviceFeatures2(m_PhysicalDevice, &features);
 
     { // Create device
@@ -696,9 +712,9 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.constantBufferMaxRange = limits.maxUniformBufferRange;
         m_Desc.storageBufferOffsetAlignment = (uint32_t)limits.minStorageBufferOffsetAlignment;
         m_Desc.storageBufferMaxRange = limits.maxStorageBufferRange;
-        m_Desc.pushConstantsMaxSize = limits.maxPushConstantsSize;
         m_Desc.bufferMaxSize = props13.maxBufferSize;
         m_Desc.bufferTextureGranularity = (uint32_t)limits.bufferImageGranularity;
+        m_Desc.pushConstantsMaxSize = limits.maxPushConstantsSize;
 
         m_Desc.boundDescriptorSetMaxNum = limits.maxBoundDescriptorSets;
         m_Desc.perStageDescriptorSamplerMaxNum = limits.maxPerStageDescriptorSamplers;
@@ -724,7 +740,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.tessControlShaderPerVertexOutputComponentMaxNum = limits.maxTessellationControlPerVertexOutputComponents;
         m_Desc.tessControlShaderPerPatchOutputComponentMaxNum = limits.maxTessellationControlPerPatchOutputComponents;
         m_Desc.tessControlShaderTotalOutputComponentMaxNum = limits.maxTessellationControlTotalOutputComponents;
-
         m_Desc.tessEvaluationShaderInputComponentMaxNum = limits.maxTessellationEvaluationInputComponents;
         m_Desc.tessEvaluationShaderOutputComponentMaxNum = limits.maxTessellationEvaluationOutputComponents;
 
@@ -748,6 +763,21 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.computeShaderWorkGroupMaxDim[1] = limits.maxComputeWorkGroupSize[1];
         m_Desc.computeShaderWorkGroupMaxDim[2] = limits.maxComputeWorkGroupSize[2];
 
+        m_Desc.rayTracingShaderGroupIdentifierSize = rayTracingProps.shaderGroupHandleSize;
+        m_Desc.rayTracingShaderRecursionMaxDepth = rayTracingProps.maxRayRecursionDepth;
+        m_Desc.rayTracingGeometryObjectMaxNum = (uint32_t)accelerationStructureProps.maxGeometryCount;
+        m_Desc.rayTracingShaderTableAligment = rayTracingProps.shaderGroupBaseAlignment;
+        m_Desc.rayTracingShaderTableMaxStride = rayTracingProps.maxShaderGroupStride;
+
+        m_Desc.meshControlSharedMemoryMaxSize = meshShaderProps.maxTaskSharedMemorySize;
+        m_Desc.meshControlWorkGroupInvocationMaxNum = meshShaderProps.maxTaskWorkGroupInvocations;
+        m_Desc.meshControlPayloadMaxSize = meshShaderProps.maxTaskPayloadSize;
+        m_Desc.meshEvaluationOutputVerticesMaxNum = meshShaderProps.maxMeshOutputVertices;
+        m_Desc.meshEvaluationOutputPrimitiveMaxNum = meshShaderProps.maxMeshOutputPrimitives;
+        m_Desc.meshEvaluationOutputComponentMaxNum = meshShaderProps.maxMeshOutputComponents;
+        m_Desc.meshEvaluationSharedMemoryMaxSize = meshShaderProps.maxMeshSharedMemorySize;
+        m_Desc.meshEvaluationWorkGroupInvocationMaxNum = meshShaderProps.maxMeshWorkGroupInvocations;
+
         m_Desc.timestampFrequencyHz = uint64_t(1e9 / double(limits.timestampPeriod) + 0.5);
         m_Desc.subPixelPrecisionBits = limits.subPixelPrecisionBits;
         m_Desc.subTexelPrecisionBits = limits.subTexelPrecisionBits;
@@ -766,18 +796,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.cullDistanceMaxNum = limits.maxCullDistances;
         m_Desc.combinedClipAndCullDistanceMaxNum = limits.maxCombinedClipAndCullDistances;
 
-        m_Desc.isTextureFilterMinMaxSupported = features12.samplerFilterMinmax;
-        m_Desc.isLogicOpSupported = features.features.logicOp;
-        m_Desc.isDepthBoundsTestSupported = features.features.depthBounds;
-        m_Desc.isComputeQueueSupported = m_Queues[(uint32_t)CommandQueueType::COMPUTE] != nullptr;
-        m_Desc.isCopyQueueSupported = m_Queues[(uint32_t)CommandQueueType::COPY] != nullptr;
-        m_Desc.isDrawIndirectCountSupported = features12.drawIndirectCount;
-        m_Desc.isFloat16Supported = features12.shaderFloat16;
-        m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = true;
-        m_Desc.isLineSmoothingSupported = lineRasterizationFeatures.smoothLines;
-        m_Desc.isCopyQueueTimestampSupported = limits.timestampComputeAndGraphics;
-
-        // Conservative raster
         if (conservativeRasterProps.fullyCoveredFragmentShaderInputVariable && conservativeRasterProps.primitiveOverestimationSize <= (1.0 / 256.0f))
             m_Desc.conservativeRasterTier = 3;
         else if (conservativeRasterProps.degenerateTrianglesRasterized && conservativeRasterProps.primitiveOverestimationSize < (1.0f / 2.0f))
@@ -785,30 +803,35 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         else
             m_Desc.conservativeRasterTier = 1;
 
-        // PSL
         m_Desc.programmableSampleLocationsTier = 0;
         if (sampleLocationsProps.sampleLocationSampleCounts)
             m_Desc.programmableSampleLocationsTier = sampleLocationsProps.variableSampleLocations ? 2 : 1; // TODO: best guess
 
-        // Ray tracing
-        m_Desc.rayTracingShaderGroupIdentifierSize = rayTracingProps.shaderGroupHandleSize;
-        m_Desc.rayTracingShaderRecursionMaxDepth = rayTracingProps.maxRayRecursionDepth;
-        m_Desc.rayTracingGeometryObjectMaxNum = (uint32_t)accelerationStructureProps.maxGeometryCount;
-        m_Desc.rayTracingShaderTableAligment = rayTracingProps.shaderGroupBaseAlignment;
-        m_Desc.rayTracingShaderTableMaxStride = rayTracingProps.maxShaderGroupStride;
+        m_Desc.isTextureFilterMinMaxSupported = features12.samplerFilterMinmax;
+        m_Desc.isLogicOpSupported = features.features.logicOp;
+        m_Desc.isDepthBoundsTestSupported = features.features.depthBounds;
+        m_Desc.isComputeQueueSupported = m_Queues[(uint32_t)CommandQueueType::COMPUTE] != nullptr;
+        m_Desc.isCopyQueueSupported = m_Queues[(uint32_t)CommandQueueType::COPY] != nullptr;
+        m_Desc.isDrawIndirectCountSupported = features12.drawIndirectCount;
+        m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = true;
+        m_Desc.isLineSmoothingSupported = lineRasterizationFeatures.smoothLines;
+        m_Desc.isCopyQueueTimestampSupported = limits.timestampComputeAndGraphics;
         m_Desc.isDispatchRaysIndirectSupported = rayTracingPipelineFeatures.rayTracingPipelineTraceRaysIndirect;
-
-        // Mesh shader
-        m_Desc.meshControlSharedMemoryMaxSize = meshShaderProps.maxTaskSharedMemorySize;
-        m_Desc.meshControlWorkGroupInvocationMaxNum = meshShaderProps.maxTaskWorkGroupInvocations;
-        m_Desc.meshControlPayloadMaxSize = meshShaderProps.maxTaskPayloadSize;
-        m_Desc.meshEvaluationOutputVerticesMaxNum = meshShaderProps.maxMeshOutputVertices;
-        m_Desc.meshEvaluationOutputPrimitiveMaxNum = meshShaderProps.maxMeshOutputPrimitives;
-        m_Desc.meshEvaluationOutputComponentMaxNum = meshShaderProps.maxMeshOutputComponents;
-        m_Desc.meshEvaluationSharedMemoryMaxSize = meshShaderProps.maxMeshSharedMemorySize;
-        m_Desc.meshEvaluationWorkGroupInvocationMaxNum = meshShaderProps.maxMeshWorkGroupInvocations;
         m_Desc.isMeshShaderPipelineStatsSupported = meshShaderFeatures.meshShaderQueries == VK_TRUE;
         m_Desc.isDrawMeshTasksIndirectSupported = true;
+
+        m_Desc.isShaderNativeI16Supported = features.features.shaderInt16;
+        m_Desc.isShaderNativeF16Supported = features12.shaderFloat16;
+        m_Desc.isShaderNativeI32Supported = true;
+        m_Desc.isShaderNativeF32Supported = true;
+        m_Desc.isShaderNativeI64Supported = features.features.shaderInt64;
+        m_Desc.isShaderNativeF64Supported = features.features.shaderFloat64;
+
+        m_Desc.isShaderAtomicsF16Supported = (shaderAtomicFloat2Features.shaderBufferFloat16Atomics || shaderAtomicFloat2Features.shaderSharedFloat16Atomics) ? true : false;
+        m_Desc.isShaderAtomicsI32Supported = true;
+        m_Desc.isShaderAtomicsF32Supported = (shaderAtomicFloatFeatures.shaderBufferFloat32Atomics || shaderAtomicFloatFeatures.shaderSharedFloat32Atomics) ? true : false;
+        m_Desc.isShaderAtomicsI64Supported = (features12.shaderBufferInt64Atomics || features12.shaderSharedInt64Atomics) ? true : false;
+        m_Desc.isShaderAtomicsF64Supported = (shaderAtomicFloatFeatures.shaderBufferFloat64Atomics || shaderAtomicFloatFeatures.shaderSharedFloat64Atomics) ? true : false;
 
         m_Desc.isSwapChainSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, desiredDeviceExts);
         m_Desc.isLowLatencySupported = IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
@@ -1750,44 +1773,36 @@ inline void DeviceVK::FreeMemory(Memory& memory) {
 }
 
 inline FormatSupportBits DeviceVK::GetFormatSupport(Format format) const {
-    const VkFormat vulkanFormat = GetVkFormat(format);
-    const VkPhysicalDevice physicalDevice = m_PhysicalDevice;
-
-    VkFormatProperties formatProperties = {};
-    m_VK.GetPhysicalDeviceFormatProperties(physicalDevice, vulkanFormat, &formatProperties);
-
-    constexpr uint32_t transferBits = VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
-
-    constexpr uint32_t textureBits = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | transferBits;
-    constexpr uint32_t storageTextureBits = VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT | transferBits;
-    constexpr uint32_t bufferBits = VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT | transferBits;
-    constexpr uint32_t storageBufferBits = VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT | transferBits;
-    constexpr uint32_t colorAttachmentBits = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT | transferBits;
-    constexpr uint32_t depthAttachmentBits = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | transferBits;
-    constexpr uint32_t vertexBufferBits = VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT | transferBits;
-
     FormatSupportBits mask = FormatSupportBits::UNSUPPORTED;
 
-    if (formatProperties.optimalTilingFeatures & textureBits)
-        mask |= FormatSupportBits::TEXTURE;
+    const VkFormat vkFormat = GetVkFormat(format);
 
-    if (formatProperties.optimalTilingFeatures & storageTextureBits)
-        mask |= FormatSupportBits::STORAGE_TEXTURE;
+    VkFormatProperties formatProperties = {};
+    m_VK.GetPhysicalDeviceFormatProperties(m_PhysicalDevice, vkFormat, &formatProperties);
 
-    if (formatProperties.optimalTilingFeatures & colorAttachmentBits)
-        mask |= FormatSupportBits::COLOR_ATTACHMENT;
+#define UPDATE_SUPPORT_BITS(required, bit) \
+    if ((formatProperties.optimalTilingFeatures & (required)) == (required)) \
+        mask |= bit;
 
-    if (formatProperties.optimalTilingFeatures & depthAttachmentBits)
-        mask |= FormatSupportBits::DEPTH_STENCIL_ATTACHMENT;
+    UPDATE_SUPPORT_BITS(VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT, FormatSupportBits::TEXTURE);
+    UPDATE_SUPPORT_BITS(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT, FormatSupportBits::STORAGE_TEXTURE);
+    UPDATE_SUPPORT_BITS(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT, FormatSupportBits::COLOR_ATTACHMENT);
+    UPDATE_SUPPORT_BITS(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT, FormatSupportBits::DEPTH_STENCIL_ATTACHMENT);
+    UPDATE_SUPPORT_BITS(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT, FormatSupportBits::BLEND);
+    UPDATE_SUPPORT_BITS(VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT, FormatSupportBits::STORAGE_TEXTURE_ATOMICS);
 
-    if (formatProperties.bufferFeatures & bufferBits)
-        mask |= FormatSupportBits::BUFFER;
+#undef UPDATE_SUPPORT_BITS
 
-    if (formatProperties.bufferFeatures & storageBufferBits)
-        mask |= FormatSupportBits::STORAGE_BUFFER;
+#define UPDATE_SUPPORT_BITS(required, bit) \
+    if ((formatProperties.bufferFeatures & (required)) == (required)) \
+        mask |= bit;
 
-    if (formatProperties.bufferFeatures & vertexBufferBits)
-        mask |= FormatSupportBits::VERTEX_BUFFER;
+    UPDATE_SUPPORT_BITS(VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, FormatSupportBits::BUFFER);
+    UPDATE_SUPPORT_BITS(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT, FormatSupportBits::STORAGE_BUFFER);
+    UPDATE_SUPPORT_BITS(VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT, FormatSupportBits::VERTEX_BUFFER);
+    UPDATE_SUPPORT_BITS(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT, FormatSupportBits::STORAGE_BUFFER_ATOMICS);
+
+#undef UPDATE_SUPPORT_BITS
 
     return mask;
 }
