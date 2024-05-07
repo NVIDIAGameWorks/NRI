@@ -187,6 +187,7 @@ struct SamplePositionsState {
 
 #include "amdags/ags_lib/inc/amd_ags.h"
 #include "nvapi/nvapi.h"
+#include "nvapi/nvShaderExtnEnums.h"
 
 namespace d3d11 {
 #include "D3DExt.h"

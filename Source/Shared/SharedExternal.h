@@ -59,8 +59,6 @@ typedef uint32_t DXGI_FORMAT;
 
 #define NRI_NODE_MASK 0x1 // mGPU is not planned
 
-#define SHADER_EXT_UAV_SLOT 63 // TODO: D3D 11.1 assumed
-
 #include "DeviceBase.h"
 
 constexpr uint32_t TIMEOUT_PRESENT = 1000; // 1 sec
@@ -254,6 +252,10 @@ struct ComPtr {
 
     inline bool operator==(T* lComPtr) const {
         return m_ComPtr == lComPtr;
+    }
+
+    inline void Nullify() {
+        m_ComPtr = nullptr;
     }
 
 protected:

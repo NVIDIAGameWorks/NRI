@@ -73,6 +73,7 @@ D3D12_RESOURCE_DIMENSION GetResourceDimension(TextureType textureType);
 
 #include "amdags/ags_lib/inc/amd_ags.h"
 #include "nvapi/nvapi.h"
+#include "nvapi/nvShaderExtnEnums.h"
 
 namespace d3d12 {
 #include "D3DExt.h"

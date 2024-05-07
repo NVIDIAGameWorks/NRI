@@ -54,6 +54,8 @@ NRI_STRUCT(DeviceCreationDesc)
     NRI_NAME(SPIRVBindingOffsets) spirvBindingOffsets;
     NRI_NAME(VulkanExtensions) vulkanExtensions;
     NRI_NAME(GraphicsAPI) graphicsAPI;
+    uint32_t shaderExtRegister; // D3D12/D3D11 only
+    uint32_t shaderExtSpace; // D3D12 only
     bool enableNRIValidation;
     bool enableAPIValidation;
     bool enableD3D12DrawParametersEmulation; // not needed for VK, unsupported by D3D11

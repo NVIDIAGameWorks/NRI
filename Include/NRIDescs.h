@@ -101,7 +101,7 @@ NRI_ENUM
 
     Format, uint8_t,
 
-    UNKNOWN,                             // -  -  -  -  -  -  -  -  -  - 
+    UNKNOWN,                             // -  -  -  -  -  -  -  -  -  -
 
     // Plain: 8 bits per channel
     R8_UNORM,                            // +  +  +  -  +  -  +  +  +  -
@@ -595,7 +595,7 @@ NRI_STRUCT(DescriptorSetDesc)
     uint32_t registerSpace;
     const NRI_NAME(DescriptorRangeDesc)* ranges;
     uint32_t rangeNum;
-    const NRI_NAME(DynamicConstantBufferDesc)* dynamicConstantBuffers;
+    const NRI_NAME(DynamicConstantBufferDesc)* dynamicConstantBuffers; // a dynamic constant buffer allows to dynamically specify an offset in the buffer via "CmdSetDescriptorSet" call
     uint32_t dynamicConstantBufferNum;
     bool partiallyBound;
 };

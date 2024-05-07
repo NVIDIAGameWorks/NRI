@@ -17,6 +17,7 @@ NRI_STRUCT(DeviceCreationD3D11Desc)
     AGSContext* agsContext; // can be NULL
     NRI_NAME(CallbackInterface) callbackInterface;
     NRI_NAME(MemoryAllocatorInterface) memoryAllocatorInterface;
+    bool enableD3D11CommandBufferEmulation;
     bool enableNRIValidation;
     bool isNVAPILoaded; // At least NVAPI requires calling "NvAPI_Initialize" in DLL/EXE where the device is created in addition to NRI
 };

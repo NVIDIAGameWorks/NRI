@@ -45,7 +45,9 @@ void Ext::InitializeAMDExt(const nri::DeviceBase* deviceBase, AGSContext* agsCon
 
     m_AGS.Initialize = (AGS_INITIALIZE)GetSharedLibraryFunction(*m_AGSLibrary, "agsInitialize");
     m_AGS.Deinitialize = (AGS_DEINITIALIZE)GetSharedLibraryFunction(*m_AGSLibrary, "agsDeInitialize");
-    m_AGS.CreateDevice = (AGS_DRIVEREXTENSIONSDX11_CREATEDEVICE)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_CreateDevice");
+
+    m_AGS.CreateDeviceD3D11 = (AGS_DRIVEREXTENSIONSDX11_CREATEDEVICE)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_CreateDevice");
+    m_AGS.DestroyDeviceD3D11 = (AGS_DRIVEREXTENSIONSDX11_DESTROYDEVICE)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_DestroyDevice");
     m_AGS.BeginUAVOverlap = (AGS_DRIVEREXTENSIONSDX11_BEGINUAVOVERLAP)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_BeginUAVOverlap");
     m_AGS.EndUAVOverlap = (AGS_DRIVEREXTENSIONSDX11_ENDUAVOVERLAP)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_EndUAVOverlap");
     m_AGS.SetDepthBounds = (AGS_DRIVEREXTENSIONSDX11_SETDEPTHBOUNDS)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_SetDepthBounds");
@@ -56,6 +58,9 @@ void Ext::InitializeAMDExt(const nri::DeviceBase* deviceBase, AGSContext* agsCon
         *m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawInstancedIndirectCountIndirect");
     m_AGS.DrawIndexedIndirectCount = (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECTCOUNTINDIRECT)GetSharedLibraryFunction(
         *m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirectCountIndirect");
+
+    m_AGS.CreateDeviceD3D12 = (AGS_DRIVEREXTENSIONSDX12_CREATEDEVICE)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX12_CreateDevice");
+    m_AGS.DestroyDeviceD3D12 = (AGS_DRIVEREXTENSIONSDX12_DESTROYDEVICE)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX12_DestroyDevice");
 
     const void** functionArray = (const void**)&m_AGS;
     const size_t functionArraySize = sizeof(AGSFunctionTable) / sizeof(void*);
@@ -87,29 +92,6 @@ void Ext::InitializeAMDExt(const nri::DeviceBase* deviceBase, AGSContext* agsCon
 
 // D3D11
 #if defined(__d3d11_h__)
-void Ext::CreateDeviceUsingAGS(IDXGIAdapter* adapter, const D3D_FEATURE_LEVEL* featureLevels, size_t featureLevelNum, UINT flags, AGSDX11ReturnedParams& params) {
-    CHECK(m_AGSContext != nullptr, "AMDAGS is not available");
-
-    AGSDX11DeviceCreationParams deviceCreationParams = {};
-    deviceCreationParams.pAdapter = adapter;
-    deviceCreationParams.DriverType = D3D_DRIVER_TYPE_UNKNOWN;
-    deviceCreationParams.Flags = flags;
-    deviceCreationParams.pFeatureLevels = featureLevels;
-    deviceCreationParams.FeatureLevels = (uint32_t)featureLevelNum;
-    deviceCreationParams.SDKVersion = D3D11_SDK_VERSION;
-
-    AGSDX11ExtensionParams extensionsParams = {};
-    extensionsParams.uavSlot = SHADER_EXT_UAV_SLOT;
-
-    AGSReturnCode result = m_AGS.CreateDevice(m_AGSContext, &deviceCreationParams, &extensionsParams, &params);
-    if (flags != 0 && result != AGS_SUCCESS) {
-        deviceCreationParams.Flags = 0;
-        result = m_AGS.CreateDevice(m_AGSContext, &deviceCreationParams, &extensionsParams, &params);
-    }
-
-    RETURN_ON_FAILURE(m_DeviceBase, result == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_CreateDevice() failed: %d", (int32_t)result);
-}
-
 void Ext::BeginUAVOverlap(ID3D11DeviceContext* deviceContext) const {
     if (m_IsNvAPIAvailable) {
         const NvAPI_Status res = NvAPI_D3D11_BeginUAVOverlap(deviceContext);

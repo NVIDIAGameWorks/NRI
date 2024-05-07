@@ -126,7 +126,7 @@ struct DeviceD3D11 final : public DeviceBase {
     Result FillFunctionTable(StreamerInterface& streamerInterface) const;
 
 private:
-    void FillDesc(const AGSDX11ReturnedParams& params);
+    void FillDesc(const AGSDX11ReturnedParams& agsParams);
 
     template <typename Implementation, typename Interface, typename... Args>
     Result CreateImplementation(Interface*& entity, const Args&... args);
@@ -143,6 +143,7 @@ private:
     CoreInterface m_CoreInterface = {};
     uint8_t m_Version = 0;
     uint8_t m_ImmediateContextVersion = 0;
+    bool m_IsWrapped = false;
     bool m_IsDeferredContextEmulated = false;
 };
 

@@ -63,9 +63,7 @@ struct DeviceD3D12 final : public DeviceBase {
     template <typename Implementation, typename Interface, typename... Args>
     Result CreateImplementation(Interface*& entity, const Args&... args);
 
-    Result Create(const DeviceCreationDesc& deviceCreationDesc);
-    Result Create(const DeviceCreationD3D12Desc& deviceCreationDesc);
-
+    Result Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationD3D12Desc& deviceCreationD3D12Desc);
     Result CreateDefaultDrawSignatures(ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation);
     Result CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type);
     Result GetDescriptorHandle(D3D12_DESCRIPTOR_HEAP_TYPE type, DescriptorHandle& descriptorHandle);
@@ -153,7 +151,7 @@ struct DeviceD3D12 final : public DeviceBase {
     Result FillFunctionTable(StreamerInterface& streamerInterface) const;
 
 private:
-    void FillDesc(bool enableDrawParametersEmulation);
+    void FillDesc(bool enableDrawParametersEmulation, const AGSDX12ReturnedParams& agsParams);
     MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const;
     ComPtr<ID3D12CommandSignature> CreateCommandSignature(
         D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation = false);
@@ -174,6 +172,7 @@ private:
     CoreInterface m_CoreInterface = {};
     uint8_t m_Version = 0;
     bool m_AreEnhancedBarriersSupported = false;
+    bool m_IsWrapped = false;
     std::array<Lock, DESCRIPTOR_HEAP_TYPE_NUM> m_FreeDescriptorLocks;
     Lock m_DescriptorHeapLock;
     Lock m_QueueLock;

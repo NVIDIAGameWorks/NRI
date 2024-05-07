@@ -3,7 +3,9 @@
 struct AGSFunctionTable {
     AGS_INITIALIZE Initialize;
     AGS_DEINITIALIZE Deinitialize;
-    AGS_DRIVEREXTENSIONSDX11_CREATEDEVICE CreateDevice;
+
+    AGS_DRIVEREXTENSIONSDX11_CREATEDEVICE CreateDeviceD3D11;
+    AGS_DRIVEREXTENSIONSDX11_DESTROYDEVICE DestroyDeviceD3D11;
     AGS_DRIVEREXTENSIONSDX11_BEGINUAVOVERLAP BeginUAVOverlap;
     AGS_DRIVEREXTENSIONSDX11_ENDUAVOVERLAP EndUAVOverlap;
     AGS_DRIVEREXTENSIONSDX11_SETDEPTHBOUNDS SetDepthBounds;
@@ -11,6 +13,9 @@ struct AGSFunctionTable {
     AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECT DrawIndexedIndirect;
     AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINSTANCEDINDIRECTCOUNTINDIRECT DrawIndirectCount;
     AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECTCOUNTINDIRECT DrawIndexedIndirectCount;
+
+    AGS_DRIVEREXTENSIONSDX12_CREATEDEVICE CreateDeviceD3D12;
+    AGS_DRIVEREXTENSIONSDX12_DESTROYDEVICE DestroyDeviceD3D12;
 };
 
 struct Ext {
@@ -29,7 +34,6 @@ struct Ext {
 
     // D3D11
 #if defined(__d3d11_h__)
-    void CreateDeviceUsingAGS(IDXGIAdapter* adapter, const D3D_FEATURE_LEVEL* featureLevels, size_t featureLevelNum, UINT flags, AGSDX11ReturnedParams& params);
     void BeginUAVOverlap(ID3D11DeviceContext* deviceContext) const;
     void EndUAVOverlap(ID3D11DeviceContext* deviceContext) const;
     void WaitForDrain(ID3D11DeviceContext* deviceContext, uint32_t flags) const;

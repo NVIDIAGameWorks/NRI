@@ -45,7 +45,6 @@ static uint8_t QueryLatestDevice(ComPtr<ID3D11DeviceBest>& in, ComPtr<ID3D11Devi
 
 Result CreateDeviceD3D11(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device) {
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
-
     DeviceD3D11* implementation = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
     Result result = implementation->Create(deviceCreationDesc, nullptr, nullptr, false);
 
@@ -60,13 +59,16 @@ Result CreateDeviceD3D11(const DeviceCreationDesc& deviceCreationDesc, DeviceBas
 }
 
 Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc, DeviceBase*& device) {
+    if (!deviceCreationD3D11Desc.d3d11Device)
+        return Result::INVALID_ARGUMENT;
+
     DeviceCreationDesc deviceCreationDesc = {};
     deviceCreationDesc.callbackInterface = deviceCreationD3D11Desc.callbackInterface;
     deviceCreationDesc.memoryAllocatorInterface = deviceCreationD3D11Desc.memoryAllocatorInterface;
+    deviceCreationDesc.enableD3D11CommandBufferEmulation = deviceCreationD3D11Desc.enableD3D11CommandBufferEmulation;
     deviceCreationDesc.graphicsAPI = GraphicsAPI::D3D11;
 
     StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
-
     DeviceD3D11* implementation = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
     Result result = implementation->Create(deviceCreationDesc, deviceCreationD3D11Desc.d3d11Device, deviceCreationD3D11Desc.agsContext, deviceCreationD3D11Desc.isNVAPILoaded);
 
@@ -91,6 +93,19 @@ DeviceD3D11::~DeviceD3D11() {
         GetExt()->EndUAVOverlap(m_ImmediateContext);
 
     DeleteCriticalSection(&m_CriticalSection);
+
+    if (m_Ext.HasAGS() && !m_IsWrapped) {
+        uint32_t deviceRefs = 0;
+        uint32_t contextRefs = 0;
+        m_Ext.m_AGS.DestroyDeviceD3D11(m_Ext.m_AGSContext, m_Device, &deviceRefs, m_ImmediateContext, &contextRefs);
+
+        // If released, suppress ComPtr
+        if (!deviceRefs)
+            m_Device.Nullify();
+
+        if (!contextRefs)
+            m_ImmediateContext.Nullify();
+    }
 }
 
 Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* device, AGSContext* agsContext, bool isNVAPILoadedInApp) {
@@ -136,38 +151,61 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         m_Ext.InitializeAMDExt(this, agsContext, device != nullptr);
 
     // Device
-    AGSDX11ReturnedParams params = {};
-    if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA) {
-        // Tricky part: AGSDX11ReturnedParams struct is used to properly propagate depthBoundsTest support
-        params.extensionsSupported.depthBoundsDeferredContexts = true;
-        params.extensionsSupported.depthBoundsTest = true;
-        params.extensionsSupported.uavOverlap = true;
-        params.extensionsSupported.UAVOverlapDeferredContexts = true;
+    AGSDX11ReturnedParams agsParams = {};
+    if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA) { // Tricky part: "params" is used to properly propagate exts support
+        agsParams.extensionsSupported.depthBoundsTest = true;
+        agsParams.extensionsSupported.depthBoundsDeferredContexts = true;
+        agsParams.extensionsSupported.uavOverlap = true;
+        agsParams.extensionsSupported.UAVOverlapDeferredContexts = true;
     }
 
     ComPtr<ID3D11DeviceBest> deviceTemp = (ID3D11DeviceBest*)device;
-    if (!device) {
+    if (!deviceTemp) {
+        uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : 63;
         const UINT flags = deviceCreationDesc.enableAPIValidation ? D3D11_CREATE_DEVICE_DEBUG : 0;
-        const std::array<D3D_FEATURE_LEVEL, 2> levels = {D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
+        D3D_FEATURE_LEVEL levels[2] = {D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
+        const uint32_t levelNum = GetCountOf(levels);
 
         if (m_Ext.HasAGS()) {
-            m_Ext.CreateDeviceUsingAGS(m_Adapter, levels.data(), levels.size(), flags, params);
+            AGSDX11DeviceCreationParams deviceCreationParams = {};
+            deviceCreationParams.pAdapter = m_Adapter;
+            deviceCreationParams.DriverType = D3D_DRIVER_TYPE_UNKNOWN;
+            deviceCreationParams.Flags = flags;
+            deviceCreationParams.pFeatureLevels = levels;
+            deviceCreationParams.FeatureLevels = levelNum;
+            deviceCreationParams.SDKVersion = D3D11_SDK_VERSION;
 
-            device = params.pDevice;
-            if (!device)
-                return Result::FAILURE;
+            AGSDX11ExtensionParams extensionsParams = {};
+            extensionsParams.uavSlot = shaderExtRegister;
+
+            AGSReturnCode result = m_Ext.m_AGS.CreateDeviceD3D11(m_Ext.m_AGSContext, &deviceCreationParams, &extensionsParams, &agsParams);
+            if (flags != 0 && result != AGS_SUCCESS) {
+                // If Debug Layer is not available, try without D3D11_CREATE_DEVICE_DEBUG
+                deviceCreationParams.Flags = 0;
+                result = m_Ext.m_AGS.CreateDeviceD3D11(m_Ext.m_AGSContext, &deviceCreationParams, &extensionsParams, &agsParams);
+            }
+
+            RETURN_ON_FAILURE(this, result == AGS_SUCCESS, Result::FAILURE, "agsDriverExtensionsDX11_CreateDevice() failed: %d", (int32_t)result);
+
+            deviceTemp = (ID3D11DeviceBest*)agsParams.pDevice;
         } else {
-            hr = D3D11CreateDevice(
-                m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
-
-            // If Debug Layer is not available, try without D3D11_CREATE_DEVICE_DEBUG
-            if (flags && (uint32_t)hr == 0x887a002d)
-                hr = D3D11CreateDevice(
-                    m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, levels.data(), (uint32_t)levels.size(), D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
+            hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels, levelNum, D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
+            if (flags && (uint32_t)hr == 0x887a002d) {
+                // If Debug Layer is not available, try without D3D11_CREATE_DEVICE_DEBUG
+                hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, levels, levelNum, D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
+            }
 
             RETURN_ON_BAD_HRESULT(this, hr, "D3D11CreateDevice()");
+
+            // Register device
+            if (m_Ext.HasNVAPI()) {
+                NvAPI_D3D_RegisterDevice(m_Device);
+                NvAPI_D3D11_SetNvShaderExtnSlot(m_Device, shaderExtRegister);
+            }
         }
     }
+    else
+        m_IsWrapped = true;
 
     m_Version = QueryLatestDevice(deviceTemp, m_Device);
     REPORT_INFO(this, "Using ID3D11Device%u...", m_Version);
@@ -178,10 +216,6 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
 
     m_ImmediateContextVersion = QueryLatestDeviceContext(immediateContext, m_ImmediateContext);
     REPORT_INFO(this, "Using ID3D11DeviceContext%u...", m_ImmediateContextVersion);
-
-    // Set ShaderExt UAV slot
-    if (m_Ext.HasNVAPI())
-        NvAPI_D3D11_SetNvShaderExtnSlot(m_Device, SHADER_EXT_UAV_SLOT);
 
     // Skip UAV barriers by default on the immediate context
     GetExt()->BeginUAVOverlap(m_ImmediateContext);
@@ -197,8 +231,8 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         REPORT_WARNING(this, "Deferred Contexts are not supported by the driver and will be emulated!");
         m_IsDeferredContextEmulated = true;
 
-        params.extensionsSupported.UAVOverlapDeferredContexts = params.extensionsSupported.uavOverlap;
-        params.extensionsSupported.depthBoundsDeferredContexts = params.extensionsSupported.depthBoundsTest;
+        agsParams.extensionsSupported.UAVOverlapDeferredContexts = agsParams.extensionsSupported.uavOverlap;
+        agsParams.extensionsSupported.depthBoundsDeferredContexts = agsParams.extensionsSupported.depthBoundsTest;
     }
 
     hr = m_ImmediateContext->QueryInterface(IID_PPV_ARGS(&m_Multithread));
@@ -209,7 +243,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         m_Multithread->SetMultithreadProtected(true);
 
     // Other
-    FillDesc(params);
+    FillDesc(agsParams);
 
     for (uint32_t i = 0; i < (uint32_t)CommandQueueType::MAX_NUM; i++)
         m_CommandQueues.emplace_back(*this);
@@ -217,7 +251,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     return FillFunctionTable(m_CoreInterface);
 }
 
-void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params) {
+void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& agsParams) {
     D3D11_FEATURE_DATA_D3D11_OPTIONS options = {};
     HRESULT hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS, &options, sizeof(options));
     if (FAILED(hr))
@@ -372,23 +406,34 @@ void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& params) {
     m_Desc.cullDistanceMaxNum = D3D11_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.combinedClipAndCullDistanceMaxNum = D3D11_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.conservativeRasterTier = (uint8_t)options2.ConservativeRasterizationTier;
-    m_Desc.programmableSampleLocationsTier = m_Ext.HasNVAPI() ? 2 : 0; // TODO: best guess
+
+    NV_D3D11_FEATURE_DATA_RASTERIZER_SUPPORT rasterizerFeatures = {};
+    NvAPI_D3D11_CheckFeatureSupport(m_Device, NV_D3D11_FEATURE_RASTERIZER, &rasterizerFeatures, sizeof(rasterizerFeatures));
+    m_Desc.programmableSampleLocationsTier = rasterizerFeatures.ProgrammableSamplePositions ? 2 : 0;
 
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
-    m_Desc.isDepthBoundsTestSupported = params.extensionsSupported.depthBoundsDeferredContexts;
-    m_Desc.isDrawIndirectCountSupported = m_Ext.HasAGS(); // TODO: surprised?
+    m_Desc.isDepthBoundsTestSupported = agsParams.extensionsSupported.depthBoundsDeferredContexts;
+    m_Desc.isDrawIndirectCountSupported = agsParams.extensionsSupported.multiDrawIndirectCountIndirect;
     m_Desc.isLineSmoothingSupported = true;
 
     m_Desc.isShaderNativeI32Supported = true;
     m_Desc.isShaderNativeF32Supported = true;
     m_Desc.isShaderNativeF64Supported = options.ExtendedDoublesShaderInstructions;
 
-    m_Desc.isShaderAtomicsF16Supported = m_Ext.HasNVAPI();
+    bool isShaderAtomicsF16Supported = false;
+    NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported);
+
+    bool isShaderAtomicsF32Supported = false;
+    NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported);
+
+    bool isShaderAtomicsI64Supported = false;
+    NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported);
+
+    m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;
     m_Desc.isShaderAtomicsI32Supported = true;
-    m_Desc.isShaderAtomicsF32Supported = m_Ext.HasNVAPI();
-    m_Desc.isShaderAtomicsI64Supported = m_Ext.HasNVAPI() || m_Ext.HasAGS();
-    m_Desc.isShaderAtomicsF64Supported = m_Ext.HasNVAPI();
+    m_Desc.isShaderAtomicsF32Supported = isShaderAtomicsF32Supported;
+    m_Desc.isShaderAtomicsI64Supported = (isShaderAtomicsI64Supported || agsParams.extensionsSupported.intrinsics19) ? true : false;
 
     m_Desc.isSwapChainSupported = HasOutput();
     m_Desc.isLowLatencySupported = m_Ext.HasNVAPI();

@@ -59,33 +59,50 @@ static inline uint64_t HashRootSignatureAndStride(ID3D12RootSignature* rootSigna
 }
 
 Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device) {
-    StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
+    DeviceCreationD3D12Desc deviceCreationD3D12Desc = {};
 
+    StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
     DeviceD3D12* implementation = Allocate<DeviceD3D12>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    Result result = implementation->Create(deviceCreationDesc);
-    if (result != Result::SUCCESS) {
-        Deallocate(allocator, implementation);
-        return result;
+    Result result = implementation->Create(deviceCreationDesc, deviceCreationD3D12Desc);
+
+    if (result == Result::SUCCESS) {
+        device = (DeviceBase*)implementation;
+        return Result::SUCCESS;
     }
 
-    device = (DeviceBase*)implementation;
+    Deallocate(allocator, implementation);
 
-    return Result::SUCCESS;
+    return result;
 }
 
-Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, DeviceBase*& device) {
-    StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
+Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationD3D12Desc, DeviceBase*& device) {
+    if (!deviceCreationD3D12Desc.d3d12Device)
+        return Result::INVALID_ARGUMENT;
 
-    DeviceD3D12* implementation = Allocate<DeviceD3D12>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    Result res = implementation->Create(deviceCreationDesc);
+    LUID luid = deviceCreationD3D12Desc.d3d12Device->GetAdapterLuid();
 
-    if (res == Result::SUCCESS) {
+    AdapterDesc adapterDesc = {};
+    adapterDesc.luid = *(uint64_t*)&luid;
+
+    DeviceCreationDesc deviceCreationDesc = {};
+    deviceCreationDesc.adapterDesc = &adapterDesc;
+    deviceCreationDesc.callbackInterface = deviceCreationD3D12Desc.callbackInterface;
+    deviceCreationDesc.memoryAllocatorInterface = deviceCreationD3D12Desc.memoryAllocatorInterface;
+    deviceCreationDesc.enableD3D12DrawParametersEmulation = deviceCreationD3D12Desc.enableD3D12DrawParametersEmulation;
+    deviceCreationDesc.graphicsAPI = GraphicsAPI::D3D12;
+
+    StdAllocator<uint8_t> allocator(deviceCreationD3D12Desc.memoryAllocatorInterface);
+    DeviceD3D12* implementation = Allocate<DeviceD3D12>(allocator, deviceCreationD3D12Desc.callbackInterface, allocator);
+    Result result = implementation->Create(deviceCreationDesc, deviceCreationD3D12Desc);
+
+    if (result == Result::SUCCESS) {
         device = implementation;
         return Result::SUCCESS;
     }
 
     Deallocate(allocator, implementation);
-    return res;
+
+    return result;
 }
 
 DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator) :
@@ -106,6 +123,15 @@ DeviceD3D12::~DeviceD3D12() {
         if (commandQueueD3D12)
             Deallocate(GetStdAllocator(), commandQueueD3D12);
     }
+
+    if (m_Ext.HasAGS() && !m_IsWrapped) {
+        uint32_t refs = 0;
+        m_Ext.m_AGS.DestroyDeviceD3D12(m_Ext.m_AGSContext, m_Device, &refs);
+
+        // If released, suppress ComPtr
+        if (!refs)
+            m_Device.Nullify();
+    }
 }
 
 template <typename Implementation, typename Interface, typename... Args>
@@ -123,68 +149,8 @@ Result DeviceD3D12::CreateImplementation(Interface*& entity, const Args&... args
     return result;
 }
 
-Result DeviceD3D12::Create(const DeviceCreationD3D12Desc& deviceCreationDesc) {
-    ComPtr<ID3D12DeviceBest> device = (ID3D12DeviceBest*)deviceCreationDesc.d3d12Device;
-    if (!device)
-        return Result::INVALID_ARGUMENT;
-
-    // Get adapter
-    ComPtr<IDXGIFactory4> dxgiFactory;
-    HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
-    RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
-
-    hr = dxgiFactory->EnumAdapterByLuid(device->GetAdapterLuid(), IID_PPV_ARGS(&m_Adapter));
-    RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
-
-    // Get adapter description as early as possible for meaningful error reporting
-    DXGI_ADAPTER_DESC desc = {};
-    hr = m_Adapter->GetDesc(&desc);
-    RETURN_ON_BAD_HRESULT(this, hr, "IDXGIAdapter::GetDesc()");
-
-    wcstombs(m_Desc.adapterDesc.description, desc.Description, GetCountOf(m_Desc.adapterDesc.description) - 1);
-    m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
-    m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
-    m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
-    m_Desc.adapterDesc.deviceId = desc.DeviceId;
-    m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
-
-    // Extensions
-    if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA)
-        m_Ext.InitializeNVExt(this, deviceCreationDesc.isNVAPILoaded, true);
-    else if (m_Desc.adapterDesc.vendor == Vendor::AMD)
-        m_Ext.InitializeAMDExt(this, deviceCreationDesc.agsContext, true);
-
-    // Create device
-    m_Version = QueryLatestDevice(device, m_Device);
-    REPORT_INFO(this, "Using ID3D12Device%u...", m_Version);
-
-    // Wrap command queues
-    if (deviceCreationDesc.d3d12GraphicsQueue)
-        CreateCommandQueue(deviceCreationDesc.d3d12GraphicsQueue, m_CommandQueues[(uint32_t)CommandQueueType::GRAPHICS]);
-    if (deviceCreationDesc.d3d12ComputeQueue)
-        CreateCommandQueue(deviceCreationDesc.d3d12ComputeQueue, m_CommandQueues[(uint32_t)CommandQueueType::COMPUTE]);
-    if (deviceCreationDesc.d3d12CopyQueue)
-        CreateCommandQueue(deviceCreationDesc.d3d12CopyQueue, m_CommandQueues[(uint32_t)CommandQueueType::COPY]);
-
-    // Check GRAPHICS queue availability
-    CommandQueue* commandQueue;
-    Result result = GetCommandQueue(CommandQueueType::GRAPHICS, commandQueue);
-    if (result != Result::SUCCESS)
-        return result;
-
-    // Fill desc
-    FillDesc(deviceCreationDesc.enableD3D12DrawParametersEmulation);
-
-    // Create indirect command signatures
-    m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc), nullptr);
-    if (m_Desc.isDispatchRaysIndirectSupported)
-        m_DispatchRaysCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(DispatchRaysIndirectDesc), nullptr);
-
-    return FillFunctionTable(m_CoreInterface);
-}
-
-Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc) {
-    // IMPORTANT: Must be called before the D3D12 device is created, or the D3D12 runtime removes the device.
+Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationD3D12Desc& deviceCreationD3D12Desc) {
+    // IMPORTANT: Must be called before the D3D12 device is created, or the D3D12 runtime removes the device
     if (deviceCreationDesc.enableAPIValidation) {
         ComPtr<ID3D12Debug> debugController;
         if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
@@ -219,16 +185,42 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc) {
 
     // Extensions
     if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA)
-        m_Ext.InitializeNVExt(this, false, false);
+        m_Ext.InitializeNVExt(this, deviceCreationD3D12Desc.isNVAPILoaded, deviceCreationD3D12Desc.d3d12Device != nullptr);
     else if (m_Desc.adapterDesc.vendor == Vendor::AMD)
-        m_Ext.InitializeAMDExt(this, nullptr, false);
+        m_Ext.InitializeAMDExt(this, deviceCreationD3D12Desc.agsContext, deviceCreationD3D12Desc.d3d12Device != nullptr);
 
-    // Create device
-    ComPtr<ID3D12DeviceBest> device;
-    hr = D3D12CreateDevice(m_Adapter, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), (void**)&device);
-    RETURN_ON_BAD_HRESULT(this, hr, "D3D12CreateDevice()");
+    // Device
+    AGSDX12ReturnedParams agsParams = {};
+    ComPtr<ID3D12DeviceBest> deviceTemp = (ID3D12DeviceBest*)deviceCreationD3D12Desc.d3d12Device;
+    if (!deviceTemp) {
+        uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : 63;
 
-    m_Version = QueryLatestDevice(device, m_Device);
+        if (m_Ext.HasAGS()) {
+            AGSDX12DeviceCreationParams deviceCreationParams = {};
+            deviceCreationParams.pAdapter = m_Adapter;
+            deviceCreationParams.iid = __uuidof(ID3D12DeviceBest);
+            deviceCreationParams.FeatureLevel = D3D_FEATURE_LEVEL_12_0;
+
+            AGSDX12ExtensionParams extensionsParams = {};
+            extensionsParams.uavSlot = shaderExtRegister;
+
+            AGSReturnCode result = m_Ext.m_AGS.CreateDeviceD3D12(m_Ext.m_AGSContext, &deviceCreationParams, &extensionsParams, &agsParams);
+            RETURN_ON_FAILURE(this, result == AGS_SUCCESS, Result::FAILURE, "agsDriverExtensionsDX11_CreateDevice() failed: %d", (int32_t)result);
+
+            deviceTemp = (ID3D12DeviceBest*)agsParams.pDevice;
+        } else {
+            hr = D3D12CreateDevice(m_Adapter, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), (void**)&deviceTemp);
+            RETURN_ON_BAD_HRESULT(this, hr, "D3D12CreateDevice()");
+
+            // Register device
+            if (m_Ext.HasNVAPI())
+                NvAPI_D3D12_SetNvShaderExtnSlotSpace(m_Device, shaderExtRegister, deviceCreationDesc.shaderExtSpace);
+        }
+    }
+    else
+        m_IsWrapped = true;
+
+    m_Version = QueryLatestDevice(deviceTemp, m_Device);
     REPORT_INFO(this, "Using ID3D12Device%u...", m_Version);
 
     if (deviceCreationDesc.enableAPIValidation) {
@@ -256,6 +248,14 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc) {
         }
     }
 
+    // Wrap user-provided command queues
+    if (deviceCreationD3D12Desc.d3d12GraphicsQueue)
+        CreateCommandQueue(deviceCreationD3D12Desc.d3d12GraphicsQueue, m_CommandQueues[(uint32_t)CommandQueueType::GRAPHICS]);
+    if (deviceCreationD3D12Desc.d3d12ComputeQueue)
+        CreateCommandQueue(deviceCreationD3D12Desc.d3d12ComputeQueue, m_CommandQueues[(uint32_t)CommandQueueType::COMPUTE]);
+    if (deviceCreationD3D12Desc.d3d12CopyQueue)
+        CreateCommandQueue(deviceCreationD3D12Desc.d3d12CopyQueue, m_CommandQueues[(uint32_t)CommandQueueType::COPY]);
+
     // Check GRAPHICS queue availability
     CommandQueue* commandQueue;
     Result result = GetCommandQueue(CommandQueueType::GRAPHICS, commandQueue);
@@ -263,7 +263,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc) {
         return result;
 
     // Fill desc
-    FillDesc(deviceCreationDesc.enableD3D12DrawParametersEmulation);
+    FillDesc(deviceCreationDesc.enableD3D12DrawParametersEmulation, agsParams);
 
     // Create indirect command signatures
     m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc), nullptr);
@@ -273,150 +273,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc) {
     return FillFunctionTable(m_CoreInterface);
 }
 
-Result DeviceD3D12::CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type) {
-    // IMPORTANT: m_FreeDescriptorLocks[type] must be acquired before calling this function
-    ExclusiveScope lock(m_DescriptorHeapLock);
-
-    size_t heapIndex = m_DescriptorHeaps.size();
-    if (heapIndex >= HeapIndexType(-1))
-        return Result::OUT_OF_MEMORY;
-
-    ComPtr<ID3D12DescriptorHeap> descriptorHeap;
-    D3D12_DESCRIPTOR_HEAP_DESC desc = {type, DESCRIPTORS_BATCH_SIZE, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, NRI_NODE_MASK};
-    HRESULT hr = m_Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap));
-    RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateDescriptorHeap()");
-
-    DescriptorHeapDesc descriptorHeapDesc = {};
-    descriptorHeapDesc.descriptorHeap = descriptorHeap;
-    descriptorHeapDesc.descriptorPointerCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr;
-    descriptorHeapDesc.descriptorSize = m_Device->GetDescriptorHandleIncrementSize(type);
-    m_DescriptorHeaps.push_back(descriptorHeapDesc);
-
-    auto& freeDescriptors = m_FreeDescriptors[type];
-    for (uint32_t i = 0; i < desc.NumDescriptors; i++)
-        freeDescriptors.push_back({(HeapIndexType)heapIndex, (HeapOffsetType)i});
-
-    return Result::SUCCESS;
-}
-
-Result DeviceD3D12::GetDescriptorHandle(D3D12_DESCRIPTOR_HEAP_TYPE type, DescriptorHandle& descriptorHandle) {
-    ExclusiveScope lock(m_FreeDescriptorLocks[type]);
-
-    auto& freeDescriptors = m_FreeDescriptors[type];
-    if (freeDescriptors.empty()) {
-        Result result = CreateCpuOnlyVisibleDescriptorHeap(type);
-        if (result != Result::SUCCESS)
-            return result;
-    }
-
-    descriptorHandle = freeDescriptors.back();
-    freeDescriptors.pop_back();
-
-    return Result::SUCCESS;
-}
-
-DescriptorPointerCPU DeviceD3D12::GetDescriptorPointerCPU(const DescriptorHandle& descriptorHandle) {
-    ExclusiveScope lock(m_DescriptorHeapLock);
-
-    const DescriptorHeapDesc& descriptorHeapDesc = m_DescriptorHeaps[descriptorHandle.heapIndex];
-    DescriptorPointerCPU descriptorPointer = descriptorHeapDesc.descriptorPointerCPU + descriptorHandle.heapOffset * descriptorHeapDesc.descriptorSize;
-
-    return descriptorPointer;
-}
-
-void DeviceD3D12::GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const {
-    if (memoryLocation == MemoryLocation::DEVICE_UPLOAD && m_Desc.deviceUploadHeapSize == 0)
-        memoryLocation = MemoryLocation::HOST_UPLOAD;
-
-    memoryDesc.type = GetMemoryType(memoryLocation, resourceDesc);
-
-    D3D12_RESOURCE_ALLOCATION_INFO resourceAllocationInfo = m_Device->GetResourceAllocationInfo(NRI_NODE_MASK, 1, &resourceDesc);
-    memoryDesc.size = (uint64_t)resourceAllocationInfo.SizeInBytes;
-    memoryDesc.alignment = (uint32_t)resourceAllocationInfo.Alignment;
-
-    memoryDesc.mustBeDedicated = RequiresDedicatedAllocation(memoryDesc.type);
-}
-
-ComPtr<ID3D12CommandSignature> DeviceD3D12::CreateCommandSignature(
-    D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation) {
-    const bool isDrawArgument =
-        enableDrawParametersEmulation && (indirectArgumentType == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW || indirectArgumentType == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED);
-
-    D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDescs[2] = {};
-    if (isDrawArgument) {
-        // Draw base parameters emulation
-        // Base on: https://github.com/google/dawn/blob/e72fa969ad72e42064cd33bd99572ea12b0bcdaf/src/dawn/native/d3d12/PipelineLayoutD3D12.cpp#L504
-        indirectArgumentDescs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT;
-        indirectArgumentDescs[0].Constant.RootParameterIndex = 0;
-        indirectArgumentDescs[0].Constant.DestOffsetIn32BitValues = 0;
-        indirectArgumentDescs[0].Constant.Num32BitValuesToSet = 2;
-
-        indirectArgumentDescs[1].Type = indirectArgumentType;
-    } else
-        indirectArgumentDescs[0].Type = indirectArgumentType;
-
-    D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
-    commandSignatureDesc.NumArgumentDescs = isDrawArgument ? 2 : 1;
-    commandSignatureDesc.pArgumentDescs = indirectArgumentDescs;
-    commandSignatureDesc.NodeMask = NRI_NODE_MASK;
-    commandSignatureDesc.ByteStride = stride;
-
-    ComPtr<ID3D12CommandSignature> commandSignature = nullptr;
-    HRESULT hr = m_Device->CreateCommandSignature(&commandSignatureDesc, isDrawArgument ? rootSignature : nullptr, IID_PPV_ARGS(&commandSignature));
-    if (FAILED(hr))
-        REPORT_ERROR(this, "ID3D12Device::CreateCommandSignature() failed, result = 0x%08X!", hr);
-
-    return commandSignature;
-}
-
-ID3D12CommandSignature* DeviceD3D12::GetDrawCommandSignature(uint32_t stride, ID3D12RootSignature* rootSignature) {
-    auto key = HashRootSignatureAndStride(rootSignature, stride);
-    auto commandSignatureIt = m_DrawCommandSignatures.find(key);
-    if (commandSignatureIt != m_DrawCommandSignatures.end())
-        return commandSignatureIt->second;
-
-    ComPtr<ID3D12CommandSignature> commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW, stride, rootSignature);
-    m_DrawCommandSignatures[key] = commandSignature;
-
-    return commandSignature;
-}
-
-ID3D12CommandSignature* DeviceD3D12::GetDrawIndexedCommandSignature(uint32_t stride, ID3D12RootSignature* rootSignature) {
-    auto key = HashRootSignatureAndStride(rootSignature, stride);
-    auto commandSignatureIt = m_DrawIndexedCommandSignatures.find(key);
-    if (commandSignatureIt != m_DrawIndexedCommandSignatures.end())
-        return commandSignatureIt->second;
-
-    ComPtr<ID3D12CommandSignature> commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED, stride, rootSignature);
-    m_DrawIndexedCommandSignatures[key] = commandSignature;
-
-    return commandSignature;
-}
-
-ID3D12CommandSignature* DeviceD3D12::GetDrawMeshCommandSignature(uint32_t stride) {
-    auto commandSignatureIt = m_DrawMeshCommandSignatures.find(stride);
-    if (commandSignatureIt != m_DrawMeshCommandSignatures.end())
-        return commandSignatureIt->second;
-
-    ComPtr<ID3D12CommandSignature> commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH, stride, nullptr);
-    m_DrawMeshCommandSignatures[stride] = commandSignature;
-
-    return commandSignature;
-}
-
-ID3D12CommandSignature* DeviceD3D12::GetDispatchRaysCommandSignature() const {
-    return m_DispatchRaysCommandSignature.GetInterface();
-}
-
-ID3D12CommandSignature* DeviceD3D12::GetDispatchCommandSignature() const {
-    return m_DispatchCommandSignature.GetInterface();
-}
-
-MemoryType DeviceD3D12::GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const {
-    return ::GetMemoryType(memoryLocation, resourceDesc);
-}
-
-void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation) {
+void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation, const AGSDX12ReturnedParams& agsParams) {
     D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = {D3D_HIGHEST_SHADER_MODEL};
     HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel));
     if (FAILED(hr))
@@ -722,18 +579,170 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation) {
     m_Desc.isShaderNativeI64Supported = options1.Int64ShaderOps;
     m_Desc.isShaderNativeF64Supported = options.DoublePrecisionFloatShaderOps;
 
-    m_Desc.isShaderAtomicsF16Supported = m_Ext.HasNVAPI();
+    bool isShaderAtomicsF16Supported = false;
+    NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported);
+
+    bool isShaderAtomicsF32Supported = false;
+    NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported);
+
+    bool isShaderAtomicsI64Supported = false;
+    NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported);
+
+    m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;
     m_Desc.isShaderAtomicsI32Supported = true;
-    m_Desc.isShaderAtomicsF32Supported = m_Ext.HasNVAPI();
+    m_Desc.isShaderAtomicsF32Supported = isShaderAtomicsF32Supported;
 #ifdef NRI_USE_AGILITY_SDK
-    m_Desc.isShaderAtomicsI64Supported = m_Ext.HasNVAPI() || m_Ext.HasAGS() || options9.AtomicInt64OnTypedResourceSupported || options9.AtomicInt64OnGroupSharedSupported || options11.AtomicInt64OnDescriptorHeapResourceSupported;
+    m_Desc.isShaderAtomicsI64Supported = isShaderAtomicsI64Supported || agsParams.extensionsSupported.intrinsics19 || options9.AtomicInt64OnTypedResourceSupported ||
+                                         options9.AtomicInt64OnGroupSharedSupported || options11.AtomicInt64OnDescriptorHeapResourceSupported;
 #else
-    m_Desc.isShaderAtomicsI64Supported = m_Ext.HasNVAPI() || m_Ext.HasAGS();
+    m_Desc.isShaderAtomicsI64Supported = isShaderAtomicsI64Supported || agsParams.extensionsSupported.intrinsics19;
 #endif
-    m_Desc.isShaderAtomicsF64Supported = m_Ext.HasNVAPI();
 
     m_Desc.isSwapChainSupported = HasOutput();
     m_Desc.isLowLatencySupported = m_Ext.HasNVAPI();
+}
+
+Result DeviceD3D12::CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type) {
+    // IMPORTANT: m_FreeDescriptorLocks[type] must be acquired before calling this function
+    ExclusiveScope lock(m_DescriptorHeapLock);
+
+    size_t heapIndex = m_DescriptorHeaps.size();
+    if (heapIndex >= HeapIndexType(-1))
+        return Result::OUT_OF_MEMORY;
+
+    ComPtr<ID3D12DescriptorHeap> descriptorHeap;
+    D3D12_DESCRIPTOR_HEAP_DESC desc = {type, DESCRIPTORS_BATCH_SIZE, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, NRI_NODE_MASK};
+    HRESULT hr = m_Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap));
+    RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateDescriptorHeap()");
+
+    DescriptorHeapDesc descriptorHeapDesc = {};
+    descriptorHeapDesc.descriptorHeap = descriptorHeap;
+    descriptorHeapDesc.descriptorPointerCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr;
+    descriptorHeapDesc.descriptorSize = m_Device->GetDescriptorHandleIncrementSize(type);
+    m_DescriptorHeaps.push_back(descriptorHeapDesc);
+
+    auto& freeDescriptors = m_FreeDescriptors[type];
+    for (uint32_t i = 0; i < desc.NumDescriptors; i++)
+        freeDescriptors.push_back({(HeapIndexType)heapIndex, (HeapOffsetType)i});
+
+    return Result::SUCCESS;
+}
+
+Result DeviceD3D12::GetDescriptorHandle(D3D12_DESCRIPTOR_HEAP_TYPE type, DescriptorHandle& descriptorHandle) {
+    ExclusiveScope lock(m_FreeDescriptorLocks[type]);
+
+    auto& freeDescriptors = m_FreeDescriptors[type];
+    if (freeDescriptors.empty()) {
+        Result result = CreateCpuOnlyVisibleDescriptorHeap(type);
+        if (result != Result::SUCCESS)
+            return result;
+    }
+
+    descriptorHandle = freeDescriptors.back();
+    freeDescriptors.pop_back();
+
+    return Result::SUCCESS;
+}
+
+DescriptorPointerCPU DeviceD3D12::GetDescriptorPointerCPU(const DescriptorHandle& descriptorHandle) {
+    ExclusiveScope lock(m_DescriptorHeapLock);
+
+    const DescriptorHeapDesc& descriptorHeapDesc = m_DescriptorHeaps[descriptorHandle.heapIndex];
+    DescriptorPointerCPU descriptorPointer = descriptorHeapDesc.descriptorPointerCPU + descriptorHandle.heapOffset * descriptorHeapDesc.descriptorSize;
+
+    return descriptorPointer;
+}
+
+void DeviceD3D12::GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const {
+    if (memoryLocation == MemoryLocation::DEVICE_UPLOAD && m_Desc.deviceUploadHeapSize == 0)
+        memoryLocation = MemoryLocation::HOST_UPLOAD;
+
+    memoryDesc.type = GetMemoryType(memoryLocation, resourceDesc);
+
+    D3D12_RESOURCE_ALLOCATION_INFO resourceAllocationInfo = m_Device->GetResourceAllocationInfo(NRI_NODE_MASK, 1, &resourceDesc);
+    memoryDesc.size = (uint64_t)resourceAllocationInfo.SizeInBytes;
+    memoryDesc.alignment = (uint32_t)resourceAllocationInfo.Alignment;
+
+    memoryDesc.mustBeDedicated = RequiresDedicatedAllocation(memoryDesc.type);
+}
+
+ComPtr<ID3D12CommandSignature> DeviceD3D12::CreateCommandSignature(
+    D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation) {
+    const bool isDrawArgument =
+        enableDrawParametersEmulation && (indirectArgumentType == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW || indirectArgumentType == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED);
+
+    D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDescs[2] = {};
+    if (isDrawArgument) {
+        // Draw base parameters emulation
+        // Base on: https://github.com/google/dawn/blob/e72fa969ad72e42064cd33bd99572ea12b0bcdaf/src/dawn/native/d3d12/PipelineLayoutD3D12.cpp#L504
+        indirectArgumentDescs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT;
+        indirectArgumentDescs[0].Constant.RootParameterIndex = 0;
+        indirectArgumentDescs[0].Constant.DestOffsetIn32BitValues = 0;
+        indirectArgumentDescs[0].Constant.Num32BitValuesToSet = 2;
+
+        indirectArgumentDescs[1].Type = indirectArgumentType;
+    } else
+        indirectArgumentDescs[0].Type = indirectArgumentType;
+
+    D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
+    commandSignatureDesc.NumArgumentDescs = isDrawArgument ? 2 : 1;
+    commandSignatureDesc.pArgumentDescs = indirectArgumentDescs;
+    commandSignatureDesc.NodeMask = NRI_NODE_MASK;
+    commandSignatureDesc.ByteStride = stride;
+
+    ComPtr<ID3D12CommandSignature> commandSignature = nullptr;
+    HRESULT hr = m_Device->CreateCommandSignature(&commandSignatureDesc, isDrawArgument ? rootSignature : nullptr, IID_PPV_ARGS(&commandSignature));
+    if (FAILED(hr))
+        REPORT_ERROR(this, "ID3D12Device::CreateCommandSignature() failed, result = 0x%08X!", hr);
+
+    return commandSignature;
+}
+
+ID3D12CommandSignature* DeviceD3D12::GetDrawCommandSignature(uint32_t stride, ID3D12RootSignature* rootSignature) {
+    auto key = HashRootSignatureAndStride(rootSignature, stride);
+    auto commandSignatureIt = m_DrawCommandSignatures.find(key);
+    if (commandSignatureIt != m_DrawCommandSignatures.end())
+        return commandSignatureIt->second;
+
+    ComPtr<ID3D12CommandSignature> commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW, stride, rootSignature);
+    m_DrawCommandSignatures[key] = commandSignature;
+
+    return commandSignature;
+}
+
+ID3D12CommandSignature* DeviceD3D12::GetDrawIndexedCommandSignature(uint32_t stride, ID3D12RootSignature* rootSignature) {
+    auto key = HashRootSignatureAndStride(rootSignature, stride);
+    auto commandSignatureIt = m_DrawIndexedCommandSignatures.find(key);
+    if (commandSignatureIt != m_DrawIndexedCommandSignatures.end())
+        return commandSignatureIt->second;
+
+    ComPtr<ID3D12CommandSignature> commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED, stride, rootSignature);
+    m_DrawIndexedCommandSignatures[key] = commandSignature;
+
+    return commandSignature;
+}
+
+ID3D12CommandSignature* DeviceD3D12::GetDrawMeshCommandSignature(uint32_t stride) {
+    auto commandSignatureIt = m_DrawMeshCommandSignatures.find(stride);
+    if (commandSignatureIt != m_DrawMeshCommandSignatures.end())
+        return commandSignatureIt->second;
+
+    ComPtr<ID3D12CommandSignature> commandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH, stride, nullptr);
+    m_DrawMeshCommandSignatures[stride] = commandSignature;
+
+    return commandSignature;
+}
+
+ID3D12CommandSignature* DeviceD3D12::GetDispatchRaysCommandSignature() const {
+    return m_DispatchRaysCommandSignature.GetInterface();
+}
+
+ID3D12CommandSignature* DeviceD3D12::GetDispatchCommandSignature() const {
+    return m_DispatchCommandSignature.GetInterface();
+}
+
+MemoryType DeviceD3D12::GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const {
+    return ::GetMemoryType(memoryLocation, resourceDesc);
 }
 
 //================================================================================================================
