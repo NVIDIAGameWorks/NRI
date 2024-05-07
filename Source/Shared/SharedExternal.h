@@ -254,10 +254,6 @@ struct ComPtr {
         return m_ComPtr == lComPtr;
     }
 
-    inline void Nullify() {
-        m_ComPtr = nullptr;
-    }
-
 protected:
     T* m_ComPtr;
 };

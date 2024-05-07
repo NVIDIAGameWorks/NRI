@@ -94,18 +94,8 @@ DeviceD3D11::~DeviceD3D11() {
 
     DeleteCriticalSection(&m_CriticalSection);
 
-    if (m_Ext.HasAGS() && !m_IsWrapped) {
-        uint32_t deviceRefs = 0;
-        uint32_t contextRefs = 0;
-        m_Ext.m_AGS.DestroyDeviceD3D11(m_Ext.m_AGSContext, m_Device, &deviceRefs, m_ImmediateContext, &contextRefs);
-
-        // If released, suppress ComPtr
-        if (!deviceRefs)
-            m_Device.Nullify();
-
-        if (!contextRefs)
-            m_ImmediateContext.Nullify();
-    }
+    if (m_Ext.HasAGS() && !m_IsWrapped)
+        m_Ext.m_AGS.DestroyDeviceD3D11(m_Ext.m_AGSContext, m_Device, nullptr, m_ImmediateContext, nullptr);
 }
 
 Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* device, AGSContext* agsContext, bool isNVAPILoadedInApp) {

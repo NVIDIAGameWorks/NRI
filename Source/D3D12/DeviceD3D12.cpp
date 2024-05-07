@@ -124,14 +124,8 @@ DeviceD3D12::~DeviceD3D12() {
             Deallocate(GetStdAllocator(), commandQueueD3D12);
     }
 
-    if (m_Ext.HasAGS() && !m_IsWrapped) {
-        uint32_t refs = 0;
-        m_Ext.m_AGS.DestroyDeviceD3D12(m_Ext.m_AGSContext, m_Device, &refs);
-
-        // If released, suppress ComPtr
-        if (!refs)
-            m_Device.Nullify();
-    }
+    if (m_Ext.HasAGS() && !m_IsWrapped)
+        m_Ext.m_AGS.DestroyDeviceD3D12(m_Ext.m_AGSContext, m_Device, nullptr);
 }
 
 template <typename Implementation, typename Interface, typename... Args>
