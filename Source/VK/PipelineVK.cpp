@@ -196,7 +196,7 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     pipelineRenderingCreateInfo.colorAttachmentCount = om.colorNum;
     pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats;
     pipelineRenderingCreateInfo.depthAttachmentFormat = GetVkFormat(om.depthStencilFormat);
-    pipelineRenderingCreateInfo.stencilAttachmentFormat = GetVkFormat(om.depthStencilFormat);
+    pipelineRenderingCreateInfo.stencilAttachmentFormat = HasStencil(om.depthStencilFormat) ? GetVkFormat(om.depthStencilFormat) : VK_FORMAT_UNDEFINED;
 
     // Dynamic state
     uint32_t dynamicStateNum = 0;

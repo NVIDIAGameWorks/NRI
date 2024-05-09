@@ -158,6 +158,22 @@ inline VkFormat GetVkFormat(Format format, bool demoteSrgb = false) {
     return (VkFormat)NRIFormatToVKFormat(format);
 }
 
+inline bool HasStencil(Format format) {
+    switch (format)
+    {
+    case nri::Format::D24_UNORM_S8_UINT:
+        return true;
+    case nri::Format::D32_SFLOAT_S8_UINT_X24:
+        return true;
+    case nri::Format::X24_G8_UINT:
+        return true;
+    case nri::Format::X32_G8_UINT_X24:
+        return true;
+    default:
+        return false;
+    }
+}
+
 constexpr std::array<VkPrimitiveTopology, (uint32_t)Topology::MAX_NUM> TOPOLOGIES = {
     VK_PRIMITIVE_TOPOLOGY_POINT_LIST,                    // POINT_LIST
     VK_PRIMITIVE_TOPOLOGY_LINE_LIST,                     // LINE_LIST

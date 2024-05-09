@@ -58,39 +58,33 @@ NRI_STRUCT(HelperInterface)
     NRI_NAME(Result) (NRI_CALL *WaitForIdle)(NRI_NAME_REF(CommandQueue) commandQueue);
 };
 
+// Information about video memory
 NRI_API bool NRI_CALL nriQueryVideoMemoryInfo(const NRI_NAME_REF(Device) device, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(VideoMemoryInfo) videoMemoryInfo);
 
+// Format conversion
 NRI_API NRI_NAME(Format) NRI_CALL nriConvertDXGIFormatToNRI(uint32_t dxgiFormat);
 NRI_API NRI_NAME(Format) NRI_CALL nriConvertVKFormatToNRI(uint32_t vkFormat);
 NRI_API uint32_t NRI_CALL nriConvertNRIFormatToDXGI(NRI_NAME(Format) format);
 NRI_API uint32_t NRI_CALL nriConvertNRIFormatToVK(NRI_NAME(Format) format);
 
+// Strings
 NRI_API const char* NRI_CALL nriGetGraphicsAPIString(NRI_NAME(GraphicsAPI) graphicsAPI);
 NRI_API const char* NRI_CALL nriGetFormatString(NRI_NAME(Format) format);
 
+// A friendly way to get a supported depth format
 static inline NRI_NAME(Format) NRI_FUNC_NAME(GetSupportedDepthFormat)(const NRI_NAME_REF(CoreInterface) coreInterface, const NRI_NAME_REF(Device) device, uint32_t minBits, bool stencil)
 {
-    if (stencil)
-    {
-        if (minBits <= 24)
-        {
-            if (NRI_REF_ACCESS(coreInterface)->GetFormatSupport(device, NRI_ENUM_MEMBER(Format, D24_UNORM_S8_UINT)) & NRI_ENUM_MEMBER(FormatSupportBits, DEPTH_STENCIL_ATTACHMENT))
-                return NRI_ENUM_MEMBER(Format, D24_UNORM_S8_UINT);
-        }
+    if (minBits <= 16 && !stencil) {
+        if (NRI_REF_ACCESS(coreInterface)->GetFormatSupport(device, NRI_ENUM_MEMBER(Format, D16_UNORM)) & NRI_ENUM_MEMBER(FormatSupportBits, DEPTH_STENCIL_ATTACHMENT))
+            return NRI_ENUM_MEMBER(Format, D16_UNORM);
     }
-    else
-    {
-        if (minBits <= 16)
-        {
-            if (NRI_REF_ACCESS(coreInterface)->GetFormatSupport(device, NRI_ENUM_MEMBER(Format, D16_UNORM)) & NRI_ENUM_MEMBER(FormatSupportBits, DEPTH_STENCIL_ATTACHMENT))
-                return NRI_ENUM_MEMBER(Format, D16_UNORM);
-        }
-        else if (minBits <= 24)
-        {
-            if (NRI_REF_ACCESS(coreInterface)->GetFormatSupport(device, NRI_ENUM_MEMBER(Format, D24_UNORM_S8_UINT)) & NRI_ENUM_MEMBER(FormatSupportBits, DEPTH_STENCIL_ATTACHMENT))
-                return NRI_ENUM_MEMBER(Format, D24_UNORM_S8_UINT);
-        }
+        
+    if (minBits <= 24) {
+        if (NRI_REF_ACCESS(coreInterface)->GetFormatSupport(device, NRI_ENUM_MEMBER(Format, D24_UNORM_S8_UINT)) & NRI_ENUM_MEMBER(FormatSupportBits, DEPTH_STENCIL_ATTACHMENT))
+            return NRI_ENUM_MEMBER(Format, D24_UNORM_S8_UINT);
+    }
 
+    if (minBits <= 32 && !stencil) {
         if (NRI_REF_ACCESS(coreInterface)->GetFormatSupport(device, NRI_ENUM_MEMBER(Format, D32_SFLOAT)) & NRI_ENUM_MEMBER(FormatSupportBits, DEPTH_STENCIL_ATTACHMENT))
             return NRI_ENUM_MEMBER(Format, D32_SFLOAT);
     }
@@ -98,6 +92,7 @@ static inline NRI_NAME(Format) NRI_FUNC_NAME(GetSupportedDepthFormat)(const NRI_
     if (NRI_REF_ACCESS(coreInterface)->GetFormatSupport(device, NRI_ENUM_MEMBER(Format, D32_SFLOAT_S8_UINT_X24)) & NRI_ENUM_MEMBER(FormatSupportBits, DEPTH_STENCIL_ATTACHMENT))
         return NRI_ENUM_MEMBER(Format, D32_SFLOAT_S8_UINT_X24);
 
+    // Should be unreachable
     return NRI_ENUM_MEMBER(Format, UNKNOWN);
 }
 

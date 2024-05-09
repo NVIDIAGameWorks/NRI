@@ -254,6 +254,7 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
     }
 
     VkRenderingAttachmentInfo depthStencil = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+    bool hasStencil = false;
     if (attachmentsDesc.depthStencil) {
         const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.depthStencil;
 
@@ -273,6 +274,8 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
         m_RenderLayerNum = std::min(m_RenderLayerNum, desc.arraySize);
         m_RenderWidth = std::min(m_RenderWidth, w);
         m_RenderHeight = std::min(m_RenderHeight, h);
+
+        hasStencil = HasStencil(descriptor.GetTexture().GetDesc().format);
     }
 
     // TODO: matches D3D behavior?
@@ -283,18 +286,15 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
         m_RenderHeight = 0;
     }
 
-    VkRenderingInfo renderingInfo = {
-        VK_STRUCTURE_TYPE_RENDERING_INFO,
-        nullptr,
-        0,
-        {{0, 0}, {m_RenderWidth, m_RenderHeight}},
-        m_RenderLayerNum,
-        0,
-        attachmentsDesc.colorNum,
-        colors,
-        attachmentsDesc.depthStencil ? &depthStencil : nullptr,
-        attachmentsDesc.depthStencil ? &depthStencil : nullptr,
-    };
+    VkRenderingInfo renderingInfo = {VK_STRUCTURE_TYPE_RENDERING_INFO};
+    renderingInfo.flags = 0;
+    renderingInfo.renderArea = {{0, 0}, {m_RenderWidth, m_RenderHeight}};
+    renderingInfo.layerCount = m_RenderLayerNum;
+    renderingInfo.viewMask = 0;
+    renderingInfo.colorAttachmentCount = attachmentsDesc.colorNum;
+    renderingInfo.pColorAttachments = colors;
+    renderingInfo.pDepthAttachment = attachmentsDesc.depthStencil ? &depthStencil : nullptr;
+    renderingInfo.pStencilAttachment = hasStencil ? &depthStencil : nullptr;
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBeginRendering(m_Handle, &renderingInfo);

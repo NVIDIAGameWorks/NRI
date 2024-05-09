@@ -296,3 +296,18 @@ set_property (TARGET ${PROJECT_NAME} PROPERTY FOLDER ${PROJECT_NAME})
 
 set_target_properties (${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 message ("NRI output path: '${CMAKE_RUNTIME_OUTPUT_DIRECTORY}'")
+
+if (WIN32)
+    if (NRI_ENABLE_D3D11_SUPPORT OR NRI_ENABLE_D3D12_SUPPORT)
+        # Function - copy a library to the output folder of a project
+        function (copy_library PROJECT LIBRARY_NAME)
+            add_custom_command (TARGET ${PROJECT} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIBRARY_NAME} $<TARGET_FILE_DIR:${PROJECT}>
+                COMMAND_EXPAND_LISTS)
+        endfunction ()
+
+        # Copy AMD AGS into the output folder
+        find_file (AMD_AGS_DLL NAMES amd_ags_x64.dll PATHS "External/amdags/ags_lib/lib")
+        copy_library (${PROJECT_NAME} ${AMD_AGS_DLL})
+    endif ()
+endif ()
