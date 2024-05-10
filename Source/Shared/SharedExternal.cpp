@@ -387,83 +387,127 @@ uint32_t NRIFormatToDXGIFormat(nri::Format format) {
 
 #endif
 
-constexpr std::array<FormatProps, (size_t)nri::Format::MAX_NUM> FORMAT_INFO_TABLE = {{
-    {1, 0, false, false},                    // UNKNOWN
-    {sizeof(uint8_t), 1, false, false},      // R8_UNORM
-    {sizeof(int8_t), 1, false, false},       // R8_SNORM
-    {sizeof(uint8_t), 1, true, false},       // R8_UINT
-    {sizeof(int8_t), 1, true, false},        // R8_SINT
-    {sizeof(uint8_t) * 2, 1, false, false},  // RG8_UNORM
-    {sizeof(int8_t) * 2, 1, false, false},   // RG8_SNORM
-    {sizeof(uint8_t) * 2, 1, true, false},   // RG8_UINT
-    {sizeof(int8_t) * 2, 1, true, false},    // RG8_SINT
-    {sizeof(uint8_t) * 4, 1, false, false},  // BGRA8_UNORM
-    {sizeof(uint8_t) * 4, 1, false, true},   // BGRA8_SRGB
-    {sizeof(uint8_t) * 4, 1, false, false},  // RGBA8_UNORM
-    {sizeof(uint8_t) * 4, 1, false, true},   // RGBA8_SRGB
-    {sizeof(int8_t) * 4, 1, false, false},   // RGBA8_SNORM
-    {sizeof(uint8_t) * 4, 1, true, false},   // RGBA8_UINT
-    {sizeof(int8_t) * 4, 1, true, false},    // RGBA8_SINT
-    {sizeof(uint16_t), 1, false, false},     // R16_UNORM
-    {sizeof(int16_t), 1, false, false},      // R16_SNORM
-    {sizeof(uint16_t), 1, true, false},      // R16_UINT
-    {sizeof(int16_t), 1, true, false},       // R16_SINT
-    {sizeof(uint16_t), 1, false, false},     // R16_SFLOAT
-    {sizeof(uint16_t) * 2, 1, false, false}, // RG16_UNORM
-    {sizeof(int16_t) * 2, 1, false, false},  // RG16_SNORM
-    {sizeof(uint16_t) * 2, 1, true, false},  // RG16_UINT
-    {sizeof(int16_t) * 2, 1, true, false},   // RG16_SINT
-    {sizeof(uint16_t) * 2, 1, false, false}, // RG16_SFLOAT
-    {sizeof(uint16_t) * 4, 1, false, false}, // RGBA16_UNORM
-    {sizeof(int16_t) * 4, 1, false, false},  // RGBA16_SNORM
-    {sizeof(uint16_t) * 4, 1, true, false},  // RGBA16_UINT
-    {sizeof(int16_t) * 4, 1, true, false},   // RGBA16_SINT
-    {sizeof(uint16_t) * 4, 1, false, false}, // RGBA16_SFLOAT
-    {sizeof(uint32_t), 1, true, false},      // R32_UINT
-    {sizeof(int32_t), 1, true, false},       // R32_SINT
-    {sizeof(float), 1, false, false},        // R32_SFLOAT
-    {sizeof(uint32_t) * 2, 1, true, false},  // RG32_UINT
-    {sizeof(int32_t) * 2, 1, true, false},   // RG32_SINT
-    {sizeof(float) * 2, 1, false, false},    // RG32_SFLOAT
-    {sizeof(uint32_t) * 3, 1, true, false},  // RGB32_UINT
-    {sizeof(int32_t) * 3, 1, true, false},   // RGB32_SINT
-    {sizeof(float) * 3, 1, false, false},    // RGB32_SFLOAT
-    {sizeof(uint32_t) * 4, 1, true, false},  // RGBA32_UINT
-    {sizeof(int32_t) * 4, 1, true, false},   // RGBA32_SINT
-    {sizeof(float) * 4, 1, false, false},    // RGBA32_SFLOAT
-    {sizeof(uint16_t), 1, false, false},     // B5_G6_R5_UNORM
-    {sizeof(uint16_t), 1, false, false},     // B5_G5_R5_A1_UNORM
-    {sizeof(uint16_t), 1, false, false},     // B4_G4_R4_A4_UNORM
-    {sizeof(uint32_t), 1, false, false},     // R10_G10_B10_A2_UNORM
-    {sizeof(uint32_t), 1, true, false},      // R10_G10_B10_A2_UINT
-    {sizeof(uint32_t), 1, false, false},     // R11_G11_B10_UFLOAT
-    {sizeof(uint32_t), 1, false, false},     // R9_G9_B9_E5_UFLOAT
-    {8, 4, false, false},                    // BC1_RGBA_UNORM
-    {8, 4, false, true},                     // BC1_RGBA_SRGB
-    {16, 4, false, false},                   // BC2_RGBA_UNORM
-    {16, 4, false, true},                    // BC2_RGBA_SRGB
-    {16, 4, false, false},                   // BC3_RGBA_UNORM
-    {16, 4, false, true},                    // BC3_RGBA_SRGB
-    {8, 4, false, false},                    // BC4_R_UNORM
-    {8, 4, false, false},                    // BC4_R_SNORM
-    {16, 4, false, false},                   // BC5_RG_UNORM
-    {16, 4, false, false},                   // BC5_RG_SNORM
-    {16, 4, false, false},                   // BC6H_RGB_UFLOAT
-    {16, 4, false, false},                   // BC6H_RGB_SFLOAT
-    {16, 4, false, false},                   // BC7_RGBA_UNORM
-    {16, 4, false, true},                    // BC7_RGBA_SRGB
-    {sizeof(uint16_t), 1, false, false},     // D16_UNORM
-    {sizeof(uint32_t), 1, false, false},     // D24_UNORM_S8_UINT
-    {sizeof(uint32_t), 1, false, false},     // D32_SFLOAT
-    {sizeof(uint64_t), 1, false, false},     // D32_SFLOAT_S8_UINT_X24
-    {sizeof(uint32_t), 0, false, false},     // R24_UNORM_X8
-    {sizeof(uint32_t), 0, false, false},     // X24_G8_UINT
-    {sizeof(uint64_t), 0, false, false},     // R32_SFLOAT_X8_X24
-    {sizeof(uint64_t), 0, false, false},     // X32_G8_UINT_X24
+// clang-format off
+
+#define _ 0
+#define X 1
+
+constexpr std::array<nri::FormatProps, (size_t)nri::Format::MAX_NUM> FORMAT_PROPS = {{
+    //                                                                                                                  isStencil
+    //                                                                                                                  isSrgb  |
+    //                                                                                                             isSigned  |  |
+    //                                                                                                            isNorm  |  |  |
+    //                                                                                                      isInteger  |  |  |  |
+    //                                                                                                    isPacked  |  |  |  |  |
+    //                                                                                                  isFloat  |  |  |  |  |  |
+    //                                                                                           isExpShared  |  |  |  |  |  |  |
+    //                                                                                            isDepth  |  |  |  |  |  |  |  |
+    //                                                                                    isCompressed  |  |  |  |  |  |  |  |  |
+    //                                                                                        isBgr  |  |  |  |  |  |  |  |  |  |
+    //                                                                               blockHeight  |  |  |  |  |  |  |  |  |  |  |
+    //                                                                             blockWidth  |  |  |  |  |  |  |  |  |  |  |  |
+    //                                                                             stride   |  |  |  |  |  |  |  |  |  |  |  |  |
+    //                                                                         A bits   |   |  |  |  |  |  |  |  |  |  |  |  |  |
+    //                                                                     B bits   |   |   |  |  |  |  |  |  |  |  |  |  |  |  |
+    //                                                                 G bits   |   |   |   |  |  |  |  |  |  |  |  |  |  |  |  |
+    //                                                             R bits   |   |   |   |   |  |  |  |  |  |  |  |  |  |  |  |  |
+    //                          self                                    |   |   |   |   |   |  |  |  |  |  |  |  |  |  |  |  |  |
+    // format name              |                                       |   |   |   |   |   |  |  |  |  |  |  |  |  |  |  |  |  |
+    {"UNKNOWN",                 nri::Format::UNKNOWN,                   0,  0,  0,  0,  1,  0, 0, _, _, _, _, _, _, _, _, _, _, _}, // UNKNOWN
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"R8_UNORM",                nri::Format::R8_UNORM,                  8,  0,  0,  0,  1,  1, 1, _, _, _, _, _, _, _, X, _, _, _}, // R8_UNORM
+    {"R8_SNORM",                nri::Format::R8_SNORM,                  8,  0,  0,  0,  1,  1, 1, _, _, _, _, _, _, _, X, _, _, _}, // R8_SNORM
+    {"R8_UINT",                 nri::Format::R8_UINT,                   8,  0,  0,  0,  1,  1, 1, _, _, _, _, _, _, X, _, _, _, _}, // R8_UINT
+    {"R8_SINT",                 nri::Format::R8_SINT,                   8,  0,  0,  0,  1,  1, 1, _, _, _, _, _, _, X, _, X, _, _}, // R8_SINT
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"RG8_UNORM",               nri::Format::RG8_UNORM,                 8,  8,  0,  0,  2,  1, 1, _, _, _, _, _, _, _, X, _, _, _}, // RG8_UNORM
+    {"RG8_SNORM",               nri::Format::RG8_SNORM,                 8,  8,  0,  0,  2,  1, 1, _, _, _, _, _, _, _, X, _, _, _}, // RG8_SNORM
+    {"RG8_UINT",                nri::Format::RG8_UINT,                  8,  8,  0,  0,  2,  1, 1, _, _, _, _, _, _, X, _, _, _, _}, // RG8_UINT
+    {"RG8_SINT",                nri::Format::RG8_SINT,                  8,  8,  0,  0,  2,  1, 1, _, _, _, _, _, _, X, _, X, _, _}, // RG8_SINT
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"BGRA8_UNORM",             nri::Format::BGRA8_UNORM,               8,  8,  8,  8,  4,  1, 1, X, _, _, _, _, _, _, X, _, _, _}, // BGRA8_UNORM
+    {"BGRA8_SRGB",              nri::Format::BGRA8_SRGB,                8,  8,  8,  8,  4,  1, 1, X, _, _, _, _, _, _, _, _, X, _}, // BGRA8_SRGB
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"RGBA8_UNORM",             nri::Format::RGBA8_UNORM,               8,  8,  8,  8,  4,  1, 1, _, _, _, _, _, _, _, X, _, _, _}, // RGBA8_UNORM
+    {"RGBA8_SRGB",              nri::Format::RGBA8_SRGB,                8,  8,  8,  8,  4,  1, 1, _, _, _, _, _, _, _, _, _, X, _}, // RGBA8_SRGB
+    {"RGBA8_SNORM",             nri::Format::RGBA8_SNORM,               8,  8,  8,  8,  4,  1, 1, _, _, _, _, _, _, _, X, _, _, _}, // RGBA8_SNORM
+    {"RGBA8_UINT",              nri::Format::RGBA8_UINT,                8,  8,  8,  8,  4,  1, 1, _, _, _, _, _, _, X, _, _, _, _}, // RGBA8_UINT
+    {"RGBA8_SINT",              nri::Format::RGBA8_SINT,                8,  8,  8,  8,  4,  1, 1, _, _, _, _, _, _, X, _, X, _, _}, // RGBA8_SINT
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"R16_UNORM",               nri::Format::R16_UNORM,                 16, 0,  0,  0,  2,  1, 1, _, _, _, _, _, _, _, X, _, _, _}, // R16_UNORM
+    {"R16_SNORM",               nri::Format::R16_SNORM,                 16, 0,  0,  0,  2,  1, 1, _, _, _, _, _, _, _, X, _, _, _}, // R16_SNORM
+    {"R16_UINT",                nri::Format::R16_UINT,                  16, 0,  0,  0,  2,  1, 1, _, _, _, _, _, _, X, _, _, _, _}, // R16_UINT
+    {"R16_SINT",                nri::Format::R16_SINT,                  16, 0,  0,  0,  2,  1, 1, _, _, _, _, _, _, X, _, X, _, _}, // R16_SINT
+    {"R16_SFLOAT",              nri::Format::R16_SFLOAT,                16, 0,  0,  0,  2,  1, 1, _, _, _, _, X, _, _, _, X, _, _}, // R16_SFLOAT
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"RG16_UNORM",              nri::Format::RG16_UNORM,                16, 16, 0,  0,  4,  1, 1, _, _, _, _, _, _, _, X, _, _, _}, // RG16_UNORM
+    {"RG16_SNORM",              nri::Format::RG16_SNORM,                16, 16, 0,  0,  4,  1, 1, _, _, _, _, _, _, _, X, _, _, _}, // RG16_SNORM
+    {"RG16_UINT",               nri::Format::RG16_UINT,                 16, 16, 0,  0,  4,  1, 1, _, _, _, _, _, _, X, _, _, _, _}, // RG16_UINT
+    {"RG16_SINT",               nri::Format::RG16_SINT,                 16, 16, 0,  0,  4,  1, 1, _, _, _, _, _, _, X, _, X, _, _}, // RG16_SINT
+    {"RG16_SFLOAT",             nri::Format::RG16_SFLOAT,               16, 16, 0,  0,  4,  1, 1, _, _, _, _, X, _, _, _, X, _, _}, // RG16_SFLOAT
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"RGBA16_UNORM",            nri::Format::RGBA16_UNORM,              16, 16, 16, 16, 8,  1, 1, _, _, _, _, _, _, _, X, _, _, _}, // RGBA16_UNORM
+    {"RGBA16_SNORM",            nri::Format::RGBA16_SNORM,              16, 16, 16, 16, 8,  1, 1, _, _, _, _, _, _, _, X, _, _, _}, // RGBA16_SNORM
+    {"RGBA16_UINT",             nri::Format::RGBA16_UINT,               16, 16, 16, 16, 8,  1, 1, _, _, _, _, _, _, X, _, _, _, _}, // RGBA16_UINT
+    {"RGBA16_SINT",             nri::Format::RGBA16_SINT,               16, 16, 16, 16, 8,  1, 1, _, _, _, _, _, _, X, _, X, _, _}, // RGBA16_SINT
+    {"RGBA16_SFLOAT",           nri::Format::RGBA16_SFLOAT,             16, 16, 16, 16, 8,  1, 1, _, _, _, _, X, _, _, _, X, _, _}, // RGBA16_SFLOAT
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"R32_UINT",                nri::Format::R32_UINT,                  32, 32, 0,  0,  4,  1, 1, _, _, _, _, _, _, X, _, _, _, _}, // R32_UINT
+    {"R32_SINT",                nri::Format::R32_SINT,                  32, 32, 0,  0,  4,  1, 1, _, _, _, _, _, _, X, _, X, _, _}, // R32_SINT
+    {"R32_SFLOAT",              nri::Format::R32_SFLOAT,                32, 32, 0,  0,  4,  1, 1, _, _, _, _, X, _, _, _, X, _, _}, // R32_SFLOAT
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"RG32_UINT",               nri::Format::RG32_UINT,                 32, 32, 0,  0,  8,  1, 1, _, _, _, _, _, _, X, _, _, _, _}, // RG32_UINT
+    {"RG32_SINT",               nri::Format::RG32_SINT,                 32, 32, 0,  0,  8,  1, 1, _, _, _, _, _, _, X, _, X, _, _}, // RG32_SINT
+    {"RG32_SFLOAT",             nri::Format::RG32_SFLOAT,               32, 32, 0,  0,  8,  1, 1, _, _, _, _, X, _, _, _, X, _, _}, // RG32_SFLOAT
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"RGB32_UINT",              nri::Format::RGB32_UINT,                32, 32, 32, 0,  12, 1, 1, _, _, _, _, _, _, X, _, _, _, _}, // RGB32_UINT
+    {"RGB32_SINT",              nri::Format::RGB32_SINT,                32, 32, 32, 0,  12, 1, 1, _, _, _, _, _, _, X, _, X, _, _}, // RGB32_SINT
+    {"RGB32_SFLOAT",            nri::Format::RGB32_SFLOAT,              32, 32, 32, 0,  12, 1, 1, _, _, _, _, X, _, _, _, X, _, _}, // RGB32_SFLOAT
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"RGBA32_UINT",             nri::Format::RGBA32_UINT,               32, 32, 32, 32, 16, 1, 1, _, _, _, _, _, _, X, _, _, _, _}, // RGBA32_UINT
+    {"RGBA32_SINT",             nri::Format::RGBA32_SINT,               32, 32, 32, 32, 16, 1, 1, _, _, _, _, _, _, X, _, X, _, _}, // RGBA32_SINT
+    {"RGBA32_SFLOAT",           nri::Format::RGBA32_SFLOAT,             32, 32, 32, 32, 16, 1, 1, _, _, _, _, X, _, _, _, X, _, _}, // RGBA32_SFLOAT
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"B5_G6_R5_UNORM",          nri::Format::B5_G6_R5_UNORM,            5,  6,  5,  0,  2,  1, 1, X, _, _, _, _, X, _, X, _, _, _}, // B5_G6_R5_UNORM
+    {"B5_G5_R5_A1_UNORM",       nri::Format::B5_G5_R5_A1_UNORM,         5,  5,  5,  1,  2,  1, 1, X, _, _, _, _, X, _, X, _, _, _}, // B5_G5_R5_A1_UNORM
+    {"B4_G4_R4_A4_UNORM",       nri::Format::B4_G4_R4_A4_UNORM,         4,  4,  4,  4,  2,  1, 1, X, _, _, _, _, X, _, X, _, _, _}, // B4_G4_R4_A4_UNORM
+    {"R10_G10_B10_A2_UNORM",    nri::Format::R10_G10_B10_A2_UNORM,      10, 10, 10, 2,  4,  1, 1, _, _, _, _, _, X, _, X, _, _, _}, // R10_G10_B10_A2_UNORM
+    {"R10_G10_B10_A2_UINT",     nri::Format::R10_G10_B10_A2_UINT,       10, 10, 10, 2,  4,  1, 1, _, _, _, _, _, X, X, _, _, _, _}, // R10_G10_B10_A2_UINT
+    {"R11_G11_B10_UFLOAT",      nri::Format::R11_G11_B10_UFLOAT,        11, 11, 10, 0,  4,  1, 1, _, _, _, _, X, X, _, _, _, _, _}, // R11_G11_B10_UFLOAT
+    {"R9_G9_B9_E5_UFLOAT",      nri::Format::R9_G9_B9_E5_UFLOAT,        9,  9,  9,  5,  4,  1, 1, _, _, _, X, X, X, _, _, _, _, _}, // R9_G9_B9_E5_UFLOAT
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"BC1_RGBA_UNORM",          nri::Format::BC1_RGBA_UNORM,            5,  6,  5,  1,  8,  4, 4, _, X, _, _, _, _, _, X, _, _, _}, // BC1_RGBA_UNORM
+    {"BC1_RGBA_SRGB",           nri::Format::BC1_RGBA_SRGB,             5,  6,  5,  1,  8,  4, 4, _, X, _, _, _, _, _, _, _, X, _}, // BC1_RGBA_SRGB
+    {"BC2_RGBA_UNORM",          nri::Format::BC2_RGBA_UNORM,            5,  6,  5,  4,  16, 4, 4, _, X, _, _, _, _, _, X, _, _, _}, // BC2_RGBA_UNORM
+    {"BC2_RGBA_SRGB",           nri::Format::BC2_RGBA_SRGB,             5,  6,  5,  4,  16, 4, 4, _, X, _, _, _, _, _, _, _, X, _}, // BC2_RGBA_SRGB
+    {"BC3_RGBA_UNORM",          nri::Format::BC3_RGBA_UNORM,            5,  6,  5,  8,  16, 4, 4, _, X, _, _, _, _, _, X, _, _, _}, // BC3_RGBA_UNORM
+    {"BC3_RGBA_SRGB",           nri::Format::BC3_RGBA_SRGB,             5,  6,  5,  8,  16, 4, 4, _, X, _, _, _, _, _, _, _, X, _}, // BC3_RGBA_SRGB
+    {"BC4_R_UNORM",             nri::Format::BC4_R_UNORM,               8,  0,  0,  0,  8,  4, 4, _, X, _, _, _, _, _, X, _, _, _}, // BC4_R_UNORM
+    {"BC4_R_SNORM",             nri::Format::BC4_R_SNORM,               8,  0,  0,  0,  8,  4, 4, _, X, _, _, _, _, _, X, _, _, _}, // BC4_R_SNORM
+    {"BC5_RG_UNORM",            nri::Format::BC5_RG_UNORM,              8,  8,  0,  0,  16, 4, 4, _, X, _, _, _, _, _, X, _, _, _}, // BC5_RG_UNORM
+    {"BC5_RG_SNORM",            nri::Format::BC5_RG_SNORM,              8,  8,  0,  0,  16, 4, 4, _, X, _, _, _, _, _, X, _, _, _}, // BC5_RG_SNORM
+    {"BC6H_RGB_UFLOAT",         nri::Format::BC6H_RGB_UFLOAT,           16, 16, 16, 0,  16, 4, 4, _, X, _, _, X, _, _, _, _, _, _}, // BC6H_RGB_UFLOAT
+    {"BC6H_RGB_SFLOAT",         nri::Format::BC6H_RGB_SFLOAT,           16, 16, 16, 0,  16, 4, 4, _, X, _, _, X, _, _, _, X, _, _}, // BC6H_RGB_SFLOAT
+    {"BC7_RGBA_UNORM",          nri::Format::BC7_RGBA_UNORM,            8,  8,  8,  8,  16, 4, 4, _, X, _, _, _, _, _, X, _, _, _}, // BC7_RGBA_UNORM
+    {"BC7_RGBA_SRGB",           nri::Format::BC7_RGBA_SRGB,             8,  8,  8,  8,  16, 4, 4, _, X, _, _, _, _, _, _, _, X, _}, // BC7_RGBA_SRGB
+    //                                                                  r   g   b   a   s   w  h  b  c  d  e  f  p  i  n  s  s  s
+    {"D16_UNORM",               nri::Format::D16_UNORM,                 16, 0,  0,  0,  2,  1, 1, _, _, X, _, _, _, _, X, _, _, _}, // D16_UNORM
+    {"D24_UNORM_S8_UINT",       nri::Format::D24_UNORM_S8_UINT,         24, 8,  0,  0,  4,  1, 1, _, _, X, _, _, _, X, X, _, _, X}, // D24_UNORM_S8_UINT
+    {"D32_SFLOAT",              nri::Format::D32_SFLOAT,                32, 0,  0,  0,  4,  1, 1, _, _, X, _, X, _, _, _, X, _, _}, // D32_SFLOAT
+    {"D32_SFLOAT_S8_UINT_X24",  nri::Format::D32_SFLOAT_S8_UINT_X24,    32, 8,  0,  0,  8,  1, 1, _, _, X, _, X, _, X, _, X, _, X}, // D32_SFLOAT_S8_UINT_X24
+    {"R24_UNORM_X8",            nri::Format::R24_UNORM_X8,              24, 8,  0,  0,  4,  1, 1, _, _, X, _, _, _, _, X, _, _, _}, // R24_UNORM_X8
+    {"X24_G8_UINT",             nri::Format::X24_G8_UINT,               24, 8,  0,  0,  4,  1, 1, _, _, _, _, _, _, X, _, _, _, X}, // X24_G8_UINT
+    {"R32_SFLOAT_X8_X24",       nri::Format::R32_SFLOAT_X8_X24,         32, 8,  0,  0,  8,  1, 1, _, _, X, _, X, _, _, _, X, _, _}, // R32_SFLOAT_X8_X24
+    {"X32_G8_UINT_X24",         nri::Format::X32_G8_UINT_X24,           32, 8,  0,  0,  8,  1, 1, _, _, _, _, _, _, X, _, _, _, X}, // X32_G8_UINT_X24
 }};
 
-const FormatProps& GetFormatProps(nri::Format format) {
-    return FORMAT_INFO_TABLE[(size_t)format];
+#undef _
+#undef X
+
+// clang-format on
+
+const nri::FormatProps& GetFormatProps(nri::Format format) {
+    return FORMAT_PROPS[(size_t)format];
 }
 
 constexpr std::array<nri::Format, 116> NRI_FORMAT_TABLE = {

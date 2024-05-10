@@ -245,6 +245,10 @@ NRI_API uint32_t NRI_CALL nriConvertNRIFormatToDXGI(Format format) {
 #endif
 }
 
+NRI_API const FormatProps& NRI_CALL nriGetFormatProps(Format format) {
+    return GetFormatProps(format);
+}
+
 NRI_API const char* NRI_CALL nriGetGraphicsAPIString(GraphicsAPI graphicsAPI) {
     switch (graphicsAPI) {
         case GraphicsAPI::D3D11:
@@ -256,85 +260,6 @@ NRI_API const char* NRI_CALL nriGetGraphicsAPIString(GraphicsAPI graphicsAPI) {
         default:
             return "UNKNOWN";
     }
-}
-
-constexpr std::array<const char*, (size_t)Format::MAX_NUM> formatStrings = {
-    "UNKNOWN",
-    "R8_UNORM",
-    "R8_SNORM",
-    "R8_UINT",
-    "R8_SINT",
-    "RG8_UNORM",
-    "RG8_SNORM",
-    "RG8_UINT",
-    "RG8_SINT",
-    "BGRA8_UNORM",
-    "BGRA8_SRGB",
-    "RGBA8_UNORM",
-    "RGBA8_SRGB",
-    "RGBA8_SNORM",
-    "RGBA8_UINT",
-    "RGBA8_SINT",
-    "R16_UNORM",
-    "R16_SNORM",
-    "R16_UINT",
-    "R16_SINT",
-    "R16_SFLOAT",
-    "RG16_UNORM",
-    "RG16_SNORM",
-    "RG16_UINT",
-    "RG16_SINT",
-    "RG16_SFLOAT",
-    "RGBA16_UNORM",
-    "RGBA16_SNORM",
-    "RGBA16_UINT",
-    "RGBA16_SINT",
-    "RGBA16_SFLOAT",
-    "R32_UINT",
-    "R32_SINT",
-    "R32_SFLOAT",
-    "RG32_UINT",
-    "RG32_SINT",
-    "RG32_SFLOAT",
-    "RGB32_UINT",
-    "RGB32_SINT",
-    "RGB32_SFLOAT",
-    "RGBA32_UINT",
-    "RGBA32_SINT",
-    "RGBA32_SFLOAT",
-    "B5_G6_R5_UNORM",
-    "B5_G5_R5_A1_UNORM",
-    "B4_G4_R4_A4_UNORM",
-    "R10_G10_B10_A2_UNORM",
-    "R10_G10_B10_A2_UINT",
-    "R11_G11_B10_UFLOAT",
-    "R9_G9_B9_E5_UFLOAT",
-    "BC1_RGBA_UNORM",
-    "BC1_RGBA_SRGB",
-    "BC2_RGBA_UNORM",
-    "BC2_RGBA_SRGB",
-    "BC3_RGBA_UNORM",
-    "BC3_RGBA_SRGB",
-    "BC4_R_UNORM",
-    "BC4_R_SNORM",
-    "BC5_RG_UNORM",
-    "BC5_RG_SNORM",
-    "BC6H_RGB_UFLOAT",
-    "BC6H_RGB_SFLOAT",
-    "BC7_RGBA_UNORM",
-    "BC7_RGBA_SRGB",
-    "D16_UNORM",
-    "D24_UNORM_S8_UINT",
-    "D32_SFLOAT",
-    "D32_SFLOAT_S8_UINT_X24",
-    "R24_UNORM_X8",
-    "X24_G8_UINT",
-    "R32_SFLOAT_X8_X24",
-    "X32_G8_UINT_X24",
-};
-
-NRI_API const char* NRI_CALL nriGetFormatString(Format format) {
-    return formatStrings[(size_t)format];
 }
 
 #ifdef _WIN32

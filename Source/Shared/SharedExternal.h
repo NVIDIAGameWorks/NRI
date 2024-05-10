@@ -83,15 +83,8 @@ struct DxgiFormat {
     DXGI_FORMAT typed;
 };
 
-struct FormatProps {
-    uint16_t stride;
-    uint8_t blockWidth;
-    bool isInteger;
-    bool isSrgb;
-};
-
 const DxgiFormat& GetDxgiFormat(nri::Format format);
-const FormatProps& GetFormatProps(nri::Format format);
+const nri::FormatProps& GetFormatProps(nri::Format format);
 
 nri::Format DXGIFormatToNRIFormat(uint32_t dxgiFormat);
 nri::Format VKFormatToNRIFormat(uint32_t vkFormat);
