@@ -102,50 +102,51 @@ constexpr VkPipelineStageFlags2 GetPipelineStageFlags(StageBits stageBits) {
 }
 
 constexpr VkShaderStageFlags GetShaderStageFlags(StageBits stage) {
+    VkShaderStageFlags stageFlags = 0;
+
     if (stage & StageBits::VERTEX_SHADER)
-        return VK_SHADER_STAGE_VERTEX_BIT;
+        stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
 
     if (stage & StageBits::TESS_CONTROL_SHADER)
-        return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        stageFlags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 
     if (stage & StageBits::TESS_EVALUATION_SHADER)
-        return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        stageFlags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
     if (stage & StageBits::GEOMETRY_SHADER)
-        return VK_SHADER_STAGE_GEOMETRY_BIT;
+        stageFlags |= VK_SHADER_STAGE_GEOMETRY_BIT;
 
     if (stage & StageBits::FRAGMENT_SHADER)
-        return VK_SHADER_STAGE_FRAGMENT_BIT;
+        stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
     if (stage & StageBits::COMPUTE_SHADER)
-        return VK_SHADER_STAGE_COMPUTE_BIT;
+        stageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
 
     if (stage & StageBits::RAYGEN_SHADER)
-        return VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+        stageFlags |= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
 
     if (stage & StageBits::MISS_SHADER)
-        return VK_SHADER_STAGE_MISS_BIT_KHR;
+        stageFlags |= VK_SHADER_STAGE_MISS_BIT_KHR;
 
     if (stage & StageBits::INTERSECTION_SHADER)
-        return VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+        stageFlags |= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
 
     if (stage & StageBits::CLOSEST_HIT_SHADER)
-        return VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+        stageFlags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
 
     if (stage & StageBits::ANY_HIT_SHADER)
-        return VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+        stageFlags |= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
 
     if (stage & StageBits::CALLABLE_SHADER)
-        return VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+        stageFlags |= VK_SHADER_STAGE_CALLABLE_BIT_KHR;
 
     if (stage & StageBits::MESH_CONTROL_SHADER)
-        return VK_SHADER_STAGE_TASK_BIT_EXT;
+        stageFlags |= VK_SHADER_STAGE_TASK_BIT_EXT;
 
     if (stage & StageBits::MESH_EVALUATION_SHADER)
-        return VK_SHADER_STAGE_MESH_BIT_EXT;
+        stageFlags |= VK_SHADER_STAGE_MESH_BIT_EXT;
 
-    // Should be unreachable
-    return VK_SHADER_STAGE_ALL;
+    return stageFlags;
 }
 
 inline VkFormat GetVkFormat(Format format, bool demoteSrgb = false) {
