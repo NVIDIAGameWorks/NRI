@@ -61,6 +61,7 @@ NRI_STRUCT(StreamerInterface)
     NRI_NAME(Result) (NRI_CALL *CopyStreamerUpdateRequests)(NRI_NAME_REF(Streamer) streamer);
 
     // (DEVICE) Copy data to destinations (if any), barriers are externally controlled. Must be called after "CopyStreamerUpdateRequests"
+    // WARNING: D3D12 can silently promote a resource state to COPY_DESTINATION!
     void (NRI_CALL *CmdUploadStreamerUpdateRequests)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(Streamer) streamer);
 };
 

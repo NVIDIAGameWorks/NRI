@@ -64,8 +64,8 @@ NRI_STRUCT(CoreInterface)
     NRI_NAME(Result) (NRI_CALL *CreateCommandAllocator)(const NRI_NAME_REF(CommandQueue) commandQueue, NRI_NAME_REF(CommandAllocator*) commandAllocator);
     NRI_NAME(Result) (NRI_CALL *CreateCommandBuffer)(NRI_NAME_REF(CommandAllocator) commandAllocator, NRI_NAME_REF(CommandBuffer*) commandBuffer);
     NRI_NAME(Result) (NRI_CALL *CreateDescriptorPool)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(DescriptorPoolDesc) descriptorPoolDesc, NRI_NAME_REF(DescriptorPool*) descriptorPool);
-    NRI_NAME(Result) (NRI_CALL *CreateBuffer)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(BufferDesc) bufferDesc, NRI_NAME_REF(Buffer*) buffer);
-    NRI_NAME(Result) (NRI_CALL *CreateTexture)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(TextureDesc) textureDesc, NRI_NAME_REF(Texture*) texture);
+    NRI_NAME(Result) (NRI_CALL *CreateBuffer)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(BufferDesc) bufferDesc, NRI_NAME_REF(Buffer*) buffer); // requires "BindBufferMemory"
+    NRI_NAME(Result) (NRI_CALL *CreateTexture)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(TextureDesc) textureDesc, NRI_NAME_REF(Texture*) texture); // requires "BindTextureMemory"
     NRI_NAME(Result) (NRI_CALL *CreateBufferView)(const NRI_NAME_REF(BufferViewDesc) bufferViewDesc, NRI_NAME_REF(Descriptor*) bufferView);
     NRI_NAME(Result) (NRI_CALL *CreateTexture1DView)(const NRI_NAME_REF(Texture1DViewDesc) textureViewDesc, NRI_NAME_REF(Descriptor*) textureView);
     NRI_NAME(Result) (NRI_CALL *CreateTexture2DView)(const NRI_NAME_REF(Texture2DViewDesc) textureViewDesc, NRI_NAME_REF(Descriptor*) textureView);
@@ -137,11 +137,11 @@ NRI_STRUCT(CoreInterface)
 
             // Draw indirect:
             //  - drawNum = min(drawNum, countBuffer ? countBuffer[countBufferOffset] : INF)
-            //  - CmdDrawIndirect: "buffer" contains "Draw(Base)Desc" commands
-            //  - CmdDrawIndexedIndirect: "buffer" contains "DrawIndexed(Base)Desc" commands
+            //  - "CmdDrawIndirect": "buffer" contains "Draw(Base)Desc" commands
+            //  - "CmdDrawIndexedIndirect": "buffer" contains "DrawIndexed(Base)Desc" commands
             //  - see "Modified draw command signatures"
             void (NRI_CALL *CmdDrawIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const NRI_NAME(Buffer)* countBuffer, uint64_t countBufferOffset);
-            void (NRI_CALL *CmdDrawIndexedIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const NRI_NAME(Buffer)* countBuffer, uint64_t countBufferOffset);            
+            void (NRI_CALL *CmdDrawIndexedIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const NRI_NAME(Buffer)* countBuffer, uint64_t countBufferOffset);
         // }
         void (NRI_CALL *CmdEndRendering)(NRI_NAME_REF(CommandBuffer) commandBuffer);
 
@@ -196,26 +196,30 @@ NRI_STRUCT(CoreInterface)
 
     // Debug name
     void (NRI_CALL *SetDeviceDebugName)(NRI_NAME_REF(Device) device, const char* name);
-    void (NRI_CALL *SetCommandQueueDebugName)(NRI_NAME_REF(CommandQueue) commandQueue, const char* name);
     void (NRI_CALL *SetFenceDebugName)(NRI_NAME_REF(Fence) fence, const char* name);
-    void (NRI_CALL *SetCommandAllocatorDebugName)(NRI_NAME_REF(CommandAllocator) commandAllocator, const char* name);
-    void (NRI_CALL *SetDescriptorPoolDebugName)(NRI_NAME_REF(DescriptorPool) descriptorPool, const char* name);
+    void (NRI_CALL *SetDescriptorDebugName)(NRI_NAME_REF(Descriptor) descriptor, const char* name);
+    void (NRI_CALL *SetPipelineDebugName)(NRI_NAME_REF(Pipeline) pipeline, const char* name);
+    void (NRI_CALL *SetCommandBufferDebugName)(NRI_NAME_REF(CommandBuffer) commandBuffer, const char* name);
+
+    // Debug name - D3D11/D3D12: skipped if called *before* "Bind[X]Memory"
     void (NRI_CALL *SetBufferDebugName)(NRI_NAME_REF(Buffer) buffer, const char* name);
     void (NRI_CALL *SetTextureDebugName)(NRI_NAME_REF(Texture) texture, const char* name);
-    void (NRI_CALL *SetDescriptorDebugName)(NRI_NAME_REF(Descriptor) descriptor, const char* name);
+
+    // Debug name - D3D11: NOP
+    void (NRI_CALL *SetCommandQueueDebugName)(NRI_NAME_REF(CommandQueue) commandQueue, const char* name);
+    void (NRI_CALL *SetCommandAllocatorDebugName)(NRI_NAME_REF(CommandAllocator) commandAllocator, const char* name);
+    void (NRI_CALL *SetDescriptorPoolDebugName)(NRI_NAME_REF(DescriptorPool) descriptorPool, const char* name);
     void (NRI_CALL *SetPipelineLayoutDebugName)(NRI_NAME_REF(PipelineLayout) pipelineLayout, const char* name);
-    void (NRI_CALL *SetPipelineDebugName)(NRI_NAME_REF(Pipeline) pipeline, const char* name);
     void (NRI_CALL *SetQueryPoolDebugName)(NRI_NAME_REF(QueryPool) queryPool, const char* name);
     void (NRI_CALL *SetDescriptorSetDebugName)(NRI_NAME_REF(DescriptorSet) descriptorSet, const char* name);
-    void (NRI_CALL *SetCommandBufferDebugName)(NRI_NAME_REF(CommandBuffer) commandBuffer, const char* name);
     void (NRI_CALL *SetMemoryDebugName)(NRI_NAME_REF(Memory) memory, const char* name);
 
-    // Native objects
-    void* (NRI_CALL *GetDeviceNativeObject)(const NRI_NAME_REF(Device) device); // ID3D11Device*, ID3D12Device* or VkDevice
-    void* (NRI_CALL *GetCommandBufferNativeObject)(const NRI_NAME_REF(CommandBuffer) commandBuffer); // ID3D11DeviceContext*, ID3D12GraphicsCommandList* or VkCommandBuffer
-    uint64_t (NRI_CALL *GetBufferNativeObject)(const NRI_NAME_REF(Buffer) buffer); // ID3D11Buffer*, ID3D12Resource* or VkBuffer
-    uint64_t (NRI_CALL *GetTextureNativeObject)(const NRI_NAME_REF(Texture) texture); // ID3D11Resource*, ID3D12Resource* or VkImage
-    uint64_t (NRI_CALL *GetDescriptorNativeObject)(const NRI_NAME_REF(Descriptor) descriptor); // ID3D11View*, D3D12_CPU_DESCRIPTOR_HANDLE or VkImageView/VkBufferView
+    // Native objects                                                                                      D3D11                 D3D12                         VK
+    void* (NRI_CALL *GetDeviceNativeObject)(const NRI_NAME_REF(Device) device);                         // ID3D11Device*         ID3D12Device*                 VkDevice
+    void* (NRI_CALL *GetCommandBufferNativeObject)(const NRI_NAME_REF(CommandBuffer) commandBuffer);    // ID3D11DeviceContext*  ID3D12GraphicsCommandList*    VkCommandBuffer
+    uint64_t (NRI_CALL *GetBufferNativeObject)(const NRI_NAME_REF(Buffer) buffer);                      // ID3D11Buffer*         ID3D12Resource*               VkBuffer
+    uint64_t (NRI_CALL *GetTextureNativeObject)(const NRI_NAME_REF(Texture) texture);                   // ID3D11Resource*       ID3D12Resource*               VkImage
+    uint64_t (NRI_CALL *GetDescriptorNativeObject)(const NRI_NAME_REF(Descriptor) descriptor);          // ID3D11View*           D3D12_CPU_DESCRIPTOR_HANDLE   VkImageView/VkBufferView
 };
 
 NRI_API NRI_NAME(Result) NRI_CALL nriGetInterface(const NRI_NAME_REF(Device) device, const char* interfaceName, size_t interfaceSize, void* interfacePtr);

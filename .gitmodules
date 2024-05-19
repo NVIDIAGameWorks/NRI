@@ -1,7 +1,7 @@
 [submodule "External/vulkan"]
 	path = External/vulkan
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
-	branch = origin/vulkan-sdk-1.3.280
+	branch = origin/vulkan-sdk-1.3.283
 	update = merge
 [submodule "External/nvapi"]
 	path = External/nvapi

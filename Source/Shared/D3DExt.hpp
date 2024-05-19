@@ -16,7 +16,7 @@ Ext::~Ext() {
 
 void Ext::InitializeNVExt(const nri::DeviceBase* deviceBase, bool isNVAPILoadedInApp, bool isImported) {
     if (GetModuleHandleA("renderdoc.dll") != nullptr) {
-        REPORT_WARNING(deviceBase, "NVAPI is disabled, because RenderDoc library has been loaded.");
+        REPORT_WARNING(deviceBase, "NVAPI is disabled, because RenderDoc library has been loaded");
         return;
     }
     
