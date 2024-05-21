@@ -129,8 +129,8 @@ Draw parameters:
     #define NRI_DECLARE_DRAW_PARAMETERS \
         int NRI_VERTEX_ID_OFFSET : SV_VertexID, \
         uint NRI_INSTANCE_ID_OFFSET : SV_InstanceID, \
-        [[vk::builtin("BaseVertex")]] int NRI_BASE_VERTEX : _SV_Nothing, \
-        [[vk::builtin("BaseInstance")]] uint NRI_BASE_INSTANCE : _SV_Nothing
+        [[vk::builtin("BaseVertex")]] int NRI_BASE_VERTEX : _SV_Nothing1, \
+        [[vk::builtin("BaseInstance")]] uint NRI_BASE_INSTANCE : _SV_Nothing2
 
     #define NRI_VERTEX_ID (NRI_VERTEX_ID_OFFSET - NRI_BASE_VERTEX)
     #define NRI_INSTANCE_ID (NRI_INSTANCE_ID_OFFSET - NRI_BASE_INSTANCE)

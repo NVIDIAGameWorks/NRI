@@ -102,6 +102,11 @@ constexpr VkPipelineStageFlags2 GetPipelineStageFlags(StageBits stageBits) {
 }
 
 constexpr VkShaderStageFlags GetShaderStageFlags(StageBits stage) {
+    // Check non-mask values first
+    if (stage == StageBits::ALL)
+        return VK_SHADER_STAGE_ALL;
+
+    // Gather bits
     VkShaderStageFlags stageFlags = 0;
 
     if (stage & StageBits::VERTEX_SHADER)

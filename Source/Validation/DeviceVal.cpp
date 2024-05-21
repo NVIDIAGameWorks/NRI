@@ -21,7 +21,7 @@
 
 using namespace nri;
 
-static inline bool IsShaderStageValid(StageBits shaderStages, StageBits allowedStages) {
+static inline bool IsShaderStageValid(StageBits shaderStages, uint32_t& uniqueShaderStages, StageBits allowedStages) {
     uint32_t x = (uint32_t)(shaderStages & allowedStages);
     uint32_t n = 0;
     while (x) {
@@ -29,7 +29,11 @@ static inline bool IsShaderStageValid(StageBits shaderStages, StageBits allowedS
         x >>= 1;
     }
 
-    return n == 1 || shaderStages == StageBits::ALL;
+    x = (uint32_t)shaderStages;
+    bool isUnique = (uniqueShaderStages & x) == 0;
+    uniqueShaderStages |= x;
+
+    return n == 1 && isUnique;
 }
 
 void ConvertGeometryObjectsVal(GeometryObject* destObjects, const GeometryObject* sourceObjects, uint32_t objectNum);
@@ -447,9 +451,9 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
     const PipelineLayoutVal& pipelineLayout = *(PipelineLayoutVal*)graphicsPipelineDesc.pipelineLayout;
     const StageBits shaderStages = pipelineLayout.GetPipelineLayoutDesc().shaderStages;
     bool hasEntryPoint = false;
+    uint32_t uniqueShaderStages = 0;
     for (uint32_t i = 0; i < graphicsPipelineDesc.shaderNum; i++) {
         const ShaderDesc* shaderDesc = graphicsPipelineDesc.shaders + i;
-
         if (shaderDesc->stage == StageBits::VERTEX_SHADER || shaderDesc->stage == StageBits::MESH_CONTROL_SHADER)
             hasEntryPoint = true;
 
@@ -457,10 +461,10 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
             this, shaderDesc->stage & shaderStages, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].stage' is not enabled in the pipeline layout", i);
         RETURN_ON_FAILURE(this, shaderDesc->bytecode != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].bytecode' is invalid", i);
         RETURN_ON_FAILURE(this, shaderDesc->size != 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].size' is 0", i);
-        RETURN_ON_FAILURE(this, IsShaderStageValid(shaderDesc->stage, StageBits::GRAPHICS_SHADERS), Result::INVALID_ARGUMENT,
-            "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].stage' must include only 1 graphics shader stage", i);
+        RETURN_ON_FAILURE(this, IsShaderStageValid(shaderDesc->stage, uniqueShaderStages, StageBits::GRAPHICS_SHADERS), Result::INVALID_ARGUMENT,
+            "CreatePipeline: 'graphicsPipelineDesc.shaders[%u].stage' must include only 1 graphics shader stage, unique for the entire pipeline", i);
     }
-    RETURN_ON_FAILURE(this, hasEntryPoint, Result::INVALID_ARGUMENT, "CreatePipeline: Vertex or Mesh control shader is not provided");
+    RETURN_ON_FAILURE(this, hasEntryPoint, Result::INVALID_ARGUMENT, "CreatePipeline: a VERTEX or MESH_CONTROL shader is not provided");
 
     for (uint32_t i = 0; i < graphicsPipelineDesc.outputMerger.colorNum; i++) {
         const ColorAttachmentDesc* color = graphicsPipelineDesc.outputMerger.color + i;
@@ -1153,6 +1157,7 @@ Result DeviceVal::CreateRayTracingPipeline(const RayTracingPipelineDesc& pipelin
     RETURN_ON_FAILURE(this, pipelineDesc.shaderGroupDescNum != 0, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderGroupDescNum' is 0");
     RETURN_ON_FAILURE(this, pipelineDesc.recursionDepthMax != 0, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.recursionDepthMax' is 0");
 
+    uint32_t uniqueShaderStages = 0;
     for (uint32_t i = 0; i < pipelineDesc.shaderLibrary->shaderNum; i++) {
         const ShaderDesc& shaderDesc = pipelineDesc.shaderLibrary->shaders[i];
 
@@ -1160,8 +1165,8 @@ Result DeviceVal::CreateRayTracingPipeline(const RayTracingPipelineDesc& pipelin
             this, shaderDesc.bytecode != nullptr, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].bytecode' is invalid", i);
 
         RETURN_ON_FAILURE(this, shaderDesc.size != 0, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].size' is 0", i);
-        RETURN_ON_FAILURE(this, IsShaderStageValid(shaderDesc.stage, StageBits::RAY_TRACING_SHADERS), Result::INVALID_ARGUMENT,
-            "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].stage' must include only 1 ray tracing shader stage", i);
+        RETURN_ON_FAILURE(this, IsShaderStageValid(shaderDesc.stage, uniqueShaderStages, StageBits::RAY_TRACING_SHADERS), Result::INVALID_ARGUMENT,
+            "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].stage' must include only 1 ray tracing shader stage, unique for the entire pipeline", i);
     }
 
     auto pipelineDescImpl = pipelineDesc;

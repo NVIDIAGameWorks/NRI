@@ -15,7 +15,7 @@ option (NRI_ENABLE_WAYLAND_SUPPORT "Enable 'wayland' support" ON)
 # Options: D3D12 specific
 option (NRI_ENABLE_AGILITY_SDK_SUPPORT "Enable Agility SDK suupport to unlock access to recent D3D12 features" OFF)
 set (NRI_AGILITY_SDK_PATH "C:/AgilitySDK" CACHE STRING "Path to a directory containing Agility SDK (contents of '.nupkg/build/native/')")
-set (NRI_AGILITY_SDK_VERSION "613" CACHE STRING "Agility SDK version")
+set (NRI_AGILITY_SDK_VERSION "614" CACHE STRING "Agility SDK version")
 set (NRI_AGILITY_SDK_DIR "AgilitySDK" CACHE STRING "Directory where Agility SDK binaries will be copied to relative to 'CMAKE_RUNTIME_OUTPUT_DIRECTORY'")
 
 # Is submodule?
