@@ -819,6 +819,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isDispatchRaysIndirectSupported = rayTracingPipelineFeatures.rayTracingPipelineTraceRaysIndirect;
         m_Desc.isMeshShaderPipelineStatsSupported = meshShaderFeatures.meshShaderQueries == VK_TRUE;
         m_Desc.isDrawMeshTasksIndirectSupported = true;
+        m_Desc.isEnchancedBarrierSupported = true;
 
         m_Desc.isShaderNativeI16Supported = features.features.shaderInt16;
         m_Desc.isShaderNativeF16Supported = features12.shaderFloat16;
