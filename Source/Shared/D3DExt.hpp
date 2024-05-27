@@ -1,5 +1,7 @@
 // © 2021 NVIDIA Corporation
 
+#if NRI_USE_EXT_LIBS
+
 Ext::~Ext() {
     if (m_IsNvAPIAvailable)
         NvAPI_Unload();
@@ -19,7 +21,7 @@ void Ext::InitializeNVExt(const nri::DeviceBase* deviceBase, bool isNVAPILoadedI
         REPORT_WARNING(deviceBase, "NVAPI is disabled, because RenderDoc library has been loaded");
         return;
     }
-    
+
     m_DeviceBase = deviceBase;
     m_IsImported = isImported;
 
@@ -96,7 +98,8 @@ void Ext::InitializeAMDExt(const nri::DeviceBase* deviceBase, AGSContext* agsCon
 }
 
 // D3D11
-#if defined(__d3d11_h__)
+#    if defined(__d3d11_h__)
+
 void Ext::BeginUAVOverlap(ID3D11DeviceContext* deviceContext) const {
     if (m_IsNvAPIAvailable) {
         const NvAPI_Status res = NvAPI_D3D11_BeginUAVOverlap(deviceContext);
@@ -187,4 +190,34 @@ void Ext::DrawIndexedIndirect(
         }
     }
 }
+
+#    endif
+
+#else
+
+// D3D11
+#    if defined(__d3d11_h__)
+
+void Ext::DrawIndirect(
+    ID3D11DeviceContext* deviceContext, ID3D11Buffer* buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, ID3D11Buffer* countBuffer, uint32_t) const {
+    if (!countBuffer) {
+        for (uint32_t i = 0; i < drawNum; i++) {
+            deviceContext->DrawInstancedIndirect(buffer, (uint32_t)offset);
+            offset += stride;
+        }
+    }
+}
+
+void Ext::DrawIndexedIndirect(
+    ID3D11DeviceContext* deviceContext, ID3D11Buffer* buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, ID3D11Buffer* countBuffer, uint32_t) const {
+    if (!countBuffer) {
+        for (uint32_t i = 0; i < drawNum; i++) {
+            deviceContext->DrawIndexedInstancedIndirect(buffer, (uint32_t)offset);
+            offset += stride;
+        }
+    }
+}
+
+#    endif
+
 #endif

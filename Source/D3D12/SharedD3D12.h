@@ -71,9 +71,11 @@ D3D12_DESCRIPTOR_RANGE_TYPE GetDescriptorRangesType(DescriptorType descriptorTyp
 D3D12_RESOURCE_DIMENSION GetResourceDimension(TextureType textureType);
 } // namespace nri
 
-#include "amdags/ags_lib/inc/amd_ags.h"
-#include "nvapi/nvapi.h"
-#include "nvapi/nvShaderExtnEnums.h"
+#if NRI_USE_EXT_LIBS
+    #include "amdags/ags_lib/inc/amd_ags.h"
+    #include "nvapi/nvapi.h"
+    #include "nvapi/nvShaderExtnEnums.h"
+#endif
 
 namespace d3d12 {
 #include "D3DExt.h"

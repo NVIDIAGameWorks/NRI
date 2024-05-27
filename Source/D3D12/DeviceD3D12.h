@@ -147,7 +147,7 @@ struct DeviceD3D12 final : public DeviceBase {
     Result FillFunctionTable(StreamerInterface& streamerInterface) const;
 
 private:
-    void FillDesc(bool enableDrawParametersEmulation, const AGSDX12ReturnedParams& agsParams);
+    void FillDesc(bool enableDrawParametersEmulation);
     MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const;
     ComPtr<ID3D12CommandSignature> CreateCommandSignature(
         D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation = false);

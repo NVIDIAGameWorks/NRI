@@ -107,17 +107,17 @@ NRI_API Result NRI_CALL nriCreateDevice(const DeviceCreationDesc& deviceCreation
     CheckAndSetDefaultCallbacks(modifiedDeviceCreationDesc.callbackInterface);
     CheckAndSetDefaultAllocator(modifiedDeviceCreationDesc.memoryAllocatorInterface);
 
-#if (NRI_USE_D3D11 == 1)
+#if NRI_USE_D3D11
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::D3D11)
         result = CreateDeviceD3D11(modifiedDeviceCreationDesc, deviceImpl);
 #endif
 
-#if (NRI_USE_D3D12 == 1)
+#if NRI_USE_D3D12
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::D3D12)
         result = CreateDeviceD3D12(modifiedDeviceCreationDesc, deviceImpl);
 #endif
 
-#if (NRI_USE_VULKAN == 1)
+#if NRI_USE_VULKAN
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::VULKAN)
         result = CreateDeviceVK(modifiedDeviceCreationDesc, deviceImpl);
 #endif
@@ -146,7 +146,7 @@ NRI_API Result NRI_CALL nriCreateDeviceFromD3D11Device(const DeviceCreationD3D11
     Result result = Result::UNSUPPORTED;
     DeviceBase* deviceImpl = nullptr;
 
-#if (NRI_USE_D3D11 == 1)
+#if NRI_USE_D3D11
     result = CreateDeviceD3D11(tempDeviceCreationD3D11Desc, deviceImpl);
 #endif
 
@@ -174,7 +174,7 @@ NRI_API Result NRI_CALL nriCreateDeviceFromD3D12Device(const DeviceCreationD3D12
     Result result = Result::UNSUPPORTED;
     DeviceBase* deviceImpl = nullptr;
 
-#if (NRI_USE_D3D12 == 1)
+#if NRI_USE_D3D12
     result = CreateDeviceD3D12(tempDeviceCreationD3D12Desc, deviceImpl);
 #endif
 
@@ -203,7 +203,7 @@ NRI_API Result NRI_CALL nriCreateDeviceFromVkDevice(const DeviceCreationVKDesc& 
     Result result = Result::UNSUPPORTED;
     DeviceBase* deviceImpl = nullptr;
 
-#if (NRI_USE_VULKAN == 1)
+#if NRI_USE_VULKAN
     result = CreateDeviceVK(tempDeviceCreationVKDesc, deviceImpl);
 #endif
 
@@ -228,7 +228,7 @@ NRI_API Format NRI_CALL nriConvertDXGIFormatToNRI(uint32_t dxgiFormat) {
 NRI_API uint32_t NRI_CALL nriConvertNRIFormatToVK(Format format) {
     MaybeUnused(format);
 
-#if (NRI_USE_VULKAN == 1)
+#if NRI_USE_VULKAN
     return NRIFormatToVKFormat(format);
 #else
     return 0;
@@ -238,7 +238,7 @@ NRI_API uint32_t NRI_CALL nriConvertNRIFormatToVK(Format format) {
 NRI_API uint32_t NRI_CALL nriConvertNRIFormatToDXGI(Format format) {
     MaybeUnused(format);
 
-#if (NRI_USE_D3D11 == 1 || NRI_USE_D3D12 == 1)
+#if (NRI_USE_D3D11 || NRI_USE_D3D12)
     return NRIFormatToDXGIFormat(format);
 #else
     return 0;

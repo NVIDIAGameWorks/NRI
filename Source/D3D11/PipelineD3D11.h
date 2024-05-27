@@ -65,7 +65,11 @@ private:
     ComPtr<ID3D11InputLayout> m_InputLayout;
     ComPtr<ID3D11DepthStencilState> m_DepthStencilState;
     ComPtr<ID3D11BlendState1> m_BlendState;
-    NvAPI_D3D11_RASTERIZER_DESC_EX m_RasterizerStateExDesc = {};
+#if NRI_USE_EXT_LIBS
+    NvAPI_D3D11_RASTERIZER_DESC_EX m_RasterizerDesc = {};
+#else
+    D3D11_RASTERIZER_DESC m_RasterizerDesc = {};
+#endif
     D3D11_PRIMITIVE_TOPOLOGY m_Topology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
     uint32_t m_SampleMask = uint32_t(-1);
 };

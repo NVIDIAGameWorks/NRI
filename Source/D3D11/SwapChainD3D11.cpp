@@ -191,15 +191,19 @@ inline Result SwapChainD3D11::WaitForPresent() {
 }
 
 inline Result SwapChainD3D11::Present() {
+#if NRI_USE_EXT_LIBS
     if (m_Desc.allowLowLatency)
         SetLatencyMarker((LatencyMarker)PRESENT_START);
+#endif
 
     uint32_t flags = (!m_Desc.verticalSyncInterval && (m_Flags & DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING)) ? DXGI_PRESENT_ALLOW_TEARING : 0;
     HRESULT hr = m_SwapChain->Present(m_Desc.verticalSyncInterval, flags);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGISwapChain::Present()");
 
+#if NRI_USE_EXT_LIBS
     if (m_Desc.allowLowLatency)
         SetLatencyMarker((LatencyMarker)PRESENT_END);
+#endif
 
     m_PresentId++;
 
@@ -207,6 +211,7 @@ inline Result SwapChainD3D11::Present() {
 }
 
 inline Result SwapChainD3D11::SetLatencySleepMode(const LatencySleepMode& latencySleepMode) {
+#if NRI_USE_EXT_LIBS
     NV_SET_SLEEP_MODE_PARAMS params = {NV_SET_SLEEP_MODE_PARAMS_VER};
     params.bLowLatencyMode = latencySleepMode.lowLatencyMode;
     params.bLowLatencyBoost = latencySleepMode.lowLatencyBoost;
@@ -216,9 +221,15 @@ inline Result SwapChainD3D11::SetLatencySleepMode(const LatencySleepMode& latenc
     NvAPI_Status status = NvAPI_D3D_SetSleepMode(m_Device.GetNativeObject(), &params);
 
     return status == NVAPI_OK ? Result::SUCCESS : Result::FAILURE;
+#else
+    MaybeUnused(latencySleepMode);
+
+    return Result::UNSUPPORTED;
+#endif
 }
 
 inline Result SwapChainD3D11::SetLatencyMarker(LatencyMarker latencyMarker) {
+#if NRI_USE_EXT_LIBS
     NV_LATENCY_MARKER_PARAMS params = {NV_LATENCY_MARKER_PARAMS_VER};
     params.frameID = m_PresentId;
     params.markerType = (NV_LATENCY_MARKER_TYPE)latencyMarker;
@@ -226,19 +237,29 @@ inline Result SwapChainD3D11::SetLatencyMarker(LatencyMarker latencyMarker) {
     NvAPI_Status status = NvAPI_D3D_SetLatencyMarker(m_Device.GetNativeObject(), &params);
 
     return status == NVAPI_OK ? Result::SUCCESS : Result::FAILURE;
+#else
+    MaybeUnused(latencyMarker);
+
+    return Result::UNSUPPORTED;
+#endif
 }
 
 inline Result SwapChainD3D11::LatencySleep() {
+#if NRI_USE_EXT_LIBS
     NvAPI_Status status = NvAPI_D3D_Sleep(m_Device.GetNativeObject());
 
     return status == NVAPI_OK ? Result::SUCCESS : Result::FAILURE;
+#else
+    return Result::UNSUPPORTED;
+#endif
 }
 
 inline Result SwapChainD3D11::GetLatencyReport(LatencyReport& latencyReport) {
+    latencyReport = {};
+#if NRI_USE_EXT_LIBS
     NV_LATENCY_RESULT_PARAMS params = {NV_LATENCY_RESULT_PARAMS_VER};
     NvAPI_Status status = NvAPI_D3D_GetLatency(m_Device.GetNativeObject(), &params);
 
-    latencyReport = {};
     if (status == NVAPI_OK) {
         const uint32_t i = 63; // the most recent frame
         latencyReport.inputSampleTimeUs = params.frameReport[i].inputSampleTime;
@@ -259,6 +280,9 @@ inline Result SwapChainD3D11::GetLatencyReport(LatencyReport& latencyReport) {
     }
 
     return Result::FAILURE;
+#else
+    return Result::UNSUPPORTED;
+#endif
 }
 
 #include "SwapChainD3D11.hpp"

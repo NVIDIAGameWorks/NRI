@@ -145,7 +145,7 @@ void CommandBufferD3D11::SetStencilReference(uint8_t frontRef, uint8_t backRef) 
 }
 
 void CommandBufferD3D11::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
-    MaybeUnused(sampleNum); // already have this in "m_RasterizerStateExDesc"
+    MaybeUnused(sampleNum); // already have this in "m_RasterizerDesc"
 
     m_SamplePositionsState.Set(positions, positionNum);
 
@@ -446,6 +446,8 @@ void CommandBufferD3D11::DispatchIndirect(const Buffer& buffer, uint64_t offset)
 }
 
 void CommandBufferD3D11::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
+    MaybeUnused(barrierGroupDesc);
+#if NRI_USE_EXT_LIBS
     constexpr AccessBits STORAGE_MASK = AccessBits::SHADER_RESOURCE_STORAGE;
 
     if (barrierGroupDesc.textureNum == 0 && barrierGroupDesc.bufferNum == 0)
@@ -494,6 +496,7 @@ void CommandBufferD3D11::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
 
     if (flags)
         m_Device.GetExt()->WaitForDrain(m_DeferredContext, flags);
+#endif
 }
 
 void CommandBufferD3D11::BeginQuery(const QueryPool& queryPool, uint32_t offset) {

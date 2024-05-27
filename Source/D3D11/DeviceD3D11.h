@@ -126,7 +126,7 @@ struct DeviceD3D11 final : public DeviceBase {
     Result FillFunctionTable(StreamerInterface& streamerInterface) const;
 
 private:
-    void FillDesc(const AGSDX11ReturnedParams& agsParams);
+    void FillDesc();
 
     template <typename Implementation, typename Interface, typename... Args>
     Result CreateImplementation(Interface*& entity, const Args&... args);

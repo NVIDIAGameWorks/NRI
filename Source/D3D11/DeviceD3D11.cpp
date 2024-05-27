@@ -94,8 +94,10 @@ DeviceD3D11::~DeviceD3D11() {
 
     DeleteCriticalSection(&m_CriticalSection);
 
+#if NRI_USE_EXT_LIBS
     if (m_Ext.HasAGS() && !m_IsWrapped)
         m_Ext.m_AGS.DestroyDeviceD3D11(m_Ext.m_AGSContext, m_Device, nullptr, m_ImmediateContext, nullptr);
+#endif
 }
 
 Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* device, AGSContext* agsContext, bool isNVAPILoadedInApp) {
@@ -141,21 +143,17 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         m_Ext.InitializeAMDExt(this, agsContext, device != nullptr);
 
     // Device
-    AGSDX11ReturnedParams agsParams = {};
-    if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA) { // Tricky part: "params" is used to properly propagate exts support
-        agsParams.extensionsSupported.depthBoundsTest = true;
-        agsParams.extensionsSupported.depthBoundsDeferredContexts = true;
-        agsParams.extensionsSupported.uavOverlap = true;
-        agsParams.extensionsSupported.UAVOverlapDeferredContexts = true;
-    }
-
     ComPtr<ID3D11DeviceBest> deviceTemp = (ID3D11DeviceBest*)device;
     if (!deviceTemp) {
-        uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : 63;
         const UINT flags = deviceCreationDesc.enableAPIValidation ? D3D11_CREATE_DEVICE_DEBUG : 0;
         D3D_FEATURE_LEVEL levels[2] = {D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
         const uint32_t levelNum = GetCountOf(levels);
+        bool isDepthBoundsTestSupported = false;
+        bool isDrawIndirectCountSupported = false;
+        bool isShaderAtomicsI64Supported = false;
 
+#if NRI_USE_EXT_LIBS
+        uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : 63;
         if (m_Ext.HasAGS()) {
             AGSDX11DeviceCreationParams deviceCreationParams = {};
             deviceCreationParams.pAdapter = m_Adapter;
@@ -168,6 +166,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
             AGSDX11ExtensionParams extensionsParams = {};
             extensionsParams.uavSlot = shaderExtRegister;
 
+            AGSDX11ReturnedParams agsParams = {};
             AGSReturnCode result = m_Ext.m_AGS.CreateDeviceD3D11(m_Ext.m_AGSContext, &deviceCreationParams, &extensionsParams, &agsParams);
             if (flags != 0 && result != AGS_SUCCESS) {
                 // If Debug Layer is not available, try without D3D11_CREATE_DEVICE_DEBUG
@@ -178,7 +177,11 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
             RETURN_ON_FAILURE(this, result == AGS_SUCCESS, Result::FAILURE, "agsDriverExtensionsDX11_CreateDevice() failed: %d", (int32_t)result);
 
             deviceTemp = (ID3D11DeviceBest*)agsParams.pDevice;
+            isDepthBoundsTestSupported = agsParams.extensionsSupported.depthBoundsDeferredContexts;
+            isDrawIndirectCountSupported = agsParams.extensionsSupported.multiDrawIndirectCountIndirect;
+            isShaderAtomicsI64Supported = agsParams.extensionsSupported.intrinsics19;
         } else {
+#endif
             hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels, levelNum, D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
             if (flags && (uint32_t)hr == 0x887a002d) {
                 // If Debug Layer is not available, try without D3D11_CREATE_DEVICE_DEBUG
@@ -187,12 +190,20 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
 
             RETURN_ON_BAD_HRESULT(this, hr, "D3D11CreateDevice()");
 
-            // Register device
+#if NRI_USE_EXT_LIBS
             if (m_Ext.HasNVAPI()) {
                 NvAPI_D3D_RegisterDevice(m_Device);
                 NvAPI_D3D11_SetNvShaderExtnSlot(m_Device, shaderExtRegister);
+                NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported);
+                isDepthBoundsTestSupported = true;
             }
         }
+#endif
+
+        // Start filling here to avoid passing additional arguments into "FillDesc"
+        m_Desc.isDepthBoundsTestSupported = isDepthBoundsTestSupported;
+        m_Desc.isDrawIndirectCountSupported = isDrawIndirectCountSupported;
+        m_Desc.isShaderAtomicsI64Supported = isShaderAtomicsI64Supported;
     }
     else
         m_IsWrapped = true;
@@ -220,9 +231,6 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     if (!threadingCaps.DriverCommandLists) {
         REPORT_WARNING(this, "Deferred Contexts are not supported by the driver and will be emulated!");
         m_IsDeferredContextEmulated = true;
-
-        agsParams.extensionsSupported.UAVOverlapDeferredContexts = agsParams.extensionsSupported.uavOverlap;
-        agsParams.extensionsSupported.depthBoundsDeferredContexts = agsParams.extensionsSupported.depthBoundsTest;
     }
 
     hr = m_ImmediateContext->QueryInterface(IID_PPV_ARGS(&m_Multithread));
@@ -233,7 +241,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         m_Multithread->SetMultithreadProtected(true);
 
     // Other
-    FillDesc(agsParams);
+    FillDesc();
 
     for (uint32_t i = 0; i < (uint32_t)CommandQueueType::MAX_NUM; i++)
         m_CommandQueues.emplace_back(*this);
@@ -241,7 +249,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     return FillFunctionTable(m_CoreInterface);
 }
 
-void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& agsParams) {
+void DeviceD3D11::FillDesc() {
     D3D11_FEATURE_DATA_D3D11_OPTIONS options = {};
     HRESULT hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS, &options, sizeof(options));
     if (FAILED(hr))
@@ -397,33 +405,28 @@ void DeviceD3D11::FillDesc(const AGSDX11ReturnedParams& agsParams) {
     m_Desc.combinedClipAndCullDistanceMaxNum = D3D11_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.conservativeRasterTier = (uint8_t)options2.ConservativeRasterizationTier;
 
+    bool isShaderAtomicsF16Supported = false;
+    bool isShaderAtomicsF32Supported = false;
+#if NRI_USE_EXT_LIBS
+    NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported);
+    NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported);
+
     NV_D3D11_FEATURE_DATA_RASTERIZER_SUPPORT rasterizerFeatures = {};
     NvAPI_D3D11_CheckFeatureSupport(m_Device, NV_D3D11_FEATURE_RASTERIZER, &rasterizerFeatures, sizeof(rasterizerFeatures));
     m_Desc.programmableSampleLocationsTier = rasterizerFeatures.ProgrammableSamplePositions ? 2 : 0;
+#endif
 
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
-    m_Desc.isDepthBoundsTestSupported = agsParams.extensionsSupported.depthBoundsDeferredContexts;
-    m_Desc.isDrawIndirectCountSupported = agsParams.extensionsSupported.multiDrawIndirectCountIndirect;
     m_Desc.isLineSmoothingSupported = true;
 
     m_Desc.isShaderNativeI32Supported = true;
     m_Desc.isShaderNativeF32Supported = true;
     m_Desc.isShaderNativeF64Supported = options.ExtendedDoublesShaderInstructions;
 
-    bool isShaderAtomicsF16Supported = false;
-    NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported);
-
-    bool isShaderAtomicsF32Supported = false;
-    NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported);
-
-    bool isShaderAtomicsI64Supported = false;
-    NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported);
-
     m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;
     m_Desc.isShaderAtomicsI32Supported = true;
     m_Desc.isShaderAtomicsF32Supported = isShaderAtomicsF32Supported;
-    m_Desc.isShaderAtomicsI64Supported = (isShaderAtomicsI64Supported || agsParams.extensionsSupported.intrinsics19) ? true : false;
 
     m_Desc.isSwapChainSupported = HasOutput();
     m_Desc.isLowLatencySupported = m_Ext.HasNVAPI();

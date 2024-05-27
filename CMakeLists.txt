@@ -18,6 +18,9 @@ set (NRI_AGILITY_SDK_PATH "C:/AgilitySDK" CACHE STRING "Path to a directory cont
 set (NRI_AGILITY_SDK_VERSION "614" CACHE STRING "Agility SDK version")
 set (NRI_AGILITY_SDK_DIR "AgilitySDK" CACHE STRING "Directory where Agility SDK binaries will be copied to relative to 'CMAKE_RUNTIME_OUTPUT_DIRECTORY'")
 
+# Options: D3D11/D3D12 specific
+option (NRI_ENABLE_EXTERNAL_LIBRARIES "Enable vendor specific extension libraries (NVAPI and AMD AGS)" ON)
+
 # Is submodule?
 if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     set (IS_SUBMODULE OFF)
@@ -117,50 +120,70 @@ else ()
 endif ()
 
 set (COMPILE_DEFINITIONS WIN32_LEAN_AND_MEAN NOMINMAX _CRT_SECURE_NO_WARNINGS)
+if (NRI_ENABLE_EXTERNAL_LIBRARIES)
+    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_EXT_LIBS=1)
+endif ()
+
+# External libs
+if (WIN32 AND NRI_ENABLE_EXTERNAL_LIBRARIES AND (NRI_ENABLE_D3D11_SUPPORT OR NRI_ENABLE_D3D12_SUPPORT))
+    # Statically linked
+    find_library (NVAPI_LIB NAMES nvapi64 nvapi PATHS "External/nvapi/${NVAPI_BIN_ARCHITECTURE}" REQUIRED)
+    # Dynamically loaded
+    find_library (AGS_LIB NAMES amd_ags_${BIN_ARCHITECTURE} PATHS "External/amdags/ags_lib/lib" REQUIRED)
+
+    file (GLOB NVAPI_HEADERS "External/nvapi/*.h")
+    source_group ("External/nvapi" FILES ${NVAPI_HEADERS})
+    file (GLOB AMDAGS_HEADERS "External/amdags/ags_lib/inc/*.h")
+    source_group ("External/amdags" FILES ${AMDAGS_HEADERS})
+endif ()
 
 # D3D11
 if (WIN32 AND NRI_ENABLE_D3D11_SUPPORT)
     message ("NRI adding backend: D3D11")
+
     set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_D3D11=1)
     set (INPUT_LIBS_D3D11 ${INPUT_LIB_D3D11} ${INPUT_LIB_DXGI})
 
-    find_library (INPUT_LIB_NVAPI NAMES nvapi64 nvapi PATHS "External/nvapi/${NVAPI_BIN_ARCHITECTURE}" REQUIRED)
-    find_library (INPUT_LIB_AGS NAMES amd_ags_${BIN_ARCHITECTURE} PATHS "External/amdags/ags_lib/lib" REQUIRED)
-
     file (GLOB D3D11_SOURCE "Source/D3D11/*.cpp" "Source/D3D11/*.h" "Source/D3D11/*.hpp")
     source_group ("" FILES ${D3D11_SOURCE})
-    file (GLOB D3D11_NVAPI "External/nvapi/*.h")
-    source_group ("External/nvapi" FILES ${D3D11_NVAPI})
-    file (GLOB D3D11_AMDAGS "External/amdags/ags_lib/inc/*.h")
-    source_group ("External/amdags" FILES ${D3D11_AMDAGS})
-    add_library (NRI_D3D11 STATIC ${D3D11_SOURCE} ${D3D11_NVAPI} ${D3D11_AMDAGS})
+
+    if (NRI_ENABLE_EXTERNAL_LIBRARIES)
+        add_library (NRI_D3D11 STATIC ${D3D11_SOURCE} ${NVAPI_HEADERS} ${AMDAGS_HEADERS})
+        target_link_libraries (NRI_D3D11 PRIVATE ${NVAPI_LIB})
+    else ()
+        add_library (NRI_D3D11 STATIC ${D3D11_SOURCE})
+    endif ()
+
     target_include_directories (NRI_D3D11 PRIVATE "Include" "Source/Shared" "External")
     target_compile_definitions (NRI_D3D11 PRIVATE ${COMPILE_DEFINITIONS})
     target_compile_options (NRI_D3D11 PRIVATE ${COMPILE_OPTIONS})
-    target_link_libraries (NRI_D3D11 PRIVATE NRI_Shared ${INPUT_LIBS_D3D11} ${INPUT_LIB_NVAPI} ${INPUT_LIB_DXGUID})
+    target_link_libraries (NRI_D3D11 PRIVATE NRI_Shared ${INPUT_LIBS_D3D11} ${INPUT_LIB_DXGUID})
+
     set_property (TARGET NRI_D3D11 PROPERTY FOLDER ${PROJECT_NAME})
 endif ()
 
 # D3D12
 if (WIN32 AND NRI_ENABLE_D3D12_SUPPORT)
     message ("NRI adding backend: D3D12")
+
     set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_D3D12=1)
     set (INPUT_LIBS_D3D12 ${INPUT_LIB_D3D12} ${INPUT_LIB_DXGI})
 
-    find_library (INPUT_LIB_NVAPI NAMES nvapi64 nvapi PATHS "External/nvapi/${NVAPI_BIN_ARCHITECTURE}" REQUIRED)
-    find_library (INPUT_LIB_AGS NAMES amd_ags_${BIN_ARCHITECTURE} PATHS "External/amdags/ags_lib/lib" REQUIRED)
-
     file (GLOB D3D12_SOURCE "Source/D3D12/*.cpp" "Source/D3D12/*.h" "Source/D3D12/*.hpp")
     source_group ("" FILES ${D3D12_SOURCE})
-    file (GLOB D3D12_NVAPI "External/nvapi/*.h")
-    source_group ("External/nvapi" FILES ${D3D12_NVAPI})
-    file (GLOB D3D12_AMDAGS "External/amdags/ags_lib/inc/*.h")
-    source_group ("External/amdags" FILES ${D3D12_AMDAGS})
-    add_library (NRI_D3D12 STATIC ${D3D12_SOURCE} ${D3D12_NVAPI} ${D3D12_AMDAGS})
+
+    if (NRI_ENABLE_EXTERNAL_LIBRARIES)
+        add_library (NRI_D3D12 STATIC ${D3D12_SOURCE} ${NVAPI_HEADERS} ${AMDAGS_HEADERS})
+        target_link_libraries (NRI_D3D12 PRIVATE ${NVAPI_LIB})
+    else ()
+        add_library (NRI_D3D12 STATIC ${D3D12_SOURCE})
+    endif ()
+
     target_include_directories (NRI_D3D12 PRIVATE "Include" "Source/Shared" "External")
     target_compile_definitions (NRI_D3D12 PRIVATE ${COMPILE_DEFINITIONS})
     target_compile_options (NRI_D3D12 PRIVATE ${COMPILE_OPTIONS})
-    target_link_libraries (NRI_D3D12 PRIVATE NRI_Shared ${INPUT_LIBS_D3D12} ${INPUT_LIB_NVAPI})
+    target_link_libraries (NRI_D3D12 PRIVATE NRI_Shared ${INPUT_LIBS_D3D12})
+
     set_property (TARGET NRI_D3D12 PROPERTY FOLDER ${PROJECT_NAME})
 
     if (NRI_ENABLE_AGILITY_SDK_SUPPORT)

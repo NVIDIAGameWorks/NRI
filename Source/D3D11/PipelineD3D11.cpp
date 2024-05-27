@@ -121,12 +121,14 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
         m_RasterizerStates.push_back(rasterizerState);
 
         // Ex
-        memcpy(&m_RasterizerStateExDesc, &rasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
-        m_RasterizerStateExDesc.ForcedSampleCount = sampleNum;
-        m_RasterizerStateExDesc.ProgrammableSamplePositionsEnable = true;
-        m_RasterizerStateExDesc.SampleCount = sampleNum;
-        m_RasterizerStateExDesc.ConservativeRasterEnable = r.conservativeRasterization;
-        m_RasterizerStateExDesc.TargetIndepentRasterWithDepth = true;
+        memcpy(&m_RasterizerDesc, &rasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
+#if NRI_USE_EXT_LIBS
+        m_RasterizerDesc.ForcedSampleCount = sampleNum;
+        m_RasterizerDesc.ProgrammableSamplePositionsEnable = true;
+        m_RasterizerDesc.SampleCount = sampleNum;
+        m_RasterizerDesc.ConservativeRasterEnable = r.conservativeRasterization;
+        m_RasterizerDesc.TargetIndepentRasterWithDepth = true;
+#endif
     }
 
     { // Depth-stencil
@@ -214,6 +216,8 @@ Result PipelineD3D11::Create(const ComputePipelineDesc& pipelineDesc) {
 }
 
 void PipelineD3D11::ChangeSamplePositions(ID3D11DeviceContextBest* deferredContext, const SamplePositionsState& samplePositionState) {
+    MaybeUnused(deferredContext, samplePositionState);
+#if NRI_USE_EXT_LIBS
     if (IsCompute())
         return;
 
@@ -229,14 +233,14 @@ void PipelineD3D11::ChangeSamplePositions(ID3D11DeviceContextBest* deferredConte
         RasterizerState newState = {};
         newState.samplePositionHash = samplePositionState.positionHash;
 
-        m_RasterizerStateExDesc.InterleavedSamplingEnable = samplePositionState.positionNum > m_RasterizerStateExDesc.SampleCount;
+        m_RasterizerDesc.InterleavedSamplingEnable = samplePositionState.positionNum > m_RasterizerDesc.SampleCount;
         for (uint32_t j = 0; j < samplePositionState.positionNum; j++) {
-            m_RasterizerStateExDesc.SamplePositionsX[j] = samplePositionState.positions[j].x + 8;
-            m_RasterizerStateExDesc.SamplePositionsY[j] = samplePositionState.positions[j].y + 8;
+            m_RasterizerDesc.SamplePositionsX[j] = samplePositionState.positions[j].x + 8;
+            m_RasterizerDesc.SamplePositionsY[j] = samplePositionState.positions[j].y + 8;
         }
 
         if (m_Device.GetExt()->HasNVAPI()) {
-            NvAPI_Status result = NvAPI_D3D11_CreateRasterizerState(m_Device.GetNativeObject(), &m_RasterizerStateExDesc, (ID3D11RasterizerState**)&newState.ptr);
+            NvAPI_Status result = NvAPI_D3D11_CreateRasterizerState(m_Device.GetNativeObject(), &m_RasterizerDesc, (ID3D11RasterizerState**)&newState.ptr);
             if (result != NVAPI_OK)
                 REPORT_ERROR(&m_Device, "NvAPI_D3D11_CreateRasterizerState() - FAILED!");
         }
@@ -250,6 +254,7 @@ void PipelineD3D11::ChangeSamplePositions(ID3D11DeviceContextBest* deferredConte
     // Bind
     ID3D11RasterizerState2* stateWithPSL = m_RasterizerStates[i].ptr;
     deferredContext->RSSetState(stateWithPSL);
+#endif
 }
 
 void PipelineD3D11::ChangeStencilReference(ID3D11DeviceContextBest* deferredContext, uint8_t stencilRef) {

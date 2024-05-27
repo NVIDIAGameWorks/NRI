@@ -124,8 +124,10 @@ DeviceD3D12::~DeviceD3D12() {
             Deallocate(GetStdAllocator(), commandQueueD3D12);
     }
 
+#if NRI_USE_EXT_LIBS
     if (m_Ext.HasAGS() && !m_IsWrapped)
         m_Ext.m_AGS.DestroyDeviceD3D12(m_Ext.m_AGSContext, m_Device, nullptr);
+#endif
 }
 
 template <typename Implementation, typename Interface, typename... Args>
@@ -184,11 +186,11 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
         m_Ext.InitializeAMDExt(this, deviceCreationD3D12Desc.agsContext, deviceCreationD3D12Desc.d3d12Device != nullptr);
 
     // Device
-    AGSDX12ReturnedParams agsParams = {};
     ComPtr<ID3D12DeviceBest> deviceTemp = (ID3D12DeviceBest*)deviceCreationD3D12Desc.d3d12Device;
     if (!deviceTemp) {
+#if NRI_USE_EXT_LIBS
+        bool isShaderAtomicsI64Supported = false;
         uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : 63;
-
         if (m_Ext.HasAGS()) {
             AGSDX12DeviceCreationParams deviceCreationParams = {};
             deviceCreationParams.pAdapter = m_Adapter;
@@ -198,20 +200,28 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
             AGSDX12ExtensionParams extensionsParams = {};
             extensionsParams.uavSlot = shaderExtRegister;
 
+            AGSDX12ReturnedParams agsParams = {};
             AGSReturnCode result = m_Ext.m_AGS.CreateDeviceD3D12(m_Ext.m_AGSContext, &deviceCreationParams, &extensionsParams, &agsParams);
             RETURN_ON_FAILURE(this, result == AGS_SUCCESS, Result::FAILURE, "agsDriverExtensionsDX11_CreateDevice() failed: %d", (int32_t)result);
 
             deviceTemp = (ID3D12DeviceBest*)agsParams.pDevice;
+            isShaderAtomicsI64Supported = agsParams.extensionsSupported.intrinsics19;
         } else {
+#endif
             hr = D3D12CreateDevice(m_Adapter, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), (void**)&deviceTemp);
             RETURN_ON_BAD_HRESULT(this, hr, "D3D12CreateDevice()");
 
-            // Register device
-            if (m_Ext.HasNVAPI())
+#if NRI_USE_EXT_LIBS
+            if (m_Ext.HasNVAPI()) {
                 NvAPI_D3D12_SetNvShaderExtnSlotSpace(m_Device, shaderExtRegister, deviceCreationDesc.shaderExtSpace);
+                NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported);
+            }
         }
-    }
-    else
+
+        // Start filling here to avoid passing additional arguments into "FillDesc"
+        m_Desc.isShaderAtomicsI64Supported = isShaderAtomicsI64Supported;
+#endif
+    } else
         m_IsWrapped = true;
 
     m_Version = QueryLatestDevice(deviceTemp, m_Device);
@@ -257,7 +267,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
         return result;
 
     // Fill desc
-    FillDesc(deviceCreationDesc.enableD3D12DrawParametersEmulation, agsParams);
+    FillDesc(deviceCreationDesc.enableD3D12DrawParametersEmulation);
 
     // Create indirect command signatures
     m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc), nullptr);
@@ -267,7 +277,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
     return FillFunctionTable(m_CoreInterface);
 }
 
-void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation, const AGSDX12ReturnedParams& agsParams) {
+void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation) {
     D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = {D3D_HIGHEST_SHADER_MODEL};
     HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel));
     if (FAILED(hr))
@@ -568,22 +578,18 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation, const AGSDX12Retu
     m_Desc.isShaderNativeF64Supported = options.DoublePrecisionFloatShaderOps;
 
     bool isShaderAtomicsF16Supported = false;
-    NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported);
-
     bool isShaderAtomicsF32Supported = false;
+#if NRI_USE_EXT_LIBS
+    NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported);
     NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported);
-
-    bool isShaderAtomicsI64Supported = false;
-    NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported);
+#endif
 
     m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;
     m_Desc.isShaderAtomicsI32Supported = true;
     m_Desc.isShaderAtomicsF32Supported = isShaderAtomicsF32Supported;
 #ifdef NRI_USE_AGILITY_SDK
-    m_Desc.isShaderAtomicsI64Supported = isShaderAtomicsI64Supported || agsParams.extensionsSupported.intrinsics19 || options9.AtomicInt64OnTypedResourceSupported ||
-                                         options9.AtomicInt64OnGroupSharedSupported || options11.AtomicInt64OnDescriptorHeapResourceSupported;
-#else
-    m_Desc.isShaderAtomicsI64Supported = isShaderAtomicsI64Supported || agsParams.extensionsSupported.intrinsics19;
+    m_Desc.isShaderAtomicsI64Supported = m_Desc.isShaderAtomicsI64Supported || options9.AtomicInt64OnTypedResourceSupported || options9.AtomicInt64OnGroupSharedSupported ||
+                                         options11.AtomicInt64OnDescriptorHeapResourceSupported;
 #endif
 
     m_Desc.isDrawParametersEmulationEnabled = enableDrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
