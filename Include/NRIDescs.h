@@ -494,7 +494,7 @@ NRI_STRUCT(TextureDesc)
 NRI_STRUCT(BufferDesc)
 {
     uint64_t size;
-    uint32_t structureStride;
+    uint32_t structureStride; // use 4 to allow "byte address" (raw) views
     NRI_NAME(BufferUsageBits) usageMask;
 };
 
@@ -1566,6 +1566,7 @@ NRI_STRUCT(DeviceDesc)
     uint32_t isDispatchRaysIndirectSupported : 1;
     uint32_t isDrawMeshTasksIndirectSupported : 1;
     uint32_t isMeshShaderPipelineStatsSupported : 1;
+    uint32_t isEnchancedBarrierSupported : 1; // aka - can "Layout" be ignored?
 
     // Shader features
     uint32_t isShaderNativeI16Supported : 1;

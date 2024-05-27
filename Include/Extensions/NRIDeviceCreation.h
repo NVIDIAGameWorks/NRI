@@ -30,6 +30,7 @@ NRI_STRUCT(CallbackInterface)
     void* userArg;
 };
 
+// Use largest offset for the resource type planned to be used as unbounded array
 NRI_STRUCT(SPIRVBindingOffsets)
 {
     uint32_t samplerOffset;

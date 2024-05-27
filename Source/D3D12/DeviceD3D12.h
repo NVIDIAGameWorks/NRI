@@ -46,10 +46,6 @@ struct DeviceD3D12 final : public DeviceBase {
         return m_Adapter;
     }
 
-    inline bool AreEnhancedBarriersSupported() const {
-        return m_AreEnhancedBarriersSupported;
-    }   
-    
     inline const CoreInterface& GetCoreInterface() const {
         return m_CoreInterface;
     }
@@ -171,7 +167,6 @@ private:
     ComPtr<ID3D12CommandSignature> m_DispatchRaysCommandSignature;
     CoreInterface m_CoreInterface = {};
     uint8_t m_Version = 0;
-    bool m_AreEnhancedBarriersSupported = false;
     bool m_IsWrapped = false;
     std::array<Lock, DESCRIPTOR_HEAP_TYPE_NUM> m_FreeDescriptorLocks;
     Lock m_DescriptorHeapLock;

@@ -613,7 +613,7 @@ inline void CommandBufferD3D12::DispatchIndirect(const Buffer& buffer, uint64_t 
 
 inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
 #ifdef NRI_USE_AGILITY_SDK
-    if (m_Device.AreEnhancedBarriersSupported()) { // Enhanced barriers
+    if (m_Device.GetDesc().isEnchancedBarrierSupported) { // Enhanced barriers
         // Count
         uint32_t barrierNum = barrierGroupDesc.globalNum + barrierGroupDesc.bufferNum + barrierGroupDesc.textureNum;
         if (!barrierNum)

@@ -347,18 +347,21 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation, const AGSDX12Retu
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12, &options12, sizeof(options12));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options12) failed, result = 0x%08X!", hr);
-    m_AreEnhancedBarriersSupported = options12.EnhancedBarriersSupported;
+    m_Desc.isEnchancedBarrierSupported = options12.EnhancedBarriersSupported;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS13 options13 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS13, &options13, sizeof(options13));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options13) failed, result = 0x%08X!", hr);
+    m_Desc.uploadBufferTextureRowAlignment = options13.UnrestrictedBufferTextureCopyPitchSupported ? 1 : D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
+    m_Desc.uploadBufferTextureSliceAlignment = options13.UnrestrictedBufferTextureCopyPitchSupported ? 1 : D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
 
     // Minimum supported client: Agility SDK
     D3D12_FEATURE_DATA_D3D12_OPTIONS14 options14 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS14, &options14, sizeof(options14));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options14) failed, result = 0x%08X!", hr);
+    m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = options14.IndependentFrontAndBackStencilRefMaskSupported ? true : false;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS15 options15 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS15, &options15, sizeof(options15));
@@ -369,6 +372,7 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation, const AGSDX12Retu
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &options16, sizeof(options16));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options16) failed, result = 0x%08X!", hr);
+    m_Desc.deviceUploadHeapSize = options16.GPUUploadHeapSupported ? m_Desc.adapterDesc.videoMemorySize : 0;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS17 options17 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS17, &options17, sizeof(options17));
@@ -394,6 +398,9 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation, const AGSDX12Retu
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS21, &options21, sizeof(options21));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options21) failed, result = 0x%08X!", hr);
+#else
+    m_Desc.uploadBufferTextureRowAlignment = D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
+    m_Desc.uploadBufferTextureSliceAlignment = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
 #endif
 
     const std::array<D3D_FEATURE_LEVEL, 5> levelsList = {
@@ -445,15 +452,6 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation, const AGSDX12Retu
     m_Desc.texture3DMaxDim = D3D12_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
     m_Desc.textureArrayMaxDim = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
     m_Desc.texelBufferMaxDim = (1 << D3D12_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP) - 1;
-
-#ifdef NRI_USE_AGILITY_SDK
-    m_Desc.deviceUploadHeapSize = options16.GPUUploadHeapSupported ? m_Desc.adapterDesc.videoMemorySize : 0;
-    m_Desc.uploadBufferTextureRowAlignment = options13.UnrestrictedBufferTextureCopyPitchSupported ? 1 : D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
-    m_Desc.uploadBufferTextureSliceAlignment = options13.UnrestrictedBufferTextureCopyPitchSupported ? 1 : D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
-#else
-    m_Desc.uploadBufferTextureRowAlignment = D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
-    m_Desc.uploadBufferTextureSliceAlignment = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
-#endif
 
     m_Desc.memoryAllocationMaxNum = 0xFFFFFFFF;
     m_Desc.samplerAllocationMaxNum = D3D12_REQ_SAMPLER_OBJECT_COUNT_PER_DEVICE;
@@ -560,11 +558,7 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation, const AGSDX12Retu
     m_Desc.isComputeQueueSupported = true;
     m_Desc.isCopyQueueSupported = true;
     m_Desc.isDrawIndirectCountSupported = true;
-#ifdef NRI_USE_AGILITY_SDK
-    m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = options14.IndependentFrontAndBackStencilRefMaskSupported ? true : false;
-#endif
     m_Desc.isLineSmoothingSupported = true;
-    m_Desc.isDrawParametersEmulationEnabled = enableDrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
 
     m_Desc.isShaderNativeI16Supported = options4.Native16BitShaderOpsSupported;
     m_Desc.isShaderNativeF16Supported = options4.Native16BitShaderOpsSupported;
@@ -591,6 +585,8 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation, const AGSDX12Retu
 #else
     m_Desc.isShaderAtomicsI64Supported = isShaderAtomicsI64Supported || agsParams.extensionsSupported.intrinsics19;
 #endif
+
+    m_Desc.isDrawParametersEmulationEnabled = enableDrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
 
     m_Desc.isSwapChainSupported = HasOutput();
     m_Desc.isLowLatencySupported = m_Ext.HasNVAPI();
