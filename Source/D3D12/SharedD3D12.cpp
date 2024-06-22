@@ -402,7 +402,7 @@ bool nri::GetBufferDesc(const BufferD3D12Desc& bufferD3D12Desc, BufferDesc& buff
         return false;
 
     D3D12_RESOURCE_DESC desc = resource->GetDesc();
-    if (desc.Dimension < D3D12_RESOURCE_DIMENSION_TEXTURE1D)
+    if (desc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
         return false;
 
     bufferDesc.size = desc.Width;
