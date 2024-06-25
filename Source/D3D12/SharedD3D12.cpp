@@ -359,7 +359,7 @@ void nri::ConvertRects(D3D12_RECT* rectsD3D12, const Rect* rects, uint32_t rectN
 }
 
 uint64_t nri::GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc) {
-    return memoryD3D12Desc.d3d12Heap->GetDesc().SizeInBytes;
+    return memoryD3D12Desc.d3d12Heap ? memoryD3D12Desc.d3d12Heap->GetDesc().SizeInBytes : memoryD3D12Desc.d3d12HeapDesc->SizeInBytes;
 }
 
 bool nri::GetTextureDesc(const TextureD3D12Desc& textureD3D12Desc, TextureDesc& textureDesc) {

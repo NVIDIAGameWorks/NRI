@@ -34,6 +34,10 @@ struct TextureVK {
         return GetDimension(GraphicsAPI::VULKAN, m_Desc, dimensionIndex, mip);
     }
 
+    inline bool OwnsNativeObjects() const {
+        return m_OwnsNativeObjects;
+    }
+
     ~TextureVK();
 
     Result Create(const TextureDesc& textureDesc);

@@ -1677,6 +1677,8 @@ inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBi
         return Result::SUCCESS;
 
     VkBindBufferMemoryInfo* infos = STACK_ALLOC(VkBindBufferMemoryInfo, memoryBindingDescNum);
+    uint32_t boundMemoryNum = 0;
+
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         const BufferMemoryBindingDesc& bindingDesc = memoryBindingDescs[i];
 
@@ -1686,21 +1688,25 @@ inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBi
         const MemoryTypeUnpack unpack = {memoryImpl.GetType()};
         const MemoryTypeInfo& memoryTypeInfo = unpack.info;
 
-        if (memoryTypeInfo.isDedicated == 1)
+        if (memoryImpl.OwnsNativeObjects() && memoryTypeInfo.isDedicated == 1)
             memoryImpl.CreateDedicated(bufferImpl);
 
-        VkBindBufferMemoryInfo& info = infos[i];
-        info = {VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO};
-        info.buffer = bufferImpl.GetHandle();
-        info.memory = memoryImpl.GetHandle();
-        info.memoryOffset = bindingDesc.offset;
+        if (bufferImpl.OwnsNativeObjects()) {
+            VkBindBufferMemoryInfo& info = infos[boundMemoryNum++];
+            info = {VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO};
+            info.buffer = bufferImpl.GetHandle();
+            info.memory = memoryImpl.GetHandle();
+            info.memoryOffset = bindingDesc.offset;
+        }
 
         if (IsHostVisibleMemory(memoryTypeInfo.memoryLocation))
-            bufferImpl.SetHostMemory(memoryImpl, info.memoryOffset);
+            bufferImpl.SetHostMemory(memoryImpl, bindingDesc.offset);
     }
 
-    VkResult result = m_VK.BindBufferMemory2(m_Device, memoryBindingDescNum, infos);
-    RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkBindBufferMemory2 returned %d", (int32_t)result);
+    if (boundMemoryNum > 0) {
+        VkResult result = m_VK.BindBufferMemory2(m_Device, boundMemoryNum, infos);
+        RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkBindBufferMemory2 returned %d", (int32_t)result);
+    }
 
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         BufferVK& bufferImpl = *(BufferVK*)memoryBindingDescs[i].buffer;
@@ -1715,6 +1721,8 @@ inline Result DeviceVK::BindTextureMemory(const TextureMemoryBindingDesc* memory
         return Result::SUCCESS;
 
     VkBindImageMemoryInfo* infos = STACK_ALLOC(VkBindImageMemoryInfo, memoryBindingDescNum);
+    uint32_t boundMemoryNum = 0;
+
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         const TextureMemoryBindingDesc& bindingDesc = memoryBindingDescs[i];
 
@@ -1724,18 +1732,22 @@ inline Result DeviceVK::BindTextureMemory(const TextureMemoryBindingDesc* memory
         const MemoryTypeUnpack unpack = {memoryImpl.GetType()};
         const MemoryTypeInfo& memoryTypeInfo = unpack.info;
 
-        if (memoryTypeInfo.isDedicated)
+        if (memoryImpl.OwnsNativeObjects() && memoryTypeInfo.isDedicated)
             memoryImpl.CreateDedicated(textureImpl);
 
-        VkBindImageMemoryInfo& info = infos[i];
-        info = {VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO};
-        info.image = textureImpl.GetHandle();
-        info.memory = memoryImpl.GetHandle();
-        info.memoryOffset = bindingDesc.offset;
+        if (textureImpl.OwnsNativeObjects()) {
+            VkBindImageMemoryInfo& info = infos[boundMemoryNum++];
+            info = {VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO};
+            info.image = textureImpl.GetHandle();
+            info.memory = memoryImpl.GetHandle();
+            info.memoryOffset = bindingDesc.offset;
+        }
     }
 
-    VkResult result = m_VK.BindImageMemory2(m_Device, memoryBindingDescNum, infos);
-    RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkBindImageMemory2 returned %d", (int32_t)result);
+    if (boundMemoryNum > 0) {
+        VkResult result = m_VK.BindImageMemory2(m_Device, memoryBindingDescNum, infos);
+        RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkBindImageMemory2 returned %d", (int32_t)result);
+    }
 
     return Result::SUCCESS;
 }

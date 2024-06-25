@@ -8,6 +8,10 @@
 using namespace nri;
 
 Result TextureD3D11::Create(const MemoryD3D11* memory) {
+    // Texture was already created externally
+    if (m_Texture)
+        return Result::SUCCESS;
+
     const DxgiFormat& dxgiFormat = GetDxgiFormat(m_Desc.format);
 
     uint32_t bindFlags = 0;

@@ -30,6 +30,10 @@ struct MemoryVK {
         return m_MappedMemory;
     }
 
+    inline bool OwnsNativeObjects() const {
+        return m_OwnsNativeObjects;
+    }
+
     ~MemoryVK();
 
     Result Create(const MemoryType memoryType, uint64_t size);
