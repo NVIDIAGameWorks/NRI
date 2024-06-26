@@ -38,6 +38,10 @@ Result TextureD3D12::Create(const TextureD3D12Desc& textureDesc) {
 }
 
 Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
+    // Texture was already created externally
+    if (m_Texture)
+        return Result::SUCCESS;
+
     const D3D12_HEAP_DESC& heapDesc = memory->GetHeapDesc();
     D3D12_CLEAR_VALUE clearValue = {GetDxgiFormat(m_Desc.format).typed};
 
@@ -52,7 +56,7 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
         DXGI_FORMAT* castableFormats = nullptr; // TODO: add castable formats, see options12.RelaxedFormatCastingSupported
 
         if (memory->RequiresDedicatedAllocation()) {
-            HRESULT hr = m_Device->CreateCommittedResource3(&heapDesc.Properties, D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &desc1, initialLayout,
+            HRESULT hr = m_Device->CreateCommittedResource3(&heapDesc.Properties, heapDesc.Flags, &desc1, initialLayout,
                 isRenderableSurface ? &clearValue : nullptr, nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Texture));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device10::CreateCommittedResource3()");
         } else {
@@ -70,7 +74,7 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
 
         if (memory->RequiresDedicatedAllocation()) {
             HRESULT hr = m_Device->CreateCommittedResource(
-                &heapDesc.Properties, D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &desc, D3D12_RESOURCE_STATE_COMMON, isRenderableSurface ? &clearValue : nullptr, IID_PPV_ARGS(&m_Texture));
+                &heapDesc.Properties, heapDesc.Flags, &desc, D3D12_RESOURCE_STATE_COMMON, isRenderableSurface ? &clearValue : nullptr, IID_PPV_ARGS(&m_Texture));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateCommittedResource()");
         } else {
             HRESULT hr = m_Device->CreatePlacedResource(*memory, offset, &desc, D3D12_RESOURCE_STATE_COMMON, isRenderableSurface ? &clearValue : nullptr, IID_PPV_ARGS(&m_Texture));

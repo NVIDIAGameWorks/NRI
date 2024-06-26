@@ -635,6 +635,10 @@ Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingD
 
         RETURN_ON_FAILURE(this, !buffer.IsBoundToMemory(), Result::INVALID_ARGUMENT, "BindBufferMemory: 'memoryBindingDescs[%u].buffer' is already bound to memory", i);
 
+        destDesc = srcDesc;
+        destDesc.memory = memory.GetImpl();
+        destDesc.buffer = buffer.GetImpl();
+
         // Skip validation if memory has been created from GAPI object using a wrapper extension
         if (memory.GetMemoryLocation() == MemoryLocation::MAX_NUM)
             continue;
@@ -652,10 +656,6 @@ Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingD
         const bool memorySizeIsUnknown = memory.GetSize() == 0;
 
         RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "BindBufferMemory: 'memoryBindingDescs[%u].offset' is invalid", i);
-
-        destDesc = srcDesc;
-        destDesc.memory = memory.GetImpl();
-        destDesc.buffer = buffer.GetImpl();
     }
 
     const Result result = m_CoreAPI.BindBufferMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
@@ -687,6 +687,10 @@ Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindin
 
         RETURN_ON_FAILURE(this, !texture.IsBoundToMemory(), Result::INVALID_ARGUMENT, "BindTextureMemory: 'memoryBindingDescs[%u].texture' is already bound to memory", i);
 
+        destDesc = srcDesc;
+        destDesc.memory = memory.GetImpl();
+        destDesc.texture = texture.GetImpl();
+
         // Skip validation if memory has been created from GAPI object using a wrapper extension
         if (memory.GetMemoryLocation() == MemoryLocation::MAX_NUM)
             continue;
@@ -704,10 +708,6 @@ Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindin
         const bool memorySizeIsUnknown = memory.GetSize() == 0;
 
         RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "BindTextureMemory: 'memoryBindingDescs[%u].offset' is invalid", i);
-
-        destDesc = srcDesc;
-        destDesc.memory = memory.GetImpl();
-        destDesc.texture = texture.GetImpl();
     }
 
     const Result result = m_CoreAPI.BindTextureMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
@@ -1028,7 +1028,8 @@ Result DeviceVal::CreateTextureD3D12(const TextureD3D12Desc& textureDesc, Textur
 }
 
 Result DeviceVal::CreateMemoryD3D12(const MemoryD3D12Desc& memoryDesc, Memory*& memory) {
-    RETURN_ON_FAILURE(this, memoryDesc.d3d12Heap != nullptr, Result::INVALID_ARGUMENT, "CreateMemoryD3D12: 'memoryDesc.d3d12Heap' is NULL");
+    RETURN_ON_FAILURE(
+        this, (memoryDesc.d3d12Heap != nullptr || memoryDesc.d3d12HeapDesc != nullptr), Result::INVALID_ARGUMENT, "CreateMemoryD3D12: 'memoryDesc.d3d12Heap' is NULL");
 
     Memory* memoryImpl = nullptr;
     const Result result = m_WrapperD3D12API.CreateMemoryD3D12(m_Device, memoryDesc, memoryImpl);

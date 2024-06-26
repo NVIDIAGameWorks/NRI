@@ -23,6 +23,10 @@ struct AccelerationStructureVK {
         return m_Buffer;
     }
 
+    inline bool OwnsNativeObjects() const {
+        return m_OwnsNativeObjects;
+    }
+
     ~AccelerationStructureVK();
 
     Result Create(const AccelerationStructureDesc& accelerationStructureDesc);

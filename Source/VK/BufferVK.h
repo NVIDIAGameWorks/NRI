@@ -27,6 +27,10 @@ struct BufferVK {
         return m_Desc;
     }
 
+    inline bool OwnsNativeObjects() const {
+		return m_OwnsNativeObjects;
+	}
+
     ~BufferVK();
 
     Result Create(const BufferDesc& bufferDesc);

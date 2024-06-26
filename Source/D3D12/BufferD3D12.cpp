@@ -38,6 +38,10 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool 
     MaybeUnused(isAccelerationStructureBuffer);
     const D3D12_HEAP_DESC& heapDesc = memory->GetHeapDesc();
 
+    // Buffer was already created externally
+    if (m_Buffer)
+        return Result::SUCCESS;
+
 #ifdef NRI_USE_AGILITY_SDK
     if (m_Device.GetVersion() >= 10) {
         D3D12_RESOURCE_DESC1 desc1 = {};
@@ -47,7 +51,8 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool 
         DXGI_FORMAT* castableFormats = nullptr; // TODO: add castable formats, see options12.RelaxedFormatCastingSupported
 
         if (memory->RequiresDedicatedAllocation()) {
-            HRESULT hr = m_Device->CreateCommittedResource3(&heapDesc.Properties, D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &desc1, D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, nullptr,
+            HRESULT hr = m_Device->CreateCommittedResource3(
+                &heapDesc.Properties, heapDesc.Flags, &desc1, D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, nullptr,
                 castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Buffer));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device10::CreateCommittedResource3()");
         } else {
@@ -70,7 +75,7 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool 
             initialState |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 
         if (memory->RequiresDedicatedAllocation()) {
-            HRESULT hr = m_Device->CreateCommittedResource(&heapDesc.Properties, D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &desc, initialState, nullptr, IID_PPV_ARGS(&m_Buffer));
+            HRESULT hr = m_Device->CreateCommittedResource(&heapDesc.Properties, heapDesc.Flags, &desc, initialState, nullptr, IID_PPV_ARGS(&m_Buffer));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateCommittedResource()");
         } else {
             HRESULT hr = m_Device->CreatePlacedResource(*memory, offset, &desc, initialState, nullptr, IID_PPV_ARGS(&m_Buffer));

@@ -5,6 +5,7 @@
 #include "NRIDeviceCreation.h"
 
 NRI_FORWARD_STRUCT(ID3D12Heap);
+NRI_FORWARD_STRUCT(D3D12_HEAP_DESC);
 NRI_FORWARD_STRUCT(ID3D12Device);
 NRI_FORWARD_STRUCT(ID3D12Resource);
 NRI_FORWARD_STRUCT(ID3D12CommandQueue);
@@ -49,6 +50,7 @@ NRI_STRUCT(TextureD3D12Desc)
 NRI_STRUCT(MemoryD3D12Desc)
 {
     ID3D12Heap* d3d12Heap;
+    const D3D12_HEAP_DESC* d3d12HeapDesc;
 };
 
 NRI_STRUCT(AccelerationStructureD3D12Desc)

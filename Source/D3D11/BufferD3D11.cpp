@@ -14,6 +14,10 @@ BufferD3D11::~BufferD3D11() {
 }
 
 Result BufferD3D11::Create(const MemoryD3D11& memory) {
+    // Buffer was already created externally
+    if (m_Buffer)
+        return Result::SUCCESS;
+
     MemoryLocation memoryLocation = memory.GetType();
 
     D3D11_BUFFER_DESC desc = {};
