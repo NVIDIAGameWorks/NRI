@@ -947,6 +947,7 @@ Result DeviceVal::CreateCommandBufferD3D11(const CommandBufferD3D11Desc& command
 
 Result DeviceVal::CreateBufferD3D11(const BufferD3D11Desc& bufferDesc, Buffer*& buffer) {
     RETURN_ON_FAILURE(this, bufferDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT, "CreateBufferD3D11: 'bufferDesc.d3d11Resource' is NULL");
+    RETURN_ON_FAILURE(this, bufferDesc.bufferDesc != nullptr, Result::INVALID_ARGUMENT, "CreateBufferD3D11: 'bufferDesc.bufferDesc' is NULL");
 
     Buffer* bufferImpl = nullptr;
     const Result result = m_WrapperD3D11API.CreateBufferD3D11(m_Device, bufferDesc, bufferImpl);
@@ -997,8 +998,26 @@ Result DeviceVal::CreateCommandBufferD3D12(const CommandBufferD3D12Desc& command
     return result;
 }
 
+Result DeviceVal::CreateDescriptorPoolD3D12(const DescriptorPoolD3D12Desc& descriptorPoolD3D12Desc, DescriptorPool*& descriptorPool) {
+    RETURN_ON_FAILURE(this, descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap == nullptr && descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap == nullptr,
+        Result::INVALID_ARGUMENT,
+        "CreateDescriptorPoolD3D12: 'descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap' and 'descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap' are NULL");
+
+    DescriptorPool* descriptorPoolImpl = nullptr;
+    const Result result = m_WrapperD3D12API.CreateDescriptorPoolD3D12(m_Device, descriptorPoolD3D12Desc, descriptorPoolImpl);
+
+    if (result == Result::SUCCESS) {
+        RETURN_ON_FAILURE(this, descriptorPoolImpl != nullptr, Result::FAILURE, "CreateDescriptorPoolD3D12: 'impl' is NULL");
+
+        descriptorPool = (DescriptorPool*)Allocate<DescriptorPoolVal>(GetStdAllocator(), *this, descriptorPoolImpl, descriptorPoolD3D12Desc.descriptorSetMaxNum);
+    }
+
+    return result;
+}
+
 Result DeviceVal::CreateBufferD3D12(const BufferD3D12Desc& bufferDesc, Buffer*& buffer) {
     RETURN_ON_FAILURE(this, bufferDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "CreateBufferD3D12: 'bufferDesc.d3d12Resource' is NULL");
+    RETURN_ON_FAILURE(this, bufferDesc.bufferDesc != nullptr, Result::INVALID_ARGUMENT, "CreateBufferD3D12: 'bufferDesc.bufferDesc' is NULL");
 
     Buffer* bufferImpl = nullptr;
     const Result result = m_WrapperD3D12API.CreateBufferD3D12(m_Device, bufferDesc, bufferImpl);
@@ -1028,8 +1047,8 @@ Result DeviceVal::CreateTextureD3D12(const TextureD3D12Desc& textureDesc, Textur
 }
 
 Result DeviceVal::CreateMemoryD3D12(const MemoryD3D12Desc& memoryDesc, Memory*& memory) {
-    RETURN_ON_FAILURE(
-        this, (memoryDesc.d3d12Heap != nullptr || memoryDesc.d3d12HeapDesc != nullptr), Result::INVALID_ARGUMENT, "CreateMemoryD3D12: 'memoryDesc.d3d12Heap' is NULL");
+    RETURN_ON_FAILURE(this, (memoryDesc.d3d12Heap != nullptr || memoryDesc.d3d12HeapDesc != nullptr), Result::INVALID_ARGUMENT,
+        "CreateMemoryD3D12: 'memoryDesc.d3d12Heap' or 'memoryDesc.d3d12HeapDesc' is NULL");
 
     Memory* memoryImpl = nullptr;
     const Result result = m_WrapperD3D12API.CreateMemoryD3D12(m_Device, memoryDesc, memoryImpl);

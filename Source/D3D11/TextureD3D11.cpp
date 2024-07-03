@@ -84,10 +84,14 @@ Result TextureD3D11::Create(const MemoryD3D11* memory) {
 }
 
 Result TextureD3D11::Create(const TextureD3D11Desc& textureDesc) {
-    if (!GetTextureDesc(textureDesc, m_Desc))
-        return Result::INVALID_ARGUMENT;
-
+    if (!textureDesc.textureDesc) {
+        if (!GetTextureDesc(textureDesc, m_Desc))
+            return Result::INVALID_ARGUMENT;
+    } else {
+        m_Desc = *textureDesc.textureDesc;
+    }
     m_Texture = textureDesc.d3d11Resource;
+    m_Desc = *textureDesc.textureDesc;
 
     return Result::SUCCESS;
 }

@@ -103,6 +103,7 @@ struct DeviceD3D12 final : public DeviceBase {
     Result CreateFence(uint64_t initialValue, Fence*& fence);
     Result CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool);
     Result CreateCommandBuffer(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer);
+    Result CreateDescriptorPool(const DescriptorPoolD3D12Desc& descriptorPoolD3D12Desc, DescriptorPool*& descriptorPool);
     Result CreateBuffer(const BufferD3D12Desc& bufferDesc, Buffer*& buffer);
     Result CreateTexture(const TextureD3D12Desc& textureDesc, Texture*& texture);
     Result CreateMemory(const MemoryD3D12Desc& memoryDesc, Memory*& memory);

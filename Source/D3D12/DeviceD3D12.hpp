@@ -284,6 +284,10 @@ static Result NRI_CALL CreateCommandBuffer(Device& device, const CommandBufferD3
     return ((DeviceD3D12&)device).CreateCommandBuffer(commandBufferD3D12Desc, commandBuffer);
 }
 
+static Result NRI_CALL CreateDescriptorPool(Device& device, const DescriptorPoolD3D12Desc& descriptorPoolD3D12Desc, DescriptorPool*& descriptorPool) {
+    return ((DeviceD3D12&)device).CreateDescriptorPool(descriptorPoolD3D12Desc, descriptorPool);
+}
+
 static Result NRI_CALL CreateBuffer(Device& device, const BufferD3D12Desc& bufferD3D12Desc, Buffer*& buffer) {
     return ((DeviceD3D12&)device).CreateBuffer(bufferD3D12Desc, buffer);
 }
@@ -303,6 +307,7 @@ static Result NRI_CALL CreateAccelerationStructure(Device& device, const Acceler
 Result DeviceD3D12::FillFunctionTable(WrapperD3D12Interface& wrapperD3D12Interface) const {
     wrapperD3D12Interface = {};
     wrapperD3D12Interface.CreateCommandBufferD3D12 = ::CreateCommandBuffer;
+    wrapperD3D12Interface.CreateDescriptorPoolD3D12 = ::CreateDescriptorPool;
     wrapperD3D12Interface.CreateBufferD3D12 = ::CreateBuffer;
     wrapperD3D12Interface.CreateTextureD3D12 = ::CreateTexture;
     wrapperD3D12Interface.CreateMemoryD3D12 = ::CreateMemory;

@@ -123,6 +123,7 @@ struct DeviceVal final : public DeviceBase {
     Result CreateTextureD3D11(const TextureD3D11Desc& textureDesc, Texture*& texture);
 
     Result CreateCommandBufferD3D12(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer);
+    Result CreateDescriptorPoolD3D12(const DescriptorPoolD3D12Desc& descriptorPoolD3D12Desc, DescriptorPool*& descriptorPool);
     Result CreateBufferD3D12(const BufferD3D12Desc& bufferDesc, Buffer*& buffer);
     Result CreateTextureD3D12(const TextureD3D12Desc& textureDesc, Texture*& texture);
     Result CreateMemoryD3D12(const MemoryD3D12Desc& memoryDesc, Memory*& memory);

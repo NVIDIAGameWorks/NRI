@@ -42,6 +42,34 @@ Result DescriptorPoolD3D12::Create(const DescriptorPoolDesc& descriptorPoolDesc)
     return Result::SUCCESS;
 }
 
+Result DescriptorPoolD3D12::Create(const DescriptorPoolD3D12Desc& descriptorPoolDesc) {
+    static_assert(static_cast<size_t>(DescriptorHeapType::MAX_NUM) == 2, "DescriptorHeapType::MAX_NUM != 2");
+    static_assert(static_cast<uint32_t>(DescriptorHeapType::RESOURCE) == 0, "DescriptorHeapType::RESOURCE != 0");
+    static_assert(static_cast<uint32_t>(DescriptorHeapType::SAMPLER) == 1, "DescriptorHeapType::SAMPLER != 1");
+
+    const std::array<ID3D12DescriptorHeap*, DescriptorHeapType::MAX_NUM> descriptorHeaps = {
+		descriptorPoolDesc.d3d12ResourceDescriptorHeap,
+		descriptorPoolDesc.d3d12SamplerDescriptorHeap
+	};
+
+    for (uint32_t i = 0; i < DescriptorHeapType::MAX_NUM; i++) {
+		if (descriptorHeaps[i]) {
+			D3D12_DESCRIPTOR_HEAP_DESC desc = descriptorHeaps[i]->GetDesc();
+			m_DescriptorHeapDescs[i].descriptorHeap = descriptorHeaps[i];
+			m_DescriptorHeapDescs[i].descriptorPointerCPU = descriptorHeaps[i]->GetCPUDescriptorHandleForHeapStart().ptr;
+			m_DescriptorHeapDescs[i].descriptorPointerGPU = descriptorHeaps[i]->GetGPUDescriptorHandleForHeapStart().ptr;
+			m_DescriptorHeapDescs[i].descriptorSize = m_Device->GetDescriptorHandleIncrementSize(desc.Type);
+
+			m_DescriptorHeaps[m_DescriptorHeapNum] = descriptorHeaps[i];
+			m_DescriptorHeapNum++;
+		}
+	}
+
+    m_DescriptorSets.resize(descriptorPoolDesc.descriptorSetMaxNum, DescriptorSetD3D12(*this));
+
+    return Result::SUCCESS;
+}
+
 void DescriptorPoolD3D12::Bind(ID3D12GraphicsCommandList* graphicsCommandList) const {
     graphicsCommandList->SetDescriptorHeaps(m_DescriptorHeapNum, m_DescriptorHeaps.data());
 }
