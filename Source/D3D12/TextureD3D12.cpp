@@ -29,8 +29,12 @@ Result TextureD3D12::Create(const TextureDesc& textureDesc) {
 }
 
 Result TextureD3D12::Create(const TextureD3D12Desc& textureDesc) {
-    if (!GetTextureDesc(textureDesc, m_Desc))
-        return Result::INVALID_ARGUMENT;
+    if (!textureDesc.textureDesc) {
+        if (!GetTextureDesc(textureDesc, m_Desc))
+            return Result::INVALID_ARGUMENT;
+    } else {
+        m_Desc = *textureDesc.textureDesc;
+    }
 
     m_Texture = (ID3D12ResourceBest*)textureDesc.d3d12Resource;
 
@@ -56,8 +60,8 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
         DXGI_FORMAT* castableFormats = nullptr; // TODO: add castable formats, see options12.RelaxedFormatCastingSupported
 
         if (memory->RequiresDedicatedAllocation()) {
-            HRESULT hr = m_Device->CreateCommittedResource3(&heapDesc.Properties, heapDesc.Flags, &desc1, initialLayout,
-                isRenderableSurface ? &clearValue : nullptr, nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Texture));
+            HRESULT hr = m_Device->CreateCommittedResource3(&heapDesc.Properties, heapDesc.Flags, &desc1, initialLayout, isRenderableSurface ? &clearValue : nullptr, nullptr,
+                castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Texture));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device10::CreateCommittedResource3()");
         } else {
             HRESULT hr = m_Device->CreatePlacedResource2(

@@ -22,6 +22,8 @@ struct DescriptorPoolD3D12 {
     }
 
     Result Create(const DescriptorPoolDesc& descriptorPoolDesc);
+    Result Create(const DescriptorPoolD3D12Desc& descriptorPoolDesc);
+
     void Bind(ID3D12GraphicsCommandList* graphicsCommandList) const;
     uint32_t AllocateDescriptors(DescriptorHeapType descriptorHeapType, uint32_t descriptorNum);
     DescriptorPointerCPU GetDescriptorPointerCPU(DescriptorHeapType descriptorHeapType, uint32_t offset) const;

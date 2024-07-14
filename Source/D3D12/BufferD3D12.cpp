@@ -26,9 +26,7 @@ Result BufferD3D12::Create(const BufferDesc& bufferDesc) {
 }
 
 Result BufferD3D12::Create(const BufferD3D12Desc& bufferDesc) {
-    if (!GetBufferDesc(bufferDesc, m_Desc))
-        return Result::INVALID_ARGUMENT;
-
+    m_Desc = *bufferDesc.bufferDesc;
     m_Buffer = (ID3D12ResourceBest*)bufferDesc.d3d12Resource;
 
     return Result::SUCCESS;

@@ -5,12 +5,13 @@
 #include "NRIDeviceCreation.h"
 
 NRI_FORWARD_STRUCT(ID3D12Heap);
-NRI_FORWARD_STRUCT(D3D12_HEAP_DESC);
+NRI_FORWARD_STRUCT(ID3D12DescriptorHeap);
 NRI_FORWARD_STRUCT(ID3D12Device);
 NRI_FORWARD_STRUCT(ID3D12Resource);
 NRI_FORWARD_STRUCT(ID3D12CommandQueue);
 NRI_FORWARD_STRUCT(ID3D12CommandAllocator);
 NRI_FORWARD_STRUCT(ID3D12GraphicsCommandList);
+NRI_FORWARD_STRUCT(D3D12_HEAP_DESC);
 
 NRI_NAMESPACE_BEGIN
 
@@ -36,15 +37,24 @@ NRI_STRUCT(CommandBufferD3D12Desc)
     ID3D12CommandAllocator* d3d12CommandAllocator;
 };
 
+NRI_STRUCT(DescriptorPoolD3D12Desc)
+{
+    ID3D12DescriptorHeap* d3d12ResourceDescriptorHeap;
+    ID3D12DescriptorHeap* d3d12SamplerDescriptorHeap;
+    uint32_t descriptorSetMaxNum;
+};
+
 NRI_STRUCT(BufferD3D12Desc)
 {
     ID3D12Resource* d3d12Resource;
+    const NRI_NAME(BufferDesc)* bufferDesc;
     uint32_t structureStride;
 };
 
 NRI_STRUCT(TextureD3D12Desc)
 {
     ID3D12Resource* d3d12Resource;
+    const NRI_NAME(TextureDesc)* textureDesc;
 };
 
 NRI_STRUCT(MemoryD3D12Desc)
@@ -63,6 +73,7 @@ NRI_STRUCT(AccelerationStructureD3D12Desc)
 NRI_STRUCT(WrapperD3D12Interface)
 {
     NRI_NAME(Result) (NRI_CALL *CreateCommandBufferD3D12)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(CommandBufferD3D12Desc) commandBufferD3D12Desc, NRI_NAME_REF(CommandBuffer*) commandBuffer);
+    NRI_NAME(Result) (NRI_CALL *CreateDescriptorPoolD3D12)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(DescriptorPoolD3D12Desc) descriptorPoolD3D12Desc, NRI_NAME_REF(DescriptorPool*) descriptorPool);
     NRI_NAME(Result) (NRI_CALL *CreateBufferD3D12)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(BufferD3D12Desc) bufferD3D12Desc, NRI_NAME_REF(Buffer*) buffer);
     NRI_NAME(Result) (NRI_CALL *CreateTextureD3D12)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(TextureD3D12Desc) textureD3D12Desc, NRI_NAME_REF(Texture*) texture);
     NRI_NAME(Result) (NRI_CALL *CreateMemoryD3D12)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(MemoryD3D12Desc) memoryD3D12Desc, NRI_NAME_REF(Memory*) memory);

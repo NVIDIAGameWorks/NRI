@@ -55,10 +55,11 @@ Result MemoryVK::Create(const MemoryVKDesc& memoryDesc) {
     RETURN_ON_FAILURE(&m_Device, found, Result::INVALID_ARGUMENT, "Can't find memory by index");
 
     m_Handle = (VkDeviceMemory)memoryDesc.vkDeviceMemory;
+    m_MappedMemory = (uint8_t*)memoryDesc.vkMappedMemory;
     const MemoryTypeInfo& memoryTypeInfo = unpack.info;
 
     const auto& vk = m_Device.GetDispatchTable();
-    if (IsHostVisibleMemory(memoryTypeInfo.memoryLocation)) {
+    if (!m_MappedMemory && IsHostVisibleMemory(memoryTypeInfo.memoryLocation)) {
         VkResult result = vk.MapMemory(m_Device, m_Handle, 0, memoryDesc.size, 0, (void**)&m_MappedMemory);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkMapMemory returned %d", (int32_t)result);
     }

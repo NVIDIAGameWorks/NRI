@@ -856,6 +856,10 @@ inline Result DeviceD3D12::CreateCommandBuffer(const CommandBufferD3D12Desc& com
     return CreateImplementation<CommandBufferD3D12>(commandBuffer, commandBufferDesc);
 }
 
+inline Result DeviceD3D12::CreateDescriptorPool(const DescriptorPoolD3D12Desc& descriptorPoolD3D12Desc, DescriptorPool*& descriptorPool) {
+    return CreateImplementation<DescriptorPoolD3D12>(descriptorPool, descriptorPoolD3D12Desc);
+}
+
 Result DeviceD3D12::CreateBuffer(const BufferD3D12Desc& bufferDesc, Buffer*& buffer) { // TODO: not inline
     return CreateImplementation<BufferD3D12>(buffer, bufferDesc);
 }

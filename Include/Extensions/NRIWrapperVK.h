@@ -92,6 +92,7 @@ NRI_STRUCT(TextureVKDesc)
 NRI_STRUCT(MemoryVKDesc)
 {
     NRIVkDeviceMemory vkDeviceMemory;
+    void* vkMappedMemory;
     uint64_t size;
     uint32_t memoryTypeIndex;
 };
