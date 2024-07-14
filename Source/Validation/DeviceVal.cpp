@@ -947,7 +947,6 @@ Result DeviceVal::CreateCommandBufferD3D11(const CommandBufferD3D11Desc& command
 
 Result DeviceVal::CreateBufferD3D11(const BufferD3D11Desc& bufferDesc, Buffer*& buffer) {
     RETURN_ON_FAILURE(this, bufferDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT, "CreateBufferD3D11: 'bufferDesc.d3d11Resource' is NULL");
-    RETURN_ON_FAILURE(this, bufferDesc.bufferDesc != nullptr, Result::INVALID_ARGUMENT, "CreateBufferD3D11: 'bufferDesc.bufferDesc' is NULL");
 
     Buffer* bufferImpl = nullptr;
     const Result result = m_WrapperD3D11API.CreateBufferD3D11(m_Device, bufferDesc, bufferImpl);
@@ -1017,7 +1016,6 @@ Result DeviceVal::CreateDescriptorPoolD3D12(const DescriptorPoolD3D12Desc& descr
 
 Result DeviceVal::CreateBufferD3D12(const BufferD3D12Desc& bufferDesc, Buffer*& buffer) {
     RETURN_ON_FAILURE(this, bufferDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "CreateBufferD3D12: 'bufferDesc.d3d12Resource' is NULL");
-    RETURN_ON_FAILURE(this, bufferDesc.bufferDesc != nullptr, Result::INVALID_ARGUMENT, "CreateBufferD3D12: 'bufferDesc.bufferDesc' is NULL");
 
     Buffer* bufferImpl = nullptr;
     const Result result = m_WrapperD3D12API.CreateBufferD3D12(m_Device, bufferDesc, bufferImpl);

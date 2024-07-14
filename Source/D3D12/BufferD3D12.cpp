@@ -26,7 +26,11 @@ Result BufferD3D12::Create(const BufferDesc& bufferDesc) {
 }
 
 Result BufferD3D12::Create(const BufferD3D12Desc& bufferDesc) {
-    m_Desc = *bufferDesc.bufferDesc;
+    if (bufferDesc.desc)
+        m_Desc = *bufferDesc.desc;
+    else if (!GetBufferDesc(bufferDesc, m_Desc))
+        return Result::INVALID_ARGUMENT;
+
     m_Buffer = (ID3D12ResourceBest*)bufferDesc.d3d12Resource;
 
     return Result::SUCCESS;
@@ -50,8 +54,7 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool 
 
         if (memory->RequiresDedicatedAllocation()) {
             HRESULT hr = m_Device->CreateCommittedResource3(
-                &heapDesc.Properties, heapDesc.Flags, &desc1, D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, nullptr,
-                castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Buffer));
+                &heapDesc.Properties, heapDesc.Flags, &desc1, D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Buffer));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device10::CreateCommittedResource3()");
         } else {
             HRESULT hr =

@@ -186,9 +186,9 @@ struct SamplePositionsState {
 } // namespace nri
 
 #if NRI_USE_EXT_LIBS
-    #include "amdags/ags_lib/inc/amd_ags.h"
-    #include "nvapi/nvapi.h"
-    #include "nvapi/nvShaderExtnEnums.h"
+#    include "amdags/ags_lib/inc/amd_ags.h"
+#    include "nvapi/nvShaderExtnEnums.h"
+#    include "nvapi/nvapi.h"
 #endif
 
 namespace d3d11 {

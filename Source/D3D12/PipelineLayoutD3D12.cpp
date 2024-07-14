@@ -63,11 +63,9 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
 
     D3D12_ROOT_PARAMETER1 rootParameterLocal = {};
 
-    bool enableDrawParametersEmulation = 
-        m_Device.GetDesc().isDrawParametersEmulationEnabled &&
-        pipelineLayoutDesc.enableD3D12DrawParametersEmulation && 
-        (pipelineLayoutDesc.shaderStages & nri::StageBits::VERTEX_SHADER);
-    
+    bool enableDrawParametersEmulation = m_Device.GetDesc().isDrawParametersEmulationEnabled && pipelineLayoutDesc.enableD3D12DrawParametersEmulation &&
+                                         (pipelineLayoutDesc.shaderStages & nri::StageBits::VERTEX_SHADER);
+
     if (enableDrawParametersEmulation) {
         rootParameterLocal.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
         rootParameterLocal.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;

@@ -82,9 +82,13 @@ Result BufferD3D11::Create(const MemoryD3D11& memory) {
 }
 
 Result BufferD3D11::Create(const BufferD3D11Desc& bufferDesc) {
+    if (bufferDesc.desc)
+        m_Desc = *bufferDesc.desc;
+    else if (!GetBufferDesc(bufferDesc, m_Desc))
+        return Result::INVALID_ARGUMENT;
+
     ID3D11Buffer* buffer = (ID3D11Buffer*)bufferDesc.d3d11Resource;
     m_Buffer = buffer;
-    m_Desc = *bufferDesc.bufferDesc;
 
     D3D11_BUFFER_DESC desc = {};
     buffer->GetDesc(&desc);

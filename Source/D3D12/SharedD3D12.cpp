@@ -394,6 +394,32 @@ bool nri::GetTextureDesc(const TextureD3D12Desc& textureD3D12Desc, TextureDesc& 
     return true;
 }
 
+bool nri::GetBufferDesc(const BufferD3D12Desc& bufferD3D12Desc, BufferDesc& bufferDesc) {
+    bufferDesc = {};
+
+    ID3D12Resource* resource = bufferD3D12Desc.d3d12Resource;
+    if (!resource)
+        return false;
+
+    D3D12_RESOURCE_DESC desc = resource->GetDesc();
+    if (desc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
+        return false;
+
+    bufferDesc.size = desc.Width;
+    bufferDesc.structureStride = bufferD3D12Desc.structureStride;
+
+    // There are almost no restrictions on usages in D3D12
+    bufferDesc.usageMask = BufferUsageBits::VERTEX_BUFFER | BufferUsageBits::INDEX_BUFFER | BufferUsageBits::CONSTANT_BUFFER | BufferUsageBits::ARGUMENT_BUFFER |
+                           BufferUsageBits::RAY_TRACING_BUFFER | BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_READ;
+
+    if (!(desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
+        bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE;
+    if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+        bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE_STORAGE;
+
+    return true;
+}
+
 D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE nri::GetAccelerationStructureType(AccelerationStructureType accelerationStructureType) {
     static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL == (uint32_t)AccelerationStructureType::TOP_LEVEL, "Unsupported AccelerationStructureType.");
     static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL == (uint32_t)AccelerationStructureType::BOTTOM_LEVEL, "Unsupported AccelerationStructureType.");

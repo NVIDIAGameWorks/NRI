@@ -30,13 +30,13 @@ NRI_STRUCT(CommandBufferD3D11Desc)
 NRI_STRUCT(BufferD3D11Desc)
 {
     ID3D11Resource* d3d11Resource;
-    const NRI_NAME(BufferDesc)* bufferDesc;
+    const NRI_NAME(BufferDesc)* desc; // Can be NULL, but not all information can be retrieved from the resource
 };
 
 NRI_STRUCT(TextureD3D11Desc)
 {
     ID3D11Resource* d3d11Resource;
-    const NRI_NAME(TextureDesc)* textureDesc;
+    const NRI_NAME(TextureDesc)* desc; // Can be NULL, but not all information can be retrieved from the resource
 };
 
 NRI_STRUCT(WrapperD3D11Interface)

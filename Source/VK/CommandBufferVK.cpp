@@ -380,8 +380,7 @@ inline void CommandBufferVK::DrawIndirect(const Buffer& buffer, uint64_t offset,
     if (countBuffer) {
         const VkBuffer countBufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(countBuffer);
         vk.CmdDrawIndirectCount(m_Handle, bufferHandle, offset, countBufferHandle, countBufferOffset, drawNum, (uint32_t)stride);
-    }
-    else
+    } else
         vk.CmdDrawIndirect(m_Handle, bufferHandle, offset, drawNum, (uint32_t)stride);
 }
 
@@ -392,8 +391,7 @@ inline void CommandBufferVK::DrawIndexedIndirect(const Buffer& buffer, uint64_t 
     if (countBuffer) {
         const VkBuffer countBufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(countBuffer);
         vk.CmdDrawIndexedIndirectCount(m_Handle, bufferHandle, offset, countBufferHandle, countBufferOffset, drawNum, (uint32_t)stride);
-    }
-    else
+    } else
         vk.CmdDrawIndexedIndirect(m_Handle, bufferHandle, offset, drawNum, (uint32_t)stride);
 }
 

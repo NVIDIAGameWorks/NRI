@@ -47,14 +47,14 @@ NRI_STRUCT(DescriptorPoolD3D12Desc)
 NRI_STRUCT(BufferD3D12Desc)
 {
     ID3D12Resource* d3d12Resource;
-    const NRI_NAME(BufferDesc)* bufferDesc;
+    const NRI_NAME(BufferDesc)* desc; // Can be NULL, but not all information can be retrieved from the resource
     uint32_t structureStride;
 };
 
 NRI_STRUCT(TextureD3D12Desc)
 {
     ID3D12Resource* d3d12Resource;
-    const NRI_NAME(TextureDesc)* textureDesc;
+    const NRI_NAME(TextureDesc)* desc; // Can be NULL, but not all information can be retrieved from the resource
 };
 
 NRI_STRUCT(MemoryD3D12Desc)

@@ -204,8 +204,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         m_Desc.isDepthBoundsTestSupported = isDepthBoundsTestSupported;
         m_Desc.isDrawIndirectCountSupported = isDrawIndirectCountSupported;
         m_Desc.isShaderAtomicsI64Supported = isShaderAtomicsI64Supported;
-    }
-    else
+    } else
         m_IsWrapped = true;
 
     m_Version = QueryLatestDevice(deviceTemp, m_Device);

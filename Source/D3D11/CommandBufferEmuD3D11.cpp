@@ -609,7 +609,8 @@ inline void CommandBufferEmuD3D11::DrawIndirect(const Buffer& buffer, uint64_t o
     Push(m_PushBuffer, countBufferOffset);
 }
 
-inline void CommandBufferEmuD3D11::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+inline void CommandBufferEmuD3D11::DrawIndexedIndirect(
+    const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
     Push(m_PushBuffer, DRAW_INDEXED_INDIRECT);
     Push(m_PushBuffer, &buffer);
     Push(m_PushBuffer, offset);

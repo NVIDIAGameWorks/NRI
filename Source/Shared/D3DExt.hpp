@@ -198,8 +198,7 @@ void Ext::DrawIndexedIndirect(
 // D3D11
 #    if defined(__d3d11_h__)
 
-void Ext::DrawIndirect(
-    ID3D11DeviceContext* deviceContext, ID3D11Buffer* buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, ID3D11Buffer* countBuffer, uint32_t) const {
+void Ext::DrawIndirect(ID3D11DeviceContext* deviceContext, ID3D11Buffer* buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, ID3D11Buffer* countBuffer, uint32_t) const {
     if (!countBuffer) {
         for (uint32_t i = 0; i < drawNum; i++) {
             deviceContext->DrawInstancedIndirect(buffer, (uint32_t)offset);
