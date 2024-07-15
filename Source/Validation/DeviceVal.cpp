@@ -1168,6 +1168,10 @@ Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDe
     return result;
 }
 
+Result DeviceVal::QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const {
+    return m_HelperAPI.QueryVideoMemoryInfo(m_Device, memoryLocation, videoMemoryInfo);
+}
+
 Result DeviceVal::CreateRayTracingPipeline(const RayTracingPipelineDesc& pipelineDesc, Pipeline*& pipeline) {
     RETURN_ON_FAILURE(this, pipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.pipelineLayout' is NULL");
     RETURN_ON_FAILURE(this, pipelineDesc.shaderLibrary != nullptr, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary' is NULL");

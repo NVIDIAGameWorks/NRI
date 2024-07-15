@@ -252,6 +252,7 @@ protected:
 };
 
 bool HasOutput();
+nri::Result QueryVideoMemoryInfoDXGI(uint64_t luid, nri::MemoryLocation memoryLocation, nri::VideoMemoryInfo& videoMemoryInfo);
 
 struct DisplayDescHelper {
 public:

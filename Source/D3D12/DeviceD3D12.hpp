@@ -258,7 +258,7 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& coreInterface) const {
 
 #pragma region[  Helper  ]
 
-static uint32_t NRI_CALL CountAllocationNum(Device& device, const ResourceGroupDesc& resourceGroupDesc) {
+static uint32_t NRI_CALL CalculateAllocationNumber(const Device& device, const ResourceGroupDesc& resourceGroupDesc) {
     return ((DeviceD3D12&)device).CalculateAllocationNumber(resourceGroupDesc);
 }
 
@@ -266,10 +266,17 @@ static Result NRI_CALL AllocateAndBindMemory(Device& device, const ResourceGroup
     return ((DeviceD3D12&)device).AllocateAndBindMemory(resourceGroupDesc, allocations);
 }
 
+static Result NRI_CALL QueryVideoMemoryInfo(const Device& device, MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) {
+    uint64_t luid = ((DeviceD3D12&)device).GetDesc().adapterDesc.luid;
+
+    return QueryVideoMemoryInfoDXGI(luid, memoryLocation, videoMemoryInfo);
+}
+
 Result DeviceD3D12::FillFunctionTable(HelperInterface& helperInterface) const {
     helperInterface = {};
-    helperInterface.CalculateAllocationNumber = ::CountAllocationNum;
+    helperInterface.CalculateAllocationNumber = ::CalculateAllocationNumber;
     helperInterface.AllocateAndBindMemory = ::AllocateAndBindMemory;
+    helperInterface.QueryVideoMemoryInfo = ::QueryVideoMemoryInfo;
 
     Helper_CommandQueue_PartiallyFillFunctionTableD3D12(helperInterface);
 

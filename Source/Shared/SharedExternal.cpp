@@ -379,6 +379,29 @@ bool HasOutput() {
     return false;
 }
 
+nri::Result QueryVideoMemoryInfoDXGI(uint64_t luid, nri::MemoryLocation memoryLocation, nri::VideoMemoryInfo& videoMemoryInfo) {
+    videoMemoryInfo = {};
+
+    ComPtr<IDXGIFactory4> dxgifactory;
+    if (FAILED(CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgifactory))))
+        return nri::Result::FAILURE;
+
+    ComPtr<IDXGIAdapter3> adapter;
+    if (FAILED(dxgifactory->EnumAdapterByLuid(*(LUID*)&luid, IID_PPV_ARGS(&adapter))))
+        return nri::Result::FAILURE;
+
+    bool isLocal = memoryLocation == nri::MemoryLocation::DEVICE || memoryLocation == nri::MemoryLocation::DEVICE_UPLOAD;
+
+    DXGI_QUERY_VIDEO_MEMORY_INFO info = {};
+    if (FAILED(adapter->QueryVideoMemoryInfo(0, isLocal ? DXGI_MEMORY_SEGMENT_GROUP_LOCAL : DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &info)))
+        return nri::Result::FAILURE;
+
+    videoMemoryInfo.budgetSize = info.Budget;
+    videoMemoryInfo.usageSize = info.CurrentUsage;
+
+    return nri::Result::SUCCESS;
+}
+
 #else
 
 uint32_t NRIFormatToDXGIFormat(nri::Format format) {

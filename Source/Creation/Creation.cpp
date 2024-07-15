@@ -17,6 +17,7 @@ Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, Devi
 #if NRI_USE_VULKAN
 Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
 Result CreateDeviceVK(const DeviceCreationVKDesc& deviceDesc, DeviceBase*& device);
+bool QueryVideoMemoryInfoVK(const Device& device, VideoMemoryInfo& videoMemoryInfo);
 #endif
 
 DeviceBase* CreateDeviceValidation(const DeviceCreationDesc& deviceCreationDesc, DeviceBase& device);
@@ -334,29 +335,6 @@ NRI_API Result NRI_CALL nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t
     return Result::SUCCESS;
 }
 
-NRI_API bool NRI_CALL nriQueryVideoMemoryInfo(const Device& device, MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) {
-    uint64_t luid = ((DeviceBase&)device).GetDesc().adapterDesc.luid;
-
-    ComPtr<IDXGIFactory4> dxgifactory;
-    if (FAILED(CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgifactory))))
-        return false;
-
-    ComPtr<IDXGIAdapter3> adapter;
-    if (FAILED(dxgifactory->EnumAdapterByLuid(*(LUID*)&luid, IID_PPV_ARGS(&adapter))))
-        return false;
-
-    DXGI_QUERY_VIDEO_MEMORY_INFO info = {};
-    if (FAILED(adapter->QueryVideoMemoryInfo(0,
-            (memoryLocation == MemoryLocation::DEVICE || memoryLocation == MemoryLocation::DEVICE_UPLOAD) ? DXGI_MEMORY_SEGMENT_GROUP_LOCAL : DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL,
-            &info)))
-        return false;
-
-    static_assert(sizeof(VideoMemoryInfo) == sizeof(DXGI_QUERY_VIDEO_MEMORY_INFO));
-    memcpy(&videoMemoryInfo, &info, sizeof(info));
-
-    return true;
-}
-
 NRI_API void NRI_CALL nriReportLiveObjects() {
     ComPtr<IDXGIDebug1> pDebug;
     HRESULT hr = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebug));
@@ -486,15 +464,6 @@ NRI_API Result NRI_CALL nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t
     UnloadSharedLibrary(*loader);
 
     return nriResult;
-}
-
-NRI_API bool NRI_CALL nriQueryVideoMemoryInfo(const Device& device, MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) {
-    MaybeUnused(device);
-    MaybeUnused(memoryLocation);
-    MaybeUnused(videoMemoryInfo);
-
-    // TODO: use VK_EXT_memory_budget
-    return false;
 }
 
 NRI_API void NRI_CALL nriReportLiveObjects() {

@@ -6,10 +6,8 @@ NRI_NAMESPACE_BEGIN
 
 NRI_STRUCT(VideoMemoryInfo)
 {
-    uint64_t budget;
-    uint64_t currentUsage;
-    uint64_t availableForReservation;
-    uint64_t currentReservation;
+    uint64_t budgetSize; // the OS-provided video memory budget. If "usageSize" > "budgetSize", the application may incur stuttering or performance penalties
+    uint64_t usageSize; // specifies the application’s current video memory usage
 };
 
 NRI_STRUCT(TextureSubresourceUploadDesc)
@@ -73,18 +71,18 @@ NRI_STRUCT(FormatProps)
 NRI_STRUCT(HelperInterface)
 {
     // Optimized memory allocation for a group of resources
-    uint32_t (NRI_CALL *CalculateAllocationNumber)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(ResourceGroupDesc) resourceGroupDesc);
+    uint32_t (NRI_CALL *CalculateAllocationNumber)(const NRI_NAME_REF(Device) device, const NRI_NAME_REF(ResourceGroupDesc) resourceGroupDesc);
     NRI_NAME(Result) (NRI_CALL *AllocateAndBindMemory)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(ResourceGroupDesc) resourceGroupDesc, NRI_NAME(Memory)** allocations);
 
-    // Populate resources with data (not for streaming data)
+    // Populate resources with data (not for streaming!)
     NRI_NAME(Result) (NRI_CALL *UploadData)(NRI_NAME_REF(CommandQueue) commandQueue, const NRI_NAME(TextureUploadDesc)* textureUploadDescs, uint32_t textureUploadDescNum, const NRI_NAME(BufferUploadDesc)* bufferUploadDescs, uint32_t bufferUploadDescNum);
 
     // WFI
     NRI_NAME(Result) (NRI_CALL *WaitForIdle)(NRI_NAME_REF(CommandQueue) commandQueue);
-};
 
-// Information about video memory
-NRI_API bool NRI_CALL nriQueryVideoMemoryInfo(const NRI_NAME_REF(Device) device, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(VideoMemoryInfo) videoMemoryInfo);
+    // Information about video memory
+    NRI_NAME(Result) (NRI_CALL *QueryVideoMemoryInfo)(const NRI_NAME_REF(Device) device, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(VideoMemoryInfo) videoMemoryInfo);
+};
 
 // Format utilities
 NRI_API NRI_NAME(Format) NRI_CALL nriConvertDXGIFormatToNRI(uint32_t dxgiFormat);

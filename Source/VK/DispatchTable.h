@@ -17,6 +17,7 @@ struct DispatchTable {
     VULKAN_FUNCTION(DestroyInstance);
     VULKAN_FUNCTION(DestroyDevice);
     VULKAN_FUNCTION(GetPhysicalDeviceMemoryProperties);
+    VULKAN_FUNCTION(GetPhysicalDeviceMemoryProperties2);
     VULKAN_FUNCTION(GetDeviceGroupPeerMemoryFeatures);
     VULKAN_FUNCTION(GetPhysicalDeviceFormatProperties);
     VULKAN_FUNCTION(CreateDevice);

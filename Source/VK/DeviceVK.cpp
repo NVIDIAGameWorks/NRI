@@ -259,6 +259,9 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME);
 
+    if (IsExtensionSupported(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+
     // Optional
     if (IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
@@ -566,6 +569,9 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     if (IsExtensionSupported(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(shaderAtomicFloat2Features);
     }
+
+    if (IsExtensionSupported(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, desiredDeviceExts))
+        m_IsMemoryBudgetSupported = true;
 
     m_VK.GetPhysicalDeviceFeatures2(m_PhysicalDevice, &features);
 
@@ -1269,6 +1275,7 @@ Result DeviceVK::ResolveInstanceDispatchTable(const Vector<const char*>& desired
     GET_INSTANCE_PROC(DestroyInstance);
     GET_INSTANCE_PROC(DestroyDevice);
     GET_INSTANCE_PROC(GetPhysicalDeviceMemoryProperties);
+    GET_INSTANCE_PROC(GetPhysicalDeviceMemoryProperties2);
     GET_INSTANCE_PROC(GetDeviceGroupPeerMemoryFeatures);
     GET_INSTANCE_PROC(GetPhysicalDeviceFormatProperties);
     GET_INSTANCE_PROC(CreateDevice);
@@ -1830,6 +1837,41 @@ inline Result DeviceVK::AllocateAndBindMemory(const ResourceGroupDesc& resourceG
     HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this);
 
     return allocator.AllocateAndBindMemory(resourceGroupDesc, allocations);
+}
+
+Result DeviceVK::QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const {
+    videoMemoryInfo = {};
+
+    if (!m_IsMemoryBudgetSupported)
+        return Result::UNSUPPORTED;
+
+    VkPhysicalDeviceMemoryBudgetPropertiesEXT budgetProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT};
+
+    VkPhysicalDeviceMemoryProperties2 memoryProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2};
+    memoryProps.pNext = &budgetProps;
+
+    const auto& vk = GetDispatchTable();
+    vk.GetPhysicalDeviceMemoryProperties2(m_PhysicalDevice, &memoryProps);
+
+    bool isLocal = memoryLocation == nri::MemoryLocation::DEVICE || memoryLocation == nri::MemoryLocation::DEVICE_UPLOAD;
+
+    for (uint32_t i = 0; i < GetCountOf(budgetProps.heapBudget); i++) {
+        VkDeviceSize size = budgetProps.heapBudget[i];
+        bool state = m_MemoryProps.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT;
+
+        if (size && state == isLocal)
+            videoMemoryInfo.budgetSize += size;
+    }
+
+    for (uint32_t i = 0; i < GetCountOf(budgetProps.heapUsage); i++) {
+        VkDeviceSize size = budgetProps.heapUsage[i];
+        bool state = m_MemoryProps.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT;
+
+        if (size && state == isLocal)
+            videoMemoryInfo.usageSize += size;
+    }
+
+    return Result::SUCCESS;
 }
 
 #include "DeviceVK.hpp"

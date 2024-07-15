@@ -2,8 +2,6 @@
 
 #pragma once
 
-struct IDXGIAdapter;
-
 namespace nri {
 
 struct CommandQueueVK;
@@ -114,6 +112,7 @@ struct DeviceVK final : public DeviceBase {
     FormatSupportBits GetFormatSupport(Format format) const;
     uint32_t CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const;
     Result AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations);
+    Result QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const;
 
     //================================================================================================================
     // DeviceBase
@@ -156,6 +155,7 @@ public:
     bool m_IsPresentIdSupported = false;
     bool m_IsPresentWaitSupported = false;
     bool m_IsLowLatencySupported = false;
+    bool m_IsMemoryBudgetSupported = false;
 
 private:
     Vector<uint32_t> m_ConcurrentSharingModeQueueIndices;

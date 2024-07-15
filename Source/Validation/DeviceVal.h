@@ -131,6 +131,7 @@ struct DeviceVal final : public DeviceBase {
 
     uint32_t CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const;
     Result AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations);
+    Result QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const;
 
     //================================================================================================================
     // DeviceBase

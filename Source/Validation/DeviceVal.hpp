@@ -287,7 +287,7 @@ Result DeviceVal::FillFunctionTable(WrapperD3D11Interface& wrapperD3D11Interface
 
 #pragma region[  Helper  ]
 
-static uint32_t NRI_CALL CountAllocationNum(Device& device, const ResourceGroupDesc& resourceGroupDesc) {
+static uint32_t NRI_CALL CalculateAllocationNumber(const Device& device, const ResourceGroupDesc& resourceGroupDesc) {
     return ((DeviceVal&)device).CalculateAllocationNumber(resourceGroupDesc);
 }
 
@@ -295,10 +295,15 @@ static Result NRI_CALL AllocateAndBindMemory(Device& device, const ResourceGroup
     return ((DeviceVal&)device).AllocateAndBindMemory(resourceGroupDesc, allocations);
 }
 
+static Result NRI_CALL QueryVideoMemoryInfo(const Device& device, MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) {
+    return ((DeviceVal&)device).QueryVideoMemoryInfo(memoryLocation, videoMemoryInfo);
+}
+
 Result DeviceVal::FillFunctionTable(HelperInterface& helperInterface) const {
     helperInterface = {};
-    helperInterface.CalculateAllocationNumber = ::CountAllocationNum;
+    helperInterface.CalculateAllocationNumber = ::CalculateAllocationNumber;
     helperInterface.AllocateAndBindMemory = ::AllocateAndBindMemory;
+    helperInterface.QueryVideoMemoryInfo = ::QueryVideoMemoryInfo;
 
     Helper_CommandQueue_PartiallyFillFunctionTableVal(helperInterface);
 
