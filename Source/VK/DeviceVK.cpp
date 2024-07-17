@@ -770,10 +770,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.computeShaderWorkGroupMaxDim[2] = limits.maxComputeWorkGroupSize[2];
 
         m_Desc.rayTracingShaderGroupIdentifierSize = rayTracingProps.shaderGroupHandleSize;
+        m_Desc.rayTracingShaderTableAlignment = rayTracingProps.shaderGroupBaseAlignment;
+        m_Desc.rayTracingShaderTableMaxStride = rayTracingProps.maxShaderGroupStride;
         m_Desc.rayTracingShaderRecursionMaxDepth = rayTracingProps.maxRayRecursionDepth;
         m_Desc.rayTracingGeometryObjectMaxNum = (uint32_t)accelerationStructureProps.maxGeometryCount;
-        m_Desc.rayTracingShaderTableAligment = rayTracingProps.shaderGroupBaseAlignment;
-        m_Desc.rayTracingShaderTableMaxStride = rayTracingProps.maxShaderGroupStride;
+        m_Desc.rayTracingScratchAlignment = accelerationStructureProps.minAccelerationStructureScratchOffsetAlignment;
 
         m_Desc.meshControlSharedMemoryMaxSize = meshShaderProps.maxTaskSharedMemorySize;
         m_Desc.meshControlWorkGroupInvocationMaxNum = meshShaderProps.maxTaskWorkGroupInvocations;

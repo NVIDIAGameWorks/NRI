@@ -38,11 +38,11 @@ struct AccelerationStructureVK {
     //================================================================================================================
 
     inline uint64_t GetUpdateScratchBufferSize() const {
-        return m_UpdateScratchSize;
+        return Align(m_UpdateScratchSize, m_Device.GetDesc().rayTracingScratchAlignment);
     }
 
     inline uint64_t GetBuildScratchBufferSize() const {
-        return m_BuildScratchSize;
+        return Align(m_BuildScratchSize, m_Device.GetDesc().rayTracingScratchAlignment);
     }
 
     inline VkDeviceAddress GetNativeHandle() const {

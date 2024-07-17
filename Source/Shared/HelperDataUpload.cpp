@@ -5,7 +5,7 @@
 using namespace nri;
 
 constexpr uint32_t BARRIERS_PER_PASS = 256;
-constexpr uint64_t COPY_ALIGMENT = 16;
+constexpr uint64_t COPY_ALIGNMENT = 16;
 
 static void DoTransition(const CoreInterface& NRI, CommandBuffer* commandBuffer, bool isInitial, const TextureUploadDesc* textureUploadDescs, uint32_t textureDataDescNum) {
     TextureBarrierDesc textureBarriers[BARRIERS_PER_PASS];
@@ -84,7 +84,7 @@ Result HelperDataUpload::UploadData(
         m_UploadBufferSize = std::max(m_UploadBufferSize, contentSize);
     }
 
-    m_UploadBufferSize = Align(m_UploadBufferSize, COPY_ALIGMENT);
+    m_UploadBufferSize = Align(m_UploadBufferSize, COPY_ALIGNMENT);
 
     Result result = Create();
     if (result == Result::SUCCESS) {
@@ -278,13 +278,13 @@ bool HelperDataUpload::CopyTextureContent(const TextureUploadDesc& textureUpload
 
             NRI.CmdUploadBufferToTexture(*m_CommandBuffer, *textureUploadDesc.texture, dstRegion, *m_UploadBuffer, srcDataLayout);
 
-            m_UploadBufferOffset = Align(m_UploadBufferOffset + contentSize, COPY_ALIGMENT);
+            m_UploadBufferOffset = Align(m_UploadBufferOffset + contentSize, COPY_ALIGNMENT);
         }
         mipOffset = 0;
     }
     arrayOffset = 0;
 
-    m_UploadBufferOffset = Align(m_UploadBufferOffset, COPY_ALIGMENT);
+    m_UploadBufferOffset = Align(m_UploadBufferOffset, COPY_ALIGNMENT);
 
     return true;
 }
@@ -328,7 +328,7 @@ bool HelperDataUpload::CopyBufferContent(const BufferUploadDesc& bufferUploadDes
         return false;
 
     bufferContentOffset = 0;
-    m_UploadBufferOffset = Align(m_UploadBufferOffset, COPY_ALIGMENT);
+    m_UploadBufferOffset = Align(m_UploadBufferOffset, COPY_ALIGNMENT);
 
     return true;
 }

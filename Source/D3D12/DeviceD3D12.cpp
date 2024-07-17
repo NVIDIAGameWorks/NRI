@@ -525,10 +525,11 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation) {
 
     if (m_Desc.isRayTracingSupported) {
         m_Desc.rayTracingShaderGroupIdentifierSize = D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT;
-        m_Desc.rayTracingShaderTableAligment = D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
-        m_Desc.rayTracingShaderTableMaxStride = std::numeric_limits<uint64_t>::max();
+        m_Desc.rayTracingShaderTableAlignment = D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
+        m_Desc.rayTracingShaderTableMaxStride = std::numeric_limits<uint32_t>::max();
         m_Desc.rayTracingShaderRecursionMaxDepth = D3D12_RAYTRACING_MAX_DECLARABLE_TRACE_RECURSION_DEPTH;
         m_Desc.rayTracingGeometryObjectMaxNum = (1 << 24) - 1;
+        m_Desc.rayTracingScratchAlignment = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT;
     }
 
     if (m_Desc.isMeshShaderSupported) {

@@ -583,7 +583,7 @@ void CommandBufferVal::WriteAccelerationStructureSize(
 }
 
 void CommandBufferVal::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc) {
-    uint64_t align = m_Device.GetDesc().rayTracingShaderTableAligment;
+    uint64_t align = m_Device.GetDesc().rayTracingShaderTableAlignment;
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdDispatchRays: the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "CmdDispatchRays: must be called outside of 'CmdBeginRendering/CmdEndRendering'");
     RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.buffer != nullptr, ReturnVoid(), "CmdDispatchRays: 'dispatchRaysDesc.raygenShader.buffer' is NULL");

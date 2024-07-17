@@ -57,11 +57,11 @@ void AccelerationStructureD3D12::GetMemoryInfo(MemoryDesc& memoryDesc) const {
 }
 
 uint64_t AccelerationStructureD3D12::GetUpdateScratchBufferSize() const {
-    return m_PrebuildInfo.UpdateScratchDataSizeInBytes;
+    return Align(m_PrebuildInfo.UpdateScratchDataSizeInBytes, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT);
 }
 
 uint64_t AccelerationStructureD3D12::GetBuildScratchBufferSize() const {
-    return m_PrebuildInfo.ScratchDataSizeInBytes;
+    return Align(m_PrebuildInfo.ScratchDataSizeInBytes, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT);
 }
 
 Result AccelerationStructureD3D12::BindMemory(Memory* memory, uint64_t offset) {

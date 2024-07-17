@@ -1516,11 +1516,12 @@ NRI_STRUCT(DeviceDesc)
     uint32_t computeShaderWorkGroupMaxDim[3];
 
     // Ray tracing
-    uint64_t rayTracingShaderGroupIdentifierSize;
-    uint64_t rayTracingShaderTableAligment;
-    uint64_t rayTracingShaderTableMaxStride;
+    uint32_t rayTracingShaderGroupIdentifierSize;
+    uint32_t rayTracingShaderTableAlignment;
+    uint32_t rayTracingShaderTableMaxStride;
     uint32_t rayTracingShaderRecursionMaxDepth;
     uint32_t rayTracingGeometryObjectMaxNum;
+    uint32_t rayTracingScratchAlignment;
 
     // Mesh shaders
     uint32_t meshControlSharedMemoryMaxSize;
