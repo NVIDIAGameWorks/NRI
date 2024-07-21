@@ -874,8 +874,8 @@ bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeM
         bool hasDesiredFlags = (m_MemoryProps.memoryTypes[i].propertyFlags & desiredFlags) == desiredFlags;
 
         if (isSupported && hasNeededFlags && !hasUndesiredFlags && hasDesiredFlags) {
-            memoryTypeInfo.memoryTypeIndex = (MemoryTypeIndexType)i;
-            memoryTypeInfo.memoryLocation = memoryLocation;
+            memoryTypeInfo.index = (MemoryTypeIndex)i;
+            memoryTypeInfo.location = memoryLocation;
 
             return true;
         }
@@ -888,8 +888,8 @@ bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeM
         bool hasUndesiredFlags = undesiredFlags == 0 ? false : (m_MemoryProps.memoryTypes[i].propertyFlags & undesiredFlags) == undesiredFlags;
 
         if (isSupported && hasNeededFlags && !hasUndesiredFlags) {
-            memoryTypeInfo.memoryTypeIndex = (MemoryTypeIndexType)i;
-            memoryTypeInfo.memoryLocation = memoryLocation;
+            memoryTypeInfo.index = (MemoryTypeIndex)i;
+            memoryTypeInfo.location = memoryLocation;
 
             return true;
         }
@@ -902,8 +902,8 @@ bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeM
         bool hasDesiredFlags = (m_MemoryProps.memoryTypes[i].propertyFlags & desiredFlags) == desiredFlags;
 
         if (isSupported && hasNeededFlags && hasDesiredFlags) {
-            memoryTypeInfo.memoryTypeIndex = (MemoryTypeIndexType)i;
-            memoryTypeInfo.memoryLocation = memoryLocation;
+            memoryTypeInfo.index = (MemoryTypeIndex)i;
+            memoryTypeInfo.location = memoryLocation;
 
             return true;
         }
@@ -915,8 +915,8 @@ bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeM
         bool hasNeededFlags = (m_MemoryProps.memoryTypes[i].propertyFlags & neededFlags) == neededFlags;
 
         if (isSupported && hasNeededFlags) {
-            memoryTypeInfo.memoryTypeIndex = (MemoryTypeIndexType)i;
-            memoryTypeInfo.memoryLocation = memoryLocation;
+            memoryTypeInfo.index = (MemoryTypeIndex)i;
+            memoryTypeInfo.location = memoryLocation;
 
             return true;
         }
@@ -933,11 +933,11 @@ bool DeviceVK::GetMemoryTypeByIndex(uint32_t index, MemoryTypeInfo& memoryTypeIn
     bool isHostVisible = memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
     bool isDevice = memoryType.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-    memoryTypeInfo.memoryTypeIndex = (MemoryTypeIndexType)index;
+    memoryTypeInfo.index = (MemoryTypeIndex)index;
     if (isDevice)
-        memoryTypeInfo.memoryLocation = isHostVisible ? MemoryLocation::DEVICE_UPLOAD : MemoryLocation::DEVICE;
+        memoryTypeInfo.location = isHostVisible ? MemoryLocation::DEVICE_UPLOAD : MemoryLocation::DEVICE;
     else
-        memoryTypeInfo.memoryLocation = MemoryLocation::HOST_UPLOAD;
+        memoryTypeInfo.location = MemoryLocation::HOST_UPLOAD;
 
     return true;
 }
@@ -1693,10 +1693,9 @@ inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBi
         MemoryVK& memoryImpl = *(MemoryVK*)bindingDesc.memory;
         BufferVK& bufferImpl = *(BufferVK*)bindingDesc.buffer;
 
-        const MemoryTypeUnpack unpack = {memoryImpl.GetType()};
-        const MemoryTypeInfo& memoryTypeInfo = unpack.info;
+        const MemoryTypeUnion memoryType = {memoryImpl.GetType()};
 
-        if (memoryImpl.OwnsNativeObjects() && memoryTypeInfo.isDedicated == 1)
+        if (memoryImpl.OwnsNativeObjects() && memoryType.unpacked.isDedicated)
             memoryImpl.CreateDedicated(bufferImpl);
 
         if (bufferImpl.OwnsNativeObjects()) {
@@ -1707,7 +1706,7 @@ inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBi
             info.memoryOffset = bindingDesc.offset;
         }
 
-        if (IsHostVisibleMemory(memoryTypeInfo.memoryLocation))
+        if (IsHostVisibleMemory(memoryType.unpacked.location))
             bufferImpl.SetHostMemory(memoryImpl, bindingDesc.offset);
     }
 
@@ -1737,10 +1736,9 @@ inline Result DeviceVK::BindTextureMemory(const TextureMemoryBindingDesc* memory
         MemoryVK& memoryImpl = *(MemoryVK*)bindingDesc.memory;
         TextureVK& textureImpl = *(TextureVK*)bindingDesc.texture;
 
-        const MemoryTypeUnpack unpack = {memoryImpl.GetType()};
-        const MemoryTypeInfo& memoryTypeInfo = unpack.info;
+        const MemoryTypeUnion memoryType = {memoryImpl.GetType()};
 
-        if (memoryImpl.OwnsNativeObjects() && memoryTypeInfo.isDedicated)
+        if (memoryImpl.OwnsNativeObjects() && memoryType.unpacked.isDedicated)
             memoryImpl.CreateDedicated(textureImpl);
 
         if (textureImpl.OwnsNativeObjects()) {

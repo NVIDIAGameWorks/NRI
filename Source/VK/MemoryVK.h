@@ -36,7 +36,7 @@ struct MemoryVK {
 
     ~MemoryVK();
 
-    Result Create(const MemoryType memoryType, uint64_t size);
+    Result Create(MemoryType type, uint64_t size);
     Result Create(const MemoryVKDesc& memoryDesc);
     Result CreateDedicated(BufferVK& buffer);
     Result CreateDedicated(TextureVK& texture);

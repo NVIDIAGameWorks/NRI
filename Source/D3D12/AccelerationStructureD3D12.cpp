@@ -50,10 +50,7 @@ Result AccelerationStructureD3D12::Create(const AccelerationStructureDesc& accel
 }
 
 void AccelerationStructureD3D12::GetMemoryInfo(MemoryDesc& memoryDesc) const {
-    memoryDesc.size = m_PrebuildInfo.ResultDataMaxSizeInBytes;
-    memoryDesc.alignment = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT;
-    memoryDesc.type = GetMemoryType(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
-    memoryDesc.mustBeDedicated = false;
+    m_Device.GetMemoryInfoForAccelerationStructure(m_PrebuildInfo.ResultDataMaxSizeInBytes, memoryDesc);
 }
 
 uint64_t AccelerationStructureD3D12::GetUpdateScratchBufferSize() const {

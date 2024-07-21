@@ -6,6 +6,10 @@
 
 using namespace nri;
 
+static inline D3D12_HEAP_TYPE GetHeapType(MemoryType memoryType) {
+    return (D3D12_HEAP_TYPE)(memoryType >> 16);
+}
+
 Result MemoryD3D12::Create(const MemoryType memoryType, uint64_t size) {
     D3D12_HEAP_DESC heapDesc = {};
     heapDesc.SizeInBytes = size;
@@ -17,7 +21,7 @@ Result MemoryD3D12::Create(const MemoryType memoryType, uint64_t size) {
     heapDesc.Alignment = 0;
     heapDesc.Flags = (size ? GetHeapFlags(memoryType) : D3D12_HEAP_FLAG_NONE) | D3D12_HEAP_FLAG_CREATE_NOT_ZEROED;
 
-    if (!::RequiresDedicatedAllocation(memoryType)) {
+    if (!m_Device.IsDedicated(memoryType)) {
         HRESULT hr = m_Device->CreateHeap(&heapDesc, IID_PPV_ARGS(&m_Heap));
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateHeap()");
     }

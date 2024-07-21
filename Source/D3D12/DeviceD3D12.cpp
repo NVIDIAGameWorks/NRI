@@ -287,6 +287,7 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation) {
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options) failed, result = 0x%08X!", hr);
+    m_IsResourceHeapTier2Supported = options.ResourceHeapTier == D3D12_RESOURCE_HEAP_TIER_2;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS1 options1 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &options1, sizeof(options1));
@@ -650,23 +651,66 @@ DescriptorPointerCPU DeviceD3D12::GetDescriptorPointerCPU(const DescriptorHandle
     return descriptorPointer;
 }
 
+constexpr std::array<D3D12_HEAP_TYPE, (uint32_t)MemoryLocation::MAX_NUM> HEAP_TYPES = {
+    D3D12_HEAP_TYPE_DEFAULT, // DEVICE
+#ifdef NRI_USE_AGILITY_SDK
+    // Prerequisite: D3D12_FEATURE_D3D12_OPTIONS16
+    D3D12_HEAP_TYPE_GPU_UPLOAD, // DEVICE_UPLOAD
+#else
+    D3D12_HEAP_TYPE_UPLOAD, // DEVICE_UPLOAD (silent fallback to HOST_UPLOAD)
+#endif
+    D3D12_HEAP_TYPE_UPLOAD,   // HOST_UPLOAD
+    D3D12_HEAP_TYPE_READBACK, // HOST_READBACK
+};
+
+static inline MemoryType ConstructMemoryType(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags) {
+    return ((uint32_t)heapFlags) | ((uint32_t)heapType << 16);
+}
+
 void DeviceD3D12::GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const {
     if (memoryLocation == MemoryLocation::DEVICE_UPLOAD && m_Desc.deviceUploadHeapSize == 0)
         memoryLocation = MemoryLocation::HOST_UPLOAD;
 
-    memoryDesc.type = GetMemoryType(memoryLocation, resourceDesc);
+    D3D12_HEAP_TYPE heapType = HEAP_TYPES[(uint32_t)memoryLocation];
+    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES;
+
+    if (!m_IsResourceHeapTier2Supported) {
+        if (resourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+            heapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+        else if (resourceDesc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL))
+            heapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES;
+        else
+            heapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES;
+    }
 
     D3D12_RESOURCE_ALLOCATION_INFO resourceAllocationInfo = m_Device->GetResourceAllocationInfo(NRI_NODE_MASK, 1, &resourceDesc);
+    MemoryType memoryType = ConstructMemoryType(heapType, heapFlags);
+
     memoryDesc.size = (uint64_t)resourceAllocationInfo.SizeInBytes;
     memoryDesc.alignment = (uint32_t)resourceAllocationInfo.Alignment;
+    memoryDesc.type = memoryType;
+    memoryDesc.mustBeDedicated = IsDedicated(memoryType);
+}
 
-    memoryDesc.mustBeDedicated = RequiresDedicatedAllocation(memoryDesc.type);
+void DeviceD3D12::GetMemoryInfoForAccelerationStructure(uint64_t size, MemoryDesc& memoryDesc) const {
+    D3D12_HEAP_FLAGS heapFlags = m_IsResourceHeapTier2Supported ? D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES : D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+
+    memoryDesc.size = size;
+    memoryDesc.alignment = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT;
+    memoryDesc.type = ConstructMemoryType(D3D12_HEAP_TYPE_DEFAULT, heapFlags);
+    memoryDesc.mustBeDedicated = false;
+}
+
+bool DeviceD3D12::IsDedicated(MemoryType memoryType) const {
+    D3D12_HEAP_FLAGS heapFlags = GetHeapFlags(memoryType);
+    bool isRtDs = (heapFlags & D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES) == D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES;
+
+    return !m_IsResourceHeapTier2Supported && isRtDs;
 }
 
 ComPtr<ID3D12CommandSignature> DeviceD3D12::CreateCommandSignature(
-    D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation) {
-    const bool isDrawArgument =
-        enableDrawParametersEmulation && (indirectArgumentType == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW || indirectArgumentType == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED);
+    D3D12_INDIRECT_ARGUMENT_TYPE type, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation) {
+    const bool isDrawArgument = enableDrawParametersEmulation && (type == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW || type == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED);
 
     D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDescs[2] = {};
     if (isDrawArgument) {
@@ -677,9 +721,9 @@ ComPtr<ID3D12CommandSignature> DeviceD3D12::CreateCommandSignature(
         indirectArgumentDescs[0].Constant.DestOffsetIn32BitValues = 0;
         indirectArgumentDescs[0].Constant.Num32BitValuesToSet = 2;
 
-        indirectArgumentDescs[1].Type = indirectArgumentType;
+        indirectArgumentDescs[1].Type = type;
     } else
-        indirectArgumentDescs[0].Type = indirectArgumentType;
+        indirectArgumentDescs[0].Type = type;
 
     D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
     commandSignatureDesc.NumArgumentDescs = isDrawArgument ? 2 : 1;
@@ -736,10 +780,6 @@ ID3D12CommandSignature* DeviceD3D12::GetDispatchRaysCommandSignature() const {
 
 ID3D12CommandSignature* DeviceD3D12::GetDispatchCommandSignature() const {
     return m_DispatchCommandSignature.GetInterface();
-}
-
-MemoryType DeviceD3D12::GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const {
-    return ::GetMemoryType(memoryLocation, resourceDesc);
 }
 
 //================================================================================================================

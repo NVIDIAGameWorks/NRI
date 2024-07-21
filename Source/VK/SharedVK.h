@@ -11,17 +11,17 @@
 
 #include "DispatchTable.h"
 
-typedef uint16_t MemoryTypeIndexType;
+typedef uint16_t MemoryTypeIndex;
 struct MemoryTypeInfo {
-    MemoryTypeIndexType memoryTypeIndex;
-    nri::MemoryLocation memoryLocation;
+    MemoryTypeIndex index;
+    nri::MemoryLocation location;
     bool isDedicated;
 };
 static_assert(sizeof(MemoryTypeInfo) <= sizeof(nri::MemoryType), "Unexpected structure size");
 
-union MemoryTypeUnpack {
-    nri::MemoryType type;
-    MemoryTypeInfo info;
+union MemoryTypeUnion {
+    nri::MemoryType packed;
+    MemoryTypeInfo unpacked;
 };
 
 template <typename HandleType, typename ImplType, typename NRIType>

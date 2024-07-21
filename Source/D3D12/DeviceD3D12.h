@@ -65,6 +65,8 @@ struct DeviceD3D12 final : public DeviceBase {
     Result GetDescriptorHandle(D3D12_DESCRIPTOR_HEAP_TYPE type, DescriptorHandle& descriptorHandle);
     DescriptorPointerCPU GetDescriptorPointerCPU(const DescriptorHandle& descriptorHandle);
     void GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const;
+    void GetMemoryInfoForAccelerationStructure(uint64_t size, MemoryDesc& memoryDesc) const;
+    bool IsDedicated(MemoryType memoryType) const;
 
     ID3D12CommandSignature* GetDrawCommandSignature(uint32_t stride, ID3D12RootSignature* rootSignature);
     ID3D12CommandSignature* GetDrawIndexedCommandSignature(uint32_t stride, ID3D12RootSignature* rootSignature);
@@ -149,9 +151,8 @@ struct DeviceD3D12 final : public DeviceBase {
 
 private:
     void FillDesc(bool enableDrawParametersEmulation);
-    MemoryType GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) const;
     ComPtr<ID3D12CommandSignature> CreateCommandSignature(
-        D3D12_INDIRECT_ARGUMENT_TYPE indirectArgumentType, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation = false);
+        D3D12_INDIRECT_ARGUMENT_TYPE type, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation = false);
 
 private:
     d3d12::Ext m_Ext = {}; // don't sort: destructor must be called last!
@@ -169,6 +170,7 @@ private:
     CoreInterface m_CoreInterface = {};
     uint8_t m_Version = 0;
     bool m_IsWrapped = false;
+    bool m_IsResourceHeapTier2Supported = false;
     std::array<Lock, DESCRIPTOR_HEAP_TYPE_NUM> m_FreeDescriptorLocks;
     Lock m_DescriptorHeapLock;
     Lock m_QueueLock;

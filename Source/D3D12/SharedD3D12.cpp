@@ -16,52 +16,8 @@ D3D12_COMMAND_LIST_TYPE nri::GetCommandListType(CommandQueueType commandQueueTyp
     return COMMAND_LIST_TYPES[(uint32_t)commandQueueType];
 }
 
-constexpr std::array<D3D12_HEAP_TYPE, (uint32_t)MemoryLocation::MAX_NUM> HEAP_TYPES = {
-    D3D12_HEAP_TYPE_DEFAULT, // DEVICE
-#ifdef NRI_USE_AGILITY_SDK
-    // Prerequisite: D3D12_FEATURE_D3D12_OPTIONS16
-    D3D12_HEAP_TYPE_GPU_UPLOAD, // DEVICE_UPLOAD
-#else
-    D3D12_HEAP_TYPE_UPLOAD, // DEVICE_UPLOAD (silent fallback to HOST_UPLOAD)
-#endif
-    D3D12_HEAP_TYPE_UPLOAD,   // HOST_UPLOAD
-    D3D12_HEAP_TYPE_READBACK, // HOST_READBACK
-};
-
-MemoryType nri::GetMemoryType(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags) {
-    return ((uint32_t)heapFlags) | ((uint32_t)heapType << 16);
-}
-
-MemoryType nri::GetMemoryType(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc) {
-    D3D12_HEAP_TYPE heapType = HEAP_TYPES[(uint32_t)memoryLocation];
-    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE;
-
-    // Required for Tier 1 resource heaps https://msdn.microsoft.com/en-us/library/windows/desktop/dn986743(v=vs.85).aspx
-    if (resourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
-        heapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
-    else if (resourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET || resourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
-        heapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES;
-    else
-        heapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES;
-
-    return GetMemoryType(heapType, heapFlags);
-}
-
-D3D12_HEAP_TYPE nri::GetHeapType(MemoryType memoryType) {
-    return (D3D12_HEAP_TYPE)(memoryType >> 16);
-}
-
 D3D12_HEAP_FLAGS nri::GetHeapFlags(MemoryType memoryType) {
     return (D3D12_HEAP_FLAGS)(memoryType & 0xffff);
-}
-
-bool nri::RequiresDedicatedAllocation(MemoryType memoryType) {
-    D3D12_HEAP_FLAGS heapFlags = GetHeapFlags(memoryType);
-
-    if ((heapFlags & D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES) == D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES)
-        return true;
-
-    return false;
 }
 
 D3D12_RESOURCE_FLAGS nri::GetBufferFlags(BufferUsageBits bufferUsageMask) {

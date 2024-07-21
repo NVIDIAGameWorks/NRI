@@ -37,14 +37,18 @@ Result BufferD3D12::Create(const BufferD3D12Desc& bufferDesc) {
 }
 
 Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool isAccelerationStructureBuffer) {
-    MaybeUnused(isAccelerationStructureBuffer);
-    const D3D12_HEAP_DESC& heapDesc = memory->GetHeapDesc();
-
     // Buffer was already created externally
     if (m_Buffer)
         return Result::SUCCESS;
 
+    const D3D12_HEAP_DESC& heapDesc = memory->GetHeapDesc();
+
+    // STATE_CREATION ERROR #640: CREATERESOURCEANDHEAP_INVALIDHEAPMISCFLAGS
+    D3D12_HEAP_FLAGS heapFlagsFixed = heapDesc.Flags & ~(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_BUFFERS);
+
 #ifdef NRI_USE_AGILITY_SDK
+    MaybeUnused(isAccelerationStructureBuffer);
+
     if (m_Device.GetVersion() >= 10) {
         D3D12_RESOURCE_DESC1 desc1 = {};
         GetResourceDesc((D3D12_RESOURCE_DESC*)&desc1, m_Desc);
@@ -54,7 +58,7 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool 
 
         if (memory->RequiresDedicatedAllocation()) {
             HRESULT hr = m_Device->CreateCommittedResource3(
-                &heapDesc.Properties, heapDesc.Flags, &desc1, D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Buffer));
+                &heapDesc.Properties, heapFlagsFixed, &desc1, D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Buffer));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device10::CreateCommittedResource3()");
         } else {
             HRESULT hr =
@@ -72,11 +76,12 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool 
             initialState |= D3D12_RESOURCE_STATE_GENERIC_READ;
         else if (heapDesc.Properties.Type == D3D12_HEAP_TYPE_READBACK)
             initialState |= D3D12_RESOURCE_STATE_COPY_DEST;
+
         if (isAccelerationStructureBuffer)
             initialState |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 
         if (memory->RequiresDedicatedAllocation()) {
-            HRESULT hr = m_Device->CreateCommittedResource(&heapDesc.Properties, heapDesc.Flags, &desc, initialState, nullptr, IID_PPV_ARGS(&m_Buffer));
+            HRESULT hr = m_Device->CreateCommittedResource(&heapDesc.Properties, heapFlagsFixed, &desc, initialState, nullptr, IID_PPV_ARGS(&m_Buffer));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateCommittedResource()");
         } else {
             HRESULT hr = m_Device->CreatePlacedResource(*memory, offset, &desc, initialState, nullptr, IID_PPV_ARGS(&m_Buffer));

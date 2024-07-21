@@ -88,24 +88,27 @@ inline void TextureVK::SetDebugName(const char* name) {
 }
 
 void TextureVK::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
-    VkMemoryDedicatedRequirements dedicatedRequirements = {VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS, nullptr};
-    VkMemoryRequirements2 requirements = {VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, &dedicatedRequirements};
-    VkImageMemoryRequirementsInfo2 info = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2, nullptr, m_Handle};
+    VkMemoryDedicatedRequirements dedicatedRequirements = {VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS};
+
+    VkMemoryRequirements2 requirements = {VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
+    requirements.pNext = &dedicatedRequirements;
+
+    VkImageMemoryRequirementsInfo2 info = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2};
+    info.image = m_Handle;
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.GetImageMemoryRequirements2(m_Device, &info, &requirements);
 
-    memoryDesc.mustBeDedicated = dedicatedRequirements.prefersDedicatedAllocation || dedicatedRequirements.requiresDedicatedAllocation;
-    memoryDesc.alignment = (uint32_t)requirements.memoryRequirements.alignment;
-    memoryDesc.size = requirements.memoryRequirements.size;
+    MemoryTypeUnion memoryType = {};
+    memoryType.unpacked.isDedicated = dedicatedRequirements.requiresDedicatedAllocation;
 
-    MemoryTypeUnpack unpack = {};
-    bool found = m_Device.GetMemoryType(memoryLocation, requirements.memoryRequirements.memoryTypeBits, unpack.info);
+    bool found = m_Device.GetMemoryType(memoryLocation, requirements.memoryRequirements.memoryTypeBits, memoryType.unpacked);
     RETURN_ON_FAILURE(&m_Device, found, ReturnVoid(), "Can't find suitable memory type");
 
-    unpack.info.isDedicated = dedicatedRequirements.requiresDedicatedAllocation;
-
-    memoryDesc.type = unpack.type;
+    memoryDesc.size = requirements.memoryRequirements.size;
+    memoryDesc.alignment = (uint32_t)requirements.memoryRequirements.alignment;
+    memoryDesc.type = memoryType.packed;
+    memoryDesc.mustBeDedicated = dedicatedRequirements.requiresDedicatedAllocation;
 }
 
 #include "TextureVK.hpp"
