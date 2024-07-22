@@ -13,10 +13,6 @@ static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer) {
     return ((BufferVal&)buffer).GetNativeObject();
 }
 
-static void NRI_CALL GetBufferMemoryInfo(const Buffer& buffer, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
-    ((BufferVal&)buffer).GetMemoryInfo(memoryLocation, memoryDesc);
-}
-
 static void* NRI_CALL MapBuffer(Buffer& buffer, uint64_t offset, uint64_t size) {
     return ((BufferVal&)buffer).Map(offset, size);
 }

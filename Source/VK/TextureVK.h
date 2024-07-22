@@ -48,7 +48,6 @@ struct TextureVK {
     //================================================================================================================
 
     void SetDebugName(const char* name);
-    void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
 private:
     DeviceVK& m_Device;

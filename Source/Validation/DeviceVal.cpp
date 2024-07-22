@@ -83,6 +83,16 @@ void DeviceVal::RegisterMemoryType(MemoryType memoryType, MemoryLocation memoryL
     m_MemoryTypeMap[memoryType] = memoryLocation;
 }
 
+void DeviceVal::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    GetCoreInterface().GetBufferMemoryDesc(GetImpl(), bufferDesc, memoryLocation, memoryDesc);
+    RegisterMemoryType(memoryDesc.type, memoryLocation);
+}
+
+void DeviceVal::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    GetCoreInterface().GetTextureMemoryDesc(GetImpl(), textureDesc, memoryLocation, memoryDesc);
+    RegisterMemoryType(memoryDesc.type, memoryLocation);
+}
+
 Result DeviceVal::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
     RETURN_ON_FAILURE(this, swapChainDesc.commandQueue != nullptr, Result::INVALID_ARGUMENT, "CreateSwapChain: 'swapChainDesc.commandQueue' is NULL");
     RETURN_ON_FAILURE(this, swapChainDesc.width != 0, Result::INVALID_ARGUMENT, "CreateSwapChain: 'swapChainDesc.width' is 0");
@@ -644,7 +654,7 @@ Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingD
             continue;
 
         MemoryDesc memoryDesc = {};
-        buffer.GetMemoryInfo(memory.GetMemoryLocation(), memoryDesc);
+        GetMemoryDesc(buffer.GetDesc(), memory.GetMemoryLocation(), memoryDesc);
 
         RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
             "BindBufferMemory: 'memoryBindingDescs[%u].offset' must be zero for dedicated allocation", i);
@@ -696,7 +706,7 @@ Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindin
             continue;
 
         MemoryDesc memoryDesc = {};
-        texture.GetMemoryInfo(memory.GetMemoryLocation(), memoryDesc);
+        GetMemoryDesc(texture.GetDesc(), memory.GetMemoryLocation(), memoryDesc);
 
         RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
             "BindTextureMemory: 'memoryBindingDescs[%u].offset' must be zero for dedicated allocation", i);
@@ -1248,7 +1258,7 @@ Result DeviceVal::BindAccelerationStructureMemory(const AccelerationStructureMem
             "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].accelerationStructure' is already bound to memory", i);
 
         MemoryDesc memoryDesc = {};
-        accelerationStructure.GetMemoryInfo(memoryDesc);
+        accelerationStructure.GetMemoryDesc(memoryDesc);
 
         RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
             "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].offset' must be 0 for dedicated allocation", i);

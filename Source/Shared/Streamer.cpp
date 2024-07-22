@@ -32,7 +32,7 @@ Result StreamerImpl::Create(const StreamerDesc& desc) {
 
         // Allocate memory
         MemoryDesc memoryDesc = {};
-        m_NRI.GetBufferMemoryInfo(*m_ConstantBuffer, desc.constantBufferMemoryLocation, memoryDesc);
+        m_NRI.GetBufferMemoryDesc(m_Device, bufferDesc, desc.constantBufferMemoryLocation, memoryDesc);
 
         result = m_NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, m_ConstantBufferMemory);
         if (result != Result::SUCCESS)
@@ -131,7 +131,7 @@ Result StreamerImpl::CopyStreamerUpdateRequests() {
         if (m_DynamicBuffer)
             m_GarbageInFlight.push_back({m_DynamicBuffer, m_DynamicBufferMemory, 0});
 
-        { // Create new dynamic buffer
+        { // Create new dynamic buffer & allocate memory
             BufferDesc bufferDesc = {};
             bufferDesc.size = m_DynamicBufferSize;
             bufferDesc.usageMask = m_Desc.dynamicBufferUsageBits;
@@ -139,13 +139,11 @@ Result StreamerImpl::CopyStreamerUpdateRequests() {
             Result result = m_NRI.CreateBuffer(m_Device, bufferDesc, m_DynamicBuffer);
             if (result != Result::SUCCESS)
                 return result;
-        }
 
-        { // Allocate memory
             MemoryDesc memoryDesc = {};
-            m_NRI.GetBufferMemoryInfo(*m_DynamicBuffer, m_Desc.dynamicBufferMemoryLocation, memoryDesc);
+            m_NRI.GetBufferMemoryDesc(m_Device, bufferDesc, m_Desc.dynamicBufferMemoryLocation, memoryDesc);
 
-            Result result = m_NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, m_DynamicBufferMemory);
+            result = m_NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, m_DynamicBufferMemory);
             if (result != Result::SUCCESS)
                 return result;
         }

@@ -16,6 +16,18 @@ static const TextureDesc& NRI_CALL GetTextureDesc(const Texture& texture) {
     return ((const TextureVal&)texture).GetDesc();
 }
 
+static FormatSupportBits NRI_CALL GetFormatSupport(const Device& device, Format format) {
+    return ((const DeviceVal&)device).GetFormatSupport(format);
+}
+
+static void NRI_CALL GetBufferMemoryDesc(const Device& device, const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    ((DeviceVal&)device).GetMemoryDesc(bufferDesc, memoryLocation, memoryDesc);
+}
+
+static void NRI_CALL GetTextureMemoryDesc(const Device& device, const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    ((DeviceVal&)device).GetMemoryDesc(textureDesc, memoryLocation, memoryDesc);
+}
+
 static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
     return ((DeviceVal&)device).GetCommandQueue(commandQueueType, commandQueue);
 }
@@ -166,10 +178,6 @@ static void NRI_CALL FreeMemory(Memory& memory) {
     GetDeviceVal(memory).FreeMemory(memory);
 }
 
-static FormatSupportBits NRI_CALL GetFormatSupport(const Device& device, Format format) {
-    return ((const DeviceVal&)device).GetFormatSupport(format);
-}
-
 static void NRI_CALL SetDeviceDebugName(Device& device, const char* name) {
     ((DeviceVal&)device).SetDebugName(name);
 }
@@ -199,6 +207,8 @@ Result DeviceVal::FillFunctionTable(CoreInterface& coreInterface) const {
     coreInterface.GetBufferDesc = ::GetBufferDesc;
     coreInterface.GetTextureDesc = ::GetTextureDesc;
     coreInterface.GetFormatSupport = ::GetFormatSupport;
+    coreInterface.GetBufferMemoryDesc = ::GetBufferMemoryDesc;
+    coreInterface.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
     coreInterface.GetCommandQueue = ::GetCommandQueue;
     coreInterface.CreateCommandAllocator = ::CreateCommandAllocator;
     coreInterface.CreateDescriptorPool = ::CreateDescriptorPool;

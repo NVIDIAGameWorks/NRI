@@ -101,12 +101,13 @@ Result HelperDataUpload::UploadData(
 Result HelperDataUpload::Create() {
     BufferDesc bufferDesc = {};
     bufferDesc.size = m_UploadBufferSize;
+
     Result result = NRI.CreateBuffer(m_Device, bufferDesc, m_UploadBuffer);
     if (result != Result::SUCCESS)
         return result;
 
     MemoryDesc memoryDesc = {};
-    NRI.GetBufferMemoryInfo(*m_UploadBuffer, MemoryLocation::HOST_UPLOAD, memoryDesc);
+    NRI.GetBufferMemoryDesc(m_Device, bufferDesc, MemoryLocation::HOST_UPLOAD, memoryDesc);
 
     result = NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, m_UploadBufferMemory);
     if (result != Result::SUCCESS)

@@ -49,8 +49,6 @@ struct DeviceD3D11 final : public DeviceBase {
         return m_IsDeferredContextEmulated;
     }
 
-    Result Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* precreatedDevice, AGSContext* agsContext, bool isNVAPILoadedInApp);
-
     inline void EnterCriticalSection() {
         if (m_Multithread)
             m_Multithread->Enter();
@@ -64,6 +62,10 @@ struct DeviceD3D11 final : public DeviceBase {
         else
             ::LeaveCriticalSection(&m_CriticalSection);
     }
+
+    Result Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* precreatedDevice, AGSContext* agsContext, bool isNVAPILoadedInApp);
+    void GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
+    void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
     //================================================================================================================
     // NRI

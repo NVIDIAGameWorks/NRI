@@ -16,6 +16,24 @@ static const TextureDesc& NRI_CALL GetTextureDesc(const Texture& texture) {
     return ((const TextureD3D12&)texture).GetDesc();
 }
 
+static FormatSupportBits NRI_CALL GetFormatSupport(const Device& device, Format format) {
+    return ((const DeviceD3D12&)device).GetFormatSupport(format);
+}
+
+static void NRI_CALL GetBufferMemoryDesc(const Device& device, const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    D3D12_RESOURCE_DESC desc = {};
+    GetResourceDesc(&desc, bufferDesc);
+
+    ((const DeviceD3D12&)device).GetMemoryDesc(memoryLocation, desc, memoryDesc);
+}
+
+static void NRI_CALL GetTextureMemoryDesc(const Device& device, const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    D3D12_RESOURCE_DESC desc = {};
+    GetResourceDesc(&desc, textureDesc);
+
+    ((const DeviceD3D12&)device).GetMemoryDesc(memoryLocation, desc, memoryDesc);
+}
+
 static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
     return ((DeviceD3D12&)device).GetCommandQueue(commandQueueType, commandQueue);
 }
@@ -173,10 +191,6 @@ static void NRI_CALL FreeMemory(Memory& memory) {
     device.FreeMemory(memory);
 }
 
-static FormatSupportBits NRI_CALL GetFormatSupport(const Device& device, Format format) {
-    return ((const DeviceD3D12&)device).GetFormatSupport(format);
-}
-
 static void NRI_CALL SetDeviceDebugName(Device& device, const char* name) {
     ((DeviceD3D12&)device).SetDebugName(name);
 }
@@ -206,6 +220,8 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& coreInterface) const {
     coreInterface.GetBufferDesc = ::GetBufferDesc;
     coreInterface.GetTextureDesc = ::GetTextureDesc;
     coreInterface.GetFormatSupport = ::GetFormatSupport;
+    coreInterface.GetBufferMemoryDesc = ::GetBufferMemoryDesc;
+    coreInterface.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
     coreInterface.GetCommandQueue = ::GetCommandQueue;
     coreInterface.CreateCommandAllocator = ::CreateCommandAllocator;
     coreInterface.CreateDescriptorPool = ::CreateDescriptorPool;

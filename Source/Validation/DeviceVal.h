@@ -10,9 +10,6 @@ struct DeviceVal final : public DeviceBase {
     DeviceVal(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator, DeviceBase& device);
     ~DeviceVal();
 
-    bool Create();
-    void RegisterMemoryType(MemoryType memoryType, MemoryLocation memoryLocation);
-
     inline Device& GetImpl() const {
         return m_Device;
     }
@@ -64,6 +61,11 @@ struct DeviceVal final : public DeviceBase {
     inline Lock& GetLock() {
         return m_Lock;
     }
+
+    bool Create();
+    void RegisterMemoryType(MemoryType memoryType, MemoryLocation memoryLocation);
+    void GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
+    void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
 
     //================================================================================================================
     // NRI

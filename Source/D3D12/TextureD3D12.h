@@ -56,8 +56,6 @@ struct TextureD3D12 {
         SET_D3D_DEBUG_OBJECT_NAME(m_Texture, name);
     }
 
-    void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
-
 private:
     DeviceD3D12& m_Device;
     TextureDesc m_Desc = {};

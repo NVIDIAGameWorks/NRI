@@ -234,23 +234,6 @@ TextureD3D11& BufferD3D11::RecreateReadbackTexture(const TextureD3D11& srcTextur
 // NRI
 //================================================================================================================
 
-inline void BufferD3D11::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
-    const bool isConstantBuffer = (m_Desc.usageMask & BufferUsageBits::CONSTANT_BUFFER) == (uint32_t)BufferUsageBits::CONSTANT_BUFFER;
-
-    uint32_t alignment = 65536;
-    if (isConstantBuffer)
-        alignment = 256;
-    else if (m_Desc.size <= 4096)
-        alignment = 4096;
-
-    uint64_t size = Align(m_Desc.size, alignment);
-
-    memoryDesc.type = (MemoryType)memoryLocation;
-    memoryDesc.size = size;
-    memoryDesc.alignment = alignment;
-    memoryDesc.mustBeDedicated = false;
-}
-
 inline void* BufferD3D11::Map(uint64_t offset, uint64_t size) {
     MaybeUnused(size);
 

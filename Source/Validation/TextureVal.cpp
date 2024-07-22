@@ -18,9 +18,4 @@ void TextureVal::SetDebugName(const char* name) {
     GetCoreInterface().SetTextureDebugName(*GetImpl(), name);
 }
 
-void TextureVal::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
-    GetCoreInterface().GetTextureMemoryInfo(*GetImpl(), memoryLocation, memoryDesc);
-    m_Device.RegisterMemoryType(memoryDesc.type, memoryLocation);
-}
-
 #include "TextureVal.hpp"

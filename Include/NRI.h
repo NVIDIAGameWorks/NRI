@@ -25,8 +25,8 @@ Non-goals:
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 137
-#define NRI_VERSION_DATE "21 July 2024"
+#define NRI_VERSION_MINOR 138
+#define NRI_VERSION_DATE "22 July 2024"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -56,8 +56,8 @@ NRI_STRUCT(CoreInterface)
     const NRI_NAME_REF(TextureDesc) (NRI_CALL *GetTextureDesc)(const NRI_NAME_REF(Texture) texture);
     NRI_NAME(FormatSupportBits) (NRI_CALL *GetFormatSupport)(const NRI_NAME_REF(Device) device, NRI_NAME(Format) format);
     uint32_t (NRI_CALL *GetQuerySize)(const NRI_NAME_REF(QueryPool) queryPool);
-    void (NRI_CALL *GetBufferMemoryInfo)(const NRI_NAME_REF(Buffer) buffer, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(MemoryDesc) memoryDesc);
-    void (NRI_CALL *GetTextureMemoryInfo)(const NRI_NAME_REF(Texture) texture, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(MemoryDesc) memoryDesc);
+    void (NRI_CALL *GetBufferMemoryDesc)(const NRI_NAME_REF(Device) device, const NRI_NAME_REF(BufferDesc) bufferDesc, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(MemoryDesc) memoryDesc);
+    void (NRI_CALL *GetTextureMemoryDesc)(const NRI_NAME_REF(Device) device, const NRI_NAME_REF(TextureDesc) textureDesc, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(MemoryDesc) memoryDesc);
     NRI_NAME(Result) (NRI_CALL *GetCommandQueue)(NRI_NAME_REF(Device) device, NRI_NAME(CommandQueueType) commandQueueType, NRI_NAME_REF(CommandQueue*) commandQueue);
 
     // Create

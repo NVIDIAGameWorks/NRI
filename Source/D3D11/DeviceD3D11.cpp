@@ -335,6 +335,7 @@ void DeviceD3D11::FillDesc() {
     m_Desc.bufferTextureGranularity = 1;
     m_Desc.bufferMaxSize = D3D11_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_C_TERM * 1024ull * 1024ull;
     m_Desc.pushConstantsMaxSize = D3D11_REQ_IMMEDIATE_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
+    m_Desc.memoryTier = MemoryTier::ONE;
 
     m_Desc.boundDescriptorSetMaxNum = D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT;
     m_Desc.perStageDescriptorSamplerMaxNum = D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT;
@@ -444,6 +445,39 @@ Result DeviceD3D11::CreateImplementation(Interface*& entity, const Args&... args
     Deallocate(GetStdAllocator(), implementation);
 
     return result;
+}
+
+void DeviceD3D11::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
+    const bool isConstantBuffer = (bufferDesc.usageMask & BufferUsageBits::CONSTANT_BUFFER) == (uint32_t)BufferUsageBits::CONSTANT_BUFFER;
+
+    uint32_t alignment = 65536;
+    if (isConstantBuffer)
+        alignment = 256;
+    else if (bufferDesc.size <= 4096)
+        alignment = 4096;
+
+    memoryDesc.type = (MemoryType)memoryLocation;
+    memoryDesc.size = Align(bufferDesc.size, alignment);
+    memoryDesc.alignment = alignment;
+    memoryDesc.mustBeDedicated = false;
+}
+
+void DeviceD3D11::GetMemoryDesc(const TextureDesc& textureDesc,MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
+    bool isMultisampled = textureDesc.sampleNum > 1;
+    uint32_t size = TextureD3D11::GetMipmappedSize(textureDesc);
+
+    uint32_t alignment = 65536;
+    if (isMultisampled)
+        alignment = 4194304;
+    else if (size <= 65536)
+        alignment = 65536;
+
+    size = Align(size, alignment);
+
+    memoryDesc.type = (MemoryType)memoryLocation;
+    memoryDesc.size = size;
+    memoryDesc.alignment = alignment;
+    memoryDesc.mustBeDedicated = false;
 }
 
 //================================================================================================================

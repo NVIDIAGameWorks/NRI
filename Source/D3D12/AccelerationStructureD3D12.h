@@ -23,7 +23,7 @@ struct AccelerationStructureD3D12 {
 
     Result Create(const AccelerationStructureDesc& accelerationStructureDesc);
     Result Create(const AccelerationStructureD3D12Desc& accelerationStructureDesc);
-    void GetMemoryInfo(MemoryDesc& memoryDesc) const;
+    void GetMemoryDesc(MemoryDesc& memoryDesc) const;
     uint64_t GetUpdateScratchBufferSize() const;
     uint64_t GetBuildScratchBufferSize() const;
     Result BindMemory(Memory* memory, uint64_t offset);

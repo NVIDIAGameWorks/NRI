@@ -36,6 +36,9 @@ D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE GetAccelerationStructureType(Accele
 D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits accelerationStructureBuildFlags);
 D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE GetCopyMode(CopyMode copyMode);
 
+void GetResourceDesc(D3D12_RESOURCE_DESC* desc, const BufferDesc& bufferDesc);
+void GetResourceDesc(D3D12_RESOURCE_DESC* desc, const TextureDesc& textureDesc);
+
 D3D12_RESOURCE_FLAGS GetBufferFlags(BufferUsageBits bufferUsageMask);
 D3D12_RESOURCE_FLAGS GetTextureFlags(TextureUsageBits textureUsageMask);
 

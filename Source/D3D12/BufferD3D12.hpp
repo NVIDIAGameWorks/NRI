@@ -13,10 +13,6 @@ static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer) {
     return uint64_t((ID3D12Resource*)((BufferD3D12&)buffer));
 }
 
-static void NRI_CALL GetBufferMemoryInfo(const Buffer& buffer, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
-    ((BufferD3D12&)buffer).GetMemoryInfo(memoryLocation, memoryDesc);
-}
-
 static void* NRI_CALL MapBuffer(Buffer& buffer, uint64_t offset, uint64_t size) {
     return ((BufferD3D12&)buffer).Map(offset, size);
 }

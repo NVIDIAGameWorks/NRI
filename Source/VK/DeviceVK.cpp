@@ -26,6 +26,62 @@ constexpr uint32_t INVALID_FAMILY_INDEX = uint32_t(-1);
 
 using namespace nri;
 
+constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits bufferUsageBits, uint32_t structureStride) {
+    VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+    if (bufferUsageBits & BufferUsageBits::VERTEX_BUFFER)
+        flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+    if (bufferUsageBits & BufferUsageBits::INDEX_BUFFER)
+        flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+
+    if (bufferUsageBits & BufferUsageBits::CONSTANT_BUFFER)
+        flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+
+    if (bufferUsageBits & BufferUsageBits::ARGUMENT_BUFFER)
+        flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+
+    if (bufferUsageBits & BufferUsageBits::RAY_TRACING_BUFFER) // TODO: add more usage bits?
+        flags |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+    if (bufferUsageBits & BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_READ)
+        flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+
+    if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE) {
+        if (structureStride == 0)
+            flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+        else
+            flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    }
+
+    if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE_STORAGE) {
+        if (structureStride == 0 && (bufferUsageBits & BufferUsageBits::RAY_TRACING_BUFFER) == 0)
+            flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+        else
+            flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    }
+
+    return flags;
+}
+
+constexpr VkImageUsageFlags GetImageUsageFlags(TextureUsageBits textureUsageBits) {
+    VkImageUsageFlags flags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+    if (textureUsageBits & TextureUsageBits::SHADER_RESOURCE)
+        flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
+
+    if (textureUsageBits & TextureUsageBits::SHADER_RESOURCE_STORAGE)
+        flags |= VK_IMAGE_USAGE_STORAGE_BIT;
+
+    if (textureUsageBits & TextureUsageBits::COLOR_ATTACHMENT)
+        flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+    if (textureUsageBits & TextureUsageBits::DEPTH_STENCIL_ATTACHMENT)
+        flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+    return flags;
+}
+
 Result CreateDeviceVK(const DeviceCreationDesc& desc, DeviceBase*& device) {
     StdAllocator<uint8_t> allocator(desc.memoryAllocatorInterface);
     DeviceVK* implementation = Allocate<DeviceVK>(allocator, desc.callbackInterface, allocator);
@@ -721,6 +777,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.bufferMaxSize = props13.maxBufferSize;
         m_Desc.bufferTextureGranularity = (uint32_t)limits.bufferImageGranularity;
         m_Desc.pushConstantsMaxSize = limits.maxPushConstantsSize;
+        m_Desc.memoryTier = MemoryTier::TWO; // TODO: seems to be the best match
 
         m_Desc.boundDescriptorSetMaxNum = limits.maxBoundDescriptorSets;
         m_Desc.perStageDescriptorSamplerMaxNum = limits.maxPerStageDescriptorSamplers;
@@ -846,6 +903,107 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     }
 
     return FillFunctionTable(m_CoreInterface);
+}
+
+void DeviceVK::FillCreateInfo(const BufferDesc& bufferDesc, VkBufferCreateInfo& info) const {
+    const VkSharingMode sharingMode = IsConcurrentSharingModeEnabledForBuffers() ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+    const Vector<uint32_t>& queueIndices = GetConcurrentSharingModeQueueIndices();
+
+    info.size = bufferDesc.size;
+    info.usage = GetBufferUsageFlags(bufferDesc.usageMask, bufferDesc.structureStride);
+    info.sharingMode = sharingMode;
+    info.queueFamilyIndexCount = (uint32_t)queueIndices.size();
+    info.pQueueFamilyIndices = queueIndices.data();
+
+    if (m_IsDeviceAddressSupported)
+        info.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+}
+
+void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo& info) const {
+    const VkImageType imageType = ::GetImageType(textureDesc.type);
+    const VkSharingMode sharingMode = IsConcurrentSharingModeEnabledForImages() ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+    const Vector<uint32_t>& queueIndices = GetConcurrentSharingModeQueueIndices();
+
+    VkImageCreateFlags flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT; // typeless
+    const FormatProps& formatProps = GetFormatProps(textureDesc.format);
+    if (formatProps.blockWidth > 1)
+        flags |= VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT; // format can be used to create a view with an uncompressed format (1 texel covers 1 block)
+    if (textureDesc.arraySize >= 6 && textureDesc.width == textureDesc.height)
+        flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT; // allow cube maps
+    if (textureDesc.type == nri::TextureType::TEXTURE_3D)
+        flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT; // allow 3D demotion to a set of layers // TODO: hook up "VK_EXT_image_2d_view_of_3d"?
+    if (m_Desc.programmableSampleLocationsTier && textureDesc.format >= Format::D16_UNORM)
+        flags |= VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
+
+    info.flags = flags;
+    info.imageType = imageType;
+    info.format = ::GetVkFormat(textureDesc.format, true);
+    info.extent.width = textureDesc.width;
+    info.extent.height = textureDesc.height;
+    info.extent.depth = textureDesc.depth;
+    info.mipLevels = textureDesc.mipNum;
+    info.arrayLayers = textureDesc.arraySize;
+    info.samples = (VkSampleCountFlagBits)textureDesc.sampleNum;
+    info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    info.usage = GetImageUsageFlags(textureDesc.usageMask);
+    info.sharingMode = sharingMode;
+    info.queueFamilyIndexCount = (uint32_t)queueIndices.size();
+    info.pQueueFamilyIndices = queueIndices.data();
+    info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
+void DeviceVK::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
+    VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    FillCreateInfo(bufferDesc, createInfo);
+
+    VkMemoryDedicatedRequirements dedicatedRequirements = {VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS};
+
+    VkMemoryRequirements2 requirements = {VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
+    requirements.pNext = &dedicatedRequirements;
+
+    VkDeviceBufferMemoryRequirements bufferMemoryRequirements = {VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS};
+    bufferMemoryRequirements.pCreateInfo = &createInfo;
+
+    const auto& vk = GetDispatchTable();
+    vk.GetDeviceBufferMemoryRequirements(m_Device, &bufferMemoryRequirements, &requirements);
+
+    MemoryTypeUnion memoryType = {};
+    memoryType.unpacked.isDedicated = dedicatedRequirements.requiresDedicatedAllocation;
+
+    bool found = GetMemoryType(memoryLocation, requirements.memoryRequirements.memoryTypeBits, memoryType.unpacked);
+    RETURN_ON_FAILURE(this, found, ReturnVoid(), "Can't find suitable memory type");
+
+    memoryDesc.size = requirements.memoryRequirements.size;
+    memoryDesc.alignment = (uint32_t)requirements.memoryRequirements.alignment;
+    memoryDesc.type = memoryType.packed;
+    memoryDesc.mustBeDedicated = dedicatedRequirements.requiresDedicatedAllocation;
+}
+
+void DeviceVK::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
+    VkImageCreateInfo createInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    FillCreateInfo(textureDesc, createInfo);
+
+    VkMemoryDedicatedRequirements dedicatedRequirements = {VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS};
+
+    VkMemoryRequirements2 requirements = {VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
+    requirements.pNext = &dedicatedRequirements;
+
+    VkDeviceImageMemoryRequirements imageMemoryRequirements = {VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS};
+    imageMemoryRequirements.pCreateInfo = &createInfo;
+
+    const auto& vk = GetDispatchTable();
+    vk.GetDeviceImageMemoryRequirements(m_Device, &imageMemoryRequirements, &requirements);
+
+    MemoryTypeUnion memoryType = {};
+    memoryType.unpacked.isDedicated = dedicatedRequirements.requiresDedicatedAllocation;
+
+    bool found = GetMemoryType(memoryLocation, requirements.memoryRequirements.memoryTypeBits, memoryType.unpacked);
+    RETURN_ON_FAILURE(this, found, ReturnVoid(), "Can't find suitable memory type");
+
+    memoryDesc.size = requirements.memoryRequirements.size;
+    memoryDesc.alignment = (uint32_t)requirements.memoryRequirements.alignment;
+    memoryDesc.type = memoryType.packed;
+    memoryDesc.mustBeDedicated = dedicatedRequirements.requiresDedicatedAllocation;
 }
 
 bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const {
@@ -1365,8 +1523,8 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
     GET_DEVICE_CORE_OR_KHR_PROC(UpdateDescriptorSets);
     GET_DEVICE_CORE_OR_KHR_PROC(BindBufferMemory2);
     GET_DEVICE_CORE_OR_KHR_PROC(BindImageMemory2);
-    GET_DEVICE_CORE_OR_KHR_PROC(GetBufferMemoryRequirements2);
-    GET_DEVICE_CORE_OR_KHR_PROC(GetImageMemoryRequirements2);
+    GET_DEVICE_CORE_OR_KHR_PROC(GetDeviceBufferMemoryRequirements);
+    GET_DEVICE_CORE_OR_KHR_PROC(GetDeviceImageMemoryRequirements);
     GET_DEVICE_CORE_OR_KHR_PROC(BeginCommandBuffer);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdSetViewport);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdSetScissor);

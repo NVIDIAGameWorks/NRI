@@ -103,8 +103,8 @@ struct DispatchTable {
     VULKAN_FUNCTION(UpdateDescriptorSets);
     VULKAN_FUNCTION(BindBufferMemory2);
     VULKAN_FUNCTION(BindImageMemory2);
-    VULKAN_FUNCTION(GetBufferMemoryRequirements2);
-    VULKAN_FUNCTION(GetImageMemoryRequirements2);
+    VULKAN_FUNCTION(GetDeviceBufferMemoryRequirements);
+    VULKAN_FUNCTION(GetDeviceImageMemoryRequirements);
     VULKAN_FUNCTION(GetBufferDeviceAddress);
     VULKAN_FUNCTION(BeginCommandBuffer);
     VULKAN_FUNCTION(CmdSetViewport);

@@ -17,8 +17,8 @@ AccelerationStructureVal::~AccelerationStructureVal() {
     GetRayTracingInterface().DestroyAccelerationStructure(*GetImpl());
 }
 
-void AccelerationStructureVal::GetMemoryInfo(MemoryDesc& memoryDesc) const {
-    GetRayTracingInterface().GetAccelerationStructureMemoryInfo(*GetImpl(), memoryDesc);
+void AccelerationStructureVal::GetMemoryDesc(MemoryDesc& memoryDesc) const {
+    GetRayTracingInterface().GetAccelerationStructureMemoryDesc(*GetImpl(), memoryDesc);
     m_Device.RegisterMemoryType(memoryDesc.type, MemoryLocation::DEVICE);
 }
 

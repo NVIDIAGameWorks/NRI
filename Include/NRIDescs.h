@@ -58,29 +58,6 @@ NRI_ENUM
     MAX_NUM
 );
 
-NRI_ENUM
-(
-    Vendor, uint8_t,
-
-    UNKNOWN,
-    NVIDIA,
-    AMD,
-    INTEL,
-
-    MAX_NUM
-);
-
-NRI_ENUM
-(
-    GraphicsAPI, uint8_t,
-
-    D3D11,
-    D3D12,
-    VULKAN,
-
-    MAX_NUM
-);
-
 // left -> right : low -> high bits
 // Expected (but not guaranteed) "FormatSupportBits" are provided, but "GetFormatSupport" should be used for querying real HW support
 // To demote sRGB use the previous format, i.e. "format - 1"
@@ -1404,6 +1381,40 @@ NRI_STRUCT(PipelineStatisticsDesc)
 //===============================================================================================================================
 #pragma region [ Device desc ]
 
+NRI_ENUM
+(
+    GraphicsAPI, uint8_t,
+
+    D3D11,
+    D3D12,
+    VULKAN,
+
+    MAX_NUM
+);
+
+NRI_ENUM
+(
+    Vendor, uint8_t,
+
+    UNKNOWN,
+    NVIDIA,
+    AMD,
+    INTEL,
+
+    MAX_NUM
+);
+
+// Provided for convinience, when a memory chunk needs to be allocated in advance and it's unclear which resource categories can be placed together
+NRI_ENUM
+(
+    MemoryTier, uint8_t,
+    
+    ONE, // A memory can only support resources from a single resource category (buffers, color and depth-stencil attachments, all other textures)    
+    TWO, // A memory can support resources from all 3 categories
+
+    MAX_NUM
+);
+
 NRI_STRUCT(AdapterDesc)
 {
     char description[128];
@@ -1464,6 +1475,7 @@ NRI_STRUCT(DeviceDesc)
     uint32_t bufferTextureGranularity;
     uint64_t bufferMaxSize;
     uint32_t pushConstantsMaxSize;
+    NRI_NAME(MemoryTier) memoryTier;
 
     // Shader resources
     uint32_t boundDescriptorSetMaxNum;

@@ -97,7 +97,8 @@ Result HelperDeviceMemoryAllocator::ProcessDedicatedResources(MemoryLocation mem
     MemoryDesc memoryDesc = {};
 
     for (size_t i = 0; i < m_DedicatedBuffers.size(); i++) {
-        m_NRI.GetBufferMemoryInfo(*m_DedicatedBuffers[i], memoryLocation, memoryDesc);
+        const BufferDesc& bufferDesc = m_NRI.GetBufferDesc(*m_DedicatedBuffers[i]);
+        m_NRI.GetBufferMemoryDesc(m_Device, bufferDesc, memoryLocation, memoryDesc);
 
         Memory*& memory = allocations[allocationNum];
 
@@ -110,7 +111,8 @@ Result HelperDeviceMemoryAllocator::ProcessDedicatedResources(MemoryLocation mem
     }
 
     for (size_t i = 0; i < m_DedicatedTextures.size(); i++) {
-        m_NRI.GetTextureMemoryInfo(*m_DedicatedTextures[i], memoryLocation, memoryDesc);
+        const TextureDesc& textureDesc = m_NRI.GetTextureDesc(*m_DedicatedTextures[i]);
+        m_NRI.GetTextureMemoryDesc(m_Device, textureDesc, memoryLocation, memoryDesc);
 
         Memory*& memory = allocations[allocationNum];
 
@@ -130,7 +132,8 @@ void HelperDeviceMemoryAllocator::GroupByMemoryType(MemoryLocation memoryLocatio
 
     for (uint32_t i = 0; i < bufferNum; i++) {
         Buffer* buffer = buffers[i];
-        m_NRI.GetBufferMemoryInfo(*buffer, memoryLocation, memoryDesc);
+        const BufferDesc& bufferDesc = m_NRI.GetBufferDesc(*buffer);
+        m_NRI.GetBufferMemoryDesc(m_Device, bufferDesc, memoryLocation, memoryDesc);
 
         if (memoryDesc.mustBeDedicated)
             m_DedicatedBuffers.push_back(buffer);
@@ -153,7 +156,8 @@ void HelperDeviceMemoryAllocator::GroupByMemoryType(MemoryLocation memoryLocatio
 
     for (uint32_t i = 0; i < textureNum; i++) {
         Texture* texture = textures[i];
-        m_NRI.GetTextureMemoryInfo(*texture, memoryLocation, memoryDesc);
+        const TextureDesc& textureDesc = m_NRI.GetTextureDesc(*texture);
+        m_NRI.GetTextureMemoryDesc(m_Device, textureDesc, memoryLocation, memoryDesc);
 
         if (memoryDesc.mustBeDedicated)
             m_DedicatedTextures.push_back(texture);

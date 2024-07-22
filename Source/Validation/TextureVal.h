@@ -37,7 +37,6 @@ struct TextureVal : public DeviceObjectVal<Texture> {
     // NRI
     //================================================================================================================
     void SetDebugName(const char* name);
-    void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
 private:
     MemoryVal* m_Memory = nullptr;

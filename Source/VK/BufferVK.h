@@ -43,7 +43,6 @@ struct BufferVK {
     //================================================================================================================
 
     void SetDebugName(const char* name);
-    void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
     void* Map(uint64_t offset, uint64_t size);
     void Unmap();
 

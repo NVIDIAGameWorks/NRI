@@ -112,7 +112,6 @@ protected:
     void Core_Buffer_PartiallyFillFunctionTable##API(CoreInterface& table) { \
         table.SetBufferDebugName = ::SetBufferDebugName; \
         table.GetBufferNativeObject = ::GetBufferNativeObject; \
-        table.GetBufferMemoryInfo = ::GetBufferMemoryInfo; \
         table.MapBuffer = ::MapBuffer; \
         table.UnmapBuffer = ::UnmapBuffer; \
     }
@@ -212,7 +211,6 @@ protected:
     void Core_Texture_PartiallyFillFunctionTable##API(CoreInterface& table) { \
         table.SetTextureDebugName = ::SetTextureDebugName; \
         table.GetTextureNativeObject = ::GetTextureNativeObject; \
-        table.GetTextureMemoryInfo = ::GetTextureMemoryInfo; \
     }
 
 #define Define_SwapChain_PartiallyFillFunctionTable(API) \
@@ -240,7 +238,7 @@ protected:
 #define Define_RayTracing_AccelerationStructure_PartiallyFillFunctionTable(API) \
     void RayTracing_AccelerationStructure_PartiallyFillFunctionTable##API(RayTracingInterface& table) { \
         table.CreateAccelerationStructureDescriptor = ::CreateAccelerationStructureDescriptor; \
-        table.GetAccelerationStructureMemoryInfo = ::GetAccelerationStructureMemoryInfo; \
+        table.GetAccelerationStructureMemoryDesc = ::GetAccelerationStructureMemoryDesc; \
         table.GetAccelerationStructureUpdateScratchBufferSize = ::GetAccelerationStructureUpdateScratchBufferSize; \
         table.GetAccelerationStructureBuildScratchBufferSize = ::GetAccelerationStructureBuildScratchBufferSize; \
         table.GetAccelerationStructureHandle = ::GetAccelerationStructureHandle; \

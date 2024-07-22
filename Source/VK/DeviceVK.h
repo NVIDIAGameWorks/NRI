@@ -55,6 +55,10 @@ struct DeviceVK final : public DeviceBase {
     ~DeviceVK();
 
     Result Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationVKDesc& deviceCreationVKDesc, bool isWrapper);
+    void FillCreateInfo(const BufferDesc& bufferDesc, VkBufferCreateInfo& info) const;
+    void FillCreateInfo(const TextureDesc& bufferDesc, VkImageCreateInfo& info) const;
+    void GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
+    void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
     bool GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const;
     bool GetMemoryTypeByIndex(uint32_t index, MemoryTypeInfo& memoryTypeInfo) const;
     void SetDebugNameToTrivialObject(VkObjectType objectType, uint64_t handle, const char* name);

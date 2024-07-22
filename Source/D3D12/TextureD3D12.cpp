@@ -7,7 +7,7 @@
 
 using namespace nri;
 
-static inline void GetResourceDesc(D3D12_RESOURCE_DESC* desc, const TextureDesc& textureDesc) {
+void nri::GetResourceDesc(D3D12_RESOURCE_DESC* desc, const TextureDesc& textureDesc) {
     uint16_t blockWidth = (uint16_t)GetFormatProps(textureDesc.format).blockWidth;
 
     desc->Dimension = GetResourceDimension(textureDesc.type);
@@ -93,12 +93,5 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
 //================================================================================================================
 // NRI
 //================================================================================================================
-
-inline void TextureD3D12::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
-    D3D12_RESOURCE_DESC desc = {};
-    GetResourceDesc(&desc, m_Desc);
-
-    m_Device.GetMemoryInfo(memoryLocation, desc, memoryDesc);
-}
 
 #include "TextureD3D12.hpp"

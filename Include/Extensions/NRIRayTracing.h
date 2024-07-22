@@ -203,7 +203,7 @@ NRI_STRUCT(DispatchRaysIndirectDesc)
 NRI_STRUCT(RayTracingInterface)
 {
     // Get
-    void (NRI_CALL *GetAccelerationStructureMemoryInfo)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure, NRI_NAME_REF(MemoryDesc) memoryDesc);
+    void (NRI_CALL *GetAccelerationStructureMemoryDesc)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure, NRI_NAME_REF(MemoryDesc) memoryDesc);
     uint64_t (NRI_CALL *GetAccelerationStructureUpdateScratchBufferSize)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure);
     uint64_t (NRI_CALL *GetAccelerationStructureBuildScratchBufferSize)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure);
     uint64_t (NRI_CALL *GetAccelerationStructureHandle)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure);

@@ -59,7 +59,6 @@ struct BufferD3D11 {
         SET_D3D_DEBUG_OBJECT_NAME(m_Buffer, name);
     }
 
-    void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
     void* Map(uint64_t offset, uint64_t size);
     void Unmap();
 

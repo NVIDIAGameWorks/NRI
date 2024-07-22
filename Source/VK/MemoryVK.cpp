@@ -74,7 +74,7 @@ Result MemoryVK::CreateDedicated(BufferVK& buffer) {
     RETURN_ON_FAILURE(&m_Device, memoryType.unpacked.isDedicated, Result::FAILURE, "Can't allocate a dedicated memory: memory type is not dedicated.");
 
     MemoryDesc memoryDesc = {};
-    buffer.GetMemoryInfo(memoryType.unpacked.location, memoryDesc);
+    m_Device.GetMemoryDesc(buffer.GetDesc(), memoryType.unpacked.location, memoryDesc);
 
     VkMemoryAllocateFlagsInfo flagsInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO};
     flagsInfo.flags = (m_Device.m_IsDeviceAddressSupported ? VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT : 0) | VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
@@ -111,7 +111,7 @@ Result MemoryVK::CreateDedicated(TextureVK& texture) {
     RETURN_ON_FAILURE(&m_Device, memoryType.unpacked.isDedicated, Result::FAILURE, "Can't allocate a dedicated memory: the memory type is not dedicated.");
 
     MemoryDesc memoryDesc = {};
-    texture.GetMemoryInfo(memoryType.unpacked.location, memoryDesc);
+    m_Device.GetMemoryDesc(texture.GetDesc(), memoryType.unpacked.location, memoryDesc);
 
     VkMemoryAllocateFlagsInfo flagsInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO};
     flagsInfo.flags = (m_Device.m_IsDeviceAddressSupported ? VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT : 0) | VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;

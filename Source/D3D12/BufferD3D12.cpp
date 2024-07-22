@@ -7,7 +7,7 @@
 
 using namespace nri;
 
-static inline void GetResourceDesc(D3D12_RESOURCE_DESC* desc, const BufferDesc& bufferDesc) {
+void nri::GetResourceDesc(D3D12_RESOURCE_DESC* desc, const BufferDesc& bufferDesc) {
     desc->Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     desc->Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT; // 64KB
     desc->Width = bufferDesc.size;
@@ -95,13 +95,6 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool 
 //================================================================================================================
 // NRI
 //================================================================================================================
-
-inline void BufferD3D12::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
-    D3D12_RESOURCE_DESC desc = {};
-    GetResourceDesc(&desc, m_Desc);
-
-    m_Device.GetMemoryInfo(memoryLocation, desc, memoryDesc);
-}
 
 inline void* BufferD3D12::Map(uint64_t offset, uint64_t size) {
     uint8_t* data = nullptr;

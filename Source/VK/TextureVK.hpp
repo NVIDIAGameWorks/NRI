@@ -13,10 +13,6 @@ static uint64_t NRI_CALL GetTextureNativeObject(const Texture& texture) {
     return uint64_t(((TextureVK&)texture).GetHandle());
 }
 
-static void NRI_CALL GetTextureMemoryInfo(const Texture& texture, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
-    ((TextureVK&)texture).GetMemoryInfo(memoryLocation, memoryDesc);
-}
-
 #pragma endregion
 
 Define_Core_Texture_PartiallyFillFunctionTable(VK);

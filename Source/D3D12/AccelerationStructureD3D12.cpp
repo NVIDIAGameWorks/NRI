@@ -49,8 +49,8 @@ Result AccelerationStructureD3D12::Create(const AccelerationStructureDesc& accel
     return result;
 }
 
-void AccelerationStructureD3D12::GetMemoryInfo(MemoryDesc& memoryDesc) const {
-    m_Device.GetMemoryInfoForAccelerationStructure(m_PrebuildInfo.ResultDataMaxSizeInBytes, memoryDesc);
+void AccelerationStructureD3D12::GetMemoryDesc(MemoryDesc& memoryDesc) const {
+    m_Device.GetAccelerationStructureMemoryDesc(m_PrebuildInfo.ResultDataMaxSizeInBytes, memoryDesc);
 }
 
 uint64_t AccelerationStructureD3D12::GetUpdateScratchBufferSize() const {

@@ -287,7 +287,7 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation) {
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options) failed, result = 0x%08X!", hr);
-    m_IsResourceHeapTier2Supported = options.ResourceHeapTier == D3D12_RESOURCE_HEAP_TIER_2;
+    m_Desc.memoryTier = options.ResourceHeapTier == D3D12_RESOURCE_HEAP_TIER_2 ? MemoryTier::TWO : MemoryTier::ONE;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS1 options1 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &options1, sizeof(options1));
@@ -667,14 +667,14 @@ static inline MemoryType ConstructMemoryType(D3D12_HEAP_TYPE heapType, D3D12_HEA
     return ((uint32_t)heapFlags) | ((uint32_t)heapType << 16);
 }
 
-void DeviceD3D12::GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const {
+void DeviceD3D12::GetMemoryDesc(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const {
     if (memoryLocation == MemoryLocation::DEVICE_UPLOAD && m_Desc.deviceUploadHeapSize == 0)
         memoryLocation = MemoryLocation::HOST_UPLOAD;
 
     D3D12_HEAP_TYPE heapType = HEAP_TYPES[(uint32_t)memoryLocation];
-    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES;
 
-    if (!m_IsResourceHeapTier2Supported) {
+    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES;
+    if (m_Desc.memoryTier == MemoryTier::ONE) {
         if (resourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
             heapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
         else if (resourceDesc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL))
@@ -692,8 +692,8 @@ void DeviceD3D12::GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOU
     memoryDesc.mustBeDedicated = IsDedicated(memoryType);
 }
 
-void DeviceD3D12::GetMemoryInfoForAccelerationStructure(uint64_t size, MemoryDesc& memoryDesc) const {
-    D3D12_HEAP_FLAGS heapFlags = m_IsResourceHeapTier2Supported ? D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES : D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+void DeviceD3D12::GetAccelerationStructureMemoryDesc(uint64_t size, MemoryDesc& memoryDesc) const {
+    D3D12_HEAP_FLAGS heapFlags = m_Desc.memoryTier == MemoryTier::TWO ? D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES : D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
 
     memoryDesc.size = size;
     memoryDesc.alignment = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT;
@@ -705,7 +705,7 @@ bool DeviceD3D12::IsDedicated(MemoryType memoryType) const {
     D3D12_HEAP_FLAGS heapFlags = GetHeapFlags(memoryType);
     bool isRtDs = (heapFlags & D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES) == D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES;
 
-    return !m_IsResourceHeapTier2Supported && isRtDs;
+    return m_Desc.memoryTier == MemoryTier::ONE && isRtDs;
 }
 
 ComPtr<ID3D12CommandSignature> DeviceD3D12::CreateCommandSignature(

@@ -50,7 +50,7 @@ struct AccelerationStructureVK {
     }
 
     void SetDebugName(const char* name);
-    void GetMemoryInfo(MemoryDesc& memoryDesc) const;
+    void GetMemoryDesc(MemoryDesc& memoryDesc) const;
     Result CreateDescriptor(Descriptor*& descriptor) const;
 
 private:

@@ -75,7 +75,7 @@ Result TextureD3D11::Create(const MemoryD3D11* memory) {
 
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateTextureXx()");
 
-    uint64_t size = GetMipmappedSize();
+    uint64_t size = GetMipmappedSize(m_Desc);
     uint32_t priority = memory ? memory->GetResidencyPriority(size) : 0;
     if (priority != 0)
         m_Texture->SetEvictionPriority(priority);
@@ -94,22 +94,13 @@ Result TextureD3D11::Create(const TextureD3D11Desc& textureDesc) {
     return Result::SUCCESS;
 }
 
-uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, Mip_t mipNum, Mip_t mipOffset) const {
-    if (!mipNum)
-        mipNum = m_Desc.mipNum;
+uint32_t TextureD3D11::GetMipmappedSize(const TextureDesc& textureDesc) {
+    bool isCompressed = textureDesc.format >= Format::BC1_RGBA_UNORM && textureDesc.format <= Format::BC7_RGBA_SRGB;
 
-    bool isCompressed = m_Desc.format >= Format::BC1_RGBA_UNORM && m_Desc.format <= Format::BC7_RGBA_SRGB;
-    bool isCustom = w || h || d;
-
-    if (!w)
-        w = GetSize(0, mipOffset);
-
-    if (!h)
-        h = GetSize(1, mipOffset);
-
-    if (!d)
-        d = GetSize(2, mipOffset);
-
+    uint32_t w = GetDimension(GraphicsAPI::D3D11, textureDesc, 0, 0);
+    uint32_t h = GetDimension(GraphicsAPI::D3D11, textureDesc, 1, 0);
+    uint32_t d = GetDimension(GraphicsAPI::D3D11, textureDesc, 2, 0);
+    uint32_t mipNum = textureDesc.mipNum;
     uint32_t size = 0;
 
     while (mipNum) {
@@ -133,13 +124,10 @@ uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, Mip_
         mipNum--;
     }
 
-    const FormatProps& formatProps = GetFormatProps(m_Desc.format);
+    const FormatProps& formatProps = GetFormatProps(textureDesc.format);
     size *= formatProps.stride;
-
-    if (!isCustom) {
-        size *= m_Desc.sampleNum;
-        size *= m_Desc.arraySize;
-    }
+    size *= std::max(textureDesc.sampleNum, (Sample_t)1);
+    size *= std::max(textureDesc.arraySize, (Dim_t)1);
 
     return size;
 }
@@ -147,23 +135,5 @@ uint32_t TextureD3D11::GetMipmappedSize(uint32_t w, uint32_t h, uint32_t d, Mip_
 //================================================================================================================
 // NRI
 //================================================================================================================
-
-inline void TextureD3D11::GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
-    bool isMultisampled = m_Desc.sampleNum > 1;
-    uint32_t size = GetMipmappedSize();
-
-    uint32_t alignment = 65536;
-    if (isMultisampled)
-        alignment = 4194304;
-    else if (size <= 65536)
-        alignment = 65536;
-
-    size = Align(size, alignment);
-
-    memoryDesc.type = (MemoryType)memoryLocation;
-    memoryDesc.size = size;
-    memoryDesc.alignment = alignment;
-    memoryDesc.mustBeDedicated = false;
-}
 
 #include "TextureD3D11.hpp"

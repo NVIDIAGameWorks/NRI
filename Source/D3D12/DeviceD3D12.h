@@ -64,8 +64,8 @@ struct DeviceD3D12 final : public DeviceBase {
     Result CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type);
     Result GetDescriptorHandle(D3D12_DESCRIPTOR_HEAP_TYPE type, DescriptorHandle& descriptorHandle);
     DescriptorPointerCPU GetDescriptorPointerCPU(const DescriptorHandle& descriptorHandle);
-    void GetMemoryInfo(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const;
-    void GetMemoryInfoForAccelerationStructure(uint64_t size, MemoryDesc& memoryDesc) const;
+    void GetMemoryDesc(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const;
+    void GetAccelerationStructureMemoryDesc(uint64_t size, MemoryDesc& memoryDesc) const;
     bool IsDedicated(MemoryType memoryType) const;
 
     ID3D12CommandSignature* GetDrawCommandSignature(uint32_t stride, ID3D12RootSignature* rootSignature);
@@ -170,7 +170,6 @@ private:
     CoreInterface m_CoreInterface = {};
     uint8_t m_Version = 0;
     bool m_IsWrapped = false;
-    bool m_IsResourceHeapTier2Supported = false;
     std::array<Lock, DESCRIPTOR_HEAP_TYPE_NUM> m_FreeDescriptorLocks;
     Lock m_DescriptorHeapLock;
     Lock m_QueueLock;

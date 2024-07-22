@@ -51,7 +51,8 @@ struct TextureD3D11 {
 
     Result Create(const MemoryD3D11* memory);
     Result Create(const TextureD3D11Desc& textureDesc);
-    uint32_t GetMipmappedSize(uint32_t w = 0, uint32_t h = 0, uint32_t d = 0, Mip_t mipNum = 0, Mip_t mipOffset = 0) const;
+
+    static uint32_t GetMipmappedSize(const TextureDesc& textureDesc);
 
     //================================================================================================================
     // NRI
@@ -60,8 +61,6 @@ struct TextureD3D11 {
     inline void SetDebugName(const char* name) {
         SET_D3D_DEBUG_OBJECT_NAME(m_Texture, name);
     }
-
-    void GetMemoryInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
 private:
     DeviceD3D11& m_Device;

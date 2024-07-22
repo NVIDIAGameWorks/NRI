@@ -149,8 +149,8 @@ inline void AccelerationStructureVK::SetDebugName(const char* name) {
     m_Buffer->SetDebugName(name);
 }
 
-inline void AccelerationStructureVK::GetMemoryInfo(MemoryDesc& memoryDesc) const {
-    m_Buffer->GetMemoryInfo(MemoryLocation::DEVICE, memoryDesc);
+inline void AccelerationStructureVK::GetMemoryDesc(MemoryDesc& memoryDesc) const {
+    m_Device.GetMemoryDesc(m_Buffer->GetDesc(), MemoryLocation::DEVICE, memoryDesc);
 }
 
 inline Result AccelerationStructureVK::CreateDescriptor(Descriptor*& descriptor) const {
