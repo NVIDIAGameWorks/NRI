@@ -119,7 +119,7 @@ struct DeviceD3D12 final : public DeviceBase {
     void DestroyPipeline(Pipeline& pipeline);
     void DestroyFence(Fence& queueSemaphore);
     void DestroyQueryPool(QueryPool& queryPool);
-    Result AllocateMemory(const MemoryType memoryType, uint64_t size, Memory*& memory);
+    Result AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     void FreeMemory(Memory& memory);

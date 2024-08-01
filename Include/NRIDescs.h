@@ -1212,6 +1212,14 @@ NRI_STRUCT(QueueSubmitDesc)
 };
 
 // Memory
+NRI_STRUCT(MemoryDesc)
+{
+    uint64_t size;
+    uint32_t alignment;
+    NRI_NAME(MemoryType) type;
+    bool mustBeDedicated;
+};
+
 NRI_STRUCT(BufferMemoryBindingDesc)
 {
     NRI_NAME(Memory)* memory;
@@ -1224,14 +1232,6 @@ NRI_STRUCT(TextureMemoryBindingDesc)
     NRI_NAME(Memory)* memory;
     NRI_NAME(Texture)* texture;
     uint64_t offset;
-};
-
-NRI_STRUCT(MemoryDesc)
-{
-    uint64_t size;
-    uint32_t alignment;
-    NRI_NAME(MemoryType) type;
-    bool mustBeDedicated;
 };
 
 // Clear storage

@@ -51,7 +51,7 @@ typedef uint32_t DXGI_FORMAT;
 #define REPORT_WARNING(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_WARNING, __FILE__, __LINE__, format, ##__VA_ARGS__)
 #define REPORT_ERROR(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
 
-#define CHECK(condition, message) assert(condition&& message)
+#define CHECK(condition, message) assert((condition) && message)
 
 #define SET_D3D_DEBUG_OBJECT_NAME(obj, name) \
     if (obj) \

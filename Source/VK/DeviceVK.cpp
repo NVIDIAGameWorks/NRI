@@ -326,7 +326,7 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
 template <typename Implementation, typename Interface, typename... Args>
 Result DeviceVK::CreateImplementation(Interface*& entity, const Args&... args) {
     Implementation* implementation = Allocate<Implementation>(GetStdAllocator(), *this);
-    const Result result = implementation->Create(args...);
+    Result result = implementation->Create(args...);
 
     if (result == Result::SUCCESS) {
         entity = (Interface*)implementation;
@@ -1713,21 +1713,23 @@ inline Result DeviceVK::CreateAccelerationStructure(const AccelerationStructureD
 inline Result DeviceVK::CreateCommandQueue(const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue) {
     ExclusiveScope lock(m_Lock);
 
-    const uint32_t commandQueueTypeIndex = (uint32_t)commandQueueVKDesc.commandQueueType;
-    const bool isFamilyIndexSame = m_FamilyIndices[commandQueueTypeIndex] == commandQueueVKDesc.familyIndex;
-    const bool isQueueSame = (VkQueue)m_Queues[commandQueueTypeIndex] == (VkQueue)commandQueueVKDesc.vkQueue;
+    uint32_t commandQueueTypeIndex = (uint32_t)commandQueueVKDesc.commandQueueType;
+    bool isFamilyIndexSame = m_FamilyIndices[commandQueueTypeIndex] == commandQueueVKDesc.familyIndex;
+    bool isQueueSame = (VkQueue)m_Queues[commandQueueTypeIndex] == (VkQueue)commandQueueVKDesc.vkQueue;
     if (isFamilyIndexSame && isQueueSame) {
         commandQueue = (CommandQueue*)m_Queues[commandQueueTypeIndex];
         return Result::SUCCESS;
     }
 
-    CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVKDesc);
-    Deallocate(GetStdAllocator(), m_Queues[commandQueueTypeIndex]);
+    Result result = CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVKDesc);
+    if (result == Result::SUCCESS) {
+        Deallocate(GetStdAllocator(), m_Queues[commandQueueTypeIndex]);
 
-    m_FamilyIndices[commandQueueTypeIndex] = commandQueueVKDesc.familyIndex;
-    m_Queues[commandQueueTypeIndex] = (CommandQueueVK*)commandQueue;
+        m_FamilyIndices[commandQueueTypeIndex] = commandQueueVKDesc.familyIndex;
+        m_Queues[commandQueueTypeIndex] = (CommandQueueVK*)commandQueue;
+    }
 
-    return Result::SUCCESS;
+    return result;
 }
 
 inline Result DeviceVK::CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorVKDesc, CommandAllocator*& commandAllocator) {
@@ -1756,11 +1758,11 @@ inline Result DeviceVK::CreateMemory(const MemoryVKDesc& memoryVKDesc, Memory*& 
 
 inline Result DeviceVK::CreateGraphicsPipeline(NRIVkPipeline vkPipeline, Pipeline*& pipeline) {
     PipelineVK* implementation = Allocate<PipelineVK>(GetStdAllocator(), *this);
-    const Result result = implementation->CreateGraphics(vkPipeline);
+    Result result = implementation->CreateGraphics(vkPipeline);
 
-    if (result != Result::SUCCESS) {
+    if (result == Result::SUCCESS) {
         pipeline = (Pipeline*)implementation;
-        return result;
+        return Result::SUCCESS;
     }
 
     Deallocate(GetStdAllocator(), implementation);
@@ -1770,11 +1772,11 @@ inline Result DeviceVK::CreateGraphicsPipeline(NRIVkPipeline vkPipeline, Pipelin
 
 inline Result DeviceVK::CreateComputePipeline(NRIVkPipeline vkPipeline, Pipeline*& pipeline) {
     PipelineVK* implementation = Allocate<PipelineVK>(GetStdAllocator(), *this);
-    const Result result = implementation->CreateCompute(vkPipeline);
+    Result result = implementation->CreateCompute(vkPipeline);
 
-    if (result != Result::SUCCESS) {
+    if (result == Result::SUCCESS) {
         pipeline = (Pipeline*)implementation;
-        return result;
+        return Result::SUCCESS;
     }
 
     Deallocate(GetStdAllocator(), implementation);

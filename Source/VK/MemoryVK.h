@@ -36,10 +36,10 @@ struct MemoryVK {
 
     ~MemoryVK();
 
-    Result Create(MemoryType type, uint64_t size);
     Result Create(const MemoryVKDesc& memoryDesc);
-    Result CreateDedicated(BufferVK& buffer);
-    Result CreateDedicated(TextureVK& texture);
+    Result Create(MemoryType type, uint64_t size);
+    Result CreateDedicated(const BufferVK& buffer);
+    Result CreateDedicated(const TextureVK& texture);
 
     //================================================================================================================
     // NRI

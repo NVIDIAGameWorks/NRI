@@ -54,7 +54,7 @@ static uint8_t QueryLatestDevice(ComPtr<ID3D12DeviceBest>& in, ComPtr<ID3D12Devi
 }
 
 static inline uint64_t HashRootSignatureAndStride(ID3D12RootSignature* rootSignature, uint32_t stride) {
-    assert(stride < 4096);
+    CHECK(stride < 4096, "Only stride < 4096 supported by encoding");
     return ((uint64_t)stride << 52ull) | ((uint64_t)rootSignature & ((1ull << 52) - 1));
 }
 
@@ -686,7 +686,7 @@ void DeviceD3D12::GetMemoryDesc(MemoryLocation memoryLocation, const D3D12_RESOU
     D3D12_RESOURCE_ALLOCATION_INFO resourceAllocationInfo = m_Device->GetResourceAllocationInfo(NRI_NODE_MASK, 1, &resourceDesc);
     MemoryType memoryType = ConstructMemoryType(heapType, heapFlags);
 
-    memoryDesc.size = (uint64_t)resourceAllocationInfo.SizeInBytes;
+    memoryDesc.size = resourceAllocationInfo.SizeInBytes;
     memoryDesc.alignment = (uint32_t)resourceAllocationInfo.Alignment;
     memoryDesc.type = memoryType;
     memoryDesc.mustBeDedicated = IsDedicated(memoryType);
@@ -949,7 +949,7 @@ inline void DeviceD3D12::DestroyQueryPool(QueryPool& queryPool) {
     Deallocate(GetStdAllocator(), (QueryPoolD3D12*)&queryPool);
 }
 
-inline Result DeviceD3D12::AllocateMemory(const MemoryType memoryType, uint64_t size, Memory*& memory) {
+inline Result DeviceD3D12::AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory) {
     return CreateImplementation<MemoryD3D12>(memory, memoryType, size);
 }
 

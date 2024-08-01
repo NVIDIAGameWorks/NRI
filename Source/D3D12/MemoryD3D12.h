@@ -29,7 +29,7 @@ struct MemoryD3D12 {
         return m_Device;
     }
 
-    Result Create(const MemoryType memoryType, uint64_t size);
+    Result Create(MemoryType memoryType, uint64_t size);
     Result Create(const MemoryD3D12Desc& memoryDesc);
 
     //================================================================================================================

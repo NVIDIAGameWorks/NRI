@@ -25,8 +25,8 @@ Non-goals:
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 138
-#define NRI_VERSION_DATE "22 July 2024"
+#define NRI_VERSION_MINOR 139
+#define NRI_VERSION_DATE "31 July 2024"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -90,6 +90,10 @@ NRI_STRUCT(CoreInterface)
     void (NRI_CALL *DestroyFence)(NRI_NAME_REF(Fence) fence);
 
     // Memory
+    //  - use "GetBufferMemoryDesc" (or "GetTextureMemoryDesc") to get "MemoryDesc" ("usageBits" and "MemoryLocation" affect returned "MemoryType")
+    //  - (optional) group returned "MemoryDesc"s by "MemoryType", but do not group if "mustBeDedicated = true"
+    //  - call "BindBufferMemory" (or "BindTextureMemory") to bind resources to "Memory" objects
+    // => "CalculateAllocationNumber" and "AllocateAndBindMemory" simplify this process for static allocations
     NRI_NAME(Result) (NRI_CALL *AllocateMemory)(NRI_NAME_REF(Device) device, NRI_NAME(MemoryType) memoryType, uint64_t size, NRI_NAME_REF(Memory*) memory);
     NRI_NAME(Result) (NRI_CALL *BindBufferMemory)(NRI_NAME_REF(Device) device, const NRI_NAME(BufferMemoryBindingDesc)* memoryBindingDescs, uint32_t memoryBindingDescNum);
     NRI_NAME(Result) (NRI_CALL *BindTextureMemory)(NRI_NAME_REF(Device) device, const NRI_NAME(TextureMemoryBindingDesc)* memoryBindingDescs, uint32_t memoryBindingDescNum);

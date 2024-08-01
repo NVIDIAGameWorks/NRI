@@ -10,7 +10,7 @@ static inline D3D12_HEAP_TYPE GetHeapType(MemoryType memoryType) {
     return (D3D12_HEAP_TYPE)(memoryType >> 16);
 }
 
-Result MemoryD3D12::Create(const MemoryType memoryType, uint64_t size) {
+Result MemoryD3D12::Create(MemoryType memoryType, uint64_t size) {
     D3D12_HEAP_DESC heapDesc = {};
     heapDesc.SizeInBytes = size;
     heapDesc.Properties.Type = GetHeapType(memoryType);

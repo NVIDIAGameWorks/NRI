@@ -4,14 +4,14 @@
 
 using namespace nri;
 
-HelperDeviceMemoryAllocator::MemoryTypeGroup::MemoryTypeGroup(const StdAllocator<uint8_t>& stdAllocator) :
-    buffers(stdAllocator), bufferOffsets(stdAllocator), textures(stdAllocator), textureOffsets(stdAllocator), memoryOffset(0) {
+HelperDeviceMemoryAllocator::MemoryHeap::MemoryHeap(MemoryType memoryType, const StdAllocator<uint8_t>& stdAllocator) :
+    buffers(stdAllocator), bufferOffsets(stdAllocator), textures(stdAllocator), textureOffsets(stdAllocator), size(0), type(memoryType) {
 }
 
 HelperDeviceMemoryAllocator::HelperDeviceMemoryAllocator(const CoreInterface& NRI, Device& device) :
     m_NRI(NRI),
     m_Device(device),
-    m_Map(((DeviceBase&)device).GetStdAllocator()),
+    m_Heaps(((DeviceBase&)device).GetStdAllocator()),
     m_DedicatedBuffers(((DeviceBase&)device).GetStdAllocator()),
     m_DedicatedTextures(((DeviceBase&)device).GetStdAllocator()),
     m_BufferBindingDescs(((DeviceBase&)device).GetStdAllocator()),
@@ -19,25 +19,16 @@ HelperDeviceMemoryAllocator::HelperDeviceMemoryAllocator(const CoreInterface& NR
 }
 
 uint32_t HelperDeviceMemoryAllocator::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) {
-    m_Map.clear();
-    m_DedicatedBuffers.clear();
-    m_DedicatedTextures.clear();
+    GroupByMemoryType(resourceGroupDesc.memoryLocation, resourceGroupDesc);
 
-    GroupByMemoryType(resourceGroupDesc.memoryLocation, resourceGroupDesc.buffers, resourceGroupDesc.bufferNum);
-    GroupByMemoryType(resourceGroupDesc.memoryLocation, resourceGroupDesc.textures, resourceGroupDesc.textureNum);
+    size_t allocationNum = m_Heaps.size() + m_DedicatedBuffers.size() + m_DedicatedTextures.size();
 
-    return uint32_t(m_Map.size()) + uint32_t(m_DedicatedBuffers.size()) + uint32_t(m_DedicatedTextures.size());
+    return (uint32_t)allocationNum;
 }
 
 Result HelperDeviceMemoryAllocator::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
-    m_Map.clear();
-    m_DedicatedBuffers.clear();
-    m_DedicatedTextures.clear();
-    m_BufferBindingDescs.clear();
-    m_TextureBindingDescs.clear();
-
     size_t allocationNum = 0;
-    const Result result = TryToAllocateAndBindMemory(resourceGroupDesc, allocations, allocationNum);
+    Result result = TryToAllocateAndBindMemory(resourceGroupDesc, allocations, allocationNum);
 
     if (result != Result::SUCCESS) {
         for (size_t i = 0; i < allocationNum; i++) {
@@ -50,46 +41,32 @@ Result HelperDeviceMemoryAllocator::AllocateAndBindMemory(const ResourceGroupDes
 }
 
 Result HelperDeviceMemoryAllocator::TryToAllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations, size_t& allocationNum) {
-    GroupByMemoryType(resourceGroupDesc.memoryLocation, resourceGroupDesc.buffers, resourceGroupDesc.bufferNum);
-    GroupByMemoryType(resourceGroupDesc.memoryLocation, resourceGroupDesc.textures, resourceGroupDesc.textureNum);
+    GroupByMemoryType(resourceGroupDesc.memoryLocation, resourceGroupDesc);
 
-    Result result = Result::SUCCESS;
+    for (MemoryHeap& heap : m_Heaps) {
+        Memory*& memory = allocations[allocationNum];
 
-    for (auto it = m_Map.begin(); it != m_Map.end() && result == Result::SUCCESS; ++it)
-        result = ProcessMemoryTypeGroup(it->first, it->second, allocations, allocationNum);
+        Result result = m_NRI.AllocateMemory(m_Device, heap.type, heap.size, memory);
+        if (result != Result::SUCCESS)
+            return result;
 
-    if (result != Result::SUCCESS)
-        return result;
+        FillMemoryBindingDescs(heap.buffers.data(), heap.bufferOffsets.data(), (uint32_t)heap.buffers.size(), *memory);
+        FillMemoryBindingDescs(heap.textures.data(), heap.textureOffsets.data(), (uint32_t)heap.textures.size(), *memory);
 
-    result = ProcessDedicatedResources(resourceGroupDesc.memoryLocation, allocations, allocationNum);
+        allocationNum++;
+    }
 
+    Result result = ProcessDedicatedResources(resourceGroupDesc.memoryLocation, allocations, allocationNum);
     if (result != Result::SUCCESS)
         return result;
 
     result = m_NRI.BindBufferMemory(m_Device, m_BufferBindingDescs.data(), (uint32_t)m_BufferBindingDescs.size());
-
     if (result != Result::SUCCESS)
         return result;
 
     result = m_NRI.BindTextureMemory(m_Device, m_TextureBindingDescs.data(), (uint32_t)m_TextureBindingDescs.size());
 
     return result;
-}
-
-Result HelperDeviceMemoryAllocator::ProcessMemoryTypeGroup(MemoryType memoryType, MemoryTypeGroup& group, Memory** allocations, size_t& allocationNum) {
-    Memory*& memory = allocations[allocationNum];
-
-    const uint64_t allocationSize = group.memoryOffset;
-
-    const Result result = m_NRI.AllocateMemory(m_Device, memoryType, allocationSize, memory);
-    if (result != Result::SUCCESS)
-        return result;
-
-    FillMemoryBindingDescs(group.buffers.data(), group.bufferOffsets.data(), (uint32_t)group.buffers.size(), *memory);
-    FillMemoryBindingDescs(group.textures.data(), group.textureOffsets.data(), (uint32_t)group.textures.size(), *memory);
-    allocationNum++;
-
-    return Result::SUCCESS;
 }
 
 Result HelperDeviceMemoryAllocator::ProcessDedicatedResources(MemoryLocation memoryLocation, Memory** allocations, size_t& allocationNum) {
@@ -102,11 +79,12 @@ Result HelperDeviceMemoryAllocator::ProcessDedicatedResources(MemoryLocation mem
 
         Memory*& memory = allocations[allocationNum];
 
-        const Result result = m_NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, memory);
+        Result result = m_NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, memory);
         if (result != Result::SUCCESS)
             return result;
 
         FillMemoryBindingDescs(m_DedicatedBuffers.data() + i, &zeroOffset, 1, *memory);
+
         allocationNum++;
     }
 
@@ -116,62 +94,82 @@ Result HelperDeviceMemoryAllocator::ProcessDedicatedResources(MemoryLocation mem
 
         Memory*& memory = allocations[allocationNum];
 
-        const Result result = m_NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, memory);
+        Result result = m_NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, memory);
         if (result != Result::SUCCESS)
             return result;
 
         FillMemoryBindingDescs(m_DedicatedTextures.data() + i, &zeroOffset, 1, *memory);
+
         allocationNum++;
     }
 
     return Result::SUCCESS;
 }
 
-void HelperDeviceMemoryAllocator::GroupByMemoryType(MemoryLocation memoryLocation, Buffer* const* buffers, uint32_t bufferNum) {
-    MemoryDesc memoryDesc = {};
+HelperDeviceMemoryAllocator::MemoryHeap& HelperDeviceMemoryAllocator::FindOrCreateHeap(nri::MemoryDesc& memoryDesc, uint64_t preferredMemorySize) {
+    if (preferredMemorySize == 0)
+        preferredMemorySize = 256 * 1024 * 1024;
 
-    for (uint32_t i = 0; i < bufferNum; i++) {
-        Buffer* buffer = buffers[i];
+    size_t j = 0;
+    for (; j < m_Heaps.size(); j++) {
+        const MemoryHeap& heap = m_Heaps[j];
+        
+        uint64_t offset = Align(heap.size, memoryDesc.alignment);
+        uint64_t newSize = offset + memoryDesc.size;
+
+        if (heap.type == memoryDesc.type && newSize <= preferredMemorySize)
+            break;
+    }
+
+    if (j == m_Heaps.size())
+        m_Heaps.push_back(MemoryHeap(memoryDesc.type, ((DeviceBase&)m_Device).GetStdAllocator()));
+
+    return m_Heaps[j];
+}
+
+void HelperDeviceMemoryAllocator::GroupByMemoryType(MemoryLocation memoryLocation, const nri::ResourceGroupDesc& resourceGroupDesc) {
+    for (uint32_t i = 0; i < resourceGroupDesc.bufferNum; i++) {
+        Buffer* buffer = resourceGroupDesc.buffers[i];
         const BufferDesc& bufferDesc = m_NRI.GetBufferDesc(*buffer);
+
+        MemoryDesc memoryDesc = {};
         m_NRI.GetBufferMemoryDesc(m_Device, bufferDesc, memoryLocation, memoryDesc);
 
         if (memoryDesc.mustBeDedicated)
             m_DedicatedBuffers.push_back(buffer);
         else {
-            MemoryTypeGroup& group = m_Map.try_emplace(memoryDesc.type, ((DeviceBase&)m_Device).GetStdAllocator()).first->second;
+            MemoryHeap& heap = FindOrCreateHeap(memoryDesc, resourceGroupDesc.preferredMemorySize);
 
-            uint64_t offset = Align(group.memoryOffset, memoryDesc.alignment);
+            uint64_t offset = Align(heap.size, memoryDesc.alignment);
 
-            group.buffers.push_back(buffer);
-            group.bufferOffsets.push_back(offset);
-            group.memoryOffset = offset + memoryDesc.size;
+            heap.buffers.push_back(buffer);
+            heap.bufferOffsets.push_back(offset);
+            heap.size = offset + memoryDesc.size;
         }
     }
-}
 
-void HelperDeviceMemoryAllocator::GroupByMemoryType(MemoryLocation memoryLocation, Texture* const* textures, uint32_t textureNum) {
-    const DeviceDesc& deviceDesc = m_NRI.GetDeviceDesc(m_Device);
-
-    MemoryDesc memoryDesc = {};
-
-    for (uint32_t i = 0; i < textureNum; i++) {
-        Texture* texture = textures[i];
+    for (uint32_t i = 0; i < resourceGroupDesc.textureNum; i++) {
+        Texture* texture = resourceGroupDesc.textures[i];
         const TextureDesc& textureDesc = m_NRI.GetTextureDesc(*texture);
+
+        MemoryDesc memoryDesc = {};
         m_NRI.GetTextureMemoryDesc(m_Device, textureDesc, memoryLocation, memoryDesc);
 
         if (memoryDesc.mustBeDedicated)
             m_DedicatedTextures.push_back(texture);
         else {
-            MemoryTypeGroup& group = m_Map.try_emplace(memoryDesc.type, ((DeviceBase&)m_Device).GetStdAllocator()).first->second;
+            MemoryHeap& heap = FindOrCreateHeap(memoryDesc, resourceGroupDesc.preferredMemorySize);
 
-            if (group.textures.empty() && group.memoryOffset > 0)
-                group.memoryOffset = Align(group.memoryOffset, deviceDesc.bufferTextureGranularity);
+            if (heap.textures.empty()) {
+                const DeviceDesc& deviceDesc = m_NRI.GetDeviceDesc(m_Device);
+                heap.size = Align(heap.size, deviceDesc.bufferTextureGranularity);
+            }
 
-            uint64_t offset = Align(group.memoryOffset, memoryDesc.alignment);
+            uint64_t offset = Align(heap.size, memoryDesc.alignment);
 
-            group.textures.push_back(texture);
-            group.textureOffsets.push_back(offset);
-            group.memoryOffset = offset + memoryDesc.size;
+            heap.textures.push_back(texture);
+            heap.textureOffsets.push_back(offset);
+            heap.size = offset + memoryDesc.size;
         }
     }
 }

@@ -154,9 +154,16 @@ inline void AccelerationStructureVK::GetMemoryDesc(MemoryDesc& memoryDesc) const
 }
 
 inline Result AccelerationStructureVK::CreateDescriptor(Descriptor*& descriptor) const {
-    DescriptorVK& descriptorImpl = *Allocate<DescriptorVK>(m_Device.GetStdAllocator(), m_Device);
-    descriptorImpl.Create(m_Handle);
-    descriptor = (Descriptor*)&descriptorImpl;
+    DescriptorVK* descriptorImpl = Allocate<DescriptorVK>(m_Device.GetStdAllocator(), m_Device);
+    
+    Result result = descriptorImpl->Create(m_Handle);
+
+    if (result == Result::SUCCESS) {
+        descriptor = (Descriptor*)descriptorImpl;
+        return Result::SUCCESS;
+    }
+
+    Deallocate(m_Device.GetStdAllocator(), descriptorImpl);
 
     return Result::SUCCESS;
 }

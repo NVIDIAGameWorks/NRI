@@ -381,6 +381,9 @@ Result PipelineVK::Create(const RayTracingPipelineDesc& rayTracingPipelineDesc) 
 }
 
 Result PipelineVK::CreateGraphics(NRIVkPipeline vkPipeline) {
+    if (!vkPipeline)
+        return Result::INVALID_ARGUMENT;
+
     m_OwnsNativeObjects = false;
     m_Handle = (VkPipeline)vkPipeline;
     m_BindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -389,6 +392,9 @@ Result PipelineVK::CreateGraphics(NRIVkPipeline vkPipeline) {
 }
 
 Result PipelineVK::CreateCompute(NRIVkPipeline vkPipeline) {
+    if (!vkPipeline)
+        return Result::INVALID_ARGUMENT;
+
     m_OwnsNativeObjects = false;
     m_Handle = (VkPipeline)vkPipeline;
     m_BindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;

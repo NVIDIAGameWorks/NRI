@@ -73,7 +73,7 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
             m_InputAssemplyStrides[stream.bindingSlot] = stream.stride;
         };
 
-        assert(vertexShader != nullptr);
+        CHECK(vertexShader != nullptr, "VS can't be NULL");
         hr = m_Device->CreateInputLayout(&inputElements[0], vi.attributeNum, vertexShader->bytecode, (size_t)vertexShader->size, &m_InputLayout);
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateInputLayout()");
     }
