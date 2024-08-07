@@ -109,7 +109,11 @@ Result HelperDataUpload::Create() {
     MemoryDesc memoryDesc = {};
     NRI.GetBufferMemoryDesc(m_Device, bufferDesc, MemoryLocation::HOST_UPLOAD, memoryDesc);
 
-    result = NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, m_UploadBufferMemory);
+    AllocateMemoryDesc allocateMemoryDesc = {};
+    allocateMemoryDesc.type = memoryDesc.type;
+    allocateMemoryDesc.size = memoryDesc.size;
+
+    result = NRI.AllocateMemory(m_Device, allocateMemoryDesc, m_UploadBufferMemory);
     if (result != Result::SUCCESS)
         return result;
 

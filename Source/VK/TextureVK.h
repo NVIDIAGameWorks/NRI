@@ -31,7 +31,7 @@ struct TextureVK {
     }
 
     inline Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const {
-        return GetDimension(GraphicsAPI::VULKAN, m_Desc, dimensionIndex, mip);
+        return GetDimension(GraphicsAPI::VK, m_Desc, dimensionIndex, mip);
     }
 
     inline bool OwnsNativeObjects() const {

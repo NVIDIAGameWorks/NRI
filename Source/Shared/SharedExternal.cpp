@@ -834,7 +834,7 @@ void CheckAndSetDefaultCallbacks(nri::CallbackInterface& callbackInterface) {
 
 constexpr std::array<const char*, uint32_t(nri::Message::TYPE_ERROR) + 1> MESSAGE_TYPE_NAME = {"INFO", "WARNING", "ERROR"};
 
-constexpr std::array<const char*, uint32_t(nri::GraphicsAPI::VULKAN) + 1> GRAPHICS_API_NAME = {"D3D11", "D3D12", "VK"};
+constexpr std::array<const char*, uint32_t(nri::GraphicsAPI::VK) + 1> GRAPHICS_API_NAME = {"D3D11", "D3D12", "VK"};
 
 void nri::DeviceBase::ReportMessage(nri::Message messageType, const char* file, uint32_t line, const char* format, ...) const {
     const nri::DeviceDesc& desc = GetDesc();

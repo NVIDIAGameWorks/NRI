@@ -324,6 +324,7 @@ NRI_ENUM
     GRAPHICS,
     COMPUTE,
     COPY,
+    HIGH_PRIORITY_COPY,
 
     MAX_NUM
 );
@@ -1220,6 +1221,13 @@ NRI_STRUCT(MemoryDesc)
     bool mustBeDedicated;
 };
 
+NRI_STRUCT(AllocateMemoryDesc)
+{
+    uint64_t size;
+    NRI_NAME(MemoryType) type;
+    float priority; // [-1; 1]: low < 0, normal = 0, high > 0
+};
+
 NRI_STRUCT(BufferMemoryBindingDesc)
 {
     NRI_NAME(Memory)* memory;
@@ -1387,7 +1395,7 @@ NRI_ENUM
 
     D3D11,
     D3D12,
-    VULKAN,
+    VK,
 
     MAX_NUM
 );
@@ -1408,8 +1416,8 @@ NRI_ENUM
 NRI_ENUM
 (
     MemoryTier, uint8_t,
-    
-    ONE, // A memory can only support resources from a single resource category (buffers, color and depth-stencil attachments, all other textures)    
+
+    ONE, // A memory can only support resources from a single resource category (buffers, color and depth-stencil attachments, all other textures)
     TWO, // A memory can support resources from all 3 categories
 
     MAX_NUM

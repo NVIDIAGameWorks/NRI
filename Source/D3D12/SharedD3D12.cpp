@@ -6,14 +6,19 @@
 
 using namespace nri;
 
-constexpr std::array<D3D12_COMMAND_LIST_TYPE, (uint32_t)CommandQueueType::MAX_NUM> COMMAND_LIST_TYPES = {
-    D3D12_COMMAND_LIST_TYPE_DIRECT,  // GRAPHICS
-    D3D12_COMMAND_LIST_TYPE_COMPUTE, // COMPUTE
-    D3D12_COMMAND_LIST_TYPE_COPY     // COPY
-};
-
 D3D12_COMMAND_LIST_TYPE nri::GetCommandListType(CommandQueueType commandQueueType) {
-    return COMMAND_LIST_TYPES[(uint32_t)commandQueueType];
+    switch (commandQueueType) {
+        case CommandQueueType::GRAPHICS:
+            return D3D12_COMMAND_LIST_TYPE_DIRECT;
+        case CommandQueueType::COMPUTE:
+            return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+        case CommandQueueType::COPY:
+        case CommandQueueType::HIGH_PRIORITY_COPY:
+            return D3D12_COMMAND_LIST_TYPE_COPY;
+        default:
+            CHECK(false, "Wrong value");
+            return D3D12_COMMAND_LIST_TYPE_DIRECT;
+    }
 }
 
 D3D12_HEAP_FLAGS nri::GetHeapFlags(MemoryType memoryType) {

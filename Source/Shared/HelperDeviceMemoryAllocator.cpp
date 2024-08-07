@@ -46,7 +46,11 @@ Result HelperDeviceMemoryAllocator::TryToAllocateAndBindMemory(const ResourceGro
     for (MemoryHeap& heap : m_Heaps) {
         Memory*& memory = allocations[allocationNum];
 
-        Result result = m_NRI.AllocateMemory(m_Device, heap.type, heap.size, memory);
+        AllocateMemoryDesc allocateMemoryDesc = {};
+        allocateMemoryDesc.type = heap.type;
+        allocateMemoryDesc.size = heap.size;
+
+        Result result = m_NRI.AllocateMemory(m_Device, allocateMemoryDesc, memory);
         if (result != Result::SUCCESS)
             return result;
 
@@ -79,7 +83,11 @@ Result HelperDeviceMemoryAllocator::ProcessDedicatedResources(MemoryLocation mem
 
         Memory*& memory = allocations[allocationNum];
 
-        Result result = m_NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, memory);
+        AllocateMemoryDesc allocateMemoryDesc = {};
+        allocateMemoryDesc.type = memoryDesc.type;
+        allocateMemoryDesc.size = memoryDesc.size;
+
+        Result result = m_NRI.AllocateMemory(m_Device, allocateMemoryDesc, memory);
         if (result != Result::SUCCESS)
             return result;
 
@@ -94,7 +102,11 @@ Result HelperDeviceMemoryAllocator::ProcessDedicatedResources(MemoryLocation mem
 
         Memory*& memory = allocations[allocationNum];
 
-        Result result = m_NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, memory);
+        AllocateMemoryDesc allocateMemoryDesc = {};
+        allocateMemoryDesc.type = memoryDesc.type;
+        allocateMemoryDesc.size = memoryDesc.size;
+
+        Result result = m_NRI.AllocateMemory(m_Device, allocateMemoryDesc, memory);
         if (result != Result::SUCCESS)
             return result;
 

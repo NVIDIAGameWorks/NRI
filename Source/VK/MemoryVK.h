@@ -37,7 +37,7 @@ struct MemoryVK {
     ~MemoryVK();
 
     Result Create(const MemoryVKDesc& memoryDesc);
-    Result Create(MemoryType type, uint64_t size);
+    Result Create(const AllocateMemoryDesc& allocateMemoryDesc);
     Result CreateDedicated(const BufferVK& buffer);
     Result CreateDedicated(const TextureVK& texture);
 
@@ -52,6 +52,7 @@ private:
     VkDeviceMemory m_Handle = VK_NULL_HANDLE;
     uint8_t* m_MappedMemory = nullptr;
     MemoryType m_Type = std::numeric_limits<MemoryType>::max();
+    float m_Priority = 0.0f;
     bool m_OwnsNativeObjects = false;
 };
 

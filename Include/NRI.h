@@ -1,7 +1,7 @@
 // © 2021 NVIDIA Corporation
 
 /*
-NRI: generalized common denominator for D3D11, D3D12 and Vulkan GAPIs
+NRI: generalized common denominator for D3D11, D3D12 and VK GAPIs
     D3D11 spec: https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm
     D3D12 spec: https://microsoft.github.io/DirectX-Specs/
     VK spec: https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html
@@ -25,8 +25,8 @@ Non-goals:
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 139
-#define NRI_VERSION_DATE "31 July 2024"
+#define NRI_VERSION_MINOR 140
+#define NRI_VERSION_DATE "6 August 2024"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -58,6 +58,9 @@ NRI_STRUCT(CoreInterface)
     uint32_t (NRI_CALL *GetQuerySize)(const NRI_NAME_REF(QueryPool) queryPool);
     void (NRI_CALL *GetBufferMemoryDesc)(const NRI_NAME_REF(Device) device, const NRI_NAME_REF(BufferDesc) bufferDesc, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(MemoryDesc) memoryDesc);
     void (NRI_CALL *GetTextureMemoryDesc)(const NRI_NAME_REF(Device) device, const NRI_NAME_REF(TextureDesc) textureDesc, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(MemoryDesc) memoryDesc);
+
+    // Getting COMPUTE and/or COPY queues switches VK "sharing mode" to "VK_SHARING_MODE_CONCURRENT", which can be slower on some HW. This approach is used to avoid
+    // dealing with "queue ownership transitions", but also adds a requirement to "get" all async queues before resources creation participating into multi-queue activity
     NRI_NAME(Result) (NRI_CALL *GetCommandQueue)(NRI_NAME_REF(Device) device, NRI_NAME(CommandQueueType) commandQueueType, NRI_NAME_REF(CommandQueue*) commandQueue);
 
     // Create
@@ -94,7 +97,7 @@ NRI_STRUCT(CoreInterface)
     //  - (optional) group returned "MemoryDesc"s by "MemoryType", but do not group if "mustBeDedicated = true"
     //  - call "BindBufferMemory" (or "BindTextureMemory") to bind resources to "Memory" objects
     // => "CalculateAllocationNumber" and "AllocateAndBindMemory" simplify this process for static allocations
-    NRI_NAME(Result) (NRI_CALL *AllocateMemory)(NRI_NAME_REF(Device) device, NRI_NAME(MemoryType) memoryType, uint64_t size, NRI_NAME_REF(Memory*) memory);
+    NRI_NAME(Result) (NRI_CALL *AllocateMemory)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(AllocateMemoryDesc) allocateMemoryDesc, NRI_NAME_REF(Memory*) memory);
     NRI_NAME(Result) (NRI_CALL *BindBufferMemory)(NRI_NAME_REF(Device) device, const NRI_NAME(BufferMemoryBindingDesc)* memoryBindingDescs, uint32_t memoryBindingDescNum);
     NRI_NAME(Result) (NRI_CALL *BindTextureMemory)(NRI_NAME_REF(Device) device, const NRI_NAME(TextureMemoryBindingDesc)* memoryBindingDescs, uint32_t memoryBindingDescNum);
     void (NRI_CALL *FreeMemory)(NRI_NAME_REF(Memory) memory);
@@ -175,12 +178,10 @@ NRI_STRUCT(CoreInterface)
     // }
     NRI_NAME(Result) (NRI_CALL *EndCommandBuffer)(NRI_NAME_REF(CommandBuffer) commandBuffer);
 
-    // Synchronization
+    // Work submission and synchronization
+    void (NRI_CALL *QueueSubmit)(NRI_NAME_REF(CommandQueue) commandQueue, const NRI_NAME_REF(QueueSubmitDesc) queueSubmitDesc); // on device
+    void (NRI_CALL *Wait)(NRI_NAME_REF(Fence) fence, uint64_t value); // on host
     uint64_t (NRI_CALL *GetFenceValue)(NRI_NAME_REF(Fence) fence);
-    void (NRI_CALL *Wait)(NRI_NAME_REF(Fence) fence, uint64_t value);
-
-    // Work submission (with queue synchronization)
-    void (NRI_CALL *QueueSubmit)(NRI_NAME_REF(CommandQueue) commandQueue, const NRI_NAME_REF(QueueSubmitDesc) queueSubmitDesc);
 
     // Descriptor set
     void (NRI_CALL *UpdateDescriptorRanges)(NRI_NAME_REF(DescriptorSet) descriptorSet, uint32_t baseRange, uint32_t rangeNum, const NRI_NAME(DescriptorRangeUpdateDesc)* rangeUpdateDescs);
@@ -218,12 +219,12 @@ NRI_STRUCT(CoreInterface)
     void (NRI_CALL *SetDescriptorSetDebugName)(NRI_NAME_REF(DescriptorSet) descriptorSet, const char* name);
     void (NRI_CALL *SetMemoryDebugName)(NRI_NAME_REF(Memory) memory, const char* name);
 
-    // Native objects                                                                                      D3D11                 D3D12                         VK
-    void* (NRI_CALL *GetDeviceNativeObject)(const NRI_NAME_REF(Device) device);                         // ID3D11Device*         ID3D12Device*                 VkDevice
-    void* (NRI_CALL *GetCommandBufferNativeObject)(const NRI_NAME_REF(CommandBuffer) commandBuffer);    // ID3D11DeviceContext*  ID3D12GraphicsCommandList*    VkCommandBuffer
-    uint64_t (NRI_CALL *GetBufferNativeObject)(const NRI_NAME_REF(Buffer) buffer);                      // ID3D11Buffer*         ID3D12Resource*               VkBuffer
-    uint64_t (NRI_CALL *GetTextureNativeObject)(const NRI_NAME_REF(Texture) texture);                   // ID3D11Resource*       ID3D12Resource*               VkImage
-    uint64_t (NRI_CALL *GetDescriptorNativeObject)(const NRI_NAME_REF(Descriptor) descriptor);          // ID3D11View*           D3D12_CPU_DESCRIPTOR_HANDLE   VkImageView/VkBufferView
+    // Native objects                                                                                ___D3D11________________|_D3D12_______________________|_VK______________________
+    void* (NRI_CALL *GetDeviceNativeObject)(const NRI_NAME_REF(Device) device);                      // ID3D11Device*        | ID3D12Device*               | VkDevice
+    void* (NRI_CALL *GetCommandBufferNativeObject)(const NRI_NAME_REF(CommandBuffer) commandBuffer); // ID3D11DeviceContext* | ID3D12GraphicsCommandList*  | VkCommandBuffer
+    uint64_t (NRI_CALL *GetBufferNativeObject)(const NRI_NAME_REF(Buffer) buffer);                   // ID3D11Buffer*        | ID3D12Resource*             | VkBuffer
+    uint64_t (NRI_CALL *GetTextureNativeObject)(const NRI_NAME_REF(Texture) texture);                // ID3D11Resource*      | ID3D12Resource*             | VkImage
+    uint64_t (NRI_CALL *GetDescriptorNativeObject)(const NRI_NAME_REF(Descriptor) descriptor);       // ID3D11View*          | D3D12_CPU_DESCRIPTOR_HANDLE | VkImageView/VkBufferView
 };
 
 NRI_API NRI_NAME(Result) NRI_CALL nriGetInterface(const NRI_NAME_REF(Device) device, const char* interfaceName, size_t interfaceSize, void* interfacePtr);

@@ -29,7 +29,7 @@ struct CommandQueueD3D12 {
         return m_CommandListType;
     }
 
-    Result Create(CommandQueueType queueType);
+    Result Create(CommandQueueType commandQueueType);
     Result Create(ID3D12CommandQueue* commandQueue);
 
     //================================================================================================================

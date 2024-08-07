@@ -82,7 +82,7 @@ Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc,
     return result;
 }
 
-DeviceD3D11::DeviceD3D11(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator) : DeviceBase(callbacks, stdAllocator), m_CommandQueues(GetStdAllocator()) {
+DeviceD3D11::DeviceD3D11(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator) : DeviceBase(callbacks, stdAllocator) {
     m_Desc.graphicsAPI = GraphicsAPI::D3D11;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
@@ -98,13 +98,18 @@ DeviceD3D11::~DeviceD3D11() {
     if (m_Ext.HasAGS() && !m_IsWrapped)
         m_Ext.m_AGS.DestroyDeviceD3D11(m_Ext.m_AGSContext, m_Device, nullptr, m_ImmediateContext, nullptr);
 #endif
+
+    for (CommandQueueD3D11* commandQueue: m_CommandQueues) {
+        if (commandQueue)
+            Deallocate(GetStdAllocator(), commandQueue);
+    }
 }
 
 Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* device, AGSContext* agsContext, bool isNVAPILoadedInApp) {
     // Get adapter
     if (!device) {
         ComPtr<IDXGIFactory4> dxgiFactory;
-        HRESULT hr = CreateDXGIFactory2(deviceCreationDesc.enableAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
+        HRESULT hr = CreateDXGIFactory2(deviceCreationDesc.enableGraphicsAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
         RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
 
         if (deviceCreationDesc.adapterDesc) {
@@ -145,7 +150,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     // Device
     ComPtr<ID3D11DeviceBest> deviceTemp = (ID3D11DeviceBest*)device;
     if (!deviceTemp) {
-        const UINT flags = deviceCreationDesc.enableAPIValidation ? D3D11_CREATE_DEVICE_DEBUG : 0;
+        const UINT flags = deviceCreationDesc.enableGraphicsAPIValidation ? D3D11_CREATE_DEVICE_DEBUG : 0;
         D3D_FEATURE_LEVEL levels[2] = {D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
         const uint32_t levelNum = GetCountOf(levels);
         bool isDepthBoundsTestSupported = false;
@@ -239,11 +244,12 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     } else
         m_Multithread->SetMultithreadProtected(true);
 
-    // Other
-    FillDesc();
+    // Create command queues (ignoring support, since there is no real support in any case)
+    for (CommandQueueD3D11*& commandQueue : m_CommandQueues)
+        commandQueue = Allocate<CommandQueueD3D11>(GetStdAllocator(), *this);
 
-    for (uint32_t i = 0; i < (uint32_t)CommandQueueType::MAX_NUM; i++)
-        m_CommandQueues.emplace_back(*this);
+    // Fill desc
+    FillDesc();
 
     return FillFunctionTable(m_CoreInterface);
 }
@@ -416,6 +422,10 @@ void DeviceD3D11::FillDesc() {
     m_Desc.programmableSampleLocationsTier = rasterizerFeatures.ProgrammableSamplePositions ? 2 : 0;
 #endif
 
+    // TODO: report fake COMPUTE and COPY queues support since multi-queue supporting code is NOP. Can it hurt?
+    m_Desc.isComputeQueueSupported = true;
+    m_Desc.isCopyQueueSupported = true;
+
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isLineSmoothingSupported = true;
@@ -443,6 +453,7 @@ Result DeviceD3D11::CreateImplementation(Interface*& entity, const Args&... args
     }
 
     Deallocate(GetStdAllocator(), implementation);
+    entity = nullptr;
 
     return result;
 }
@@ -462,7 +473,7 @@ void DeviceD3D11::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation mem
     memoryDesc.mustBeDedicated = false;
 }
 
-void DeviceD3D11::GetMemoryDesc(const TextureDesc& textureDesc,MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
+void DeviceD3D11::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
     bool isMultisampled = textureDesc.sampleNum > 1;
     uint32_t size = TextureD3D11::GetMipmappedSize(textureDesc);
 
@@ -501,14 +512,9 @@ inline void DeviceD3D11::DestroySwapChain(SwapChain& swapChain) {
 }
 
 inline Result DeviceD3D11::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
-    commandQueue = (CommandQueue*)&m_CommandQueues[(uint32_t)commandQueueType];
+    commandQueue = (CommandQueue*)m_CommandQueues[(uint32_t)commandQueueType];
 
-    if (commandQueueType != CommandQueueType::GRAPHICS) {
-        REPORT_WARNING(this, "%s command queue is not supported by the device!", commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY");
-        return Result::UNSUPPORTED;
-    }
-
-    return Result::SUCCESS;
+    return commandQueue ? Result::SUCCESS : Result::UNSUPPORTED;
 }
 
 inline Result DeviceD3D11::CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
@@ -651,10 +657,8 @@ inline void DeviceD3D11::DestroyFence(Fence& fence) {
     Deallocate(GetStdAllocator(), (FenceD3D11*)&fence);
 }
 
-inline Result DeviceD3D11::AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory) {
-    MaybeUnused(size);
-
-    memory = (Memory*)Allocate<MemoryD3D11>(GetStdAllocator(), *this, memoryType);
+inline Result DeviceD3D11::AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
+    memory = (Memory*)Allocate<MemoryD3D11>(GetStdAllocator(), *this, allocateMemoryDesc);
 
     return Result::SUCCESS;
 }
@@ -731,18 +735,6 @@ inline FormatSupportBits DeviceD3D11::GetFormatSupport(Format format) const {
 #undef UPDATE_SUPPORT_BITS
 
     return mask;
-}
-
-inline uint32_t DeviceD3D11::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const {
-    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this);
-
-    return allocator.CalculateAllocationNumber(resourceGroupDesc);
-}
-
-inline Result DeviceD3D11::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
-    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this);
-
-    return allocator.AllocateAndBindMemory(resourceGroupDesc, allocations);
 }
 
 namespace d3d11 {

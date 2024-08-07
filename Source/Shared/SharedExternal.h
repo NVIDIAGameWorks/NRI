@@ -120,13 +120,13 @@ inline nri::Dim_t GetDimension(nri::GraphicsAPI api, const nri::TextureDesc& tex
     dim = (nri::Dim_t)std::max(dim >> mip, 1);
 
     // TODO: VK doesn't require manual alignment, but probably we should use it here and during texture creation
-    if (api != nri::GraphicsAPI::VULKAN)
+    if (api != nri::GraphicsAPI::VK)
         dim = Align(dim, dimensionIndex < 2 ? GetFormatProps(textureDesc.format).blockWidth : 1);
 
     return dim;
 }
 
-// String conversion
+// Strings
 void ConvertCharToWchar(const char* in, wchar_t* out, size_t outLen);
 void ConvertWcharToChar(const wchar_t* in, char* out, size_t outLen);
 

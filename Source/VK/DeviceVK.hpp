@@ -156,8 +156,8 @@ static void NRI_CALL DestroyFence(Fence& fence) {
     ((FenceVK&)fence).GetDevice().DestroyFence(fence);
 }
 
-static Result NRI_CALL AllocateMemory(Device& device, MemoryType memoryType, uint64_t size, Memory*& memory) {
-    return ((DeviceVK&)device).AllocateMemory(memoryType, size, memory);
+static Result NRI_CALL AllocateMemory(Device& device, const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
+    return ((DeviceVK&)device).AllocateMemory(allocateMemoryDesc, memory);
 }
 
 static Result NRI_CALL BindBufferMemory(Device& device, const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
@@ -426,11 +426,17 @@ Result DeviceVK::FillFunctionTable(MeshShaderInterface& meshShaderInterface) con
 #pragma region[  Helper  ]
 
 static uint32_t NRI_CALL CalculateAllocationNumber(const Device& device, const ResourceGroupDesc& resourceGroupDesc) {
-    return ((DeviceVK&)device).CalculateAllocationNumber(resourceGroupDesc);
+    DeviceVK& deviceVK = (DeviceVK&)device;
+    HelperDeviceMemoryAllocator allocator(deviceVK.GetCoreInterface(), (Device&)device);
+
+    return allocator.CalculateAllocationNumber(resourceGroupDesc);
 }
 
 static Result NRI_CALL AllocateAndBindMemory(Device& device, const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
-    return ((DeviceVK&)device).AllocateAndBindMemory(resourceGroupDesc, allocations);
+    DeviceVK& deviceVK = (DeviceVK&)device;
+    HelperDeviceMemoryAllocator allocator(deviceVK.GetCoreInterface(), device);
+
+    return allocator.AllocateAndBindMemory(resourceGroupDesc, allocations);
 }
 
 static Result NRI_CALL QueryVideoMemoryInfo(const Device& device, MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) {

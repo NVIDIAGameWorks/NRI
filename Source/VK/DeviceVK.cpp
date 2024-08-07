@@ -22,12 +22,13 @@
 
 static_assert(VK_LUID_SIZE == sizeof(uint64_t), "invalid sizeof");
 
-constexpr uint32_t INVALID_FAMILY_INDEX = uint32_t(-1);
-
 using namespace nri;
 
-constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits bufferUsageBits, uint32_t structureStride) {
-    VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits bufferUsageBits, uint32_t structureStride, bool isDeviceAddressSupported) {
+    VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+    if (isDeviceAddressSupported)
+        flags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
     if (bufferUsageBits & BufferUsageBits::VERTEX_BUFFER)
         flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -94,6 +95,7 @@ Result CreateDeviceVK(const DeviceCreationDesc& desc, DeviceBase*& device) {
     }
 
     Deallocate(allocator, implementation);
+
     return res;
 }
 
@@ -108,6 +110,7 @@ Result CreateDeviceVK(const DeviceCreationVKDesc& desc, DeviceBase*& device) {
     }
 
     Deallocate(allocator, implementation);
+
     return res;
 }
 
@@ -152,20 +155,6 @@ void VKAPI_PTR vkFreeHostMemory(void* pUserData, void* pMemory) {
     const auto& lowLevelAllocator = stdAllocator.GetInterface();
 
     return lowLevelAllocator.Free(lowLevelAllocator.userArg, pMemory);
-}
-
-void VKAPI_PTR vkHostMemoryInternalAllocationNotification(void* pUserData, size_t size, VkInternalAllocationType allocationType, VkSystemAllocationScope allocationScope) {
-    MaybeUnused(pUserData);
-    MaybeUnused(size);
-    MaybeUnused(allocationType);
-    MaybeUnused(allocationScope);
-}
-
-void VKAPI_PTR vkHostMemoryInternalFreeNotification(void* pUserData, size_t size, VkInternalAllocationType allocationType, VkSystemAllocationScope allocationScope) {
-    MaybeUnused(pUserData);
-    MaybeUnused(size);
-    MaybeUnused(allocationType);
-    MaybeUnused(allocationScope);
 }
 
 void DeviceVK::FilterInstanceLayers(Vector<const char*>& layers) {
@@ -318,6 +307,9 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
 
+    if (IsExtensionSupported(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME);
+
     // Optional
     if (IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
@@ -334,12 +326,13 @@ Result DeviceVK::CreateImplementation(Interface*& entity, const Args&... args) {
     }
 
     Deallocate(GetStdAllocator(), implementation);
+    entity = nullptr;
+
     return result;
 }
 
-DeviceVK::DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator) :
-    DeviceBase(callbacks, stdAllocator), m_ConcurrentSharingModeQueueIndices(GetStdAllocator()) {
-    m_Desc.graphicsAPI = GraphicsAPI::VULKAN;
+DeviceVK::DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator) : DeviceBase(callbacks, stdAllocator) {
+    m_Desc.graphicsAPI = GraphicsAPI::VK;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
 }
@@ -348,8 +341,8 @@ DeviceVK::~DeviceVK() {
     if (m_Device == VK_NULL_HANDLE)
         return;
 
-    for (uint32_t i = 0; i < m_Queues.size(); i++)
-        Deallocate(GetStdAllocator(), m_Queues[i]);
+    for (uint32_t i = 0; i < m_CommandQueues.size(); i++)
+        Deallocate(GetStdAllocator(), m_CommandQueues[i]);
 
     if (m_Messenger) {
         typedef PFN_vkDestroyDebugUtilsMessengerEXT Func;
@@ -425,8 +418,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_AllocationCallbacks.pfnAllocation = vkAllocateHostMemory;
         m_AllocationCallbacks.pfnReallocation = vkReallocateHostMemory;
         m_AllocationCallbacks.pfnFree = vkFreeHostMemory;
-        m_AllocationCallbacks.pfnInternalAllocation = vkHostMemoryInternalAllocationNotification;
-        m_AllocationCallbacks.pfnInternalFree = vkHostMemoryInternalFreeNotification;
 
         if (!isWrapper)
             m_AllocationCallbackPtr = &m_AllocationCallbacks;
@@ -456,10 +447,10 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         } else {
             ProcessInstanceExtensions(desiredInstanceExts);
 
-            for (uint32_t i = 0; i < deviceCreationDesc.vulkanExtensions.instanceExtensionNum; i++)
-                desiredInstanceExts.push_back(deviceCreationDesc.vulkanExtensions.instanceExtensions[i]);
+            for (uint32_t i = 0; i < deviceCreationDesc.vkExtensions.instanceExtensionNum; i++)
+                desiredInstanceExts.push_back(deviceCreationDesc.vkExtensions.instanceExtensions[i]);
 
-            res = CreateInstance(deviceCreationDesc.enableAPIValidation, desiredInstanceExts);
+            res = CreateInstance(deviceCreationDesc.enableGraphicsAPIValidation, desiredInstanceExts);
             if (res != Result::SUCCESS)
                 return res;
         }
@@ -474,7 +465,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         if (isWrapper) {
             m_PhysicalDevice = (VkPhysicalDevice)deviceCreationVKDesc.vkPhysicalDevice;
 
-            minorVersion = deviceCreationVKDesc.isVulkan12 ? 2 : 3;
+            minorVersion = deviceCreationVKDesc.minorVersion;
         } else {
             uint32_t deviceGroupNum = 0;
             m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, nullptr);
@@ -520,7 +511,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
 
         m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &m_MemoryProps);
 
-        FillFamilyIndices(isWrapper, deviceCreationVKDesc.queueFamilyIndices, deviceCreationVKDesc.queueFamilyIndexNum);
+        FillFamilyIndices(isWrapper, deviceCreationVKDesc);
     }
 
     // Get adapter description as early as possible for meaningful error reporting
@@ -533,10 +524,10 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         for (uint32_t i = 0; i < deviceCreationVKDesc.enabledExtensions.deviceExtensionNum; i++)
             desiredDeviceExts.push_back(deviceCreationVKDesc.enabledExtensions.deviceExtensions[i]);
     } else {
-        ProcessDeviceExtensions(desiredDeviceExts, deviceCreationDesc.disableVulkanRayTracing);
+        ProcessDeviceExtensions(desiredDeviceExts, deviceCreationDesc.disableVKRayTracing);
 
-        for (uint32_t i = 0; i < deviceCreationDesc.vulkanExtensions.deviceExtensionNum; i++)
-            desiredDeviceExts.push_back(deviceCreationDesc.vulkanExtensions.deviceExtensions[i]);
+        for (uint32_t i = 0; i < deviceCreationDesc.vkExtensions.deviceExtensionNum; i++)
+            desiredDeviceExts.push_back(deviceCreationDesc.vkExtensions.deviceExtensions[i]);
     }
 
     // Device features
@@ -626,6 +617,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(shaderAtomicFloat2Features);
     }
 
+    VkPhysicalDeviceMemoryPriorityFeaturesEXT memoryPriorityFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(memoryPriorityFeatures);
+    }
+
     if (IsExtensionSupported(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, desiredDeviceExts))
         m_IsMemoryBudgetSupported = true;
 
@@ -639,25 +635,41 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             // ...
 
             // Create device
-            Vector<VkDeviceQueueCreateInfo> queues(GetStdAllocator());
-            const float priorities = 1.0f;
-            for (size_t i = 0; i < m_FamilyIndices.size(); i++) {
-                if (m_FamilyIndices[i] == INVALID_FAMILY_INDEX)
-                    continue;
-
-                VkDeviceQueueCreateInfo info = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
-                info.queueCount = 1;
-                info.queueFamilyIndex = m_FamilyIndices[i];
-                info.pQueuePriorities = &priorities;
-                queues.push_back(info);
-            }
+            const float priorities[2] = {0.5f, 1.0f};
+            std::array<VkDeviceQueueCreateInfo, (size_t)CommandQueueType::MAX_NUM> queueCreateInfos = {};
 
             VkDeviceCreateInfo deviceCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
             deviceCreateInfo.pNext = &features;
-            deviceCreateInfo.queueCreateInfoCount = (uint32_t)queues.size();
-            deviceCreateInfo.pQueueCreateInfos = queues.data();
+            deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
             deviceCreateInfo.enabledExtensionCount = (uint32_t)desiredDeviceExts.size();
             deviceCreateInfo.ppEnabledExtensionNames = desiredDeviceExts.data();
+
+            for (uint32_t queueFamilyIndex : m_QueueFamilyIndices) {
+                // Skip invalid
+                if (queueFamilyIndex == INVALID_FAMILY_INDEX)
+                    continue;
+
+                // Find in existing
+                uint32_t j = 0;
+                for (; j < deviceCreateInfo.queueCreateInfoCount; j++) {
+                    if (queueFamilyIndex == queueCreateInfos[j].queueFamilyIndex) {
+                        queueCreateInfos[j].queueCount++;
+                        break;
+                    }
+                }
+
+                // Add new one
+                if (j == deviceCreateInfo.queueCreateInfoCount) {
+                    VkDeviceQueueCreateInfo& queueInfo = queueCreateInfos[j];
+
+                    queueInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
+                    queueInfo.queueCount = 1;
+                    queueInfo.queueFamilyIndex = queueFamilyIndex;
+                    queueInfo.pQueuePriorities = priorities;
+
+                    deviceCreateInfo.queueCreateInfoCount++;
+                }
+            }
 
             VkResult result = m_VK.CreateDevice(m_PhysicalDevice, &deviceCreateInfo, m_AllocationCallbackPtr, &m_Device);
             RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkCreateDevice returned %d", (int32_t)result);
@@ -668,9 +680,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             return res;
     }
 
-    // Finalize
-    CreateCommandQueues();
-    ReportDeviceGroupInfo();
+    // Check GRAPHICS queue availability
+    CommandQueue* commandQueue;
+    Result result = GetCommandQueue(CommandQueueType::GRAPHICS, commandQueue);
+    if (result != Result::SUCCESS)
+        return result;
 
     { // Desc
         // Device properties
@@ -728,6 +742,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_IsSwapChainMutableFormatSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, desiredDeviceExts);
         m_IsPresentIdSupported = presentIdFeatures.presentId;
         m_IsPresentWaitSupported = m_IsPresentIdSupported && presentWaitFeatures.presentWait;
+        m_IsMemoryPrioritySupported = memoryPriorityFeatures.memoryPriority;
         m_IsLowLatencySupported = m_IsPresentIdSupported && IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
 
         // Fill desc
@@ -871,11 +886,12 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         if (sampleLocationsProps.sampleLocationSampleCounts)
             m_Desc.programmableSampleLocationsTier = sampleLocationsProps.variableSampleLocations ? 2 : 1; // TODO: best guess
 
+        m_Desc.isComputeQueueSupported = m_QueueFamilyIndices[(uint32_t)CommandQueueType::COMPUTE] != INVALID_FAMILY_INDEX;
+        m_Desc.isCopyQueueSupported = m_QueueFamilyIndices[(uint32_t)CommandQueueType::COPY] != INVALID_FAMILY_INDEX;
+
         m_Desc.isTextureFilterMinMaxSupported = features12.samplerFilterMinmax;
         m_Desc.isLogicOpSupported = features.features.logicOp;
         m_Desc.isDepthBoundsTestSupported = features.features.depthBounds;
-        m_Desc.isComputeQueueSupported = m_Queues[(uint32_t)CommandQueueType::COMPUTE] != nullptr;
-        m_Desc.isCopyQueueSupported = m_Queues[(uint32_t)CommandQueueType::COPY] != nullptr;
         m_Desc.isDrawIndirectCountSupported = features12.drawIndirectCount;
         m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = true;
         m_Desc.isLineSmoothingSupported = lineRasterizationFeatures.smoothLines;
@@ -902,28 +918,21 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isLowLatencySupported = IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
     }
 
+    ReportDeviceGroupInfo();
+
     return FillFunctionTable(m_CoreInterface);
 }
 
 void DeviceVK::FillCreateInfo(const BufferDesc& bufferDesc, VkBufferCreateInfo& info) const {
-    const VkSharingMode sharingMode = IsConcurrentSharingModeEnabledForBuffers() ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
-    const Vector<uint32_t>& queueIndices = GetConcurrentSharingModeQueueIndices();
-
+    info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO; // should be already set
     info.size = bufferDesc.size;
-    info.usage = GetBufferUsageFlags(bufferDesc.usageMask, bufferDesc.structureStride);
-    info.sharingMode = sharingMode;
-    info.queueFamilyIndexCount = (uint32_t)queueIndices.size();
-    info.pQueueFamilyIndices = queueIndices.data();
-
-    if (m_IsDeviceAddressSupported)
-        info.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    info.usage = GetBufferUsageFlags(bufferDesc.usageMask, bufferDesc.structureStride, m_IsDeviceAddressSupported);
+    info.sharingMode = m_NumActiveFamilyIndices > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE; // TODO: still no DCC on AMD with concurrent?
+    info.queueFamilyIndexCount = m_NumActiveFamilyIndices;
+    info.pQueueFamilyIndices = m_ActiveQueueFamilyIndices.data();
 }
 
 void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo& info) const {
-    const VkImageType imageType = ::GetImageType(textureDesc.type);
-    const VkSharingMode sharingMode = IsConcurrentSharingModeEnabledForImages() ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
-    const Vector<uint32_t>& queueIndices = GetConcurrentSharingModeQueueIndices();
-
     VkImageCreateFlags flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT; // typeless
     const FormatProps& formatProps = GetFormatProps(textureDesc.format);
     if (formatProps.blockWidth > 1)
@@ -935,8 +944,9 @@ void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo&
     if (m_Desc.programmableSampleLocationsTier && textureDesc.format >= Format::D16_UNORM)
         flags |= VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
 
+    info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO; // should be already set
     info.flags = flags;
-    info.imageType = imageType;
+    info.imageType = ::GetImageType(textureDesc.type);
     info.format = ::GetVkFormat(textureDesc.format, true);
     info.extent.width = textureDesc.width;
     info.extent.height = textureDesc.height;
@@ -946,9 +956,9 @@ void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo&
     info.samples = (VkSampleCountFlagBits)textureDesc.sampleNum;
     info.tiling = VK_IMAGE_TILING_OPTIMAL;
     info.usage = GetImageUsageFlags(textureDesc.usageMask);
-    info.sharingMode = sharingMode;
-    info.queueFamilyIndexCount = (uint32_t)queueIndices.size();
-    info.pQueueFamilyIndices = queueIndices.data();
+    info.sharingMode = m_NumActiveFamilyIndices > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE; // TODO: still no DCC on AMD with concurrent?
+    info.queueFamilyIndexCount = m_NumActiveFamilyIndices;
+    info.pQueueFamilyIndices = m_ActiveQueueFamilyIndices.data();
     info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
@@ -1201,9 +1211,9 @@ VkBool32 VKAPI_PTR DebugUtilsMessenger(
     return VK_FALSE;
 }
 
-Result DeviceVK::CreateInstance(bool enableAPIValidation, const Vector<const char*>& desiredInstanceExts) {
+Result DeviceVK::CreateInstance(bool enableGraphicsAPIValidation, const Vector<const char*>& desiredInstanceExts) {
     Vector<const char*> layers(GetStdAllocator());
-    if (enableAPIValidation)
+    if (enableGraphicsAPIValidation)
         layers.push_back("VK_LAYER_KHRONOS_validation");
 
     FilterInstanceLayers(layers);
@@ -1220,7 +1230,7 @@ Result DeviceVK::CreateInstance(bool enableAPIValidation, const Vector<const cha
     validationFeatures.pEnabledValidationFeatures = enabledValidationFeatures;
 
     VkInstanceCreateInfo info = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
-    info.pNext = enableAPIValidation ? &validationFeatures : nullptr;
+    info.pNext = enableGraphicsAPIValidation ? &validationFeatures : nullptr;
 #ifdef __APPLE__
     info.flags = (VkInstanceCreateFlags)VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
 #endif
@@ -1233,7 +1243,7 @@ Result DeviceVK::CreateInstance(bool enableAPIValidation, const Vector<const cha
     VkResult result = m_VK.CreateInstance(&info, m_AllocationCallbackPtr, &m_Instance);
     RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkCreateInstance returned %d", (int32_t)result);
 
-    if (enableAPIValidation) {
+    if (enableGraphicsAPIValidation) {
         VkDebugUtilsMessengerCreateInfoEXT createInfo = {VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
         createInfo.pUserData = this;
         createInfo.pfnUserCallback = DebugUtilsMessenger;
@@ -1254,72 +1264,76 @@ Result DeviceVK::CreateInstance(bool enableAPIValidation, const Vector<const cha
     return Result::SUCCESS;
 }
 
-void DeviceVK::FillFamilyIndices(bool useEnabledFamilyIndices, const uint32_t* enabledFamilyIndices, uint32_t familyIndexNum) {
+void DeviceVK::FillFamilyIndices(bool isWrapper, const DeviceCreationVKDesc& deviceCreationVKDesc) {
     uint32_t familyNum = 0;
     m_VK.GetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &familyNum, nullptr);
 
     Vector<VkQueueFamilyProperties> familyProps(familyNum, GetStdAllocator());
     m_VK.GetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &familyNum, familyProps.data());
 
-    memset(m_FamilyIndices.data(), INVALID_FAMILY_INDEX, m_FamilyIndices.size() * sizeof(uint32_t));
-    std::array<uint8_t, (uint32_t)CommandQueueType::MAX_NUM> scores = {};
+    memset(m_QueueFamilyIndices.data(), INVALID_FAMILY_INDEX, m_QueueFamilyIndices.size() * sizeof(m_QueueFamilyIndices[0]));
+    std::array<uint32_t, (uint32_t)CommandQueueType::MAX_NUM> scores = {};
 
     for (uint32_t i = 0; i < familyProps.size(); i++) {
-        if (useEnabledFamilyIndices) {
+        if (isWrapper) {
             bool isFamilyEnabled = false;
-            for (uint32_t j = 0; j < familyIndexNum && !isFamilyEnabled; j++)
-                isFamilyEnabled = enabledFamilyIndices[j] == i;
+            for (uint32_t j = 0; j < deviceCreationVKDesc.queueFamilyIndexNum && !isFamilyEnabled; j++)
+                isFamilyEnabled = deviceCreationVKDesc.queueFamilyIndices[j] == i;
 
             if (!isFamilyEnabled)
                 continue;
         }
 
-        VkQueueFlags flags = familyProps[i].queueFlags;
-        uint8_t score;
+        const VkQueueFamilyProperties& props = familyProps[i];
 
-        bool graphics = flags & VK_QUEUE_GRAPHICS_BIT;
-        bool compute = flags & VK_QUEUE_COMPUTE_BIT;
-        bool copy = flags & VK_QUEUE_TRANSFER_BIT;
-        bool sparse = flags & VK_QUEUE_SPARSE_BINDING_BIT;
-        bool protect = flags & VK_QUEUE_PROTECTED_BIT;
-        bool video = flags & (VK_QUEUE_VIDEO_DECODE_BIT_KHR | VK_QUEUE_VIDEO_ENCODE_BIT_KHR);
-        bool opticalFlow = flags & VK_QUEUE_OPTICAL_FLOW_BIT_NV;
+        bool graphics = props.queueFlags & VK_QUEUE_GRAPHICS_BIT;
+        bool compute = props.queueFlags & VK_QUEUE_COMPUTE_BIT;
+        bool copy = props.queueFlags & VK_QUEUE_TRANSFER_BIT;
+        bool sparse = props.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT;
+        bool videoDecode = props.queueFlags & VK_QUEUE_VIDEO_DECODE_BIT_KHR;
+        bool videoEncode = props.queueFlags & VK_QUEUE_VIDEO_ENCODE_BIT_KHR;
+        bool protect = props.queueFlags & VK_QUEUE_PROTECTED_BIT;
+        bool opticalFlow = props.queueFlags & VK_QUEUE_OPTICAL_FLOW_BIT_NV;
         bool taken = false;
 
-        // Scores
-        score = (graphics ? 100 : 0) + (compute ? 10 : 0) + (copy ? 10 : 0) + (sparse ? 5 : 0) + (opticalFlow ? 2 : 0) + (video ? 1 : 0) + (protect ? 1 : 0);
-        if (!taken && graphics && score > scores[(uint32_t)CommandQueueType::GRAPHICS]) {
-            m_FamilyIndices[(uint32_t)CommandQueueType::GRAPHICS] = i;
-            scores[(uint32_t)CommandQueueType::GRAPHICS] = score;
-            taken = true;
+        { // Prefer as much features as possible
+            size_t index = (size_t)CommandQueueType::GRAPHICS;
+            uint32_t score = (graphics ? 100 : 0) + (compute ? 10 : 0) + (copy ? 10 : 0) + (sparse ? 5 : 0) + (videoDecode ? 2 : 0) + (videoEncode ? 2 : 0) + (protect ? 1 : 0) +
+                             (opticalFlow ? 1 : 0);
+
+            if (!taken && graphics && score > scores[index]) {
+                m_QueueFamilyIndices[index] = i;
+                scores[index] = score;
+                taken = true;
+            }
         }
 
-        score = (!graphics ? 10 : 0) + (compute ? 100 : 0) + (!copy ? 10 : 0) + (sparse ? 5 : 0) + (opticalFlow ? 2 : 0) + (video ? 1 : 0) + (protect ? 1 : 0);
-        if (!taken && compute && score > scores[(uint32_t)CommandQueueType::COMPUTE]) {
-            m_FamilyIndices[(uint32_t)CommandQueueType::COMPUTE] = i;
-            scores[(uint32_t)CommandQueueType::COMPUTE] = score;
-            taken = true;
+        { // Prefer compute-only
+            size_t index = (size_t)CommandQueueType::COMPUTE;
+            uint32_t score = (!graphics ? 10 : 0) + (compute ? 100 : 0) + (!copy ? 10 : 0) + (sparse ? 5 : 0) + (!videoDecode ? 2 : 0) + (!videoEncode ? 2 : 0) +
+                             (protect ? 1 : 0) + (!opticalFlow ? 1 : 0);
+
+            if (!taken && compute && score > scores[index]) {
+                m_QueueFamilyIndices[index] = i;
+                scores[index] = score;
+                taken = true;
+            }
         }
 
-        score = (!graphics ? 10 : 0) + (!compute ? 10 : 0) + (copy ? 100 : 0) + (sparse ? 5 : 0) + (opticalFlow ? 2 : 0) + (video ? 1 : 0) + (protect ? 1 : 0);
-        if (!taken && copy && score > scores[(uint32_t)CommandQueueType::COPY]) {
-            m_FamilyIndices[(uint32_t)CommandQueueType::COPY] = i;
-            scores[(uint32_t)CommandQueueType::COPY] = score;
-            taken = true;
+        { // Prefer copy-only
+            size_t index = (size_t)CommandQueueType::COPY;
+            uint32_t score = (!graphics ? 10 : 0) + (!compute ? 10 : 0) + (copy ? 100 * props.queueCount : 0) + (sparse ? 5 : 0) + (!videoDecode ? 2 : 0) + (!videoEncode ? 2 : 0) +
+                             (protect ? 1 : 0) + (!opticalFlow ? 1 : 0);
+
+            if (!taken && copy && score > scores[index]) {
+                m_QueueFamilyIndices[index] = i;
+                scores[index] = score;
+                taken = true;
+
+                if (props.queueCount > 1)
+                    m_QueueFamilyIndices[(size_t)CommandQueueType::HIGH_PRIORITY_COPY] = i;
+            }
         }
-    }
-}
-
-void DeviceVK::CreateCommandQueues() {
-    for (uint32_t i = 0; i < m_FamilyIndices.size(); i++) {
-        if (m_FamilyIndices[i] == INVALID_FAMILY_INDEX)
-            continue;
-
-        VkQueue handle = VK_NULL_HANDLE;
-        m_VK.GetDeviceQueue(m_Device, m_FamilyIndices[i], 0, &handle);
-
-        m_Queues[i] = Allocate<CommandQueueVK>(GetStdAllocator(), *this, handle, m_FamilyIndices[i], (CommandQueueType)i);
-        m_ConcurrentSharingModeQueueIndices.push_back(m_FamilyIndices[i]);
     }
 }
 
@@ -1630,16 +1644,84 @@ inline void DeviceVK::SetDebugName(const char* name) {
 inline Result DeviceVK::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
     ExclusiveScope lock(m_Lock);
 
-    if (m_FamilyIndices[(uint32_t)commandQueueType] == INVALID_FAMILY_INDEX) {
-        REPORT_WARNING(this, "%s command queue is not supported by the device!",
-            commandQueueType == CommandQueueType::GRAPHICS ? "GRAPHICS" : (commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY"));
+    // Check if already created (or wrapped)
+    uint32_t index = (uint32_t)commandQueueType;
+    if (m_CommandQueues[index]) {
+        commandQueue = (CommandQueue*)m_CommandQueues[index];
+        return Result::SUCCESS;
+    }
 
+    // Check if supported
+    uint32_t queueFamilyIndex = m_QueueFamilyIndices[index];
+    if (queueFamilyIndex == INVALID_FAMILY_INDEX) {
+        commandQueue = nullptr;
         return Result::UNSUPPORTED;
     }
 
-    commandQueue = (CommandQueue*)m_Queues[(uint32_t)commandQueueType];
+    // Create
+    VkQueue handle = VK_NULL_HANDLE;
+    m_VK.GetDeviceQueue(m_Device, queueFamilyIndex, 0, &handle);
 
-    return Result::SUCCESS;
+    Result result = CreateImplementation<CommandQueueVK>(commandQueue, commandQueueType, queueFamilyIndex, handle);
+    if (result == Result::SUCCESS)
+        m_CommandQueues[index] = (CommandQueueVK*)commandQueue;
+
+    // Update active family indices
+    m_NumActiveFamilyIndices = 0;
+    for (const CommandQueueVK* queue : m_CommandQueues) {
+        if (queue) {
+            uint32_t i = 0;
+            for (; i < m_NumActiveFamilyIndices; i++) {
+                if (m_ActiveQueueFamilyIndices[i] == queue->GetFamilyIndex())
+                    break;
+            }
+
+            if (i == m_NumActiveFamilyIndices)
+                m_ActiveQueueFamilyIndices[m_NumActiveFamilyIndices++] = queue->GetFamilyIndex();
+        }
+    }
+
+    return result;
+}
+
+inline Result DeviceVK::CreateCommandQueue(const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue) {
+    ExclusiveScope lock(m_Lock);
+
+    // Check if already created
+    uint32_t index = (uint32_t)commandQueueVKDesc.commandQueueType;
+    bool isQueueFamilyIndexSame = m_QueueFamilyIndices[index] == commandQueueVKDesc.queueFamilyIndex;
+    bool isQueueSame = (VkQueue)m_CommandQueues[index] == (VkQueue)commandQueueVKDesc.vkQueue;
+    if (isQueueFamilyIndexSame && isQueueSame) {
+        commandQueue = (CommandQueue*)m_CommandQueues[index];
+        return Result::SUCCESS;
+    }
+
+    // Create
+    Result result = CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVKDesc.commandQueueType, commandQueueVKDesc.queueFamilyIndex, (VkQueue)commandQueueVKDesc.vkQueue);
+    if (result == Result::SUCCESS) {
+        // Replace old with new
+        Deallocate(GetStdAllocator(), m_CommandQueues[index]);
+
+        m_CommandQueues[index] = (CommandQueueVK*)commandQueue;
+        m_QueueFamilyIndices[index] = commandQueueVKDesc.queueFamilyIndex;
+    }
+
+    // Update active family indices
+    m_NumActiveFamilyIndices = 0;
+    for (const CommandQueueVK* queue : m_CommandQueues) {
+        if (queue) {
+            uint32_t i = 0;
+            for (; i < m_NumActiveFamilyIndices; i++) {
+                if (m_ActiveQueueFamilyIndices[i] == queue->GetFamilyIndex())
+                    break;
+            }
+
+            if (i == m_NumActiveFamilyIndices)
+                m_ActiveQueueFamilyIndices[m_NumActiveFamilyIndices++] = queue->GetFamilyIndex();
+        }
+    }
+
+    return result;
 }
 
 inline Result DeviceVK::CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
@@ -1708,28 +1790,6 @@ inline Result DeviceVK::CreatePipeline(const RayTracingPipelineDesc& rayTracingP
 
 inline Result DeviceVK::CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
     return CreateImplementation<AccelerationStructureVK>(accelerationStructure, accelerationStructureDesc);
-}
-
-inline Result DeviceVK::CreateCommandQueue(const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue) {
-    ExclusiveScope lock(m_Lock);
-
-    uint32_t commandQueueTypeIndex = (uint32_t)commandQueueVKDesc.commandQueueType;
-    bool isFamilyIndexSame = m_FamilyIndices[commandQueueTypeIndex] == commandQueueVKDesc.familyIndex;
-    bool isQueueSame = (VkQueue)m_Queues[commandQueueTypeIndex] == (VkQueue)commandQueueVKDesc.vkQueue;
-    if (isFamilyIndexSame && isQueueSame) {
-        commandQueue = (CommandQueue*)m_Queues[commandQueueTypeIndex];
-        return Result::SUCCESS;
-    }
-
-    Result result = CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVKDesc);
-    if (result == Result::SUCCESS) {
-        Deallocate(GetStdAllocator(), m_Queues[commandQueueTypeIndex]);
-
-        m_FamilyIndices[commandQueueTypeIndex] = commandQueueVKDesc.familyIndex;
-        m_Queues[commandQueueTypeIndex] = (CommandQueueVK*)commandQueue;
-    }
-
-    return result;
 }
 
 inline Result DeviceVK::CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorVKDesc, CommandAllocator*& commandAllocator) {
@@ -1836,8 +1896,8 @@ inline void DeviceVK::DestroyAccelerationStructure(AccelerationStructure& accele
     Deallocate(GetStdAllocator(), (AccelerationStructureVK*)&accelerationStructure);
 }
 
-inline Result DeviceVK::AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory) {
-    return CreateImplementation<MemoryVK>(memory, memoryType, size);
+inline Result DeviceVK::AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
+    return CreateImplementation<MemoryVK>(memory, allocateMemoryDesc);
 }
 
 inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
@@ -1984,18 +2044,6 @@ inline FormatSupportBits DeviceVK::GetFormatSupport(Format format) const {
 #undef UPDATE_SUPPORT_BITS
 
     return mask;
-}
-
-inline uint32_t DeviceVK::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const {
-    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this);
-
-    return allocator.CalculateAllocationNumber(resourceGroupDesc);
-}
-
-inline Result DeviceVK::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
-    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this);
-
-    return allocator.AllocateAndBindMemory(resourceGroupDesc, allocations);
 }
 
 Result DeviceVK::QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const {

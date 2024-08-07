@@ -36,21 +36,25 @@ Result MemoryVK::Create(const MemoryVKDesc& memoryDesc) {
     return Result::SUCCESS;
 }
 
-Result MemoryVK::Create(MemoryType type, uint64_t size) {
+Result MemoryVK::Create(const AllocateMemoryDesc& allocateMemoryDesc) {
     m_OwnsNativeObjects = true;
-    m_Type = type;
+    m_Type = allocateMemoryDesc.type;
+    m_Priority = m_Device.m_IsMemoryPrioritySupported ? (allocateMemoryDesc.priority * 0.5f + 0.5f) : 0.5f;
 
-    MemoryTypeUnion memoryType = {type};
+    MemoryTypeUnion memoryType = {allocateMemoryDesc.type};
     if (memoryType.unpacked.isDedicated)
         return Result::SUCCESS; // dedicated allocation occurs on memory binding
 
+    VkMemoryPriorityAllocateInfoEXT priorityInfo = {VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT};
+    priorityInfo.priority = m_Priority;
+
     VkMemoryAllocateFlagsInfo flagsInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO};
-    flagsInfo.flags = (m_Device.m_IsDeviceAddressSupported ? VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT : 0) | VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
-    flagsInfo.deviceMask = NRI_NODE_MASK;
+    flagsInfo.pNext = m_Priority == 0.5f ? nullptr : &priorityInfo;
+    flagsInfo.flags = m_Device.m_IsDeviceAddressSupported ? VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT : 0;
 
     VkMemoryAllocateInfo memoryInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     memoryInfo.pNext = &flagsInfo;
-    memoryInfo.allocationSize = size;
+    memoryInfo.allocationSize = allocateMemoryDesc.size;
     memoryInfo.memoryTypeIndex = memoryType.unpacked.index;
 
     const auto& vk = m_Device.GetDispatchTable();
@@ -58,7 +62,7 @@ Result MemoryVK::Create(MemoryType type, uint64_t size) {
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkAllocateMemory returned %d", (int32_t)result);
 
     if (IsHostVisibleMemory(memoryType.unpacked.location)) {
-        result = vk.MapMemory(m_Device, m_Handle, 0, size, 0, (void**)&m_MappedMemory);
+        result = vk.MapMemory(m_Device, m_Handle, 0, allocateMemoryDesc.size, 0, (void**)&m_MappedMemory);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkMapMemory returned %d", (int32_t)result);
     }
 
@@ -74,9 +78,12 @@ Result MemoryVK::CreateDedicated(const BufferVK& buffer) {
     MemoryDesc memoryDesc = {};
     m_Device.GetMemoryDesc(buffer.GetDesc(), memoryType.unpacked.location, memoryDesc);
 
+    VkMemoryPriorityAllocateInfoEXT priorityInfo = {VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT};
+    priorityInfo.priority = m_Priority;
+
     VkMemoryAllocateFlagsInfo flagsInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO};
-    flagsInfo.flags = (m_Device.m_IsDeviceAddressSupported ? VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT : 0) | VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
-    flagsInfo.deviceMask = NRI_NODE_MASK;
+    flagsInfo.pNext = m_Priority == 0.5f ? nullptr : &priorityInfo;
+    flagsInfo.flags = m_Device.m_IsDeviceAddressSupported ? VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT : 0;
 
     VkMemoryDedicatedAllocateInfo dedicatedAllocateInfo = {VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO};
     dedicatedAllocateInfo.pNext = &flagsInfo;
@@ -108,9 +115,12 @@ Result MemoryVK::CreateDedicated(const TextureVK& texture) {
     MemoryDesc memoryDesc = {};
     m_Device.GetMemoryDesc(texture.GetDesc(), memoryType.unpacked.location, memoryDesc);
 
+    VkMemoryPriorityAllocateInfoEXT priorityInfo = {VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT};
+    priorityInfo.priority = m_Priority;
+
     VkMemoryAllocateFlagsInfo flagsInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO};
-    flagsInfo.flags = (m_Device.m_IsDeviceAddressSupported ? VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT : 0) | VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
-    flagsInfo.deviceMask = NRI_NODE_MASK;
+    flagsInfo.pNext = m_Priority == 0.5f ? nullptr : &priorityInfo;
+    flagsInfo.flags = m_Device.m_IsDeviceAddressSupported ? VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT : 0;
 
     VkMemoryDedicatedAllocateInfo dedicatedAllocateInfo = {VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO};
     dedicatedAllocateInfo.pNext = &flagsInfo;

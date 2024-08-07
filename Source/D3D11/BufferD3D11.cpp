@@ -18,8 +18,6 @@ Result BufferD3D11::Create(const MemoryD3D11& memory) {
     if (m_Buffer)
         return Result::SUCCESS;
 
-    MemoryLocation memoryLocation = memory.GetType();
-
     D3D11_BUFFER_DESC desc = {};
     desc.ByteWidth = (uint32_t)m_Desc.size;
     desc.StructureByteStride = m_Desc.structureStride;
@@ -36,6 +34,7 @@ Result BufferD3D11::Create(const MemoryD3D11& memory) {
     if (m_Desc.usageMask & BufferUsageBits::ARGUMENT_BUFFER)
         desc.MiscFlags |= D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
 
+    MemoryLocation memoryLocation = memory.GetLocation();
     if (memoryLocation == MemoryLocation::HOST_UPLOAD || memoryLocation == MemoryLocation::DEVICE_UPLOAD) {
         if (m_Desc.usageMask == BufferUsageBits::NONE) {
             m_Type = BufferType::UPLOAD;
@@ -74,7 +73,7 @@ Result BufferD3D11::Create(const MemoryD3D11& memory) {
     HRESULT hr = m_Device->CreateBuffer(&desc, nullptr, &m_Buffer);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateBuffer()");
 
-    uint32_t priority = memory.GetResidencyPriority(m_Desc.size);
+    uint32_t priority = memory.GetPriority();
     if (priority != 0)
         m_Buffer->SetEvictionPriority(priority);
 

@@ -380,11 +380,10 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
 }
 
 Result PipelineD3D12::Create(const ComputePipelineDesc& computePipelineDesc) {
-    D3D12_COMPUTE_PIPELINE_STATE_DESC computePipleineStateDesc = {};
-    computePipleineStateDesc.NodeMask = NRI_NODE_MASK;
-
     m_PipelineLayout = (const PipelineLayoutD3D12*)computePipelineDesc.pipelineLayout;
 
+    D3D12_COMPUTE_PIPELINE_STATE_DESC computePipleineStateDesc = {};
+    computePipleineStateDesc.NodeMask = NRI_NODE_MASK;
     computePipleineStateDesc.pRootSignature = *m_PipelineLayout;
 
     FillShaderBytecode(computePipleineStateDesc.CS, computePipelineDesc.shader);

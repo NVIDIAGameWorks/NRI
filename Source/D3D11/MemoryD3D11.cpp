@@ -6,25 +6,34 @@
 
 using namespace nri;
 
-uint32_t MemoryD3D11::GetResidencyPriority(uint64_t size) const {
-    uint32_t high = 0;
+MemoryD3D11::MemoryD3D11(DeviceD3D11& device, const AllocateMemoryDesc& allocateMemoryDesc) : m_Device(device) {
+    m_Location = (MemoryLocation)allocateMemoryDesc.type;
 
-    if (m_ResidencyPriority == MemoryResidencyPriority::MINIMUM)
-        high = DXGI_RESOURCE_PRIORITY_MINIMUM;
-    else if (m_ResidencyPriority == MemoryResidencyPriority::LOW)
-        high = DXGI_RESOURCE_PRIORITY_LOW;
-    else if (m_ResidencyPriority == MemoryResidencyPriority::NORMAL)
-        high = DXGI_RESOURCE_PRIORITY_NORMAL;
-    else if (m_ResidencyPriority == MemoryResidencyPriority::HIGH)
-        high = DXGI_RESOURCE_PRIORITY_HIGH;
-    else if (m_ResidencyPriority == MemoryResidencyPriority::MAXIMUM)
-        high = DXGI_RESOURCE_PRIORITY_MAXIMUM;
+    if (allocateMemoryDesc.priority != 0.0f) {
+        float p = allocateMemoryDesc.priority * 0.5f + 0.5f;
+        float level = 0.0f;
 
-    uint32_t low = high ? (uint32_t)(size / (1024 * 1024 * 10)) : 0;
-    if (low > 0xFFFF)
-        low = 0xFFFF;
+        if (p < 0.2f) {
+            m_Priority = DXGI_RESOURCE_PRIORITY_MINIMUM;
+            level = 0.0f;
+        } else if (p < 0.4f) {
+            m_Priority = DXGI_RESOURCE_PRIORITY_LOW;
+            level = 0.2f;
+        } else if (p < 0.6f) {
+            m_Priority = DXGI_RESOURCE_PRIORITY_NORMAL;
+            level = 0.4f;
+        } else if (p < 0.8f) {
+            m_Priority = DXGI_RESOURCE_PRIORITY_HIGH;
+            level = 0.6f;
+        } else {
+            m_Priority = DXGI_RESOURCE_PRIORITY_MAXIMUM;
+            level = 0.8f;
+        }
 
-    high |= low;
+        uint32_t bonus = uint32_t(((p - level) / 0.2f) * 65535.0f);
+        if (bonus > 0xFFFF)
+            bonus = 0xFFFF;
 
-    return high;
+        m_Priority |= bonus;
+    }
 }

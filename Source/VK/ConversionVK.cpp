@@ -86,7 +86,7 @@ QueryType GetQueryTypeVK(uint32_t queryTypeVK) {
     return QueryType::MAX_NUM;
 }
 
-// Each depth/stencil format is only compatible with itself in Vulkan
+// Each depth/stencil format is only compatible with itself in VK
 constexpr std::array<VkFormat, (uint32_t)Format::MAX_NUM> VK_FORMAT = {
     VK_FORMAT_UNDEFINED,                // UNKNOWN
     VK_FORMAT_R8_UNORM,                 // R8_UNORM

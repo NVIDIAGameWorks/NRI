@@ -10,10 +10,10 @@
 
 using namespace nri;
 
-Result CommandQueueVK::Create(const CommandQueueVKDesc& commandQueueDesc) {
-    m_Handle = (VkQueue)commandQueueDesc.vkQueue;
-    m_FamilyIndex = commandQueueDesc.familyIndex;
-    m_Type = commandQueueDesc.commandQueueType;
+Result CommandQueueVK::Create(CommandQueueType type, uint32_t familyIndex, VkQueue handle) {
+    m_Type = type;
+    m_FamilyIndex = familyIndex;
+    m_Handle = handle;
 
     return Result::SUCCESS;
 }
@@ -41,7 +41,6 @@ inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc, const
     for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++) {
         commandBuffers[i] = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO};
         commandBuffers[i].commandBuffer = *(CommandBufferVK*)queueSubmitDesc.commandBuffers[i];
-        commandBuffers[i].deviceMask = NRI_NODE_MASK;
     }
 
     VkSemaphoreSubmitInfo* signalSemaphores = STACK_ALLOC(VkSemaphoreSubmitInfo, queueSubmitDesc.signalFenceNum);

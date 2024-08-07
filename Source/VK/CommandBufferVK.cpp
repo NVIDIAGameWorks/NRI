@@ -309,14 +309,14 @@ inline void CommandBufferVK::SetVertexBuffers(uint32_t baseSlot, uint32_t buffer
     VkBuffer* bufferHandles = STACK_ALLOC(VkBuffer, bufferNum);
 
     for (uint32_t i = 0; i < bufferNum; i++)
-        bufferHandles[i] = GetVulkanHandle<VkBuffer, BufferVK>(buffers[i]);
+        bufferHandles[i] = GetHandle<VkBuffer, BufferVK>(buffers[i]);
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBindVertexBuffers(m_Handle, baseSlot, bufferNum, bufferHandles, offsets);
 }
 
 inline void CommandBufferVK::SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType) {
-    const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer);
+    const VkBuffer bufferHandle = GetHandle<VkBuffer, BufferVK>(&buffer);
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBindIndexBuffer(m_Handle, bufferHandle, offset, GetIndexType(indexType));
 }
@@ -374,22 +374,22 @@ inline void CommandBufferVK::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc)
 }
 
 inline void CommandBufferVK::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
-    const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer);
+    const VkBuffer bufferHandle = GetHandle<VkBuffer, BufferVK>(&buffer);
     const auto& vk = m_Device.GetDispatchTable();
 
     if (countBuffer) {
-        const VkBuffer countBufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(countBuffer);
+        const VkBuffer countBufferHandle = GetHandle<VkBuffer, BufferVK>(countBuffer);
         vk.CmdDrawIndirectCount(m_Handle, bufferHandle, offset, countBufferHandle, countBufferOffset, drawNum, (uint32_t)stride);
     } else
         vk.CmdDrawIndirect(m_Handle, bufferHandle, offset, drawNum, (uint32_t)stride);
 }
 
 inline void CommandBufferVK::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
-    const VkBuffer bufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(&buffer);
+    const VkBuffer bufferHandle = GetHandle<VkBuffer, BufferVK>(&buffer);
     const auto& vk = m_Device.GetDispatchTable();
 
     if (countBuffer) {
-        const VkBuffer countBufferHandle = GetVulkanHandle<VkBuffer, BufferVK>(countBuffer);
+        const VkBuffer countBufferHandle = GetHandle<VkBuffer, BufferVK>(countBuffer);
         vk.CmdDrawIndexedIndirectCount(m_Handle, bufferHandle, offset, countBufferHandle, countBufferOffset, drawNum, (uint32_t)stride);
     } else
         vk.CmdDrawIndexedIndirect(m_Handle, bufferHandle, offset, drawNum, (uint32_t)stride);
@@ -592,7 +592,7 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
         out.srcAccessMask = GetAccessFlags(in.before.access);
         out.dstStageMask = GetPipelineStageFlags(in.after.stages);
         out.dstAccessMask = GetAccessFlags(in.after.access);
-        out.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        out.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // TODO: VK_SHARING_MODE_EXCLUSIVE could be used instead of VK_SHARING_MODE_CONCURRENT with queue ownership transfers
         out.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         out.buffer = bufferImpl.GetHandle();
         out.offset = 0;
@@ -613,7 +613,7 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
         out.dstAccessMask = in.after.layout == Layout::PRESENT ? VK_ACCESS_2_MEMORY_READ_BIT : GetAccessFlags(in.after.access);
         out.oldLayout = GetImageLayout(in.before.layout);
         out.newLayout = GetImageLayout(in.after.layout);
-        out.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        out.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // TODO: VK_SHARING_MODE_EXCLUSIVE could be used instead of VK_SHARING_MODE_CONCURRENT with queue ownership transfers
         out.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         out.image = textureImpl.GetHandle();
         out.subresourceRange = {

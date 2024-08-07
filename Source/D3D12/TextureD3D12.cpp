@@ -87,6 +87,9 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
         }
     }
 
+    if (memory->RequiresDedicatedAllocation())
+        memory->SetPriority(m_Texture.GetInterface());
+
     return Result::SUCCESS;
 }
 

@@ -34,7 +34,11 @@ Result StreamerImpl::Create(const StreamerDesc& desc) {
         MemoryDesc memoryDesc = {};
         m_NRI.GetBufferMemoryDesc(m_Device, bufferDesc, desc.constantBufferMemoryLocation, memoryDesc);
 
-        result = m_NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, m_ConstantBufferMemory);
+        AllocateMemoryDesc allocateMemoryDesc = {};
+        allocateMemoryDesc.type = memoryDesc.type;
+        allocateMemoryDesc.size = memoryDesc.size;
+
+        result = m_NRI.AllocateMemory(m_Device, allocateMemoryDesc, m_ConstantBufferMemory);
         if (result != Result::SUCCESS)
             return result;
 
@@ -143,7 +147,11 @@ Result StreamerImpl::CopyStreamerUpdateRequests() {
             MemoryDesc memoryDesc = {};
             m_NRI.GetBufferMemoryDesc(m_Device, bufferDesc, m_Desc.dynamicBufferMemoryLocation, memoryDesc);
 
-            result = m_NRI.AllocateMemory(m_Device, memoryDesc.type, memoryDesc.size, m_DynamicBufferMemory);
+            AllocateMemoryDesc allocateMemoryDesc = {};
+            allocateMemoryDesc.type = memoryDesc.type;
+            allocateMemoryDesc.size = memoryDesc.size;
+
+            result = m_NRI.AllocateMemory(m_Device, allocateMemoryDesc, m_DynamicBufferMemory);
             if (result != Result::SUCCESS)
                 return result;
         }

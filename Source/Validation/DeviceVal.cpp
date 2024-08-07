@@ -601,25 +601,26 @@ void DeviceVal::DestroyFence(Fence& fence) {
     Deallocate(GetStdAllocator(), (FenceVal*)&fence);
 }
 
-Result DeviceVal::AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory) {
-    RETURN_ON_FAILURE(this, size > 0, Result::INVALID_ARGUMENT, "AllocateMemory: 'size' is 0");
+Result DeviceVal::AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
+    RETURN_ON_FAILURE(this, allocateMemoryDesc.size > 0, Result::INVALID_ARGUMENT, "AllocateMemory: 'allocateMemoryDesc.size' is 0");
+    RETURN_ON_FAILURE(this, allocateMemoryDesc.priority >= -1.0f && allocateMemoryDesc.priority <= 1.0f, Result::INVALID_ARGUMENT, "AllocateMemory: 'allocateMemoryDesc.priority' outside of [-1; 1] range");
 
     std::unordered_map<MemoryType, MemoryLocation>::iterator it;
     std::unordered_map<MemoryType, MemoryLocation>::iterator end;
     {
         ExclusiveScope lockScope(m_Lock);
-        it = m_MemoryTypeMap.find(memoryType);
+        it = m_MemoryTypeMap.find(allocateMemoryDesc.type);
         end = m_MemoryTypeMap.end();
     }
 
     RETURN_ON_FAILURE(this, it != end, Result::FAILURE, "AllocateMemory: 'memoryType' is invalid");
 
     Memory* memoryImpl;
-    const Result result = m_CoreAPI.AllocateMemory(m_Device, memoryType, size, memoryImpl);
+    const Result result = m_CoreAPI.AllocateMemory(m_Device, allocateMemoryDesc, memoryImpl);
 
     if (result == Result::SUCCESS) {
         RETURN_ON_FAILURE(this, memoryImpl != nullptr, Result::FAILURE, "AllocateMemory: 'impl' is NULL");
-        memory = (Memory*)Allocate<MemoryVal>(GetStdAllocator(), *this, memoryImpl, size, it->second);
+        memory = (Memory*)Allocate<MemoryVal>(GetStdAllocator(), *this, memoryImpl, allocateMemoryDesc.size, it->second);
     }
 
     return result;

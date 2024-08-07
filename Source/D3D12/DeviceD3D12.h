@@ -119,13 +119,11 @@ struct DeviceD3D12 final : public DeviceBase {
     void DestroyPipeline(Pipeline& pipeline);
     void DestroyFence(Fence& queueSemaphore);
     void DestroyQueryPool(QueryPool& queryPool);
-    Result AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory);
+    Result AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     void FreeMemory(Memory& memory);
     FormatSupportBits GetFormatSupport(Format format) const;
-    uint32_t CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const;
-    Result AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations);
 
     Result CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
     Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
@@ -150,7 +148,7 @@ struct DeviceD3D12 final : public DeviceBase {
     Result FillFunctionTable(StreamerInterface& streamerInterface) const;
 
 private:
-    void FillDesc(bool enableDrawParametersEmulation);
+    void FillDesc(const DeviceCreationDesc& deviceCreationDesc);
     ComPtr<ID3D12CommandSignature> CreateCommandSignature(
         D3D12_INDIRECT_ARGUMENT_TYPE type, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation = false);
 

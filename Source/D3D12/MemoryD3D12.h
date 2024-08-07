@@ -29,8 +29,9 @@ struct MemoryD3D12 {
         return m_Device;
     }
 
-    Result Create(MemoryType memoryType, uint64_t size);
+    Result Create(const AllocateMemoryDesc& allocateMemoryDesc);
     Result Create(const MemoryD3D12Desc& memoryDesc);
+    void SetPriority(ID3D12Pageable* obj) const;
 
     //================================================================================================================
     // NRI
@@ -44,6 +45,7 @@ private:
     DeviceD3D12& m_Device;
     ComPtr<ID3D12Heap> m_Heap;
     D3D12_HEAP_DESC m_HeapDesc = {};
+    uint32_t m_Priority = 0;
 };
 
 } // namespace nri

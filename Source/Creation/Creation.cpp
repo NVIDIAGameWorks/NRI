@@ -119,7 +119,7 @@ NRI_API Result NRI_CALL nriCreateDevice(const DeviceCreationDesc& deviceCreation
 #endif
 
 #if NRI_USE_VULKAN
-    if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::VULKAN)
+    if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::VK)
         result = CreateDeviceVK(modifiedDeviceCreationDesc, deviceImpl);
 #endif
 
@@ -190,7 +190,7 @@ NRI_API Result NRI_CALL nriCreateDeviceFromVkDevice(const DeviceCreationVKDesc& 
     deviceCreationDesc.callbackInterface = deviceCreationVKDesc.callbackInterface;
     deviceCreationDesc.memoryAllocatorInterface = deviceCreationVKDesc.memoryAllocatorInterface;
     deviceCreationDesc.spirvBindingOffsets = deviceCreationVKDesc.spirvBindingOffsets;
-    deviceCreationDesc.graphicsAPI = GraphicsAPI::VULKAN;
+    deviceCreationDesc.graphicsAPI = GraphicsAPI::VK;
     deviceCreationDesc.enableNRIValidation = false;
 
     CheckAndSetDefaultCallbacks(deviceCreationDesc.callbackInterface);
@@ -256,7 +256,7 @@ NRI_API const char* NRI_CALL nriGetGraphicsAPIString(GraphicsAPI graphicsAPI) {
             return "D3D11";
         case GraphicsAPI::D3D12:
             return "D3D12";
-        case GraphicsAPI::VULKAN:
+        case GraphicsAPI::VK:
             return "VK";
         default:
             return "UNKNOWN";

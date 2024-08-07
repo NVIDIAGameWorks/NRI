@@ -110,7 +110,7 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
     }
     setNum++;
 
-    // Allocate temp memory for ALL "register spaces" making the entire range consecutive (thanks Vulkan API!)
+    // Allocate temp memory for ALL "register spaces" making the entire range consecutive (thanks VK API!)
     VkDescriptorSetLayout* descriptorSetLayouts = ALLOCATE_SCRATCH(m_Device, VkDescriptorSetLayout, setNum);
 
     // Create "empty" set layout (needed only if "register space" indices are not consecutive)

@@ -103,13 +103,11 @@ struct DeviceD3D11 final : public DeviceBase {
     void DestroyPipeline(Pipeline& pipeline);
     void DestroyQueryPool(QueryPool& queryPool);
     void DestroyFence(Fence& fence);
-    Result AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory);
+    Result AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     void FreeMemory(Memory& memory);
     FormatSupportBits GetFormatSupport(Format format) const;
-    uint32_t CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const;
-    Result AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations);
 
     //================================================================================================================
     // DeviceBase
@@ -139,7 +137,7 @@ private:
     ComPtr<IDXGIAdapter> m_Adapter;
     ComPtr<ID3D11DeviceContextBest> m_ImmediateContext;
     ComPtr<ID3D11Multithread> m_Multithread;
-    Vector<CommandQueueD3D11> m_CommandQueues;
+    std::array<CommandQueueD3D11*, (size_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     DeviceDesc m_Desc = {};
     CRITICAL_SECTION m_CriticalSection = {}; // TODO: Lock?
     CoreInterface m_CoreInterface = {};

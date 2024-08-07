@@ -89,6 +89,9 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool 
         }
     }
 
+    if (memory->RequiresDedicatedAllocation())
+        memory->SetPriority(m_Buffer.GetInterface());
+
     return Result::SUCCESS;
 }
 

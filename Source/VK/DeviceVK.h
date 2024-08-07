@@ -27,28 +27,12 @@ struct DeviceVK final : public DeviceBase {
         return m_AllocationCallbackPtr;
     }
 
-    inline const std::array<uint32_t, (uint32_t)CommandQueueType::MAX_NUM>& GetQueueFamilyIndices() const {
-        return m_FamilyIndices;
-    }
-
     inline const SPIRVBindingOffsets& GetSPIRVBindingOffsets() const {
         return m_SPIRVBindingOffsets;
     }
 
     inline const CoreInterface& GetCoreInterface() const {
         return m_CoreInterface;
-    }
-
-    inline bool IsConcurrentSharingModeEnabledForBuffers() const {
-        return m_ConcurrentSharingModeQueueIndices.size() > 1;
-    }
-
-    inline bool IsConcurrentSharingModeEnabledForImages() const {
-        return m_ConcurrentSharingModeQueueIndices.size() > 1;
-    }
-
-    inline const Vector<uint32_t>& GetConcurrentSharingModeQueueIndices() const {
-        return m_ConcurrentSharingModeQueueIndices;
     }
 
     DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator);
@@ -69,6 +53,7 @@ struct DeviceVK final : public DeviceBase {
 
     void SetDebugName(const char* name);
     Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
+    Result CreateCommandQueue(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
     Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
     Result CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool);
     Result CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer);
@@ -86,7 +71,6 @@ struct DeviceVK final : public DeviceBase {
     Result CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain);
     Result CreatePipeline(const RayTracingPipelineDesc& rayTracingPipelineDesc, Pipeline*& pipeline);
     Result CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
-    Result CreateCommandQueue(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
     Result CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator);
     Result CreateCommandBuffer(const CommandBufferVKDesc& commandBufferDesc, CommandBuffer*& commandBuffer);
     Result CreateDescriptorPool(const DescriptorPoolVKDesc& descriptorPoolVKDesc, DescriptorPool*& descriptorPool);
@@ -108,14 +92,12 @@ struct DeviceVK final : public DeviceBase {
     void DestroyFence(Fence& fence);
     void DestroySwapChain(SwapChain& swapChain);
     void DestroyAccelerationStructure(AccelerationStructure& accelerationStructure);
-    Result AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory);
+    Result AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     void FreeMemory(Memory& memory);
     FormatSupportBits GetFormatSupport(Format format) const;
-    uint32_t CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const;
-    Result AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations);
     Result QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const;
 
     //================================================================================================================
@@ -140,11 +122,10 @@ private:
     void FilterInstanceLayers(Vector<const char*>& layers);
     void ProcessInstanceExtensions(Vector<const char*>& desiredInstanceExts);
     void ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, bool disableRayTracing);
-    void FillFamilyIndices(bool useEnabledFamilyIndices, const uint32_t* enabledFamilyIndices, uint32_t familyIndexNum);
-    void CreateCommandQueues();
+    void FillFamilyIndices(bool isWrapper, const DeviceCreationVKDesc& deviceCreationVKDesc);
     void ReportDeviceGroupInfo();
     void GetAdapterDesc();
-    Result CreateInstance(bool enableAPIValidation, const Vector<const char*>& desiredInstanceExts);
+    Result CreateInstance(bool enableGraphicsAPIValidation, const Vector<const char*>& desiredInstanceExts);
     Result ResolvePreInstanceDispatchTable();
     Result ResolveInstanceDispatchTable(const Vector<const char*>& desiredInstanceExts);
     Result ResolveDispatchTable(const Vector<const char*>& desiredDeviceExts);
@@ -159,13 +140,14 @@ public:
     bool m_IsPresentIdSupported = false;
     bool m_IsPresentWaitSupported = false;
     bool m_IsLowLatencySupported = false;
+    bool m_IsMemoryPrioritySupported = false;
     bool m_IsMemoryBudgetSupported = false;
 
 private:
-    Vector<uint32_t> m_ConcurrentSharingModeQueueIndices;
     VkPhysicalDevice m_PhysicalDevice = nullptr;
-    std::array<uint32_t, (uint32_t)CommandQueueType::MAX_NUM> m_FamilyIndices = {};
-    std::array<CommandQueueVK*, (uint32_t)CommandQueueType::MAX_NUM> m_Queues = {};
+    std::array<uint32_t, (uint32_t)CommandQueueType::MAX_NUM> m_ActiveQueueFamilyIndices = {};
+    std::array<uint32_t, (uint32_t)CommandQueueType::MAX_NUM> m_QueueFamilyIndices = {};
+    std::array<CommandQueueVK*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     DispatchTable m_VK = {};
     DeviceDesc m_Desc = {};
     VkPhysicalDeviceMemoryProperties m_MemoryProps = {};
@@ -177,6 +159,7 @@ private:
     VkInstance m_Instance = VK_NULL_HANDLE;
     VkAllocationCallbacks* m_AllocationCallbackPtr = nullptr;
     VkDebugUtilsMessengerEXT m_Messenger = VK_NULL_HANDLE;
+    uint32_t m_NumActiveFamilyIndices = 0;
     bool m_OwnsNativeObjects = false;
     Lock m_Lock;
 };

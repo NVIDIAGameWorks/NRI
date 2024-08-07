@@ -10,10 +10,6 @@ struct CommandQueueVK {
     inline CommandQueueVK(DeviceVK& device) : m_Device(device) {
     }
 
-    inline CommandQueueVK(DeviceVK& device, VkQueue queue, uint32_t familyIndex, CommandQueueType type) :
-        m_Device(device), m_FamilyIndex(familyIndex), m_Type(type), m_Handle(queue) {
-    }
-
     inline operator VkQueue() const {
         return m_Handle;
     }
@@ -34,7 +30,7 @@ struct CommandQueueVK {
         return m_Lock;
     }
 
-    Result Create(const CommandQueueVKDesc& commandQueueDesc);
+    Result Create(CommandQueueType type, uint32_t familyIndex, VkQueue handle);
 
     //================================================================================================================
     // NRI
@@ -48,8 +44,8 @@ struct CommandQueueVK {
 private:
     DeviceVK& m_Device;
     VkQueue m_Handle = VK_NULL_HANDLE;
-    uint32_t m_FamilyIndex = (uint32_t)-1;
-    CommandQueueType m_Type = (CommandQueueType)-1;
+    uint32_t m_FamilyIndex = INVALID_FAMILY_INDEX;
+    CommandQueueType m_Type = CommandQueueType(-1);
     Lock m_Lock;
 };
 

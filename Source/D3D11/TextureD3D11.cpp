@@ -27,7 +27,8 @@ Result TextureD3D11::Create(const MemoryD3D11* memory) {
     uint32_t cpuAccessFlags = D3D11_CPU_ACCESS_READ;
     D3D11_USAGE usage = D3D11_USAGE_STAGING;
     if (memory) {
-        usage = (memory->GetType() == MemoryLocation::HOST_UPLOAD || memory->GetType() == MemoryLocation::DEVICE_UPLOAD) ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
+        MemoryLocation memoryLocation = memory->GetLocation();
+        usage = (memoryLocation == MemoryLocation::HOST_UPLOAD || memoryLocation == MemoryLocation::DEVICE_UPLOAD) ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
         cpuAccessFlags = 0;
     }
 
@@ -75,8 +76,7 @@ Result TextureD3D11::Create(const MemoryD3D11* memory) {
 
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateTextureXx()");
 
-    uint64_t size = GetMipmappedSize(m_Desc);
-    uint32_t priority = memory ? memory->GetResidencyPriority(size) : 0;
+    uint32_t priority = memory ? memory->GetPriority() : 0;
     if (priority != 0)
         m_Texture->SetEvictionPriority(priority);
 

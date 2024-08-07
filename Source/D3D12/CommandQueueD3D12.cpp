@@ -10,12 +10,12 @@
 
 using namespace nri;
 
-Result CommandQueueD3D12::Create(CommandQueueType queueType) {
+Result CommandQueueD3D12::Create(CommandQueueType commandQueueType) {
     D3D12_COMMAND_QUEUE_DESC commandQueueDesc = {};
-    commandQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+    commandQueueDesc.Priority = commandQueueType == CommandQueueType::HIGH_PRIORITY_COPY ? D3D12_COMMAND_QUEUE_PRIORITY_HIGH : D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
     commandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     commandQueueDesc.NodeMask = NRI_NODE_MASK;
-    commandQueueDesc.Type = GetCommandListType(queueType);
+    commandQueueDesc.Type = GetCommandListType(commandQueueType);
 
     HRESULT hr = m_Device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&m_CommandQueue));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateCommandQueue()");

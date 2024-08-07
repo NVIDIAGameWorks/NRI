@@ -141,13 +141,14 @@ Result DeviceD3D12::CreateImplementation(Interface*& entity, const Args&... args
     }
 
     Deallocate(GetStdAllocator(), implementation);
+    entity = nullptr;
 
     return result;
 }
 
 Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationD3D12Desc& deviceCreationD3D12Desc) {
     // IMPORTANT: Must be called before the D3D12 device is created, or the D3D12 runtime removes the device
-    if (deviceCreationDesc.enableAPIValidation) {
+    if (deviceCreationDesc.enableGraphicsAPIValidation) {
         ComPtr<ID3D12Debug> debugController;
         if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
             debugController->EnableDebugLayer();
@@ -155,7 +156,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
 
     // Get adapter
     ComPtr<IDXGIFactory4> dxgiFactory;
-    HRESULT hr = CreateDXGIFactory2(deviceCreationDesc.enableAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
+    HRESULT hr = CreateDXGIFactory2(deviceCreationDesc.enableGraphicsAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
     RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
 
     if (deviceCreationDesc.adapterDesc) {
@@ -227,7 +228,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
     m_Version = QueryLatestDevice(deviceTemp, m_Device);
     REPORT_INFO(this, "Using ID3D12Device%u...", m_Version);
 
-    if (deviceCreationDesc.enableAPIValidation) {
+    if (deviceCreationDesc.enableGraphicsAPIValidation) {
         ComPtr<ID3D12InfoQueue> pInfoQueue;
         m_Device->QueryInterface(&pInfoQueue);
 
@@ -267,7 +268,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
         return result;
 
     // Fill desc
-    FillDesc(deviceCreationDesc.enableD3D12DrawParametersEmulation);
+    FillDesc(deviceCreationDesc);
 
     // Create indirect command signatures
     m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc), nullptr);
@@ -277,7 +278,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
     return FillFunctionTable(m_CoreInterface);
 }
 
-void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation) {
+void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = {D3D_HIGHEST_SHADER_MODEL};
     HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel));
     if (FAILED(hr))
@@ -564,11 +565,12 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation) {
     m_Desc.conservativeRasterTier = (uint8_t)options.ConservativeRasterizationTier;
     m_Desc.programmableSampleLocationsTier = (uint8_t)options2.ProgrammableSamplePositionsTier;
 
+    m_Desc.isComputeQueueSupported = true;
+    m_Desc.isCopyQueueSupported = true;
+
     m_Desc.isTextureFilterMinMaxSupported = levels.MaxSupportedFeatureLevel >= D3D_FEATURE_LEVEL_11_1 ? true : false;
     m_Desc.isLogicOpSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isDepthBoundsTestSupported = options2.DepthBoundsTestSupported != 0;
-    m_Desc.isComputeQueueSupported = true;
-    m_Desc.isCopyQueueSupported = true;
     m_Desc.isDrawIndirectCountSupported = true;
     m_Desc.isLineSmoothingSupported = true;
 
@@ -594,7 +596,7 @@ void DeviceD3D12::FillDesc(bool enableDrawParametersEmulation) {
                                          options11.AtomicInt64OnDescriptorHeapResourceSupported;
 #endif
 
-    m_Desc.isDrawParametersEmulationEnabled = enableDrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
+    m_Desc.isDrawParametersEmulationEnabled = deviceCreationDesc.enableD3D12DrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
 
     m_Desc.isSwapChainSupported = HasOutput();
     m_Desc.isLowLatencySupported = m_Ext.HasNVAPI();
@@ -805,18 +807,24 @@ inline void DeviceD3D12::DestroySwapChain(SwapChain& swapChain) {
 inline Result DeviceD3D12::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
     ExclusiveScope lock(m_QueueLock);
 
+    // Check if supported
+    commandQueue = nullptr;
+    if (commandQueueType == CommandQueueType::COMPUTE && !m_Desc.isComputeQueueSupported)
+        return Result::UNSUPPORTED;
+    if (commandQueueType == CommandQueueType::COPY && !m_Desc.isCopyQueueSupported)
+        return Result::UNSUPPORTED;
+
+    // Check if already created (or wrapped)
     uint32_t queueIndex = (uint32_t)commandQueueType;
     if (m_CommandQueues[queueIndex]) {
         commandQueue = (CommandQueue*)m_CommandQueues[queueIndex];
         return Result::SUCCESS;
     }
 
-    Result result = CreateCommandQueue(commandQueueType, commandQueue);
-    if (result == Result::SUCCESS)
+    // Create
+    Result result = CreateImplementation<CommandQueueD3D12>(commandQueue, commandQueueType);
+    if (result == Result::SUCCESS) // TODO: "m_Desc" reports queue support as "true", so we shouldn't fail there, but we could... is it a big problem?
         m_CommandQueues[queueIndex] = (CommandQueueD3D12*)commandQueue;
-    else
-        REPORT_WARNING(this, "%s command queue is not supported by the device!",
-            commandQueueType == CommandQueueType::GRAPHICS ? "GRAPHICS" : (commandQueueType == CommandQueueType::COMPUTE ? "COMPUTE" : "COPY"));
 
     return result;
 }
@@ -949,8 +957,8 @@ inline void DeviceD3D12::DestroyQueryPool(QueryPool& queryPool) {
     Deallocate(GetStdAllocator(), (QueryPoolD3D12*)&queryPool);
 }
 
-inline Result DeviceD3D12::AllocateMemory(MemoryType memoryType, uint64_t size, Memory*& memory) {
-    return CreateImplementation<MemoryD3D12>(memory, memoryType, size);
+inline Result DeviceD3D12::AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
+    return CreateImplementation<MemoryD3D12>(memory, allocateMemoryDesc);
 }
 
 inline Result DeviceD3D12::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
@@ -1028,18 +1036,6 @@ inline FormatSupportBits DeviceD3D12::GetFormatSupport(Format format) const {
     }
 
     return mask;
-}
-
-inline uint32_t DeviceD3D12::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const {
-    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this);
-
-    return allocator.CalculateAllocationNumber(resourceGroupDesc);
-}
-
-inline Result DeviceD3D12::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
-    HelperDeviceMemoryAllocator allocator(m_CoreInterface, (Device&)*this);
-
-    return allocator.AllocateAndBindMemory(resourceGroupDesc, allocations);
 }
 
 inline Result DeviceD3D12::CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {

@@ -25,7 +25,7 @@ union MemoryTypeUnion {
 };
 
 template <typename HandleType, typename ImplType, typename NRIType>
-constexpr HandleType GetVulkanHandle(NRIType* object) {
+constexpr HandleType GetHandle(NRIType* object) {
     return (object != nullptr) ? (*(ImplType*)object).GetHandle() : HandleType(VK_NULL_HANDLE);
 }
 
@@ -36,6 +36,8 @@ constexpr bool IsHostVisibleMemory(nri::MemoryLocation location) {
 constexpr bool IsHostMemory(nri::MemoryLocation location) {
     return location > nri::MemoryLocation::DEVICE_UPLOAD;
 }
+
+constexpr uint32_t INVALID_FAMILY_INDEX = uint32_t(-1);
 
 #if 1
 #    define IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL

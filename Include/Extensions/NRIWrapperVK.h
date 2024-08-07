@@ -30,20 +30,20 @@ NRI_STRUCT(DeviceCreationVKDesc)
     NRI_NAME(CallbackInterface) callbackInterface;
     NRI_NAME(MemoryAllocatorInterface) memoryAllocatorInterface;
     NRI_NAME(SPIRVBindingOffsets) spirvBindingOffsets;
-    NRI_NAME(VulkanExtensions) enabledExtensions;
+    NRI_NAME(VKExtensions) enabledExtensions;
     NRIVkInstance vkInstance;
     NRIVkDevice vkDevice;
     NRIVkPhysicalDevice vkPhysicalDevice;
     const uint32_t* queueFamilyIndices;
     uint32_t queueFamilyIndexNum;
     const char* vulkanLoaderPath;
-    bool isVulkan12;
+    uint8_t minorVersion; // >= 2
 };
 
 NRI_STRUCT(CommandQueueVKDesc)
 {
     NRIVkQueue vkQueue;
-    uint32_t familyIndex;
+    uint32_t queueFamilyIndex;
     NRI_NAME(CommandQueueType) commandQueueType;
 };
 

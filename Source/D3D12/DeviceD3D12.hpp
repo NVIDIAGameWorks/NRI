@@ -171,8 +171,8 @@ static void NRI_CALL DestroyQueryPool(QueryPool& queryPool) {
     device.DestroyQueryPool(queryPool);
 }
 
-static Result NRI_CALL AllocateMemory(Device& device, MemoryType memoryType, uint64_t size, Memory*& memory) {
-    return ((DeviceD3D12&)device).AllocateMemory(memoryType, size, memory);
+static Result NRI_CALL AllocateMemory(Device& device, const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
+    return ((DeviceD3D12&)device).AllocateMemory(allocateMemoryDesc, memory);
 }
 
 static Result NRI_CALL BindBufferMemory(Device& device, const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
@@ -275,11 +275,17 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& coreInterface) const {
 #pragma region[  Helper  ]
 
 static uint32_t NRI_CALL CalculateAllocationNumber(const Device& device, const ResourceGroupDesc& resourceGroupDesc) {
-    return ((DeviceD3D12&)device).CalculateAllocationNumber(resourceGroupDesc);
+    DeviceD3D12& deviceD3D12 = (DeviceD3D12&)device;
+    HelperDeviceMemoryAllocator allocator(deviceD3D12.GetCoreInterface(), (Device&)device);
+
+    return allocator.CalculateAllocationNumber(resourceGroupDesc);
 }
 
 static Result NRI_CALL AllocateAndBindMemory(Device& device, const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
-    return ((DeviceD3D12&)device).AllocateAndBindMemory(resourceGroupDesc, allocations);
+    DeviceD3D12& deviceD3D12 = (DeviceD3D12&)device;
+    HelperDeviceMemoryAllocator allocator(deviceD3D12.GetCoreInterface(), device);
+
+    return allocator.AllocateAndBindMemory(resourceGroupDesc, allocations);
 }
 
 static Result NRI_CALL QueryVideoMemoryInfo(const Device& device, MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) {
