@@ -933,7 +933,7 @@ void DeviceVK::FillCreateInfo(const BufferDesc& bufferDesc, VkBufferCreateInfo& 
 }
 
 void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo& info) const {
-    VkImageCreateFlags flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT; // typeless
+    VkImageCreateFlags flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT; // typeless
     const FormatProps& formatProps = GetFormatProps(textureDesc.format);
     if (formatProps.blockWidth > 1)
         flags |= VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT; // format can be used to create a view with an uncompressed format (1 texel covers 1 block)
