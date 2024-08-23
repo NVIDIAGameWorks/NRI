@@ -445,11 +445,11 @@ static VKHandle NRI_CALL GetInstanceVK(const Device& device) {
 }
 
 static void* NRI_CALL GetInstanceProcAddrVK(const Device& device) {
-    return ((DeviceVK&)device).GetDispatchTable().GetInstanceProcAddr;
+    return (void*)((DeviceVK&)device).GetDispatchTable().GetInstanceProcAddr;
 }
 
 static void* NRI_CALL GetDeviceProcAddrVK(const Device& device) {
-    return ((DeviceVK&)device).GetDispatchTable().GetDeviceProcAddr;
+    return (void*)((DeviceVK&)device).GetDispatchTable().GetDeviceProcAddr;
 }
 
 Result DeviceVK::FillFunctionTable(WrapperVKInterface& table) const {
