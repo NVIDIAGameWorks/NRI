@@ -35,7 +35,7 @@ private:
     DeviceVK& m_Device;
     VkCommandPool m_Handle = VK_NULL_HANDLE;
     CommandQueueType m_Type = (CommandQueueType)0;
-    bool m_OwnsNativeObjects = false;
+    bool m_OwnsNativeObjects = true;
 };
 
 } // namespace nri

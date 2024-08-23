@@ -31,14 +31,10 @@ SwapChainVK::SwapChainVK(DeviceVK& device) : m_Textures(device.GetStdAllocator()
 }
 
 SwapChainVK::~SwapChainVK() {
-    Destroy();
-}
-
-void SwapChainVK::Destroy() {
     for (size_t i = 0; i < m_Textures.size(); i++)
-        Deallocate(m_Device.GetStdAllocator(), m_Textures[i]);
+        Destroy(m_Device.GetStdAllocator(), m_Textures[i]);
 
-    Deallocate(m_Device.GetStdAllocator(), m_LatencyFence);
+    Destroy(m_Device.GetStdAllocator(), m_LatencyFence);
 
     const auto& vk = m_Device.GetDispatchTable();
     if (m_Handle)
@@ -135,7 +131,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
 
         VkLatencySurfaceCapabilitiesNV latencySurfaceCapabilities = {VK_STRUCTURE_TYPE_LATENCY_SURFACE_CAPABILITIES_NV};
         latencySurfaceCapabilities.presentModeCount = 8;
-        latencySurfaceCapabilities.pPresentModes = STACK_ALLOC(VkPresentModeKHR, latencySurfaceCapabilities.presentModeCount);
+        latencySurfaceCapabilities.pPresentModes = StackAlloc(VkPresentModeKHR, latencySurfaceCapabilities.presentModeCount);
 
         if (m_Device.m_IsLowLatencySupported)
             sc.pNext = &latencySurfaceCapabilities;
@@ -164,7 +160,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         VkResult result = vk.GetPhysicalDeviceSurfaceFormatsKHR(m_Device, m_Surface, &formatNum, nullptr);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfaceFormatsKHR returned %d", (int32_t)result);
 
-        VkSurfaceFormatKHR* surfaceFormats = STACK_ALLOC(VkSurfaceFormatKHR, formatNum);
+        VkSurfaceFormatKHR* surfaceFormats = StackAlloc(VkSurfaceFormatKHR, formatNum);
         result = vk.GetPhysicalDeviceSurfaceFormatsKHR(m_Device, m_Surface, &formatNum, surfaceFormats);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfaceFormatsKHR returned %d", (int32_t)result);
 
@@ -189,7 +185,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
     VkPresentModeKHR presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
     {
         uint32_t presentModeNum = 8;
-        VkPresentModeKHR* presentModes = STACK_ALLOC(VkPresentModeKHR, presentModeNum);
+        VkPresentModeKHR* presentModes = StackAlloc(VkPresentModeKHR, presentModeNum);
         VkResult result = vk.GetPhysicalDeviceSurfacePresentModesKHR(m_Device, m_Surface, &presentModeNum, presentModes);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfacePresentModesKHR returned %d", (int32_t)result);
 
@@ -213,10 +209,10 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
             }
             if (i != presentModeNum)
                 break;
-            REPORT_WARNING(&m_Device, "VkPresentModeKHR = %u is not supported...", modes[j]);
+            REPORT_WARNING(&m_Device, "VkPresentModeKHR = %u is not supported", modes[j]);
         }
         if (j == 2)
-            REPORT_WARNING(&m_Device, "No a suitable present mode found, switching to VK_PRESENT_MODE_IMMEDIATE_KHR...");
+            REPORT_WARNING(&m_Device, "No a suitable present mode found, switching to VK_PRESENT_MODE_IMMEDIATE_KHR");
     }
 
     { // Swap chain
@@ -281,15 +277,14 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         uint32_t imageNum = 0;
         vk.GetSwapchainImagesKHR(m_Device, m_Handle, &imageNum, nullptr);
 
-        VkImage* imageHandles = STACK_ALLOC(VkImage, imageNum);
+        VkImage* imageHandles = StackAlloc(VkImage, imageNum);
         vk.GetSwapchainImagesKHR(m_Device, m_Handle, &imageNum, imageHandles);
 
         m_Textures.resize(imageNum);
         for (uint32_t i = 0; i < imageNum; i++) {
             TextureVKDesc desc = {};
-            desc.vkImage = (NRIVkImage)imageHandles[i];
+            desc.vkImage = (VKNonDispatchableHandle)imageHandles[i];
             desc.vkFormat = surfaceFormat.format;
-            desc.vkImageAspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
             desc.vkImageType = VK_IMAGE_TYPE_2D;
             desc.width = swapChainDesc.width;
             desc.height = swapChainDesc.height;

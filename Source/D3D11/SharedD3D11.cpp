@@ -236,3 +236,37 @@ bool nri::GetBufferDesc(const BufferD3D11Desc& bufferD3D11Desc, BufferDesc& buff
 
     return true;
 }
+
+uint32_t nri::ConvertPriority(float priority) {
+    if (priority == 0.0f)
+        return 0;
+
+    float p = priority * 0.5f + 0.5f;
+    float level = 0.0f;
+
+    uint32_t result = 0;
+    if (p < 0.2f) {
+        result = DXGI_RESOURCE_PRIORITY_MINIMUM;
+        level = 0.0f;
+    } else if (p < 0.4f) {
+        result = DXGI_RESOURCE_PRIORITY_LOW;
+        level = 0.2f;
+    } else if (p < 0.6f) {
+        result = DXGI_RESOURCE_PRIORITY_NORMAL;
+        level = 0.4f;
+    } else if (p < 0.8f) {
+        result = DXGI_RESOURCE_PRIORITY_HIGH;
+        level = 0.6f;
+    } else {
+        result = DXGI_RESOURCE_PRIORITY_MAXIMUM;
+        level = 0.8f;
+    }
+
+    uint32_t bonus = uint32_t(((p - level) / 0.2f) * 65535.0f);
+    if (bonus > 0xFFFF)
+        bonus = 0xFFFF;
+
+    result |= bonus;
+
+    return result;
+}

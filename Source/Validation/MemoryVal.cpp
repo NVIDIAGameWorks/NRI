@@ -49,13 +49,13 @@ void MemoryVal::ReportBoundResources() {
 void MemoryVal::BindBuffer(BufferVal& buffer) {
     ExclusiveScope lockScope(m_Lock);
     m_Buffers.push_back(&buffer);
-    buffer.SetBoundToMemory(*this);
+    buffer.SetBoundToMemory(this);
 }
 
 void MemoryVal::BindTexture(TextureVal& texture) {
     ExclusiveScope lockScope(m_Lock);
     m_Textures.push_back(&texture);
-    texture.SetBoundToMemory(*this);
+    texture.SetBoundToMemory(this);
 }
 
 void MemoryVal::BindAccelerationStructure(AccelerationStructureVal& accelerationStructure) {

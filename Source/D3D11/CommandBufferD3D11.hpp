@@ -159,14 +159,6 @@ static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPoo
 static void NRI_CALL CmdResetQueries(CommandBuffer&, const QueryPool&, uint32_t, uint32_t) {
 }
 
-static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer) {
-    if (!(&commandBuffer))
-        return;
-
-    CommandBufferHelper& commandBufferHelper = (CommandBufferHelper&)commandBuffer;
-    Deallocate(commandBufferHelper.GetStdAllocator(), &commandBufferHelper);
-}
-
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
     if (!(&commandBuffer))
         return nullptr;

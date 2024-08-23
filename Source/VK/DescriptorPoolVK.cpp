@@ -9,16 +9,16 @@
 using namespace nri;
 
 DescriptorPoolVK::~DescriptorPoolVK() {
-    const auto& lowLevelAllocator = m_Device.GetStdAllocator().GetInterface();
-
+    const auto& allocator = m_Device.GetStdAllocator().GetInterface();
     for (size_t i = 0; i < m_AllocatedSets.size(); i++) {
         m_AllocatedSets[i]->~DescriptorSetVK();
-        lowLevelAllocator.Free(lowLevelAllocator.userArg, m_AllocatedSets[i]);
+        allocator.Free(allocator.userArg, m_AllocatedSets[i]);
     }
 
-    const auto& vk = m_Device.GetDispatchTable();
-    if (m_Handle != VK_NULL_HANDLE && m_OwnsNativeObjects)
+    if (m_OwnsNativeObjects) {
+        const auto& vk = m_Device.GetDispatchTable();
         vk.DestroyDescriptorPool(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+    }
 }
 
 inline void AddDescriptorPoolSize(VkDescriptorPoolSize* poolSizeArray, uint32_t& poolSizeArraySize, VkDescriptorType type, uint32_t descriptorCount) {
@@ -31,10 +31,6 @@ inline void AddDescriptorPoolSize(VkDescriptorPoolSize* poolSizeArray, uint32_t&
 }
 
 Result DescriptorPoolVK::Create(const DescriptorPoolDesc& descriptorPoolDesc) {
-    m_OwnsNativeObjects = true;
-
-    const auto& vk = m_Device.GetDispatchTable();
-
     VkDescriptorPoolSize descriptorPoolSizeArray[16] = {};
     for (uint32_t i = 0; i < GetCountOf(descriptorPoolSizeArray); i++)
         descriptorPoolSizeArray[i].type = (VkDescriptorType)i;
@@ -54,6 +50,7 @@ Result DescriptorPoolVK::Create(const DescriptorPoolDesc& descriptorPoolDesc) {
     const VkDescriptorPoolCreateInfo info = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, nullptr, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
         descriptorPoolDesc.descriptorSetMaxNum, poolSizeCount, descriptorPoolSizeArray};
 
+    const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.CreateDescriptorPool(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateDescriptorPool returned %d", (int32_t)result);
 
@@ -61,6 +58,9 @@ Result DescriptorPoolVK::Create(const DescriptorPoolDesc& descriptorPoolDesc) {
 }
 
 Result DescriptorPoolVK::Create(const DescriptorPoolVKDesc& descriptorPoolVKDesc) {
+    if (!descriptorPoolVKDesc.vkDescriptorPool)
+        return Result::INVALID_ARGUMENT;
+
     m_OwnsNativeObjects = false;
     m_Handle = (VkDescriptorPool)descriptorPoolVKDesc.vkDescriptorPool;
 

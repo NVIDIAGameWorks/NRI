@@ -6,10 +6,6 @@ static Result NRI_CALL CreateAccelerationStructureDescriptor(const AccelerationS
     return ((AccelerationStructureD3D12&)accelerationStructure).CreateDescriptor(descriptor);
 }
 
-static void NRI_CALL GetAccelerationStructureMemoryDesc(const AccelerationStructure& accelerationStructure, MemoryDesc& memoryDesc) {
-    ((AccelerationStructureD3D12&)accelerationStructure).GetMemoryDesc(memoryDesc);
-}
-
 static uint64_t NRI_CALL GetAccelerationStructureUpdateScratchBufferSize(const AccelerationStructure& accelerationStructure) {
     return ((AccelerationStructureD3D12&)accelerationStructure).GetUpdateScratchBufferSize();
 }

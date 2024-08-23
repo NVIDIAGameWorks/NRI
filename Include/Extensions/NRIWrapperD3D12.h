@@ -23,12 +23,12 @@ NRI_STRUCT(DeviceCreationD3D12Desc)
     ID3D12CommandQueue* d3d12GraphicsQueue;
     ID3D12CommandQueue* d3d12ComputeQueue;
     ID3D12CommandQueue* d3d12CopyQueue;
-    AGSContext* agsContext; // can be NULL
+    NRI_OPTIONAL AGSContext* agsContext;
     NRI_NAME(CallbackInterface) callbackInterface;
-    NRI_NAME(MemoryAllocatorInterface) memoryAllocatorInterface;
+    NRI_NAME(AllocationCallbacks) allocationCallbacks;
     bool enableD3D12DrawParametersEmulation;
     bool enableNRIValidation;
-    bool isNVAPILoaded; // At least NVAPI requires calling "NvAPI_Initialize" in DLL/EXE where the device is created in addition to NRI
+    bool isNVAPILoaded; // at least NVAPI requires calling "NvAPI_Initialize" in DLL/EXE where the device is created in addition to NRI
 };
 
 NRI_STRUCT(CommandBufferD3D12Desc)
@@ -47,20 +47,19 @@ NRI_STRUCT(DescriptorPoolD3D12Desc)
 NRI_STRUCT(BufferD3D12Desc)
 {
     ID3D12Resource* d3d12Resource;
-    const NRI_NAME(BufferDesc)* desc; // Can be NULL, but not all information can be retrieved from the resource
-    uint32_t structureStride;
+    NRI_OPTIONAL const NRI_NAME(BufferDesc)* desc; // not all information can be retrieved from the resource if not provided
+    NRI_OPTIONAL uint32_t structureStride; // must be provided if used as a structured or raw buffer
 };
 
 NRI_STRUCT(TextureD3D12Desc)
 {
     ID3D12Resource* d3d12Resource;
-    const NRI_NAME(TextureDesc)* desc; // Can be NULL, but not all information can be retrieved from the resource
+    NRI_OPTIONAL const NRI_NAME(TextureDesc)* desc; // not all information can be retrieved from the resource if not provided
 };
 
 NRI_STRUCT(MemoryD3D12Desc)
 {
     ID3D12Heap* d3d12Heap;
-    const D3D12_HEAP_DESC* d3d12HeapDesc;
 };
 
 NRI_STRUCT(AccelerationStructureD3D12Desc)

@@ -44,5 +44,5 @@ static Result GetLatencyReport(const SwapChain& swapChain, LatencyReport& latenc
 
 #pragma endregion
 
-Define_SwapChain_PartiallyFillFunctionTable(VK);
-Define_LowLatency_SwapChain_PartiallyFillFunctionTable(VK);
+Define_SwapChain_SwapChain_PartiallyFillFunctionTable(VK);
+Define_LowLatency_SwapChain_SwapChain_PartiallyFillFunctionTable(VK);

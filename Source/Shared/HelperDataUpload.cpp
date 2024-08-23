@@ -93,7 +93,11 @@ Result HelperDataUpload::UploadData(
             result = UploadBuffers(bufferUploadDescs, bufferUploadDescNum);
     }
 
-    Destroy();
+    NRI.DestroyCommandBuffer(*m_CommandBuffer);
+    NRI.DestroyCommandAllocator(*m_CommandAllocators);
+    NRI.DestroyFence(*m_Fence);
+    NRI.DestroyBuffer(*m_UploadBuffer);
+    NRI.FreeMemory(*m_UploadBufferMemory);
 
     return result;
 }
@@ -135,14 +139,6 @@ Result HelperDataUpload::Create() {
         return result;
 
     return result;
-}
-
-void HelperDataUpload::Destroy() {
-    NRI.DestroyCommandBuffer(*m_CommandBuffer);
-    NRI.DestroyCommandAllocator(*m_CommandAllocators);
-    NRI.DestroyFence(*m_Fence);
-    NRI.DestroyBuffer(*m_UploadBuffer);
-    NRI.FreeMemory(*m_UploadBufferMemory);
 }
 
 Result HelperDataUpload::UploadTextures(const TextureUploadDesc* textureUploadDescs, uint32_t textureDataDescNum) {

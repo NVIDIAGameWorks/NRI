@@ -116,7 +116,7 @@ void CommandBufferD3D11::SetViewports(const Viewport* viewports, uint32_t viewpo
 }
 
 void CommandBufferD3D11::SetScissors(const Rect* rects, uint32_t rectNum) {
-    D3D11_RECT* rectsD3D = STACK_ALLOC(D3D11_RECT, rectNum);
+    D3D11_RECT* rectsD3D = StackAlloc(D3D11_RECT, rectNum);
 
     for (uint32_t i = 0; i < rectNum; i++) {
         const Rect& rect = rects[i];
@@ -182,7 +182,7 @@ void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t 
             }
         }
     } else {
-        D3D11_RECT* rectsD3D = STACK_ALLOC(D3D11_RECT, rectNum);
+        D3D11_RECT* rectsD3D = StackAlloc(D3D11_RECT, rectNum);
         for (uint32_t i = 0; i < rectNum; i++) {
             const Rect& rect = rects[i];
             rectsD3D[i] = {rect.x, rect.y, (LONG)(rect.x + rect.width), (LONG)(rect.y + rect.height)};
@@ -254,7 +254,7 @@ void CommandBufferD3D11::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum,
         offsets = s_nullOffsets;
 
     if (m_VertexBuffer != buffers[0] || m_VertexBufferOffset != offsets[0] || m_VertexBufferBaseSlot != baseSlot || bufferNum > 1) {
-        uint8_t* mem = STACK_ALLOC(uint8_t, bufferNum * (sizeof(ID3D11Buffer*) + sizeof(uint32_t) * 2));
+        uint8_t* mem = StackAlloc(uint8_t, bufferNum * (sizeof(ID3D11Buffer*) + sizeof(uint32_t) * 2));
 
         ID3D11Buffer** buf = (ID3D11Buffer**)mem;
         mem += bufferNum * sizeof(ID3D11Buffer*);
@@ -414,7 +414,7 @@ void CommandBufferD3D11::UploadBufferToTexture(
 
     uint32_t dstSubresource = dst.GetSubresourceIndex(dstRegionDesc);
 
-    uint8_t* data = (uint8_t*)src.Map(MapType::READ, srcDataLayoutDesc.offset);
+    uint8_t* data = (uint8_t*)src.Map(srcDataLayoutDesc.offset);
     m_DeferredContext->UpdateSubresource(dst, dstSubresource, &dstBox, data, srcDataLayoutDesc.rowPitch, srcDataLayoutDesc.slicePitch);
     src.Unmap();
 }
@@ -513,7 +513,7 @@ void CommandBufferD3D11::CopyQueries(const QueryPool& queryPool, uint32_t offset
 
 void CommandBufferD3D11::BeginAnnotation(const char* name) {
     size_t len = strlen(name) + 1;
-    wchar_t* s = STACK_ALLOC(wchar_t, len);
+    wchar_t* s = StackAlloc(wchar_t, len);
     ConvertCharToWchar(name, s, len);
 
     m_Annotation->BeginEvent(s);

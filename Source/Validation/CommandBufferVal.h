@@ -58,7 +58,6 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     void ResetQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num);
     void BeginAnnotation(const char* name);
     void EndAnnotation();
-    void Destroy();
 
     void BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
         Buffer& scratch, uint64_t scratchOffset);

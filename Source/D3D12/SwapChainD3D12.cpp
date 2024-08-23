@@ -47,7 +47,7 @@ SwapChainD3D12::~SwapChainD3D12() {
         CloseHandle(m_FrameLatencyWaitableObject);
 
     for (TextureD3D12* texture : m_Textures)
-        Deallocate<TextureD3D12>(m_Device.GetStdAllocator(), texture);
+        Destroy<TextureD3D12>(m_Device.GetStdAllocator(), texture);
 }
 
 Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc) {

@@ -7,7 +7,7 @@
 
 using namespace nri;
 
-Result TextureD3D11::Create(const MemoryD3D11* memory) {
+Result TextureD3D11::Create(MemoryLocation memoryLocation, float priority) {
     // Texture was already created externally
     if (m_Texture)
         return Result::SUCCESS;
@@ -24,12 +24,20 @@ Result TextureD3D11::Create(const MemoryD3D11* memory) {
     if (m_Desc.usageMask & TextureUsageBits::DEPTH_STENCIL_ATTACHMENT)
         bindFlags |= D3D11_BIND_DEPTH_STENCIL;
 
-    uint32_t cpuAccessFlags = D3D11_CPU_ACCESS_READ;
-    D3D11_USAGE usage = D3D11_USAGE_STAGING;
-    if (memory) {
-        MemoryLocation memoryLocation = memory->GetLocation();
-        usage = (memoryLocation == MemoryLocation::HOST_UPLOAD || memoryLocation == MemoryLocation::DEVICE_UPLOAD) ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
-        cpuAccessFlags = 0;
+    D3D11_USAGE usage = D3D11_USAGE_DEFAULT;
+    uint32_t cpuAccessFlags = 0;
+    switch (memoryLocation) {
+        case MemoryLocation::DEVICE:
+            break;
+        case MemoryLocation::DEVICE_UPLOAD:
+        case MemoryLocation::HOST_UPLOAD:
+            usage = D3D11_USAGE_DYNAMIC;
+            cpuAccessFlags = D3D11_CPU_ACCESS_WRITE;
+            break;
+        case MemoryLocation::HOST_READBACK:
+            usage = D3D11_USAGE_STAGING;
+            cpuAccessFlags = D3D11_CPU_ACCESS_READ;
+            break;
     }
 
     HRESULT hr = E_INVALIDARG;
@@ -76,9 +84,16 @@ Result TextureD3D11::Create(const MemoryD3D11* memory) {
 
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateTextureXx()");
 
-    uint32_t priority = memory ? memory->GetPriority() : 0;
-    if (priority != 0)
-        m_Texture->SetEvictionPriority(priority);
+    // Priority
+    uint32_t evictionPriority = ConvertPriority(priority);
+    if (evictionPriority != 0)
+        m_Texture->SetEvictionPriority(evictionPriority);
+
+    return Result::SUCCESS;
+}
+
+Result TextureD3D11::Create(const TextureDesc& textureDesc) {
+    m_Desc = textureDesc;
 
     return Result::SUCCESS;
 }

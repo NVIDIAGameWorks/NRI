@@ -45,8 +45,8 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
         return Result::SUCCESS;
 
     D3D12_CLEAR_VALUE clearValue = {GetDxgiFormat(m_Desc.format).typed};
-    const D3D12_HEAP_DESC& heapDesc = memory->GetHeapDesc();
 
+    const D3D12_HEAP_DESC& heapDesc = memory->GetHeapDesc();
     // STATE_CREATION ERROR #640: CREATERESOURCEANDHEAP_INVALIDHEAPMISCFLAGS
     D3D12_HEAP_FLAGS heapFlagsFixed = heapDesc.Flags & ~(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_BUFFERS);
 
@@ -55,12 +55,12 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
         D3D12_RESOURCE_DESC1 desc1 = {};
         GetResourceDesc((D3D12_RESOURCE_DESC*)&desc1, m_Desc);
 
+        const D3D12_BARRIER_LAYOUT initialLayout = D3D12_BARRIER_LAYOUT_COMMON;
         bool isRenderableSurface = desc1.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-        D3D12_BARRIER_LAYOUT initialLayout = D3D12_BARRIER_LAYOUT_COMMON;
         uint32_t castableFormatNum = 0;
         DXGI_FORMAT* castableFormats = nullptr; // TODO: add castable formats, see options12.RelaxedFormatCastingSupported
 
-        if (memory->RequiresDedicatedAllocation()) {
+        if (memory->IsDummy()) {
             HRESULT hr = m_Device->CreateCommittedResource3(&heapDesc.Properties, heapFlagsFixed, &desc1, initialLayout, isRenderableSurface ? &clearValue : nullptr, nullptr,
                 castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Texture));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device10::CreateCommittedResource3()");
@@ -75,20 +75,26 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
         D3D12_RESOURCE_DESC desc = {};
         GetResourceDesc(&desc, m_Desc);
 
+        const D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
         bool isRenderableSurface = desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
-        if (memory->RequiresDedicatedAllocation()) {
-            HRESULT hr = m_Device->CreateCommittedResource(
-                &heapDesc.Properties, heapFlagsFixed, &desc, D3D12_RESOURCE_STATE_COMMON, isRenderableSurface ? &clearValue : nullptr, IID_PPV_ARGS(&m_Texture));
+        if (memory->IsDummy()) {
+            HRESULT hr =
+                m_Device->CreateCommittedResource(&heapDesc.Properties, heapFlagsFixed, &desc, initialState, isRenderableSurface ? &clearValue : nullptr, IID_PPV_ARGS(&m_Texture));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateCommittedResource()");
         } else {
-            HRESULT hr = m_Device->CreatePlacedResource(*memory, offset, &desc, D3D12_RESOURCE_STATE_COMMON, isRenderableSurface ? &clearValue : nullptr, IID_PPV_ARGS(&m_Texture));
+            HRESULT hr = m_Device->CreatePlacedResource(*memory, offset, &desc, initialState, isRenderableSurface ? &clearValue : nullptr, IID_PPV_ARGS(&m_Texture));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreatePlacedResource()");
         }
     }
 
-    if (memory->RequiresDedicatedAllocation())
-        memory->SetPriority(m_Texture.GetInterface());
+    // Priority
+    D3D12_RESIDENCY_PRIORITY residencyPriority = (D3D12_RESIDENCY_PRIORITY)ConvertPriority(memory->GetPriority());
+    if (m_Device.GetVersion() >= 1 && residencyPriority != 0) {
+        ID3D12Pageable* obj = m_Texture.GetInterface();
+        HRESULT hr = m_Device->SetResidencyPriority(1, &obj, &residencyPriority);
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device1::SetResidencyPriority()");
+    }
 
     return Result::SUCCESS;
 }

@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "SharedD3D12.h"
-
 #ifdef NRI_USE_AGILITY_SDK
 struct ID3D12Resource2;
 typedef ID3D12Resource2 ID3D12ResourceBest;
@@ -46,6 +44,7 @@ struct TextureD3D12 {
 
     Result Create(const TextureDesc& textureDesc);
     Result Create(const TextureD3D12Desc& textureDesc);
+    Result Create(const AllocateTextureDesc& textureDesc);
     Result BindMemory(const MemoryD3D12* memory, uint64_t offset);
 
     //================================================================================================================
@@ -58,8 +57,9 @@ struct TextureD3D12 {
 
 private:
     DeviceD3D12& m_Device;
-    TextureDesc m_Desc = {};
     ComPtr<ID3D12ResourceBest> m_Texture;
+    ComPtr<D3D12MA::Allocation> m_VmaAllocation = nullptr;
+    TextureDesc m_Desc = {};
 };
 
 } // namespace nri

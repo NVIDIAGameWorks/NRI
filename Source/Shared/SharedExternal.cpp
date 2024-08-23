@@ -853,10 +853,10 @@ void nri::DeviceBase::ReportMessage(nri::Message messageType, const char* file, 
 
     char message[4096];
     int32_t written = 0;
-    if (desc.adapterDesc.description[0] == '\0')
+    if (desc.adapterDesc.name[0] == '\0')
         written = snprintf(message, GetCountOf(message), "NRI::%s(%s:%u) - %s::Unknown - ", messageTypeName, file, line, graphicsAPIName);
     else
-        written = snprintf(message, GetCountOf(message), "NRI::%s(%s:%u) - %s::%s - ", messageTypeName, file, line, graphicsAPIName, desc.adapterDesc.description);
+        written = snprintf(message, GetCountOf(message), "NRI::%s(%s:%u) - %s::%s - ", messageTypeName, file, line, graphicsAPIName, desc.adapterDesc.name);
 
     va_list argptr;
     va_start(argptr, format);

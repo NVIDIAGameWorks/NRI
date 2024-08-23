@@ -28,8 +28,7 @@ struct PipelineVK {
     Result Create(const GraphicsPipelineDesc& graphicsPipelineDesc);
     Result Create(const ComputePipelineDesc& computePipelineDesc);
     Result Create(const RayTracingPipelineDesc& rayTracingPipelineDesc);
-    Result CreateGraphics(NRIVkPipeline vkPipeline);
-    Result CreateCompute(NRIVkPipeline vkPipeline);
+    Result Create(VkPipelineBindPoint bindPoint, VKNonDispatchableHandle vkPipeline);
 
     //================================================================================================================
     // NRI
@@ -45,7 +44,7 @@ private:
     DeviceVK& m_Device;
     VkPipeline m_Handle = VK_NULL_HANDLE;
     VkPipelineBindPoint m_BindPoint = (VkPipelineBindPoint)0;
-    bool m_OwnsNativeObjects = false;
+    bool m_OwnsNativeObjects = true;
 };
 
 } // namespace nri

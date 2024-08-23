@@ -15,7 +15,7 @@ NRI_ENUM
     MAX_NUM
 );
 
-NRI_STRUCT(MemoryAllocatorInterface)
+NRI_STRUCT(AllocationCallbacks)
 {
     void* (*Allocate)(void* userArg, size_t size, size_t alignment);
     void* (*Reallocate)(void* userArg, void* memory, size_t size, size_t alignment);
@@ -49,9 +49,9 @@ NRI_STRUCT(VKExtensions)
 
 NRI_STRUCT(DeviceCreationDesc)
 {
-    const NRI_NAME(AdapterDesc)* adapterDesc; // optional
+    NRI_OPTIONAL const NRI_NAME(AdapterDesc)* adapterDesc;
     NRI_NAME(CallbackInterface) callbackInterface;
-    NRI_NAME(MemoryAllocatorInterface) memoryAllocatorInterface;
+    NRI_NAME(AllocationCallbacks) allocationCallbacks;
     NRI_NAME(SPIRVBindingOffsets) spirvBindingOffsets;
     NRI_NAME(VKExtensions) vkExtensions;
     NRI_NAME(GraphicsAPI) graphicsAPI;
@@ -66,6 +66,7 @@ NRI_STRUCT(DeviceCreationDesc)
 
     // Switches (enabled by default)
     bool disableVKRayTracing; // to save CPU memory in some implementations
+    bool disable3rdPartyAllocationCallbacks; // to use "allocationCallbacks" only for NRI needs
 };
 
 NRI_API NRI_NAME(Result) NRI_CALL nriEnumerateAdapters(NRI_NAME(AdapterDesc)* adapterDescs, uint32_t NRI_REF adapterDescNum);

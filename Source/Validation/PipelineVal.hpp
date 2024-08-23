@@ -6,8 +6,8 @@ static Result NRI_CALL WriteShaderGroupIdentifiers(const Pipeline& pipeline, uin
     return ((PipelineVal&)pipeline).WriteShaderGroupIdentifiers(baseShaderGroupIndex, shaderGroupNum, buffer);
 }
 
-void FillFunctionTablePipelineVal(RayTracingInterface& rayTracingInterface) {
-    rayTracingInterface.WriteShaderGroupIdentifiers = ::WriteShaderGroupIdentifiers;
+void FillFunctionTablePipelineVal(RayTracingInterface& table) {
+    table.WriteShaderGroupIdentifiers = ::WriteShaderGroupIdentifiers;
 }
 
 #pragma endregion

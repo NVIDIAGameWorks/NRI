@@ -9,13 +9,13 @@
 using namespace nri;
 
 CommandAllocatorVK::~CommandAllocatorVK() {
-    const auto& vk = m_Device.GetDispatchTable();
-    if (m_Handle != VK_NULL_HANDLE && m_OwnsNativeObjects)
+    if (m_OwnsNativeObjects) {
+        const auto& vk = m_Device.GetDispatchTable();
         vk.DestroyCommandPool(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+    }
 }
 
 Result CommandAllocatorVK::Create(const CommandQueue& commandQueue) {
-    m_OwnsNativeObjects = true;
     const CommandQueueVK& commandQueueImpl = (CommandQueueVK&)commandQueue;
 
     m_Type = commandQueueImpl.GetType();
@@ -30,6 +30,9 @@ Result CommandAllocatorVK::Create(const CommandQueue& commandQueue) {
 }
 
 Result CommandAllocatorVK::Create(const CommandAllocatorVKDesc& commandAllocatorDesc) {
+    if (!commandAllocatorDesc.vkCommandPool)
+        return Result::INVALID_ARGUMENT;
+
     m_OwnsNativeObjects = false;
     m_Handle = (VkCommandPool)commandAllocatorDesc.vkCommandPool;
     m_Type = commandAllocatorDesc.commandQueueType;

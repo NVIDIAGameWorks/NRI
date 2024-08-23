@@ -46,9 +46,6 @@ struct SwapChainVK : public DisplayDescHelper {
     Result GetLatencyReport(LatencyReport& latencyReport);
 
 private:
-    void Destroy();
-
-private:
     Vector<TextureVK*> m_Textures;
     FenceVK* m_LatencyFence = nullptr;
     std::array<VkSemaphore, MAX_NUMBER_OF_FRAMES_IN_FLIGHT> m_ImageAcquiredSemaphores = {VK_NULL_HANDLE};

@@ -13,6 +13,22 @@ typedef uint16_t HeapOffsetType;
 
 #define BASE_ATTRIBUTES_EMULATION_SPACE 999 // see NRI_ENABLE_DRAW_PARAMETERS
 
+struct MemoryTypeInfo {
+    uint16_t heapFlags;
+    uint8_t heapType;
+    bool mustBeDedicated;
+};
+
+inline nri::MemoryType Pack(const MemoryTypeInfo& memoryTypeInfo) {
+    return *(nri::MemoryType*)&memoryTypeInfo;
+}
+
+inline MemoryTypeInfo Unpack(const nri::MemoryType& memoryType) {
+    return *(MemoryTypeInfo*)&memoryType;
+}
+
+static_assert(sizeof(MemoryTypeInfo) == sizeof(nri::MemoryType), "Must be equal");
+
 namespace nri {
 enum DescriptorHeapType : uint32_t {
     RESOURCE = 0,
@@ -32,22 +48,21 @@ struct DescriptorHeapDesc {
     uint32_t descriptorSize;
 };
 
-D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE GetAccelerationStructureType(AccelerationStructureType accelerationStructureType);
-D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits accelerationStructureBuildFlags);
-D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE GetCopyMode(CopyMode copyMode);
-
 void GetResourceDesc(D3D12_RESOURCE_DESC* desc, const BufferDesc& bufferDesc);
 void GetResourceDesc(D3D12_RESOURCE_DESC* desc, const TextureDesc& textureDesc);
-
-D3D12_RESOURCE_FLAGS GetBufferFlags(BufferUsageBits bufferUsageMask);
-D3D12_RESOURCE_FLAGS GetTextureFlags(TextureUsageBits textureUsageMask);
-
 void ConvertGeometryDescs(D3D12_RAYTRACING_GEOMETRY_DESC* geometryDescs, const GeometryObject* geometryObjects, uint32_t geometryObjectNum);
 void ConvertRects(D3D12_RECT* rectsD3D12, const Rect* rects, uint32_t rectNum);
 bool GetTextureDesc(const TextureD3D12Desc& textureD3D12Desc, TextureDesc& textureDesc);
 bool GetBufferDesc(const BufferD3D12Desc& bufferD3D12Desc, BufferDesc& bufferDesc);
 uint64_t GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc);
+D3D12_RESIDENCY_PRIORITY ConvertPriority(float priority);
 
+D3D12_HEAP_TYPE GetHeapType(MemoryLocation memoryLocation);
+D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE GetAccelerationStructureType(AccelerationStructureType accelerationStructureType);
+D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits accelerationStructureBuildFlags);
+D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE GetCopyMode(CopyMode copyMode);
+D3D12_RESOURCE_FLAGS GetBufferFlags(BufferUsageBits bufferUsageMask);
+D3D12_RESOURCE_FLAGS GetTextureFlags(TextureUsageBits textureUsageMask);
 D3D12_FILTER GetFilterIsotropic(Filter mip, Filter magnification, Filter minification, FilterExt filterExt, bool useComparison);
 D3D12_FILTER GetFilterAnisotropic(FilterExt filterExt, bool useComparison);
 D3D12_TEXTURE_ADDRESS_MODE GetAddressMode(AddressMode addressMode);
@@ -78,5 +93,28 @@ D3D12_RESOURCE_DIMENSION GetResourceDimension(TextureType textureType);
 namespace d3d12 {
 #include "D3DExt.h"
 }
+
+// VMA
+#if defined(__GNUC__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wunused-parameter"
+#elif defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wunused-parameter"
+#else
+#    pragma warning(push)
+#    pragma warning(disable : 4100) // unreferenced formal parameter
+#endif
+
+#define D3D12MA_D3D12_HEADERS_ALREADY_INCLUDED
+#include "memalloc/D3D12MemAlloc.h"
+
+#if defined(__GNUC__)
+#    pragma GCC diagnostic pop
+#elif defined(__clang__)
+#    pragma clang diagnostic pop
+#elif defined(MSVC)
+#    pragma warning(pop)
+#endif
 
 #include "DeviceD3D12.h"

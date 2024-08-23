@@ -242,7 +242,7 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
 
     // Vertex input
     uint32_t attributeNum = graphicsPipelineDesc.vertexInput ? graphicsPipelineDesc.vertexInput->attributeNum : 0;
-    stream.inputLayout.desc.pInputElementDescs = STACK_ALLOC(D3D12_INPUT_ELEMENT_DESC, attributeNum);
+    stream.inputLayout.desc.pInputElementDescs = StackAlloc(D3D12_INPUT_ELEMENT_DESC, attributeNum);
     if (graphicsPipelineDesc.vertexInput) {
         const VertexInputDesc& vi = *graphicsPipelineDesc.vertexInput;
 
@@ -330,7 +330,7 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
 
     // Vertex input
     uint32_t attributeNum = graphicsPipelineDesc.vertexInput ? graphicsPipelineDesc.vertexInput->attributeNum : 0;
-    graphicsPipleineStateDesc.InputLayout.pInputElementDescs = STACK_ALLOC(D3D12_INPUT_ELEMENT_DESC, attributeNum);
+    graphicsPipleineStateDesc.InputLayout.pInputElementDescs = StackAlloc(D3D12_INPUT_ELEMENT_DESC, attributeNum);
     if (graphicsPipelineDesc.vertexInput) {
         const VertexInputDesc& vi = *graphicsPipelineDesc.vertexInput;
 

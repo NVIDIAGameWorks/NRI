@@ -160,13 +160,6 @@ static void NRI_CALL CmdResetQueries(CommandBuffer& commandBuffer, const QueryPo
     ((CommandBufferVal&)commandBuffer).ResetQueries(queryPool, offset, num);
 }
 
-static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer) {
-    if (!(&commandBuffer))
-        return;
-
-    ((CommandBufferVal&)commandBuffer).Destroy();
-}
-
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
     if (!(&commandBuffer))
         return nullptr;

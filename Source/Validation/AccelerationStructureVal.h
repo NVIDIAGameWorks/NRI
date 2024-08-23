@@ -7,8 +7,8 @@ namespace nri {
 struct MemoryVal;
 
 struct AccelerationStructureVal final : public DeviceObjectVal<AccelerationStructure> {
-    AccelerationStructureVal(DeviceVal& device, AccelerationStructure* accelerationStructure, bool isBoundToMemory) :
-        DeviceObjectVal(device, accelerationStructure), m_IsBoundToMemory(isBoundToMemory) {
+    AccelerationStructureVal(DeviceVal& device, AccelerationStructure* accelerationStructure, bool isBoundToMemory, const MemoryDesc& memoryDesc) :
+        DeviceObjectVal(device, accelerationStructure), m_IsBoundToMemory(isBoundToMemory), m_MemoryDesc(memoryDesc) {
     }
 
     ~AccelerationStructureVal();
@@ -22,10 +22,13 @@ struct AccelerationStructureVal final : public DeviceObjectVal<AccelerationStruc
         m_IsBoundToMemory = true;
     }
 
+    inline const MemoryDesc& GetMemoryDesc() const {
+        return m_MemoryDesc;
+    }
+
     //================================================================================================================
     // NRI
     //================================================================================================================
-    void GetMemoryDesc(MemoryDesc& memoryDesc) const;
     uint64_t GetUpdateScratchBufferSize() const;
     uint64_t GetBuildScratchBufferSize() const;
     uint64_t GetHandle() const;
@@ -35,6 +38,7 @@ struct AccelerationStructureVal final : public DeviceObjectVal<AccelerationStruc
 
 private:
     MemoryVal* m_Memory = nullptr;
+    MemoryDesc m_MemoryDesc = {};
     bool m_IsBoundToMemory = false;
 };
 

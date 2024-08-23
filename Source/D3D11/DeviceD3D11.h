@@ -63,6 +63,20 @@ struct DeviceD3D11 final : public DeviceBase {
             ::LeaveCriticalSection(&m_CriticalSection);
     }
 
+    template <typename Implementation, typename Interface, typename... Args>
+    inline Result CreateImplementation(Interface*& entity, const Args&... args) {
+        Implementation* impl = Allocate<Implementation>(GetStdAllocator(), *this);
+        Result result = impl->Create(args...);
+
+        if (result != Result::SUCCESS) {
+            Destroy(GetStdAllocator(), impl);
+            entity = nullptr;
+        } else
+            entity = (Interface*)impl;
+
+        return result;
+    }
+
     Result Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* precreatedDevice, AGSContext* agsContext, bool isNVAPILoadedInApp);
     void GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
     void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
@@ -71,43 +85,16 @@ struct DeviceD3D11 final : public DeviceBase {
     // NRI
     //================================================================================================================
 
+    Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
+    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
+    Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
+    Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
+    FormatSupportBits GetFormatSupport(Format format) const;
+
     inline void SetDebugName(const char* name) {
         SET_D3D_DEBUG_OBJECT_NAME(m_Device, name);
         SET_D3D_DEBUG_OBJECT_NAME(m_ImmediateContext, name);
     }
-
-    Result CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain);
-    void DestroySwapChain(SwapChain& swapChain);
-
-    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
-    Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
-    Result CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool);
-    Result CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer);
-    Result CreateTexture(const TextureDesc& textureDesc, Texture*& texture);
-    Result CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView);
-    Result CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView);
-    Result CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView);
-    Result CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView);
-    Result CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& sampler);
-    Result CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout);
-    Result CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline);
-    Result CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline);
-    Result CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool);
-    Result CreateFence(uint64_t initialValue, Fence*& queueSemaphore);
-    void DestroyCommandAllocator(CommandAllocator& commandAllocator);
-    void DestroyDescriptorPool(DescriptorPool& descriptorPool);
-    void DestroyBuffer(Buffer& buffer);
-    void DestroyTexture(Texture& texture);
-    void DestroyDescriptor(Descriptor& descriptor);
-    void DestroyPipelineLayout(PipelineLayout& pipelineLayout);
-    void DestroyPipeline(Pipeline& pipeline);
-    void DestroyQueryPool(QueryPool& queryPool);
-    void DestroyFence(Fence& fence);
-    Result AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory);
-    Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
-    Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
-    void FreeMemory(Memory& memory);
-    FormatSupportBits GetFormatSupport(Format format) const;
 
     //================================================================================================================
     // DeviceBase
@@ -117,19 +104,17 @@ struct DeviceD3D11 final : public DeviceBase {
         return m_Desc;
     }
 
-    void Destroy();
+    void Destruct();
     Result FillFunctionTable(CoreInterface& table) const;
+    Result FillFunctionTable(HelperInterface& table) const;
+    Result FillFunctionTable(LowLatencyInterface& table) const;
+    Result FillFunctionTable(StreamerInterface& table) const;
     Result FillFunctionTable(SwapChainInterface& table) const;
+    Result FillFunctionTable(ResourceAllocatorInterface& table) const;
     Result FillFunctionTable(WrapperD3D11Interface& table) const;
-    Result FillFunctionTable(HelperInterface& helperInterface) const;
-    Result FillFunctionTable(LowLatencyInterface& lowLatencyInterface) const;
-    Result FillFunctionTable(StreamerInterface& streamerInterface) const;
 
 private:
     void FillDesc();
-
-    template <typename Implementation, typename Interface, typename... Args>
-    Result CreateImplementation(Interface*& entity, const Args&... args);
 
 private:
     d3d11::Ext m_Ext = {}; // don't sort: destructor must be called last!

@@ -10,10 +10,10 @@
 using namespace nri;
 
 BufferD3D11::~BufferD3D11() {
-    Deallocate(m_Device.GetStdAllocator(), m_ReadbackTexture);
+    Destroy(m_Device.GetStdAllocator(), m_ReadbackTexture);
 }
 
-Result BufferD3D11::Create(const MemoryD3D11& memory) {
+Result BufferD3D11::Create(MemoryLocation memoryLocation, float priority) {
     // Buffer was already created externally
     if (m_Buffer)
         return Result::SUCCESS;
@@ -22,35 +22,30 @@ Result BufferD3D11::Create(const MemoryD3D11& memory) {
     desc.ByteWidth = (uint32_t)m_Desc.size;
     desc.StructureByteStride = m_Desc.structureStride;
 
-    if (m_Desc.structureStride)
-        desc.MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-
     // D3D11/D3D12 backends do not use FLAG_RAW for descriptors. It seems to be unnecessary because VK doesn't have
     // RAW functionality, but "byte adress buffers" in HLSL do work in VK if the underlying buffer is a structured
     // buffer with stride = 4. Since "ALLOW_RAW_VIEWS" is needed only for D3D11, add it here.
     if (m_Desc.structureStride == 4)
         desc.MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
 
+    if (m_Desc.structureStride)
+        desc.MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+
     if (m_Desc.usageMask & BufferUsageBits::ARGUMENT_BUFFER)
         desc.MiscFlags |= D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
 
-    MemoryLocation memoryLocation = memory.GetLocation();
     if (memoryLocation == MemoryLocation::HOST_UPLOAD || memoryLocation == MemoryLocation::DEVICE_UPLOAD) {
-        if (m_Desc.usageMask == BufferUsageBits::NONE) {
-            m_Type = BufferType::UPLOAD;
+        if (m_Desc.usageMask == BufferUsageBits::NONE) { // needed for "UploadBufferToTexture"
             desc.Usage = D3D11_USAGE_STAGING;
             desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
         } else {
-            m_Type = BufferType::DYNAMIC;
             desc.Usage = D3D11_USAGE_DYNAMIC;
             desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
         }
     } else if (memoryLocation == MemoryLocation::HOST_READBACK) {
-        m_Type = BufferType::READBACK;
         desc.Usage = D3D11_USAGE_STAGING;
-        desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+        desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
     } else {
-        m_Type = BufferType::DEVICE;
         desc.Usage = D3D11_USAGE_DEFAULT;
         desc.CPUAccessFlags = 0;
     }
@@ -73,9 +68,16 @@ Result BufferD3D11::Create(const MemoryD3D11& memory) {
     HRESULT hr = m_Device->CreateBuffer(&desc, nullptr, &m_Buffer);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateBuffer()");
 
-    uint32_t priority = memory.GetPriority();
-    if (priority != 0)
-        m_Buffer->SetEvictionPriority(priority);
+    // Priority
+    uint32_t evictionPriority = ConvertPriority(priority);
+    if (evictionPriority != 0)
+        m_Buffer->SetEvictionPriority(evictionPriority);
+
+    return Result::SUCCESS;
+}
+
+Result BufferD3D11::Create(const BufferDesc& bufferDesc) {
+    m_Desc = bufferDesc;
 
     return Result::SUCCESS;
 }
@@ -86,34 +88,30 @@ Result BufferD3D11::Create(const BufferD3D11Desc& bufferDesc) {
     else if (!GetBufferDesc(bufferDesc, m_Desc))
         return Result::INVALID_ARGUMENT;
 
-    ID3D11Buffer* buffer = (ID3D11Buffer*)bufferDesc.d3d11Resource;
-    m_Buffer = buffer;
-
-    D3D11_BUFFER_DESC desc = {};
-    buffer->GetDesc(&desc);
-
-    if (desc.Usage == D3D11_USAGE_STAGING)
-        m_Type = desc.CPUAccessFlags == (D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE) ? BufferType::UPLOAD : BufferType::READBACK;
-    else if (desc.Usage == D3D11_USAGE_DYNAMIC)
-        m_Type = BufferType::DYNAMIC;
-    else
-        m_Type = BufferType::DEVICE;
+    m_Buffer = (ID3D11Buffer*)bufferDesc.d3d11Resource;
 
     return Result::SUCCESS;
 }
 
-void* BufferD3D11::Map(MapType mapType, uint64_t offset) {
+void* BufferD3D11::Map(uint64_t offset) {
     D3D11_MAPPED_SUBRESOURCE mappedData = {};
     m_Device.EnterCriticalSection();
     {
         FinalizeQueries();
         FinalizeReadback();
 
-        D3D11_MAP map = D3D11_MAP_READ;
-        if (m_Type == BufferType::DYNAMIC)
-            map = D3D11_MAP_WRITE_NO_OVERWRITE;
-        else if (m_Type == BufferType::UPLOAD && mapType == MapType::DEFAULT)
-            map = D3D11_MAP_WRITE;
+        D3D11_BUFFER_DESC desc = {};
+        m_Buffer->GetDesc(&desc);
+
+        D3D11_MAP map = D3D11_MAP_WRITE;
+        if (desc.CPUAccessFlags == D3D11_CPU_ACCESS_WRITE)
+            map = desc.Usage == D3D11_USAGE_DYNAMIC ? D3D11_MAP_WRITE_NO_OVERWRITE : D3D11_MAP_WRITE;
+        else if (desc.CPUAccessFlags == D3D11_CPU_ACCESS_READ)
+            map = D3D11_MAP_READ;
+        else if (desc.CPUAccessFlags == (D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE))
+            map = D3D11_MAP_READ_WRITE; // needed for "UploadBufferToTexture"
+        else
+            CHECK(false, "Unmappable");
 
         HRESULT hr = m_Device.GetImmediateContext()->Map(m_Buffer, 0, map, 0, &mappedData);
         if (FAILED(hr)) {
@@ -217,10 +215,11 @@ TextureD3D11& BufferD3D11::RecreateReadbackTexture(const TextureD3D11& srcTextur
         else if (srcRegionDesc.height == 1)
             textureDesc.type = TextureType::TEXTURE_1D;
 
-        Deallocate(m_Device.GetStdAllocator(), m_ReadbackTexture);
+        Destroy(m_Device.GetStdAllocator(), m_ReadbackTexture);
 
-        m_ReadbackTexture = Allocate<TextureD3D11>(m_Device.GetStdAllocator(), m_Device, textureDesc);
-        m_ReadbackTexture->Create(nullptr);
+        m_Device.CreateImplementation<TextureD3D11>(m_ReadbackTexture, textureDesc);
+        if (m_ReadbackTexture)
+            m_ReadbackTexture->Create(MemoryLocation::HOST_READBACK, 0.0f);
     }
 
     m_IsReadbackDataChanged = true;
@@ -233,15 +232,9 @@ TextureD3D11& BufferD3D11::RecreateReadbackTexture(const TextureD3D11& srcTextur
 // NRI
 //================================================================================================================
 
-inline void* BufferD3D11::Map(uint64_t offset, uint64_t size) {
-    MaybeUnused(size);
-
-    return Map(MapType::DEFAULT, offset);
-}
-
 void BufferD3D11::Unmap() {
     m_Device.EnterCriticalSection();
-    { m_Device.GetImmediateContext()->Unmap(m_Buffer, 0); }
+    m_Device.GetImmediateContext()->Unmap(m_Buffer, 0);
     m_Device.LeaveCriticalSection();
 }
 

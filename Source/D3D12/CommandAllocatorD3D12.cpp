@@ -30,7 +30,7 @@ inline Result CommandAllocatorD3D12::CreateCommandBuffer(CommandBuffer*& command
         return Result::SUCCESS;
     }
 
-    Deallocate(m_Device.GetStdAllocator(), commandBufferD3D12);
+    Destroy(m_Device.GetStdAllocator(), commandBufferD3D12);
 
     return result;
 }

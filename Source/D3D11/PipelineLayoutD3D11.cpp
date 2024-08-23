@@ -164,7 +164,7 @@ void PipelineLayoutD3D11::BindDescriptorSetImpl(BindingState& currentBindingStat
     const BindingSet& bindingSet = m_BindingSets[setIndexInPipelineLayout];
     bool isStorageRebindNeededInGraphics = false;
 
-    uint8_t* memory = STACK_ALLOC(uint8_t, bindingSet.descriptorNum * (sizeof(void*) + sizeof(uint32_t) * 2));
+    uint8_t* memory = StackAlloc(uint8_t, bindingSet.descriptorNum * (sizeof(void*) + sizeof(uint32_t) * 2));
 
     void** descriptors = (void**)memory;
     memory += bindingSet.descriptorNum * sizeof(void*);

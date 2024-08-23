@@ -44,16 +44,15 @@ static uint8_t QueryLatestDevice(ComPtr<ID3D11DeviceBest>& in, ComPtr<ID3D11Devi
 }
 
 Result CreateDeviceD3D11(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device) {
-    StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
-    DeviceD3D11* implementation = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    Result result = implementation->Create(deviceCreationDesc, nullptr, nullptr, false);
+    StdAllocator<uint8_t> allocator(deviceCreationDesc.allocationCallbacks);
+    DeviceD3D11* impl = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
+    Result result = impl->Create(deviceCreationDesc, nullptr, nullptr, false);
 
-    if (result == Result::SUCCESS) {
-        device = (DeviceBase*)implementation;
-        return Result::SUCCESS;
-    }
-
-    Deallocate(allocator, implementation);
+    if (result != Result::SUCCESS) {
+        Destroy(allocator, impl);
+        device = nullptr;
+    } else
+        device = (DeviceBase*)impl;
 
     return result;
 }
@@ -64,20 +63,19 @@ Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc,
 
     DeviceCreationDesc deviceCreationDesc = {};
     deviceCreationDesc.callbackInterface = deviceCreationD3D11Desc.callbackInterface;
-    deviceCreationDesc.memoryAllocatorInterface = deviceCreationD3D11Desc.memoryAllocatorInterface;
+    deviceCreationDesc.allocationCallbacks = deviceCreationD3D11Desc.allocationCallbacks;
     deviceCreationDesc.enableD3D11CommandBufferEmulation = deviceCreationD3D11Desc.enableD3D11CommandBufferEmulation;
     deviceCreationDesc.graphicsAPI = GraphicsAPI::D3D11;
 
-    StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
-    DeviceD3D11* implementation = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    Result result = implementation->Create(deviceCreationDesc, deviceCreationD3D11Desc.d3d11Device, deviceCreationD3D11Desc.agsContext, deviceCreationD3D11Desc.isNVAPILoaded);
+    StdAllocator<uint8_t> allocator(deviceCreationDesc.allocationCallbacks);
+    DeviceD3D11* impl = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
+    Result result = impl->Create(deviceCreationDesc, deviceCreationD3D11Desc.d3d11Device, deviceCreationD3D11Desc.agsContext, deviceCreationD3D11Desc.isNVAPILoaded);
 
-    if (result == Result::SUCCESS) {
-        device = (DeviceBase*)implementation;
-        return Result::SUCCESS;
-    }
-
-    Deallocate(allocator, implementation);
+    if (result != Result::SUCCESS) {
+        Destroy(allocator, impl);
+        device = nullptr;
+    } else
+        device = (DeviceBase*)impl;
 
     return result;
 }
@@ -99,9 +97,9 @@ DeviceD3D11::~DeviceD3D11() {
         m_Ext.m_AGS.DestroyDeviceD3D11(m_Ext.m_AGSContext, m_Device, nullptr, m_ImmediateContext, nullptr);
 #endif
 
-    for (CommandQueueD3D11* commandQueue: m_CommandQueues) {
+    for (CommandQueueD3D11* commandQueue : m_CommandQueues) {
         if (commandQueue)
-            Deallocate(GetStdAllocator(), commandQueue);
+            Destroy(GetStdAllocator(), commandQueue);
     }
 }
 
@@ -134,7 +132,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     HRESULT hr = m_Adapter->GetDesc(&desc);
     RETURN_ON_BAD_HRESULT(this, hr, "IDXGIAdapter::GetDesc()");
 
-    wcstombs(m_Desc.adapterDesc.description, desc.Description, GetCountOf(m_Desc.adapterDesc.description) - 1);
+    wcstombs(m_Desc.adapterDesc.name, desc.Description, GetCountOf(m_Desc.adapterDesc.name) - 1);
     m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
     m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
     m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
@@ -213,14 +211,14 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         m_IsWrapped = true;
 
     m_Version = QueryLatestDevice(deviceTemp, m_Device);
-    REPORT_INFO(this, "Using ID3D11Device%u...", m_Version);
+    REPORT_INFO(this, "Using ID3D11Device%u", m_Version);
 
     // Immediate context
     ComPtr<ID3D11DeviceContextBest> immediateContext;
     m_Device->GetImmediateContext((ID3D11DeviceContext**)&immediateContext);
 
     m_ImmediateContextVersion = QueryLatestDeviceContext(immediateContext, m_ImmediateContext);
-    REPORT_INFO(this, "Using ID3D11DeviceContext%u...", m_ImmediateContextVersion);
+    REPORT_INFO(this, "Using ID3D11DeviceContext%u", m_ImmediateContextVersion);
 
     // Skip UAV barriers by default on the immediate context
     GetExt()->BeginUAVOverlap(m_ImmediateContext);
@@ -341,7 +339,6 @@ void DeviceD3D11::FillDesc() {
     m_Desc.bufferTextureGranularity = 1;
     m_Desc.bufferMaxSize = D3D11_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_C_TERM * 1024ull * 1024ull;
     m_Desc.pushConstantsMaxSize = D3D11_REQ_IMMEDIATE_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
-    m_Desc.memoryTier = MemoryTier::ONE;
 
     m_Desc.boundDescriptorSetMaxNum = D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT;
     m_Desc.perStageDescriptorSamplerMaxNum = D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT;
@@ -442,22 +439,6 @@ void DeviceD3D11::FillDesc() {
     m_Desc.isLowLatencySupported = m_Ext.HasNVAPI();
 }
 
-template <typename Implementation, typename Interface, typename... Args>
-Result DeviceD3D11::CreateImplementation(Interface*& entity, const Args&... args) {
-    Implementation* implementation = Allocate<Implementation>(GetStdAllocator(), *this);
-    Result result = implementation->Create(args...);
-
-    if (result == Result::SUCCESS) {
-        entity = (Interface*)implementation;
-        return Result::SUCCESS;
-    }
-
-    Deallocate(GetStdAllocator(), implementation);
-    entity = nullptr;
-
-    return result;
-}
-
 void DeviceD3D11::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
     const bool isConstantBuffer = (bufferDesc.usageMask & BufferUsageBits::CONSTANT_BUFFER) == (uint32_t)BufferUsageBits::CONSTANT_BUFFER;
 
@@ -467,10 +448,10 @@ void DeviceD3D11::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation mem
     else if (bufferDesc.size <= 4096)
         alignment = 4096;
 
+    memoryDesc = {};
     memoryDesc.type = (MemoryType)memoryLocation;
     memoryDesc.size = Align(bufferDesc.size, alignment);
     memoryDesc.alignment = alignment;
-    memoryDesc.mustBeDedicated = false;
 }
 
 void DeviceD3D11::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
@@ -485,31 +466,23 @@ void DeviceD3D11::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation m
 
     size = Align(size, alignment);
 
+    memoryDesc = {};
     memoryDesc.type = (MemoryType)memoryLocation;
     memoryDesc.size = size;
     memoryDesc.alignment = alignment;
-    memoryDesc.mustBeDedicated = false;
 }
 
 //================================================================================================================
 // DeviceBase
 //================================================================================================================
 
-void DeviceD3D11::Destroy() {
-    Deallocate(GetStdAllocator(), this);
+void DeviceD3D11::Destruct() {
+    Destroy(GetStdAllocator(), this);
 }
 
 //================================================================================================================
 // NRI
 //================================================================================================================
-
-inline Result DeviceD3D11::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
-    return CreateImplementation<SwapChainD3D11>(swapChain, swapChainDesc);
-}
-
-inline void DeviceD3D11::DestroySwapChain(SwapChain& swapChain) {
-    Deallocate(GetStdAllocator(), (SwapChainD3D11*)&swapChain);
-}
 
 inline Result DeviceD3D11::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
     commandQueue = (CommandQueue*)m_CommandQueues[(uint32_t)commandQueueType];
@@ -519,146 +492,7 @@ inline Result DeviceD3D11::GetCommandQueue(CommandQueueType commandQueueType, Co
 
 inline Result DeviceD3D11::CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
     MaybeUnused(commandQueue);
-
     commandAllocator = (CommandAllocator*)Allocate<CommandAllocatorD3D11>(GetStdAllocator(), *this);
-
-    return Result::SUCCESS;
-}
-
-inline Result DeviceD3D11::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
-    return CreateImplementation<DescriptorPoolD3D11>(descriptorPool, descriptorPoolDesc);
-}
-
-inline Result DeviceD3D11::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer) {
-    buffer = (Buffer*)Allocate<BufferD3D11>(GetStdAllocator(), *this, bufferDesc);
-
-    return Result::SUCCESS;
-}
-
-inline Result DeviceD3D11::CreateTexture(const TextureDesc& textureDesc, Texture*& texture) {
-    texture = (Texture*)Allocate<TextureD3D11>(GetStdAllocator(), *this, textureDesc);
-
-    return Result::SUCCESS;
-}
-
-inline Result DeviceD3D11::CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
-    return CreateImplementation<DescriptorD3D11>(bufferView, bufferViewDesc);
-}
-
-inline Result DeviceD3D11::CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    return CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
-}
-
-inline Result DeviceD3D11::CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    return CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
-}
-
-inline Result DeviceD3D11::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    return CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
-}
-
-inline Result DeviceD3D11::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& sampler) {
-    return CreateImplementation<DescriptorD3D11>(sampler, samplerDesc);
-}
-
-inline Result DeviceD3D11::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout) {
-    PipelineLayoutD3D11* implementation = Allocate<PipelineLayoutD3D11>(GetStdAllocator(), *this);
-    Result res = implementation->Create(pipelineLayoutDesc);
-
-    if (res == Result::SUCCESS) {
-        pipelineLayout = (PipelineLayout*)implementation;
-        return Result::SUCCESS;
-    }
-
-    Deallocate(GetStdAllocator(), implementation);
-
-    return res;
-}
-
-inline Result DeviceD3D11::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline) {
-    PipelineD3D11* implementation = Allocate<PipelineD3D11>(GetStdAllocator(), *this);
-    Result res = implementation->Create(graphicsPipelineDesc);
-
-    if (res == Result::SUCCESS) {
-        pipeline = (Pipeline*)implementation;
-        return Result::SUCCESS;
-    }
-
-    Deallocate(GetStdAllocator(), implementation);
-
-    return res;
-}
-
-inline Result DeviceD3D11::CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline) {
-    PipelineD3D11* implementation = Allocate<PipelineD3D11>(GetStdAllocator(), *this);
-    Result res = implementation->Create(computePipelineDesc);
-
-    if (res == Result::SUCCESS) {
-        pipeline = (Pipeline*)implementation;
-        return Result::SUCCESS;
-    }
-
-    Deallocate(GetStdAllocator(), implementation);
-
-    return res;
-}
-
-inline Result DeviceD3D11::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool) {
-    return CreateImplementation<QueryPoolD3D11>(queryPool, queryPoolDesc);
-}
-
-inline Result DeviceD3D11::CreateFence(uint64_t initialValue, Fence*& fence) {
-    FenceD3D11* implementation = Allocate<FenceD3D11>(GetStdAllocator(), *this);
-    Result res = implementation->Create(initialValue);
-
-    if (res == Result::SUCCESS) {
-        fence = (Fence*)implementation;
-        return Result::SUCCESS;
-    }
-
-    Deallocate(GetStdAllocator(), implementation);
-
-    return res;
-}
-
-inline void DeviceD3D11::DestroyCommandAllocator(CommandAllocator& commandAllocator) {
-    Deallocate(GetStdAllocator(), (CommandAllocatorD3D11*)&commandAllocator);
-}
-
-inline void DeviceD3D11::DestroyDescriptorPool(DescriptorPool& descriptorPool) {
-    Deallocate(GetStdAllocator(), (DescriptorPoolD3D11*)&descriptorPool);
-}
-
-inline void DeviceD3D11::DestroyBuffer(Buffer& buffer) {
-    Deallocate(GetStdAllocator(), (BufferD3D11*)&buffer);
-}
-
-inline void DeviceD3D11::DestroyTexture(Texture& texture) {
-    Deallocate(GetStdAllocator(), (TextureD3D11*)&texture);
-}
-
-inline void DeviceD3D11::DestroyDescriptor(Descriptor& descriptor) {
-    Deallocate(GetStdAllocator(), (DescriptorD3D11*)&descriptor);
-}
-
-inline void DeviceD3D11::DestroyPipelineLayout(PipelineLayout& pipelineLayout) {
-    Deallocate(GetStdAllocator(), (PipelineLayoutD3D11*)&pipelineLayout);
-}
-
-inline void DeviceD3D11::DestroyPipeline(Pipeline& pipeline) {
-    Deallocate(GetStdAllocator(), (PipelineD3D11*)&pipeline);
-}
-
-inline void DeviceD3D11::DestroyQueryPool(QueryPool& queryPool) {
-    Deallocate(GetStdAllocator(), (QueryPoolD3D11*)&queryPool);
-}
-
-inline void DeviceD3D11::DestroyFence(Fence& fence) {
-    Deallocate(GetStdAllocator(), (FenceD3D11*)&fence);
-}
-
-inline Result DeviceD3D11::AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
-    memory = (Memory*)Allocate<MemoryD3D11>(GetStdAllocator(), *this, allocateMemoryDesc);
 
     return Result::SUCCESS;
 }
@@ -666,7 +500,8 @@ inline Result DeviceD3D11::AllocateMemory(const AllocateMemoryDesc& allocateMemo
 inline Result DeviceD3D11::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         const BufferMemoryBindingDesc& desc = memoryBindingDescs[i];
-        Result res = ((BufferD3D11*)desc.buffer)->Create(*(MemoryD3D11*)desc.memory);
+        const MemoryD3D11& memory = *(MemoryD3D11*)desc.memory;
+        Result res = ((BufferD3D11*)desc.buffer)->Create(memory.GetLocation(), memory.GetPriority());
         if (res != Result::SUCCESS)
             return res;
     }
@@ -677,16 +512,13 @@ inline Result DeviceD3D11::BindBufferMemory(const BufferMemoryBindingDesc* memor
 inline Result DeviceD3D11::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         const TextureMemoryBindingDesc& desc = memoryBindingDescs[i];
-        Result res = ((TextureD3D11*)desc.texture)->Create((MemoryD3D11*)desc.memory);
+        const MemoryD3D11& memory = *(MemoryD3D11*)desc.memory;
+        Result res = ((TextureD3D11*)desc.texture)->Create(memory.GetLocation(), memory.GetPriority());
         if (res != Result::SUCCESS)
             return res;
     }
 
     return Result::SUCCESS;
-}
-
-inline void DeviceD3D11::FreeMemory(Memory& memory) {
-    Deallocate(GetStdAllocator(), (MemoryD3D11*)&memory);
 }
 
 inline FormatSupportBits DeviceD3D11::GetFormatSupport(Format format) const {

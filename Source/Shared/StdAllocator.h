@@ -43,8 +43,7 @@ inline void* AlignedMalloc(void* userArg, size_t size, size_t alignment) {
     StdAllocator_MaybeUnused(userArg);
 
     uint8_t* memory = (uint8_t*)malloc(size + sizeof(uint8_t*) + alignment - 1);
-
-    if (memory == nullptr)
+    if (!memory)
         return nullptr;
 
     uint8_t* alignedMemory = Align(memory + sizeof(uint8_t*), alignment);
@@ -55,14 +54,14 @@ inline void* AlignedMalloc(void* userArg, size_t size, size_t alignment) {
 }
 
 inline void* AlignedRealloc(void* userArg, void* memory, size_t size, size_t alignment) {
-    if (memory == nullptr)
+    if (!memory)
         return AlignedMalloc(userArg, size, alignment);
 
     uint8_t** memoryHeader = (uint8_t**)memory - 1;
     uint8_t* oldMemory = *memoryHeader;
-    uint8_t* newMemory = (uint8_t*)realloc(oldMemory, size + sizeof(uint8_t*) + alignment - 1);
 
-    if (newMemory == nullptr)
+    uint8_t* newMemory = (uint8_t*)realloc(oldMemory, size + sizeof(uint8_t*) + alignment - 1);
+    if (!newMemory)
         return nullptr;
 
     if (newMemory == oldMemory)
@@ -78,7 +77,7 @@ inline void* AlignedRealloc(void* userArg, void* memory, size_t size, size_t ali
 inline void AlignedFree(void* userArg, void* memory) {
     StdAllocator_MaybeUnused(userArg);
 
-    if (memory == nullptr)
+    if (!memory)
         return;
 
     uint8_t** memoryHeader = (uint8_t**)memory - 1;
@@ -88,13 +87,13 @@ inline void AlignedFree(void* userArg, void* memory) {
 
 #endif
 
-inline void CheckAndSetDefaultAllocator(MemoryAllocatorInterface& memoryAllocatorInterface) {
-    if (memoryAllocatorInterface.Allocate != nullptr)
+inline void CheckAndSetDefaultAllocator(AllocationCallbacks& allocationCallbacks) {
+    if (allocationCallbacks.Allocate)
         return;
 
-    memoryAllocatorInterface.Allocate = AlignedMalloc;
-    memoryAllocatorInterface.Reallocate = AlignedRealloc;
-    memoryAllocatorInterface.Free = AlignedFree;
+    allocationCallbacks.Allocate = AlignedMalloc;
+    allocationCallbacks.Reallocate = AlignedRealloc;
+    allocationCallbacks.Free = AlignedFree;
 }
 
 template <typename T>
@@ -105,7 +104,7 @@ struct StdAllocator {
     typedef std::true_type propagate_on_container_move_assignment;
     typedef std::false_type is_always_equal;
 
-    StdAllocator(const MemoryAllocatorInterface& memoryAllocatorInterface) : m_Interface(memoryAllocatorInterface) {
+    StdAllocator(const AllocationCallbacks& allocationCallbacks) : m_Interface(allocationCallbacks) {
     }
 
     StdAllocator(const StdAllocator<T>& allocator) : m_Interface(allocator.GetInterface()) {
@@ -128,7 +127,7 @@ struct StdAllocator {
         m_Interface.Free(m_Interface.userArg, memory);
     }
 
-    const MemoryAllocatorInterface& GetInterface() const {
+    const AllocationCallbacks& GetInterface() const {
         return m_Interface;
     }
 
@@ -136,7 +135,7 @@ struct StdAllocator {
     using other = StdAllocator<U>;
 
 private:
-    MemoryAllocatorInterface m_Interface = {};
+    AllocationCallbacks m_Interface = {};
 };
 
 template <typename T>
@@ -186,40 +185,24 @@ inline T* Allocate(StdAllocator<uint8_t>& allocator, Args&&... args) {
     return object;
 }
 
-template <typename T, typename... Args>
-inline T* AllocateArray(StdAllocator<uint8_t>& allocator, size_t arraySize, Args&&... args) {
-    const auto& lowLevelAllocator = allocator.GetInterface();
-    T* array = (T*)lowLevelAllocator.Allocate(lowLevelAllocator.userArg, arraySize * sizeof(T), alignof(T));
+template <typename T>
+inline void Destroy(StdAllocator<uint8_t>& allocator, T* object) {
+    if (object) {
+        object->~T();
 
-    if (array) {
-        for (size_t i = 0; i < arraySize; i++)
-            new (array + i) T(std::forward<Args>(args)...);
+        const auto& lowLevelAllocator = allocator.GetInterface();
+        lowLevelAllocator.Free(lowLevelAllocator.userArg, object);
     }
-
-    return array;
 }
 
 template <typename T>
-inline void Deallocate(StdAllocator<uint8_t>& allocator, T* object) {
-    if (!object)
-        return;
+inline void Destroy(T* object) {
+    if (object) {
+        object->~T();
 
-    object->~T();
-
-    const auto& lowLevelAllocator = allocator.GetInterface();
-    lowLevelAllocator.Free(lowLevelAllocator.userArg, object);
-}
-
-template <typename T>
-inline void DeallocateArray(StdAllocator<uint8_t>& allocator, T* array, size_t arraySize) {
-    if (!array)
-        return;
-
-    for (size_t i = 0; i < arraySize; i++)
-        (array + i)->~T();
-
-    const auto& lowLevelAllocator = allocator.GetInterface();
-    lowLevelAllocator.Free(lowLevelAllocator.userArg, array);
+        const auto& lowLevelAllocator = ((nri::DeviceBase&)object->GetDevice()).GetStdAllocator().GetInterface();
+        lowLevelAllocator.Free(lowLevelAllocator.userArg, object);
+    }
 }
 
 //================================================================================================================
@@ -234,19 +217,28 @@ using String = std::basic_string<char, std::char_traits<char>, StdAllocator<char
 
 //================================================================================================================
 
-constexpr size_t STACK_ALLOC_MAX_SIZE = 65536;
-
 template <typename T>
-constexpr size_t CountStackAllocationSize(size_t arraySize) {
-    return arraySize * sizeof(T) + alignof(T);
-}
+struct Scratch {
+    T* mem;
+    const AllocationCallbacks& allocator;
+    bool isHeap;
 
-#define ALLOCATE_SCRATCH(device, T, arraySize) \
-    (CountStackAllocationSize<T>(arraySize) <= STACK_ALLOC_MAX_SIZE) ? Align(((arraySize) ? (T*)_alloca(CountStackAllocationSize<T>(arraySize)) : nullptr), alignof(T)) \
-                                                                     : AllocateArray<T>((device).GetStdAllocator(), arraySize);
+    ~Scratch() {
+        if (isHeap)
+            allocator.Free(allocator.userArg, mem);
+    }
 
-#define FREE_SCRATCH(device, array, arraySize) \
-    if (array != nullptr && CountStackAllocationSize<decltype(array[0])>(arraySize) > STACK_ALLOC_MAX_SIZE) \
-        DeallocateArray((device).GetStdAllocator(), array, arraySize);
+    inline operator T*() const {
+        return mem;
+    }
+};
 
-#define STACK_ALLOC(T, arraySize) Align(((arraySize) ? (T*)_alloca(CountStackAllocationSize<T>(arraySize)) : nullptr), alignof(T))
+constexpr size_t MAX_STACK_ALLOC_SIZE = 128 * 1024;
+
+#define AllocateScratch(device, T, elementNum) \
+    {((elementNum) * sizeof(T) + alignof(T)) > MAX_STACK_ALLOC_SIZE \
+            ? (T*)(device).GetStdAllocator().GetInterface().Allocate((device).GetStdAllocator().GetInterface().userArg, (elementNum) * sizeof(T), alignof(T)) \
+            : (T*)Align((elementNum) ? (T*)_alloca(((elementNum) * sizeof(T) + alignof(T))) : nullptr, alignof(T)), \
+        (device).GetStdAllocator().GetInterface(), ((elementNum) * sizeof(T) + alignof(T)) > MAX_STACK_ALLOC_SIZE}
+
+#define StackAlloc(T, elementNum) Align(((elementNum) ? (T*)_alloca((elementNum) * sizeof(T) + alignof(T)) : nullptr), alignof(T))

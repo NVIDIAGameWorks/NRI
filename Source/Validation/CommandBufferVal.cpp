@@ -163,7 +163,7 @@ void CommandBufferVal::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdBeginRendering: the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "CmdBeginRendering: 'CmdBeginRendering' has been already called");
 
-    Descriptor** colors = STACK_ALLOC(Descriptor*, attachmentsDesc.colorNum);
+    Descriptor** colors = StackAlloc(Descriptor*, attachmentsDesc.colorNum);
     for (uint32_t i = 0; i < attachmentsDesc.colorNum; i++)
         colors[i] = NRI_GET_IMPL(Descriptor, attachmentsDesc.colors[i]);
 
@@ -189,7 +189,7 @@ void CommandBufferVal::EndRendering() {
 void CommandBufferVal::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdSetVertexBuffers: the command buffer must be in the recording state");
 
-    Buffer** buffersImpl = STACK_ALLOC(Buffer*, bufferNum);
+    Buffer** buffersImpl = StackAlloc(Buffer*, bufferNum);
     for (uint32_t i = 0; i < bufferNum; i++)
         buffersImpl[i] = NRI_GET_IMPL(Buffer, buffers[i]);
 
@@ -361,12 +361,12 @@ void CommandBufferVal::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
             return;
     }
 
-    BufferBarrierDesc* buffers = STACK_ALLOC(BufferBarrierDesc, barrierGroupDesc.bufferNum);
+    BufferBarrierDesc* buffers = StackAlloc(BufferBarrierDesc, barrierGroupDesc.bufferNum);
     memcpy(buffers, barrierGroupDesc.buffers, sizeof(BufferBarrierDesc) * barrierGroupDesc.bufferNum);
     for (uint32_t i = 0; i < barrierGroupDesc.bufferNum; i++)
         buffers[i].buffer = NRI_GET_IMPL(Buffer, barrierGroupDesc.buffers[i].buffer);
 
-    TextureBarrierDesc* textures = STACK_ALLOC(TextureBarrierDesc, barrierGroupDesc.textureNum);
+    TextureBarrierDesc* textures = StackAlloc(TextureBarrierDesc, barrierGroupDesc.textureNum);
     memcpy(textures, barrierGroupDesc.textures, sizeof(TextureBarrierDesc) * barrierGroupDesc.textureNum);
     for (uint32_t i = 0; i < barrierGroupDesc.textureNum; i++)
         textures[i].texture = NRI_GET_IMPL(Texture, barrierGroupDesc.textures[i].texture);
@@ -465,11 +465,6 @@ void CommandBufferVal::EndAnnotation() {
     m_AnnotationStack--;
 }
 
-void CommandBufferVal::Destroy() {
-    GetCoreInterface().DestroyCommandBuffer(*GetImpl());
-    Deallocate(m_Device.GetStdAllocator(), this);
-}
-
 void CommandBufferVal::BuildTopLevelAccelerationStructure(
     uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdBuildTopLevelAccelerationStructure: the command buffer must be in the recording state");
@@ -504,10 +499,10 @@ void CommandBufferVal::BuildBottomLevelAccelerationStructure(
     AccelerationStructure& dstImpl = *NRI_GET_IMPL(AccelerationStructure, &dst);
     Buffer& scratchImpl = *NRI_GET_IMPL(Buffer, &scratch);
 
-    Vector<GeometryObject> objectImplArray(geometryObjectNum, m_Device.GetStdAllocator());
-    ConvertGeometryObjectsVal(objectImplArray.data(), geometryObjects, geometryObjectNum);
+    Scratch<GeometryObject> objectImplArray = AllocateScratch(m_Device, GeometryObject, geometryObjectNum);
+    ConvertGeometryObjectsVal(objectImplArray, geometryObjects, geometryObjectNum);
 
-    GetRayTracingInterface().CmdBuildBottomLevelAccelerationStructure(*GetImpl(), geometryObjectNum, objectImplArray.data(), flags, dstImpl, scratchImpl, scratchOffset);
+    GetRayTracingInterface().CmdBuildBottomLevelAccelerationStructure(*GetImpl(), geometryObjectNum, objectImplArray, flags, dstImpl, scratchImpl, scratchOffset);
 }
 
 void CommandBufferVal::UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags,
@@ -547,10 +542,10 @@ void CommandBufferVal::UpdateBottomLevelAccelerationStructure(uint32_t geometryO
     AccelerationStructure& srcImpl = *NRI_GET_IMPL(AccelerationStructure, &src);
     Buffer& scratchImpl = *NRI_GET_IMPL(Buffer, &scratch);
 
-    Vector<GeometryObject> objectImplArray(geometryObjectNum, m_Device.GetStdAllocator());
-    ConvertGeometryObjectsVal(objectImplArray.data(), geometryObjects, geometryObjectNum);
+    Scratch<GeometryObject> objectImplArray = AllocateScratch(m_Device, GeometryObject, geometryObjectNum);
+    ConvertGeometryObjectsVal(objectImplArray, geometryObjects, geometryObjectNum);
 
-    GetRayTracingInterface().CmdUpdateBottomLevelAccelerationStructure(*GetImpl(), geometryObjectNum, objectImplArray.data(), flags, dstImpl, srcImpl, scratchImpl, scratchOffset);
+    GetRayTracingInterface().CmdUpdateBottomLevelAccelerationStructure(*GetImpl(), geometryObjectNum, objectImplArray, flags, dstImpl, srcImpl, scratchImpl, scratchOffset);
 }
 
 void CommandBufferVal::CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode) {
@@ -570,7 +565,7 @@ void CommandBufferVal::WriteAccelerationStructureSize(
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "CmdWriteAccelerationStructureSize: must be called outside of 'CmdBeginRendering/CmdEndRendering'");
     RETURN_ON_FAILURE(&m_Device, accelerationStructures != nullptr, ReturnVoid(), "CmdWriteAccelerationStructureSize: 'accelerationStructures' is NULL");
 
-    AccelerationStructure** accelerationStructureArray = STACK_ALLOC(AccelerationStructure*, accelerationStructureNum);
+    AccelerationStructure** accelerationStructureArray = StackAlloc(AccelerationStructure*, accelerationStructureNum);
     for (uint32_t i = 0; i < accelerationStructureNum; i++) {
         RETURN_ON_FAILURE(&m_Device, accelerationStructures[i] != nullptr, ReturnVoid(), "CmdWriteAccelerationStructureSize: 'accelerationStructures[%u]' is NULL", i);
 

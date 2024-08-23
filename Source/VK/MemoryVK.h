@@ -30,10 +30,6 @@ struct MemoryVK {
         return m_MappedMemory;
     }
 
-    inline bool OwnsNativeObjects() const {
-        return m_OwnsNativeObjects;
-    }
-
     ~MemoryVK();
 
     Result Create(const MemoryVKDesc& memoryDesc);
@@ -53,7 +49,7 @@ private:
     uint8_t* m_MappedMemory = nullptr;
     MemoryType m_Type = std::numeric_limits<MemoryType>::max();
     float m_Priority = 0.0f;
-    bool m_OwnsNativeObjects = false;
+    bool m_OwnsNativeObjects = true;
 };
 
 } // namespace nri

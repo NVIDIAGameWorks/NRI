@@ -38,6 +38,9 @@ static const bool NRI_CONST_NAME(VARIABLE_DESCRIPTOR_NUM) = true; // helper for 
 static const bool NRI_CONST_NAME(DESCRIPTOR_ARRAY) = true; // helper for "DescriptorRangeDesc::isArray"
 static const bool NRI_CONST_NAME(PARTIALLY_BOUND) = true; // helper for "DescriptorSetDesc::partiallyBound"
 
+// Readability
+#define NRI_OPTIONAL // i.e. can be 0 (keep an eye on comments)
+
 //===============================================================================================================================
 // Common
 //===============================================================================================================================
@@ -222,7 +225,7 @@ NRI_ENUM_BITS
     // Compute                                         // Invoked by  "CmdDispatch*" (not Rays)
     COMPUTE_SHADER                  = NRI_SET_BIT(10), //    Compute shader
 
-    // Ray tracing                                     // Invoked by "CmdDispatchRays"
+    // Ray tracing                                     // Invoked by "CmdDispatchRays*"
     RAYGEN_SHADER                   = NRI_SET_BIT(11), //    Ray generation shader
     MISS_SHADER                     = NRI_SET_BIT(12), //    Miss shader
     INTERSECTION_SHADER             = NRI_SET_BIT(13), //    Intersection shader
@@ -236,7 +239,7 @@ NRI_ENUM_BITS
     ACCELERATION_STRUCTURE          = NRI_SET_BIT(19), // Invoked by "Cmd*AccelerationStructure*"
 
     // Modifiers
-    INDIRECT                        = NRI_SET_BIT(20), // Invoked by "Indirect" command (used as addition to other bits)
+    INDIRECT                        = NRI_SET_BIT(20), // Invoked by "Indirect" command (used in addition to other bits)
 
     // Umbrella stages
     TESSELLATION_SHADERS            = NRI_ENUM_MEMBER_UNSCOPED(StageBits, TESS_CONTROL_SHADER) |
@@ -1060,10 +1063,10 @@ NRI_STRUCT(ShaderDesc)
 NRI_STRUCT(GraphicsPipelineDesc)
 {
     const NRI_NAME(PipelineLayout)* pipelineLayout;
-    const NRI_NAME(VertexInputDesc)* vertexInput; // optional
+    NRI_OPTIONAL const NRI_NAME(VertexInputDesc)* vertexInput;
     NRI_NAME(InputAssemblyDesc) inputAssembly;
     NRI_NAME(RasterizationDesc) rasterization;
-    const NRI_NAME(MultisampleDesc)* multisample; // optional
+    NRI_OPTIONAL const NRI_NAME(MultisampleDesc)* multisample;
     NRI_NAME(OutputMergerDesc) outputMerger;
     const NRI_NAME(ShaderDesc)* shaders;
     uint32_t shaderNum;
@@ -1218,7 +1221,7 @@ NRI_STRUCT(MemoryDesc)
     uint64_t size;
     uint32_t alignment;
     NRI_NAME(MemoryType) type;
-    bool mustBeDedicated;
+    bool mustBeDedicated; // must be put into a dedicated Memory, containing only 1 object with offset = 0
 };
 
 NRI_STRUCT(AllocateMemoryDesc)
@@ -1412,20 +1415,9 @@ NRI_ENUM
     MAX_NUM
 );
 
-// Provided for convinience, when a memory chunk needs to be allocated in advance and it's unclear which resource categories can be placed together
-NRI_ENUM
-(
-    MemoryTier, uint8_t,
-
-    ONE, // A memory can only support resources from a single resource category (buffers, color and depth-stencil attachments, all other textures)
-    TWO, // A memory can support resources from all 3 categories
-
-    MAX_NUM
-);
-
 NRI_STRUCT(AdapterDesc)
 {
-    char description[128];
+    char name[256];
     uint64_t luid;
     uint64_t videoMemorySize;
     uint64_t systemMemorySize;
@@ -1473,17 +1465,20 @@ NRI_STRUCT(DeviceDesc)
     uint64_t deviceUploadHeapSize; // ReBAR
     uint32_t memoryAllocationMaxNum;
     uint32_t samplerAllocationMaxNum;
-    uint32_t uploadBufferTextureRowAlignment;
-    uint32_t uploadBufferTextureSliceAlignment;
-    uint32_t typedBufferOffsetAlignment;
-    uint32_t constantBufferOffsetAlignment;
     uint32_t constantBufferMaxRange;
-    uint32_t storageBufferOffsetAlignment;
     uint32_t storageBufferMaxRange;
     uint32_t bufferTextureGranularity;
     uint64_t bufferMaxSize;
     uint32_t pushConstantsMaxSize;
-    NRI_NAME(MemoryTier) memoryTier;
+
+    // Memory alignment
+    uint32_t uploadBufferTextureRowAlignment;
+    uint32_t uploadBufferTextureSliceAlignment;
+    uint32_t typedBufferOffsetAlignment;
+    uint32_t constantBufferOffsetAlignment;
+    uint32_t storageBufferOffsetAlignment;
+    uint32_t rayTracingShaderTableAlignment;
+    uint32_t rayTracingScratchAlignment;
 
     // Shader resources
     uint32_t boundDescriptorSetMaxNum;
@@ -1537,11 +1532,9 @@ NRI_STRUCT(DeviceDesc)
 
     // Ray tracing
     uint32_t rayTracingShaderGroupIdentifierSize;
-    uint32_t rayTracingShaderTableAlignment;
     uint32_t rayTracingShaderTableMaxStride;
     uint32_t rayTracingShaderRecursionMaxDepth;
     uint32_t rayTracingGeometryObjectMaxNum;
-    uint32_t rayTracingScratchAlignment;
 
     // Mesh shaders
     uint32_t meshControlSharedMemoryMaxSize;
@@ -1588,6 +1581,7 @@ NRI_STRUCT(DeviceDesc)
     uint32_t isDrawMeshTasksIndirectSupported : 1;
     uint32_t isMeshShaderPipelineStatsSupported : 1;
     uint32_t isEnchancedBarrierSupported : 1; // aka - can "Layout" be ignored?
+    uint32_t isMemoryTier2Supported : 1; // a memory object can support resources from all 3 categories (buffers, attachments, all other textures)
 
     // Shader features
     uint32_t isShaderNativeI16Supported : 1;

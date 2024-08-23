@@ -8,9 +8,9 @@ NRI_FORWARD_STRUCT(Streamer);
 
 NRI_STRUCT(StreamerDesc)
 {    
-    // Statically allocated ring-buffer for dynamic constants (optional)
-    NRI_NAME(MemoryLocation) constantBufferMemoryLocation; // UPLOAD or DEVICE_UPLOAD
-    uint64_t constantBufferSize;
+    // Statically allocated ring-buffer for dynamic constants
+    NRI_OPTIONAL NRI_NAME(MemoryLocation) constantBufferMemoryLocation; // UPLOAD or DEVICE_UPLOAD
+    NRI_OPTIONAL uint64_t constantBufferSize;
 
     // Dynamically (re)allocated ring-buffer for copying and rendering (mandatory)
     NRI_NAME(MemoryLocation) dynamicBufferMemoryLocation; // UPLOAD or DEVICE_UPLOAD
@@ -24,9 +24,9 @@ NRI_STRUCT(BufferUpdateRequestDesc)
     const void* data; // pointer must be valid until "CopyStreamerUpdateRequests" call
     uint64_t dataSize;
 
-    // Destination (optional, ignored for constants)
-    NRI_NAME(Buffer)* dstBuffer;
-    uint64_t dstBufferOffset;
+    // Destination (ignored for constants)
+    NRI_OPTIONAL NRI_NAME(Buffer)* dstBuffer;
+    NRI_OPTIONAL uint64_t dstBufferOffset;
 };
 
 NRI_STRUCT(TextureUpdateRequestDesc)
@@ -36,7 +36,7 @@ NRI_STRUCT(TextureUpdateRequestDesc)
     uint32_t dataRowPitch;
     uint32_t dataSlicePitch;
 
-    // Destination (mandatory)
+    // Destination
     NRI_NAME(Texture)* dstTexture;
     NRI_NAME(TextureRegionDesc) dstRegionDesc;
 };

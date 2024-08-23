@@ -19,13 +19,19 @@ struct AccelerationStructureD3D12 {
         return m_Buffer;
     }
 
+    inline uint64_t GetUpdateScratchBufferSize() const {
+        return m_PrebuildInfo.UpdateScratchDataSizeInBytes;
+    }
+
+    inline uint64_t GetBuildScratchBufferSize() const {
+        return m_PrebuildInfo.ScratchDataSizeInBytes;
+    }
+
     ~AccelerationStructureD3D12();
 
     Result Create(const AccelerationStructureDesc& accelerationStructureDesc);
     Result Create(const AccelerationStructureD3D12Desc& accelerationStructureDesc);
-    void GetMemoryDesc(MemoryDesc& memoryDesc) const;
-    uint64_t GetUpdateScratchBufferSize() const;
-    uint64_t GetBuildScratchBufferSize() const;
+    Result Create(const AllocateAccelerationStructureDesc& accelerationStructureDesc);
     Result BindMemory(Memory* memory, uint64_t offset);
     Result CreateDescriptor(Descriptor*& descriptor) const;
 

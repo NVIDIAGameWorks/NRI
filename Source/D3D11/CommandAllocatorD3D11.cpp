@@ -29,9 +29,9 @@ Result CreateCommandBuffer(DeviceD3D11& device, ID3D11DeviceContext* precreatedC
     }
 
     if (isImmediate)
-        Deallocate(device.GetStdAllocator(), (CommandBufferEmuD3D11*)impl);
+        Destroy(device.GetStdAllocator(), (CommandBufferEmuD3D11*)impl);
     else
-        Deallocate(device.GetStdAllocator(), (CommandBufferD3D11*)impl);
+        Destroy(device.GetStdAllocator(), (CommandBufferD3D11*)impl);
 
     return result;
 }

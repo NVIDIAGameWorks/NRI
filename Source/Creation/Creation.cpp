@@ -17,7 +17,6 @@ Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, Devi
 #if NRI_USE_VULKAN
 Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
 Result CreateDeviceVK(const DeviceCreationVKDesc& deviceDesc, DeviceBase*& device);
-bool QueryVideoMemoryInfoVK(const Device& device, VideoMemoryInfo& videoMemoryInfo);
 #endif
 
 DeviceBase* CreateDeviceValidation(const DeviceCreationDesc& deviceCreationDesc, DeviceBase& device);
@@ -40,6 +39,30 @@ NRI_API Result NRI_CALL nriGetInterface(const Device& device, const char* interf
         realInterfaceSize = sizeof(HelperInterface);
         if (realInterfaceSize == interfaceSize)
             result = deviceBase.FillFunctionTable(*(HelperInterface*)interfacePtr);
+    } else if (hash == Hash(NRI_STRINGIFY(nri::LowLatencyInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(LowLatencyInterface)))) {
+        realInterfaceSize = sizeof(LowLatencyInterface);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(LowLatencyInterface*)interfacePtr);
+    } else if (hash == Hash(NRI_STRINGIFY(nri::MeshShaderInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(MeshShaderInterface)))) {
+        realInterfaceSize = sizeof(MeshShaderInterface);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(MeshShaderInterface*)interfacePtr);
+    } else if (hash == Hash(NRI_STRINGIFY(nri::RayTracingInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(RayTracingInterface)))) {
+        realInterfaceSize = sizeof(RayTracingInterface);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(RayTracingInterface*)interfacePtr);
+    } else if (hash == Hash(NRI_STRINGIFY(nri::StreamerInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(StreamerInterface)))) {
+        realInterfaceSize = sizeof(StreamerInterface);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(StreamerInterface*)interfacePtr);
+    } else if (hash == Hash(NRI_STRINGIFY(nri::SwapChainInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(SwapChainInterface)))) {
+        realInterfaceSize = sizeof(SwapChainInterface);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(SwapChainInterface*)interfacePtr);
+    } else if (hash == Hash(NRI_STRINGIFY(nri::ResourceAllocatorInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(ResourceAllocatorInterface)))) {
+        realInterfaceSize = sizeof(ResourceAllocatorInterface);
+        if (realInterfaceSize == interfaceSize)
+            result = deviceBase.FillFunctionTable(*(ResourceAllocatorInterface*)interfacePtr);
     } else if (hash == Hash(NRI_STRINGIFY(nri::WrapperD3D11Interface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(WrapperD3D11Interface)))) {
         realInterfaceSize = sizeof(WrapperD3D11Interface);
         if (realInterfaceSize == interfaceSize)
@@ -52,26 +75,6 @@ NRI_API Result NRI_CALL nriGetInterface(const Device& device, const char* interf
         realInterfaceSize = sizeof(WrapperVKInterface);
         if (realInterfaceSize == interfaceSize)
             result = deviceBase.FillFunctionTable(*(WrapperVKInterface*)interfacePtr);
-    } else if (hash == Hash(NRI_STRINGIFY(nri::SwapChainInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(SwapChainInterface)))) {
-        realInterfaceSize = sizeof(SwapChainInterface);
-        if (realInterfaceSize == interfaceSize)
-            result = deviceBase.FillFunctionTable(*(SwapChainInterface*)interfacePtr);
-    } else if (hash == Hash(NRI_STRINGIFY(nri::RayTracingInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(RayTracingInterface)))) {
-        realInterfaceSize = sizeof(RayTracingInterface);
-        if (realInterfaceSize == interfaceSize)
-            result = deviceBase.FillFunctionTable(*(RayTracingInterface*)interfacePtr);
-    } else if (hash == Hash(NRI_STRINGIFY(nri::MeshShaderInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(MeshShaderInterface)))) {
-        realInterfaceSize = sizeof(MeshShaderInterface);
-        if (realInterfaceSize == interfaceSize)
-            result = deviceBase.FillFunctionTable(*(MeshShaderInterface*)interfacePtr);
-    } else if (hash == Hash(NRI_STRINGIFY(nri::LowLatencyInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(LowLatencyInterface)))) {
-        realInterfaceSize = sizeof(LowLatencyInterface);
-        if (realInterfaceSize == interfaceSize)
-            result = deviceBase.FillFunctionTable(*(LowLatencyInterface*)interfacePtr);
-    } else if (hash == Hash(NRI_STRINGIFY(nri::StreamerInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(StreamerInterface)))) {
-        realInterfaceSize = sizeof(StreamerInterface);
-        if (realInterfaceSize == interfaceSize)
-            result = deviceBase.FillFunctionTable(*(StreamerInterface*)interfacePtr);
     }
 
     if (result == Result::INVALID_ARGUMENT)
@@ -106,7 +109,7 @@ NRI_API Result NRI_CALL nriCreateDevice(const DeviceCreationDesc& deviceCreation
 
     DeviceCreationDesc modifiedDeviceCreationDesc = deviceCreationDesc;
     CheckAndSetDefaultCallbacks(modifiedDeviceCreationDesc.callbackInterface);
-    CheckAndSetDefaultAllocator(modifiedDeviceCreationDesc.memoryAllocatorInterface);
+    CheckAndSetDefaultAllocator(modifiedDeviceCreationDesc.allocationCallbacks);
 
 #if NRI_USE_D3D11
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::D3D11)
@@ -132,17 +135,17 @@ NRI_API Result NRI_CALL nriCreateDevice(const DeviceCreationDesc& deviceCreation
 NRI_API Result NRI_CALL nriCreateDeviceFromD3D11Device(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc, Device*& device) {
     DeviceCreationDesc deviceCreationDesc = {};
     deviceCreationDesc.callbackInterface = deviceCreationD3D11Desc.callbackInterface;
-    deviceCreationDesc.memoryAllocatorInterface = deviceCreationD3D11Desc.memoryAllocatorInterface;
+    deviceCreationDesc.allocationCallbacks = deviceCreationD3D11Desc.allocationCallbacks;
     deviceCreationDesc.graphicsAPI = GraphicsAPI::D3D11;
     deviceCreationDesc.enableNRIValidation = deviceCreationD3D11Desc.enableNRIValidation;
 
     CheckAndSetDefaultCallbacks(deviceCreationDesc.callbackInterface);
-    CheckAndSetDefaultAllocator(deviceCreationDesc.memoryAllocatorInterface);
+    CheckAndSetDefaultAllocator(deviceCreationDesc.allocationCallbacks);
 
     DeviceCreationD3D11Desc tempDeviceCreationD3D11Desc = deviceCreationD3D11Desc;
 
     CheckAndSetDefaultCallbacks(tempDeviceCreationD3D11Desc.callbackInterface);
-    CheckAndSetDefaultAllocator(tempDeviceCreationD3D11Desc.memoryAllocatorInterface);
+    CheckAndSetDefaultAllocator(tempDeviceCreationD3D11Desc.allocationCallbacks);
 
     Result result = Result::UNSUPPORTED;
     DeviceBase* deviceImpl = nullptr;
@@ -160,17 +163,17 @@ NRI_API Result NRI_CALL nriCreateDeviceFromD3D11Device(const DeviceCreationD3D11
 NRI_API Result NRI_CALL nriCreateDeviceFromD3D12Device(const DeviceCreationD3D12Desc& deviceCreationD3D12Desc, Device*& device) {
     DeviceCreationDesc deviceCreationDesc = {};
     deviceCreationDesc.callbackInterface = deviceCreationD3D12Desc.callbackInterface;
-    deviceCreationDesc.memoryAllocatorInterface = deviceCreationD3D12Desc.memoryAllocatorInterface;
+    deviceCreationDesc.allocationCallbacks = deviceCreationD3D12Desc.allocationCallbacks;
     deviceCreationDesc.graphicsAPI = GraphicsAPI::D3D12;
     deviceCreationDesc.enableNRIValidation = deviceCreationD3D12Desc.enableNRIValidation;
 
     CheckAndSetDefaultCallbacks(deviceCreationDesc.callbackInterface);
-    CheckAndSetDefaultAllocator(deviceCreationDesc.memoryAllocatorInterface);
+    CheckAndSetDefaultAllocator(deviceCreationDesc.allocationCallbacks);
 
     DeviceCreationD3D12Desc tempDeviceCreationD3D12Desc = deviceCreationD3D12Desc;
 
     CheckAndSetDefaultCallbacks(tempDeviceCreationD3D12Desc.callbackInterface);
-    CheckAndSetDefaultAllocator(tempDeviceCreationD3D12Desc.memoryAllocatorInterface);
+    CheckAndSetDefaultAllocator(tempDeviceCreationD3D12Desc.allocationCallbacks);
 
     Result result = Result::UNSUPPORTED;
     DeviceBase* deviceImpl = nullptr;
@@ -188,18 +191,18 @@ NRI_API Result NRI_CALL nriCreateDeviceFromD3D12Device(const DeviceCreationD3D12
 NRI_API Result NRI_CALL nriCreateDeviceFromVkDevice(const DeviceCreationVKDesc& deviceCreationVKDesc, Device*& device) {
     DeviceCreationDesc deviceCreationDesc = {};
     deviceCreationDesc.callbackInterface = deviceCreationVKDesc.callbackInterface;
-    deviceCreationDesc.memoryAllocatorInterface = deviceCreationVKDesc.memoryAllocatorInterface;
+    deviceCreationDesc.allocationCallbacks = deviceCreationVKDesc.allocationCallbacks;
     deviceCreationDesc.spirvBindingOffsets = deviceCreationVKDesc.spirvBindingOffsets;
     deviceCreationDesc.graphicsAPI = GraphicsAPI::VK;
     deviceCreationDesc.enableNRIValidation = false;
 
     CheckAndSetDefaultCallbacks(deviceCreationDesc.callbackInterface);
-    CheckAndSetDefaultAllocator(deviceCreationDesc.memoryAllocatorInterface);
+    CheckAndSetDefaultAllocator(deviceCreationDesc.allocationCallbacks);
 
     DeviceCreationVKDesc tempDeviceCreationVKDesc = deviceCreationVKDesc;
 
     CheckAndSetDefaultCallbacks(tempDeviceCreationVKDesc.callbackInterface);
-    CheckAndSetDefaultAllocator(tempDeviceCreationVKDesc.memoryAllocatorInterface);
+    CheckAndSetDefaultAllocator(tempDeviceCreationVKDesc.allocationCallbacks);
 
     Result result = Result::UNSUPPORTED;
     DeviceBase* deviceImpl = nullptr;
@@ -215,7 +218,7 @@ NRI_API Result NRI_CALL nriCreateDeviceFromVkDevice(const DeviceCreationVKDesc& 
 }
 
 NRI_API void NRI_CALL nriDestroyDevice(Device& device) {
-    ((DeviceBase&)device).Destroy();
+    ((DeviceBase&)device).Destruct();
 }
 
 NRI_API Format NRI_CALL nriConvertVKFormatToNRI(uint32_t vkFormat) {
@@ -319,7 +322,7 @@ NRI_API Result NRI_CALL nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t
 
             AdapterDesc& adapterDesc = adapterDescs[i];
             memset(&adapterDesc, 0, sizeof(adapterDesc));
-            wcstombs(adapterDesc.description, desc.Description, GetCountOf(adapterDesc.description) - 1);
+            wcstombs(adapterDesc.name, desc.Description, GetCountOf(adapterDesc.name) - 1);
             adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
             adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
             adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
@@ -407,11 +410,11 @@ NRI_API Result NRI_CALL nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t
         if (result == VK_SUCCESS && deviceGroupNum) {
             if (adapterDescs) {
                 // Query device groups
-                VkPhysicalDeviceGroupProperties* deviceGroupProperties = STACK_ALLOC(VkPhysicalDeviceGroupProperties, deviceGroupNum);
+                VkPhysicalDeviceGroupProperties* deviceGroupProperties = StackAlloc(VkPhysicalDeviceGroupProperties, deviceGroupNum);
                 vkEnumeratePhysicalDeviceGroups(instance, &deviceGroupNum, deviceGroupProperties);
 
                 // Query device groups properties
-                AdapterDesc* adapterDescsSorted = STACK_ALLOC(AdapterDesc, deviceGroupNum);
+                AdapterDesc* adapterDescsSorted = StackAlloc(AdapterDesc, deviceGroupNum);
                 for (uint32_t i = 0; i < deviceGroupNum; i++) {
                     VkPhysicalDeviceIDProperties deviceIDProperties = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
                     VkPhysicalDeviceProperties2 properties2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
@@ -425,7 +428,7 @@ NRI_API Result NRI_CALL nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t
 
                     AdapterDesc& adapterDesc = adapterDescsSorted[i];
                     memset(&adapterDesc, 0, sizeof(adapterDesc));
-                    strncpy(adapterDesc.description, properties2.properties.deviceName, sizeof(adapterDesc.description));
+                    strncpy(adapterDesc.name, properties2.properties.deviceName, sizeof(adapterDesc.name));
                     adapterDesc.luid = *(uint64_t*)&deviceIDProperties.deviceLUID[0];
                     adapterDesc.deviceId = properties2.properties.deviceID;
                     adapterDesc.vendor = GetVendorFromID(properties2.properties.vendorID);

@@ -26,7 +26,7 @@ void DescriptorSetVal::UpdateDescriptorRanges(uint32_t rangeOffset, uint32_t ran
         "UpdateDescriptorRanges: 'rangeOffset' + 'rangeNum' is greater than the number of ranges. (rangeOffset=%u, rangeNum=%u, rangeNum=%u)", rangeOffset, rangeNum,
         GetDesc().rangeNum);
 
-    DescriptorRangeUpdateDesc* rangeUpdateDescsImpl = STACK_ALLOC(DescriptorRangeUpdateDesc, rangeNum);
+    DescriptorRangeUpdateDesc* rangeUpdateDescsImpl = StackAlloc(DescriptorRangeUpdateDesc, rangeNum);
     for (uint32_t i = 0; i < rangeNum; i++) {
         const DescriptorRangeUpdateDesc& updateDesc = rangeUpdateDescs[i];
         const DescriptorRangeDesc& rangeDesc = GetDesc().ranges[rangeOffset + i];
@@ -46,7 +46,7 @@ void DescriptorSetVal::UpdateDescriptorRanges(uint32_t rangeOffset, uint32_t ran
         DescriptorRangeUpdateDesc& dstDesc = rangeUpdateDescsImpl[i];
 
         dstDesc = updateDesc;
-        dstDesc.descriptors = STACK_ALLOC(Descriptor*, updateDesc.descriptorNum);
+        dstDesc.descriptors = StackAlloc(Descriptor*, updateDesc.descriptorNum);
         Descriptor** descriptors = (Descriptor**)dstDesc.descriptors;
 
         for (uint32_t j = 0; j < updateDesc.descriptorNum; j++) {
@@ -72,7 +72,7 @@ void DescriptorSetVal::UpdateDynamicConstantBuffers(uint32_t baseBuffer, uint32_
 
     RETURN_ON_FAILURE(&m_Device, descriptors != nullptr, ReturnVoid(), "UpdateDynamicConstantBuffers: 'descriptors' is NULL");
 
-    Descriptor** descriptorsImpl = STACK_ALLOC(Descriptor*, bufferNum);
+    Descriptor** descriptorsImpl = StackAlloc(Descriptor*, bufferNum);
     for (uint32_t i = 0; i < bufferNum; i++) {
         RETURN_ON_FAILURE(&m_Device, descriptors[i] != nullptr, ReturnVoid(), "UpdateDynamicConstantBuffers: 'descriptors[%u]' is NULL", i);
 

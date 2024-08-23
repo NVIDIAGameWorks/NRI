@@ -9,6 +9,7 @@
 #include "Extensions/NRILowLatency.h"
 #include "Extensions/NRIMeshShader.h"
 #include "Extensions/NRIRayTracing.h"
+#include "Extensions/NRIResourceAllocator.h"
 #include "Extensions/NRIStreamer.h"
 #include "Extensions/NRISwapChain.h"
 #include "Extensions/NRIWrapperD3D11.h"
@@ -23,7 +24,7 @@
 
 #include "Lock.h"
 
-typedef nri::MemoryAllocatorInterface MemoryAllocatorInterface;
+typedef nri::AllocationCallbacks AllocationCallbacks;
 #include "StdAllocator.h"
 
 #ifdef _WIN32
@@ -147,8 +148,7 @@ void* GetSharedLibraryFunction(Library& library, const char* name);
 void UnloadSharedLibrary(Library& library);
 extern const char* VULKAN_LOADER_NAME;
 
-//================================================================================================================
-// TODO: This code is Windows/D3D specific, so it's probably better to move it into a separate header
+// Windows/D3D specific
 #ifdef _WIN32
 
 struct IUnknown;

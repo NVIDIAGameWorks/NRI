@@ -45,8 +45,8 @@ DeviceVal::DeviceVal(const CallbackInterface& callbacks, const StdAllocator<uint
 
 DeviceVal::~DeviceVal() {
     for (size_t i = 0; i < m_CommandQueues.size(); i++)
-        Deallocate(GetStdAllocator(), m_CommandQueues[i]);
-    ((DeviceBase*)&m_Device)->Destroy();
+        Destroy(GetStdAllocator(), m_CommandQueues[i]);
+    ((DeviceBase*)&m_Device)->Destruct();
 }
 
 bool DeviceVal::Create() {
@@ -67,13 +67,18 @@ bool DeviceVal::Create() {
         return false;
     }
 
+    if (deviceBase.FillFunctionTable(m_ResourceAllocatorAPI) != Result::SUCCESS) {
+        REPORT_ERROR(this, "Failed to get 'ResourceAllocatorInterface' interface");
+        return false;
+    }
+
+    m_IsLowLatencySupported = deviceBase.FillFunctionTable(m_LowLatencyAPI) == Result::SUCCESS;
+    m_IsMeshShaderSupported = deviceBase.FillFunctionTable(m_MeshShaderAPI) == Result::SUCCESS;
+    m_IsRayTracingSupported = deviceBase.FillFunctionTable(m_RayTracingAPI) == Result::SUCCESS;
+    m_IsSwapChainSupported = deviceBase.FillFunctionTable(m_SwapChainAPI) == Result::SUCCESS;
     m_IsWrapperD3D11Supported = deviceBase.FillFunctionTable(m_WrapperD3D11API) == Result::SUCCESS;
     m_IsWrapperD3D12Supported = deviceBase.FillFunctionTable(m_WrapperD3D12API) == Result::SUCCESS;
     m_IsWrapperVKSupported = deviceBase.FillFunctionTable(m_WrapperVKAPI) == Result::SUCCESS;
-    m_IsSwapChainSupported = deviceBase.FillFunctionTable(m_SwapChainAPI) == Result::SUCCESS;
-    m_IsRayTracingSupported = deviceBase.FillFunctionTable(m_RayTracingAPI) == Result::SUCCESS;
-    m_IsMeshShaderSupported = deviceBase.FillFunctionTable(m_MeshShaderAPI) == Result::SUCCESS;
-    m_IsLowLatencySupported = deviceBase.FillFunctionTable(m_LowLatencyAPI) == Result::SUCCESS;
 
     return true;
 }
@@ -81,16 +86,6 @@ bool DeviceVal::Create() {
 void DeviceVal::RegisterMemoryType(MemoryType memoryType, MemoryLocation memoryLocation) {
     ExclusiveScope lockScope(m_Lock);
     m_MemoryTypeMap[memoryType] = memoryLocation;
-}
-
-void DeviceVal::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
-    GetCoreInterface().GetBufferMemoryDesc(GetImpl(), bufferDesc, memoryLocation, memoryDesc);
-    RegisterMemoryType(memoryDesc.type, memoryLocation);
-}
-
-void DeviceVal::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
-    GetCoreInterface().GetTextureMemoryDesc(GetImpl(), textureDesc, memoryLocation, memoryDesc);
-    RegisterMemoryType(memoryDesc.type, memoryLocation);
 }
 
 Result DeviceVal::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
@@ -104,19 +99,17 @@ Result DeviceVal::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*
     swapChainDescImpl.commandQueue = NRI_GET_IMPL(CommandQueue, swapChainDesc.commandQueue);
 
     SwapChain* swapChainImpl;
-    const Result result = m_SwapChainAPI.CreateSwapChain(m_Device, swapChainDescImpl, swapChainImpl);
+    Result result = m_SwapChainAPI.CreateSwapChain(m_Device, swapChainDescImpl, swapChainImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, swapChainImpl != nullptr, Result::FAILURE, "CreateSwapChain: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         swapChain = (SwapChain*)Allocate<SwapChainVal>(GetStdAllocator(), *this, swapChainImpl, swapChainDesc);
-    }
 
     return result;
 }
 
 void DeviceVal::DestroySwapChain(SwapChain& swapChain) {
     m_SwapChainAPI.DestroySwapChain(*NRI_GET_IMPL(SwapChain, &swapChain));
-    Deallocate(GetStdAllocator(), (SwapChainVal*)&swapChain);
+    Destroy(GetStdAllocator(), (SwapChainVal*)&swapChain);
 }
 
 void DeviceVal::SetDebugName(const char* name) {
@@ -132,7 +125,7 @@ Result DeviceVal::GetCommandQueue(CommandQueueType commandQueueType, CommandQueu
     RETURN_ON_FAILURE(this, commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "GetCommandQueue: 'commandQueueType' is invalid");
 
     CommandQueue* commandQueueImpl;
-    const Result result = m_CoreAPI.GetCommandQueue(m_Device, commandQueueType, commandQueueImpl);
+    Result result = m_CoreAPI.GetCommandQueue(m_Device, commandQueueType, commandQueueImpl);
 
     if (result == Result::SUCCESS) {
         const uint32_t index = (uint32_t)commandQueueType;
@@ -149,24 +142,20 @@ Result DeviceVal::CreateCommandAllocator(const CommandQueue& commandQueue, Comma
     auto commandQueueImpl = NRI_GET_IMPL(CommandQueue, &commandQueue);
 
     CommandAllocator* commandAllocatorImpl = nullptr;
-    const Result result = m_CoreAPI.CreateCommandAllocator(*commandQueueImpl, commandAllocatorImpl);
+    Result result = m_CoreAPI.CreateCommandAllocator(*commandQueueImpl, commandAllocatorImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, commandAllocatorImpl != nullptr, Result::FAILURE, "CreateCommandAllocator: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         commandAllocator = (CommandAllocator*)Allocate<CommandAllocatorVal>(GetStdAllocator(), *this, commandAllocatorImpl);
-    }
 
     return result;
 }
 
 Result DeviceVal::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
     DescriptorPool* descriptorPoolImpl = nullptr;
-    const Result result = m_CoreAPI.CreateDescriptorPool(m_Device, descriptorPoolDesc, descriptorPoolImpl);
+    Result result = m_CoreAPI.CreateDescriptorPool(m_Device, descriptorPoolDesc, descriptorPoolImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, descriptorPoolImpl != nullptr, Result::FAILURE, "CreateDescriptorPool: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         descriptorPool = (DescriptorPool*)Allocate<DescriptorPoolVal>(GetStdAllocator(), *this, descriptorPoolImpl, descriptorPoolDesc);
-    }
 
     return result;
 }
@@ -175,12 +164,22 @@ Result DeviceVal::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer) {
     RETURN_ON_FAILURE(this, bufferDesc.size != 0, Result::INVALID_ARGUMENT, "CreateBuffer: 'bufferDesc.size' is 0");
 
     Buffer* bufferImpl = nullptr;
-    const Result result = m_CoreAPI.CreateBuffer(m_Device, bufferDesc, bufferImpl);
+    Result result = m_CoreAPI.CreateBuffer(m_Device, bufferDesc, bufferImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, bufferImpl != nullptr, Result::FAILURE, "CreateBuffer: 'impl' is NULL");
-        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, bufferImpl);
-    }
+    if (result == Result::SUCCESS)
+        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, bufferImpl, false);
+
+    return result;
+}
+
+Result DeviceVal::CreateBuffer(const AllocateBufferDesc& bufferDesc, Buffer*& buffer) {
+    RETURN_ON_FAILURE(this, bufferDesc.desc.size != 0, Result::INVALID_ARGUMENT, "AllocateBuffer: 'bufferDesc.size' is 0");
+
+    Buffer* bufferImpl = nullptr;
+    Result result = m_ResourceAllocatorAPI.AllocateBuffer(m_Device, bufferDesc, bufferImpl);
+
+    if (result == Result::SUCCESS)
+        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, bufferImpl, true);
 
     return result;
 }
@@ -219,12 +218,34 @@ Result DeviceVal::CreateTexture(const TextureDesc& textureDesc, Texture*& textur
     RETURN_ON_FAILURE(this, textureDesc.sampleNum != 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.sampleNum' is 0");
 
     Texture* textureImpl = nullptr;
-    const Result result = m_CoreAPI.CreateTexture(m_Device, textureDesc, textureImpl);
+    Result result = m_CoreAPI.CreateTexture(m_Device, textureDesc, textureImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, textureImpl != nullptr, Result::FAILURE, "CreateTexture: 'impl' is NULL");
-        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, textureImpl);
-    }
+    if (result == Result::SUCCESS)
+        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, textureImpl, false);
+
+    return result;
+}
+
+Result DeviceVal::CreateTexture(const AllocateTextureDesc& textureDesc, Texture*& texture) {
+    Mip_t maxMipNum = GetMaxMipNum(textureDesc.desc.width, textureDesc.desc.height, textureDesc.desc.depth);
+
+    RETURN_ON_FAILURE(
+        this, textureDesc.desc.format > Format::UNKNOWN && textureDesc.desc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.format' is invalid");
+
+    RETURN_ON_FAILURE(this, textureDesc.desc.width != 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.width' is 0");
+    RETURN_ON_FAILURE(this, textureDesc.desc.height != 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.height' is 0");
+    RETURN_ON_FAILURE(this, textureDesc.desc.depth != 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.depth' is 0");
+    RETURN_ON_FAILURE(this, textureDesc.desc.mipNum != 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.mipNum' is 0");
+    RETURN_ON_FAILURE(
+        this, textureDesc.desc.mipNum <= maxMipNum, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.mipNum = %u' can't be > %u", textureDesc.desc.mipNum, maxMipNum);
+    RETURN_ON_FAILURE(this, textureDesc.desc.arraySize != 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.arraySize' is 0");
+    RETURN_ON_FAILURE(this, textureDesc.desc.sampleNum != 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.sampleNum' is 0");
+
+    Texture* textureImpl = nullptr;
+    Result result = m_ResourceAllocatorAPI.AllocateTexture(m_Device, textureDesc, textureImpl);
+
+    if (result == Result::SUCCESS)
+        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, textureImpl, true);
 
     return result;
 }
@@ -247,12 +268,10 @@ Result DeviceVal::CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descrip
     bufferViewDescImpl.buffer = NRI_GET_IMPL(Buffer, bufferViewDesc.buffer);
 
     Descriptor* descriptorImpl = nullptr;
-    const Result result = m_CoreAPI.CreateBufferView(bufferViewDescImpl, descriptorImpl);
+    Result result = m_CoreAPI.CreateBufferView(bufferViewDescImpl, descriptorImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, descriptorImpl != nullptr, Result::FAILURE, "CreateDescriptor: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         bufferView = (Descriptor*)Allocate<DescriptorVal>(GetStdAllocator(), *this, descriptorImpl, bufferViewDesc);
-    }
 
     return result;
 }
@@ -285,12 +304,10 @@ Result DeviceVal::CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Des
     textureViewDescImpl.texture = NRI_GET_IMPL(Texture, textureViewDesc.texture);
 
     Descriptor* descriptorImpl = nullptr;
-    const Result result = m_CoreAPI.CreateTexture1DView(textureViewDescImpl, descriptorImpl);
+    Result result = m_CoreAPI.CreateTexture1DView(textureViewDescImpl, descriptorImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, descriptorImpl != nullptr, Result::FAILURE, "CreateDescriptor: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         textureView = (Descriptor*)Allocate<DescriptorVal>(GetStdAllocator(), *this, descriptorImpl, textureViewDesc);
-    }
 
     return result;
 }
@@ -328,12 +345,10 @@ Result DeviceVal::CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Des
     textureViewDescImpl.texture = NRI_GET_IMPL(Texture, textureViewDesc.texture);
 
     Descriptor* descriptorImpl = nullptr;
-    const Result result = m_CoreAPI.CreateTexture2DView(textureViewDescImpl, descriptorImpl);
+    Result result = m_CoreAPI.CreateTexture2DView(textureViewDescImpl, descriptorImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, descriptorImpl != nullptr, Result::FAILURE, "CreateDescriptor: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         textureView = (Descriptor*)Allocate<DescriptorVal>(GetStdAllocator(), *this, descriptorImpl, textureViewDesc);
-    }
 
     return result;
 }
@@ -371,12 +386,10 @@ Result DeviceVal::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Des
     textureViewDescImpl.texture = NRI_GET_IMPL(Texture, textureViewDesc.texture);
 
     Descriptor* descriptorImpl = nullptr;
-    const Result result = m_CoreAPI.CreateTexture3DView(textureViewDescImpl, descriptorImpl);
+    Result result = m_CoreAPI.CreateTexture3DView(textureViewDescImpl, descriptorImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, descriptorImpl != nullptr, Result::FAILURE, "CreateDescriptor: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         textureView = (Descriptor*)Allocate<DescriptorVal>(GetStdAllocator(), *this, descriptorImpl, textureViewDesc);
-    }
 
     return result;
 }
@@ -393,12 +406,10 @@ Result DeviceVal::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& 
     RETURN_ON_FAILURE(this, samplerDesc.borderColor < BorderColor::MAX_NUM, Result::INVALID_ARGUMENT, "CreateSampler: 'samplerDesc.borderColor' is invalid");
 
     Descriptor* samplerImpl = nullptr;
-    const Result result = m_CoreAPI.CreateSampler(m_Device, samplerDesc, samplerImpl);
+    Result result = m_CoreAPI.CreateSampler(m_Device, samplerDesc, samplerImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, samplerImpl != nullptr, Result::FAILURE, "CreateDescriptor: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         sampler = (Descriptor*)Allocate<DescriptorVal>(GetStdAllocator(), *this, samplerImpl);
-    }
 
     return result;
 }
@@ -443,12 +454,10 @@ Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutD
     }
 
     PipelineLayout* pipelineLayoutImpl = nullptr;
-    const Result result = m_CoreAPI.CreatePipelineLayout(m_Device, pipelineLayoutDesc, pipelineLayoutImpl);
+    Result result = m_CoreAPI.CreatePipelineLayout(m_Device, pipelineLayoutDesc, pipelineLayoutImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, pipelineLayoutImpl != nullptr, Result::FAILURE, "CreatePipelineLayout: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         pipelineLayout = (PipelineLayout*)Allocate<PipelineLayoutVal>(GetStdAllocator(), *this, pipelineLayoutImpl, pipelineLayoutDesc);
-    }
 
     return result;
 }
@@ -497,12 +506,10 @@ Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDes
     graphicsPipelineDescImpl.pipelineLayout = NRI_GET_IMPL(PipelineLayout, graphicsPipelineDesc.pipelineLayout);
 
     Pipeline* pipelineImpl = nullptr;
-    const Result result = m_CoreAPI.CreateGraphicsPipeline(m_Device, graphicsPipelineDescImpl, pipelineImpl);
+    Result result = m_CoreAPI.CreateGraphicsPipeline(m_Device, graphicsPipelineDescImpl, pipelineImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, pipelineImpl != nullptr, Result::FAILURE, "CreatePipeline: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetStdAllocator(), *this, pipelineImpl, graphicsPipelineDesc);
-    }
 
     return result;
 }
@@ -519,12 +526,10 @@ Result DeviceVal::CreatePipeline(const ComputePipelineDesc& computePipelineDesc,
     computePipelineDescImpl.pipelineLayout = NRI_GET_IMPL(PipelineLayout, computePipelineDesc.pipelineLayout);
 
     Pipeline* pipelineImpl = nullptr;
-    const Result result = m_CoreAPI.CreateComputePipeline(m_Device, computePipelineDescImpl, pipelineImpl);
+    Result result = m_CoreAPI.CreateComputePipeline(m_Device, computePipelineDescImpl, pipelineImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, pipelineImpl != nullptr, Result::FAILURE, "CreatePipeline: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetStdAllocator(), *this, pipelineImpl, computePipelineDesc);
-    }
 
     return result;
 }
@@ -534,76 +539,78 @@ Result DeviceVal::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*
     RETURN_ON_FAILURE(this, queryPoolDesc.capacity > 0, Result::INVALID_ARGUMENT, "CreateQueryPool: 'queryPoolDesc.capacity' is 0");
 
     QueryPool* queryPoolImpl = nullptr;
-    const Result result = m_CoreAPI.CreateQueryPool(m_Device, queryPoolDesc, queryPoolImpl);
+    Result result = m_CoreAPI.CreateQueryPool(m_Device, queryPoolDesc, queryPoolImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, queryPoolImpl != nullptr, Result::FAILURE, "CreateQueryPool: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         queryPool = (QueryPool*)Allocate<QueryPoolVal>(GetStdAllocator(), *this, queryPoolImpl, queryPoolDesc.queryType, queryPoolDesc.capacity);
-    }
 
     return result;
 }
 
 Result DeviceVal::CreateFence(uint64_t initialValue, Fence*& fence) {
     Fence* fenceImpl;
-    const Result result = m_CoreAPI.CreateFence(m_Device, initialValue, fenceImpl);
+    Result result = m_CoreAPI.CreateFence(m_Device, initialValue, fenceImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, fenceImpl != nullptr, Result::FAILURE, "CreateFence: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         fence = (Fence*)Allocate<FenceVal>(GetStdAllocator(), *this, fenceImpl);
-    }
 
     return result;
 }
 
+void DeviceVal::DestroyCommandBuffer(CommandBuffer& commandBuffer) {
+    m_CoreAPI.DestroyCommandBuffer(*NRI_GET_IMPL(CommandBuffer, &commandBuffer));
+    Destroy(GetStdAllocator(), (CommandBufferVal*)&commandBuffer);
+}
+
 void DeviceVal::DestroyCommandAllocator(CommandAllocator& commandAllocator) {
     m_CoreAPI.DestroyCommandAllocator(*NRI_GET_IMPL(CommandAllocator, &commandAllocator));
-    Deallocate(GetStdAllocator(), (CommandAllocatorVal*)&commandAllocator);
+    Destroy(GetStdAllocator(), (CommandAllocatorVal*)&commandAllocator);
 }
 
 void DeviceVal::DestroyDescriptorPool(DescriptorPool& descriptorPool) {
     m_CoreAPI.DestroyDescriptorPool(*NRI_GET_IMPL(DescriptorPool, &descriptorPool));
-    Deallocate(GetStdAllocator(), (DescriptorPoolVal*)&descriptorPool);
+    Destroy(GetStdAllocator(), (DescriptorPoolVal*)&descriptorPool);
 }
 
 void DeviceVal::DestroyBuffer(Buffer& buffer) {
     m_CoreAPI.DestroyBuffer(*NRI_GET_IMPL(Buffer, &buffer));
-    Deallocate(GetStdAllocator(), (BufferVal*)&buffer);
+    Destroy(GetStdAllocator(), (BufferVal*)&buffer);
 }
 
 void DeviceVal::DestroyTexture(Texture& texture) {
     m_CoreAPI.DestroyTexture(*NRI_GET_IMPL(Texture, &texture));
-    Deallocate(GetStdAllocator(), (TextureVal*)&texture);
+    Destroy(GetStdAllocator(), (TextureVal*)&texture);
 }
 
 void DeviceVal::DestroyDescriptor(Descriptor& descriptor) {
     m_CoreAPI.DestroyDescriptor(*NRI_GET_IMPL(Descriptor, &descriptor));
-    Deallocate(GetStdAllocator(), (DescriptorVal*)&descriptor);
+    Destroy(GetStdAllocator(), (DescriptorVal*)&descriptor);
 }
 
 void DeviceVal::DestroyPipelineLayout(PipelineLayout& pipelineLayout) {
     m_CoreAPI.DestroyPipelineLayout(*NRI_GET_IMPL(PipelineLayout, &pipelineLayout));
-    Deallocate(GetStdAllocator(), (PipelineLayoutVal*)&pipelineLayout);
+    Destroy(GetStdAllocator(), (PipelineLayoutVal*)&pipelineLayout);
 }
 
 void DeviceVal::DestroyPipeline(Pipeline& pipeline) {
     m_CoreAPI.DestroyPipeline(*NRI_GET_IMPL(Pipeline, &pipeline));
-    Deallocate(GetStdAllocator(), (PipelineVal*)&pipeline);
+    Destroy(GetStdAllocator(), (PipelineVal*)&pipeline);
 }
 
 void DeviceVal::DestroyQueryPool(QueryPool& queryPool) {
     m_CoreAPI.DestroyQueryPool(*NRI_GET_IMPL(QueryPool, &queryPool));
-    Deallocate(GetStdAllocator(), (QueryPoolVal*)&queryPool);
+    Destroy(GetStdAllocator(), (QueryPoolVal*)&queryPool);
 }
 
 void DeviceVal::DestroyFence(Fence& fence) {
     m_CoreAPI.DestroyFence(*NRI_GET_IMPL(Fence, &fence));
-    Deallocate(GetStdAllocator(), (FenceVal*)&fence);
+    Destroy(GetStdAllocator(), (FenceVal*)&fence);
 }
 
 Result DeviceVal::AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
     RETURN_ON_FAILURE(this, allocateMemoryDesc.size > 0, Result::INVALID_ARGUMENT, "AllocateMemory: 'allocateMemoryDesc.size' is 0");
-    RETURN_ON_FAILURE(this, allocateMemoryDesc.priority >= -1.0f && allocateMemoryDesc.priority <= 1.0f, Result::INVALID_ARGUMENT, "AllocateMemory: 'allocateMemoryDesc.priority' outside of [-1; 1] range");
+    RETURN_ON_FAILURE(this, allocateMemoryDesc.priority >= -1.0f && allocateMemoryDesc.priority <= 1.0f, Result::INVALID_ARGUMENT,
+        "AllocateMemory: 'allocateMemoryDesc.priority' outside of [-1; 1] range");
 
     std::unordered_map<MemoryType, MemoryLocation>::iterator it;
     std::unordered_map<MemoryType, MemoryLocation>::iterator end;
@@ -616,23 +623,18 @@ Result DeviceVal::AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, M
     RETURN_ON_FAILURE(this, it != end, Result::FAILURE, "AllocateMemory: 'memoryType' is invalid");
 
     Memory* memoryImpl;
-    const Result result = m_CoreAPI.AllocateMemory(m_Device, allocateMemoryDesc, memoryImpl);
+    Result result = m_CoreAPI.AllocateMemory(m_Device, allocateMemoryDesc, memoryImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, memoryImpl != nullptr, Result::FAILURE, "AllocateMemory: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         memory = (Memory*)Allocate<MemoryVal>(GetStdAllocator(), *this, memoryImpl, allocateMemoryDesc.size, it->second);
-    }
 
     return result;
 }
 
 Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
-    if (memoryBindingDescNum == 0)
-        return Result::SUCCESS;
-
     RETURN_ON_FAILURE(this, memoryBindingDescs != nullptr, Result::INVALID_ARGUMENT, "BindBufferMemory: 'memoryBindingDescs' is NULL");
 
-    BufferMemoryBindingDesc* memoryBindingDescsImpl = STACK_ALLOC(BufferMemoryBindingDesc, memoryBindingDescNum);
+    BufferMemoryBindingDesc* memoryBindingDescsImpl = StackAlloc(BufferMemoryBindingDesc, memoryBindingDescNum);
 
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         BufferMemoryBindingDesc& destDesc = memoryBindingDescsImpl[i];
@@ -655,7 +657,7 @@ Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingD
             continue;
 
         MemoryDesc memoryDesc = {};
-        GetMemoryDesc(buffer.GetDesc(), memory.GetMemoryLocation(), memoryDesc);
+        GetCoreInterface().GetBufferMemoryDesc(GetImpl(), buffer.GetDesc(), memory.GetMemoryLocation(), memoryDesc);
 
         RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
             "BindBufferMemory: 'memoryBindingDescs[%u].offset' must be zero for dedicated allocation", i);
@@ -669,7 +671,7 @@ Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingD
         RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "BindBufferMemory: 'memoryBindingDescs[%u].offset' is invalid", i);
     }
 
-    const Result result = m_CoreAPI.BindBufferMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
+    Result result = m_CoreAPI.BindBufferMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
 
     if (result == Result::SUCCESS) {
         for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
@@ -682,9 +684,9 @@ Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingD
 }
 
 Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
-    RETURN_ON_FAILURE(this, memoryBindingDescs != nullptr || memoryBindingDescNum == 0, Result::INVALID_ARGUMENT, "BindTextureMemory: 'memoryBindingDescs' is a NULL");
+    RETURN_ON_FAILURE(this, memoryBindingDescs != nullptr, Result::INVALID_ARGUMENT, "BindTextureMemory: 'memoryBindingDescs' is a NULL");
 
-    TextureMemoryBindingDesc* memoryBindingDescsImpl = STACK_ALLOC(TextureMemoryBindingDesc, memoryBindingDescNum);
+    TextureMemoryBindingDesc* memoryBindingDescsImpl = StackAlloc(TextureMemoryBindingDesc, memoryBindingDescNum);
 
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         TextureMemoryBindingDesc& destDesc = memoryBindingDescsImpl[i];
@@ -707,7 +709,7 @@ Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindin
             continue;
 
         MemoryDesc memoryDesc = {};
-        GetMemoryDesc(texture.GetDesc(), memory.GetMemoryLocation(), memoryDesc);
+        GetCoreInterface().GetTextureMemoryDesc(GetImpl(), texture.GetDesc(), memory.GetMemoryLocation(), memoryDesc);
 
         RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
             "BindTextureMemory: 'memoryBindingDescs[%u].offset' must be zero for dedicated allocation", i);
@@ -721,7 +723,7 @@ Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindin
         RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "BindTextureMemory: 'memoryBindingDescs[%u].offset' is invalid", i);
     }
 
-    const Result result = m_CoreAPI.BindTextureMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
+    Result result = m_CoreAPI.BindTextureMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
 
     if (result == Result::SUCCESS) {
         for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
@@ -743,7 +745,7 @@ void DeviceVal::FreeMemory(Memory& memory) {
     }
 
     m_CoreAPI.FreeMemory(*NRI_GET_IMPL(Memory, &memory));
-    Deallocate(GetStdAllocator(), (MemoryVal*)&memory);
+    Destroy(GetStdAllocator(), (MemoryVal*)&memory);
 }
 
 FormatSupportBits DeviceVal::GetFormatSupport(Format format) const {
@@ -752,186 +754,154 @@ FormatSupportBits DeviceVal::GetFormatSupport(Format format) const {
 
 #if NRI_USE_VULKAN
 
-Result DeviceVal::CreateCommandQueueVK(const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue) {
-    RETURN_ON_FAILURE(this, commandQueueVKDesc.vkQueue != 0, Result::INVALID_ARGUMENT, "CreateCommandQueueVK: 'commandQueueVKDesc.vkQueue' is NULL");
+Result DeviceVal::CreateCommandQueue(const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue) {
+    RETURN_ON_FAILURE(this, commandQueueVKDesc.vkQueue != 0, Result::INVALID_ARGUMENT, "CreateCommandQueue: 'commandQueueVKDesc.vkQueue' is NULL");
 
     RETURN_ON_FAILURE(
-        this, commandQueueVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "CreateCommandQueueVK: 'commandQueueVKDesc.commandQueueType' is invalid");
+        this, commandQueueVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "CreateCommandQueue: 'commandQueueVKDesc.commandQueueType' is invalid");
 
     CommandQueue* commandQueueImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateCommandQueueVK(m_Device, commandQueueVKDesc, commandQueueImpl);
+    Result result = m_WrapperVKAPI.CreateCommandQueueVK(m_Device, commandQueueVKDesc, commandQueueImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, commandQueueImpl != nullptr, Result::FAILURE, "CreateCommandQueueVK: 'impl' is NULL");
-
+    if (result == Result::SUCCESS)
         commandQueue = (CommandQueue*)Allocate<CommandQueueVal>(GetStdAllocator(), *this, commandQueueImpl);
-    }
 
     return result;
 }
 
-Result DeviceVal::CreateCommandAllocatorVK(const CommandAllocatorVKDesc& commandAllocatorVKDesc, CommandAllocator*& commandAllocator) {
-    RETURN_ON_FAILURE(this, commandAllocatorVKDesc.vkCommandPool != 0, Result::INVALID_ARGUMENT, "CreateCommandAllocatorVK: 'commandAllocatorVKDesc.vkCommandPool' is NULL");
+Result DeviceVal::CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorVKDesc, CommandAllocator*& commandAllocator) {
+    RETURN_ON_FAILURE(this, commandAllocatorVKDesc.vkCommandPool != 0, Result::INVALID_ARGUMENT, "CreateCommandAllocator: 'commandAllocatorVKDesc.vkCommandPool' is NULL");
 
     RETURN_ON_FAILURE(this, commandAllocatorVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
-        "CreateCommandAllocatorVK: 'commandAllocatorVKDesc.commandQueueType' is invalid");
+        "CreateCommandAllocator: 'commandAllocatorVKDesc.commandQueueType' is invalid");
 
     CommandAllocator* commandAllocatorImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateCommandAllocatorVK(m_Device, commandAllocatorVKDesc, commandAllocatorImpl);
+    Result result = m_WrapperVKAPI.CreateCommandAllocatorVK(m_Device, commandAllocatorVKDesc, commandAllocatorImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, commandAllocatorImpl != nullptr, Result::FAILURE, "CreateCommandAllocatorVK: 'impl' is NULL");
-
+    if (result == Result::SUCCESS)
         commandAllocator = (CommandAllocator*)Allocate<CommandAllocatorVal>(GetStdAllocator(), *this, commandAllocatorImpl);
-    }
 
     return result;
 }
 
-Result DeviceVal::CreateCommandBufferVK(const CommandBufferVKDesc& commandBufferVKDesc, CommandBuffer*& commandBuffer) {
-    RETURN_ON_FAILURE(this, commandBufferVKDesc.vkCommandBuffer != 0, Result::INVALID_ARGUMENT, "CreateCommandBufferVK: 'commandBufferVKDesc.vkCommandBuffer' is NULL");
+Result DeviceVal::CreateCommandBuffer(const CommandBufferVKDesc& commandBufferVKDesc, CommandBuffer*& commandBuffer) {
+    RETURN_ON_FAILURE(this, commandBufferVKDesc.vkCommandBuffer != 0, Result::INVALID_ARGUMENT, "CreateCommandBuffer: 'commandBufferVKDesc.vkCommandBuffer' is NULL");
 
-    RETURN_ON_FAILURE(this, commandBufferVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT,
-        "CreateCommandBufferVK: 'commandBufferVKDesc.commandQueueType' is invalid");
+    RETURN_ON_FAILURE(
+        this, commandBufferVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "CreateCommandBuffer: 'commandBufferVKDesc.commandQueueType' is invalid");
 
     CommandBuffer* commandBufferImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateCommandBufferVK(m_Device, commandBufferVKDesc, commandBufferImpl);
+    Result result = m_WrapperVKAPI.CreateCommandBufferVK(m_Device, commandBufferVKDesc, commandBufferImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, commandBufferImpl != nullptr, Result::FAILURE, "CreateCommandBufferVK: 'impl' is NULL");
-
+    if (result == Result::SUCCESS)
         commandBuffer = (CommandBuffer*)Allocate<CommandBufferVal>(GetStdAllocator(), *this, commandBufferImpl, true);
-    }
 
     return result;
 }
 
-Result DeviceVal::CreateDescriptorPoolVK(const DescriptorPoolVKDesc& descriptorPoolVKDesc, DescriptorPool*& descriptorPool) {
-    RETURN_ON_FAILURE(this, descriptorPoolVKDesc.vkDescriptorPool != 0, Result::INVALID_ARGUMENT, "CreateDescriptorPoolVK: 'vkDescriptorPool' is NULL");
-    RETURN_ON_FAILURE(this, descriptorPoolVKDesc.descriptorSetMaxNum != 0, Result::INVALID_ARGUMENT, "CreateDescriptorPoolVK: 'descriptorSetMaxNum' is 0");
+Result DeviceVal::CreateDescriptorPool(const DescriptorPoolVKDesc& descriptorPoolVKDesc, DescriptorPool*& descriptorPool) {
+    RETURN_ON_FAILURE(this, descriptorPoolVKDesc.vkDescriptorPool != 0, Result::INVALID_ARGUMENT, "CreateDescriptorPool: 'vkDescriptorPool' is NULL");
+    RETURN_ON_FAILURE(this, descriptorPoolVKDesc.descriptorSetMaxNum != 0, Result::INVALID_ARGUMENT, "CreateDescriptorPool: 'descriptorSetMaxNum' is 0");
 
     DescriptorPool* descriptorPoolImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateDescriptorPoolVK(m_Device, descriptorPoolVKDesc, descriptorPoolImpl);
+    Result result = m_WrapperVKAPI.CreateDescriptorPoolVK(m_Device, descriptorPoolVKDesc, descriptorPoolImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, descriptorPoolImpl != nullptr, Result::FAILURE, "CreateDescriptorPoolVK: 'impl' is NULL");
-
+    if (result == Result::SUCCESS)
         descriptorPool = (DescriptorPool*)Allocate<DescriptorPoolVal>(GetStdAllocator(), *this, descriptorPoolImpl, descriptorPoolVKDesc.descriptorSetMaxNum);
-    }
 
     return result;
 }
 
-Result DeviceVal::CreateBufferVK(const BufferVKDesc& bufferDesc, Buffer*& buffer) {
-    RETURN_ON_FAILURE(this, bufferDesc.vkBuffer != 0, Result::INVALID_ARGUMENT, "CreateBufferVK: 'bufferDesc.vkBuffer' is NULL");
-    RETURN_ON_FAILURE(this, bufferDesc.memory != nullptr, Result::INVALID_ARGUMENT, "CreateBufferVK: 'bufferDesc.memory' is NULL");
-    RETURN_ON_FAILURE(this, bufferDesc.size > 0, Result::INVALID_ARGUMENT, "CreateBufferVK: 'bufferDesc.bufferSize' is 0");
+Result DeviceVal::CreateBuffer(const BufferVKDesc& bufferDesc, Buffer*& buffer) {
+    RETURN_ON_FAILURE(this, bufferDesc.vkBuffer != 0, Result::INVALID_ARGUMENT, "CreateBuffer: 'bufferDesc.vkBuffer' is NULL");
+    RETURN_ON_FAILURE(this, bufferDesc.size > 0, Result::INVALID_ARGUMENT, "CreateBuffer: 'bufferDesc.bufferSize' is 0");
 
     Buffer* bufferImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateBufferVK(m_Device, bufferDesc, bufferImpl);
+    Result result = m_WrapperVKAPI.CreateBufferVK(m_Device, bufferDesc, bufferImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, bufferImpl != nullptr, Result::FAILURE, "CreateBufferVK: 'impl' is NULL");
-
-        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, bufferImpl);
-    }
+    if (result == Result::SUCCESS)
+        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, bufferImpl, true);
 
     return result;
 }
 
-Result DeviceVal::CreateTextureVK(const TextureVKDesc& textureVKDesc, Texture*& texture) {
-    RETURN_ON_FAILURE(this, textureVKDesc.vkImage != 0, Result::INVALID_ARGUMENT, "CreateTextureVK: 'textureVKDesc.vkImage' is NULL");
-    RETURN_ON_FAILURE(this, nriConvertVKFormatToNRI(textureVKDesc.vkFormat) != Format::UNKNOWN, Result::INVALID_ARGUMENT, "CreateTextureVK: 'textureVKDesc.sampleNum' is 0");
-    RETURN_ON_FAILURE(this, textureVKDesc.sampleNum > 0, Result::INVALID_ARGUMENT, "CreateTextureVK: 'textureVKDesc.sampleNum' is 0");
-    RETURN_ON_FAILURE(this, textureVKDesc.arraySize > 0, Result::INVALID_ARGUMENT, "CreateTextureVK: 'textureVKDesc.arraySize' is 0");
-    RETURN_ON_FAILURE(this, textureVKDesc.mipNum > 0, Result::INVALID_ARGUMENT, "CreateTextureVK: 'textureVKDesc.mipNum' is 0");
+Result DeviceVal::CreateTexture(const TextureVKDesc& textureVKDesc, Texture*& texture) {
+    RETURN_ON_FAILURE(this, textureVKDesc.vkImage != 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureVKDesc.vkImage' is NULL");
+    RETURN_ON_FAILURE(this, nriConvertVKFormatToNRI(textureVKDesc.vkFormat) != Format::UNKNOWN, Result::INVALID_ARGUMENT, "CreateTexture: 'textureVKDesc.sampleNum' is 0");
+    RETURN_ON_FAILURE(this, textureVKDesc.sampleNum > 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureVKDesc.sampleNum' is 0");
+    RETURN_ON_FAILURE(this, textureVKDesc.arraySize > 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureVKDesc.arraySize' is 0");
+    RETURN_ON_FAILURE(this, textureVKDesc.mipNum > 0, Result::INVALID_ARGUMENT, "CreateTexture: 'textureVKDesc.mipNum' is 0");
 
     Texture* textureImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateTextureVK(m_Device, textureVKDesc, textureImpl);
+    Result result = m_WrapperVKAPI.CreateTextureVK(m_Device, textureVKDesc, textureImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, textureImpl != nullptr, Result::FAILURE, "CreateTextureVK: 'impl' is NULL");
-
-        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, textureImpl);
-    }
+    if (result == Result::SUCCESS)
+        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, textureImpl, true);
 
     return result;
 }
 
-Result DeviceVal::CreateMemoryVK(const MemoryVKDesc& memoryVKDesc, Memory*& memory) {
-    RETURN_ON_FAILURE(this, memoryVKDesc.vkDeviceMemory != 0, Result::INVALID_ARGUMENT, "CreateMemoryVK: 'memoryVKDesc.vkDeviceMemory' is NULL");
-    RETURN_ON_FAILURE(this, memoryVKDesc.size > 0, Result::INVALID_ARGUMENT, "CreateMemoryVK: 'memoryVKDesc.size' is 0");
+Result DeviceVal::CreateMemory(const MemoryVKDesc& memoryVKDesc, Memory*& memory) {
+    RETURN_ON_FAILURE(this, memoryVKDesc.vkDeviceMemory != 0, Result::INVALID_ARGUMENT, "CreateMemory: 'memoryVKDesc.vkDeviceMemory' is NULL");
+    RETURN_ON_FAILURE(this, memoryVKDesc.size > 0, Result::INVALID_ARGUMENT, "CreateMemory: 'memoryVKDesc.size' is 0");
 
     Memory* memoryImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateMemoryVK(m_Device, memoryVKDesc, memoryImpl);
+    Result result = m_WrapperVKAPI.CreateMemoryVK(m_Device, memoryVKDesc, memoryImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, memoryImpl != nullptr, Result::FAILURE, "CreateMemoryVK: 'impl' is NULL");
-
+    if (result == Result::SUCCESS)
         memory = (Memory*)Allocate<MemoryVal>(GetStdAllocator(), *this, memoryImpl, memoryVKDesc.size, MemoryLocation::MAX_NUM);
-    }
 
     return result;
 }
 
-Result DeviceVal::CreateGraphicsPipelineVK(NRIVkPipeline vkPipeline, Pipeline*& pipeline) {
-    RETURN_ON_FAILURE(this, vkPipeline != 0, Result::INVALID_ARGUMENT, "CreateGraphicsPipelineVK: 'vkPipeline' is NULL");
+Result DeviceVal::CreateGraphicsPipeline(VKNonDispatchableHandle vkPipeline, Pipeline*& pipeline) {
+    RETURN_ON_FAILURE(this, vkPipeline != 0, Result::INVALID_ARGUMENT, "CreateGraphicsPipeline: 'vkPipeline' is NULL");
 
     Pipeline* pipelineImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateGraphicsPipelineVK(m_Device, vkPipeline, pipelineImpl);
+    Result result = m_WrapperVKAPI.CreateGraphicsPipelineVK(m_Device, vkPipeline, pipelineImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, pipelineImpl != nullptr, Result::FAILURE, "CreateGraphicsPipelineVK: 'impl' is NULL");
-
+    if (result == Result::SUCCESS)
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetStdAllocator(), *this, pipelineImpl);
-    }
 
     return result;
 }
 
-Result DeviceVal::CreateComputePipelineVK(NRIVkPipeline vkPipeline, Pipeline*& pipeline) {
-    RETURN_ON_FAILURE(this, vkPipeline != 0, Result::INVALID_ARGUMENT, "CreateComputePipelineVK: 'vkPipeline' is NULL");
+Result DeviceVal::CreateComputePipeline(VKNonDispatchableHandle vkPipeline, Pipeline*& pipeline) {
+    RETURN_ON_FAILURE(this, vkPipeline != 0, Result::INVALID_ARGUMENT, "CreateComputePipeline: 'vkPipeline' is NULL");
 
     Pipeline* pipelineImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateComputePipelineVK(m_Device, vkPipeline, pipelineImpl);
+    Result result = m_WrapperVKAPI.CreateComputePipelineVK(m_Device, vkPipeline, pipelineImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, pipelineImpl != nullptr, Result::FAILURE, "CreateComputePipelineVK: 'impl' is NULL");
-
+    if (result == Result::SUCCESS)
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetStdAllocator(), *this, pipelineImpl);
-    }
 
     return result;
 }
 
-Result DeviceVal::CreateQueryPoolVK(const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool) {
-    RETURN_ON_FAILURE(this, queryPoolVKDesc.vkQueryPool != 0, Result::INVALID_ARGUMENT, "CreateQueryPoolVK: 'queryPoolVKDesc.vkQueryPool' is NULL");
+Result DeviceVal::CreateQueryPool(const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool) {
+    RETURN_ON_FAILURE(this, queryPoolVKDesc.vkQueryPool != 0, Result::INVALID_ARGUMENT, "CreateQueryPool: 'queryPoolVKDesc.vkQueryPool' is NULL");
 
     QueryPool* queryPoolImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateQueryPoolVK(m_Device, queryPoolVKDesc, queryPoolImpl);
+    Result result = m_WrapperVKAPI.CreateQueryPoolVK(m_Device, queryPoolVKDesc, queryPoolImpl);
 
     if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, queryPoolImpl != nullptr, Result::FAILURE, "CreateQueryPoolVK: 'impl' is NULL");
-
-        const QueryType queryType = GetQueryTypeVK(queryPoolVKDesc.vkQueryType);
-
+        QueryType queryType = GetQueryTypeVK(queryPoolVKDesc.vkQueryType);
         queryPool = (QueryPool*)Allocate<QueryPoolVal>(GetStdAllocator(), *this, queryPoolImpl, queryType, 0);
     }
 
     return result;
 }
 
-Result DeviceVal::CreateAccelerationStructureVK(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
+Result DeviceVal::CreateAccelerationStructure(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
     RETURN_ON_FAILURE(this, accelerationStructureDesc.vkAccelerationStructure != 0, Result::INVALID_ARGUMENT,
-        "CreateAccelerationStructureVK: 'accelerationStructureDesc.vkAccelerationStructure' is NULL");
+        "CreateAccelerationStructure: 'accelerationStructureDesc.vkAccelerationStructure' is NULL");
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
-    const Result result = m_WrapperVKAPI.CreateAccelerationStructureVK(m_Device, accelerationStructureDesc, accelerationStructureImpl);
+    Result result = m_WrapperVKAPI.CreateAccelerationStructureVK(m_Device, accelerationStructureDesc, accelerationStructureImpl);
 
     if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, accelerationStructureImpl != nullptr, Result::FAILURE, "CreateAccelerationStructureVK: 'impl' is NULL");
-
-        accelerationStructure = (AccelerationStructure*)Allocate<AccelerationStructureVal>(GetStdAllocator(), *this, accelerationStructureImpl, true);
+        MemoryDesc memoryDesc = {};
+        accelerationStructure = (AccelerationStructure*)Allocate<AccelerationStructureVal>(GetStdAllocator(), *this, accelerationStructureImpl, true, memoryDesc);
     }
 
     return result;
@@ -941,47 +911,38 @@ Result DeviceVal::CreateAccelerationStructureVK(const AccelerationStructureVKDes
 
 #if NRI_USE_D3D11
 
-Result DeviceVal::CreateCommandBufferD3D11(const CommandBufferD3D11Desc& commandBufferDesc, CommandBuffer*& commandBuffer) {
-    RETURN_ON_FAILURE(this, commandBufferDesc.d3d11DeviceContext != nullptr, Result::INVALID_ARGUMENT, "CreateCommandBufferD3D11: 'commandBufferDesc.d3d11DeviceContext' is NULL");
+Result DeviceVal::CreateCommandBuffer(const CommandBufferD3D11Desc& commandBufferDesc, CommandBuffer*& commandBuffer) {
+    RETURN_ON_FAILURE(this, commandBufferDesc.d3d11DeviceContext != nullptr, Result::INVALID_ARGUMENT, "CreateCommandBuffer: 'commandBufferDesc.d3d11DeviceContext' is NULL");
 
     CommandBuffer* commandBufferImpl = nullptr;
-    const Result result = m_WrapperD3D11API.CreateCommandBufferD3D11(m_Device, commandBufferDesc, commandBufferImpl);
+    Result result = m_WrapperD3D11API.CreateCommandBufferD3D11(m_Device, commandBufferDesc, commandBufferImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, commandBufferImpl != nullptr, Result::FAILURE, "CreateCommandBufferD3D11: 'impl' is NULL");
-
+    if (result == Result::SUCCESS)
         commandBuffer = (CommandBuffer*)Allocate<CommandBufferVal>(GetStdAllocator(), *this, commandBufferImpl, true);
-    }
 
     return result;
 }
 
-Result DeviceVal::CreateBufferD3D11(const BufferD3D11Desc& bufferDesc, Buffer*& buffer) {
-    RETURN_ON_FAILURE(this, bufferDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT, "CreateBufferD3D11: 'bufferDesc.d3d11Resource' is NULL");
+Result DeviceVal::CreateBuffer(const BufferD3D11Desc& bufferDesc, Buffer*& buffer) {
+    RETURN_ON_FAILURE(this, bufferDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT, "CreateBuffer: 'bufferDesc.d3d11Resource' is NULL");
 
     Buffer* bufferImpl = nullptr;
-    const Result result = m_WrapperD3D11API.CreateBufferD3D11(m_Device, bufferDesc, bufferImpl);
+    Result result = m_WrapperD3D11API.CreateBufferD3D11(m_Device, bufferDesc, bufferImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, bufferImpl != nullptr, Result::FAILURE, "CreateBufferD3D11: 'impl' is NULL");
-
-        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, bufferImpl);
-    }
+    if (result == Result::SUCCESS)
+        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, bufferImpl, true);
 
     return result;
 }
 
-Result DeviceVal::CreateTextureD3D11(const TextureD3D11Desc& textureDesc, Texture*& texture) {
-    RETURN_ON_FAILURE(this, textureDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT, "CreateTextureD3D11: 'textureDesc.d3d11Resource' is NULL");
+Result DeviceVal::CreateTexture(const TextureD3D11Desc& textureDesc, Texture*& texture) {
+    RETURN_ON_FAILURE(this, textureDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.d3d11Resource' is NULL");
 
     Texture* textureImpl = nullptr;
-    const Result result = m_WrapperD3D11API.CreateTextureD3D11(m_Device, textureDesc, textureImpl);
+    Result result = m_WrapperD3D11API.CreateTextureD3D11(m_Device, textureDesc, textureImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, textureImpl != nullptr, Result::FAILURE, "CreateTextureD3D11: 'impl' is NULL");
-
-        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, textureImpl);
-    }
+    if (result == Result::SUCCESS)
+        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, textureImpl, true);
 
     return result;
 }
@@ -990,100 +951,81 @@ Result DeviceVal::CreateTextureD3D11(const TextureD3D11Desc& textureDesc, Textur
 
 #if NRI_USE_D3D12
 
-Result DeviceVal::CreateCommandBufferD3D12(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer) {
-    RETURN_ON_FAILURE(
-        this, commandBufferDesc.d3d12CommandAllocator != nullptr, Result::INVALID_ARGUMENT, "CreateCommandBufferD3D12: 'commandBufferDesc.d3d12CommandAllocator' is NULL");
+Result DeviceVal::CreateCommandBuffer(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer) {
+    RETURN_ON_FAILURE(this, commandBufferDesc.d3d12CommandAllocator != nullptr, Result::INVALID_ARGUMENT, "CreateCommandBuffer: 'commandBufferDesc.d3d12CommandAllocator' is NULL");
 
-    RETURN_ON_FAILURE(this, commandBufferDesc.d3d12CommandList != nullptr, Result::INVALID_ARGUMENT, "CreateCommandBufferD3D12: 'commandBufferDesc.d3d12CommandList' is NULL");
+    RETURN_ON_FAILURE(this, commandBufferDesc.d3d12CommandList != nullptr, Result::INVALID_ARGUMENT, "CreateCommandBuffer: 'commandBufferDesc.d3d12CommandList' is NULL");
 
     CommandBuffer* commandBufferImpl = nullptr;
-    const Result result = m_WrapperD3D12API.CreateCommandBufferD3D12(m_Device, commandBufferDesc, commandBufferImpl);
+    Result result = m_WrapperD3D12API.CreateCommandBufferD3D12(m_Device, commandBufferDesc, commandBufferImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, commandBufferImpl != nullptr, Result::FAILURE, "CreateCommandBufferD3D12: 'impl' is NULL");
-
+    if (result == Result::SUCCESS)
         commandBuffer = (CommandBuffer*)Allocate<CommandBufferVal>(GetStdAllocator(), *this, commandBufferImpl, true);
-    }
 
     return result;
 }
 
-Result DeviceVal::CreateDescriptorPoolD3D12(const DescriptorPoolD3D12Desc& descriptorPoolD3D12Desc, DescriptorPool*& descriptorPool) {
+Result DeviceVal::CreateDescriptorPool(const DescriptorPoolD3D12Desc& descriptorPoolD3D12Desc, DescriptorPool*& descriptorPool) {
     RETURN_ON_FAILURE(this, descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap == nullptr && descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap == nullptr,
-        Result::INVALID_ARGUMENT,
-        "CreateDescriptorPoolD3D12: 'descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap' and 'descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap' are NULL");
+        Result::INVALID_ARGUMENT, "CreateDescriptorPool: 'descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap' and 'descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap' are NULL");
 
     DescriptorPool* descriptorPoolImpl = nullptr;
-    const Result result = m_WrapperD3D12API.CreateDescriptorPoolD3D12(m_Device, descriptorPoolD3D12Desc, descriptorPoolImpl);
+    Result result = m_WrapperD3D12API.CreateDescriptorPoolD3D12(m_Device, descriptorPoolD3D12Desc, descriptorPoolImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, descriptorPoolImpl != nullptr, Result::FAILURE, "CreateDescriptorPoolD3D12: 'impl' is NULL");
-
+    if (result == Result::SUCCESS)
         descriptorPool = (DescriptorPool*)Allocate<DescriptorPoolVal>(GetStdAllocator(), *this, descriptorPoolImpl, descriptorPoolD3D12Desc.descriptorSetMaxNum);
-    }
 
     return result;
 }
 
-Result DeviceVal::CreateBufferD3D12(const BufferD3D12Desc& bufferDesc, Buffer*& buffer) {
-    RETURN_ON_FAILURE(this, bufferDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "CreateBufferD3D12: 'bufferDesc.d3d12Resource' is NULL");
+Result DeviceVal::CreateBuffer(const BufferD3D12Desc& bufferDesc, Buffer*& buffer) {
+    RETURN_ON_FAILURE(this, bufferDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "CreateBuffer: 'bufferDesc.d3d12Resource' is NULL");
 
     Buffer* bufferImpl = nullptr;
-    const Result result = m_WrapperD3D12API.CreateBufferD3D12(m_Device, bufferDesc, bufferImpl);
+    Result result = m_WrapperD3D12API.CreateBufferD3D12(m_Device, bufferDesc, bufferImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, bufferImpl != nullptr, Result::FAILURE, "CreateBufferD3D12: 'impl' is NULL");
-
-        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, bufferImpl);
-    }
+    if (result == Result::SUCCESS)
+        buffer = (Buffer*)Allocate<BufferVal>(GetStdAllocator(), *this, bufferImpl, true);
 
     return result;
 }
 
-Result DeviceVal::CreateTextureD3D12(const TextureD3D12Desc& textureDesc, Texture*& texture) {
-    RETURN_ON_FAILURE(this, textureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "CreateTextureD3D12: 'textureDesc.d3d12Resource' is NULL");
+Result DeviceVal::CreateTexture(const TextureD3D12Desc& textureDesc, Texture*& texture) {
+    RETURN_ON_FAILURE(this, textureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "CreateTexture: 'textureDesc.d3d12Resource' is NULL");
 
     Texture* textureImpl = nullptr;
-    const Result result = m_WrapperD3D12API.CreateTextureD3D12(m_Device, textureDesc, textureImpl);
+    Result result = m_WrapperD3D12API.CreateTextureD3D12(m_Device, textureDesc, textureImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, textureImpl != nullptr, Result::FAILURE, "CreateTextureD3D12: 'impl' is NULL");
-
-        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, textureImpl);
-    }
+    if (result == Result::SUCCESS)
+        texture = (Texture*)Allocate<TextureVal>(GetStdAllocator(), *this, textureImpl, true);
 
     return result;
 }
 
-Result DeviceVal::CreateMemoryD3D12(const MemoryD3D12Desc& memoryDesc, Memory*& memory) {
-    RETURN_ON_FAILURE(this, (memoryDesc.d3d12Heap != nullptr || memoryDesc.d3d12HeapDesc != nullptr), Result::INVALID_ARGUMENT,
-        "CreateMemoryD3D12: 'memoryDesc.d3d12Heap' or 'memoryDesc.d3d12HeapDesc' is NULL");
+Result DeviceVal::CreateMemory(const MemoryD3D12Desc& memoryDesc, Memory*& memory) {
+    RETURN_ON_FAILURE(this, memoryDesc.d3d12Heap != nullptr, Result::INVALID_ARGUMENT, "CreateMemory: 'memoryDesc.d3d12Heap' is NULL");
 
     Memory* memoryImpl = nullptr;
-    const Result result = m_WrapperD3D12API.CreateMemoryD3D12(m_Device, memoryDesc, memoryImpl);
+    Result result = m_WrapperD3D12API.CreateMemoryD3D12(m_Device, memoryDesc, memoryImpl);
 
     const uint64_t size = GetMemorySizeD3D12(memoryDesc);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, memoryImpl != nullptr, Result::FAILURE, "CreateMemoryD3D12: 'impl' is NULL");
-
+    if (result == Result::SUCCESS)
         memory = (Memory*)Allocate<MemoryVal>(GetStdAllocator(), *this, memoryImpl, size, MemoryLocation::MAX_NUM);
-    }
 
     return result;
 }
 
-Result DeviceVal::CreateAccelerationStructureD3D12(const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
+Result DeviceVal::CreateAccelerationStructure(const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
     RETURN_ON_FAILURE(
-        this, accelerationStructureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "CreateAccelerationStructureD3D12: 'accelerationStructureDesc.d3d12Resource' is NULL");
+        this, accelerationStructureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "CreateAccelerationStructure: 'accelerationStructureDesc.d3d12Resource' is NULL");
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
-    const Result result = m_WrapperD3D12API.CreateAccelerationStructureD3D12(m_Device, accelerationStructureDesc, accelerationStructureImpl);
+    Result result = m_WrapperD3D12API.CreateAccelerationStructureD3D12(m_Device, accelerationStructureDesc, accelerationStructureImpl);
 
     if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, accelerationStructureImpl != nullptr, Result::FAILURE, "CreateAccelerationStructureD3D12: 'impl' is NULL");
-
-        accelerationStructure = (AccelerationStructure*)Allocate<AccelerationStructureVal>(GetStdAllocator(), *this, accelerationStructureImpl, true);
+        MemoryDesc memoryDesc = {};
+        accelerationStructure = (AccelerationStructure*)Allocate<AccelerationStructureVal>(GetStdAllocator(), *this, accelerationStructureImpl, true, memoryDesc);
     }
 
     return result;
@@ -1096,7 +1038,7 @@ uint32_t DeviceVal::CalculateAllocationNumber(const ResourceGroupDesc& resourceG
     RETURN_ON_FAILURE(this, resourceGroupDesc.bufferNum == 0 || resourceGroupDesc.buffers != nullptr, 0, "CalculateAllocationNumber: 'resourceGroupDesc.buffers' is NULL");
     RETURN_ON_FAILURE(this, resourceGroupDesc.textureNum == 0 || resourceGroupDesc.textures != nullptr, 0, "CalculateAllocationNumber: 'resourceGroupDesc.textures' is NULL");
 
-    Buffer** buffersImpl = STACK_ALLOC(Buffer*, resourceGroupDesc.bufferNum);
+    Buffer** buffersImpl = StackAlloc(Buffer*, resourceGroupDesc.bufferNum);
 
     for (uint32_t i = 0; i < resourceGroupDesc.bufferNum; i++) {
         RETURN_ON_FAILURE(this, resourceGroupDesc.buffers[i] != nullptr, 0, "CalculateAllocationNumber: 'resourceGroupDesc.buffers[%u]' is NULL", i);
@@ -1105,7 +1047,7 @@ uint32_t DeviceVal::CalculateAllocationNumber(const ResourceGroupDesc& resourceG
         buffersImpl[i] = bufferVal.GetImpl();
     }
 
-    Texture** texturesImpl = STACK_ALLOC(Texture*, resourceGroupDesc.textureNum);
+    Texture** texturesImpl = StackAlloc(Texture*, resourceGroupDesc.textureNum);
 
     for (uint32_t i = 0; i < resourceGroupDesc.textureNum; i++) {
         RETURN_ON_FAILURE(this, resourceGroupDesc.textures[i] != nullptr, 0, "CalculateAllocationNumber: 'resourceGroupDesc.textures[%u]' is NULL", i);
@@ -1133,7 +1075,7 @@ Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDe
     RETURN_ON_FAILURE(
         this, resourceGroupDesc.textureNum == 0 || resourceGroupDesc.textures != nullptr, Result::INVALID_ARGUMENT, "AllocateAndBindMemory: 'resourceGroupDesc.textures' is NULL");
 
-    Buffer** buffersImpl = STACK_ALLOC(Buffer*, resourceGroupDesc.bufferNum);
+    Buffer** buffersImpl = StackAlloc(Buffer*, resourceGroupDesc.bufferNum);
 
     for (uint32_t i = 0; i < resourceGroupDesc.bufferNum; i++) {
         RETURN_ON_FAILURE(this, resourceGroupDesc.buffers[i] != nullptr, Result::INVALID_ARGUMENT, "AllocateAndBindMemory: 'resourceGroupDesc.buffers[%u]' is NULL", i);
@@ -1142,7 +1084,7 @@ Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDe
         buffersImpl[i] = bufferVal.GetImpl();
     }
 
-    Texture** texturesImpl = STACK_ALLOC(Texture*, resourceGroupDesc.textureNum);
+    Texture** texturesImpl = StackAlloc(Texture*, resourceGroupDesc.textureNum);
 
     for (uint32_t i = 0; i < resourceGroupDesc.textureNum; i++) {
         RETURN_ON_FAILURE(this, resourceGroupDesc.textures[i] != nullptr, Result::INVALID_ARGUMENT, "AllocateAndBindMemory: 'resourceGroupDesc.textures[%u]' is NULL", i);
@@ -1157,7 +1099,7 @@ Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDe
     resourceGroupDescImpl.buffers = buffersImpl;
     resourceGroupDescImpl.textures = texturesImpl;
 
-    const Result result = m_HelperAPI.AllocateAndBindMemory(m_Device, resourceGroupDescImpl, allocations);
+    Result result = m_HelperAPI.AllocateAndBindMemory(m_Device, resourceGroupDescImpl, allocations);
 
     if (result == Result::SUCCESS) {
         for (uint32_t i = 0; i < resourceGroupDesc.bufferNum; i++) {
@@ -1170,10 +1112,8 @@ Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDe
             textureVal.SetBoundToMemory();
         }
 
-        for (uint32_t i = 0; i < allocationNum; i++) {
-            RETURN_ON_FAILURE(this, allocations[i] != nullptr, Result::FAILURE, "AllocateAndBindMemory: 'impl' is NULL");
+        for (uint32_t i = 0; i < allocationNum; i++)
             allocations[i] = (Memory*)Allocate<MemoryVal>(GetStdAllocator(), *this, allocations[i], 0, resourceGroupDesc.memoryLocation);
-        }
     }
 
     return result;
@@ -1183,35 +1123,32 @@ Result DeviceVal::QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemor
     return m_HelperAPI.QueryVideoMemoryInfo(m_Device, memoryLocation, videoMemoryInfo);
 }
 
-Result DeviceVal::CreateRayTracingPipeline(const RayTracingPipelineDesc& pipelineDesc, Pipeline*& pipeline) {
-    RETURN_ON_FAILURE(this, pipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.pipelineLayout' is NULL");
-    RETURN_ON_FAILURE(this, pipelineDesc.shaderLibrary != nullptr, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary' is NULL");
-    RETURN_ON_FAILURE(this, pipelineDesc.shaderGroupDescs != nullptr, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderGroupDescs' is NULL");
-    RETURN_ON_FAILURE(this, pipelineDesc.shaderGroupDescNum != 0, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderGroupDescNum' is 0");
-    RETURN_ON_FAILURE(this, pipelineDesc.recursionDepthMax != 0, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.recursionDepthMax' is 0");
+Result DeviceVal::CreatePipeline(const RayTracingPipelineDesc& pipelineDesc, Pipeline*& pipeline) {
+    RETURN_ON_FAILURE(this, pipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'pipelineDesc.pipelineLayout' is NULL");
+    RETURN_ON_FAILURE(this, pipelineDesc.shaderLibrary != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'pipelineDesc.shaderLibrary' is NULL");
+    RETURN_ON_FAILURE(this, pipelineDesc.shaderGroupDescs != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'pipelineDesc.shaderGroupDescs' is NULL");
+    RETURN_ON_FAILURE(this, pipelineDesc.shaderGroupDescNum != 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'pipelineDesc.shaderGroupDescNum' is 0");
+    RETURN_ON_FAILURE(this, pipelineDesc.recursionDepthMax != 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'pipelineDesc.recursionDepthMax' is 0");
 
     uint32_t uniqueShaderStages = 0;
     for (uint32_t i = 0; i < pipelineDesc.shaderLibrary->shaderNum; i++) {
         const ShaderDesc& shaderDesc = pipelineDesc.shaderLibrary->shaders[i];
 
-        RETURN_ON_FAILURE(
-            this, shaderDesc.bytecode != nullptr, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].bytecode' is invalid", i);
+        RETURN_ON_FAILURE(this, shaderDesc.bytecode != nullptr, Result::INVALID_ARGUMENT, "CreatePipeline: 'pipelineDesc.shaderLibrary->shaders[%u].bytecode' is invalid", i);
 
-        RETURN_ON_FAILURE(this, shaderDesc.size != 0, Result::INVALID_ARGUMENT, "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].size' is 0", i);
+        RETURN_ON_FAILURE(this, shaderDesc.size != 0, Result::INVALID_ARGUMENT, "CreatePipeline: 'pipelineDesc.shaderLibrary->shaders[%u].size' is 0", i);
         RETURN_ON_FAILURE(this, IsShaderStageValid(shaderDesc.stage, uniqueShaderStages, StageBits::RAY_TRACING_SHADERS), Result::INVALID_ARGUMENT,
-            "CreateRayTracingPipeline: 'pipelineDesc.shaderLibrary->shaders[%u].stage' must include only 1 ray tracing shader stage, unique for the entire pipeline", i);
+            "CreatePipeline: 'pipelineDesc.shaderLibrary->shaders[%u].stage' must include only 1 ray tracing shader stage, unique for the entire pipeline", i);
     }
 
     auto pipelineDescImpl = pipelineDesc;
     pipelineDescImpl.pipelineLayout = NRI_GET_IMPL(PipelineLayout, pipelineDesc.pipelineLayout);
 
     Pipeline* pipelineImpl = nullptr;
-    const Result result = m_RayTracingAPI.CreateRayTracingPipeline(m_Device, pipelineDescImpl, pipelineImpl);
+    Result result = m_RayTracingAPI.CreateRayTracingPipeline(m_Device, pipelineDescImpl, pipelineImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, pipelineImpl != nullptr, Result::FAILURE, "CreateRayTracingPipeline: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetStdAllocator(), *this, pipelineImpl);
-    }
 
     return result;
 }
@@ -1222,44 +1159,68 @@ Result DeviceVal::CreateAccelerationStructure(const AccelerationStructureDesc& a
 
     AccelerationStructureDesc accelerationStructureDescImpl = accelerationStructureDesc;
 
-    Vector<GeometryObject> objectImplArray(GetStdAllocator());
+    uint32_t geometryObjectNum = accelerationStructureDesc.type == AccelerationStructureType::BOTTOM_LEVEL ? accelerationStructureDesc.instanceOrGeometryObjectNum : 0;
+    Scratch<GeometryObject> objectImplArray = AllocateScratch(*this, GeometryObject, geometryObjectNum);
+
     if (accelerationStructureDesc.type == AccelerationStructureType::BOTTOM_LEVEL) {
-        const uint32_t geometryObjectNum = accelerationStructureDesc.instanceOrGeometryObjectNum;
-        objectImplArray.resize(geometryObjectNum);
-        ConvertGeometryObjectsVal(objectImplArray.data(), accelerationStructureDesc.geometryObjects, geometryObjectNum);
-        accelerationStructureDescImpl.geometryObjects = objectImplArray.data();
+        ConvertGeometryObjectsVal(objectImplArray, accelerationStructureDesc.geometryObjects, geometryObjectNum);
+        accelerationStructureDescImpl.geometryObjects = objectImplArray;
     }
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
-    const Result result = m_RayTracingAPI.CreateAccelerationStructure(m_Device, accelerationStructureDescImpl, accelerationStructureImpl);
+    Result result = m_RayTracingAPI.CreateAccelerationStructure(m_Device, accelerationStructureDescImpl, accelerationStructureImpl);
 
     if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(this, accelerationStructureImpl != nullptr, Result::FAILURE, "CreateAccelerationStructure: 'impl' is NULL");
-        accelerationStructure = (AccelerationStructure*)Allocate<AccelerationStructureVal>(GetStdAllocator(), *this, accelerationStructureImpl, false);
+        MemoryDesc memoryDesc = {};
+        m_RayTracingAPI.GetAccelerationStructureMemoryDesc(GetImpl(), accelerationStructureDescImpl, MemoryLocation::DEVICE, memoryDesc);
+
+        accelerationStructure = (AccelerationStructure*)Allocate<AccelerationStructureVal>(GetStdAllocator(), *this, accelerationStructureImpl, false, memoryDesc);
+    }
+
+    return result;
+}
+
+Result DeviceVal::CreateAccelerationStructure(const AllocateAccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
+    RETURN_ON_FAILURE(this, accelerationStructureDesc.desc.instanceOrGeometryObjectNum != 0, Result::INVALID_ARGUMENT,
+        "CreateAccelerationStructure: 'accelerationStructureDesc.instanceOrGeometryObjectNum' is 0");
+
+    AllocateAccelerationStructureDesc accelerationStructureDescImpl = accelerationStructureDesc;
+
+    uint32_t geometryObjectNum = accelerationStructureDesc.desc.type == AccelerationStructureType::BOTTOM_LEVEL ? accelerationStructureDesc.desc.instanceOrGeometryObjectNum : 0;
+    Scratch<GeometryObject> objectImplArray = AllocateScratch(*this, GeometryObject, geometryObjectNum);
+
+    if (accelerationStructureDesc.desc.type == AccelerationStructureType::BOTTOM_LEVEL) {
+        ConvertGeometryObjectsVal(objectImplArray, accelerationStructureDesc.desc.geometryObjects, geometryObjectNum);
+        accelerationStructureDescImpl.desc.geometryObjects = objectImplArray;
+    }
+
+    AccelerationStructure* accelerationStructureImpl = nullptr;
+    Result result = m_ResourceAllocatorAPI.AllocateAccelerationStructure(m_Device, accelerationStructureDescImpl, accelerationStructureImpl);
+
+    if (result == Result::SUCCESS) {
+        MemoryDesc memoryDesc = {};
+        m_RayTracingAPI.GetAccelerationStructureMemoryDesc(GetImpl(), accelerationStructureDescImpl.desc, MemoryLocation::DEVICE, memoryDesc);
+
+        accelerationStructure = (AccelerationStructure*)Allocate<AccelerationStructureVal>(GetStdAllocator(), *this, accelerationStructureImpl, true, memoryDesc);
     }
 
     return result;
 }
 
 Result DeviceVal::BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
-    if (memoryBindingDescNum == 0)
-        return Result::SUCCESS;
-
     RETURN_ON_FAILURE(this, memoryBindingDescs != nullptr, Result::INVALID_ARGUMENT, "BindAccelerationStructureMemory: 'memoryBindingDescs' is NULL");
 
-    AccelerationStructureMemoryBindingDesc* memoryBindingDescsImpl = STACK_ALLOC(AccelerationStructureMemoryBindingDesc, memoryBindingDescNum);
+    AccelerationStructureMemoryBindingDesc* memoryBindingDescsImpl = StackAlloc(AccelerationStructureMemoryBindingDesc, memoryBindingDescNum);
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         AccelerationStructureMemoryBindingDesc& destDesc = memoryBindingDescsImpl[i];
         const AccelerationStructureMemoryBindingDesc& srcDesc = memoryBindingDescs[i];
 
         MemoryVal& memory = (MemoryVal&)*srcDesc.memory;
         AccelerationStructureVal& accelerationStructure = (AccelerationStructureVal&)*srcDesc.accelerationStructure;
+        const MemoryDesc& memoryDesc = accelerationStructure.GetMemoryDesc();
 
         RETURN_ON_FAILURE(this, !accelerationStructure.IsBoundToMemory(), Result::INVALID_ARGUMENT,
             "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].accelerationStructure' is already bound to memory", i);
-
-        MemoryDesc memoryDesc = {};
-        accelerationStructure.GetMemoryDesc(memoryDesc);
 
         RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT,
             "BindAccelerationStructureMemory: 'memoryBindingDescs[%u].offset' must be 0 for dedicated allocation", i);
@@ -1280,7 +1241,7 @@ Result DeviceVal::BindAccelerationStructureMemory(const AccelerationStructureMem
         destDesc.accelerationStructure = accelerationStructure.GetImpl();
     }
 
-    const Result result = m_RayTracingAPI.BindAccelerationStructureMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
+    Result result = m_RayTracingAPI.BindAccelerationStructureMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
 
     if (result == Result::SUCCESS) {
         for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
@@ -1293,19 +1254,19 @@ Result DeviceVal::BindAccelerationStructureMemory(const AccelerationStructureMem
 }
 
 void DeviceVal::DestroyAccelerationStructure(AccelerationStructure& accelerationStructure) {
-    Deallocate(GetStdAllocator(), (AccelerationStructureVal*)&accelerationStructure);
+    Destroy(GetStdAllocator(), (AccelerationStructureVal*)&accelerationStructure);
 }
 
-void DeviceVal::Destroy() {
-    Deallocate(GetStdAllocator(), this);
+void DeviceVal::Destruct() {
+    Destroy(GetStdAllocator(), this);
 }
 
 DeviceBase* CreateDeviceValidation(const DeviceCreationDesc& deviceCreationDesc, DeviceBase& device) {
-    StdAllocator<uint8_t> allocator(deviceCreationDesc.memoryAllocatorInterface);
+    StdAllocator<uint8_t> allocator(deviceCreationDesc.allocationCallbacks);
     DeviceVal* deviceVal = Allocate<DeviceVal>(allocator, deviceCreationDesc.callbackInterface, allocator, device);
 
     if (!deviceVal->Create()) {
-        Deallocate(allocator, deviceVal);
+        Destroy(allocator, deviceVal);
         return nullptr;
     }
 

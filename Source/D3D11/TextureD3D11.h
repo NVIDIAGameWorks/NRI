@@ -11,9 +11,6 @@ struct TextureD3D11 {
     inline TextureD3D11(DeviceD3D11& device) : m_Device(device) {
     }
 
-    TextureD3D11(DeviceD3D11& device, const TextureDesc& textureDesc) : m_Device(device), m_Desc(textureDesc) {
-    }
-
     inline ~TextureD3D11() {
     }
 
@@ -49,8 +46,9 @@ struct TextureD3D11 {
         return GetDimension(GraphicsAPI::D3D11, m_Desc, dimensionIndex, mip);
     }
 
-    Result Create(const MemoryD3D11* memory);
+    Result Create(const TextureDesc& textureDesc);
     Result Create(const TextureD3D11Desc& textureDesc);
+    Result Create(MemoryLocation memoryLocation, float priority);
 
     static uint32_t GetMipmappedSize(const TextureDesc& textureDesc);
 

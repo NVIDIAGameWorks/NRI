@@ -2,10 +2,6 @@
 
 #pragma region[  RayTracing  ]
 
-static void NRI_CALL GetAccelerationStructureMemoryDesc(const AccelerationStructure& accelerationStructure, MemoryDesc& memoryDesc) {
-    ((const AccelerationStructureVal&)accelerationStructure).GetMemoryDesc(memoryDesc);
-}
-
 static uint64_t NRI_CALL GetAccelerationStructureUpdateScratchBufferSize(const AccelerationStructure& accelerationStructure) {
     return ((const AccelerationStructureVal&)accelerationStructure).GetUpdateScratchBufferSize();
 }

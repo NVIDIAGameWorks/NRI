@@ -111,7 +111,7 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
     setNum++;
 
     // Allocate temp memory for ALL "register spaces" making the entire range consecutive (thanks VK API!)
-    VkDescriptorSetLayout* descriptorSetLayouts = ALLOCATE_SCRATCH(m_Device, VkDescriptorSetLayout, setNum);
+    Scratch<VkDescriptorSetLayout> descriptorSetLayouts = AllocateScratch(m_Device, VkDescriptorSetLayout, setNum);
 
     // Create "empty" set layout (needed only if "register space" indices are not consecutive)
     if (setNum != pipelineLayoutDesc.descriptorSetNum) {
@@ -129,7 +129,7 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
     }
 
     // Push constants
-    VkPushConstantRange* pushConstantRanges = ALLOCATE_SCRATCH(m_Device, VkPushConstantRange, pipelineLayoutDesc.pushConstantNum);
+    Scratch<VkPushConstantRange> pushConstantRanges = AllocateScratch(m_Device, VkPushConstantRange, pipelineLayoutDesc.pushConstantNum);
     FillPushConstantRanges(pipelineLayoutDesc, pushConstantRanges);
 
     // Create pipeline layout
@@ -143,9 +143,6 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
     VkResult result = vk.CreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
 
     // Cleanup
-    FREE_SCRATCH(m_Device, pushConstantRanges, pipelineLayoutDesc.pushConstantNum);
-    FREE_SCRATCH(m_Device, descriptorSetLayouts, setNum);
-
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, Result::FAILURE, "vkCreatePipelineLayout returned %d", (int32_t)result);
 
     FillRuntimeBindingInfo(pipelineLayoutDesc, bindingOffsets);
@@ -180,15 +177,17 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
         bindingMaxNum += range.isArray ? 1 : range.descriptorNum;
     }
 
-    VkDescriptorSetLayoutBinding* bindings = ALLOCATE_SCRATCH(m_Device, VkDescriptorSetLayoutBinding, bindingMaxNum);
-    VkDescriptorBindingFlags* bindingFlags = ALLOCATE_SCRATCH(m_Device, VkDescriptorBindingFlags, bindingMaxNum);
+    Scratch<VkDescriptorSetLayoutBinding> bindings = AllocateScratch(m_Device, VkDescriptorSetLayoutBinding, bindingMaxNum);
+    Scratch<VkDescriptorBindingFlags> bindingFlags = AllocateScratch(m_Device, VkDescriptorBindingFlags, bindingMaxNum);
     VkDescriptorSetLayoutBinding* bindingsBegin = bindings;
     VkDescriptorBindingFlags* bindingFlagsBegin = bindingFlags;
 
-    FillDescriptorBindings(descriptorSetDesc, bindingOffsets, bindings, bindingFlags);
-    FillDynamicConstantBufferBindings(descriptorSetDesc, bindingOffsets, bindings, bindingFlags);
+    VkDescriptorSetLayoutBinding* bindingsEnd = bindings;
+    VkDescriptorBindingFlags* bindingFlagsEnd = bindingFlags;
+    FillDescriptorBindings(descriptorSetDesc, bindingOffsets, bindingsEnd, bindingFlagsEnd);
+    FillDynamicConstantBufferBindings(descriptorSetDesc, bindingOffsets, bindingsEnd, bindingFlagsEnd);
 
-    const uint32_t bindingNum = uint32_t(bindings - bindingsBegin);
+    const uint32_t bindingNum = uint32_t(bindingsEnd - bindingsBegin);
 
     VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO};
     bindingFlagsInfo.bindingCount = bindingNum;
@@ -204,9 +203,6 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
     VkResult result = vk.CreateDescriptorSetLayout(m_Device, &info, m_Device.GetAllocationCallbacks(), &handle);
 
     // Cleanup
-    FREE_SCRATCH(m_Device, bindingsBegin, bindingMaxNum);
-    FREE_SCRATCH(m_Device, bindingFlagsBegin, bindingMaxNum);
-
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, 0, "vkCreateDescriptorSetLayout returned %d", (int32_t)result);
 
     return handle;

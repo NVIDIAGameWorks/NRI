@@ -10,7 +10,7 @@ using namespace nri;
 
 SwapChainVal::~SwapChainVal() {
     for (size_t i = 0; i < m_Textures.size(); i++)
-        Deallocate(m_Device.GetStdAllocator(), m_Textures[i]);
+        Destroy(m_Device.GetStdAllocator(), m_Textures[i]);
 }
 
 inline void SwapChainVal::SetDebugName(const char* name) {
@@ -23,7 +23,7 @@ inline Texture* const* SwapChainVal::GetTextures(uint32_t& textureNum) {
 
     if (m_Textures.empty()) {
         for (uint32_t i = 0; i < textureNum; i++) {
-            TextureVal* textureVal = Allocate<TextureVal>(m_Device.GetStdAllocator(), m_Device, textures[i]);
+            TextureVal* textureVal = Allocate<TextureVal>(m_Device.GetStdAllocator(), m_Device, textures[i], true);
             m_Textures.push_back(textureVal);
         }
     }

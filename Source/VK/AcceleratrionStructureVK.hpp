@@ -2,10 +2,6 @@
 
 #pragma region[  RayTracing  ]
 
-static void NRI_CALL GetAccelerationStructureMemoryDesc(const AccelerationStructure& accelerationStructure, MemoryDesc& memoryDesc) {
-    ((AccelerationStructureVK&)accelerationStructure).GetMemoryDesc(memoryDesc);
-}
-
 static uint64_t NRI_CALL GetAccelerationStructureUpdateScratchBufferSize(const AccelerationStructure& accelerationStructure) {
     return ((AccelerationStructureVK&)accelerationStructure).GetUpdateScratchBufferSize();
 }
@@ -16,7 +12,7 @@ static uint64_t NRI_CALL GetAccelerationStructureBuildScratchBufferSize(const Ac
 
 static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure) {
     static_assert(sizeof(uint64_t) == sizeof(VkDeviceAddress), "type mismatch");
-    return (uint64_t)((AccelerationStructureVK&)accelerationStructure).GetNativeHandle();
+    return (uint64_t)((AccelerationStructureVK&)accelerationStructure).GetDeviceAddress();
 }
 
 static void NRI_CALL SetAccelerationStructureDebugName(AccelerationStructure& accelerationStructure, const char* name) {

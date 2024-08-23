@@ -64,93 +64,94 @@ struct DeviceVal final : public DeviceBase {
 
     bool Create();
     void RegisterMemoryType(MemoryType memoryType, MemoryLocation memoryLocation);
-    void GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
-    void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
 
     //================================================================================================================
     // NRI
     //================================================================================================================
-    Result CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain);
-    void DestroySwapChain(SwapChain& swapChain);
-    void SetDebugName(const char* name);
-    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
-    Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
-    Result CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool);
+
+    Result CreateFence(uint64_t initialValue, Fence*& fence);
+    Result CreateMemory(const MemoryVKDesc& memoryVKDesc, Memory*& memory);
+    Result CreateMemory(const MemoryD3D12Desc& memoryDesc, Memory*& memory);
     Result CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer);
+    Result CreateBuffer(const AllocateBufferDesc& bufferDesc, Buffer*& buffer);
+    Result CreateBuffer(const BufferVKDesc& bufferDesc, Buffer*& buffer);
+    Result CreateBuffer(const BufferD3D11Desc& bufferDesc, Buffer*& buffer);
+    Result CreateBuffer(const BufferD3D12Desc& bufferDesc, Buffer*& buffer);
     Result CreateTexture(const TextureDesc& textureDesc, Texture*& texture);
+    Result CreateTexture(const AllocateTextureDesc& textureDesc, Texture*& texture);
+    Result CreateTexture(const TextureVKDesc& textureVKDesc, Texture*& texture);
+    Result CreateTexture(const TextureD3D11Desc& textureDesc, Texture*& texture);
+    Result CreateTexture(const TextureD3D12Desc& textureDesc, Texture*& texture);
+    Result CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline);
+    Result CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline);
+    Result CreatePipeline(const RayTracingPipelineDesc& pipelineDesc, Pipeline*& pipeline);
+    Result CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool);
+    Result CreateQueryPool(const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool);
+    Result CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain);
+    Result CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& sampler);
     Result CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView);
     Result CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView);
     Result CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView);
     Result CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView);
-    Result CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& sampler);
+    Result CreateCommandQueue(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
+    Result CreateCommandBuffer(const CommandBufferVKDesc& commandBufferDesc, CommandBuffer*& commandBuffer);
+    Result CreateCommandBuffer(const CommandBufferD3D11Desc& commandBufferDesc, CommandBuffer*& commandBuffer);
+    Result CreateCommandBuffer(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer);
     Result CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout);
-    Result CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline);
-    Result CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline);
-    Result CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool);
-    Result CreateFence(uint64_t initialValue, Fence*& fence);
-    void DestroyCommandAllocator(CommandAllocator& commandAllocator);
-    void DestroyDescriptorPool(DescriptorPool& descriptorPool);
+    Result CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool);
+    Result CreateDescriptorPool(const DescriptorPoolVKDesc& descriptorPoolVKDesc, DescriptorPool*& descriptorPool);
+    Result CreateDescriptorPool(const DescriptorPoolD3D12Desc& descriptorPoolD3D12Desc, DescriptorPool*& descriptorPool);
+    Result CreateComputePipeline(VKNonDispatchableHandle vkPipeline, Pipeline*& pipeline);
+    Result CreateGraphicsPipeline(VKNonDispatchableHandle vkPipeline, Pipeline*& pipeline);
+    Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
+    Result CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator);
+    Result CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
+    Result CreateAccelerationStructure(const AllocateAccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
+    Result CreateAccelerationStructure(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
+    Result CreateAccelerationStructure(const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
+
+    void DestroyFence(Fence& fence);
     void DestroyBuffer(Buffer& buffer);
     void DestroyTexture(Texture& texture);
-    void DestroyDescriptor(Descriptor& descriptor);
-    void DestroyPipelineLayout(PipelineLayout& pipelineLayout);
     void DestroyPipeline(Pipeline& pipeline);
     void DestroyQueryPool(QueryPool& queryPool);
-    void DestroyFence(Fence& queueSemaphore);
+    void DestroySwapChain(SwapChain& swapChain);
+    void DestroyDescriptor(Descriptor& descriptor);
+    void DestroyDescriptorPool(DescriptorPool& descriptorPool);
+    void DestroyPipelineLayout(PipelineLayout& pipelineLayout);
+    void DestroyCommandBuffer(CommandBuffer& commandBuffer);
+    void DestroyCommandAllocator(CommandAllocator& commandAllocator);
+    void DestroyAccelerationStructure(AccelerationStructure& accelerationStructure);
+
+    void FreeMemory(Memory& memory);
+    void SetDebugName(const char* name);
+    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
     Result AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
-    void FreeMemory(Memory& memory);
-
-    Result CreateRayTracingPipeline(const RayTracingPipelineDesc& pipelineDesc, Pipeline*& pipeline);
-    Result CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
-    Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
-    void DestroyAccelerationStructure(AccelerationStructure& accelerationStructure);
-    FormatSupportBits GetFormatSupport(Format format) const;
-
-    Result CreateCommandQueueVK(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
-    Result CreateCommandAllocatorVK(const CommandAllocatorVKDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator);
-    Result CreateCommandBufferVK(const CommandBufferVKDesc& commandBufferDesc, CommandBuffer*& commandBuffer);
-    Result CreateDescriptorPoolVK(const DescriptorPoolVKDesc& descriptorPoolVKDesc, DescriptorPool*& descriptorPool);
-    Result CreateBufferVK(const BufferVKDesc& bufferDesc, Buffer*& buffer);
-    Result CreateTextureVK(const TextureVKDesc& textureVKDesc, Texture*& texture);
-    Result CreateMemoryVK(const MemoryVKDesc& memoryVKDesc, Memory*& memory);
-    Result CreateGraphicsPipelineVK(NRIVkPipeline vkPipeline, Pipeline*& pipeline);
-    Result CreateComputePipelineVK(NRIVkPipeline vkPipeline, Pipeline*& pipeline);
-    Result CreateQueryPoolVK(const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool);
-    Result CreateAccelerationStructureVK(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
-
-    Result CreateCommandBufferD3D11(const CommandBufferD3D11Desc& commandBufferDesc, CommandBuffer*& commandBuffer);
-    Result CreateBufferD3D11(const BufferD3D11Desc& bufferDesc, Buffer*& buffer);
-    Result CreateTextureD3D11(const TextureD3D11Desc& textureDesc, Texture*& texture);
-
-    Result CreateCommandBufferD3D12(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer);
-    Result CreateDescriptorPoolD3D12(const DescriptorPoolD3D12Desc& descriptorPoolD3D12Desc, DescriptorPool*& descriptorPool);
-    Result CreateBufferD3D12(const BufferD3D12Desc& bufferDesc, Buffer*& buffer);
-    Result CreateTextureD3D12(const TextureD3D12Desc& textureDesc, Texture*& texture);
-    Result CreateMemoryD3D12(const MemoryD3D12Desc& memoryDesc, Memory*& memory);
-    Result CreateAccelerationStructureD3D12(const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
-
-    uint32_t CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const;
-    Result AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations);
     Result QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const;
+    Result AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations);
+    Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
+    uint32_t CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const;
+    FormatSupportBits GetFormatSupport(Format format) const;
 
     //================================================================================================================
     // DeviceBase
     //================================================================================================================
     const DeviceDesc& GetDesc() const;
 
-    void Destroy();
+    void Destruct();
     Result FillFunctionTable(CoreInterface& table) const;
     Result FillFunctionTable(HelperInterface& table) const;
-    Result FillFunctionTable(StreamerInterface& streamerInterface) const;
+    Result FillFunctionTable(LowLatencyInterface& table) const;
+    Result FillFunctionTable(MeshShaderInterface& table) const;
+    Result FillFunctionTable(ResourceAllocatorInterface& table) const;
+    Result FillFunctionTable(RayTracingInterface& table) const;
+    Result FillFunctionTable(StreamerInterface& table) const;
+    Result FillFunctionTable(SwapChainInterface& table) const;
     Result FillFunctionTable(WrapperD3D11Interface& table) const;
     Result FillFunctionTable(WrapperD3D12Interface& table) const;
     Result FillFunctionTable(WrapperVKInterface& table) const;
-    Result FillFunctionTable(SwapChainInterface& table) const;
-    Result FillFunctionTable(RayTracingInterface& table) const;
-    Result FillFunctionTable(MeshShaderInterface& table) const;
-    Result FillFunctionTable(LowLatencyInterface& table) const;
 
 private:
     Device& m_Device;
@@ -158,22 +159,23 @@ private:
     CoreInterface m_CoreAPI = {};
     HelperInterface m_HelperAPI = {};
     StreamerInterface m_StreamerAPI = {};
+    LowLatencyInterface m_LowLatencyAPI = {};
+    MeshShaderInterface m_MeshShaderAPI = {};
+    RayTracingInterface m_RayTracingAPI = {};
+    ResourceAllocatorInterface m_ResourceAllocatorAPI = {};
+    SwapChainInterface m_SwapChainAPI = {};
     WrapperD3D11Interface m_WrapperD3D11API = {};
     WrapperD3D12Interface m_WrapperD3D12API = {};
     WrapperVKInterface m_WrapperVKAPI = {};
-    SwapChainInterface m_SwapChainAPI = {};
-    RayTracingInterface m_RayTracingAPI = {};
-    MeshShaderInterface m_MeshShaderAPI = {};
-    LowLatencyInterface m_LowLatencyAPI = {};
     std::array<CommandQueueVal*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     UnorderedMap<MemoryType, MemoryLocation> m_MemoryTypeMap;
+    bool m_IsLowLatencySupported = false;
+    bool m_IsMeshShaderSupported = false;
+    bool m_IsRayTracingSupported = false;
+    bool m_IsSwapChainSupported = false;
     bool m_IsWrapperD3D11Supported = false;
     bool m_IsWrapperD3D12Supported = false;
     bool m_IsWrapperVKSupported = false;
-    bool m_IsSwapChainSupported = false;
-    bool m_IsRayTracingSupported = false;
-    bool m_IsMeshShaderSupported = false;
-    bool m_IsLowLatencySupported = false;
     Lock m_Lock;
 };
 

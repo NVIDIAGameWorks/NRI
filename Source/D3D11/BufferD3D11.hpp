@@ -14,7 +14,8 @@ static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer) {
 }
 
 static void* NRI_CALL MapBuffer(Buffer& buffer, uint64_t offset, uint64_t size) {
-    return ((BufferD3D11&)buffer).Map(offset, size);
+    MaybeUnused(size);
+    return ((BufferD3D11&)buffer).Map(offset);
 }
 
 static void NRI_CALL UnmapBuffer(Buffer& buffer) {

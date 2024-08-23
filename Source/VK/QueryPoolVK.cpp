@@ -7,15 +7,13 @@
 using namespace nri;
 
 QueryPoolVK::~QueryPoolVK() {
-    const auto& vk = m_Device.GetDispatchTable();
-
-    if (m_OwnsNativeObjects)
+    if (m_OwnsNativeObjects) {
+        const auto& vk = m_Device.GetDispatchTable();
         vk.DestroyQueryPool(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+    }
 }
 
 Result QueryPoolVK::Create(const QueryPoolDesc& queryPoolDesc) {
-    m_OwnsNativeObjects = true;
-
     if (queryPoolDesc.queryType == QueryType::TIMESTAMP || queryPoolDesc.queryType == QueryType::TIMESTAMP_COPY_QUEUE)
         m_Type = VK_QUERY_TYPE_TIMESTAMP;
     else if (queryPoolDesc.queryType == QueryType::OCCLUSION)
@@ -49,6 +47,9 @@ Result QueryPoolVK::Create(const QueryPoolDesc& queryPoolDesc) {
 }
 
 Result QueryPoolVK::Create(const QueryPoolVKDesc& queryPoolDesc) {
+    if (!queryPoolDesc.vkQueryPool)
+        return Result::INVALID_ARGUMENT;
+
     m_OwnsNativeObjects = false;
     m_Type = (VkQueryType)queryPoolDesc.vkQueryType;
     m_Handle = (VkQueryPool)queryPoolDesc.vkQueryPool;

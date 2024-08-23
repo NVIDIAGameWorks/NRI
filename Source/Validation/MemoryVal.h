@@ -40,7 +40,7 @@ private:
     std::vector<TextureVal*> m_Textures;
     std::vector<AccelerationStructureVal*> m_AccelerationStructures;
     uint64_t m_Size = 0;
-    MemoryLocation m_MemoryLocation = MemoryLocation::MAX_NUM;
+    MemoryLocation m_MemoryLocation = MemoryLocation::MAX_NUM; // wrapped object
     Lock m_Lock;
 };
 

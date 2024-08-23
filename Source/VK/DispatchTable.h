@@ -90,6 +90,7 @@ struct DispatchTable {
     VULKAN_FUNCTION(MapMemory);
     VULKAN_FUNCTION(UnmapMemory);
     VULKAN_FUNCTION(FreeMemory);
+    VULKAN_FUNCTION(FlushMappedMemoryRanges);
     VULKAN_FUNCTION(QueueWaitIdle);
     VULKAN_FUNCTION(QueueSubmit2);
     VULKAN_FUNCTION(GetSemaphoreCounterValue);

@@ -16,7 +16,8 @@ enum class MemoryResidencyPriority {
 };
 
 struct MemoryD3D11 {
-    MemoryD3D11(DeviceD3D11& device, const AllocateMemoryDesc& allocateMemoryDesc);
+    inline MemoryD3D11(DeviceD3D11& device) : m_Device(device) {
+    }
 
     inline ~MemoryD3D11() {
     }
@@ -29,9 +30,11 @@ struct MemoryD3D11 {
         return m_Location;
     }
 
-    inline uint32_t GetPriority() const {
+    inline float GetPriority() const {
         return m_Priority;
     }
+
+    Result Create(const AllocateMemoryDesc& allocateMemoryDesc);
 
     //================================================================================================================
     // NRI
@@ -44,7 +47,7 @@ struct MemoryD3D11 {
 private:
     DeviceD3D11& m_Device;
     MemoryLocation m_Location = MemoryLocation::DEVICE;
-    uint32_t m_Priority = 0;
+    float m_Priority = 0.0f;
 };
 
 } // namespace nri

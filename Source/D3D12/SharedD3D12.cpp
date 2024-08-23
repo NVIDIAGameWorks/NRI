@@ -28,7 +28,7 @@ D3D12_HEAP_FLAGS nri::GetHeapFlags(MemoryType memoryType) {
 D3D12_RESOURCE_FLAGS nri::GetBufferFlags(BufferUsageBits bufferUsageMask) {
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
-    if (bufferUsageMask & BufferUsageBits::SHADER_RESOURCE_STORAGE)
+    if (bufferUsageMask & (BufferUsageBits::SHADER_RESOURCE_STORAGE | BufferUsageBits::RAY_TRACING_BUFFER))
         flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
     return flags;
@@ -320,7 +320,41 @@ void nri::ConvertRects(D3D12_RECT* rectsD3D12, const Rect* rects, uint32_t rectN
 }
 
 uint64_t nri::GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc) {
-    return memoryD3D12Desc.d3d12Heap ? memoryD3D12Desc.d3d12Heap->GetDesc().SizeInBytes : memoryD3D12Desc.d3d12HeapDesc->SizeInBytes;
+    return memoryD3D12Desc.d3d12Heap->GetDesc().SizeInBytes;
+}
+
+D3D12_RESIDENCY_PRIORITY nri::ConvertPriority(float priority) {
+    if (priority == 0.0f)
+        return (D3D12_RESIDENCY_PRIORITY)0;
+
+    float p = priority * 0.5f + 0.5f;
+    float level = 0.0f;
+
+    uint32_t result = 0;
+    if (p < 0.2f) {
+        result = (uint32_t)D3D12_RESIDENCY_PRIORITY_MINIMUM;
+        level = 0.0f;
+    } else if (p < 0.4f) {
+        result = (uint32_t)D3D12_RESIDENCY_PRIORITY_LOW;
+        level = 0.2f;
+    } else if (p < 0.6f) {
+        result = (uint32_t)D3D12_RESIDENCY_PRIORITY_NORMAL;
+        level = 0.4f;
+    } else if (p < 0.8f) {
+        result = (uint32_t)D3D12_RESIDENCY_PRIORITY_HIGH;
+        level = 0.6f;
+    } else {
+        result = (uint32_t)D3D12_RESIDENCY_PRIORITY_MAXIMUM;
+        level = 0.8f;
+    }
+
+    uint32_t bonus = uint32_t(((p - level) / 0.2f) * 65535.0f);
+    if (bonus > 0xFFFF)
+        bonus = 0xFFFF;
+
+    result |= bonus;
+
+    return (D3D12_RESIDENCY_PRIORITY)result;
 }
 
 bool nri::GetTextureDesc(const TextureD3D12Desc& textureD3D12Desc, TextureDesc& textureDesc) {
@@ -379,6 +413,21 @@ bool nri::GetBufferDesc(const BufferD3D12Desc& bufferD3D12Desc, BufferDesc& buff
         bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE_STORAGE;
 
     return true;
+}
+
+constexpr std::array<D3D12_HEAP_TYPE, (uint32_t)MemoryLocation::MAX_NUM> HEAP_TYPES = {
+    D3D12_HEAP_TYPE_DEFAULT, // DEVICE
+#ifdef NRI_USE_AGILITY_SDK
+    D3D12_HEAP_TYPE_GPU_UPLOAD, // DEVICE_UPLOAD (Prerequisite: D3D12_FEATURE_D3D12_OPTIONS16)
+#else
+    D3D12_HEAP_TYPE_UPLOAD, // DEVICE_UPLOAD (silent fallback to HOST_UPLOAD)
+#endif
+    D3D12_HEAP_TYPE_UPLOAD,   // HOST_UPLOAD
+    D3D12_HEAP_TYPE_READBACK, // HOST_READBACK
+};
+
+D3D12_HEAP_TYPE nri::GetHeapType(MemoryLocation memoryLocation) {
+    return HEAP_TYPES[(size_t)memoryLocation];
 }
 
 D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE nri::GetAccelerationStructureType(AccelerationStructureType accelerationStructureType) {

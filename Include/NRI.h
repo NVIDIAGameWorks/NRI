@@ -25,8 +25,8 @@ Non-goals:
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 140
-#define NRI_VERSION_DATE "6 August 2024"
+#define NRI_VERSION_MINOR 141
+#define NRI_VERSION_DATE "23 August 2024"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall
@@ -35,7 +35,7 @@ Non-goals:
 #endif
 
 #ifndef NRI_API
-    #if NRI_STATIC_LIBRARY
+    #ifdef NRI_STATIC_LIBRARY
         #define NRI_API
     #elif defined(__cplusplus)
         #define NRI_API extern "C"
@@ -64,6 +64,8 @@ NRI_STRUCT(CoreInterface)
     NRI_NAME(Result) (NRI_CALL *GetCommandQueue)(NRI_NAME_REF(Device) device, NRI_NAME(CommandQueueType) commandQueueType, NRI_NAME_REF(CommandQueue*) commandQueue);
 
     // Create
+    // "Creation" doesn't assume allocation of big chunks of memory on the device, but it happens for some entities implicitly
+    // "Allocation" emphasizes the fact that there is a chunk of memory allocated under the hood
     NRI_NAME(Result) (NRI_CALL *CreateCommandAllocator)(const NRI_NAME_REF(CommandQueue) commandQueue, NRI_NAME_REF(CommandAllocator*) commandAllocator);
     NRI_NAME(Result) (NRI_CALL *CreateCommandBuffer)(NRI_NAME_REF(CommandAllocator) commandAllocator, NRI_NAME_REF(CommandBuffer*) commandBuffer);
     NRI_NAME(Result) (NRI_CALL *CreateDescriptorPool)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(DescriptorPoolDesc) descriptorPoolDesc, NRI_NAME_REF(DescriptorPool*) descriptorPool);
@@ -93,10 +95,14 @@ NRI_STRUCT(CoreInterface)
     void (NRI_CALL *DestroyFence)(NRI_NAME_REF(Fence) fence);
 
     // Memory
-    //  - use "GetBufferMemoryDesc" (or "GetTextureMemoryDesc") to get "MemoryDesc" ("usageBits" and "MemoryLocation" affect returned "MemoryType")
-    //  - (optional) group returned "MemoryDesc"s by "MemoryType", but do not group if "mustBeDedicated = true"
-    //  - call "BindBufferMemory" (or "BindTextureMemory") to bind resources to "Memory" objects
-    // => "CalculateAllocationNumber" and "AllocateAndBindMemory" simplify this process for static allocations
+    //  Low level:
+    //      - use "Get[Resource]MemoryDesc" to get "MemoryDesc" ("usageBits" and "MemoryLocation" affect returned "MemoryType")
+    //      - (optional) group returned "MemoryDesc"s by "MemoryType", but don't group if "mustBeDedicated = true"
+    //      - call "Bind[Resource]Memory" to bind resources to "Memory" objects
+    //  Mid level:
+    //      - "CalculateAllocationNumber" and "AllocateAndBindMemory" simplify this process for buffers and textures
+    //  High level:
+    //      - "ResourceAllocatorInterface" allows to create resources already bound to memory
     NRI_NAME(Result) (NRI_CALL *AllocateMemory)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(AllocateMemoryDesc) allocateMemoryDesc, NRI_NAME_REF(Memory*) memory);
     NRI_NAME(Result) (NRI_CALL *BindBufferMemory)(NRI_NAME_REF(Device) device, const NRI_NAME(BufferMemoryBindingDesc)* memoryBindingDescs, uint32_t memoryBindingDescNum);
     NRI_NAME(Result) (NRI_CALL *BindTextureMemory)(NRI_NAME_REF(Device) device, const NRI_NAME(TextureMemoryBindingDesc)* memoryBindingDescs, uint32_t memoryBindingDescNum);

@@ -125,7 +125,7 @@ HelperDeviceMemoryAllocator::MemoryHeap& HelperDeviceMemoryAllocator::FindOrCrea
     size_t j = 0;
     for (; j < m_Heaps.size(); j++) {
         const MemoryHeap& heap = m_Heaps[j];
-        
+
         uint64_t offset = Align(heap.size, memoryDesc.alignment);
         uint64_t newSize = offset + memoryDesc.size;
 

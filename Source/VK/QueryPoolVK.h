@@ -42,7 +42,7 @@ private:
     VkQueryPool m_Handle = VK_NULL_HANDLE;
     VkQueryType m_Type = (VkQueryType)0;
     uint32_t m_QuerySize = 0;
-    bool m_OwnsNativeObjects = false;
+    bool m_OwnsNativeObjects = true;
 };
 
 } // namespace nri

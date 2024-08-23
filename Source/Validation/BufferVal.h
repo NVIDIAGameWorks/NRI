@@ -7,7 +7,7 @@ namespace nri {
 struct MemoryVal;
 
 struct BufferVal final : public DeviceObjectVal<Buffer> {
-    BufferVal(DeviceVal& device, Buffer* buffer) : DeviceObjectVal(device, buffer) {
+    BufferVal(DeviceVal& device, Buffer* buffer, bool isBoundToMemory) : DeviceObjectVal(device, buffer), m_IsBoundToMemory(isBoundToMemory) {
     }
 
     ~BufferVal();
@@ -24,12 +24,8 @@ struct BufferVal final : public DeviceObjectVal<Buffer> {
         return m_IsBoundToMemory;
     }
 
-    inline void SetBoundToMemory() {
-        m_IsBoundToMemory = true;
-    }
-
-    inline void SetBoundToMemory(MemoryVal& memory) {
-        m_Memory = &memory;
+    inline void SetBoundToMemory(MemoryVal* memory = nullptr) {
+        m_Memory = memory;
         m_IsBoundToMemory = true;
     }
 

@@ -15,18 +15,6 @@ namespace nri {
 
 constexpr Mip_t NULL_TEXTURE_REGION_DESC = Mip_t(-1);
 
-enum class BufferType {
-    DEVICE,
-    DYNAMIC,
-    READBACK,
-    UPLOAD
-};
-
-enum class MapType {
-    DEFAULT,
-    READ
-};
-
 enum class DescriptorTypeDX11 : uint8_t {
     // don't change order
     NO_SHADER_VISIBLE,
@@ -47,6 +35,7 @@ D3D11_BLEND GetD3D11BlendFromBlendFactor(BlendFactor blendFactor);
 D3D11_LOGIC_OP GetD3D11LogicOpFromLogicFunc(LogicFunc logicalFunc);
 bool GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& textureDesc);
 bool GetBufferDesc(const BufferD3D11Desc& bufferD3D11Desc, BufferDesc& bufferDesc);
+uint32_t ConvertPriority(float priority);
 
 struct SubresourceInfo {
     const void* resource = nullptr;

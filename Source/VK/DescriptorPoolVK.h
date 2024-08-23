@@ -40,7 +40,7 @@ private:
     Vector<DescriptorSetVK*> m_AllocatedSets;
     VkDescriptorPool m_Handle = VK_NULL_HANDLE;
     uint32_t m_UsedSets = 0;
-    bool m_OwnsNativeObjects = false;
+    bool m_OwnsNativeObjects = true;
 };
 
 } // namespace nri

@@ -27,16 +27,13 @@ struct BufferVK {
         return m_Desc;
     }
 
-    inline bool OwnsNativeObjects() const {
-		return m_OwnsNativeObjects;
-	}
-
     ~BufferVK();
 
     Result Create(const BufferDesc& bufferDesc);
     Result Create(const BufferVKDesc& bufferDesc);
-    void SetHostMemory(MemoryVK& memory, uint64_t memoryOffset);
-    void ReadDeviceAddress();
+    Result Create(const AllocateBufferDesc& bufferDesc);
+    void FinishMemoryBinding(MemoryVK& memory, uint64_t memoryOffset);
+    void DestroyVma();
 
     //================================================================================================================
     // NRI
@@ -49,13 +46,15 @@ struct BufferVK {
 private:
     DeviceVK& m_Device;
     VkBuffer m_Handle = VK_NULL_HANDLE;
-    VkDeviceAddress m_DeviceAddress = {};
-    BufferDesc m_Desc = {};
-    MemoryVK* m_Memory = nullptr;
+    VkDeviceAddress m_DeviceAddress = 0;
+    uint8_t* m_MappedMemory = nullptr;
+    VkDeviceMemory m_NonCoherentDeviceMemory = VK_NULL_HANDLE;
     uint64_t m_MappedMemoryOffset = 0;
-    uint64_t m_MappedRangeOffset = 0;
-    uint64_t m_MappedRangeSize = 0;
-    bool m_OwnsNativeObjects = false;
+    uint64_t m_MappedMemoryRangeSize = 0;
+    uint64_t m_MappedMemoryRangeOffset = 0;
+    BufferDesc m_Desc = {};
+    VmaAllocation_T* m_VmaAllocation = nullptr;
+    bool m_OwnsNativeObjects = true;
 };
 
 inline VkDeviceAddress GetBufferDeviceAddress(const Buffer* buffer) {

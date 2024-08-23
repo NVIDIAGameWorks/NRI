@@ -72,19 +72,19 @@ void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapC
 
     auto queueSubmitDescImpl = queueSubmitDesc;
 
-    FenceSubmitDesc* waitFences = STACK_ALLOC(FenceSubmitDesc, queueSubmitDesc.waitFenceNum);
+    FenceSubmitDesc* waitFences = StackAlloc(FenceSubmitDesc, queueSubmitDesc.waitFenceNum);
     for (uint32_t i = 0; i < queueSubmitDesc.waitFenceNum; i++) {
         waitFences[i] = queueSubmitDesc.waitFences[i];
         waitFences[i].fence = NRI_GET_IMPL(Fence, waitFences[i].fence);
     }
     queueSubmitDescImpl.waitFences = waitFences;
 
-    CommandBuffer** commandBuffers = STACK_ALLOC(CommandBuffer*, queueSubmitDesc.commandBufferNum);
+    CommandBuffer** commandBuffers = StackAlloc(CommandBuffer*, queueSubmitDesc.commandBufferNum);
     for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++)
         commandBuffers[i] = NRI_GET_IMPL(CommandBuffer, queueSubmitDesc.commandBuffers[i]);
     queueSubmitDescImpl.commandBuffers = commandBuffers;
 
-    FenceSubmitDesc* signalFences = STACK_ALLOC(FenceSubmitDesc, queueSubmitDesc.signalFenceNum);
+    FenceSubmitDesc* signalFences = StackAlloc(FenceSubmitDesc, queueSubmitDesc.signalFenceNum);
     for (uint32_t i = 0; i < queueSubmitDesc.signalFenceNum; i++) {
         signalFences[i] = queueSubmitDesc.signalFences[i];
         signalFences[i].fence = NRI_GET_IMPL(Fence, signalFences[i].fence);
@@ -103,7 +103,7 @@ Result CommandQueueVal::UploadData(
     RETURN_ON_FAILURE(&m_Device, textureUploadDescNum == 0 || textureUploadDescs != nullptr, Result::INVALID_ARGUMENT, "UploadData: 'textureUploadDescs' is NULL");
     RETURN_ON_FAILURE(&m_Device, bufferUploadDescNum == 0 || bufferUploadDescs != nullptr, Result::INVALID_ARGUMENT, "UploadData: 'bufferUploadDescs' is NULL");
 
-    TextureUploadDesc* textureUploadDescsImpl = STACK_ALLOC(TextureUploadDesc, textureUploadDescNum);
+    TextureUploadDesc* textureUploadDescsImpl = StackAlloc(TextureUploadDesc, textureUploadDescNum);
 
     for (uint32_t i = 0; i < textureUploadDescNum; i++) {
         if (!ValidateTextureUploadDesc(m_Device, i, textureUploadDescs[i]))
@@ -115,7 +115,7 @@ Result CommandQueueVal::UploadData(
         textureUploadDescsImpl[i].texture = textureVal->GetImpl();
     }
 
-    BufferUploadDesc* bufferUploadDescsImpl = STACK_ALLOC(BufferUploadDesc, bufferUploadDescNum);
+    BufferUploadDesc* bufferUploadDescsImpl = StackAlloc(BufferUploadDesc, bufferUploadDescNum);
 
     for (uint32_t i = 0; i < bufferUploadDescNum; i++) {
         if (!ValidateBufferUploadDesc(m_Device, i, bufferUploadDescs[i]))

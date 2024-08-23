@@ -35,6 +35,28 @@ struct DeviceVK final : public DeviceBase {
         return m_CoreInterface;
     }
 
+    inline bool IsHostCoherentMemory(MemoryTypeIndex memoryTypeIndex) const {
+        return (m_MemoryProps.memoryTypes[memoryTypeIndex].propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0;
+    }
+
+    inline VmaAllocator_T* GetVma() const {
+        return m_Vma;
+    }
+
+    template <typename Implementation, typename Interface, typename... Args>
+    inline Result CreateImplementation(Interface*& entity, const Args&... args) {
+        Implementation* impl = Allocate<Implementation>(GetStdAllocator(), *this);
+        Result result = impl->Create(args...);
+
+        if (result != Result::SUCCESS) {
+            Destroy(GetStdAllocator(), impl);
+            entity = nullptr;
+        } else
+            entity = (Interface*)impl;
+
+        return result;
+    }
+
     DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator);
     ~DeviceVK();
 
@@ -43,62 +65,26 @@ struct DeviceVK final : public DeviceBase {
     void FillCreateInfo(const TextureDesc& bufferDesc, VkImageCreateInfo& info) const;
     void GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
     void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
-    bool GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const;
+    void GetMemoryDesc(const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
+    bool GetMemoryTypeInfo(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const;
     bool GetMemoryTypeByIndex(uint32_t index, MemoryTypeInfo& memoryTypeInfo) const;
+    void GetAccelerationStructureBuildSizesInfo(const AccelerationStructureDesc& accelerationStructureDesc, VkAccelerationStructureBuildSizesInfoKHR& sizesInfo);
     void SetDebugNameToTrivialObject(VkObjectType objectType, uint64_t handle, const char* name);
+    Result CreateVma();
+    void DestroyVma();
 
     //================================================================================================================
     // NRI
     //================================================================================================================
 
     void SetDebugName(const char* name);
-    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
     Result CreateCommandQueue(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
-    Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
-    Result CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool);
-    Result CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer);
-    Result CreateTexture(const TextureDesc& textureDesc, Texture*& texture);
-    Result CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView);
-    Result CreateTexture1DView(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView);
-    Result CreateTexture2DView(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView);
-    Result CreateTexture3DView(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView);
-    Result CreateSampler(const SamplerDesc& samplerDesc, Descriptor*& sampler);
-    Result CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout);
-    Result CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline);
-    Result CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline);
-    Result CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool);
-    Result CreateFence(uint64_t initialValue, Fence*& fence);
-    Result CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain);
-    Result CreatePipeline(const RayTracingPipelineDesc& rayTracingPipelineDesc, Pipeline*& pipeline);
-    Result CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
-    Result CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator);
-    Result CreateCommandBuffer(const CommandBufferVKDesc& commandBufferDesc, CommandBuffer*& commandBuffer);
-    Result CreateDescriptorPool(const DescriptorPoolVKDesc& descriptorPoolVKDesc, DescriptorPool*& descriptorPool);
-    Result CreateBuffer(const BufferVKDesc& bufferDesc, Buffer*& buffer);
-    Result CreateTexture(const TextureVKDesc& textureVKDesc, Texture*& texture);
-    Result CreateMemory(const MemoryVKDesc& memoryVKDesc, Memory*& memory);
-    Result CreateGraphicsPipeline(NRIVkPipeline vkPipeline, Pipeline*& pipeline);
-    Result CreateComputePipeline(NRIVkPipeline vkPipeline, Pipeline*& pipeline);
-    Result CreateQueryPool(const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool);
-    Result CreateAccelerationStructure(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
-    void DestroyCommandAllocator(CommandAllocator& commandAllocator);
-    void DestroyDescriptorPool(DescriptorPool& descriptorPool);
-    void DestroyBuffer(Buffer& buffer);
-    void DestroyTexture(Texture& texture);
-    void DestroyDescriptor(Descriptor& descriptor);
-    void DestroyPipelineLayout(PipelineLayout& pipelineLayout);
-    void DestroyPipeline(Pipeline& pipeline);
-    void DestroyQueryPool(QueryPool& queryPool);
-    void DestroyFence(Fence& fence);
-    void DestroySwapChain(SwapChain& swapChain);
-    void DestroyAccelerationStructure(AccelerationStructure& accelerationStructure);
-    Result AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory);
+    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
-    Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
-    void FreeMemory(Memory& memory);
-    FormatSupportBits GetFormatSupport(Format format) const;
     Result QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const;
+    Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
+    FormatSupportBits GetFormatSupport(Format format) const;
 
     //================================================================================================================
     // DeviceBase
@@ -108,15 +94,16 @@ struct DeviceVK final : public DeviceBase {
         return m_Desc;
     }
 
-    void Destroy();
+    void Destruct();
     Result FillFunctionTable(CoreInterface& table) const;
+    Result FillFunctionTable(HelperInterface& table) const;
+    Result FillFunctionTable(LowLatencyInterface& table) const;
+    Result FillFunctionTable(MeshShaderInterface& table) const;
+    Result FillFunctionTable(RayTracingInterface& table) const;
+    Result FillFunctionTable(StreamerInterface& table) const;
     Result FillFunctionTable(SwapChainInterface& table) const;
-    Result FillFunctionTable(WrapperVKInterface& wrapperVKInterface) const;
-    Result FillFunctionTable(RayTracingInterface& rayTracingInterface) const;
-    Result FillFunctionTable(MeshShaderInterface& meshShaderInterface) const;
-    Result FillFunctionTable(HelperInterface& helperInterface) const;
-    Result FillFunctionTable(LowLatencyInterface& lowLatencyInterface) const;
-    Result FillFunctionTable(StreamerInterface& streamerInterface) const;
+    Result FillFunctionTable(ResourceAllocatorInterface& table) const;
+    Result FillFunctionTable(WrapperVKInterface& table) const;
 
 private:
     void FilterInstanceLayers(Vector<const char*>& layers);
@@ -130,9 +117,6 @@ private:
     Result ResolveInstanceDispatchTable(const Vector<const char*>& desiredInstanceExts);
     Result ResolveDispatchTable(const Vector<const char*>& desiredDeviceExts);
 
-    template <typename Implementation, typename Interface, typename... Args>
-    Result CreateImplementation(Interface*& entity, const Args&... args);
-
 public:
     bool m_IsDescriptorIndexingSupported = false;
     bool m_IsDeviceAddressSupported = false;
@@ -142,6 +126,7 @@ public:
     bool m_IsLowLatencySupported = false;
     bool m_IsMemoryPrioritySupported = false;
     bool m_IsMemoryBudgetSupported = false;
+    bool m_IsMaintenance5Supported = false;
 
 private:
     VkPhysicalDevice m_PhysicalDevice = nullptr;
@@ -159,8 +144,10 @@ private:
     VkInstance m_Instance = VK_NULL_HANDLE;
     VkAllocationCallbacks* m_AllocationCallbackPtr = nullptr;
     VkDebugUtilsMessengerEXT m_Messenger = VK_NULL_HANDLE;
+    VmaAllocator_T* m_Vma = nullptr;
     uint32_t m_NumActiveFamilyIndices = 0;
-    bool m_OwnsNativeObjects = false;
+    uint32_t m_MinorVersion = 0;
+    bool m_OwnsNativeObjects = true;
     Lock m_Lock;
 };
 

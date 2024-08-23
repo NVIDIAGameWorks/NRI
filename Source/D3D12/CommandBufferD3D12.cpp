@@ -273,7 +273,7 @@ inline void CommandBufferD3D12::SetViewports(const Viewport* viewports, uint32_t
 }
 
 inline void CommandBufferD3D12::SetScissors(const Rect* rects, uint32_t rectNum) {
-    D3D12_RECT* rectsD3D12 = STACK_ALLOC(D3D12_RECT, rectNum);
+    D3D12_RECT* rectsD3D12 = StackAlloc(D3D12_RECT, rectNum);
     ConvertRects(rectsD3D12, rects, rectNum);
 
     m_GraphicsCommandList->RSSetScissorRects(rectNum, rectsD3D12);
@@ -307,7 +307,7 @@ inline void CommandBufferD3D12::SetBlendConstants(const Color32f& color) {
 }
 
 inline void CommandBufferD3D12::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
-    D3D12_RECT* rectsD3D12 = STACK_ALLOC(D3D12_RECT, rectNum);
+    D3D12_RECT* rectsD3D12 = StackAlloc(D3D12_RECT, rectNum);
     ConvertRects(rectsD3D12, rects, rectNum);
 
     for (uint32_t i = 0; i < clearDescNum; i++) {
@@ -376,7 +376,7 @@ inline void CommandBufferD3D12::BeginRendering(const AttachmentsDesc& attachment
 }
 
 inline void CommandBufferD3D12::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
-    D3D12_VERTEX_BUFFER_VIEW* vertexBufferViews = STACK_ALLOC(D3D12_VERTEX_BUFFER_VIEW, bufferNum);
+    D3D12_VERTEX_BUFFER_VIEW* vertexBufferViews = StackAlloc(D3D12_VERTEX_BUFFER_VIEW, bufferNum);
 
     for (uint32_t i = 0; i < bufferNum; i++) {
         if (buffers[i] != nullptr) {
@@ -626,7 +626,7 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
 
         // Global
         uint16_t num = barrierGroupDesc.globalNum;
-        D3D12_GLOBAL_BARRIER* globalBarriers = STACK_ALLOC(D3D12_GLOBAL_BARRIER, num);
+        D3D12_GLOBAL_BARRIER* globalBarriers = StackAlloc(D3D12_GLOBAL_BARRIER, num);
         if (num) {
             D3D12_BARRIER_GROUP* barrierGroup = &barrierGroups[barriersGroupsNum++];
             barrierGroup->Type = D3D12_BARRIER_TYPE_GLOBAL;
@@ -646,7 +646,7 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
 
         // Buffer
         num = barrierGroupDesc.bufferNum;
-        D3D12_BUFFER_BARRIER* bufferBarriers = STACK_ALLOC(D3D12_BUFFER_BARRIER, num);
+        D3D12_BUFFER_BARRIER* bufferBarriers = StackAlloc(D3D12_BUFFER_BARRIER, num);
         if (barrierGroupDesc.bufferNum) {
             D3D12_BARRIER_GROUP* barrierGroup = &barrierGroups[barriersGroupsNum++];
             barrierGroup->Type = D3D12_BARRIER_TYPE_BUFFER;
@@ -670,7 +670,7 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
 
         // Texture
         num = barrierGroupDesc.textureNum;
-        D3D12_TEXTURE_BARRIER* textureBarriers = STACK_ALLOC(D3D12_TEXTURE_BARRIER, num);
+        D3D12_TEXTURE_BARRIER* textureBarriers = StackAlloc(D3D12_TEXTURE_BARRIER, num);
         if (barrierGroupDesc.textureNum) {
             D3D12_BARRIER_GROUP* barrierGroup = &barrierGroups[barriersGroupsNum++];
             barrierGroup->Type = D3D12_BARRIER_TYPE_TEXTURE;
@@ -738,7 +738,7 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
             return;
 
         // Gather
-        D3D12_RESOURCE_BARRIER* barriers = STACK_ALLOC(D3D12_RESOURCE_BARRIER, barrierNum);
+        D3D12_RESOURCE_BARRIER* barriers = StackAlloc(D3D12_RESOURCE_BARRIER, barrierNum);
         memset(barriers, 0, sizeof(D3D12_RESOURCE_BARRIER) * barrierNum);
 
         D3D12_RESOURCE_BARRIER* ptr = barriers;
@@ -804,7 +804,7 @@ inline void CommandBufferD3D12::CopyQueries(const QueryPool& queryPool, uint32_t
 
 inline void CommandBufferD3D12::BeginAnnotation(const char* name) {
     size_t len = strlen(name) + 1;
-    wchar_t* s = STACK_ALLOC(wchar_t, len);
+    wchar_t* s = StackAlloc(wchar_t, len);
     ConvertCharToWchar(name, s, len);
 
     PIXBeginEvent(m_GraphicsCommandList, PIX_COLOR_DEFAULT, s);
@@ -840,9 +840,9 @@ inline void CommandBufferD3D12::BuildBottomLevelAccelerationStructure(
     desc.Inputs.NumDescs = geometryObjectNum;
     desc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 
-    Vector<D3D12_RAYTRACING_GEOMETRY_DESC> geometryDescs(geometryObjectNum, m_Device.GetStdAllocator());
-    ConvertGeometryDescs(&geometryDescs[0], geometryObjects, geometryObjectNum);
-    desc.Inputs.pGeometryDescs = &geometryDescs[0];
+    Scratch<D3D12_RAYTRACING_GEOMETRY_DESC> geometryDescs = AllocateScratch(m_Device, D3D12_RAYTRACING_GEOMETRY_DESC, geometryObjectNum);
+    ConvertGeometryDescs(geometryDescs, geometryObjects, geometryObjectNum);
+    desc.Inputs.pGeometryDescs = geometryDescs;
 
     if (m_Version >= 4)
         m_GraphicsCommandList->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
@@ -876,9 +876,9 @@ inline void CommandBufferD3D12::UpdateBottomLevelAccelerationStructure(uint32_t 
     desc.Inputs.NumDescs = geometryObjectNum;
     desc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 
-    Vector<D3D12_RAYTRACING_GEOMETRY_DESC> geometryDescs(geometryObjectNum, m_Device.GetStdAllocator());
-    ConvertGeometryDescs(&geometryDescs[0], geometryObjects, geometryObjectNum);
-    desc.Inputs.pGeometryDescs = &geometryDescs[0];
+    Scratch<D3D12_RAYTRACING_GEOMETRY_DESC> geometryDescs = AllocateScratch(m_Device, D3D12_RAYTRACING_GEOMETRY_DESC, geometryObjectNum);
+    ConvertGeometryDescs(geometryDescs, geometryObjects, geometryObjectNum);
+    desc.Inputs.pGeometryDescs = geometryDescs;
 
     if (m_Version >= 4)
         m_GraphicsCommandList->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
@@ -891,7 +891,7 @@ inline void CommandBufferD3D12::CopyAccelerationStructure(AccelerationStructure&
 
 inline void CommandBufferD3D12::WriteAccelerationStructureSize(
     const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryOffset) {
-    D3D12_GPU_VIRTUAL_ADDRESS* virtualAddresses = ALLOCATE_SCRATCH(m_Device, D3D12_GPU_VIRTUAL_ADDRESS, accelerationStructureNum);
+    Scratch<D3D12_GPU_VIRTUAL_ADDRESS> virtualAddresses = AllocateScratch(m_Device, D3D12_GPU_VIRTUAL_ADDRESS, accelerationStructureNum);
     for (uint32_t i = 0; i < accelerationStructureNum; i++)
         virtualAddresses[i] = ((AccelerationStructureD3D12&)accelerationStructures[i]).GetHandle();
 
@@ -901,8 +901,6 @@ inline void CommandBufferD3D12::WriteAccelerationStructureSize(
 
     if (m_Version >= 4)
         m_GraphicsCommandList->EmitRaytracingAccelerationStructurePostbuildInfo(&postbuildInfo, accelerationStructureNum, virtualAddresses);
-
-    FREE_SCRATCH(m_Device, virtualAddresses, accelerationStructureNum);
 }
 
 inline void CommandBufferD3D12::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc) {

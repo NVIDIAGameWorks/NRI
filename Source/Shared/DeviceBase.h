@@ -31,7 +31,7 @@ struct DeviceBase {
     }
 
     virtual const DeviceDesc& GetDesc() const = 0;
-    virtual void Destroy() = 0;
+    virtual void Destruct() = 0;
 
     virtual Result FillFunctionTable(CoreInterface& table) const {
         table = {};
@@ -43,7 +43,32 @@ struct DeviceBase {
         return Result::UNSUPPORTED;
     }
 
+    virtual Result FillFunctionTable(LowLatencyInterface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
+    virtual Result FillFunctionTable(MeshShaderInterface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
+    virtual Result FillFunctionTable(RayTracingInterface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
     virtual Result FillFunctionTable(StreamerInterface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
+    virtual Result FillFunctionTable(SwapChainInterface& table) const {
+        table = {};
+        return Result::UNSUPPORTED;
+    }
+
+    virtual Result FillFunctionTable(ResourceAllocatorInterface& table) const {
         table = {};
         return Result::UNSUPPORTED;
     }
@@ -63,26 +88,6 @@ struct DeviceBase {
         return Result::UNSUPPORTED;
     }
 
-    virtual Result FillFunctionTable(SwapChainInterface& table) const {
-        table = {};
-        return Result::UNSUPPORTED;
-    }
-
-    virtual Result FillFunctionTable(RayTracingInterface& table) const {
-        table = {};
-        return Result::UNSUPPORTED;
-    }
-
-    virtual Result FillFunctionTable(MeshShaderInterface& table) const {
-        table = {};
-        return Result::UNSUPPORTED;
-    }
-
-    virtual Result FillFunctionTable(LowLatencyInterface& table) const {
-        table = {};
-        return Result::UNSUPPORTED;
-    }
-
 protected:
     CallbackInterface m_CallbackInterface = {};
     StdAllocator<uint8_t> m_StdAllocator;
@@ -97,16 +102,25 @@ protected:
     void Core_Descriptor_PartiallyFillFunctionTable##API(CoreInterface& table); \
     void Core_DescriptorPool_PartiallyFillFunctionTable##API(CoreInterface& table); \
     void Core_DescriptorSet_PartiallyFillFunctionTable##API(CoreInterface& table); \
+    void Core_Device_PartiallyFillFunctionTable##API(CoreInterface& table); \
     void Core_Fence_PartiallyFillFunctionTable##API(CoreInterface& table); \
     void Core_QueryPool_PartiallyFillFunctionTable##API(CoreInterface& table); \
     void Core_Texture_PartiallyFillFunctionTable##API(CoreInterface& table); \
-    void SwapChain_PartiallyFillFunctionTable##API(SwapChainInterface& table); \
-    void RayTracing_CommandBuffer_PartiallyFillFunctionTable##API(RayTracingInterface& table); \
-    void RayTracing_AccelerationStructure_PartiallyFillFunctionTable##API(RayTracingInterface& table); \
-    void MeshShader_CommandBuffer_PartiallyFillFunctionTable##API(MeshShaderInterface& table); \
     void Helper_CommandQueue_PartiallyFillFunctionTable##API(HelperInterface& table); \
-    void LowLatency_SwapChain_PartiallyFillFunctionTable##API(LowLatencyInterface& table); \
-    void LowLatency_CommandQueue_PartiallyFillFunctionTable##API(LowLatencyInterface& table)
+    void Helper_Device_PartiallyFillFunctionTable##API(HelperInterface& table); \
+    void LowLatency_CommandQueue_PartiallyFillFunctionTable##API(LowLatencyInterface& table); \
+    void LowLatency_SwapChain_SwapChain_PartiallyFillFunctionTable##API(LowLatencyInterface& table); \
+    void MeshShader_CommandBuffer_PartiallyFillFunctionTable##API(MeshShaderInterface& table); \
+    void RayTracing_AccelerationStructure_PartiallyFillFunctionTable##API(RayTracingInterface& table); \
+    void RayTracing_CommandBuffer_PartiallyFillFunctionTable##API(RayTracingInterface& table); \
+    void RayTracing_Device_PartiallyFillFunctionTable##API(RayTracingInterface& table); \
+    void Streamer_Device_PartiallyFillFunctionTable##API(StreamerInterface& table); \
+    void SwapChain_SwapChain_PartiallyFillFunctionTable##API(SwapChainInterface& table); \
+    void SwapChain_Device_PartiallyFillFunctionTable##API(SwapChainInterface& table); \
+    void ResourceAllocator_Device_PartiallyFillFunctionTable##API(ResourceAllocatorInterface& table); \
+    void WrapperD3D11_Device_PartiallyFillFunctionTable##API(WrapperD3D11Interface& table); \
+    void WrapperD3D12_Device_PartiallyFillFunctionTable##API(WrapperD3D12Interface& table); \
+    void WrapperVK_Device_PartiallyFillFunctionTable##API(WrapperVKInterface& table)
 
 #define Define_Core_Buffer_PartiallyFillFunctionTable(API) \
     void Core_Buffer_PartiallyFillFunctionTable##API(CoreInterface& table) { \
@@ -125,7 +139,6 @@ protected:
 
 #define Define_Core_CommandBuffer_PartiallyFillFunctionTable(API) \
     void Core_CommandBuffer_PartiallyFillFunctionTable##API(CoreInterface& table) { \
-        table.DestroyCommandBuffer = ::DestroyCommandBuffer; \
         table.BeginCommandBuffer = ::BeginCommandBuffer; \
         table.CmdSetDescriptorPool = ::CmdSetDescriptorPool; \
         table.CmdSetDescriptorSet = ::CmdSetDescriptorSet; \
@@ -194,6 +207,50 @@ protected:
         table.CopyDescriptorSet = ::CopyDescriptorSet; \
     }
 
+#define Define_Core_Device_PartiallyFillFunctionTable(API) \
+    void Core_Device_PartiallyFillFunctionTable##API(CoreInterface& table) { \
+        table.GetDeviceDesc = ::GetDeviceDesc; \
+        table.GetBufferDesc = ::GetBufferDesc; \
+        table.GetTextureDesc = ::GetTextureDesc; \
+        table.GetFormatSupport = ::GetFormatSupport; \
+        table.GetBufferMemoryDesc = ::GetBufferMemoryDesc; \
+        table.GetTextureMemoryDesc = ::GetTextureMemoryDesc; \
+        table.GetCommandQueue = ::GetCommandQueue; \
+        table.CreateCommandAllocator = ::CreateCommandAllocator; \
+        table.CreateDescriptorPool = ::CreateDescriptorPool; \
+        table.CreateBuffer = ::CreateBuffer; \
+        table.CreateTexture = ::CreateTexture; \
+        table.CreateBufferView = ::CreateBufferView; \
+        table.CreateTexture1DView = ::CreateTexture1DView; \
+        table.CreateTexture2DView = ::CreateTexture2DView; \
+        table.CreateTexture3DView = ::CreateTexture3DView; \
+        table.CreateSampler = ::CreateSampler; \
+        table.CreatePipelineLayout = ::CreatePipelineLayout; \
+        table.CreateGraphicsPipeline = ::CreateGraphicsPipeline; \
+        table.CreateComputePipeline = ::CreateComputePipeline; \
+        table.CreateQueryPool = ::CreateQueryPool; \
+        table.CreateFence = ::CreateFence; \
+        table.DestroyCommandBuffer = ::DestroyCommandBuffer; \
+        table.DestroyCommandAllocator = ::DestroyCommandAllocator; \
+        table.DestroyDescriptorPool = ::DestroyDescriptorPool; \
+        table.DestroyBuffer = ::DestroyBuffer; \
+        table.DestroyTexture = ::DestroyTexture; \
+        table.DestroyDescriptor = ::DestroyDescriptor; \
+        table.DestroyPipelineLayout = ::DestroyPipelineLayout; \
+        table.DestroyPipeline = ::DestroyPipeline; \
+        table.DestroyQueryPool = ::DestroyQueryPool; \
+        table.DestroyFence = ::DestroyFence; \
+        table.AllocateMemory = ::AllocateMemory; \
+        table.BindBufferMemory = ::BindBufferMemory; \
+        table.BindTextureMemory = ::BindTextureMemory; \
+        table.FreeMemory = ::FreeMemory; \
+        table.SetDeviceDebugName = ::SetDeviceDebugName; \
+        table.SetPipelineDebugName = ::SetPipelineDebugName; \
+        table.SetPipelineLayoutDebugName = ::SetPipelineLayoutDebugName; \
+        table.SetMemoryDebugName = ::SetMemoryDebugName; \
+        table.GetDeviceNativeObject = ::GetDeviceNativeObject; \
+    }
+
 #define Define_Core_Fence_PartiallyFillFunctionTable(API) \
     void Core_Fence_PartiallyFillFunctionTable##API(CoreInterface& table) { \
         table.GetFenceValue = ::GetFenceValue; \
@@ -213,14 +270,46 @@ protected:
         table.GetTextureNativeObject = ::GetTextureNativeObject; \
     }
 
-#define Define_SwapChain_PartiallyFillFunctionTable(API) \
-    void SwapChain_PartiallyFillFunctionTable##API(SwapChainInterface& table) { \
-        table.SetSwapChainDebugName = ::SetSwapChainDebugName; \
-        table.GetSwapChainTextures = ::GetSwapChainTextures; \
-        table.AcquireNextSwapChainTexture = ::AcquireNextSwapChainTexture; \
-        table.WaitForPresent = ::WaitForPresent; \
-        table.QueuePresent = ::QueuePresent; \
-        table.GetDisplayDesc = ::GetDisplayDesc; \
+#define Define_Helper_CommandQueue_PartiallyFillFunctionTable(API) \
+    void Helper_CommandQueue_PartiallyFillFunctionTable##API(HelperInterface& table) { \
+        table.UploadData = ::UploadData; \
+        table.WaitForIdle = ::WaitForIdle; \
+    }
+
+#define Define_Helper_Device_PartiallyFillFunctionTable(API) \
+    void Helper_Device_PartiallyFillFunctionTable##API(HelperInterface& table) { \
+        table.CalculateAllocationNumber = ::CalculateAllocationNumber; \
+        table.AllocateAndBindMemory = ::AllocateAndBindMemory; \
+        table.QueryVideoMemoryInfo = ::QueryVideoMemoryInfo; \
+    }
+
+#define Define_LowLatency_CommandQueue_PartiallyFillFunctionTable(API) \
+    void LowLatency_CommandQueue_PartiallyFillFunctionTable##API(LowLatencyInterface& table) { \
+        table.QueueSubmitTrackable = ::QueueSubmitTrackable; \
+    }
+
+#define Define_LowLatency_SwapChain_SwapChain_PartiallyFillFunctionTable(API) \
+    void LowLatency_SwapChain_SwapChain_PartiallyFillFunctionTable##API(LowLatencyInterface& table) { \
+        table.SetLatencySleepMode = ::SetLatencySleepMode; \
+        table.SetLatencyMarker = ::SetLatencyMarker; \
+        table.LatencySleep = ::LatencySleep; \
+        table.GetLatencyReport = ::GetLatencyReport; \
+    }
+
+#define Define_MeshShader_CommandBuffer_PartiallyFillFunctionTable(API) \
+    void MeshShader_CommandBuffer_PartiallyFillFunctionTable##API(MeshShaderInterface& table) { \
+        table.CmdDrawMeshTasks = ::CmdDrawMeshTasks; \
+        table.CmdDrawMeshTasksIndirect = ::CmdDrawMeshTasksIndirect; \
+    }
+
+#define Define_RayTracing_AccelerationStructure_PartiallyFillFunctionTable(API) \
+    void RayTracing_AccelerationStructure_PartiallyFillFunctionTable##API(RayTracingInterface& table) { \
+        table.CreateAccelerationStructureDescriptor = ::CreateAccelerationStructureDescriptor; \
+        table.GetAccelerationStructureUpdateScratchBufferSize = ::GetAccelerationStructureUpdateScratchBufferSize; \
+        table.GetAccelerationStructureBuildScratchBufferSize = ::GetAccelerationStructureBuildScratchBufferSize; \
+        table.GetAccelerationStructureHandle = ::GetAccelerationStructureHandle; \
+        table.SetAccelerationStructureDebugName = ::SetAccelerationStructureDebugName; \
+        table.GetAccelerationStructureNativeObject = ::GetAccelerationStructureNativeObject; \
     }
 
 #define Define_RayTracing_CommandBuffer_PartiallyFillFunctionTable(API) \
@@ -235,38 +324,83 @@ protected:
         table.CmdDispatchRaysIndirect = ::CmdDispatchRaysIndirect; \
     }
 
-#define Define_RayTracing_AccelerationStructure_PartiallyFillFunctionTable(API) \
-    void RayTracing_AccelerationStructure_PartiallyFillFunctionTable##API(RayTracingInterface& table) { \
-        table.CreateAccelerationStructureDescriptor = ::CreateAccelerationStructureDescriptor; \
+#define Define_RayTracing_Device_PartiallyFillFunctionTable(API) \
+    void RayTracing_Device_PartiallyFillFunctionTable##API(RayTracingInterface& table) { \
         table.GetAccelerationStructureMemoryDesc = ::GetAccelerationStructureMemoryDesc; \
-        table.GetAccelerationStructureUpdateScratchBufferSize = ::GetAccelerationStructureUpdateScratchBufferSize; \
-        table.GetAccelerationStructureBuildScratchBufferSize = ::GetAccelerationStructureBuildScratchBufferSize; \
-        table.GetAccelerationStructureHandle = ::GetAccelerationStructureHandle; \
-        table.SetAccelerationStructureDebugName = ::SetAccelerationStructureDebugName; \
-        table.GetAccelerationStructureNativeObject = ::GetAccelerationStructureNativeObject; \
+        table.CreateRayTracingPipeline = ::CreateRayTracingPipeline; \
+        table.CreateAccelerationStructure = ::CreateAccelerationStructure; \
+        table.BindAccelerationStructureMemory = ::BindAccelerationStructureMemory; \
+        table.DestroyAccelerationStructure = ::DestroyAccelerationStructure; \
     }
 
-#define Define_MeshShader_CommandBuffer_PartiallyFillFunctionTable(API) \
-    void MeshShader_CommandBuffer_PartiallyFillFunctionTable##API(MeshShaderInterface& table) { \
-        table.CmdDrawMeshTasks = ::CmdDrawMeshTasks; \
-        table.CmdDrawMeshTasksIndirect = ::CmdDrawMeshTasksIndirect; \
+#define Define_Streamer_Device_PartiallyFillFunctionTable(API) \
+    void Streamer_Device_PartiallyFillFunctionTable##API(StreamerInterface& table) { \
+        table.CreateStreamer = ::CreateStreamer; \
+        table.DestroyStreamer = ::DestroyStreamer; \
+        table.GetStreamerConstantBuffer = ::GetStreamerConstantBuffer; \
+        table.UpdateStreamerConstantBuffer = ::UpdateStreamerConstantBuffer; \
+        table.AddStreamerBufferUpdateRequest = ::AddStreamerBufferUpdateRequest; \
+        table.AddStreamerTextureUpdateRequest = ::AddStreamerTextureUpdateRequest; \
+        table.CopyStreamerUpdateRequests = ::CopyStreamerUpdateRequests; \
+        table.GetStreamerDynamicBuffer = ::GetStreamerDynamicBuffer; \
+        table.CmdUploadStreamerUpdateRequests = ::CmdUploadStreamerUpdateRequests; \
     }
 
-#define Define_Helper_CommandQueue_PartiallyFillFunctionTable(API) \
-    void Helper_CommandQueue_PartiallyFillFunctionTable##API(HelperInterface& table) { \
-        table.UploadData = ::UploadData; \
-        table.WaitForIdle = ::WaitForIdle; \
+#define Define_SwapChain_Device_PartiallyFillFunctionTable(API) \
+    void SwapChain_Device_PartiallyFillFunctionTable##API(SwapChainInterface& table) { \
+        table.CreateSwapChain = ::CreateSwapChain; \
+        table.DestroySwapChain = ::DestroySwapChain; \
     }
 
-#define Define_LowLatency_SwapChain_PartiallyFillFunctionTable(API) \
-    void LowLatency_SwapChain_PartiallyFillFunctionTable##API(LowLatencyInterface& table) { \
-        table.SetLatencySleepMode = ::SetLatencySleepMode; \
-        table.SetLatencyMarker = ::SetLatencyMarker; \
-        table.LatencySleep = ::LatencySleep; \
-        table.GetLatencyReport = ::GetLatencyReport; \
+#define Define_SwapChain_SwapChain_PartiallyFillFunctionTable(API) \
+    void SwapChain_SwapChain_PartiallyFillFunctionTable##API(SwapChainInterface& table) { \
+        table.SetSwapChainDebugName = ::SetSwapChainDebugName; \
+        table.GetSwapChainTextures = ::GetSwapChainTextures; \
+        table.AcquireNextSwapChainTexture = ::AcquireNextSwapChainTexture; \
+        table.WaitForPresent = ::WaitForPresent; \
+        table.QueuePresent = ::QueuePresent; \
+        table.GetDisplayDesc = ::GetDisplayDesc; \
     }
 
-#define Define_LowLatency_CommandQueue_PartiallyFillFunctionTable(API) \
-    void LowLatency_CommandQueue_PartiallyFillFunctionTable##API(LowLatencyInterface& table) { \
-        table.QueueSubmitTrackable = ::QueueSubmitTrackable; \
+#define Define_ResourceAllocator_Device_PartiallyFillFunctionTable(API) \
+    void ResourceAllocator_Device_PartiallyFillFunctionTable##API(ResourceAllocatorInterface& table) { \
+        table.AllocateBuffer = ::AllocateBuffer; \
+        table.AllocateTexture = ::AllocateTexture; \
+        table.AllocateAccelerationStructure = ::AllocateAccelerationStructure; \
+    }
+
+#define Define_WrapperD3D11_Device_PartiallyFillFunctionTable(API) \
+    void WrapperD3D11_Device_PartiallyFillFunctionTable##API(WrapperD3D11Interface& table) { \
+        table.CreateCommandBufferD3D11 = ::CreateCommandBufferD3D11; \
+        table.CreateTextureD3D11 = ::CreateTextureD3D11; \
+        table.CreateBufferD3D11 = ::CreateBufferD3D11; \
+    }
+
+#define Define_WrapperD3D12_Device_PartiallyFillFunctionTable(API) \
+    void WrapperD3D12_Device_PartiallyFillFunctionTable##API(WrapperD3D12Interface& table) { \
+        table.CreateCommandBufferD3D12 = ::CreateCommandBufferD3D12; \
+        table.CreateDescriptorPoolD3D12 = ::CreateDescriptorPoolD3D12; \
+        table.CreateBufferD3D12 = ::CreateBufferD3D12; \
+        table.CreateTextureD3D12 = ::CreateTextureD3D12; \
+        table.CreateMemoryD3D12 = ::CreateMemoryD3D12; \
+        table.CreateAccelerationStructureD3D12 = ::CreateAccelerationStructureD3D12; \
+    }
+
+#define Define_WrapperVK_Device_PartiallyFillFunctionTable(API) \
+    void WrapperVK_Device_PartiallyFillFunctionTable##API(WrapperVKInterface& table) { \
+        table.CreateCommandQueueVK = ::CreateCommandQueueVK; \
+        table.CreateCommandAllocatorVK = ::CreateCommandAllocatorVK; \
+        table.CreateCommandBufferVK = ::CreateCommandBufferVK; \
+        table.CreateDescriptorPoolVK = ::CreateDescriptorPoolVK; \
+        table.CreateBufferVK = ::CreateBufferVK; \
+        table.CreateTextureVK = ::CreateTextureVK; \
+        table.CreateMemoryVK = ::CreateMemoryVK; \
+        table.CreateGraphicsPipelineVK = ::CreateGraphicsPipelineVK; \
+        table.CreateComputePipelineVK = ::CreateComputePipelineVK; \
+        table.CreateQueryPoolVK = ::CreateQueryPoolVK; \
+        table.CreateAccelerationStructureVK = ::CreateAccelerationStructureVK; \
+        table.GetPhysicalDeviceVK = ::GetPhysicalDeviceVK; \
+        table.GetInstanceVK = ::GetInstanceVK; \
+        table.GetDeviceProcAddrVK = ::GetDeviceProcAddrVK; \
+        table.GetInstanceProcAddrVK = ::GetInstanceProcAddrVK; \
     }

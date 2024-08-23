@@ -14,12 +14,12 @@ NRI_NAMESPACE_BEGIN
 NRI_STRUCT(DeviceCreationD3D11Desc)
 {
     ID3D11Device* d3d11Device;
-    AGSContext* agsContext; // can be NULL
+    NRI_OPTIONAL AGSContext* agsContext;
     NRI_NAME(CallbackInterface) callbackInterface;
-    NRI_NAME(MemoryAllocatorInterface) memoryAllocatorInterface;
+    NRI_NAME(AllocationCallbacks) allocationCallbacks;
     bool enableD3D11CommandBufferEmulation;
     bool enableNRIValidation;
-    bool isNVAPILoaded; // At least NVAPI requires calling "NvAPI_Initialize" in DLL/EXE where the device is created in addition to NRI
+    bool isNVAPILoaded; // at least NVAPI requires calling "NvAPI_Initialize" in DLL/EXE where the device is created in addition to NRI
 };
 
 NRI_STRUCT(CommandBufferD3D11Desc)
@@ -30,13 +30,13 @@ NRI_STRUCT(CommandBufferD3D11Desc)
 NRI_STRUCT(BufferD3D11Desc)
 {
     ID3D11Resource* d3d11Resource;
-    const NRI_NAME(BufferDesc)* desc; // Can be NULL, but not all information can be retrieved from the resource
+    NRI_OPTIONAL const NRI_NAME(BufferDesc)* desc; // not all information can be retrieved from the resource if not provided
 };
 
 NRI_STRUCT(TextureD3D11Desc)
 {
     ID3D11Resource* d3d11Resource;
-    const NRI_NAME(TextureDesc)* desc; // Can be NULL, but not all information can be retrieved from the resource
+    NRI_OPTIONAL const NRI_NAME(TextureDesc)* desc; // not all information can be retrieved from the resource if not provided
 };
 
 NRI_STRUCT(WrapperD3D11Interface)

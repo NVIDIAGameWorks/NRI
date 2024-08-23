@@ -73,7 +73,7 @@ inline Result CommandBufferVK::End() {
 }
 
 inline void CommandBufferVK::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
-    VkViewport* vkViewports = STACK_ALLOC(VkViewport, viewportNum);
+    VkViewport* vkViewports = StackAlloc(VkViewport, viewportNum);
     for (uint32_t i = 0; i < viewportNum; i++) {
         const Viewport& viewport = viewports[i];
         VkViewport& vkViewport = vkViewports[i];
@@ -94,7 +94,7 @@ inline void CommandBufferVK::SetViewports(const Viewport* viewports, uint32_t vi
 }
 
 inline void CommandBufferVK::SetScissors(const Rect* rects, uint32_t rectNum) {
-    VkRect2D* vkRects = STACK_ALLOC(VkRect2D, rectNum);
+    VkRect2D* vkRects = StackAlloc(VkRect2D, rectNum);
     for (uint32_t i = 0; i < rectNum; i++) {
         const Rect& viewport = rects[i];
         VkRect2D& vkRect = vkRects[i];
@@ -125,7 +125,7 @@ inline void CommandBufferVK::SetStencilReference(uint8_t frontRef, uint8_t backR
 }
 
 inline void CommandBufferVK::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
-    VkSampleLocationEXT* locations = STACK_ALLOC(VkSampleLocationEXT, positionNum);
+    VkSampleLocationEXT* locations = StackAlloc(VkSampleLocationEXT, positionNum);
     for (uint32_t i = 0; i < positionNum; i++)
         locations[i] = {(float)(positions[i].x + 8) / 16.0f, (float)(positions[i].y + 8) / 16.0f};
 
@@ -147,7 +147,7 @@ inline void CommandBufferVK::SetBlendConstants(const Color32f& color) {
 }
 
 inline void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
-    VkClearAttachment* attachments = STACK_ALLOC(VkClearAttachment, clearDescNum);
+    VkClearAttachment* attachments = StackAlloc(VkClearAttachment, clearDescNum);
 
     for (uint32_t i = 0; i < clearDescNum; i++) {
         const ClearDesc& desc = clearDescs[i];
@@ -177,7 +177,7 @@ inline void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, uint3
 
     VkClearRect* clearRects = nullptr;
     if (rectNum == 0) {
-        clearRects = STACK_ALLOC(VkClearRect, clearDescNum);
+        clearRects = StackAlloc(VkClearRect, clearDescNum);
         rectNum = clearDescNum;
 
         for (uint32_t i = 0; i < clearDescNum; i++) {
@@ -187,7 +187,7 @@ inline void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, uint3
             clearRect.rect = {{0, 0}, {m_RenderWidth, m_RenderHeight}};
         }
     } else {
-        clearRects = STACK_ALLOC(VkClearRect, rectNum);
+        clearRects = StackAlloc(VkClearRect, rectNum);
 
         for (uint32_t i = 0; i < rectNum; i++) {
             const Rect& rect = rects[i];
@@ -227,7 +227,7 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
 
     VkRenderingAttachmentInfo* colors = nullptr;
     if (attachmentsDesc.colorNum) {
-        colors = STACK_ALLOC(VkRenderingAttachmentInfo, attachmentsDesc.colorNum);
+        colors = StackAlloc(VkRenderingAttachmentInfo, attachmentsDesc.colorNum);
 
         for (uint32_t i = 0; i < attachmentsDesc.colorNum; i++) {
             const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.colors[i];
@@ -306,7 +306,7 @@ inline void CommandBufferVK::EndRendering() {
 }
 
 inline void CommandBufferVK::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
-    VkBuffer* bufferHandles = STACK_ALLOC(VkBuffer, bufferNum);
+    VkBuffer* bufferHandles = StackAlloc(VkBuffer, bufferNum);
 
     for (uint32_t i = 0; i < bufferNum; i++)
         bufferHandles[i] = GetHandle<VkBuffer, BufferVK>(buffers[i]);
@@ -568,7 +568,7 @@ static inline VkAccessFlags2 GetAccessFlags(AccessBits accessBits) {
 
 inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
     // Global
-    VkMemoryBarrier2* memoryBarriers = STACK_ALLOC(VkMemoryBarrier2, barrierGroupDesc.globalNum);
+    VkMemoryBarrier2* memoryBarriers = StackAlloc(VkMemoryBarrier2, barrierGroupDesc.globalNum);
     for (uint16_t i = 0; i < barrierGroupDesc.globalNum; i++) {
         const GlobalBarrierDesc& in = barrierGroupDesc.globals[i];
 
@@ -581,7 +581,7 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
     }
 
     // Buffer
-    VkBufferMemoryBarrier2* bufferBarriers = STACK_ALLOC(VkBufferMemoryBarrier2, barrierGroupDesc.bufferNum);
+    VkBufferMemoryBarrier2* bufferBarriers = StackAlloc(VkBufferMemoryBarrier2, barrierGroupDesc.bufferNum);
     for (uint16_t i = 0; i < barrierGroupDesc.bufferNum; i++) {
         const BufferBarrierDesc& in = barrierGroupDesc.buffers[i];
         const BufferVK& bufferImpl = *(const BufferVK*)in.buffer;
@@ -600,7 +600,7 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
     }
 
     // Texture
-    VkImageMemoryBarrier2* textureBarriers = STACK_ALLOC(VkImageMemoryBarrier2, barrierGroupDesc.textureNum);
+    VkImageMemoryBarrier2* textureBarriers = StackAlloc(VkImageMemoryBarrier2, barrierGroupDesc.textureNum);
     for (uint16_t i = 0; i < barrierGroupDesc.textureNum; i++) {
         const TextureBarrierDesc& in = barrierGroupDesc.textures[i];
         const TextureVK& textureImpl = *(const TextureVK*)in.texture;
@@ -695,7 +695,7 @@ inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, const
     const TextureDesc& dstTextureDesc = dstTexture.GetDesc();
     const TextureDesc& srcTextureDesc = srcTexture.GetDesc();
 
-    VkImageCopy* regions = STACK_ALLOC(VkImageCopy, dstTextureDesc.mipNum);
+    VkImageCopy* regions = StackAlloc(VkImageCopy, dstTextureDesc.mipNum);
     for (Mip_t i = 0; i < dstTextureDesc.mipNum; i++) {
         regions[i].srcSubresource = {srcTexture.GetImageAspectFlags(), i, 0, srcTextureDesc.arraySize};
         regions[i].dstSubresource = {dstTexture.GetImageAspectFlags(), i, 0, dstTextureDesc.arraySize};
@@ -744,8 +744,8 @@ inline void CommandBufferVK::BuildBottomLevelAccelerationStructure(
     const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
     const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress() + scratchOffset;
 
-    VkAccelerationStructureGeometryKHR* geometries = ALLOCATE_SCRATCH(m_Device, VkAccelerationStructureGeometryKHR, geometryObjectNum);
-    VkAccelerationStructureBuildRangeInfoKHR* ranges = ALLOCATE_SCRATCH(m_Device, VkAccelerationStructureBuildRangeInfoKHR, geometryObjectNum);
+    Scratch<VkAccelerationStructureGeometryKHR> geometries = AllocateScratch(m_Device, VkAccelerationStructureGeometryKHR, geometryObjectNum);
+    Scratch<VkAccelerationStructureBuildRangeInfoKHR> ranges = AllocateScratch(m_Device, VkAccelerationStructureBuildRangeInfoKHR, geometryObjectNum);
 
     ConvertGeometryObjectsVK(geometries, ranges, geometryObjects, geometryObjectNum);
 
@@ -762,9 +762,6 @@ inline void CommandBufferVK::BuildBottomLevelAccelerationStructure(
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBuildAccelerationStructuresKHR(m_Handle, 1, &buildGeometryInfo, rangeArrays);
-
-    FREE_SCRATCH(m_Device, ranges, geometryObjectNum);
-    FREE_SCRATCH(m_Device, geometries, geometryObjectNum);
 }
 
 inline void CommandBufferVK::UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags,
@@ -806,8 +803,8 @@ inline void CommandBufferVK::UpdateBottomLevelAccelerationStructure(uint32_t geo
     const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
     const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress() + scratchOffset;
 
-    VkAccelerationStructureGeometryKHR* geometries = ALLOCATE_SCRATCH(m_Device, VkAccelerationStructureGeometryKHR, geometryObjectNum);
-    VkAccelerationStructureBuildRangeInfoKHR* ranges = ALLOCATE_SCRATCH(m_Device, VkAccelerationStructureBuildRangeInfoKHR, geometryObjectNum);
+    Scratch<VkAccelerationStructureGeometryKHR> geometries = AllocateScratch(m_Device, VkAccelerationStructureGeometryKHR, geometryObjectNum);
+    Scratch<VkAccelerationStructureBuildRangeInfoKHR> ranges = AllocateScratch(m_Device, VkAccelerationStructureBuildRangeInfoKHR, geometryObjectNum);
 
     ConvertGeometryObjectsVK(geometries, ranges, geometryObjects, geometryObjectNum);
 
@@ -825,9 +822,6 @@ inline void CommandBufferVK::UpdateBottomLevelAccelerationStructure(uint32_t geo
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBuildAccelerationStructuresKHR(m_Handle, 1, &buildGeometryInfo, rangeArrays);
-
-    FREE_SCRATCH(m_Device, ranges, geometryObjectNum);
-    FREE_SCRATCH(m_Device, geometries, geometryObjectNum);
 }
 
 inline void CommandBufferVK::CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode) {
@@ -845,7 +839,7 @@ inline void CommandBufferVK::CopyAccelerationStructure(AccelerationStructure& ds
 
 inline void CommandBufferVK::WriteAccelerationStructureSize(
     const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryPoolOffset) {
-    VkAccelerationStructureKHR* ASes = ALLOCATE_SCRATCH(m_Device, VkAccelerationStructureKHR, accelerationStructureNum);
+    Scratch<VkAccelerationStructureKHR> ASes = AllocateScratch(m_Device, VkAccelerationStructureKHR, accelerationStructureNum);
 
     for (uint32_t i = 0; i < accelerationStructureNum; i++)
         ASes[i] = ((const AccelerationStructureVK*)accelerationStructures[i])->GetHandle();
@@ -855,8 +849,6 @@ inline void CommandBufferVK::WriteAccelerationStructureSize(
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdWriteAccelerationStructuresPropertiesKHR(
         m_Handle, accelerationStructureNum, ASes, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, queryPoolHandle, queryPoolOffset);
-
-    FREE_SCRATCH(m_Device, ASes, accelerationStructureNum);
 }
 
 inline void CommandBufferVK::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc) {

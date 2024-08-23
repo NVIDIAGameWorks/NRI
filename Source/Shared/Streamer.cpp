@@ -103,7 +103,7 @@ uint64_t StreamerImpl::AddStreamerTextureUpdateRequest(const TextureUpdateReques
     uint64_t alignedSize = alignedSlicePitch * d;
 
     uint64_t offset = m_DynamicDataOffsetBase + m_DynamicDataOffset;
-    m_TextureRequests.push_back({textureUpdateRequestDesc, m_DynamicDataOffset}); // store local offset 
+    m_TextureRequests.push_back({textureUpdateRequestDesc, m_DynamicDataOffset}); // store local offset
     m_DynamicDataOffset += alignedSize;
 
     return offset;

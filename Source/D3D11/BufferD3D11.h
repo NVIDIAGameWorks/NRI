@@ -17,9 +17,6 @@ struct QueryRange {
 };
 
 struct BufferD3D11 {
-    inline BufferD3D11(DeviceD3D11& device, const BufferDesc& bufferDesc) : m_Device(device), m_Desc(bufferDesc) {
-    }
-
     inline BufferD3D11(DeviceD3D11& device) : m_Device(device) {
     }
 
@@ -44,9 +41,10 @@ struct BufferD3D11 {
 
     ~BufferD3D11();
 
-    Result Create(const MemoryD3D11& memory);
+    Result Create(const BufferDesc& bufferDesc);
     Result Create(const BufferD3D11Desc& bufferDesc);
-    void* Map(MapType mapType, uint64_t offset);
+    Result Create(MemoryLocation memoryLocation, float priority);
+    void* Map(uint64_t offset);
     void FinalizeQueries();
     void FinalizeReadback();
     TextureD3D11& RecreateReadbackTexture(const TextureD3D11& srcTexture, const TextureRegionDesc& srcRegionDesc, const TextureDataLayoutDesc& readbackDataLayoutDesc);
@@ -59,7 +57,6 @@ struct BufferD3D11 {
         SET_D3D_DEBUG_OBJECT_NAME(m_Buffer, name);
     }
 
-    void* Map(uint64_t offset, uint64_t size);
     void Unmap();
 
 private:
@@ -67,7 +64,6 @@ private:
     ComPtr<ID3D11Buffer> m_Buffer;
     TextureD3D11* m_ReadbackTexture = nullptr;
     BufferDesc m_Desc = {};
-    BufferType m_Type = BufferType::DEVICE;
     QueryRange m_QueryRange = {};
     bool m_IsReadbackDataChanged = false;
     TextureDataLayoutDesc m_ReadbackDataLayoutDesc = {};

@@ -11,7 +11,6 @@ struct HelperDataUpload {
 
 private:
     nri::Result Create();
-    void Destroy();
     nri::Result UploadTextures(const nri::TextureUploadDesc* textureDataDescs, uint32_t textureDataDescNum);
     nri::Result UploadBuffers(const nri::BufferUploadDesc* bufferDataDescs, uint32_t bufferDataDescNum);
     nri::Result EndCommandBuffersAndSubmit();

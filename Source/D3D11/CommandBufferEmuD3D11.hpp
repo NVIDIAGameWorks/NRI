@@ -159,14 +159,6 @@ static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPoo
 static void NRI_CALL CmdResetQueries(CommandBuffer&, const QueryPool&, uint32_t, uint32_t) {
 }
 
-static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer) {
-    if (!(&commandBuffer))
-        return;
-
-    CommandBufferHelper& commandBufferHelper = (CommandBufferHelper&)commandBuffer;
-    Deallocate(commandBufferHelper.GetStdAllocator(), &commandBufferHelper);
-}
-
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
     if (!(&commandBuffer))
         return nullptr;
@@ -177,45 +169,44 @@ static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandB
 
 #pragma endregion
 
-void Core_CommandBufferEmu_PartiallyFillFunctionTable(CoreInterface& coreInterface) {
-    coreInterface.DestroyCommandBuffer = ::DestroyCommandBuffer;
-    coreInterface.BeginCommandBuffer = ::BeginCommandBuffer;
-    coreInterface.CmdSetDescriptorPool = ::CmdSetDescriptorPool;
-    coreInterface.CmdSetDescriptorSet = ::CmdSetDescriptorSet;
-    coreInterface.CmdSetPipelineLayout = ::CmdSetPipelineLayout;
-    coreInterface.CmdSetPipeline = ::CmdSetPipeline;
-    coreInterface.CmdSetConstants = ::CmdSetConstants;
-    coreInterface.CmdBarrier = ::CmdBarrier;
-    coreInterface.CmdBeginRendering = ::CmdBeginRendering;
-    coreInterface.CmdClearAttachments = ::CmdClearAttachments;
-    coreInterface.CmdSetViewports = ::CmdSetViewports;
-    coreInterface.CmdSetScissors = ::CmdSetScissors;
-    coreInterface.CmdSetDepthBounds = ::CmdSetDepthBounds;
-    coreInterface.CmdSetStencilReference = ::CmdSetStencilReference;
-    coreInterface.CmdSetSamplePositions = ::CmdSetSamplePositions;
-    coreInterface.CmdSetBlendConstants = ::CmdSetBlendConstants;
-    coreInterface.CmdSetIndexBuffer = ::CmdSetIndexBuffer;
-    coreInterface.CmdSetVertexBuffers = ::CmdSetVertexBuffers;
-    coreInterface.CmdDraw = ::CmdDraw;
-    coreInterface.CmdDrawIndexed = ::CmdDrawIndexed;
-    coreInterface.CmdDrawIndirect = ::CmdDrawIndirect;
-    coreInterface.CmdDrawIndexedIndirect = ::CmdDrawIndexedIndirect;
-    coreInterface.CmdEndRendering = ::CmdEndRendering;
-    coreInterface.CmdDispatch = ::CmdDispatch;
-    coreInterface.CmdDispatchIndirect = ::CmdDispatchIndirect;
-    coreInterface.CmdBeginQuery = ::CmdBeginQuery;
-    coreInterface.CmdEndQuery = ::CmdEndQuery;
-    coreInterface.CmdCopyQueries = ::CmdCopyQueries;
-    coreInterface.CmdResetQueries = ::CmdResetQueries;
-    coreInterface.CmdBeginAnnotation = ::CmdBeginAnnotation;
-    coreInterface.CmdEndAnnotation = ::CmdEndAnnotation;
-    coreInterface.CmdClearStorageBuffer = ::CmdClearStorageBuffer;
-    coreInterface.CmdClearStorageTexture = ::CmdClearStorageTexture;
-    coreInterface.CmdCopyBuffer = ::CmdCopyBuffer;
-    coreInterface.CmdCopyTexture = ::CmdCopyTexture;
-    coreInterface.CmdUploadBufferToTexture = ::CmdUploadBufferToTexture;
-    coreInterface.CmdReadbackTextureToBuffer = ::CmdReadbackTextureToBuffer;
-    coreInterface.EndCommandBuffer = ::EndCommandBuffer;
-    coreInterface.SetCommandBufferDebugName = ::SetCommandBufferDebugName;
-    coreInterface.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
+void Core_CommandBufferEmu_PartiallyFillFunctionTable(CoreInterface& table) {
+    table.BeginCommandBuffer = ::BeginCommandBuffer;
+    table.CmdSetDescriptorPool = ::CmdSetDescriptorPool;
+    table.CmdSetDescriptorSet = ::CmdSetDescriptorSet;
+    table.CmdSetPipelineLayout = ::CmdSetPipelineLayout;
+    table.CmdSetPipeline = ::CmdSetPipeline;
+    table.CmdSetConstants = ::CmdSetConstants;
+    table.CmdBarrier = ::CmdBarrier;
+    table.CmdBeginRendering = ::CmdBeginRendering;
+    table.CmdClearAttachments = ::CmdClearAttachments;
+    table.CmdSetViewports = ::CmdSetViewports;
+    table.CmdSetScissors = ::CmdSetScissors;
+    table.CmdSetDepthBounds = ::CmdSetDepthBounds;
+    table.CmdSetStencilReference = ::CmdSetStencilReference;
+    table.CmdSetSamplePositions = ::CmdSetSamplePositions;
+    table.CmdSetBlendConstants = ::CmdSetBlendConstants;
+    table.CmdSetIndexBuffer = ::CmdSetIndexBuffer;
+    table.CmdSetVertexBuffers = ::CmdSetVertexBuffers;
+    table.CmdDraw = ::CmdDraw;
+    table.CmdDrawIndexed = ::CmdDrawIndexed;
+    table.CmdDrawIndirect = ::CmdDrawIndirect;
+    table.CmdDrawIndexedIndirect = ::CmdDrawIndexedIndirect;
+    table.CmdEndRendering = ::CmdEndRendering;
+    table.CmdDispatch = ::CmdDispatch;
+    table.CmdDispatchIndirect = ::CmdDispatchIndirect;
+    table.CmdBeginQuery = ::CmdBeginQuery;
+    table.CmdEndQuery = ::CmdEndQuery;
+    table.CmdCopyQueries = ::CmdCopyQueries;
+    table.CmdResetQueries = ::CmdResetQueries;
+    table.CmdBeginAnnotation = ::CmdBeginAnnotation;
+    table.CmdEndAnnotation = ::CmdEndAnnotation;
+    table.CmdClearStorageBuffer = ::CmdClearStorageBuffer;
+    table.CmdClearStorageTexture = ::CmdClearStorageTexture;
+    table.CmdCopyBuffer = ::CmdCopyBuffer;
+    table.CmdCopyTexture = ::CmdCopyTexture;
+    table.CmdUploadBufferToTexture = ::CmdUploadBufferToTexture;
+    table.CmdReadbackTextureToBuffer = ::CmdReadbackTextureToBuffer;
+    table.EndCommandBuffer = ::EndCommandBuffer;
+    table.SetCommandBufferDebugName = ::SetCommandBufferDebugName;
+    table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
 }

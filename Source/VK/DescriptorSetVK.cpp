@@ -184,10 +184,10 @@ inline void DescriptorSetVK::UpdateDescriptorRanges(uint32_t rangeOffset, uint32
     constexpr uint32_t writesPerIteration = 1024;
     uint32_t writeMaxNum = std::min<uint32_t>(writesPerIteration, rangeNum);
 
-    VkWriteDescriptorSet* writes = STACK_ALLOC(VkWriteDescriptorSet, writeMaxNum);
+    VkWriteDescriptorSet* writes = StackAlloc(VkWriteDescriptorSet, writeMaxNum);
 
     constexpr size_t slabSize = 32768;
-    SlabAllocator slab(STACK_ALLOC(uint8_t, slabSize), slabSize);
+    SlabAllocator slab(StackAlloc(uint8_t, slabSize), slabSize);
 
     const auto& vk = m_Device.GetDispatchTable();
 
@@ -224,8 +224,8 @@ inline void DescriptorSetVK::UpdateDescriptorRanges(uint32_t rangeOffset, uint32
 }
 
 inline void DescriptorSetVK::UpdateDynamicConstantBuffers(uint32_t bufferOffset, uint32_t descriptorNum, const Descriptor* const* descriptors) {
-    VkWriteDescriptorSet* writes = STACK_ALLOC(VkWriteDescriptorSet, descriptorNum);
-    VkDescriptorBufferInfo* infos = STACK_ALLOC(VkDescriptorBufferInfo, descriptorNum);
+    VkWriteDescriptorSet* writes = StackAlloc(VkWriteDescriptorSet, descriptorNum);
+    VkDescriptorBufferInfo* infos = StackAlloc(VkDescriptorBufferInfo, descriptorNum);
     uint32_t writeNum = 0;
 
     for (uint32_t j = 0; j < descriptorNum; j++) {
@@ -246,7 +246,7 @@ inline void DescriptorSetVK::UpdateDynamicConstantBuffers(uint32_t bufferOffset,
 inline void DescriptorSetVK::Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc) {
     const uint32_t descriptorRangeNum = descriptorSetCopyDesc.rangeNum + descriptorSetCopyDesc.dynamicConstantBufferNum;
 
-    VkCopyDescriptorSet* copies = STACK_ALLOC(VkCopyDescriptorSet, descriptorRangeNum);
+    VkCopyDescriptorSet* copies = StackAlloc(VkCopyDescriptorSet, descriptorRangeNum);
     uint32_t copyNum = 0;
 
     const DescriptorSetVK& srcSetImpl = *(const DescriptorSetVK*)descriptorSetCopyDesc.srcDescriptorSet;

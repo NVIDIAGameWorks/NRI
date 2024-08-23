@@ -11,15 +11,10 @@
 using namespace nri;
 
 AccelerationStructureVal::~AccelerationStructureVal() {
-    if (m_Memory != nullptr)
+    if (m_Memory)
         m_Memory->UnbindAccelerationStructure(*this);
 
     GetRayTracingInterface().DestroyAccelerationStructure(*GetImpl());
-}
-
-void AccelerationStructureVal::GetMemoryDesc(MemoryDesc& memoryDesc) const {
-    GetRayTracingInterface().GetAccelerationStructureMemoryDesc(*GetImpl(), memoryDesc);
-    m_Device.RegisterMemoryType(memoryDesc.type, MemoryLocation::DEVICE);
 }
 
 uint64_t AccelerationStructureVal::GetUpdateScratchBufferSize() const {
@@ -46,10 +41,8 @@ Result AccelerationStructureVal::CreateDescriptor(Descriptor*& descriptor) {
     Descriptor* descriptorImpl = nullptr;
     const Result result = GetRayTracingInterface().CreateAccelerationStructureDescriptor(*GetImpl(), descriptorImpl);
 
-    if (result == Result::SUCCESS) {
-        RETURN_ON_FAILURE(&m_Device, descriptorImpl != nullptr, Result::FAILURE, "CreateAccelerationStructureDescriptor: 'impl' is NULL");
+    if (result == Result::SUCCESS)
         descriptor = (Descriptor*)Allocate<DescriptorVal>(m_Device.GetStdAllocator(), m_Device, descriptorImpl, ResourceType::ACCELERATION_STRUCTURE);
-    }
 
     return result;
 }

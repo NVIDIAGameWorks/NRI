@@ -9,26 +9,28 @@
 using namespace nri;
 
 MemoryVK::~MemoryVK() {
-    const auto& vk = m_Device.GetDispatchTable();
-
-    if (m_OwnsNativeObjects)
+    if (m_OwnsNativeObjects) {
+        const auto& vk = m_Device.GetDispatchTable();
         vk.FreeMemory(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+    }
 }
 
 Result MemoryVK::Create(const MemoryVKDesc& memoryDesc) {
-    m_OwnsNativeObjects = false;
+    if (!memoryDesc.vkDeviceMemory)
+        return Result::INVALID_ARGUMENT;
 
-    MemoryTypeUnion memoryType = {};
+    MemoryTypeInfo memoryTypeInfo = {};
 
-    bool found = m_Device.GetMemoryTypeByIndex(memoryDesc.memoryTypeIndex, memoryType.unpacked);
+    bool found = m_Device.GetMemoryTypeByIndex(memoryDesc.memoryTypeIndex, memoryTypeInfo);
     RETURN_ON_FAILURE(&m_Device, found, Result::INVALID_ARGUMENT, "Can't find memory by index");
 
+    m_OwnsNativeObjects = false;
     m_Handle = (VkDeviceMemory)memoryDesc.vkDeviceMemory;
     m_MappedMemory = (uint8_t*)memoryDesc.vkMappedMemory;
-    m_Type = memoryType.packed;
+    m_Type = Pack(memoryTypeInfo);
 
     const auto& vk = m_Device.GetDispatchTable();
-    if (!m_MappedMemory && IsHostVisibleMemory(memoryType.unpacked.location)) {
+    if (!m_MappedMemory && IsHostVisibleMemory(memoryTypeInfo.location)) {
         VkResult result = vk.MapMemory(m_Device, m_Handle, 0, memoryDesc.size, 0, (void**)&m_MappedMemory);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkMapMemory returned %d", (int32_t)result);
     }
@@ -37,12 +39,11 @@ Result MemoryVK::Create(const MemoryVKDesc& memoryDesc) {
 }
 
 Result MemoryVK::Create(const AllocateMemoryDesc& allocateMemoryDesc) {
-    m_OwnsNativeObjects = true;
     m_Type = allocateMemoryDesc.type;
     m_Priority = m_Device.m_IsMemoryPrioritySupported ? (allocateMemoryDesc.priority * 0.5f + 0.5f) : 0.5f;
 
-    MemoryTypeUnion memoryType = {allocateMemoryDesc.type};
-    if (memoryType.unpacked.isDedicated)
+    MemoryTypeInfo memoryTypeInfo = Unpack(allocateMemoryDesc.type);
+    if (memoryTypeInfo.mustBeDedicated)
         return Result::SUCCESS; // dedicated allocation occurs on memory binding
 
     VkMemoryPriorityAllocateInfoEXT priorityInfo = {VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT};
@@ -55,13 +56,13 @@ Result MemoryVK::Create(const AllocateMemoryDesc& allocateMemoryDesc) {
     VkMemoryAllocateInfo memoryInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     memoryInfo.pNext = &flagsInfo;
     memoryInfo.allocationSize = allocateMemoryDesc.size;
-    memoryInfo.memoryTypeIndex = memoryType.unpacked.index;
+    memoryInfo.memoryTypeIndex = memoryTypeInfo.index;
 
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.AllocateMemory(m_Device, &memoryInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkAllocateMemory returned %d", (int32_t)result);
 
-    if (IsHostVisibleMemory(memoryType.unpacked.location)) {
+    if (IsHostVisibleMemory(memoryTypeInfo.location)) {
         result = vk.MapMemory(m_Device, m_Handle, 0, allocateMemoryDesc.size, 0, (void**)&m_MappedMemory);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkMapMemory returned %d", (int32_t)result);
     }
@@ -70,13 +71,11 @@ Result MemoryVK::Create(const AllocateMemoryDesc& allocateMemoryDesc) {
 }
 
 Result MemoryVK::CreateDedicated(const BufferVK& buffer) {
-    m_OwnsNativeObjects = true;
-
-    MemoryTypeUnion memoryType = {m_Type};
-    CHECK(m_Type != std::numeric_limits<MemoryType>::max() && memoryType.unpacked.isDedicated, "Shouldn't be there");
+    MemoryTypeInfo memoryTypeInfo = Unpack(m_Type);
+    CHECK(m_Type != std::numeric_limits<MemoryType>::max() && memoryTypeInfo.mustBeDedicated, "Shouldn't be there");
 
     MemoryDesc memoryDesc = {};
-    m_Device.GetMemoryDesc(buffer.GetDesc(), memoryType.unpacked.location, memoryDesc);
+    m_Device.GetMemoryDesc(buffer.GetDesc(), memoryTypeInfo.location, memoryDesc);
 
     VkMemoryPriorityAllocateInfoEXT priorityInfo = {VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT};
     priorityInfo.priority = m_Priority;
@@ -92,13 +91,13 @@ Result MemoryVK::CreateDedicated(const BufferVK& buffer) {
     VkMemoryAllocateInfo memoryInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     memoryInfo.pNext = &dedicatedAllocateInfo;
     memoryInfo.allocationSize = memoryDesc.size;
-    memoryInfo.memoryTypeIndex = memoryType.unpacked.index;
+    memoryInfo.memoryTypeIndex = memoryTypeInfo.index;
 
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.AllocateMemory(m_Device, &memoryInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkAllocateMemory returned %d", (int32_t)result);
 
-    if (IsHostVisibleMemory(memoryType.unpacked.location)) {
+    if (IsHostVisibleMemory(memoryTypeInfo.location)) {
         result = vk.MapMemory(m_Device, m_Handle, 0, memoryDesc.size, 0, (void**)&m_MappedMemory);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkMapMemory returned %d", (int32_t)result);
     }
@@ -107,13 +106,11 @@ Result MemoryVK::CreateDedicated(const BufferVK& buffer) {
 }
 
 Result MemoryVK::CreateDedicated(const TextureVK& texture) {
-    m_OwnsNativeObjects = true;
-
-    const MemoryTypeUnion memoryType = {m_Type};
-    CHECK(m_Type != std::numeric_limits<MemoryType>::max() && memoryType.unpacked.isDedicated, "Shouldn't be there");
+    MemoryTypeInfo memoryTypeInfo = Unpack(m_Type);
+    CHECK(m_Type != std::numeric_limits<MemoryType>::max() && memoryTypeInfo.mustBeDedicated, "Shouldn't be there");
 
     MemoryDesc memoryDesc = {};
-    m_Device.GetMemoryDesc(texture.GetDesc(), memoryType.unpacked.location, memoryDesc);
+    m_Device.GetMemoryDesc(texture.GetDesc(), memoryTypeInfo.location, memoryDesc);
 
     VkMemoryPriorityAllocateInfoEXT priorityInfo = {VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT};
     priorityInfo.priority = m_Priority;
@@ -129,13 +126,13 @@ Result MemoryVK::CreateDedicated(const TextureVK& texture) {
     VkMemoryAllocateInfo memoryInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     memoryInfo.pNext = &dedicatedAllocateInfo;
     memoryInfo.allocationSize = memoryDesc.size;
-    memoryInfo.memoryTypeIndex = memoryType.unpacked.index;
+    memoryInfo.memoryTypeIndex = memoryTypeInfo.index;
 
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.AllocateMemory(m_Device, &memoryInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkAllocateMemory returned %d", (int32_t)result);
 
-    if (IsHostVisibleMemory(memoryType.unpacked.location)) {
+    if (IsHostVisibleMemory(memoryTypeInfo.location)) {
         result = vk.MapMemory(m_Device, m_Handle, 0, memoryDesc.size, 0, (void**)&m_MappedMemory);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkMapMemory returned %d", (int32_t)result);
     }

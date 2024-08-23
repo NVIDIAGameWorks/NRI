@@ -18,10 +18,6 @@ struct TextureVK {
         return m_Device;
     }
 
-    inline VkImageAspectFlags GetImageAspectFlags() const {
-        return m_ImageAspectFlags;
-    }
-
     inline VkExtent3D GetExtent() const {
         return {m_Desc.width, m_Desc.height, m_Desc.depth};
     }
@@ -34,14 +30,13 @@ struct TextureVK {
         return GetDimension(GraphicsAPI::VK, m_Desc, dimensionIndex, mip);
     }
 
-    inline bool OwnsNativeObjects() const {
-        return m_OwnsNativeObjects;
-    }
-
     ~TextureVK();
 
     Result Create(const TextureDesc& textureDesc);
     Result Create(const TextureVKDesc& textureDesc);
+    Result Create(const AllocateTextureDesc& textureDesc);
+    VkImageAspectFlags GetImageAspectFlags() const;
+    void DestroyVma();
 
     //================================================================================================================
     // NRI
@@ -53,8 +48,8 @@ private:
     DeviceVK& m_Device;
     VkImage m_Handle = VK_NULL_HANDLE;
     TextureDesc m_Desc = {};
-    VkImageAspectFlags m_ImageAspectFlags = (VkImageAspectFlags)0;
-    bool m_OwnsNativeObjects = false;
+    VmaAllocation_T* m_VmaAllocation = nullptr;
+    bool m_OwnsNativeObjects = true;
 };
 
 } // namespace nri

@@ -46,7 +46,7 @@ inline void CommandQueueD3D12::Submit(const QueueSubmitDesc& queueSubmitDesc) {
     }
 
     if (queueSubmitDesc.commandBufferNum) {
-        ID3D12CommandList** commandLists = STACK_ALLOC(ID3D12CommandList*, queueSubmitDesc.commandBufferNum);
+        ID3D12CommandList** commandLists = StackAlloc(ID3D12CommandList*, queueSubmitDesc.commandBufferNum);
         for (uint32_t j = 0; j < queueSubmitDesc.commandBufferNum; j++)
             commandLists[j] = *(CommandBufferD3D12*)queueSubmitDesc.commandBuffers[j];
 

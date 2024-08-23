@@ -20,8 +20,6 @@
 #include "SwapChainVK.h"
 #include "TextureVK.h"
 
-static_assert(VK_LUID_SIZE == sizeof(uint64_t), "invalid sizeof");
-
 using namespace nri;
 
 constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits bufferUsageBits, uint32_t structureStride, bool isDeviceAddressSupported) {
@@ -84,34 +82,31 @@ constexpr VkImageUsageFlags GetImageUsageFlags(TextureUsageBits textureUsageBits
 }
 
 Result CreateDeviceVK(const DeviceCreationDesc& desc, DeviceBase*& device) {
-    StdAllocator<uint8_t> allocator(desc.memoryAllocatorInterface);
-    DeviceVK* implementation = Allocate<DeviceVK>(allocator, desc.callbackInterface, allocator);
+    StdAllocator<uint8_t> allocator(desc.allocationCallbacks);
+    DeviceVK* impl = Allocate<DeviceVK>(allocator, desc.callbackInterface, allocator);
+    Result result = impl->Create(desc, {}, false);
 
-    const Result res = implementation->Create(desc, {}, false);
+    if (result != Result::SUCCESS) {
+        Destroy(allocator, impl);
+        device = nullptr;
+    } else
+        device = (DeviceBase*)impl;
 
-    if (res == Result::SUCCESS) {
-        device = implementation;
-        return Result::SUCCESS;
-    }
-
-    Deallocate(allocator, implementation);
-
-    return res;
+    return result;
 }
 
 Result CreateDeviceVK(const DeviceCreationVKDesc& desc, DeviceBase*& device) {
-    StdAllocator<uint8_t> allocator(desc.memoryAllocatorInterface);
-    DeviceVK* implementation = Allocate<DeviceVK>(allocator, desc.callbackInterface, allocator);
-    const Result res = implementation->Create({}, desc, true);
+    StdAllocator<uint8_t> allocator(desc.allocationCallbacks);
+    DeviceVK* impl = Allocate<DeviceVK>(allocator, desc.callbackInterface, allocator);
+    Result result = impl->Create({}, desc, true);
 
-    if (res == Result::SUCCESS) {
-        device = implementation;
-        return Result::SUCCESS;
-    }
+    if (result != Result::SUCCESS) {
+        Destroy(allocator, impl);
+        device = nullptr;
+    } else
+        device = (DeviceBase*)impl;
 
-    Deallocate(allocator, implementation);
-
-    return res;
+    return result;
 }
 
 inline bool IsExtensionSupported(const char* ext, const Vector<VkExtensionProperties>& list) {
@@ -132,7 +127,7 @@ inline bool IsExtensionSupported(const char* ext, const Vector<const char*>& lis
     return false;
 }
 
-void* VKAPI_PTR vkAllocateHostMemory(void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope) {
+static void* VKAPI_PTR vkAllocateHostMemory(void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope) {
     MaybeUnused(allocationScope);
 
     StdAllocator<uint8_t>& stdAllocator = *(StdAllocator<uint8_t>*)pUserData;
@@ -141,7 +136,7 @@ void* VKAPI_PTR vkAllocateHostMemory(void* pUserData, size_t size, size_t alignm
     return lowLevelAllocator.Allocate(lowLevelAllocator.userArg, size, alignment);
 }
 
-void* VKAPI_PTR vkReallocateHostMemory(void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope) {
+static void* VKAPI_PTR vkReallocateHostMemory(void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope) {
     MaybeUnused(allocationScope);
 
     StdAllocator<uint8_t>& stdAllocator = *(StdAllocator<uint8_t>*)pUserData;
@@ -150,7 +145,7 @@ void* VKAPI_PTR vkReallocateHostMemory(void* pUserData, void* pOriginal, size_t 
     return lowLevelAllocator.Reallocate(lowLevelAllocator.userArg, pOriginal, size, alignment);
 }
 
-void VKAPI_PTR vkFreeHostMemory(void* pUserData, void* pMemory) {
+static void VKAPI_PTR vkFreeHostMemory(void* pUserData, void* pMemory) {
     StdAllocator<uint8_t>& stdAllocator = *(StdAllocator<uint8_t>*)pUserData;
     const auto& lowLevelAllocator = stdAllocator.GetInterface();
 
@@ -315,23 +310,12 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
         desiredDeviceExts.push_back(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
 }
 
-template <typename Implementation, typename Interface, typename... Args>
-Result DeviceVK::CreateImplementation(Interface*& entity, const Args&... args) {
-    Implementation* implementation = Allocate<Implementation>(GetStdAllocator(), *this);
-    Result result = implementation->Create(args...);
-
-    if (result == Result::SUCCESS) {
-        entity = (Interface*)implementation;
-        return Result::SUCCESS;
-    }
-
-    Deallocate(GetStdAllocator(), implementation);
-    entity = nullptr;
-
-    return result;
-}
-
 DeviceVK::DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator) : DeviceBase(callbacks, stdAllocator) {
+    m_AllocationCallbacks.pUserData = &GetStdAllocator();
+    m_AllocationCallbacks.pfnAllocation = vkAllocateHostMemory;
+    m_AllocationCallbacks.pfnReallocation = vkReallocateHostMemory;
+    m_AllocationCallbacks.pfnFree = vkFreeHostMemory;
+
     m_Desc.graphicsAPI = GraphicsAPI::VK;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
@@ -341,8 +325,10 @@ DeviceVK::~DeviceVK() {
     if (m_Device == VK_NULL_HANDLE)
         return;
 
+    DestroyVma();
+
     for (uint32_t i = 0; i < m_CommandQueues.size(); i++)
-        Deallocate(GetStdAllocator(), m_CommandQueues[i]);
+        Destroy(GetStdAllocator(), m_CommandQueues[i]);
 
     if (m_Messenger) {
         typedef PFN_vkDestroyDebugUtilsMessengerEXT Func;
@@ -364,8 +350,9 @@ void DeviceVK::GetAdapterDesc() {
     VkPhysicalDeviceProperties2 props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &deviceIDProps};
     m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevice, &props);
 
+    static_assert(VK_LUID_SIZE == sizeof(uint64_t), "unexpected sizeof");
 #ifdef _WIN32
-    static_assert(sizeof(LUID) == VK_LUID_SIZE, "invalid sizeof");
+    static_assert(VK_LUID_SIZE == sizeof(LUID), "unexpected sizeof");
 
     ComPtr<IDXGIFactory4> dxgiFactory;
     HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
@@ -383,7 +370,7 @@ void DeviceVK::GetAdapterDesc() {
     if (FAILED(hr))
         REPORT_WARNING(this, "IDXGIAdapter::GetDesc() failed, result = 0x%08X!", hr);
     else {
-        wcstombs(m_Desc.adapterDesc.description, desc.Description, GetCountOf(m_Desc.adapterDesc.description) - 1);
+        wcstombs(m_Desc.adapterDesc.name, desc.Description, GetCountOf(m_Desc.adapterDesc.name) - 1);
         m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
         m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
         m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
@@ -391,7 +378,7 @@ void DeviceVK::GetAdapterDesc() {
         m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
     }
 #else
-    strncpy(m_Desc.adapterDesc.description, props.properties.deviceName, sizeof(m_Desc.adapterDesc.description));
+    strncpy(m_Desc.adapterDesc.name, props.properties.deviceName, sizeof(m_Desc.adapterDesc.name));
     m_Desc.adapterDesc.luid = *(uint64_t*)&deviceIDProps.deviceLUID[0];
     m_Desc.adapterDesc.deviceId = props.properties.deviceID;
     m_Desc.adapterDesc.vendor = GetVendorFromID(props.properties.vendorID);
@@ -413,21 +400,14 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     m_OwnsNativeObjects = !isWrapper;
     m_SPIRVBindingOffsets = isWrapper ? deviceCreationVKDesc.spirvBindingOffsets : deviceCreationDesc.spirvBindingOffsets;
 
-    { // Custom allocator
-        m_AllocationCallbacks.pUserData = &GetStdAllocator();
-        m_AllocationCallbacks.pfnAllocation = vkAllocateHostMemory;
-        m_AllocationCallbacks.pfnReallocation = vkReallocateHostMemory;
-        m_AllocationCallbacks.pfnFree = vkFreeHostMemory;
-
-        if (!isWrapper)
-            m_AllocationCallbackPtr = &m_AllocationCallbacks;
-    }
+    if (!isWrapper && !deviceCreationDesc.disable3rdPartyAllocationCallbacks)
+        m_AllocationCallbackPtr = &m_AllocationCallbacks;
 
     { // Loader
-        const char* loaderPath = deviceCreationVKDesc.vulkanLoaderPath ? deviceCreationVKDesc.vulkanLoaderPath : VULKAN_LOADER_NAME;
+        const char* loaderPath = deviceCreationVKDesc.libraryPath ? deviceCreationVKDesc.libraryPath : VULKAN_LOADER_NAME;
         m_Loader = LoadSharedLibrary(loaderPath);
         if (!m_Loader) {
-            REPORT_ERROR(this, "Failed to load Vulkan loader: '%s'.", loaderPath);
+            REPORT_ERROR(this, "Failed to load Vulkan loader: '%s'", loaderPath);
             return Result::UNSUPPORTED;
         }
     }
@@ -460,17 +440,17 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             return res;
     }
 
-    uint32_t minorVersion = 0;
+    m_MinorVersion = 0;
     { // Group
         if (isWrapper) {
             m_PhysicalDevice = (VkPhysicalDevice)deviceCreationVKDesc.vkPhysicalDevice;
 
-            minorVersion = deviceCreationVKDesc.minorVersion;
+            m_MinorVersion = deviceCreationVKDesc.minorVersion;
         } else {
             uint32_t deviceGroupNum = 0;
             m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, nullptr);
 
-            VkPhysicalDeviceGroupProperties* deviceGroups = STACK_ALLOC(VkPhysicalDeviceGroupProperties, deviceGroupNum);
+            VkPhysicalDeviceGroupProperties* deviceGroups = StackAlloc(VkPhysicalDeviceGroupProperties, deviceGroupNum);
             VkResult result = m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, deviceGroups);
             RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkEnumeratePhysicalDevices returned %d", (int32_t)result);
 
@@ -485,9 +465,9 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
                 m_VK.GetPhysicalDeviceProperties2(group.physicalDevices[0], &props);
 
                 uint32_t majorVersion = VK_VERSION_MAJOR(props.properties.apiVersion);
-                minorVersion = VK_VERSION_MINOR(props.properties.apiVersion);
+                m_MinorVersion = VK_VERSION_MINOR(props.properties.apiVersion);
 
-                bool isSupported = majorVersion * 10 + minorVersion >= 12;
+                bool isSupported = (majorVersion * 10 + m_MinorVersion) >= 12;
                 if (deviceCreationDesc.adapterDesc) {
                     const uint64_t luid = *(uint64_t*)idProps.deviceLUID;
                     if (luid == deviceCreationDesc.adapterDesc->luid) {
@@ -541,7 +521,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     APPEND_EXT(features12);
 
     VkPhysicalDeviceVulkan13Features features13 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
-    if (minorVersion >= 3) {
+    if (m_MinorVersion >= 3) {
         APPEND_EXT(features13);
     }
 
@@ -555,6 +535,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR};
     if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(maintenance5Features);
+        m_IsMaintenance5Supported = true;
     }
 
     VkPhysicalDeviceFragmentShadingRateFeaturesKHR shadingRateFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR};
@@ -698,7 +679,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(props12);
 
         VkPhysicalDeviceVulkan13Properties props13 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES};
-        if (minorVersion >= 3) {
+        if (m_MinorVersion >= 3) {
             APPEND_EXT(props13);
         }
 
@@ -773,7 +754,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.textureArrayMaxDim = (Dim_t)limits.maxImageArrayLayers;
         m_Desc.texelBufferMaxDim = limits.maxTexelBufferElements;
 
-        const VkMemoryPropertyFlags neededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        const VkMemoryPropertyFlags neededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         for (uint32_t i = 0; i < m_MemoryProps.memoryTypeCount; i++) {
             const VkMemoryType& memoryType = m_MemoryProps.memoryTypes[i];
             if ((memoryType.propertyFlags & neededFlags) == neededFlags)
@@ -792,7 +773,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.bufferMaxSize = props13.maxBufferSize;
         m_Desc.bufferTextureGranularity = (uint32_t)limits.bufferImageGranularity;
         m_Desc.pushConstantsMaxSize = limits.maxPushConstantsSize;
-        m_Desc.memoryTier = MemoryTier::TWO; // TODO: seems to be the best match
 
         m_Desc.boundDescriptorSetMaxNum = limits.maxBoundDescriptorSets;
         m_Desc.perStageDescriptorSamplerMaxNum = limits.maxPerStageDescriptorSamplers;
@@ -900,6 +880,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isMeshShaderPipelineStatsSupported = meshShaderFeatures.meshShaderQueries == VK_TRUE;
         m_Desc.isDrawMeshTasksIndirectSupported = true;
         m_Desc.isEnchancedBarrierSupported = true;
+        m_Desc.isMemoryTier2Supported = true; // TODO: seems to be the best match
 
         m_Desc.isShaderNativeI16Supported = features.features.shaderInt16;
         m_Desc.isShaderNativeF16Supported = features12.shaderFloat16;
@@ -977,16 +958,16 @@ void DeviceVK::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memory
     const auto& vk = GetDispatchTable();
     vk.GetDeviceBufferMemoryRequirements(m_Device, &bufferMemoryRequirements, &requirements);
 
-    MemoryTypeUnion memoryType = {};
-    memoryType.unpacked.isDedicated = dedicatedRequirements.requiresDedicatedAllocation;
+    MemoryTypeInfo memoryTypeInfo = {};
+    memoryTypeInfo.mustBeDedicated = dedicatedRequirements.prefersDedicatedAllocation;
 
-    bool found = GetMemoryType(memoryLocation, requirements.memoryRequirements.memoryTypeBits, memoryType.unpacked);
-    RETURN_ON_FAILURE(this, found, ReturnVoid(), "Can't find suitable memory type");
-
-    memoryDesc.size = requirements.memoryRequirements.size;
-    memoryDesc.alignment = (uint32_t)requirements.memoryRequirements.alignment;
-    memoryDesc.type = memoryType.packed;
-    memoryDesc.mustBeDedicated = dedicatedRequirements.requiresDedicatedAllocation;
+    memoryDesc = {};
+    if (GetMemoryTypeInfo(memoryLocation, requirements.memoryRequirements.memoryTypeBits, memoryTypeInfo)) {
+        memoryDesc.size = requirements.memoryRequirements.size;
+        memoryDesc.alignment = (uint32_t)requirements.memoryRequirements.alignment;
+        memoryDesc.type = Pack(memoryTypeInfo);
+        memoryDesc.mustBeDedicated = memoryTypeInfo.mustBeDedicated;
+    }
 }
 
 void DeviceVK::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
@@ -1004,34 +985,45 @@ void DeviceVK::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memo
     const auto& vk = GetDispatchTable();
     vk.GetDeviceImageMemoryRequirements(m_Device, &imageMemoryRequirements, &requirements);
 
-    MemoryTypeUnion memoryType = {};
-    memoryType.unpacked.isDedicated = dedicatedRequirements.requiresDedicatedAllocation;
+    MemoryTypeInfo memoryTypeInfo = {};
+    memoryTypeInfo.mustBeDedicated = dedicatedRequirements.prefersDedicatedAllocation;
 
-    bool found = GetMemoryType(memoryLocation, requirements.memoryRequirements.memoryTypeBits, memoryType.unpacked);
-    RETURN_ON_FAILURE(this, found, ReturnVoid(), "Can't find suitable memory type");
-
-    memoryDesc.size = requirements.memoryRequirements.size;
-    memoryDesc.alignment = (uint32_t)requirements.memoryRequirements.alignment;
-    memoryDesc.type = memoryType.packed;
-    memoryDesc.mustBeDedicated = dedicatedRequirements.requiresDedicatedAllocation;
+    memoryDesc = {};
+    if (GetMemoryTypeInfo(memoryLocation, requirements.memoryRequirements.memoryTypeBits, memoryTypeInfo)) {
+        memoryDesc.size = requirements.memoryRequirements.size;
+        memoryDesc.alignment = (uint32_t)requirements.memoryRequirements.alignment;
+        memoryDesc.type = Pack(memoryTypeInfo);
+        memoryDesc.mustBeDedicated = memoryTypeInfo.mustBeDedicated;
+    }
 }
 
-bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const {
+void DeviceVK::GetMemoryDesc(const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    VkAccelerationStructureBuildSizesInfoKHR sizesInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
+    GetAccelerationStructureBuildSizesInfo(accelerationStructureDesc, sizesInfo);
+
+    BufferDesc bufferDesc = {};
+    bufferDesc.size = sizesInfo.accelerationStructureSize;
+    bufferDesc.usageMask = BufferUsageBits::RAY_TRACING_BUFFER;
+
+    GetMemoryDesc(bufferDesc, memoryLocation, memoryDesc);
+}
+
+bool DeviceVK::GetMemoryTypeInfo(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const {
     VkMemoryPropertyFlags neededFlags = 0;    // must have
     VkMemoryPropertyFlags undesiredFlags = 0; // have higher priority than desired
     VkMemoryPropertyFlags desiredFlags = 0;   // nice to have
 
     if (memoryLocation == MemoryLocation::DEVICE) {
         neededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        undesiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        undesiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
     } else if (memoryLocation == MemoryLocation::DEVICE_UPLOAD) {
-        neededFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        desiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        neededFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         undesiredFlags = VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        desiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     } else {
-        neededFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        neededFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         undesiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        desiredFlags = memoryLocation == MemoryLocation::HOST_READBACK ? VK_MEMORY_PROPERTY_HOST_CACHED_BIT : 0;
+        desiredFlags = (memoryLocation == MemoryLocation::HOST_READBACK ? VK_MEMORY_PROPERTY_HOST_CACHED_BIT : 0) | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     }
 
     // Phase 1: needed, undesired and desired
@@ -1090,6 +1082,8 @@ bool DeviceVK::GetMemoryType(MemoryLocation memoryLocation, uint32_t memoryTypeM
         }
     }
 
+    CHECK(false, "Can't find suitable memory type");
+
     return false;
 }
 
@@ -1108,6 +1102,33 @@ bool DeviceVK::GetMemoryTypeByIndex(uint32_t index, MemoryTypeInfo& memoryTypeIn
         memoryTypeInfo.location = MemoryLocation::HOST_UPLOAD;
 
     return true;
+}
+
+void DeviceVK::GetAccelerationStructureBuildSizesInfo(const AccelerationStructureDesc& accelerationStructureDesc, VkAccelerationStructureBuildSizesInfoKHR& sizesInfo) {
+    uint32_t geometryCount = accelerationStructureDesc.type == AccelerationStructureType::BOTTOM_LEVEL ? accelerationStructureDesc.instanceOrGeometryObjectNum : 1;
+    Scratch<uint32_t> primitiveMaxNums = AllocateScratch(*this, uint32_t, geometryCount);
+    Scratch<VkAccelerationStructureGeometryKHR> geometries = AllocateScratch(*this, VkAccelerationStructureGeometryKHR, geometryCount);
+
+    if (accelerationStructureDesc.type == AccelerationStructureType::BOTTOM_LEVEL)
+        ConvertGeometryObjectSizesVK(geometries, primitiveMaxNums, accelerationStructureDesc.geometryObjects, geometryCount);
+    else {
+        geometries[0] = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
+        geometries[0].geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+        geometries[0].geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+        geometries[0].geometry.aabbs.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR;
+        geometries[0].geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+
+        primitiveMaxNums[0] = accelerationStructureDesc.instanceOrGeometryObjectNum;
+    }
+
+    VkAccelerationStructureBuildGeometryInfoKHR buildInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
+    buildInfo.type = GetAccelerationStructureType(accelerationStructureDesc.type);
+    buildInfo.flags = GetAccelerationStructureBuildFlags(accelerationStructureDesc.flags);
+    buildInfo.geometryCount = geometryCount;
+    buildInfo.pGeometries = geometries;
+
+    const auto& vk = GetDispatchTable();
+    vk.GetAccelerationStructureBuildSizesKHR(m_Device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &buildInfo, primitiveMaxNums, &sizesInfo);
 }
 
 const char* GetObjectTypeName(VkObjectType objectType) {
@@ -1524,6 +1545,7 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
     GET_DEVICE_CORE_OR_KHR_PROC(MapMemory);
     GET_DEVICE_CORE_OR_KHR_PROC(UnmapMemory);
     GET_DEVICE_CORE_OR_KHR_PROC(FreeMemory);
+    GET_DEVICE_CORE_OR_KHR_PROC(FlushMappedMemoryRanges);
     GET_DEVICE_CORE_OR_KHR_PROC(QueueWaitIdle);
     GET_DEVICE_CORE_OR_KHR_PROC(QueueSubmit2);
     GET_DEVICE_CORE_OR_KHR_PROC(GetSemaphoreCounterValue);
@@ -1629,8 +1651,8 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
     return Result::SUCCESS;
 }
 
-void DeviceVK::Destroy() {
-    Deallocate(GetStdAllocator(), this);
+void DeviceVK::Destruct() {
+    Destroy(GetStdAllocator(), this);
 }
 
 //================================================================================================================
@@ -1697,10 +1719,11 @@ inline Result DeviceVK::CreateCommandQueue(const CommandQueueVKDesc& commandQueu
     }
 
     // Create
-    Result result = CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVKDesc.commandQueueType, commandQueueVKDesc.queueFamilyIndex, (VkQueue)commandQueueVKDesc.vkQueue);
+    Result result =
+        CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVKDesc.commandQueueType, commandQueueVKDesc.queueFamilyIndex, (VkQueue)commandQueueVKDesc.vkQueue);
     if (result == Result::SUCCESS) {
         // Replace old with new
-        Deallocate(GetStdAllocator(), m_CommandQueues[index]);
+        Destroy(GetStdAllocator(), m_CommandQueues[index]);
 
         m_CommandQueues[index] = (CommandQueueVK*)commandQueue;
         m_QueueFamilyIndices[index] = commandQueueVKDesc.queueFamilyIndex;
@@ -1724,275 +1747,88 @@ inline Result DeviceVK::CreateCommandQueue(const CommandQueueVKDesc& commandQueu
     return result;
 }
 
-inline Result DeviceVK::CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
-    return CreateImplementation<CommandAllocatorVK>(commandAllocator, commandQueue);
-}
-
-inline Result DeviceVK::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
-    return CreateImplementation<DescriptorPoolVK>(descriptorPool, descriptorPoolDesc);
-}
-
-Result DeviceVK::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer) { // TODO: not inline
-    return CreateImplementation<BufferVK>(buffer, bufferDesc);
-}
-
-inline Result DeviceVK::CreateTexture(const TextureDesc& textureDesc, Texture*& texture) {
-    return CreateImplementation<TextureVK>(texture, textureDesc);
-}
-
-inline Result DeviceVK::CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
-    return CreateImplementation<DescriptorVK>(bufferView, bufferViewDesc);
-}
-
-inline Result DeviceVK::CreateTexture1DView(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    return CreateImplementation<DescriptorVK>(textureView, textureViewDesc);
-}
-
-inline Result DeviceVK::CreateTexture2DView(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    return CreateImplementation<DescriptorVK>(textureView, textureViewDesc);
-}
-
-inline Result DeviceVK::CreateTexture3DView(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    return CreateImplementation<DescriptorVK>(textureView, textureViewDesc);
-}
-
-inline Result DeviceVK::CreateSampler(const SamplerDesc& samplerDesc, Descriptor*& sampler) {
-    return CreateImplementation<DescriptorVK>(sampler, samplerDesc);
-}
-
-inline Result DeviceVK::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout) {
-    return CreateImplementation<PipelineLayoutVK>(pipelineLayout, pipelineLayoutDesc);
-}
-
-inline Result DeviceVK::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline) {
-    return CreateImplementation<PipelineVK>(pipeline, graphicsPipelineDesc);
-}
-
-inline Result DeviceVK::CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline) {
-    return CreateImplementation<PipelineVK>(pipeline, computePipelineDesc);
-}
-
-inline Result DeviceVK::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool) {
-    return CreateImplementation<QueryPoolVK>(queryPool, queryPoolDesc);
-}
-
-inline Result DeviceVK::CreateFence(uint64_t initialValue, Fence*& fence) {
-    return CreateImplementation<FenceVK>(fence, initialValue);
-}
-
-inline Result DeviceVK::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
-    return CreateImplementation<SwapChainVK>(swapChain, swapChainDesc);
-}
-
-inline Result DeviceVK::CreatePipeline(const RayTracingPipelineDesc& rayTracingPipelineDesc, Pipeline*& pipeline) {
-    return CreateImplementation<PipelineVK>(pipeline, rayTracingPipelineDesc);
-}
-
-inline Result DeviceVK::CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
-    return CreateImplementation<AccelerationStructureVK>(accelerationStructure, accelerationStructureDesc);
-}
-
-inline Result DeviceVK::CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorVKDesc, CommandAllocator*& commandAllocator) {
-    return CreateImplementation<CommandAllocatorVK>(commandAllocator, commandAllocatorVKDesc);
-}
-
-inline Result DeviceVK::CreateCommandBuffer(const CommandBufferVKDesc& commandBufferVKDesc, CommandBuffer*& commandBuffer) {
-    return CreateImplementation<CommandBufferVK>(commandBuffer, commandBufferVKDesc);
-}
-
-inline Result DeviceVK::CreateDescriptorPool(const DescriptorPoolVKDesc& descriptorPoolVKDesc, DescriptorPool*& descriptorPool) {
-    return CreateImplementation<DescriptorPoolVK>(descriptorPool, descriptorPoolVKDesc);
-}
-
-inline Result DeviceVK::CreateBuffer(const BufferVKDesc& bufferDesc, Buffer*& buffer) {
-    return CreateImplementation<BufferVK>(buffer, bufferDesc);
-}
-
-inline Result DeviceVK::CreateTexture(const TextureVKDesc& textureVKDesc, Texture*& texture) {
-    return CreateImplementation<TextureVK>(texture, textureVKDesc);
-}
-
-inline Result DeviceVK::CreateMemory(const MemoryVKDesc& memoryVKDesc, Memory*& memory) {
-    return CreateImplementation<MemoryVK>(memory, memoryVKDesc);
-}
-
-inline Result DeviceVK::CreateGraphicsPipeline(NRIVkPipeline vkPipeline, Pipeline*& pipeline) {
-    PipelineVK* implementation = Allocate<PipelineVK>(GetStdAllocator(), *this);
-    Result result = implementation->CreateGraphics(vkPipeline);
-
-    if (result == Result::SUCCESS) {
-        pipeline = (Pipeline*)implementation;
-        return Result::SUCCESS;
-    }
-
-    Deallocate(GetStdAllocator(), implementation);
-
-    return result;
-}
-
-inline Result DeviceVK::CreateComputePipeline(NRIVkPipeline vkPipeline, Pipeline*& pipeline) {
-    PipelineVK* implementation = Allocate<PipelineVK>(GetStdAllocator(), *this);
-    Result result = implementation->CreateCompute(vkPipeline);
-
-    if (result == Result::SUCCESS) {
-        pipeline = (Pipeline*)implementation;
-        return Result::SUCCESS;
-    }
-
-    Deallocate(GetStdAllocator(), implementation);
-
-    return result;
-}
-
-inline Result DeviceVK::CreateQueryPool(const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool) {
-    return CreateImplementation<QueryPoolVK>(queryPool, queryPoolVKDesc);
-}
-
-inline Result DeviceVK::CreateAccelerationStructure(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
-    return CreateImplementation<AccelerationStructureVK>(accelerationStructure, accelerationStructureDesc);
-}
-
-inline void DeviceVK::DestroyCommandAllocator(CommandAllocator& commandAllocator) {
-    Deallocate(GetStdAllocator(), (CommandAllocatorVK*)&commandAllocator);
-}
-
-inline void DeviceVK::DestroyDescriptorPool(DescriptorPool& descriptorPool) {
-    Deallocate(GetStdAllocator(), (DescriptorPoolVK*)&descriptorPool);
-}
-
-void DeviceVK::DestroyBuffer(Buffer& buffer) { // TODO: not inline
-    Deallocate(GetStdAllocator(), (BufferVK*)&buffer);
-}
-
-inline void DeviceVK::DestroyTexture(Texture& texture) {
-    Deallocate(GetStdAllocator(), (TextureVK*)&texture);
-}
-
-inline void DeviceVK::DestroyDescriptor(Descriptor& descriptor) {
-    Deallocate(GetStdAllocator(), (DescriptorVK*)&descriptor);
-}
-
-inline void DeviceVK::DestroyPipelineLayout(PipelineLayout& pipelineLayout) {
-    Deallocate(GetStdAllocator(), (PipelineLayoutVK*)&pipelineLayout);
-}
-
-inline void DeviceVK::DestroyPipeline(Pipeline& pipeline) {
-    Deallocate(GetStdAllocator(), (PipelineVK*)&pipeline);
-}
-
-inline void DeviceVK::DestroyQueryPool(QueryPool& queryPool) {
-    Deallocate(GetStdAllocator(), (QueryPoolVK*)&queryPool);
-}
-
-inline void DeviceVK::DestroyFence(Fence& fence) {
-    Deallocate(GetStdAllocator(), (FenceVK*)&fence);
-}
-
-inline void DeviceVK::DestroySwapChain(SwapChain& swapChain) {
-    Deallocate(GetStdAllocator(), (SwapChainVK*)&swapChain);
-}
-
-inline void DeviceVK::DestroyAccelerationStructure(AccelerationStructure& accelerationStructure) {
-    Deallocate(GetStdAllocator(), (AccelerationStructureVK*)&accelerationStructure);
-}
-
-inline Result DeviceVK::AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
-    return CreateImplementation<MemoryVK>(memory, allocateMemoryDesc);
-}
-
 inline Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
-    if (memoryBindingDescNum == 0)
+    if (!memoryBindingDescNum)
         return Result::SUCCESS;
 
-    VkBindBufferMemoryInfo* infos = STACK_ALLOC(VkBindBufferMemoryInfo, memoryBindingDescNum);
-    uint32_t boundMemoryNum = 0;
+    Scratch<VkBindBufferMemoryInfo> infos = AllocateScratch(*this, VkBindBufferMemoryInfo, memoryBindingDescNum);
 
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
-        const BufferMemoryBindingDesc& bindingDesc = memoryBindingDescs[i];
+        const BufferMemoryBindingDesc& memoryBindingDesc = memoryBindingDescs[i];
 
-        MemoryVK& memoryImpl = *(MemoryVK*)bindingDesc.memory;
-        BufferVK& bufferImpl = *(BufferVK*)bindingDesc.buffer;
+        BufferVK& bufferImpl = *(BufferVK*)memoryBindingDesc.buffer;
+        MemoryVK& memoryImpl = *(MemoryVK*)memoryBindingDesc.memory;
 
-        const MemoryTypeUnion memoryType = {memoryImpl.GetType()};
-
-        if (memoryImpl.OwnsNativeObjects() && memoryType.unpacked.isDedicated)
+        MemoryTypeInfo memoryTypeInfo = Unpack(memoryImpl.GetType());
+        if (memoryTypeInfo.mustBeDedicated)
             memoryImpl.CreateDedicated(bufferImpl);
 
-        if (bufferImpl.OwnsNativeObjects()) {
-            VkBindBufferMemoryInfo& info = infos[boundMemoryNum++];
-            info = {VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO};
-            info.buffer = bufferImpl.GetHandle();
-            info.memory = memoryImpl.GetHandle();
-            info.memoryOffset = bindingDesc.offset;
-        }
-
-        if (IsHostVisibleMemory(memoryType.unpacked.location))
-            bufferImpl.SetHostMemory(memoryImpl, bindingDesc.offset);
+        VkBindBufferMemoryInfo& info = infos[i];
+        info = {VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO};
+        info.buffer = bufferImpl.GetHandle();
+        info.memory = memoryImpl.GetHandle();
+        info.memoryOffset = memoryBindingDesc.offset;
     }
 
-    if (boundMemoryNum > 0) {
-        VkResult result = m_VK.BindBufferMemory2(m_Device, boundMemoryNum, infos);
-        RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkBindBufferMemory2 returned %d", (int32_t)result);
-    }
+    VkResult result = m_VK.BindBufferMemory2(m_Device, memoryBindingDescNum, infos);
+    RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkBindBufferMemory2 returned %d", (int32_t)result);
 
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
-        BufferVK& bufferImpl = *(BufferVK*)memoryBindingDescs[i].buffer;
-        bufferImpl.ReadDeviceAddress();
+        const BufferMemoryBindingDesc& memoryBindingDesc = memoryBindingDescs[i];
+
+        BufferVK& bufferImpl = *(BufferVK*)memoryBindingDesc.buffer;
+        MemoryVK& memoryImpl = *(MemoryVK*)memoryBindingDesc.memory;
+
+        bufferImpl.FinishMemoryBinding(memoryImpl, memoryBindingDesc.offset);
     }
 
     return Result::SUCCESS;
 }
 
 inline Result DeviceVK::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
-    if (memoryBindingDescNum == 0)
+    if (!memoryBindingDescNum)
         return Result::SUCCESS;
 
-    VkBindImageMemoryInfo* infos = STACK_ALLOC(VkBindImageMemoryInfo, memoryBindingDescNum);
-    uint32_t boundMemoryNum = 0;
+    Scratch<VkBindImageMemoryInfo> infos = AllocateScratch(*this, VkBindImageMemoryInfo, memoryBindingDescNum);
 
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
-        const TextureMemoryBindingDesc& bindingDesc = memoryBindingDescs[i];
+        const TextureMemoryBindingDesc& memoryBindingDesc = memoryBindingDescs[i];
 
-        MemoryVK& memoryImpl = *(MemoryVK*)bindingDesc.memory;
-        TextureVK& textureImpl = *(TextureVK*)bindingDesc.texture;
+        MemoryVK& memoryImpl = *(MemoryVK*)memoryBindingDesc.memory;
+        TextureVK& textureImpl = *(TextureVK*)memoryBindingDesc.texture;
 
-        const MemoryTypeUnion memoryType = {memoryImpl.GetType()};
-
-        if (memoryImpl.OwnsNativeObjects() && memoryType.unpacked.isDedicated)
+        MemoryTypeInfo memoryTypeInfo = Unpack(memoryImpl.GetType());
+        if (memoryTypeInfo.mustBeDedicated)
             memoryImpl.CreateDedicated(textureImpl);
 
-        if (textureImpl.OwnsNativeObjects()) {
-            VkBindImageMemoryInfo& info = infos[boundMemoryNum++];
-            info = {VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO};
-            info.image = textureImpl.GetHandle();
-            info.memory = memoryImpl.GetHandle();
-            info.memoryOffset = bindingDesc.offset;
-        }
+        VkBindImageMemoryInfo& info = infos[i];
+        info = {VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO};
+        info.image = textureImpl.GetHandle();
+        info.memory = memoryImpl.GetHandle();
+        info.memoryOffset = memoryBindingDesc.offset;
     }
 
-    if (boundMemoryNum > 0) {
-        VkResult result = m_VK.BindImageMemory2(m_Device, memoryBindingDescNum, infos);
-        RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkBindImageMemory2 returned %d", (int32_t)result);
-    }
+    VkResult result = m_VK.BindImageMemory2(m_Device, memoryBindingDescNum, infos);
+    RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkBindImageMemory2 returned %d", (int32_t)result);
 
     return Result::SUCCESS;
 }
 
 inline Result DeviceVK::BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
-    if (memoryBindingDescNum == 0)
+    if (!memoryBindingDescNum)
         return Result::SUCCESS;
 
-    BufferMemoryBindingDesc* infos = ALLOCATE_SCRATCH(*this, BufferMemoryBindingDesc, memoryBindingDescNum);
+    Scratch<BufferMemoryBindingDesc> infos = AllocateScratch(*this, BufferMemoryBindingDesc, memoryBindingDescNum);
 
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
-        const AccelerationStructureMemoryBindingDesc& bindingDesc = memoryBindingDescs[i];
-        AccelerationStructureVK& accelerationStructure = *(AccelerationStructureVK*)bindingDesc.accelerationStructure;
+        const AccelerationStructureMemoryBindingDesc& memoryBindingDesc = memoryBindingDescs[i];
+        AccelerationStructureVK& accelerationStructure = *(AccelerationStructureVK*)memoryBindingDesc.accelerationStructure;
 
         BufferMemoryBindingDesc& bufferMemoryBinding = infos[i];
         bufferMemoryBinding = {};
         bufferMemoryBinding.buffer = (Buffer*)accelerationStructure.GetBuffer();
-        bufferMemoryBinding.memory = bindingDesc.memory;
-        bufferMemoryBinding.offset = bindingDesc.offset;
+        bufferMemoryBinding.memory = memoryBindingDesc.memory;
+        bufferMemoryBinding.offset = memoryBindingDesc.offset;
     }
 
     Result result = BindBufferMemory(infos, memoryBindingDescNum);
@@ -2002,13 +1838,7 @@ inline Result DeviceVK::BindAccelerationStructureMemory(const AccelerationStruct
         result = accelerationStructure.FinishCreation();
     }
 
-    FREE_SCRATCH(*this, infos, memoryBindingDescNum);
-
     return result;
-}
-
-inline void DeviceVK::FreeMemory(Memory& memory) {
-    Deallocate(GetStdAllocator(), (MemoryVK*)&memory);
 }
 
 inline FormatSupportBits DeviceVK::GetFormatSupport(Format format) const {
