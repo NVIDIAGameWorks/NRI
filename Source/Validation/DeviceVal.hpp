@@ -537,6 +537,8 @@ static Result NRI_CALL CreateTextureD3D11(Device& device, const TextureD3D11Desc
     return ((DeviceVal&)device).CreateTexture(textureD3D11Desc, texture);
 }
 
+Define_WrapperD3D11_Device_PartiallyFillFunctionTable(Val);
+
 #endif
 
 Result DeviceVal::FillFunctionTable(WrapperD3D11Interface& table) const {
@@ -583,6 +585,8 @@ static Result NRI_CALL CreateAccelerationStructureD3D12(
     Device& device, const AccelerationStructureD3D12Desc& accelerationStructureD3D12Desc, AccelerationStructure*& accelerationStructure) {
     return ((DeviceVal&)device).CreateAccelerationStructure(accelerationStructureD3D12Desc, accelerationStructure);
 }
+
+Define_WrapperD3D12_Device_PartiallyFillFunctionTable(Val);
 
 #endif
 
@@ -668,6 +672,8 @@ static void* NRI_CALL GetDeviceProcAddrVK(const Device& device) {
     return ((DeviceVal&)device).GetWrapperVKInterface().GetDeviceProcAddrVK(((DeviceVal&)device).GetImpl());
 }
 
+Define_WrapperVK_Device_PartiallyFillFunctionTable(Val);
+
 #endif
 
 Result DeviceVal::FillFunctionTable(WrapperVKInterface& table) const {
@@ -692,6 +698,3 @@ Define_RayTracing_Device_PartiallyFillFunctionTable(Val);
 Define_Streamer_Device_PartiallyFillFunctionTable(Val);
 Define_SwapChain_Device_PartiallyFillFunctionTable(Val);
 Define_ResourceAllocator_Device_PartiallyFillFunctionTable(Val);
-Define_WrapperD3D11_Device_PartiallyFillFunctionTable(Val);
-Define_WrapperD3D12_Device_PartiallyFillFunctionTable(Val);
-Define_WrapperVK_Device_PartiallyFillFunctionTable(Val);
