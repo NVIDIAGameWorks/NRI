@@ -148,63 +148,6 @@ bool operator!=(const StdAllocator<T>& left, const StdAllocator<T>& right) {
     return !operator==(left, right);
 }
 
-template <typename T>
-inline T Align(T x, size_t alignment) {
-    return (T)((size_t(x) + alignment - 1) & ~(alignment - 1));
-}
-
-template <typename T, uint32_t N>
-constexpr uint32_t GetCountOf(T const (&)[N]) {
-    return N;
-}
-
-template <typename T>
-constexpr uint32_t GetCountOf(const std::vector<T>& v) {
-    return (uint32_t)v.size();
-}
-
-template <typename T, size_t N>
-constexpr uint32_t GetCountOf(const std::array<T, N>& v) {
-    return (uint32_t)v.size();
-}
-
-template <typename T, typename... Args>
-constexpr void Construct(T* objects, size_t number, Args&&... args) {
-    for (size_t i = 0; i < number; i++)
-        new (objects + i) T(std::forward<Args>(args)...);
-}
-
-template <typename T, typename... Args>
-inline T* Allocate(StdAllocator<uint8_t>& allocator, Args&&... args) {
-    const auto& lowLevelAllocator = allocator.GetInterface();
-    T* object = (T*)lowLevelAllocator.Allocate(lowLevelAllocator.userArg, sizeof(T), alignof(T));
-
-    if (object)
-        new (object) T(std::forward<Args>(args)...);
-
-    return object;
-}
-
-template <typename T>
-inline void Destroy(StdAllocator<uint8_t>& allocator, T* object) {
-    if (object) {
-        object->~T();
-
-        const auto& lowLevelAllocator = allocator.GetInterface();
-        lowLevelAllocator.Free(lowLevelAllocator.userArg, object);
-    }
-}
-
-template <typename T>
-inline void Destroy(T* object) {
-    if (object) {
-        object->~T();
-
-        const auto& lowLevelAllocator = ((nri::DeviceBase&)object->GetDevice()).GetStdAllocator().GetInterface();
-        lowLevelAllocator.Free(lowLevelAllocator.userArg, object);
-    }
-}
-
 //================================================================================================================
 
 template <typename T>

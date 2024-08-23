@@ -27,6 +27,69 @@
 typedef nri::AllocationCallbacks AllocationCallbacks;
 #include "StdAllocator.h"
 
+#define REPORT_INFO(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define REPORT_WARNING(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_WARNING, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define REPORT_ERROR(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
+
+#include "DeviceBase.h"
+
+template <typename T>
+inline T Align(T x, size_t alignment) {
+    return (T)((size_t(x) + alignment - 1) & ~(alignment - 1));
+}
+
+template <typename T, uint32_t N>
+constexpr uint32_t GetCountOf(T const (&)[N]) {
+    return N;
+}
+
+template <typename T>
+constexpr uint32_t GetCountOf(const std::vector<T>& v) {
+    return (uint32_t)v.size();
+}
+
+template <typename T, size_t N>
+constexpr uint32_t GetCountOf(const std::array<T, N>& v) {
+    return (uint32_t)v.size();
+}
+
+template <typename T, typename... Args>
+constexpr void Construct(T* objects, size_t number, Args&&... args) {
+    for (size_t i = 0; i < number; i++)
+        new (objects + i) T(std::forward<Args>(args)...);
+}
+
+template <typename T, typename... Args>
+inline T* Allocate(StdAllocator<uint8_t>& allocator, Args&&... args) {
+    const auto& lowLevelAllocator = allocator.GetInterface();
+    T* object = (T*)lowLevelAllocator.Allocate(lowLevelAllocator.userArg, sizeof(T), alignof(T));
+
+    if (object)
+        new (object) T(std::forward<Args>(args)...);
+
+    return object;
+}
+
+template <typename T>
+inline void Destroy(StdAllocator<uint8_t>& allocator, T* object) {
+    if (object) {
+        object->~T();
+
+        const auto& lowLevelAllocator = allocator.GetInterface();
+        lowLevelAllocator.Free(lowLevelAllocator.userArg, object);
+    }
+}
+
+template <typename T>
+inline void Destroy(T* object) {
+    if (object) {
+        object->~T();
+
+        const auto& lowLevelAllocator = ((nri::DeviceBase&)object->GetDevice()).GetStdAllocator().GetInterface();
+        lowLevelAllocator.Free(lowLevelAllocator.userArg, object);
+    }
+}
+
 #ifdef _WIN32
 #    include <dxgi1_6.h>
 #else
@@ -48,10 +111,6 @@ typedef uint32_t DXGI_FORMAT;
         return returnCode; \
     }
 
-#define REPORT_INFO(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define REPORT_WARNING(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_WARNING, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define REPORT_ERROR(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
-
 #define CHECK(condition, message) assert((condition) && message)
 
 #define SET_D3D_DEBUG_OBJECT_NAME(obj, name) \
@@ -59,8 +118,6 @@ typedef uint32_t DXGI_FORMAT;
     obj->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)std::strlen(name), name)
 
 #define NRI_NODE_MASK 0x1 // mGPU is not planned
-
-#include "DeviceBase.h"
 
 constexpr uint32_t TIMEOUT_PRESENT = 1000; // 1 sec
 constexpr uint32_t TIMEOUT_FENCE = 5000;   // 5 sec
