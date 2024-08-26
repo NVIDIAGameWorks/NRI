@@ -1458,7 +1458,7 @@ NRI_STRUCT(DeviceDesc)
     NRI_NAME(Dim_t) texture1DMaxDim;
     NRI_NAME(Dim_t) texture2DMaxDim;
     NRI_NAME(Dim_t) texture3DMaxDim;
-    NRI_NAME(Dim_t) textureArrayMaxLayerNum;
+    NRI_NAME(Dim_t) textureArrayLayerMaxNum;
     uint32_t texelBufferMaxDim;
 
     // Memory

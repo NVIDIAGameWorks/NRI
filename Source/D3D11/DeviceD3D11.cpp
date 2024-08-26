@@ -325,7 +325,7 @@ void DeviceD3D11::FillDesc() {
     m_Desc.texture1DMaxDim = D3D11_REQ_TEXTURE1D_U_DIMENSION;
     m_Desc.texture2DMaxDim = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
     m_Desc.texture3DMaxDim = D3D11_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
-    m_Desc.textureArrayMaxLayerNum = D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
+    m_Desc.textureArrayLayerMaxNum = D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
     m_Desc.texelBufferMaxDim = (1 << D3D11_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP) - 1;
 
     m_Desc.memoryAllocationMaxNum = 0xFFFFFFFF;

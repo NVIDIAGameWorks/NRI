@@ -752,7 +752,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.texture1DMaxDim = (Dim_t)limits.maxImageDimension1D;
         m_Desc.texture2DMaxDim = (Dim_t)limits.maxImageDimension2D;
         m_Desc.texture3DMaxDim = (Dim_t)limits.maxImageDimension3D;
-        m_Desc.textureArrayMaxLayerNum = (Dim_t)limits.maxImageArrayLayers;
+        m_Desc.textureArrayLayerMaxNum = (Dim_t)limits.maxImageArrayLayers;
         m_Desc.texelBufferMaxDim = limits.maxTexelBufferElements;
 
         const VkMemoryPropertyFlags neededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
