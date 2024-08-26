@@ -86,7 +86,7 @@ CompactNamespaces: false
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
 Cpp11BracedListStyle: true
-DerivePointerAlignment: true
+DerivePointerAlignment: false
 DisableFormat: false
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: LogicalBlock
@@ -231,6 +231,9 @@ Standard: Auto
 TabWidth: 4
 UseTab: Never
 WhitespaceSensitiveMacros:
-  - STRINGIFY
+  - NRI_STRINGIFY
 TypenameMacros:
-  - STRUCT
+  - NRI_STRUCT
+  - NRI_UNION
+  - NRI_NAME
+  - NRI_NAME_REF

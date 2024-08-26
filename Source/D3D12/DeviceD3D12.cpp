@@ -593,7 +593,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.isShaderAtomicsI32Supported = true;
     m_Desc.isShaderAtomicsF32Supported = isShaderAtomicsF32Supported;
 #ifdef NRI_USE_AGILITY_SDK
-    m_Desc.isShaderAtomicsI64Supported = m_Desc.isShaderAtomicsI64Supported|| options9.AtomicInt64OnTypedResourceSupported || options9.AtomicInt64OnGroupSharedSupported || options11.AtomicInt64OnDescriptorHeapResourceSupported;
+    m_Desc.isShaderAtomicsI64Supported = m_Desc.isShaderAtomicsI64Supported || options9.AtomicInt64OnTypedResourceSupported || options9.AtomicInt64OnGroupSharedSupported || options11.AtomicInt64OnDescriptorHeapResourceSupported;
 #endif
 
     m_Desc.isDrawParametersEmulationEnabled = deviceCreationDesc.enableD3D12DrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
