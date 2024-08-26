@@ -35,9 +35,7 @@ Non-goals:
 #endif
 
 #ifndef NRI_API
-    #ifdef NRI_STATIC_LIBRARY
-        #define NRI_API
-    #elif defined(__cplusplus)
+    #if defined(__cplusplus)
         #define NRI_API extern "C"
     #else
         #define NRI_API extern
