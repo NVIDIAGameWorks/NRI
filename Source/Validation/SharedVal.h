@@ -8,7 +8,10 @@ namespace nri {
 
 template <typename T>
 struct DeviceObjectVal {
-    DeviceObjectVal(DeviceVal& device, T* object = nullptr) : m_Name(device.GetStdAllocator()), m_Device(device), m_Impl(object) {
+    DeviceObjectVal(DeviceVal& device, T* object = nullptr)
+        : m_Name(device.GetStdAllocator())
+        , m_Device(device)
+        , m_Impl(object) {
     }
 
     inline T* GetImpl() const {

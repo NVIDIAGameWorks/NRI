@@ -45,7 +45,7 @@ Result TextureD3D11::Create(MemoryLocation memoryLocation, float priority) {
         D3D11_TEXTURE1D_DESC desc = {};
         desc.Width = m_Desc.width;
         desc.MipLevels = m_Desc.mipNum;
-        desc.ArraySize = m_Desc.arraySize;
+        desc.ArraySize = m_Desc.layerNum;
         desc.Format = dxgiFormat.typeless;
         desc.Usage = usage;
         desc.BindFlags = bindFlags;
@@ -69,14 +69,14 @@ Result TextureD3D11::Create(MemoryLocation memoryLocation, float priority) {
         desc.Width = m_Desc.width;
         desc.Height = m_Desc.height;
         desc.MipLevels = m_Desc.mipNum;
-        desc.ArraySize = m_Desc.arraySize;
+        desc.ArraySize = m_Desc.layerNum;
         desc.Format = dxgiFormat.typeless;
         desc.SampleDesc.Count = m_Desc.sampleNum;
         desc.Usage = usage;
         desc.BindFlags = bindFlags;
         desc.CPUAccessFlags = cpuAccessFlags;
 
-        if (m_Desc.sampleNum == 1 && desc.Width == desc.Height && (m_Desc.arraySize % 6 == 0))
+        if (m_Desc.sampleNum == 1 && desc.Width == desc.Height && (m_Desc.layerNum % 6 == 0))
             desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE; // TODO: valid assumption?
 
         hr = m_Device->CreateTexture2D(&desc, nullptr, (ID3D11Texture2D**)&m_Texture);
@@ -142,7 +142,7 @@ uint32_t TextureD3D11::GetMipmappedSize(const TextureDesc& textureDesc) {
     const FormatProps& formatProps = GetFormatProps(textureDesc.format);
     size *= formatProps.stride;
     size *= std::max(textureDesc.sampleNum, (Sample_t)1);
-    size *= std::max(textureDesc.arraySize, (Dim_t)1);
+    size *= std::max(textureDesc.layerNum, (Dim_t)1);
 
     return size;
 }

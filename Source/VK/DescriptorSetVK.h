@@ -8,7 +8,8 @@ struct DeviceVK;
 struct DescriptorSetDesc;
 
 struct DescriptorSetVK {
-    inline DescriptorSetVK(DeviceVK& device) : m_Device(device) {
+    inline DescriptorSetVK(DeviceVK& device)
+        : m_Device(device) {
     }
 
     inline VkDescriptorSet GetHandle() const {

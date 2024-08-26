@@ -4,7 +4,9 @@
 
 namespace nri {
 struct DeviceBase {
-    inline DeviceBase(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator) : m_CallbackInterface(callbacks), m_StdAllocator(stdAllocator) {
+    inline DeviceBase(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator)
+        : m_CallbackInterface(callbacks)
+        , m_StdAllocator(stdAllocator) {
     }
 
     inline StdAllocator<uint8_t>& GetStdAllocator() {

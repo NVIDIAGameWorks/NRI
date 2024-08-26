@@ -8,7 +8,8 @@ struct DeviceD3D11;
 struct MemoryD3D11;
 
 struct TextureD3D11 {
-    inline TextureD3D11(DeviceD3D11& device) : m_Device(device) {
+    inline TextureD3D11(DeviceD3D11& device)
+        : m_Device(device) {
     }
 
     inline ~TextureD3D11() {
@@ -39,7 +40,7 @@ struct TextureD3D11 {
     }
 
     inline uint32_t GetSubresourceIndex(const TextureRegionDesc& regionDesc) const {
-        return regionDesc.mipOffset + regionDesc.arrayOffset * m_Desc.mipNum;
+        return regionDesc.mipOffset + regionDesc.layerOffset * m_Desc.mipNum;
     }
 
     inline Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const {

@@ -8,7 +8,8 @@ struct DeviceVK;
 struct MemoryVK;
 
 struct BufferVK {
-    inline BufferVK(DeviceVK& device) : m_Device(device) {
+    inline BufferVK(DeviceVK& device)
+        : m_Device(device) {
     }
 
     inline VkBuffer GetHandle() const {

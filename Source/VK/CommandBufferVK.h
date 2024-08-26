@@ -10,7 +10,8 @@ struct PipelineLayoutVK;
 struct TextureVK;
 
 struct CommandBufferVK {
-    inline CommandBufferVK(DeviceVK& device) : m_Device(device) {
+    inline CommandBufferVK(DeviceVK& device)
+        : m_Device(device) {
     }
 
     inline operator VkCommandBuffer() const {

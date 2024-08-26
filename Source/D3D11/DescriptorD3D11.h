@@ -7,7 +7,8 @@ namespace nri {
 struct DeviceD3D11;
 
 struct DescriptorD3D11 {
-    inline DescriptorD3D11(DeviceD3D11& device) : m_Device(device) {
+    inline DescriptorD3D11(DeviceD3D11& device)
+        : m_Device(device) {
     }
 
     inline ~DescriptorD3D11() {

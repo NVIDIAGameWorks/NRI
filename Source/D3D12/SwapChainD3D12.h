@@ -11,7 +11,9 @@ struct DeviceD3D12;
 struct TextureD3D12;
 
 struct SwapChainD3D12 : public DisplayDescHelper {
-    inline SwapChainD3D12(DeviceD3D12& device) : m_Device(device), m_Textures(device.GetStdAllocator()) {
+    inline SwapChainD3D12(DeviceD3D12& device)
+        : m_Device(device)
+        , m_Textures(device.GetStdAllocator()) {
     }
 
     inline DeviceD3D12& GetDevice() const {

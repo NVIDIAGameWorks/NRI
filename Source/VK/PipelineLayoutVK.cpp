@@ -265,13 +265,13 @@ void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipeline
     }
 }
 
-RuntimeBindingInfo::RuntimeBindingInfo(StdAllocator<uint8_t>& allocator) :
-    hasVariableDescriptorNum(allocator),
-    descriptorSetRangeDescs(allocator),
-    dynamicConstantBufferDescs(allocator),
-    descriptorSetDescs(allocator),
-    pushConstantDescs(allocator),
-    pushConstantBindings(allocator) {
+RuntimeBindingInfo::RuntimeBindingInfo(StdAllocator<uint8_t>& allocator)
+    : hasVariableDescriptorNum(allocator)
+    , descriptorSetRangeDescs(allocator)
+    , dynamicConstantBufferDescs(allocator)
+    , descriptorSetDescs(allocator)
+    , pushConstantDescs(allocator)
+    , pushConstantBindings(allocator) {
 }
 
 //================================================================================================================

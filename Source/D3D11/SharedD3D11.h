@@ -41,9 +41,9 @@ struct SubresourceInfo {
     const void* resource = nullptr;
     uint64_t data = 0;
 
-    inline void Initialize(const void* tex, Mip_t mipOffset, Mip_t mipNum, Dim_t arrayOffset, Dim_t arraySize) {
+    inline void Initialize(const void* tex, Mip_t mipOffset, Mip_t mipNum, Dim_t layerOffset, Dim_t layerNum) {
         resource = tex;
-        data = (uint64_t(arraySize) << 48) | (uint64_t(arrayOffset) << 32) | (uint64_t(mipNum) << 16) | uint64_t(mipOffset);
+        data = (uint64_t(layerNum) << 48) | (uint64_t(layerOffset) << 32) | (uint64_t(mipNum) << 16) | uint64_t(mipOffset);
     }
 
     inline void Initialize(const void* buf) {
@@ -137,6 +137,7 @@ struct BindingState {
 struct CommandBufferHelper {
     virtual ~CommandBufferHelper() {
     }
+
     virtual Result Create(ID3D11DeviceContext* precreatedContext) = 0;
     virtual void Submit() = 0;
     virtual ID3D11DeviceContext* GetNativeObject() const = 0;

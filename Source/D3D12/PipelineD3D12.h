@@ -11,7 +11,10 @@ struct PipelineLayoutD3D12;
 struct CommandBufferD3D12;
 
 struct PipelineD3D12 {
-    inline PipelineD3D12(DeviceD3D12& device) : m_Device(device), m_ShaderGroupNames(device.GetStdAllocator()), m_InputAssemplyStrides(device.GetStdAllocator()) {
+    inline PipelineD3D12(DeviceD3D12& device)
+        : m_Device(device)
+        , m_ShaderGroupNames(device.GetStdAllocator())
+        , m_InputAssemplyStrides(device.GetStdAllocator()) {
     }
 
     inline ~PipelineD3D12() {

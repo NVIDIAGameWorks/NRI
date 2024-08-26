@@ -28,7 +28,7 @@ AlignConsecutiveMacros:
   AlignCompound: false
   PadOperators: false
 AlignEscapedNewlines: DontAlign
-AlignOperands: Align
+AlignOperands: DontAlign
 # AlignTrailingComments:
 #  Kind: Never
 #  OverEmptyLines: 0
@@ -72,15 +72,15 @@ BraceWrapping:
 # BreakAfterAttributes: Never
 BreakAfterJavaFieldAnnotations: false
 # BreakArrays: true
-BreakBeforeBinaryOperators: None
+BreakBeforeBinaryOperators: All
 BreakBeforeBraces: Attach
 BreakBeforeConceptDeclarations: Always
 # BreakBeforeInlineASMColon: OnlyMultiline
 BreakBeforeTernaryOperators: true
-BreakConstructorInitializers: AfterColon
+BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: BeforeColon
 BreakStringLiterals: true
-ColumnLimit: 180
+ColumnLimit: 0
 CommentPragmas: "^ IWYU pragma:"
 CompactNamespaces: false
 ConstructorInitializerIndentWidth: 4
@@ -184,7 +184,7 @@ RemoveBracesLLVM: false
 # RemoveSemicolon: false
 RequiresClausePosition: OwnLine
 # RequiresExpressionIndentation: OuterScope
-SeparateDefinitionBlocks: Leave
+SeparateDefinitionBlocks: Always
 ShortNamespaceLines: 1
 SortIncludes: CaseSensitive
 SortJavaStaticImport: Before

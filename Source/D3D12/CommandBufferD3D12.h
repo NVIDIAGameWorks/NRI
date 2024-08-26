@@ -22,7 +22,8 @@ struct DescriptorPoolD3D12;
 struct DescriptorSetD3D12;
 
 struct CommandBufferD3D12 {
-    inline CommandBufferD3D12(DeviceD3D12& device) : m_Device(device) {
+    inline CommandBufferD3D12(DeviceD3D12& device)
+        : m_Device(device) {
     }
 
     inline ~CommandBufferD3D12() {
@@ -47,6 +48,9 @@ struct CommandBufferD3D12 {
         SET_D3D_DEBUG_OBJECT_NAME(m_GraphicsCommandList, name);
     }
 
+    inline void EndRendering() {
+    }
+
     Result Begin(const DescriptorPool* descriptorPool);
     Result End();
     void SetViewports(const Viewport* viewports, uint32_t viewportNum);
@@ -59,8 +63,6 @@ struct CommandBufferD3D12 {
     void ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc);
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);
     void BeginRendering(const AttachmentsDesc& attachmentsDesc);
-    inline void EndRendering() {
-    }
     void SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets);
     void SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType);
     void SetPipelineLayout(const PipelineLayout& pipelineLayout);

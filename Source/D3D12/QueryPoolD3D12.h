@@ -10,7 +10,8 @@ namespace nri {
 struct DeviceD3D12;
 
 struct QueryPoolD3D12 {
-    inline QueryPoolD3D12(DeviceD3D12& device) : m_Device(device) {
+    inline QueryPoolD3D12(DeviceD3D12& device)
+        : m_Device(device) {
     }
 
     inline ~QueryPoolD3D12() {

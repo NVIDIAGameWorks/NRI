@@ -42,7 +42,7 @@ Result TextureVK::Create(const TextureVKDesc& textureDesc) {
     m_Desc.height = textureDesc.height;
     m_Desc.depth = textureDesc.depth;
     m_Desc.mipNum = textureDesc.mipNum;
-    m_Desc.arraySize = textureDesc.arraySize;
+    m_Desc.layerNum = textureDesc.layerNum;
     m_Desc.sampleNum = textureDesc.sampleNum;
 
     m_OwnsNativeObjects = false;

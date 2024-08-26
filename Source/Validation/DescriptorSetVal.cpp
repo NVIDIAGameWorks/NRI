@@ -18,9 +18,7 @@ void DescriptorSetVal::UpdateDescriptorRanges(uint32_t rangeOffset, uint32_t ran
         return;
 
     RETURN_ON_FAILURE(&m_Device, rangeUpdateDescs != nullptr, ReturnVoid(), "UpdateDescriptorRanges: 'rangeUpdateDescs' is NULL");
-
-    RETURN_ON_FAILURE(&m_Device, rangeOffset < GetDesc().rangeNum, ReturnVoid(), "UpdateDescriptorRanges: 'rangeOffset' is out of bounds. (rangeOffset=%u, rangeNum=%u)",
-        rangeOffset, GetDesc().rangeNum);
+    RETURN_ON_FAILURE(&m_Device, rangeOffset < GetDesc().rangeNum, ReturnVoid(), "UpdateDescriptorRanges: 'rangeOffset' is out of bounds. (rangeOffset=%u, rangeNum=%u)", rangeOffset, GetDesc().rangeNum);
 
     RETURN_ON_FAILURE(&m_Device, rangeOffset + rangeNum <= GetDesc().rangeNum, ReturnVoid(),
         "UpdateDescriptorRanges: 'rangeOffset' + 'rangeNum' is greater than the number of ranges. (rangeOffset=%u, rangeNum=%u, rangeNum=%u)", rangeOffset, rangeNum,

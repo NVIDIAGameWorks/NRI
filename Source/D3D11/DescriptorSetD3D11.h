@@ -13,7 +13,8 @@ struct OffsetNum {
 };
 
 struct DescriptorSetD3D11 {
-    inline DescriptorSetD3D11(DeviceD3D11& device) : m_Ranges(device.GetStdAllocator()) {
+    inline DescriptorSetD3D11(DeviceD3D11& device)
+        : m_Ranges(device.GetStdAllocator()) {
     }
 
     inline const DescriptorD3D11* GetDescriptor(uint32_t i) const {

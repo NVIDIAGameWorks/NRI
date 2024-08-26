@@ -24,8 +24,11 @@ struct RuntimeBindingInfo {
 };
 
 struct PipelineLayoutVK {
-    inline PipelineLayoutVK(DeviceVK& device) :
-        m_Device(device), m_RuntimeBindingInfo(device.GetStdAllocator()), m_DescriptorSetLayouts(device.GetStdAllocator()), m_DescriptorSetSpaces(device.GetStdAllocator()) {
+    inline PipelineLayoutVK(DeviceVK& device)
+        : m_Device(device)
+        , m_RuntimeBindingInfo(device.GetStdAllocator())
+        , m_DescriptorSetLayouts(device.GetStdAllocator())
+        , m_DescriptorSetSpaces(device.GetStdAllocator()) {
     }
 
     inline operator VkPipelineLayout() const {

@@ -247,7 +247,7 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
             Dim_t w = desc.texture->GetSize(0, desc.mipOffset);
             Dim_t h = desc.texture->GetSize(1, desc.mipOffset);
 
-            m_RenderLayerNum = std::min(m_RenderLayerNum, desc.arraySize);
+            m_RenderLayerNum = std::min(m_RenderLayerNum, desc.layerNum);
             m_RenderWidth = std::min(m_RenderWidth, w);
             m_RenderHeight = std::min(m_RenderHeight, h);
         }
@@ -271,7 +271,7 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
         Dim_t w = desc.texture->GetSize(0, desc.mipOffset);
         Dim_t h = desc.texture->GetSize(1, desc.mipOffset);
 
-        m_RenderLayerNum = std::min(m_RenderLayerNum, desc.arraySize);
+        m_RenderLayerNum = std::min(m_RenderLayerNum, desc.layerNum);
         m_RenderWidth = std::min(m_RenderWidth, w);
         m_RenderHeight = std::min(m_RenderHeight, h);
 
@@ -417,7 +417,7 @@ inline void CommandBufferVK::CopyTexture(Texture& dstTexture, const TextureRegio
     VkImageCopy region;
 
     if (srcRegionDesc != nullptr) {
-        region.srcSubresource = {srcTextureImpl.GetImageAspectFlags(), srcRegionDesc->mipOffset, srcRegionDesc->arrayOffset, 1};
+        region.srcSubresource = {srcTextureImpl.GetImageAspectFlags(), srcRegionDesc->mipOffset, srcRegionDesc->layerOffset, 1};
 
         region.srcOffset = {(int32_t)srcRegionDesc->x, (int32_t)srcRegionDesc->y, (int32_t)srcRegionDesc->z};
 
@@ -434,7 +434,7 @@ inline void CommandBufferVK::CopyTexture(Texture& dstTexture, const TextureRegio
     }
 
     if (dstRegionDesc != nullptr) {
-        region.dstSubresource = {dstTextureImpl.GetImageAspectFlags(), dstRegionDesc->mipOffset, dstRegionDesc->arrayOffset, 1};
+        region.dstSubresource = {dstTextureImpl.GetImageAspectFlags(), dstRegionDesc->mipOffset, dstRegionDesc->layerOffset, 1};
 
         region.dstOffset = {(int32_t)dstRegionDesc->x, (int32_t)dstRegionDesc->y, (int32_t)dstRegionDesc->z};
     } else {
@@ -463,7 +463,7 @@ inline void CommandBufferVK::UploadBufferToTexture(
         srcDataLayoutDesc.offset,
         bufferRowLength,
         bufferImageHeight,
-        VkImageSubresourceLayers{dstTextureImpl.GetImageAspectFlags(), dstRegionDesc.mipOffset, dstRegionDesc.arrayOffset, 1},
+        VkImageSubresourceLayers{dstTextureImpl.GetImageAspectFlags(), dstRegionDesc.mipOffset, dstRegionDesc.layerOffset, 1},
         VkOffset3D{dstRegionDesc.x, dstRegionDesc.y, dstRegionDesc.z},
         VkExtent3D{
             (dstRegionDesc.width == WHOLE_SIZE) ? dstTextureImpl.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.width,
@@ -492,7 +492,7 @@ inline void CommandBufferVK::ReadbackTextureToBuffer(
         dstDataLayoutDesc.offset,
         bufferRowLength,
         bufferImageHeight,
-        VkImageSubresourceLayers{srcTextureImpl.GetImageAspectFlags(), srcRegionDesc.mipOffset, srcRegionDesc.arrayOffset, 1},
+        VkImageSubresourceLayers{srcTextureImpl.GetImageAspectFlags(), srcRegionDesc.mipOffset, srcRegionDesc.layerOffset, 1},
         VkOffset3D{srcRegionDesc.x, srcRegionDesc.y, srcRegionDesc.z},
         VkExtent3D{
             (srcRegionDesc.width == WHOLE_SIZE) ? srcTextureImpl.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width,
@@ -619,9 +619,9 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
         out.subresourceRange = {
             textureImpl.GetImageAspectFlags(),
             in.mipOffset,
-            (in.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : in.mipNum,
-            in.arrayOffset,
-            (in.arraySize == REMAINING_ARRAY_LAYERS) ? VK_REMAINING_ARRAY_LAYERS : in.arraySize,
+            (in.mipNum == REMAINING_MIPS) ? VK_REMAINING_MIP_LEVELS : in.mipNum,
+            in.layerOffset,
+            (in.layerNum == REMAINING_LAYERS) ? VK_REMAINING_ARRAY_LAYERS : in.layerNum,
         };
     }
 
@@ -697,8 +697,8 @@ inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, const
 
     VkImageCopy* regions = StackAlloc(VkImageCopy, dstTextureDesc.mipNum);
     for (Mip_t i = 0; i < dstTextureDesc.mipNum; i++) {
-        regions[i].srcSubresource = {srcTexture.GetImageAspectFlags(), i, 0, srcTextureDesc.arraySize};
-        regions[i].dstSubresource = {dstTexture.GetImageAspectFlags(), i, 0, dstTextureDesc.arraySize};
+        regions[i].srcSubresource = {srcTexture.GetImageAspectFlags(), i, 0, srcTextureDesc.layerNum};
+        regions[i].dstSubresource = {dstTexture.GetImageAspectFlags(), i, 0, dstTextureDesc.layerNum};
         regions[i].dstOffset = {};
         regions[i].srcOffset = {};
         regions[i].extent = dstTexture.GetExtent();

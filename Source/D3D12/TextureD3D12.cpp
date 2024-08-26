@@ -14,7 +14,7 @@ void nri::GetResourceDesc(D3D12_RESOURCE_DESC* desc, const TextureDesc& textureD
     desc->Alignment = textureDesc.sampleNum > 1 ? 0 : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
     desc->Width = Align(textureDesc.width, blockWidth);
     desc->Height = Align(textureDesc.height, blockWidth);
-    desc->DepthOrArraySize = textureDesc.type == TextureType::TEXTURE_3D ? textureDesc.depth : textureDesc.arraySize;
+    desc->DepthOrArraySize = textureDesc.type == TextureType::TEXTURE_3D ? textureDesc.depth : textureDesc.layerNum;
     desc->MipLevels = textureDesc.mipNum;
     desc->Format = GetDxgiFormat(textureDesc.format).typeless;
     desc->SampleDesc.Count = textureDesc.sampleNum;
@@ -79,8 +79,7 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
         bool isRenderableSurface = desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
         if (memory->IsDummy()) {
-            HRESULT hr =
-                m_Device->CreateCommittedResource(&heapDesc.Properties, heapFlagsFixed, &desc, initialState, isRenderableSurface ? &clearValue : nullptr, IID_PPV_ARGS(&m_Texture));
+            HRESULT hr = m_Device->CreateCommittedResource(&heapDesc.Properties, heapFlagsFixed, &desc, initialState, isRenderableSurface ? &clearValue : nullptr, IID_PPV_ARGS(&m_Texture));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device::CreateCommittedResource()");
         } else {
             HRESULT hr = m_Device->CreatePlacedResource(*memory, offset, &desc, initialState, isRenderableSurface ? &clearValue : nullptr, IID_PPV_ARGS(&m_Texture));

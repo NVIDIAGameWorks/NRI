@@ -7,8 +7,10 @@
 
 using namespace nri;
 
-QueryPoolVal::QueryPoolVal(DeviceVal& device, QueryPool* queryPool, QueryType queryType, uint32_t queryNum) :
-    DeviceObjectVal(device, queryPool), m_DeviceState(device.GetStdAllocator()), m_QueryType(queryType) {
+QueryPoolVal::QueryPoolVal(DeviceVal& device, QueryPool* queryPool, QueryType queryType, uint32_t queryNum)
+    : DeviceObjectVal(device, queryPool)
+    , m_DeviceState(device.GetStdAllocator())
+    , m_QueryType(queryType) {
     m_QueryNum = queryNum;
 
     if (queryNum != 0) {

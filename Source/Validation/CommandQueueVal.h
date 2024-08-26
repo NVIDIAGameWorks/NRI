@@ -7,7 +7,8 @@ namespace nri {
 struct CommandBufferVal;
 
 struct CommandQueueVal : public DeviceObjectVal<CommandQueue> {
-    inline CommandQueueVal(DeviceVal& device, CommandQueue* commandQueue) : DeviceObjectVal(device, commandQueue) {
+    inline CommandQueueVal(DeviceVal& device, CommandQueue* commandQueue)
+        : DeviceObjectVal(device, commandQueue) {
     }
 
     //================================================================================================================

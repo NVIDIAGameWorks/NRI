@@ -8,7 +8,7 @@ USAGE:
 
 Textures, buffers, samplers and acceleration structures:
     NRI_RESOURCE(Texture2D<float4>, gInput, t, 0, 2);
-    NRI_RESOURCE(RWTexture2D<float>, gOutputs, u, 0, 0);
+    NRI_RESOURCE(RWTexture2D<float>, gOutput, u, 0, 0);
     NRI_RESOURCE(StructuredBuffer<InstanceData>, gInstanceData, t, 2, 2);
     NRI_RESOURCE(RaytracingAccelerationStructure, gTlas, t, 1, 2);
     NRI_RESOURCE(SamplerState, gLinearMipmapLinearSampler, s, 0, 0);

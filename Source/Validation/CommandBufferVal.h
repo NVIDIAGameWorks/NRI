@@ -5,8 +5,11 @@
 namespace nri {
 
 struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
-    CommandBufferVal(DeviceVal& device, CommandBuffer* commandBuffer, bool isWrapped) :
-        DeviceObjectVal(device, commandBuffer), m_ValidationCommands(device.GetStdAllocator()), m_IsRecordingStarted(isWrapped), m_IsWrapped(isWrapped) {
+    CommandBufferVal(DeviceVal& device, CommandBuffer* commandBuffer, bool isWrapped)
+        : DeviceObjectVal(device, commandBuffer)
+        , m_ValidationCommands(device.GetStdAllocator())
+        , m_IsRecordingStarted(isWrapped)
+        , m_IsWrapped(isWrapped) {
     }
 
     inline const Vector<uint8_t>& GetValidationCommands() const {

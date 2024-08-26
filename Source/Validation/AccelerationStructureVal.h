@@ -7,8 +7,10 @@ namespace nri {
 struct MemoryVal;
 
 struct AccelerationStructureVal final : public DeviceObjectVal<AccelerationStructure> {
-    AccelerationStructureVal(DeviceVal& device, AccelerationStructure* accelerationStructure, bool isBoundToMemory, const MemoryDesc& memoryDesc) :
-        DeviceObjectVal(device, accelerationStructure), m_IsBoundToMemory(isBoundToMemory), m_MemoryDesc(memoryDesc) {
+    AccelerationStructureVal(DeviceVal& device, AccelerationStructure* accelerationStructure, bool isBoundToMemory, const MemoryDesc& memoryDesc)
+        : DeviceObjectVal(device, accelerationStructure)
+        , m_IsBoundToMemory(isBoundToMemory)
+        , m_MemoryDesc(memoryDesc) {
     }
 
     ~AccelerationStructureVal();

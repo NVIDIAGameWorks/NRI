@@ -8,8 +8,7 @@
 using namespace nri;
 
 static inline bool IsConstantColorReferenced(BlendFactor factor) {
-    return factor == BlendFactor::CONSTANT_COLOR || factor == BlendFactor::CONSTANT_ALPHA || factor == BlendFactor::ONE_MINUS_CONSTANT_COLOR ||
-           factor == BlendFactor::ONE_MINUS_CONSTANT_ALPHA;
+    return factor == BlendFactor::CONSTANT_COLOR || factor == BlendFactor::CONSTANT_ALPHA || factor == BlendFactor::ONE_MINUS_CONSTANT_COLOR || factor == BlendFactor::ONE_MINUS_CONSTANT_ALPHA;
 }
 
 PipelineVK::~PipelineVK() {
@@ -178,8 +177,7 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
             GetColorComponent(attachmentDesc.colorWriteMask),
         };
 
-        if (IsConstantColorReferenced(attachmentDesc.colorBlend.srcFactor) || IsConstantColorReferenced(attachmentDesc.colorBlend.dstFactor) ||
-            IsConstantColorReferenced(attachmentDesc.alphaBlend.srcFactor) || IsConstantColorReferenced(attachmentDesc.alphaBlend.dstFactor))
+        if (IsConstantColorReferenced(attachmentDesc.colorBlend.srcFactor) || IsConstantColorReferenced(attachmentDesc.colorBlend.dstFactor) || IsConstantColorReferenced(attachmentDesc.alphaBlend.srcFactor) || IsConstantColorReferenced(attachmentDesc.alphaBlend.dstFactor))
             isConstantColorReferenced = true;
     }
 
@@ -308,52 +306,52 @@ Result PipelineVK::Create(const RayTracingPipelineDesc& rayTracingPipelineDesc) 
 
     VkRayTracingShaderGroupCreateInfoKHR* groupArray = StackAlloc(VkRayTracingShaderGroupCreateInfoKHR, rayTracingPipelineDesc.shaderGroupDescNum);
     for (uint32_t i = 0; i < rayTracingPipelineDesc.shaderGroupDescNum; i++) {
-        VkRayTracingShaderGroupCreateInfoKHR& dstGroup = groupArray[i];
         const ShaderGroupDesc& srcGroup = rayTracingPipelineDesc.shaderGroupDescs[i];
 
+        VkRayTracingShaderGroupCreateInfoKHR& dstGroup = groupArray[i];
         dstGroup = {VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR};
-        dstGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
         dstGroup.generalShader = VK_SHADER_UNUSED_KHR;
         dstGroup.closestHitShader = VK_SHADER_UNUSED_KHR;
         dstGroup.anyHitShader = VK_SHADER_UNUSED_KHR;
         dstGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
 
         for (uint32_t j = 0; j < GetCountOf(srcGroup.shaderIndices); j++) {
-            if (srcGroup.shaderIndices[j] == 0)
-                continue;
+            if (srcGroup.shaderIndices[j]) {
+                const uint32_t index = srcGroup.shaderIndices[j] - 1;
+                const VkPipelineShaderStageCreateInfo& stageInfo = stages[index];
 
-            const uint32_t index = srcGroup.shaderIndices[j] - 1;
-            const VkPipelineShaderStageCreateInfo& stageInfo = stages[index];
+                switch (stageInfo.stage) {
+                    case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
+                    case VK_SHADER_STAGE_MISS_BIT_KHR:
+                    case VK_SHADER_STAGE_CALLABLE_BIT_KHR:
+                        dstGroup.generalShader = index;
+                        break;
 
-            switch (stageInfo.stage) {
-                case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
-                case VK_SHADER_STAGE_MISS_BIT_KHR:
-                case VK_SHADER_STAGE_CALLABLE_BIT_KHR:
-                    dstGroup.generalShader = index;
-                    break;
+                    case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
+                        dstGroup.anyHitShader = index;
+                        break;
 
-                case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
-                    if (dstGroup.type != VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR)
-                        dstGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
-                    dstGroup.anyHitShader = index;
-                    break;
+                    case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
+                        dstGroup.closestHitShader = index;
+                        break;
 
-                case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
-                    if (dstGroup.type != VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR)
-                        dstGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
-                    dstGroup.closestHitShader = index;
-                    break;
+                    case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
+                        dstGroup.intersectionShader = index;
+                        break;
 
-                case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
-                    dstGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR;
-                    dstGroup.intersectionShader = index;
-                    break;
-
-                default:
-                    // already initialized
-                    break;
+                    default:
+                        // already initialized
+                        break;
+                }
             }
         }
+
+        if (dstGroup.intersectionShader != VK_SHADER_UNUSED_KHR)
+            dstGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR;
+        else if (dstGroup.generalShader != VK_SHADER_UNUSED_KHR)
+            dstGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+        else
+            dstGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
     }
 
     VkRayTracingPipelineCreateInfoKHR createInfo = {VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR};

@@ -72,7 +72,7 @@ NRI_STRUCT(TextureVKDesc)
     NRI_NAME(Dim_t) height;
     NRI_NAME(Dim_t) depth;
     NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) arraySize;
+    NRI_NAME(Dim_t) layerNum;
     NRI_NAME(Sample_t) sampleNum;
 };
 

@@ -11,7 +11,8 @@ struct DeviceD3D12;
 constexpr uint16_t ROOT_PARAMETER_UNUSED = uint16_t(-1);
 
 struct DescriptorSetRootMapping {
-    inline DescriptorSetRootMapping(StdAllocator<uint8_t>& allocator) : rootOffsets(allocator) {
+    inline DescriptorSetRootMapping(StdAllocator<uint8_t>& allocator)
+        : rootOffsets(allocator) {
     }
 
     Vector<uint16_t> rootOffsets;

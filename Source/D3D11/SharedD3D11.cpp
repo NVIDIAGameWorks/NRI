@@ -151,7 +151,7 @@ bool nri::GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& 
         textureDesc.height = 1;
         textureDesc.depth = 1;
         textureDesc.mipNum = (Mip_t)desc.MipLevels;
-        textureDesc.arraySize = (Dim_t)desc.ArraySize;
+        textureDesc.layerNum = (Dim_t)desc.ArraySize;
         textureDesc.sampleNum = 1;
         textureDesc.type = TextureType::TEXTURE_1D;
         textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
@@ -166,7 +166,7 @@ bool nri::GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& 
         textureDesc.height = (Dim_t)desc.Height;
         textureDesc.depth = 1;
         textureDesc.mipNum = (Mip_t)desc.MipLevels;
-        textureDesc.arraySize = (Dim_t)desc.ArraySize;
+        textureDesc.layerNum = (Dim_t)desc.ArraySize;
         textureDesc.sampleNum = (Sample_t)desc.SampleDesc.Count;
         textureDesc.type = TextureType::TEXTURE_2D;
         textureDesc.format = DXGIFormatToNRIFormat(desc.Format);
@@ -181,7 +181,7 @@ bool nri::GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& 
         textureDesc.height = (Dim_t)desc.Height;
         textureDesc.depth = (Dim_t)desc.Depth;
         textureDesc.mipNum = (Mip_t)desc.MipLevels;
-        textureDesc.arraySize = 1;
+        textureDesc.layerNum = 1;
         textureDesc.sampleNum = 1;
         textureDesc.type = TextureType::TEXTURE_3D;
         textureDesc.format = DXGIFormatToNRIFormat(desc.Format);

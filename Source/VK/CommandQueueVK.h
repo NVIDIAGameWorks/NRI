@@ -7,7 +7,8 @@ namespace nri {
 struct DeviceVK;
 
 struct CommandQueueVK {
-    inline CommandQueueVK(DeviceVK& device) : m_Device(device) {
+    inline CommandQueueVK(DeviceVK& device)
+        : m_Device(device) {
     }
 
     inline operator VkQueue() const {

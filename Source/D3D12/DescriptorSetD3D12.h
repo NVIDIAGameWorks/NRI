@@ -14,7 +14,8 @@ struct DescriptorRangeMapping {
 };
 
 struct DescriptorSetMapping {
-    inline DescriptorSetMapping(StdAllocator<uint8_t>& allocator) : descriptorRangeMappings(allocator) {
+    inline DescriptorSetMapping(StdAllocator<uint8_t>& allocator)
+        : descriptorRangeMappings(allocator) {
     }
 
     std::array<uint32_t, DescriptorHeapType::MAX_NUM> descriptorNum = {};

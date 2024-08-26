@@ -35,7 +35,10 @@ uint8_t QueryLatestDeviceContext(ComPtr<ID3D11DeviceContextBest>& in, ComPtr<ID3
     return n - i - 1;
 }
 
-CommandBufferD3D11::CommandBufferD3D11(DeviceD3D11& device) : m_Device(device), m_DeferredContext(device.GetImmediateContext()), m_Version(device.GetImmediateContextVersion()) {
+CommandBufferD3D11::CommandBufferD3D11(DeviceD3D11& device)
+    : m_Device(device)
+    , m_DeferredContext(device.GetImmediateContext())
+    , m_Version(device.GetImmediateContextVersion()) {
     m_DeferredContext->QueryInterface(IID_PPV_ARGS(&m_Annotation));
 }
 
@@ -429,7 +432,7 @@ void CommandBufferD3D11::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataL
 
     TextureRegionDesc dstRegionDesc = {};
     dstRegionDesc.mipOffset = srcRegionDesc.mipOffset;
-    dstRegionDesc.arrayOffset = srcRegionDesc.arrayOffset;
+    dstRegionDesc.layerOffset = srcRegionDesc.layerOffset;
     dstRegionDesc.width = srcRegionDesc.width == WHOLE_SIZE ? src.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width;
     dstRegionDesc.height = srcRegionDesc.height == WHOLE_SIZE ? src.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.height;
     dstRegionDesc.depth = srcRegionDesc.depth == WHOLE_SIZE ? src.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.depth;

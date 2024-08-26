@@ -8,7 +8,9 @@ struct PipelineD3D11;
 typedef Vector<uint32_t> PushBuffer;
 
 struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
-    inline CommandBufferEmuD3D11(DeviceD3D11& device) : m_Device(device), m_PushBuffer(device.GetStdAllocator()) {
+    inline CommandBufferEmuD3D11(DeviceD3D11& device)
+        : m_Device(device)
+        , m_PushBuffer(device.GetStdAllocator()) {
     }
 
     inline ~CommandBufferEmuD3D11() {

@@ -118,8 +118,7 @@ void CommandBufferVal::SetStencilReference(uint8_t frontRef, uint8_t backRef) {
 
 void CommandBufferVal::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdSetSamplePositions: the command buffer must be in the recording state");
-    RETURN_ON_FAILURE(
-        &m_Device, m_Device.GetDesc().programmableSampleLocationsTier != 0, ReturnVoid(), "CmdSetSamplePositions: DeviceDesc::isProgrammableSampleLocationsSupported = false");
+    RETURN_ON_FAILURE(&m_Device, m_Device.GetDesc().programmableSampleLocationsTier != 0, ReturnVoid(), "CmdSetSamplePositions: DeviceDesc::isProgrammableSampleLocationsSupported = false");
 
     GetCoreInterface().CmdSetSamplePositions(*GetImpl(), positions, positionNum, sampleNum);
 }
@@ -473,11 +472,8 @@ void CommandBufferVal::BuildTopLevelAccelerationStructure(
     BufferVal& bufferVal = (BufferVal&)buffer;
     BufferVal& scratchVal = (BufferVal&)scratch;
 
-    RETURN_ON_FAILURE(
-        &m_Device, bufferOffset < bufferVal.GetDesc().size, ReturnVoid(), "CmdBuildTopLevelAccelerationStructure: 'bufferOffset = %llu' is out of bounds", bufferOffset);
-
-    RETURN_ON_FAILURE(
-        &m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdBuildTopLevelAccelerationStructure: 'scratchOffset = %llu' is out of bounds", scratchOffset);
+    RETURN_ON_FAILURE(&m_Device, bufferOffset < bufferVal.GetDesc().size, ReturnVoid(), "CmdBuildTopLevelAccelerationStructure: 'bufferOffset = %llu' is out of bounds", bufferOffset);
+    RETURN_ON_FAILURE(&m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdBuildTopLevelAccelerationStructure: 'scratchOffset = %llu' is out of bounds", scratchOffset);
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL(AccelerationStructure, &dst);
     Buffer& scratchImpl = *NRI_GET_IMPL(Buffer, &scratch);
@@ -493,8 +489,7 @@ void CommandBufferVal::BuildBottomLevelAccelerationStructure(
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "CmdBuildBottomLevelAccelerationStructure: the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "CmdBuildBottomLevelAccelerationStructure: must be called outside of 'CmdBeginRendering/CmdEndRendering'");
     RETURN_ON_FAILURE(&m_Device, geometryObjects != nullptr, ReturnVoid(), "CmdBuildBottomLevelAccelerationStructure: 'geometryObjects' is NULL");
-    RETURN_ON_FAILURE(
-        &m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdBuildBottomLevelAccelerationStructure: 'scratchOffset = %llu' is out of bounds", scratchOffset);
+    RETURN_ON_FAILURE(&m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdBuildBottomLevelAccelerationStructure: 'scratchOffset = %llu' is out of bounds", scratchOffset);
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL(AccelerationStructure, &dst);
     Buffer& scratchImpl = *NRI_GET_IMPL(Buffer, &scratch);
@@ -513,11 +508,8 @@ void CommandBufferVal::UpdateTopLevelAccelerationStructure(uint32_t instanceNum,
     BufferVal& bufferVal = (BufferVal&)buffer;
     BufferVal& scratchVal = (BufferVal&)scratch;
 
-    RETURN_ON_FAILURE(
-        &m_Device, bufferOffset < bufferVal.GetDesc().size, ReturnVoid(), "CmdUpdateTopLevelAccelerationStructure: 'bufferOffset = %llu' is out of bounds", bufferOffset);
-
-    RETURN_ON_FAILURE(
-        &m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdUpdateTopLevelAccelerationStructure: 'scratchOffset = %llu' is out of bounds", scratchOffset);
+    RETURN_ON_FAILURE(&m_Device, bufferOffset < bufferVal.GetDesc().size, ReturnVoid(), "CmdUpdateTopLevelAccelerationStructure: 'bufferOffset = %llu' is out of bounds", bufferOffset);
+    RETURN_ON_FAILURE(&m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdUpdateTopLevelAccelerationStructure: 'scratchOffset = %llu' is out of bounds", scratchOffset);
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL(AccelerationStructure, &dst);
     AccelerationStructure& srcImpl = *NRI_GET_IMPL(AccelerationStructure, &src);
@@ -535,8 +527,7 @@ void CommandBufferVal::UpdateBottomLevelAccelerationStructure(uint32_t geometryO
 
     BufferVal& scratchVal = (BufferVal&)scratch;
 
-    RETURN_ON_FAILURE(
-        &m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdUpdateBottomLevelAccelerationStructure: 'scratchOffset = %llu' is out of bounds", scratchOffset);
+    RETURN_ON_FAILURE(&m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "CmdUpdateBottomLevelAccelerationStructure: 'scratchOffset = %llu' is out of bounds", scratchOffset);
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL(AccelerationStructure, &dst);
     AccelerationStructure& srcImpl = *NRI_GET_IMPL(AccelerationStructure, &src);

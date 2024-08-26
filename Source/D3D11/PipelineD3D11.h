@@ -16,7 +16,10 @@ struct RasterizerState {
 };
 
 struct PipelineD3D11 {
-    inline PipelineD3D11(DeviceD3D11& device) : m_Device(device), m_InputAssemplyStrides(device.GetStdAllocator()), m_RasterizerStates(device.GetStdAllocator()) {
+    inline PipelineD3D11(DeviceD3D11& device)
+        : m_Device(device)
+        , m_InputAssemplyStrides(device.GetStdAllocator())
+        , m_RasterizerStates(device.GetStdAllocator()) {
     }
 
     inline ~PipelineD3D11() {

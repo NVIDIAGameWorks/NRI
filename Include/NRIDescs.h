@@ -29,8 +29,8 @@ typedef uint8_t NRI_NAME(Mip_t);
 typedef uint8_t NRI_NAME(Sample_t);
 
 // Aliases
-static const NRI_NAME(Dim_t) NRI_CONST_NAME(REMAINING_ARRAY_LAYERS) = 0; // only for "arraySize"
-static const NRI_NAME(Mip_t) NRI_CONST_NAME(REMAINING_MIP_LEVELS) = 0; // only for "mipNum"
+static const NRI_NAME(Dim_t) NRI_CONST_NAME(REMAINING_LAYERS) = 0; // only for "layerNum"
+static const NRI_NAME(Mip_t) NRI_CONST_NAME(REMAINING_MIPS) = 0; // only for "mipNum"
 static const NRI_NAME(Dim_t) NRI_CONST_NAME(WHOLE_SIZE) = 0; // only for "Dim_t" and "size"
 static const uint32_t NRI_CONST_NAME(ALL_SAMPLES) = 0; // only for "sampleMask"
 static const uint32_t NRI_CONST_NAME(ONE_VIEWPORT) = 0; // only for "viewportNum"
@@ -468,7 +468,7 @@ NRI_STRUCT(TextureDesc)
     NRI_NAME(Dim_t) height;
     NRI_NAME(Dim_t) depth;
     NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) arraySize;
+    NRI_NAME(Dim_t) layerNum;
     NRI_NAME(Sample_t) sampleNum;
 };
 
@@ -487,8 +487,8 @@ NRI_STRUCT(Texture1DViewDesc)
     NRI_NAME(Format) format;
     NRI_NAME(Mip_t) mipOffset;
     NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) arrayOffset;
-    NRI_NAME(Dim_t) arraySize;
+    NRI_NAME(Dim_t) layerOffset;
+    NRI_NAME(Dim_t) layerNum;
     NRI_NAME(ResourceViewBits) flags;
 };
 
@@ -499,8 +499,8 @@ NRI_STRUCT(Texture2DViewDesc)
     NRI_NAME(Format) format;
     NRI_NAME(Mip_t) mipOffset;
     NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) arrayOffset;
-    NRI_NAME(Dim_t) arraySize;
+    NRI_NAME(Dim_t) layerOffset;
+    NRI_NAME(Dim_t) layerNum;
     NRI_NAME(ResourceViewBits) flags;
 };
 
@@ -961,7 +961,7 @@ NRI_STRUCT(OutputMergerDesc)
 
 NRI_STRUCT(AttachmentsDesc)
 {
-    const NRI_NAME(Descriptor)* depthStencil;
+    NRI_OPTIONAL const NRI_NAME(Descriptor)* depthStencil;
     const NRI_NAME(Descriptor)* const* colors;
     uint32_t colorNum;
 };
@@ -1057,7 +1057,7 @@ NRI_STRUCT(ShaderDesc)
     NRI_NAME(StageBits) stage;
     const void* bytecode;
     uint64_t size;
-    const char* entryPointName;
+    NRI_OPTIONAL const char* entryPointName;
 };
 
 NRI_STRUCT(GraphicsPipelineDesc)
@@ -1156,8 +1156,8 @@ NRI_STRUCT(TextureBarrierDesc)
     NRI_NAME(AccessLayoutStage) after;
     NRI_NAME(Mip_t) mipOffset;
     NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) arrayOffset;
-    NRI_NAME(Dim_t) arraySize;
+    NRI_NAME(Dim_t) layerOffset;
+    NRI_NAME(Dim_t) layerNum;
 };
 
 NRI_STRUCT(BarrierGroupDesc)
@@ -1187,7 +1187,7 @@ NRI_STRUCT(TextureRegionDesc)
     NRI_NAME(Dim_t) height;
     NRI_NAME(Dim_t) depth;
     NRI_NAME(Mip_t) mipOffset;
-    NRI_NAME(Dim_t) arrayOffset;
+    NRI_NAME(Dim_t) layerOffset;
 };
 
 NRI_STRUCT(TextureDataLayoutDesc)
@@ -1458,7 +1458,7 @@ NRI_STRUCT(DeviceDesc)
     NRI_NAME(Dim_t) texture1DMaxDim;
     NRI_NAME(Dim_t) texture2DMaxDim;
     NRI_NAME(Dim_t) texture3DMaxDim;
-    NRI_NAME(Dim_t) textureArrayMaxDim;
+    NRI_NAME(Dim_t) textureArrayMaxLayerNum;
     uint32_t texelBufferMaxDim;
 
     // Memory

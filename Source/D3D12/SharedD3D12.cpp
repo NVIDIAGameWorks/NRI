@@ -374,7 +374,7 @@ bool nri::GetTextureDesc(const TextureD3D12Desc& textureD3D12Desc, TextureDesc& 
     textureDesc.height = (Dim_t)desc.Height;
     textureDesc.depth = textureDesc.type == TextureType::TEXTURE_3D ? (Dim_t)desc.DepthOrArraySize : 1;
     textureDesc.mipNum = (Mip_t)desc.MipLevels;
-    textureDesc.arraySize = textureDesc.type == TextureType::TEXTURE_3D ? 1 : (Dim_t)desc.DepthOrArraySize;
+    textureDesc.layerNum = textureDesc.type == TextureType::TEXTURE_3D ? 1 : (Dim_t)desc.DepthOrArraySize;
     textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
 
     if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
@@ -404,8 +404,7 @@ bool nri::GetBufferDesc(const BufferD3D12Desc& bufferD3D12Desc, BufferDesc& buff
     bufferDesc.structureStride = bufferD3D12Desc.structureStride;
 
     // There are almost no restrictions on usages in D3D12
-    bufferDesc.usageMask = BufferUsageBits::VERTEX_BUFFER | BufferUsageBits::INDEX_BUFFER | BufferUsageBits::CONSTANT_BUFFER | BufferUsageBits::ARGUMENT_BUFFER |
-                           BufferUsageBits::RAY_TRACING_BUFFER | BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_READ;
+    bufferDesc.usageMask = BufferUsageBits::VERTEX_BUFFER | BufferUsageBits::INDEX_BUFFER | BufferUsageBits::CONSTANT_BUFFER | BufferUsageBits::ARGUMENT_BUFFER | BufferUsageBits::RAY_TRACING_BUFFER | BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_READ;
 
     if (!(desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
         bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE;
@@ -473,7 +472,7 @@ void nri::ConvertGeometryDescs(D3D12_RAYTRACING_GEOMETRY_DESC* geometryDescs, co
         geometryDescs[i].Flags = GetGeometryFlags(geometryObjects[i].flags);
 
         if (geometryDescs[i].Type == D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES) {
-            const Triangles& triangles = geometryObjects[i].triangles;
+            const Triangles& triangles = geometryObjects[i].geometry.triangles;
             geometryDescs[i].Triangles.Transform3x4 = triangles.transformBuffer ? ((BufferD3D12*)triangles.transformBuffer)->GetPointerGPU() + triangles.transformOffset : 0;
             geometryDescs[i].Triangles.IndexFormat = triangles.indexType == IndexType::UINT16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
             geometryDescs[i].Triangles.VertexFormat = GetDxgiFormat(triangles.vertexFormat).typed;
@@ -483,7 +482,7 @@ void nri::ConvertGeometryDescs(D3D12_RAYTRACING_GEOMETRY_DESC* geometryDescs, co
             geometryDescs[i].Triangles.VertexBuffer.StartAddress = ((BufferD3D12*)triangles.vertexBuffer)->GetPointerGPU() + triangles.vertexOffset;
             geometryDescs[i].Triangles.VertexBuffer.StrideInBytes = triangles.vertexStride;
         } else if (geometryDescs[i].Type == D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS) {
-            const AABBs& aabbs = geometryObjects[i].boxes;
+            const AABBs& aabbs = geometryObjects[i].geometry.aabbs;
             geometryDescs[i].AABBs.AABBCount = aabbs.boxNum;
             geometryDescs[i].AABBs.AABBs.StartAddress = ((BufferD3D12*)aabbs.buffer)->GetPointerGPU() + aabbs.offset;
             geometryDescs[i].AABBs.AABBs.StrideInBytes = aabbs.stride;

@@ -25,8 +25,8 @@ Non-goals:
 #include <stddef.h>
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 141
-#define NRI_VERSION_DATE "23 August 2024"
+#define NRI_VERSION_MINOR 142
+#define NRI_VERSION_DATE "26 August 2024"
 
 #ifdef _WIN32
     #define NRI_CALL __fastcall

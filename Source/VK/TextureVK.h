@@ -7,7 +7,8 @@ namespace nri {
 struct DeviceVK;
 
 struct TextureVK {
-    inline TextureVK(DeviceVK& device) : m_Device(device) {
+    inline TextureVK(DeviceVK& device)
+        : m_Device(device) {
     }
 
     inline VkImage GetHandle() const {

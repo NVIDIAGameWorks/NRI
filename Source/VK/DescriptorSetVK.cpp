@@ -8,7 +8,10 @@
 using namespace nri;
 
 struct SlabAllocator {
-    inline SlabAllocator(void* memory, size_t size) : m_CurrentOffset((uint8_t*)memory), m_End((size_t)memory + size), m_Memory((uint8_t*)memory) {
+    inline SlabAllocator(void* memory, size_t size)
+        : m_CurrentOffset((uint8_t*)memory)
+        , m_End((size_t)memory + size)
+        , m_Memory((uint8_t*)memory) {
     }
 
     template <typename T>

@@ -11,7 +11,8 @@ namespace nri {
 struct DeviceD3D12;
 
 struct CommandQueueD3D12 {
-    inline CommandQueueD3D12(DeviceD3D12& device) : m_Device(device) {
+    inline CommandQueueD3D12(DeviceD3D12& device)
+        : m_Device(device) {
     }
 
     inline ~CommandQueueD3D12() {

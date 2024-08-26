@@ -9,7 +9,10 @@ namespace nri {
 struct DeviceD3D11;
 
 struct DescriptorPoolD3D11 {
-    inline DescriptorPoolD3D11(DeviceD3D11& device) : m_DescriptorSets(device.GetStdAllocator()), m_DescriptorPool(device.GetStdAllocator()), m_Device(device) {
+    inline DescriptorPoolD3D11(DeviceD3D11& device)
+        : m_DescriptorSets(device.GetStdAllocator())
+        , m_DescriptorPool(device.GetStdAllocator())
+        , m_Device(device) {
     }
 
     inline ~DescriptorPoolD3D11() {

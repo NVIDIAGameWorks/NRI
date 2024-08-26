@@ -7,8 +7,10 @@ namespace nri {
 struct TextureVal;
 
 struct SwapChainVal : public DeviceObjectVal<SwapChain> {
-    SwapChainVal(DeviceVal& device, SwapChain* swapChain, const SwapChainDesc& swapChainDesc) :
-        DeviceObjectVal(device, swapChain), m_Textures(device.GetStdAllocator()), m_SwapChainDesc(swapChainDesc) {
+    SwapChainVal(DeviceVal& device, SwapChain* swapChain, const SwapChainDesc& swapChainDesc)
+        : DeviceObjectVal(device, swapChain)
+        , m_Textures(device.GetStdAllocator())
+        , m_SwapChainDesc(swapChainDesc) {
     }
 
     ~SwapChainVal();

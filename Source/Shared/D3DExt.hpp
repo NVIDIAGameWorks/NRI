@@ -52,20 +52,15 @@ void Ext::InitializeAMDExt(const nri::DeviceBase* deviceBase, AGSContext* agsCon
 
     m_AGS.Initialize = (AGS_INITIALIZE)GetSharedLibraryFunction(*m_AGSLibrary, "agsInitialize");
     m_AGS.Deinitialize = (AGS_DEINITIALIZE)GetSharedLibraryFunction(*m_AGSLibrary, "agsDeInitialize");
-
     m_AGS.CreateDeviceD3D11 = (AGS_DRIVEREXTENSIONSDX11_CREATEDEVICE)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_CreateDevice");
     m_AGS.DestroyDeviceD3D11 = (AGS_DRIVEREXTENSIONSDX11_DESTROYDEVICE)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_DestroyDevice");
     m_AGS.BeginUAVOverlap = (AGS_DRIVEREXTENSIONSDX11_BEGINUAVOVERLAP)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_BeginUAVOverlap");
     m_AGS.EndUAVOverlap = (AGS_DRIVEREXTENSIONSDX11_ENDUAVOVERLAP)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_EndUAVOverlap");
     m_AGS.SetDepthBounds = (AGS_DRIVEREXTENSIONSDX11_SETDEPTHBOUNDS)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_SetDepthBounds");
     m_AGS.DrawIndirect = (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINSTANCEDINDIRECT)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawInstancedIndirect");
-    m_AGS.DrawIndexedIndirect =
-        (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECT)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect");
-    m_AGS.DrawIndirectCount = (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINSTANCEDINDIRECTCOUNTINDIRECT)GetSharedLibraryFunction(
-        *m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawInstancedIndirectCountIndirect");
-    m_AGS.DrawIndexedIndirectCount = (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECTCOUNTINDIRECT)GetSharedLibraryFunction(
-        *m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirectCountIndirect");
-
+    m_AGS.DrawIndexedIndirect = (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECT)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect");
+    m_AGS.DrawIndirectCount = (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINSTANCEDINDIRECTCOUNTINDIRECT)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawInstancedIndirectCountIndirect");
+    m_AGS.DrawIndexedIndirectCount = (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECTCOUNTINDIRECT)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirectCountIndirect");
     m_AGS.CreateDeviceD3D12 = (AGS_DRIVEREXTENSIONSDX12_CREATEDEVICE)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX12_CreateDevice");
     m_AGS.DestroyDeviceD3D12 = (AGS_DRIVEREXTENSIONSDX12_DESTROYDEVICE)GetSharedLibraryFunction(*m_AGSLibrary, "agsDriverExtensionsDX12_DestroyDevice");
 

@@ -9,8 +9,9 @@
 
 using namespace nri;
 
-DescriptorSetD3D12::DescriptorSetD3D12(DescriptorPoolD3D12& desriptorPoolD3D12) :
-    m_DescriptorPoolD3D12(desriptorPoolD3D12), m_DynamicConstantBuffers(desriptorPoolD3D12.GetDevice().GetStdAllocator()) {
+DescriptorSetD3D12::DescriptorSetD3D12(DescriptorPoolD3D12& desriptorPoolD3D12)
+    : m_DescriptorPoolD3D12(desriptorPoolD3D12)
+    , m_DynamicConstantBuffers(desriptorPoolD3D12.GetDevice().GetStdAllocator()) {
 }
 
 void DescriptorSetD3D12::Initialize(const DescriptorSetMapping* descriptorSetMapping, uint16_t dynamicConstantBufferNum) {

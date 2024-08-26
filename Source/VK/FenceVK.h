@@ -8,7 +8,8 @@ struct DeviceVK;
 struct CommandQueueVK;
 
 struct FenceVK {
-    inline FenceVK(DeviceVK& device) : m_Device(device) {
+    inline FenceVK(DeviceVK& device)
+        : m_Device(device) {
     }
 
     inline operator VkSemaphore() const {

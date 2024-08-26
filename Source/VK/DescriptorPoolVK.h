@@ -8,7 +8,9 @@ struct DeviceVK;
 struct DescriptorSetVK;
 
 struct DescriptorPoolVK {
-    inline DescriptorPoolVK(DeviceVK& device) : m_Device(device), m_AllocatedSets(device.GetStdAllocator()) {
+    inline DescriptorPoolVK(DeviceVK& device)
+        : m_Device(device)
+        , m_AllocatedSets(device.GetStdAllocator()) {
         m_AllocatedSets.reserve(64);
     }
 

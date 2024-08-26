@@ -25,7 +25,7 @@ NRI_STRUCT(AllocateTextureDesc)
 
 NRI_STRUCT(AllocateAccelerationStructureDesc)
 {
-    NRI_NAME(AccelerationStructureDesc) desc;
+    NRI_NAME(AccelerationStructureDesc) desc; // TODO: requires NRIRayTracing.h
     NRI_NAME(MemoryLocation) memoryLocation;
     float memoryPriority;
 };

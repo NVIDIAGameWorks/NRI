@@ -34,46 +34,44 @@ template <typename T>
 void FillTextureDesc(const T& textureViewDesc, DescriptorTextureDesc& descriptorTextureDesc) {
     const TextureVK& texture = *(const TextureVK*)textureViewDesc.texture;
     const TextureDesc& textureDesc = texture.GetDesc();
-
-    const Mip_t mipLevelsLeft = textureDesc.mipNum - textureViewDesc.mipOffset;
-    const Dim_t arrayLayersLeft = textureDesc.arraySize - descriptorTextureDesc.arrayOffset;
+    const Mip_t remainingMips = textureDesc.mipNum - textureViewDesc.mipOffset;
+    const Dim_t remainingLayers = textureDesc.layerNum - descriptorTextureDesc.layerOffset;
 
     descriptorTextureDesc.texture = &texture;
     descriptorTextureDesc.layout = ::GetImageLayoutForView(textureViewDesc.viewType);
     descriptorTextureDesc.aspectFlags = ::GetImageAspectFlags(textureViewDesc.format);
-    descriptorTextureDesc.arrayOffset = textureViewDesc.arrayOffset;
-    descriptorTextureDesc.arraySize = (textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS) ? arrayLayersLeft : textureViewDesc.arraySize;
+    descriptorTextureDesc.layerOffset = textureViewDesc.layerOffset;
+    descriptorTextureDesc.layerNum = (textureViewDesc.layerNum == REMAINING_LAYERS) ? remainingLayers : textureViewDesc.layerNum;
     descriptorTextureDesc.mipOffset = textureViewDesc.mipOffset;
-    descriptorTextureDesc.mipNum = (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? mipLevelsLeft : textureViewDesc.mipNum;
+    descriptorTextureDesc.mipNum = (textureViewDesc.mipNum == REMAINING_MIPS) ? remainingMips : textureViewDesc.mipNum;
 }
 
 template <>
 void FillTextureDesc(const Texture3DViewDesc& textureViewDesc, DescriptorTextureDesc& descriptorTextureDesc) {
     const TextureVK& texture = *(const TextureVK*)textureViewDesc.texture;
     const TextureDesc& textureDesc = texture.GetDesc();
-
-    const Mip_t mipLevelsLeft = textureDesc.mipNum - textureViewDesc.mipOffset;
+    const Mip_t remainingMips = textureDesc.mipNum - textureViewDesc.mipOffset;
 
     descriptorTextureDesc.texture = &texture;
     descriptorTextureDesc.layout = ::GetImageLayoutForView(textureViewDesc.viewType);
     descriptorTextureDesc.aspectFlags = ::GetImageAspectFlags(textureViewDesc.format);
-    descriptorTextureDesc.arrayOffset = 0;
-    descriptorTextureDesc.arraySize = 1;
+    descriptorTextureDesc.layerOffset = 0;
+    descriptorTextureDesc.layerNum = 1;
     descriptorTextureDesc.mipOffset = textureViewDesc.mipOffset;
-    descriptorTextureDesc.mipNum = (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? mipLevelsLeft : textureViewDesc.mipNum;
+    descriptorTextureDesc.mipNum = (textureViewDesc.mipNum == REMAINING_MIPS) ? remainingMips : textureViewDesc.mipNum;
 }
 
 template <typename T>
 void FillImageSubresourceRange(const T& textureViewDesc, VkImageSubresourceRange& subresourceRange) {
     subresourceRange = {::GetImageAspectFlags(textureViewDesc.format), textureViewDesc.mipOffset,
-        (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : textureViewDesc.mipNum, textureViewDesc.arrayOffset,
-        (textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS) ? VK_REMAINING_ARRAY_LAYERS : textureViewDesc.arraySize};
+        (textureViewDesc.mipNum == REMAINING_MIPS) ? VK_REMAINING_MIP_LEVELS : textureViewDesc.mipNum, textureViewDesc.layerOffset,
+        (textureViewDesc.layerNum == REMAINING_LAYERS) ? VK_REMAINING_ARRAY_LAYERS : textureViewDesc.layerNum};
 }
 
 template <>
 void FillImageSubresourceRange(const Texture3DViewDesc& textureViewDesc, VkImageSubresourceRange& subresourceRange) {
     subresourceRange = {::GetImageAspectFlags(textureViewDesc.format), textureViewDesc.mipOffset,
-        (textureViewDesc.mipNum == REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : textureViewDesc.mipNum, 0, 1};
+        (textureViewDesc.mipNum == REMAINING_MIPS) ? VK_REMAINING_MIP_LEVELS : textureViewDesc.mipNum, 0, 1};
 }
 
 template <typename T>

@@ -8,7 +8,8 @@ struct DeviceVK;
 struct BufferVK;
 
 struct AccelerationStructureVK {
-    inline AccelerationStructureVK(DeviceVK& device) : m_Device(device) {
+    inline AccelerationStructureVK(DeviceVK& device)
+        : m_Device(device) {
     }
 
     inline VkAccelerationStructureKHR GetHandle() const {

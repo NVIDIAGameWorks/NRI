@@ -5,7 +5,8 @@
 namespace nri {
 
 struct CommandAllocatorVal final : public DeviceObjectVal<CommandAllocator> {
-    CommandAllocatorVal(DeviceVal& device, CommandAllocator* commandAllocator) : DeviceObjectVal(device, commandAllocator) {
+    CommandAllocatorVal(DeviceVal& device, CommandAllocator* commandAllocator)
+        : DeviceObjectVal(device, commandAllocator) {
     }
 
     //================================================================================================================

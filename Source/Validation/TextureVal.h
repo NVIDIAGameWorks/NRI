@@ -7,7 +7,9 @@ namespace nri {
 struct MemoryVal;
 
 struct TextureVal : public DeviceObjectVal<Texture> {
-    TextureVal(DeviceVal& device, Texture* texture, bool isBoundToMemory) : DeviceObjectVal(device, texture), m_IsBoundToMemory(isBoundToMemory) {
+    TextureVal(DeviceVal& device, Texture* texture, bool isBoundToMemory)
+        : DeviceObjectVal(device, texture)
+        , m_IsBoundToMemory(isBoundToMemory) {
     }
 
     ~TextureVal();

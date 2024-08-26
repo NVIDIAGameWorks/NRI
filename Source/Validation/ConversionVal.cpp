@@ -9,17 +9,15 @@ using namespace nri;
 
 void ConvertGeometryObjectsVal(GeometryObject* destObjects, const GeometryObject* sourceObjects, uint32_t objectNum) {
     for (uint32_t i = 0; i < objectNum; i++) {
-        const GeometryObject& geometrySrc = sourceObjects[i];
-        GeometryObject& geometryDst = destObjects[i];
+        const GeometryObject& src = sourceObjects[i];
+        GeometryObject& dst = destObjects[i];
 
-        geometryDst = geometrySrc;
-
-        if (geometrySrc.type == GeometryType::TRIANGLES) {
-            geometryDst.triangles.vertexBuffer = NRI_GET_IMPL(Buffer, geometrySrc.triangles.vertexBuffer);
-            geometryDst.triangles.indexBuffer = NRI_GET_IMPL(Buffer, geometrySrc.triangles.indexBuffer);
-            geometryDst.triangles.transformBuffer = NRI_GET_IMPL(Buffer, geometrySrc.triangles.transformBuffer);
-        } else {
-            geometryDst.boxes.buffer = NRI_GET_IMPL(Buffer, geometrySrc.boxes.buffer);
-        }
+        dst = src;
+        if (src.type == GeometryType::TRIANGLES) {
+            dst.geometry.triangles.vertexBuffer = NRI_GET_IMPL(Buffer, src.geometry.triangles.vertexBuffer);
+            dst.geometry.triangles.indexBuffer = NRI_GET_IMPL(Buffer, src.geometry.triangles.indexBuffer);
+            dst.geometry.triangles.transformBuffer = NRI_GET_IMPL(Buffer, src.geometry.triangles.transformBuffer);
+        } else
+            dst.geometry.aabbs.buffer = NRI_GET_IMPL(Buffer, src.geometry.aabbs.buffer);
     }
 }

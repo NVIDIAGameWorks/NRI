@@ -17,14 +17,14 @@ struct GarbageInFlight {
 };
 
 struct StreamerImpl {
-    inline StreamerImpl(nri::Device& device, const nri::CoreInterface& NRI) :
-        m_Device(device),
-        m_NRI(NRI),
-        m_BufferRequests(((nri::DeviceBase&)device).GetStdAllocator()),
-        m_BufferRequestsWithDst(((nri::DeviceBase&)device).GetStdAllocator()),
-        m_TextureRequests(((nri::DeviceBase&)device).GetStdAllocator()),
-        m_TextureRequestsWithDst(((nri::DeviceBase&)device).GetStdAllocator()),
-        m_GarbageInFlight(((nri::DeviceBase&)device).GetStdAllocator()) {
+    inline StreamerImpl(nri::Device& device, const nri::CoreInterface& NRI)
+        : m_Device(device)
+        , m_NRI(NRI)
+        , m_BufferRequests(((nri::DeviceBase&)device).GetStdAllocator())
+        , m_BufferRequestsWithDst(((nri::DeviceBase&)device).GetStdAllocator())
+        , m_TextureRequests(((nri::DeviceBase&)device).GetStdAllocator())
+        , m_TextureRequestsWithDst(((nri::DeviceBase&)device).GetStdAllocator())
+        , m_GarbageInFlight(((nri::DeviceBase&)device).GetStdAllocator()) {
     }
 
     inline nri::Buffer* GetDynamicBuffer() {

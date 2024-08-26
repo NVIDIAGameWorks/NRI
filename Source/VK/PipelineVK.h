@@ -8,7 +8,8 @@ struct DeviceVK;
 struct PipelineLayoutVK;
 
 struct PipelineVK {
-    inline PipelineVK(DeviceVK& device) : m_Device(device) {
+    inline PipelineVK(DeviceVK& device)
+        : m_Device(device) {
     }
 
     inline operator VkPipeline() const {

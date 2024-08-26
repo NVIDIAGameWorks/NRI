@@ -7,12 +7,12 @@
 
 using namespace nri;
 
-PipelineLayoutVal::PipelineLayoutVal(DeviceVal& device, PipelineLayout* pipelineLayout, const PipelineLayoutDesc& pipelineLayoutDesc) :
-    DeviceObjectVal(device, pipelineLayout),
-    m_DescriptorSetDescs(device.GetStdAllocator()),
-    m_PushConstantDescs(device.GetStdAllocator()),
-    m_DescriptorRangeDescs(device.GetStdAllocator()),
-    m_DynamicConstantBufferDescs(device.GetStdAllocator()) {
+PipelineLayoutVal::PipelineLayoutVal(DeviceVal& device, PipelineLayout* pipelineLayout, const PipelineLayoutDesc& pipelineLayoutDesc)
+    : DeviceObjectVal(device, pipelineLayout)
+    , m_DescriptorSetDescs(device.GetStdAllocator())
+    , m_PushConstantDescs(device.GetStdAllocator())
+    , m_DescriptorRangeDescs(device.GetStdAllocator())
+    , m_DynamicConstantBufferDescs(device.GetStdAllocator()) {
     uint32_t descriptorRangeDescNum = 0;
     uint32_t dynamicConstantBufferDescNum = 0;
 
@@ -22,7 +22,6 @@ PipelineLayoutVal::PipelineLayoutVal(DeviceVal& device, PipelineLayout* pipeline
     }
 
     m_DescriptorSetDescs.insert(m_DescriptorSetDescs.begin(), pipelineLayoutDesc.descriptorSets, pipelineLayoutDesc.descriptorSets + pipelineLayoutDesc.descriptorSetNum);
-
     m_PushConstantDescs.insert(m_PushConstantDescs.begin(), pipelineLayoutDesc.pushConstants, pipelineLayoutDesc.pushConstants + pipelineLayoutDesc.pushConstantNum);
 
     m_DescriptorRangeDescs.reserve(descriptorRangeDescNum);
@@ -35,13 +34,10 @@ PipelineLayoutVal::PipelineLayoutVal(DeviceVal& device, PipelineLayout* pipeline
         m_DescriptorSetDescs[i].dynamicConstantBuffers = m_DynamicConstantBufferDescs.data() + m_DynamicConstantBufferDescs.size();
 
         m_DescriptorRangeDescs.insert(m_DescriptorRangeDescs.end(), descriptorSetDesc.ranges, descriptorSetDesc.ranges + descriptorSetDesc.rangeNum);
-
-        m_DynamicConstantBufferDescs.insert(
-            m_DynamicConstantBufferDescs.end(), descriptorSetDesc.dynamicConstantBuffers, descriptorSetDesc.dynamicConstantBuffers + descriptorSetDesc.dynamicConstantBufferNum);
+        m_DynamicConstantBufferDescs.insert(m_DynamicConstantBufferDescs.end(), descriptorSetDesc.dynamicConstantBuffers, descriptorSetDesc.dynamicConstantBuffers + descriptorSetDesc.dynamicConstantBufferNum);
     }
 
     m_PipelineLayoutDesc = pipelineLayoutDesc;
-
     m_PipelineLayoutDesc.descriptorSets = m_DescriptorSetDescs.data();
     m_PipelineLayoutDesc.pushConstants = m_PushConstantDescs.data();
 }

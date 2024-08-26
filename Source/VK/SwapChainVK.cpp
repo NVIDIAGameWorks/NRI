@@ -27,7 +27,9 @@ static std::array<VkColorSpaceKHR, (size_t)SwapChainFormat::MAX_NUM> g_colorSpac
     VK_COLOR_SPACE_HDR10_ST2084_EXT,         // BT2020_G2084_10BIT
 };
 
-SwapChainVK::SwapChainVK(DeviceVK& device) : m_Textures(device.GetStdAllocator()), m_Device(device) {
+SwapChainVK::SwapChainVK(DeviceVK& device)
+    : m_Device(device)
+    , m_Textures(device.GetStdAllocator()) {
 }
 
 SwapChainVK::~SwapChainVK() {
@@ -147,8 +149,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         RETURN_ON_FAILURE(&m_Device, isHeightValid, Result::INVALID_ARGUMENT, "swapChainDesc.height is out of [%u, %u] range", sc.surfaceCapabilities.minImageExtent.height,
             sc.surfaceCapabilities.maxImageExtent.height);
 
-        bool isTextureNumValid =
-            textureNum >= sc.surfaceCapabilities.minImageCount && (textureNum <= sc.surfaceCapabilities.maxImageCount || sc.surfaceCapabilities.maxImageCount == 0);
+        bool isTextureNumValid = textureNum >= sc.surfaceCapabilities.minImageCount && (textureNum <= sc.surfaceCapabilities.maxImageCount || sc.surfaceCapabilities.maxImageCount == 0);
         RETURN_ON_FAILURE(&m_Device, isTextureNumValid, Result::INVALID_ARGUMENT, "swapChainDesc.textureNum is out of [%u, %u] range", sc.surfaceCapabilities.minImageCount,
             sc.surfaceCapabilities.maxImageCount);
     }
@@ -290,7 +291,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
             desc.height = swapChainDesc.height;
             desc.depth = 1;
             desc.mipNum = 1;
-            desc.arraySize = 1;
+            desc.layerNum = 1;
             desc.sampleNum = 1;
 
             TextureVK* texture = Allocate<TextureVK>(m_Device.GetStdAllocator(), m_Device);

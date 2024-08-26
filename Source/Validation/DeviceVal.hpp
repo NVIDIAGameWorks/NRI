@@ -366,7 +366,8 @@ Result DeviceVal::FillFunctionTable(ResourceAllocatorInterface& table) const {
 #pragma region[  Streamer  ]
 
 struct StreamerVal : DeviceObjectVal<Streamer> {
-    inline StreamerVal(DeviceVal& device, Streamer* impl) : DeviceObjectVal(device, impl) {
+    inline StreamerVal(DeviceVal& device, Streamer* impl)
+        : DeviceObjectVal(device, impl) {
     }
 
     BufferVal* constantBuffer = nullptr;
@@ -376,8 +377,8 @@ struct StreamerVal : DeviceObjectVal<Streamer> {
 
 static Result CreateStreamer(Device& device, const StreamerDesc& streamerDesc, Streamer*& streamer) {
     DeviceVal& deviceVal = (DeviceVal&)device;
-    bool isUpload = (streamerDesc.constantBufferMemoryLocation == MemoryLocation::HOST_UPLOAD || streamerDesc.constantBufferMemoryLocation == MemoryLocation::DEVICE_UPLOAD) &&
-                    (streamerDesc.dynamicBufferMemoryLocation == MemoryLocation::HOST_UPLOAD || streamerDesc.dynamicBufferMemoryLocation == MemoryLocation::DEVICE_UPLOAD);
+    bool isUpload = (streamerDesc.constantBufferMemoryLocation == MemoryLocation::HOST_UPLOAD || streamerDesc.constantBufferMemoryLocation == MemoryLocation::DEVICE_UPLOAD)
+        && (streamerDesc.dynamicBufferMemoryLocation == MemoryLocation::HOST_UPLOAD || streamerDesc.dynamicBufferMemoryLocation == MemoryLocation::DEVICE_UPLOAD);
     RETURN_ON_FAILURE(&deviceVal, isUpload, Result::INVALID_ARGUMENT, "CreateStreamer: memory location must be an UPLOAD heap");
 
     Streamer* impl = nullptr;

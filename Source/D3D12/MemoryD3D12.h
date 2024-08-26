@@ -7,7 +7,8 @@ namespace nri {
 struct DeviceD3D12;
 
 struct MemoryD3D12 {
-    inline MemoryD3D12(DeviceD3D12& device) : m_Device(device) {
+    inline MemoryD3D12(DeviceD3D12& device)
+        : m_Device(device) {
     }
 
     inline ~MemoryD3D12() {

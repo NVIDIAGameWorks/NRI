@@ -41,8 +41,11 @@ struct BindingData {
 };
 
 struct PipelineLayoutD3D11 {
-    inline PipelineLayoutD3D11(DeviceD3D11& device) :
-        m_Device(device), m_BindingSets(device.GetStdAllocator()), m_BindingRanges(device.GetStdAllocator()), m_ConstantBuffers(device.GetStdAllocator()) {
+    inline PipelineLayoutD3D11(DeviceD3D11& device)
+        : m_Device(device)
+        , m_BindingSets(device.GetStdAllocator())
+        , m_BindingRanges(device.GetStdAllocator())
+        , m_ConstantBuffers(device.GetStdAllocator()) {
     }
 
     inline DeviceD3D11& GetDevice() const {

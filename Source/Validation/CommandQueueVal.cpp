@@ -26,7 +26,7 @@ static bool ValidateTextureUploadDesc(DeviceVal& device, uint32_t i, const Textu
     RETURN_ON_FAILURE(&device, textureUploadDesc.after.layout < Layout::MAX_NUM, false, "UploadData: 'textureUploadDescs[%u].nextLayout' is invalid", i);
     RETURN_ON_FAILURE(&device, textureVal.IsBoundToMemory(), false, "UploadData: 'textureUploadDescs[%u].texture' is not bound to memory", i);
 
-    uint32_t subresourceNum = textureDesc.arraySize * textureDesc.mipNum;
+    uint32_t subresourceNum = textureDesc.layerNum * textureDesc.mipNum;
     for (uint32_t j = 0; j < subresourceNum; j++) {
         const TextureSubresourceUploadDesc& subresource = textureUploadDesc.subresources[j];
 
@@ -55,9 +55,7 @@ static bool ValidateBufferUploadDesc(DeviceVal& device, uint32_t i, const Buffer
     RETURN_ON_FAILURE(&device, bufferUploadDesc.buffer != nullptr, false, "UploadData: 'bufferUploadDescs[%u].buffer' is invalid", i);
     RETURN_ON_FAILURE(&device, bufferUploadDesc.data != nullptr, false, "UploadData: 'bufferUploadDescs[%u].data' is invalid", i);
     RETURN_ON_FAILURE(&device, bufferVal.IsBoundToMemory(), false, "UploadData: 'bufferUploadDescs[%u].buffer' is not bound to memory", i);
-
-    RETURN_ON_FAILURE(
-        &device, rangeEnd <= bufferVal.GetDesc().size, false, "UploadData: 'bufferUploadDescs[%u].bufferOffset + bufferUploadDescs[%u].dataSize' is out of bounds", i, i);
+    RETURN_ON_FAILURE(&device, rangeEnd <= bufferVal.GetDesc().size, false, "UploadData: 'bufferUploadDescs[%u].bufferOffset + bufferUploadDescs[%u].dataSize' is out of bounds", i, i);
 
     return true;
 }

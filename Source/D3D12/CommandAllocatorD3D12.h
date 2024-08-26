@@ -10,7 +10,8 @@ namespace nri {
 struct DeviceD3D12;
 
 struct CommandAllocatorD3D12 {
-    inline CommandAllocatorD3D12(DeviceD3D12& device) : m_Device(device) {
+    inline CommandAllocatorD3D12(DeviceD3D12& device)
+        : m_Device(device) {
     }
 
     inline ~CommandAllocatorD3D12() {

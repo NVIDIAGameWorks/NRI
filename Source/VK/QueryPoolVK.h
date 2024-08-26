@@ -7,7 +7,8 @@ namespace nri {
 struct DeviceVK;
 
 struct QueryPoolVK {
-    inline QueryPoolVK(DeviceVK& device) : m_Device(device) {
+    inline QueryPoolVK(DeviceVK& device)
+        : m_Device(device) {
     }
 
     inline VkQueryPool GetHandle() const {

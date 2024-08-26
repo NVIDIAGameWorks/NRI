@@ -76,14 +76,18 @@ NRI_STRUCT(ShaderLibrary)
 
 NRI_STRUCT(ShaderGroupDesc)
 {
-    uint32_t shaderIndices[3];
+    // Use cases:
+    //  - general: RAYGEN_SHADER, MISS_SHADER or CALLABLE_SHADER
+    //  - HitGroup: CLOSEST_HIT_SHADER and/or ANY_HIT_SHADER in any order
+    //  - HitGroup with an intersection shader: INTERSECTION_SHADER + CLOSEST_HIT_SHADER and/or ANY_HIT_SHADER in any order
+    uint32_t shaderIndices[3]; // in ShaderLibrary, starting with 1 (0 - unused)
 };
 
 NRI_STRUCT(RayTracingPipelineDesc)
 {
     const NRI_NAME(PipelineLayout)* pipelineLayout;
     const NRI_NAME(ShaderLibrary)* shaderLibrary;
-    const NRI_NAME(ShaderGroupDesc)* shaderGroupDescs; // TODO: move to ShaderLibrary
+    const NRI_NAME(ShaderGroupDesc)* shaderGroupDescs;
     uint32_t shaderGroupDescNum;
     uint32_t recursionDepthMax;
     uint32_t payloadAttributeSizeMax;
@@ -113,11 +117,6 @@ NRI_STRUCT(AABBs)
     uint64_t offset;
 };
 
-#if defined(_MSC_VER)
-    // Disable bogus nameless union warning that's treated as error
-    #pragma warning(disable:4201)
-#endif
-
 NRI_STRUCT(GeometryObject)
 {
     NRI_NAME(GeometryType) type;
@@ -125,13 +124,9 @@ NRI_STRUCT(GeometryObject)
     union
     {
         NRI_NAME(Triangles) triangles;
-        NRI_NAME(AABBs) boxes;
-    };
+        NRI_NAME(AABBs) aabbs;
+    } geometry;
 };
-
-#if defined(_MSC_VER)
-    #pragma warning(default:4201)
-#endif
 
 NRI_STRUCT(GeometryObjectInstance)
 {
@@ -148,7 +143,7 @@ NRI_STRUCT(AccelerationStructureDesc)
     NRI_NAME(AccelerationStructureType) type;
     NRI_NAME(AccelerationStructureBuildBits) flags;
     uint32_t instanceOrGeometryObjectNum;
-    const NRI_NAME(GeometryObject)* geometryObjects;
+    const NRI_NAME(GeometryObject)* geometryObjects; // needed only for BOTTOM_LEVEL
 };
 
 NRI_STRUCT(AccelerationStructureMemoryBindingDesc)
@@ -233,7 +228,8 @@ NRI_STRUCT(RayTracingInterface)
         NRI_NAME(AccelerationStructureBuildBits) flags, NRI_NAME_REF(AccelerationStructure) dst, NRI_NAME_REF(AccelerationStructure) src, NRI_NAME_REF(Buffer) scratch, uint64_t scratchOffset);
 
     void (NRI_CALL *CmdCopyAccelerationStructure)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(AccelerationStructure) dst, NRI_NAME_REF(AccelerationStructure) src, NRI_NAME(CopyMode) copyMode);
-    void (NRI_CALL *CmdWriteAccelerationStructureSize)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME(AccelerationStructure)* const* accelerationStructures, uint32_t accelerationStructureNum, NRI_NAME_REF(QueryPool) queryPool, uint32_t queryPoolOffset);
+    void (NRI_CALL *CmdWriteAccelerationStructureSize)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME(AccelerationStructure)* const* accelerationStructures, uint32_t accelerationStructureNum,
+        NRI_NAME_REF(QueryPool) queryPool, uint32_t queryPoolOffset);
 
     void (NRI_CALL *CmdDispatchRays)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(DispatchRaysDesc) dispatchRaysDesc);
     void (NRI_CALL *CmdDispatchRaysIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset); // buffer contains "DispatchRaysIndirectDesc" commands

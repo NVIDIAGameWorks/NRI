@@ -25,7 +25,7 @@ static void DoTransition(const CoreInterface& NRI, CommandBuffer* commandBuffer,
             barrier = {};
             barrier.texture = textureUploadDesc.texture;
             barrier.mipNum = textureDesc.mipNum;
-            barrier.arraySize = textureDesc.arraySize;
+            barrier.layerNum = textureDesc.layerNum;
             barrier.before = isInitial ? initialState : state;
             barrier.after = isInitial ? state : textureUploadDesc.after;
         }
@@ -147,7 +147,7 @@ Result HelperDataUpload::UploadTextures(const TextureUploadDesc* textureUploadDe
 
     bool isInitial = true;
     uint32_t i = 0;
-    Dim_t arrayOffset = 0;
+    Dim_t layerOffset = 0;
     Mip_t mipOffset = 0;
 
     while (i < textureDataDescNum) {
@@ -169,7 +169,7 @@ Result HelperDataUpload::UploadTextures(const TextureUploadDesc* textureUploadDe
         m_UploadBufferOffset = 0;
         bool isCapacityInsufficient = false;
 
-        for (; i < textureDataDescNum && CopyTextureContent(textureUploadDescs[i], arrayOffset, mipOffset, isCapacityInsufficient); i++)
+        for (; i < textureDataDescNum && CopyTextureContent(textureUploadDescs[i], layerOffset, mipOffset, isCapacityInsufficient); i++)
             ;
 
         if (isCapacityInsufficient)
@@ -244,16 +244,16 @@ Result HelperDataUpload::EndCommandBuffersAndSubmit() {
     return Result::SUCCESS;
 }
 
-bool HelperDataUpload::CopyTextureContent(const TextureUploadDesc& textureUploadDesc, Dim_t& arrayOffset, Mip_t& mipOffset, bool& isCapacityInsufficient) {
+bool HelperDataUpload::CopyTextureContent(const TextureUploadDesc& textureUploadDesc, Dim_t& layerOffset, Mip_t& mipOffset, bool& isCapacityInsufficient) {
     if (textureUploadDesc.subresources == nullptr)
         return true;
 
     const DeviceDesc& deviceDesc = NRI.GetDeviceDesc(m_Device);
     const TextureDesc& textureDesc = NRI.GetTextureDesc(*textureUploadDesc.texture);
 
-    for (; arrayOffset < textureDesc.arraySize; arrayOffset++) {
+    for (; layerOffset < textureDesc.layerNum; layerOffset++) {
         for (; mipOffset < textureDesc.mipNum; mipOffset++) {
-            const auto& subresource = textureUploadDesc.subresources[arrayOffset * textureDesc.mipNum + mipOffset];
+            const auto& subresource = textureUploadDesc.subresources[layerOffset * textureDesc.mipNum + mipOffset];
 
             uint32_t sliceRowNum = subresource.slicePitch / subresource.rowPitch;
             uint32_t alignedRowPitch = Align(subresource.rowPitch, deviceDesc.uploadBufferTextureRowAlignment);
@@ -274,7 +274,7 @@ bool HelperDataUpload::CopyTextureContent(const TextureUploadDesc& textureUpload
             srcDataLayout.slicePitch = alignedSlicePitch;
 
             TextureRegionDesc dstRegion = {};
-            dstRegion.arrayOffset = arrayOffset;
+            dstRegion.layerOffset = layerOffset;
             dstRegion.mipOffset = mipOffset;
 
             NRI.CmdUploadBufferToTexture(*m_CommandBuffer, *textureUploadDesc.texture, dstRegion, *m_UploadBuffer, srcDataLayout);
@@ -283,7 +283,7 @@ bool HelperDataUpload::CopyTextureContent(const TextureUploadDesc& textureUpload
         }
         mipOffset = 0;
     }
-    arrayOffset = 0;
+    layerOffset = 0;
 
     m_UploadBufferOffset = Align(m_UploadBufferOffset, COPY_ALIGNMENT);
 
@@ -309,7 +309,7 @@ void HelperDataUpload::CopyTextureSubresourceContent(const TextureSubresourceUpl
 }
 
 bool HelperDataUpload::CopyBufferContent(const BufferUploadDesc& bufferUploadDesc, uint64_t& bufferContentOffset) {
-    if (bufferUploadDesc.dataSize == 0)
+    if (!bufferUploadDesc.dataSize)
         return true;
 
     const uint64_t freeSpace = m_UploadBufferSize - m_UploadBufferOffset;

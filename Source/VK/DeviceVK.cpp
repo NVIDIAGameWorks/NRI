@@ -310,7 +310,8 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
         desiredDeviceExts.push_back(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
 }
 
-DeviceVK::DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator) : DeviceBase(callbacks, stdAllocator) {
+DeviceVK::DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator)
+    : DeviceBase(callbacks, stdAllocator) {
     m_AllocationCallbacks.pUserData = &GetStdAllocator();
     m_AllocationCallbacks.pfnAllocation = vkAllocateHostMemory;
     m_AllocationCallbacks.pfnReallocation = vkReallocateHostMemory;
@@ -751,7 +752,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.texture1DMaxDim = (Dim_t)limits.maxImageDimension1D;
         m_Desc.texture2DMaxDim = (Dim_t)limits.maxImageDimension2D;
         m_Desc.texture3DMaxDim = (Dim_t)limits.maxImageDimension3D;
-        m_Desc.textureArrayMaxDim = (Dim_t)limits.maxImageArrayLayers;
+        m_Desc.textureArrayMaxLayerNum = (Dim_t)limits.maxImageArrayLayers;
         m_Desc.texelBufferMaxDim = limits.maxTexelBufferElements;
 
         const VkMemoryPropertyFlags neededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
@@ -918,7 +919,7 @@ void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo&
     const FormatProps& formatProps = GetFormatProps(textureDesc.format);
     if (formatProps.blockWidth > 1)
         flags |= VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT; // format can be used to create a view with an uncompressed format (1 texel covers 1 block)
-    if (textureDesc.arraySize >= 6 && textureDesc.width == textureDesc.height)
+    if (textureDesc.layerNum >= 6 && textureDesc.width == textureDesc.height)
         flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT; // allow cube maps
     if (textureDesc.type == nri::TextureType::TEXTURE_3D)
         flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT; // allow 3D demotion to a set of layers // TODO: hook up "VK_EXT_image_2d_view_of_3d"?
@@ -933,7 +934,7 @@ void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo&
     info.extent.height = textureDesc.height;
     info.extent.depth = textureDesc.depth;
     info.mipLevels = textureDesc.mipNum;
-    info.arrayLayers = textureDesc.arraySize;
+    info.arrayLayers = textureDesc.layerNum;
     info.samples = (VkSampleCountFlagBits)textureDesc.sampleNum;
     info.tiling = VK_IMAGE_TILING_OPTIMAL;
     info.usage = GetImageUsageFlags(textureDesc.usageMask);
@@ -1275,8 +1276,7 @@ Result DeviceVK::CreateInstance(bool enableGraphicsAPIValidation, const Vector<c
         createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
         createInfo.messageType |= VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
-        PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT =
-            (PFN_vkCreateDebugUtilsMessengerEXT)m_VK.GetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT");
+        PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)m_VK.GetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT");
         result = vkCreateDebugUtilsMessengerEXT(m_Instance, &createInfo, m_AllocationCallbackPtr, &m_Messenger);
 
         RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkCreateDebugUtilsMessengerEXT returned %d", (int32_t)result);
@@ -1319,8 +1319,7 @@ void DeviceVK::FillFamilyIndices(bool isWrapper, const DeviceCreationVKDesc& dev
 
         { // Prefer as much features as possible
             size_t index = (size_t)CommandQueueType::GRAPHICS;
-            uint32_t score = (graphics ? 100 : 0) + (compute ? 10 : 0) + (copy ? 10 : 0) + (sparse ? 5 : 0) + (videoDecode ? 2 : 0) + (videoEncode ? 2 : 0) + (protect ? 1 : 0) +
-                             (opticalFlow ? 1 : 0);
+            uint32_t score = (graphics ? 100 : 0) + (compute ? 10 : 0) + (copy ? 10 : 0) + (sparse ? 5 : 0) + (videoDecode ? 2 : 0) + (videoEncode ? 2 : 0) + (protect ? 1 : 0) + (opticalFlow ? 1 : 0);
 
             if (!taken && graphics && score > scores[index]) {
                 m_QueueFamilyIndices[index] = i;
@@ -1331,8 +1330,7 @@ void DeviceVK::FillFamilyIndices(bool isWrapper, const DeviceCreationVKDesc& dev
 
         { // Prefer compute-only
             size_t index = (size_t)CommandQueueType::COMPUTE;
-            uint32_t score = (!graphics ? 10 : 0) + (compute ? 100 : 0) + (!copy ? 10 : 0) + (sparse ? 5 : 0) + (!videoDecode ? 2 : 0) + (!videoEncode ? 2 : 0) +
-                             (protect ? 1 : 0) + (!opticalFlow ? 1 : 0);
+            uint32_t score = (!graphics ? 10 : 0) + (compute ? 100 : 0) + (!copy ? 10 : 0) + (sparse ? 5 : 0) + (!videoDecode ? 2 : 0) + (!videoEncode ? 2 : 0) + (protect ? 1 : 0) + (!opticalFlow ? 1 : 0);
 
             if (!taken && compute && score > scores[index]) {
                 m_QueueFamilyIndices[index] = i;
@@ -1343,8 +1341,7 @@ void DeviceVK::FillFamilyIndices(bool isWrapper, const DeviceCreationVKDesc& dev
 
         { // Prefer copy-only
             size_t index = (size_t)CommandQueueType::COPY;
-            uint32_t score = (!graphics ? 10 : 0) + (!compute ? 10 : 0) + (copy ? 100 * props.queueCount : 0) + (sparse ? 5 : 0) + (!videoDecode ? 2 : 0) + (!videoEncode ? 2 : 0) +
-                             (protect ? 1 : 0) + (!opticalFlow ? 1 : 0);
+            uint32_t score = (!graphics ? 10 : 0) + (!compute ? 10 : 0) + (copy ? 100 * props.queueCount : 0) + (sparse ? 5 : 0) + (!videoDecode ? 2 : 0) + (!videoEncode ? 2 : 0) + (protect ? 1 : 0) + (!opticalFlow ? 1 : 0);
 
             if (!taken && copy && score > scores[index]) {
                 m_QueueFamilyIndices[index] = i;
@@ -1719,8 +1716,7 @@ inline Result DeviceVK::CreateCommandQueue(const CommandQueueVKDesc& commandQueu
     }
 
     // Create
-    Result result =
-        CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVKDesc.commandQueueType, commandQueueVKDesc.queueFamilyIndex, (VkQueue)commandQueueVKDesc.vkQueue);
+    Result result = CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVKDesc.commandQueueType, commandQueueVKDesc.queueFamilyIndex, (VkQueue)commandQueueVKDesc.vkQueue);
     if (result == Result::SUCCESS) {
         // Replace old with new
         Destroy(GetStdAllocator(), m_CommandQueues[index]);

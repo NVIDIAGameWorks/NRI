@@ -117,13 +117,13 @@ Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationD3D12Desc,
     return result;
 }
 
-DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator) :
-    DeviceBase(callbacks, stdAllocator),
-    m_DescriptorHeaps(GetStdAllocator()),
-    m_FreeDescriptors(GetStdAllocator()),
-    m_DrawCommandSignatures(GetStdAllocator()),
-    m_DrawIndexedCommandSignatures(GetStdAllocator()),
-    m_DrawMeshCommandSignatures(GetStdAllocator()) {
+DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator)
+    : DeviceBase(callbacks, stdAllocator)
+    , m_DescriptorHeaps(GetStdAllocator())
+    , m_FreeDescriptors(GetStdAllocator())
+    , m_DrawCommandSignatures(GetStdAllocator())
+    , m_DrawIndexedCommandSignatures(GetStdAllocator())
+    , m_DrawMeshCommandSignatures(GetStdAllocator()) {
     m_FreeDescriptors.resize(DESCRIPTOR_HEAP_TYPE_NUM, Vector<DescriptorHandle>(GetStdAllocator()));
     m_Desc.graphicsAPI = GraphicsAPI::D3D12;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
@@ -464,7 +464,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.texture1DMaxDim = D3D12_REQ_TEXTURE1D_U_DIMENSION;
     m_Desc.texture2DMaxDim = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
     m_Desc.texture3DMaxDim = D3D12_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
-    m_Desc.textureArrayMaxDim = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
+    m_Desc.textureArrayMaxLayerNum = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
     m_Desc.texelBufferMaxDim = (1 << D3D12_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP) - 1;
 
     m_Desc.memoryAllocationMaxNum = 0xFFFFFFFF;
@@ -501,8 +501,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.tessControlShaderPerVertexInputComponentMaxNum = D3D12_HS_CONTROL_POINT_PHASE_INPUT_REGISTER_COUNT * D3D12_HS_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessControlShaderPerVertexOutputComponentMaxNum = D3D12_HS_CONTROL_POINT_PHASE_OUTPUT_REGISTER_COUNT * D3D12_HS_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessControlShaderPerPatchOutputComponentMaxNum = D3D12_HS_OUTPUT_PATCH_CONSTANT_REGISTER_SCALAR_COMPONENTS;
-    m_Desc.tessControlShaderTotalOutputComponentMaxNum =
-        m_Desc.tessControlShaderPatchPointMaxNum * m_Desc.tessControlShaderPerVertexOutputComponentMaxNum + m_Desc.tessControlShaderPerPatchOutputComponentMaxNum;
+    m_Desc.tessControlShaderTotalOutputComponentMaxNum = m_Desc.tessControlShaderPatchPointMaxNum * m_Desc.tessControlShaderPerVertexOutputComponentMaxNum + m_Desc.tessControlShaderPerPatchOutputComponentMaxNum;
 
     m_Desc.tessEvaluationShaderInputComponentMaxNum = D3D12_DS_INPUT_CONTROL_POINT_REGISTER_COUNT * D3D12_DS_INPUT_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessEvaluationShaderOutputComponentMaxNum = D3D12_DS_INPUT_CONTROL_POINT_REGISTER_COUNT * D3D12_DS_INPUT_CONTROL_POINT_REGISTER_COMPONENTS;
@@ -594,8 +593,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.isShaderAtomicsI32Supported = true;
     m_Desc.isShaderAtomicsF32Supported = isShaderAtomicsF32Supported;
 #ifdef NRI_USE_AGILITY_SDK
-    m_Desc.isShaderAtomicsI64Supported = m_Desc.isShaderAtomicsI64Supported || options9.AtomicInt64OnTypedResourceSupported || options9.AtomicInt64OnGroupSharedSupported ||
-                                         options11.AtomicInt64OnDescriptorHeapResourceSupported;
+    m_Desc.isShaderAtomicsI64Supported = m_Desc.isShaderAtomicsI64Supported|| options9.AtomicInt64OnTypedResourceSupported || options9.AtomicInt64OnGroupSharedSupported || options11.AtomicInt64OnDescriptorHeapResourceSupported;
 #endif
 
     m_Desc.isDrawParametersEmulationEnabled = deviceCreationDesc.enableD3D12DrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
@@ -895,9 +893,7 @@ inline FormatSupportBits DeviceD3D12::GetFormatSupport(Format format) const {
     if ((formatSupport.Support2 & (optional)) != 0) \
         mask |= bit;
 
-        const uint32_t anyAtomics = D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_ADD | D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_BITWISE_OPS |
-                                    D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_COMPARE_STORE_OR_COMPARE_EXCHANGE | D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_EXCHANGE |
-                                    D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_SIGNED_MIN_OR_MAX | D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_UNSIGNED_MIN_OR_MAX;
+        const uint32_t anyAtomics = D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_ADD | D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_BITWISE_OPS | D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_COMPARE_STORE_OR_COMPARE_EXCHANGE | D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_EXCHANGE | D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_SIGNED_MIN_OR_MAX | D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_UNSIGNED_MIN_OR_MAX;
 
         if (mask & FormatSupportBits::STORAGE_TEXTURE)
             UPDATE_SUPPORT_BITS(anyAtomics, FormatSupportBits::STORAGE_TEXTURE_ATOMICS);
@@ -923,8 +919,7 @@ Result DeviceD3D12::CreateDefaultDrawSignatures(ID3D12RootSignature* rootSignatu
     auto key = HashRootSignatureAndStride(rootSignature, drawStride);
     m_DrawCommandSignatures.emplace(key, drawCommandSignature);
 
-    ComPtr<ID3D12CommandSignature> drawIndexedCommandSignature =
-        CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED, drawIndexedStride, rootSignature, drawParametersEmulation);
+    ComPtr<ID3D12CommandSignature> drawIndexedCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED, drawIndexedStride, rootSignature, drawParametersEmulation);
     if (!drawIndexedCommandSignature)
         return nri::Result::FAILURE;
 

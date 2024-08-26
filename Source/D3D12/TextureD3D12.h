@@ -16,7 +16,8 @@ struct DeviceD3D12;
 struct MemoryD3D12;
 
 struct TextureD3D12 {
-    inline TextureD3D12(DeviceD3D12& device) : m_Device(device) {
+    inline TextureD3D12(DeviceD3D12& device)
+        : m_Device(device) {
     }
 
     inline ~TextureD3D12() {
@@ -34,8 +35,8 @@ struct TextureD3D12 {
         return m_Texture.GetInterface();
     }
 
-    inline uint32_t GetSubresourceIndex(Dim_t arrayOffset, Mip_t mipOffset) const {
-        return arrayOffset * m_Desc.mipNum + mipOffset;
+    inline uint32_t GetSubresourceIndex(Dim_t layerOffset, Mip_t mipOffset) const {
+        return layerOffset * m_Desc.mipNum + mipOffset;
     }
 
     inline Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const {

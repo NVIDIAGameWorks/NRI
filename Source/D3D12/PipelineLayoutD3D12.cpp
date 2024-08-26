@@ -37,11 +37,11 @@ D3D12_ROOT_SIGNATURE_FLAGS GetRootSignatureStageFlags(const PipelineLayoutDesc& 
     return flags;
 }
 
-PipelineLayoutD3D12::PipelineLayoutD3D12(DeviceD3D12& device) :
-    m_DescriptorSetMappings(device.GetStdAllocator()),
-    m_DescriptorSetRootMappings(device.GetStdAllocator()),
-    m_DynamicConstantBufferMappings(device.GetStdAllocator()),
-    m_Device(device) {
+PipelineLayoutD3D12::PipelineLayoutD3D12(DeviceD3D12& device)
+    : m_DescriptorSetMappings(device.GetStdAllocator())
+    , m_DescriptorSetRootMappings(device.GetStdAllocator())
+    , m_DynamicConstantBufferMappings(device.GetStdAllocator())
+    , m_Device(device) {
 }
 
 Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
@@ -63,8 +63,8 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
 
     D3D12_ROOT_PARAMETER1 rootParameterLocal = {};
 
-    bool enableDrawParametersEmulation = m_Device.GetDesc().isDrawParametersEmulationEnabled && pipelineLayoutDesc.enableD3D12DrawParametersEmulation &&
-                                         (pipelineLayoutDesc.shaderStages & nri::StageBits::VERTEX_SHADER);
+    bool enableDrawParametersEmulation = m_Device.GetDesc().isDrawParametersEmulationEnabled
+        && pipelineLayoutDesc.enableD3D12DrawParametersEmulation && (pipelineLayoutDesc.shaderStages & nri::StageBits::VERTEX_SHADER);
 
     if (enableDrawParametersEmulation) {
         rootParameterLocal.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
@@ -92,8 +92,7 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
             D3D12_SHADER_VISIBILITY shaderVisibility = GetShaderVisibility(descriptorSetDesc.ranges[j].shaderStages);
             D3D12_DESCRIPTOR_RANGE_TYPE rangeType = GetDescriptorRangesType(descriptorSetDesc.ranges[j].descriptorType);
 
-            if (groupedRangeNum &&
-                (rootParameter.ShaderVisibility != shaderVisibility || groupedRangeType != rangeType || descriptorRangeMapping.descriptorHeapType != heapIndex)) {
+            if (groupedRangeNum && (rootParameter.ShaderVisibility != shaderVisibility || groupedRangeType != rangeType || descriptorRangeMapping.descriptorHeapType != heapIndex)) {
                 rootParameter.DescriptorTable.NumDescriptorRanges = groupedRangeNum;
                 rootParameters.push_back(rootParameter);
 

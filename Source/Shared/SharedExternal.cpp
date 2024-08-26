@@ -311,8 +311,7 @@ nri::Result DisplayDescHelper::GetDisplayDesc(void* hwnd, nri::DisplayDesc& disp
 
         // Compute the intersection
 
-        int32_t intersectArea =
-            ComputeIntersectionArea(windowRect.left, windowRect.top, windowRect.right, windowRect.bottom, outputRect.left, outputRect.top, outputRect.right, outputRect.bottom);
+        int32_t intersectArea = ComputeIntersectionArea(windowRect.left, windowRect.top, windowRect.right, windowRect.bottom, outputRect.left, outputRect.top, outputRect.right, outputRect.bottom);
 
         if (intersectArea > bestIntersectArea) {
             bestOutput = currentOutput;

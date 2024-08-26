@@ -37,6 +37,9 @@ struct CommandBufferD3D11 final : public CommandBufferHelper {
         SET_D3D_DEBUG_OBJECT_NAME(m_CommandList, name);
     }
 
+    inline void EndRendering() {
+    }
+
     Result Begin(const DescriptorPool* descriptorPool);
     Result End();
     void SetViewports(const Viewport* viewports, uint32_t viewportNum);
@@ -49,8 +52,6 @@ struct CommandBufferD3D11 final : public CommandBufferHelper {
     void ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc);
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);
     void BeginRendering(const AttachmentsDesc& attachmentsDesc);
-    inline void EndRendering() {
-    }
     void SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets);
     void SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType);
     void SetPipelineLayout(const PipelineLayout& pipelineLayout);

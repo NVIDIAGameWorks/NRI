@@ -7,7 +7,8 @@ namespace nri {
 struct DeviceVK;
 
 struct CommandAllocatorVK {
-    inline CommandAllocatorVK(DeviceVK& device) : m_Device(device) {
+    inline CommandAllocatorVK(DeviceVK& device)
+        : m_Device(device) {
     }
 
     inline operator VkCommandPool() const {

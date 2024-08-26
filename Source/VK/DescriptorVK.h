@@ -26,14 +26,15 @@ struct DescriptorTextureDesc {
     const TextureVK* texture;
     VkImageLayout layout;
     VkImageAspectFlags aspectFlags;
-    Dim_t arrayOffset;
-    Dim_t arraySize;
+    Dim_t layerOffset;
+    Dim_t layerNum;
     Mip_t mipOffset;
     Mip_t mipNum;
 };
 
 struct DescriptorVK {
-    inline DescriptorVK(DeviceVK& device) : m_Device(device) {
+    inline DescriptorVK(DeviceVK& device)
+        : m_Device(device) {
     }
 
     inline DeviceVK& GetDevice() const {
@@ -98,8 +99,8 @@ struct DescriptorVK {
         range.aspectMask = m_TextureDesc.aspectFlags;
         range.baseMipLevel = m_TextureDesc.mipOffset;
         range.levelCount = m_TextureDesc.mipNum;
-        range.baseArrayLayer = m_TextureDesc.arrayOffset;
-        range.layerCount = m_TextureDesc.arraySize;
+        range.baseArrayLayer = m_TextureDesc.layerOffset;
+        range.layerCount = m_TextureDesc.layerNum;
     }
 
     ~DescriptorVK();
@@ -123,16 +124,19 @@ private:
 
 private:
     DeviceVK& m_Device;
+
     union {
         VkBufferView m_BufferView = VK_NULL_HANDLE;
         VkImageView m_ImageView;
         VkAccelerationStructureKHR m_AccelerationStructure;
         VkSampler m_Sampler;
     };
+
     union {
         DescriptorBufferDesc m_BufferDesc;
         DescriptorTextureDesc m_TextureDesc = {};
     };
+
     DescriptorTypeVK m_Type = DescriptorTypeVK::NONE;
     VkFormat m_Format = VK_FORMAT_UNDEFINED;
 };

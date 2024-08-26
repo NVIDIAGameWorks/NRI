@@ -29,8 +29,8 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
     DXGI_FORMAT format = GetDxgiFormat(textureViewDesc.format).typed;
 
     const TextureDesc& textureDesc = texture.GetDesc();
-    Mip_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
-    Dim_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
+    Mip_t remainingMips = textureViewDesc.mipNum == REMAINING_MIPS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
+    Dim_t remainingLayers = textureViewDesc.layerNum == REMAINING_LAYERS ? (textureDesc.layerNum - textureViewDesc.layerOffset) : textureViewDesc.layerNum;
 
     switch (textureViewDesc.viewType) {
         case Texture1DViewType::SHADER_RESOURCE_1D: {
@@ -39,7 +39,7 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
             desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             desc.Texture1D.MostDetailedMip = textureViewDesc.mipOffset;
-            desc.Texture1D.MipLevels = remainingMipLevels;
+            desc.Texture1D.MipLevels = remainingMips;
             desc.Texture1D.ResourceMinLODClamp = 0;
 
             return CreateShaderResourceView(texture, desc);
@@ -50,9 +50,9 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
             desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             desc.Texture1DArray.MostDetailedMip = textureViewDesc.mipOffset;
-            desc.Texture1DArray.MipLevels = remainingMipLevels;
-            desc.Texture1DArray.FirstArraySlice = textureViewDesc.arrayOffset;
-            desc.Texture1DArray.ArraySize = remainingArrayLayers;
+            desc.Texture1DArray.MipLevels = remainingMips;
+            desc.Texture1DArray.FirstArraySlice = textureViewDesc.layerOffset;
+            desc.Texture1DArray.ArraySize = remainingLayers;
             desc.Texture1DArray.ResourceMinLODClamp = 0;
 
             return CreateShaderResourceView(texture, desc);
@@ -70,8 +70,8 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
             desc.Format = format;
             desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
             desc.Texture1DArray.MipSlice = textureViewDesc.mipOffset;
-            desc.Texture1DArray.FirstArraySlice = textureViewDesc.arrayOffset;
-            desc.Texture1DArray.ArraySize = remainingArrayLayers;
+            desc.Texture1DArray.FirstArraySlice = textureViewDesc.layerOffset;
+            desc.Texture1DArray.ArraySize = remainingLayers;
 
             return CreateUnorderedAccessView(texture, desc, textureViewDesc.format);
         }
@@ -80,8 +80,8 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
             desc.Format = format;
             desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1DARRAY;
             desc.Texture1DArray.MipSlice = textureViewDesc.mipOffset;
-            desc.Texture1DArray.FirstArraySlice = textureViewDesc.arrayOffset;
-            desc.Texture1DArray.ArraySize = remainingArrayLayers;
+            desc.Texture1DArray.FirstArraySlice = textureViewDesc.layerOffset;
+            desc.Texture1DArray.ArraySize = remainingLayers;
 
             return CreateRenderTargetView(texture, desc);
         }
@@ -91,8 +91,8 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
             desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
             desc.Flags = D3D12_DSV_FLAG_NONE;
             desc.Texture1DArray.MipSlice = textureViewDesc.mipOffset;
-            desc.Texture1DArray.FirstArraySlice = textureViewDesc.arrayOffset;
-            desc.Texture1DArray.ArraySize = remainingArrayLayers;
+            desc.Texture1DArray.FirstArraySlice = textureViewDesc.layerOffset;
+            desc.Texture1DArray.ArraySize = remainingLayers;
 
             if (textureViewDesc.flags & ResourceViewBits::READONLY_DEPTH)
                 desc.Flags |= D3D12_DSV_FLAG_READ_ONLY_DEPTH;
@@ -111,8 +111,8 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
     DXGI_FORMAT format = GetDxgiFormat(textureViewDesc.format).typed;
 
     const TextureDesc& textureDesc = texture.GetDesc();
-    Mip_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
-    Dim_t remainingArrayLayers = textureViewDesc.arraySize == REMAINING_ARRAY_LAYERS ? (textureDesc.arraySize - textureViewDesc.arrayOffset) : textureViewDesc.arraySize;
+    Mip_t remainingMips = textureViewDesc.mipNum == REMAINING_MIPS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
+    Dim_t remainingLayers = textureViewDesc.layerNum == REMAINING_LAYERS ? (textureDesc.layerNum - textureViewDesc.layerOffset) : textureViewDesc.layerNum;
 
     switch (textureViewDesc.viewType) {
         case Texture2DViewType::SHADER_RESOURCE_2D: {
@@ -124,7 +124,7 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
             } else {
                 desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
                 desc.Texture2D.MostDetailedMip = textureViewDesc.mipOffset;
-                desc.Texture2D.MipLevels = remainingMipLevels;
+                desc.Texture2D.MipLevels = remainingMips;
                 desc.Texture2D.PlaneSlice = 0;
                 desc.Texture2D.ResourceMinLODClamp = 0;
             }
@@ -137,14 +137,14 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             if (textureDesc.sampleNum > 1) {
                 desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
-                desc.Texture2DMSArray.FirstArraySlice = textureViewDesc.arrayOffset;
-                desc.Texture2DMSArray.ArraySize = remainingArrayLayers;
+                desc.Texture2DMSArray.FirstArraySlice = textureViewDesc.layerOffset;
+                desc.Texture2DMSArray.ArraySize = remainingLayers;
             } else {
                 desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
                 desc.Texture2DArray.MostDetailedMip = textureViewDesc.mipOffset;
-                desc.Texture2DArray.MipLevels = remainingMipLevels;
-                desc.Texture2DArray.FirstArraySlice = textureViewDesc.arrayOffset;
-                desc.Texture2DArray.ArraySize = remainingArrayLayers;
+                desc.Texture2DArray.MipLevels = remainingMips;
+                desc.Texture2DArray.FirstArraySlice = textureViewDesc.layerOffset;
+                desc.Texture2DArray.ArraySize = remainingLayers;
                 desc.Texture2D.PlaneSlice = 0;
                 desc.Texture2DArray.ResourceMinLODClamp = 0;
             }
@@ -157,7 +157,7 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
             desc.TextureCube.MostDetailedMip = textureViewDesc.mipOffset;
-            desc.TextureCube.MipLevels = remainingMipLevels;
+            desc.TextureCube.MipLevels = remainingMips;
 
             return CreateShaderResourceView(texture, desc);
         }
@@ -167,9 +167,9 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
             desc.TextureCubeArray.MostDetailedMip = textureViewDesc.mipOffset;
-            desc.TextureCubeArray.MipLevels = remainingMipLevels;
-            desc.TextureCubeArray.First2DArrayFace = textureViewDesc.arrayOffset;
-            desc.TextureCubeArray.NumCubes = remainingArrayLayers / 6;
+            desc.TextureCubeArray.MipLevels = remainingMips;
+            desc.TextureCubeArray.First2DArrayFace = textureViewDesc.layerOffset;
+            desc.TextureCubeArray.NumCubes = remainingLayers / 6;
 
             return CreateShaderResourceView(texture, desc);
         }
@@ -187,8 +187,8 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
             desc.Format = format;
             desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
             desc.Texture2DArray.MipSlice = textureViewDesc.mipOffset;
-            desc.Texture2DArray.FirstArraySlice = textureViewDesc.arrayOffset;
-            desc.Texture2DArray.ArraySize = remainingArrayLayers;
+            desc.Texture2DArray.FirstArraySlice = textureViewDesc.layerOffset;
+            desc.Texture2DArray.ArraySize = remainingLayers;
             desc.Texture2DArray.PlaneSlice = 0;
 
             return CreateUnorderedAccessView(texture, desc, textureViewDesc.format);
@@ -198,8 +198,8 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
             desc.Format = format;
             desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
             desc.Texture2DArray.MipSlice = textureViewDesc.mipOffset;
-            desc.Texture2DArray.FirstArraySlice = textureViewDesc.arrayOffset;
-            desc.Texture2DArray.ArraySize = remainingArrayLayers;
+            desc.Texture2DArray.FirstArraySlice = textureViewDesc.layerOffset;
+            desc.Texture2DArray.ArraySize = remainingLayers;
             desc.Texture2DArray.PlaneSlice = 0;
 
             return CreateRenderTargetView(texture, desc);
@@ -210,8 +210,8 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
             desc.Flags = D3D12_DSV_FLAG_NONE;
             desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
             desc.Texture2DArray.MipSlice = textureViewDesc.mipOffset;
-            desc.Texture2DArray.FirstArraySlice = textureViewDesc.arrayOffset;
-            desc.Texture2DArray.ArraySize = remainingArrayLayers;
+            desc.Texture2DArray.FirstArraySlice = textureViewDesc.layerOffset;
+            desc.Texture2DArray.ArraySize = remainingLayers;
 
             if (textureViewDesc.flags & ResourceViewBits::READONLY_DEPTH)
                 desc.Flags |= D3D12_DSV_FLAG_READ_ONLY_DEPTH;
@@ -230,7 +230,7 @@ Result DescriptorD3D12::Create(const Texture3DViewDesc& textureViewDesc) {
     DXGI_FORMAT format = GetDxgiFormat(textureViewDesc.format).typed;
 
     const TextureDesc& textureDesc = texture.GetDesc();
-    Mip_t remainingMipLevels = textureViewDesc.mipNum == REMAINING_MIP_LEVELS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
+    Mip_t remainingMips = textureViewDesc.mipNum == REMAINING_MIPS ? (textureDesc.mipNum - textureViewDesc.mipOffset) : textureViewDesc.mipNum;
 
     switch (textureViewDesc.viewType) {
         case Texture3DViewType::SHADER_RESOURCE_3D: {
@@ -239,7 +239,7 @@ Result DescriptorD3D12::Create(const Texture3DViewDesc& textureViewDesc) {
             desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             desc.Texture3D.MostDetailedMip = textureViewDesc.mipOffset;
-            desc.Texture3D.MipLevels = remainingMipLevels;
+            desc.Texture3D.MipLevels = remainingMips;
             desc.Texture3D.ResourceMinLODClamp = 0;
 
             return CreateShaderResourceView(texture, desc);
@@ -331,8 +331,9 @@ Result DescriptorD3D12::Create(const SamplerDesc& samplerDesc) {
     bool useComparison = samplerDesc.compareFunc != CompareFunc::NONE;
 
     D3D12_SAMPLER_DESC desc = {};
-    desc.Filter = useAnisotropy ? GetFilterAnisotropic(samplerDesc.filters.ext, useComparison)
-                                : GetFilterIsotropic(samplerDesc.filters.mip, samplerDesc.filters.mag, samplerDesc.filters.min, samplerDesc.filters.ext, useComparison);
+    desc.Filter = useAnisotropy
+        ? GetFilterAnisotropic(samplerDesc.filters.ext, useComparison)
+        : GetFilterIsotropic(samplerDesc.filters.mip, samplerDesc.filters.mag, samplerDesc.filters.min, samplerDesc.filters.ext, useComparison);
     desc.AddressU = GetAddressMode(samplerDesc.addressModes.u);
     desc.AddressV = GetAddressMode(samplerDesc.addressModes.v);
     desc.AddressW = GetAddressMode(samplerDesc.addressModes.w);
@@ -342,9 +343,9 @@ Result DescriptorD3D12::Create(const SamplerDesc& samplerDesc) {
     desc.MinLOD = samplerDesc.mipMin;
     desc.MaxLOD = samplerDesc.mipMax;
 
-    if (samplerDesc.borderColor == BorderColor::FLOAT_OPAQUE_BLACK || samplerDesc.borderColor == BorderColor::INT_OPAQUE_BLACK) {
+    if (samplerDesc.borderColor == BorderColor::FLOAT_OPAQUE_BLACK || samplerDesc.borderColor == BorderColor::INT_OPAQUE_BLACK)
         desc.BorderColor[3] = 1.0f;
-    } else if (samplerDesc.borderColor == BorderColor::FLOAT_OPAQUE_WHITE || samplerDesc.borderColor == BorderColor::INT_OPAQUE_WHITE) {
+    else if (samplerDesc.borderColor == BorderColor::FLOAT_OPAQUE_WHITE || samplerDesc.borderColor == BorderColor::INT_OPAQUE_WHITE) {
         desc.BorderColor[0] = 1.0f;
         desc.BorderColor[1] = 1.0f;
         desc.BorderColor[2] = 1.0f;

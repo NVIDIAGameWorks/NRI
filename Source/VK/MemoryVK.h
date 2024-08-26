@@ -11,7 +11,8 @@ struct BufferVK;
 struct TextureVK;
 
 struct MemoryVK {
-    inline MemoryVK(DeviceVK& device) : m_Device(device) {
+    inline MemoryVK(DeviceVK& device)
+        : m_Device(device) {
     }
 
     inline VkDeviceMemory GetHandle() const {

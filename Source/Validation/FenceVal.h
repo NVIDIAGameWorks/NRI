@@ -7,7 +7,8 @@ namespace nri {
 struct CommandQueueVal;
 
 struct FenceVal : public DeviceObjectVal<Fence> {
-    inline FenceVal(DeviceVal& device, Fence* fence) : DeviceObjectVal(device, fence) {
+    inline FenceVal(DeviceVal& device, Fence* fence)
+        : DeviceObjectVal(device, fence) {
     }
 
     inline ~FenceVal() {

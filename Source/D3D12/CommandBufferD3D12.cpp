@@ -86,8 +86,7 @@ static inline D3D12_BARRIER_SYNC GetBarrierSyncFlags(StageBits stageBits) {
         flags |= D3D12_BARRIER_SYNC_CLEAR_UNORDERED_ACCESS_VIEW;
 
     if (stageBits & StageBits::ACCELERATION_STRUCTURE)
-        flags |= D3D12_BARRIER_SYNC_BUILD_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_BARRIER_SYNC_COPY_RAYTRACING_ACCELERATION_STRUCTURE |
-                 D3D12_BARRIER_SYNC_EMIT_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO;
+        flags |= D3D12_BARRIER_SYNC_BUILD_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_BARRIER_SYNC_COPY_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_BARRIER_SYNC_EMIT_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO;
 
     return flags;
 }
@@ -511,13 +510,13 @@ inline void CommandBufferD3D12::CopyTexture(Texture& dstTexture, const TextureRe
         D3D12_TEXTURE_COPY_LOCATION dstTextureCopyLocation = {
             dstTextureD3D12,
             D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-            dstTextureD3D12.GetSubresourceIndex(dstRegion->arrayOffset, dstRegion->mipOffset),
+            dstTextureD3D12.GetSubresourceIndex(dstRegion->layerOffset, dstRegion->mipOffset),
         };
 
         D3D12_TEXTURE_COPY_LOCATION srcTextureCopyLocation = {
             srcTextureD3D12,
             D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-            srcTextureD3D12.GetSubresourceIndex(srcRegion->arrayOffset, srcRegion->mipOffset),
+            srcTextureD3D12.GetSubresourceIndex(srcRegion->layerOffset, srcRegion->mipOffset),
         };
 
         const uint16_t size[3] = {srcRegion->width == WHOLE_SIZE ? srcTextureD3D12.GetSize(0, srcRegion->mipOffset) : srcRegion->width,
@@ -535,7 +534,7 @@ inline void CommandBufferD3D12::UploadBufferToTexture(
     D3D12_TEXTURE_COPY_LOCATION dstTextureCopyLocation = {
         dstTextureD3D12,
         D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-        dstTextureD3D12.GetSubresourceIndex(dstRegionDesc.arrayOffset, dstRegionDesc.mipOffset),
+        dstTextureD3D12.GetSubresourceIndex(dstRegionDesc.layerOffset, dstRegionDesc.mipOffset),
     };
 
     const uint16_t size[3] = {
@@ -572,7 +571,7 @@ inline void CommandBufferD3D12::ReadbackTextureToBuffer(
     D3D12_TEXTURE_COPY_LOCATION srcTextureCopyLocation = {
         srcTextureD3D12,
         D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-        srcTextureD3D12.GetSubresourceIndex(srcRegionDesc.arrayOffset, srcRegionDesc.mipOffset),
+        srcTextureD3D12.GetSubresourceIndex(srcRegionDesc.layerOffset, srcRegionDesc.mipOffset),
     };
 
     D3D12_TEXTURE_COPY_LOCATION dstTextureCopyLocation = {};
@@ -692,9 +691,9 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
                 out.LayoutAfter = GetBarrierLayout(in.after.layout);
                 out.pResource = texture;
                 out.Subresources.IndexOrFirstMipLevel = in.mipOffset;
-                out.Subresources.NumMipLevels = in.mipNum == REMAINING_MIP_LEVELS ? desc.mipNum : in.mipNum;
-                out.Subresources.FirstArraySlice = in.arrayOffset;
-                out.Subresources.NumArraySlices = in.arraySize == REMAINING_ARRAY_LAYERS ? desc.arraySize : in.arraySize;
+                out.Subresources.NumMipLevels = in.mipNum == REMAINING_MIPS ? desc.mipNum : in.mipNum;
+                out.Subresources.FirstArraySlice = in.layerOffset;
+                out.Subresources.NumArraySlices = in.layerNum == REMAINING_LAYERS ? desc.layerNum : in.layerNum;
                 out.Subresources.FirstPlane = 0;
                 out.Subresources.NumPlanes = 1;
 
@@ -715,13 +714,13 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
             const TextureBarrierDesc& barrierDesc = barrierGroupDesc.textures[i];
             const TextureD3D12& texture = *(TextureD3D12*)barrierDesc.texture;
             const TextureDesc& textureDesc = texture.GetDesc();
-            const Dim_t arraySize = barrierDesc.arraySize == REMAINING_ARRAY_LAYERS ? textureDesc.arraySize : barrierDesc.arraySize;
-            const Mip_t mipNum = barrierDesc.mipNum == REMAINING_MIP_LEVELS ? textureDesc.mipNum : barrierDesc.mipNum;
+            const Dim_t layerNum = barrierDesc.layerNum == REMAINING_LAYERS ? textureDesc.layerNum : barrierDesc.layerNum;
+            const Mip_t mipNum = barrierDesc.mipNum == REMAINING_MIPS ? textureDesc.mipNum : barrierDesc.mipNum;
 
-            if (barrierDesc.arrayOffset == 0 && arraySize == textureDesc.arraySize && barrierDesc.mipOffset == 0 && mipNum == textureDesc.mipNum)
+            if (barrierDesc.layerOffset == 0 && layerNum == textureDesc.layerNum && barrierDesc.mipOffset == 0 && mipNum == textureDesc.mipNum)
                 barrierNum++;
             else
-                barrierNum += arraySize * mipNum;
+                barrierNum += layerNum * mipNum;
         }
 
         bool isGlobalUavBarrierNeeded = false;
@@ -753,15 +752,15 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
             const TextureBarrierDesc& barrierDesc = barrierGroupDesc.textures[i];
             const TextureD3D12& texture = *(TextureD3D12*)barrierDesc.texture;
             const TextureDesc& textureDesc = texture.GetDesc();
-            const Dim_t arraySize = barrierDesc.arraySize == REMAINING_ARRAY_LAYERS ? textureDesc.arraySize : barrierDesc.arraySize;
-            const Mip_t mipNum = barrierDesc.mipNum == REMAINING_MIP_LEVELS ? textureDesc.mipNum : barrierDesc.mipNum;
+            const Dim_t layerNum = barrierDesc.layerNum == REMAINING_LAYERS ? textureDesc.layerNum : barrierDesc.layerNum;
+            const Mip_t mipNum = barrierDesc.mipNum == REMAINING_MIPS ? textureDesc.mipNum : barrierDesc.mipNum;
 
-            if (barrierDesc.arrayOffset == 0 && arraySize == textureDesc.arraySize && barrierDesc.mipOffset == 0 && mipNum == textureDesc.mipNum)
+            if (barrierDesc.layerOffset == 0 && layerNum == textureDesc.layerNum && barrierDesc.mipOffset == 0 && mipNum == textureDesc.mipNum)
                 AddResourceBarrier(commandListType, texture, barrierDesc.before.access, barrierDesc.after.access, *ptr++, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
             else {
-                for (Dim_t arrayOffset = barrierDesc.arrayOffset; arrayOffset < barrierDesc.arrayOffset + arraySize; arrayOffset++) {
+                for (Dim_t layerOffset = barrierDesc.layerOffset; layerOffset < barrierDesc.layerOffset + layerNum; layerOffset++) {
                     for (Mip_t mipOffset = barrierDesc.mipOffset; mipOffset < barrierDesc.mipOffset + mipNum; mipOffset++) {
-                        uint32_t subresource = texture.GetSubresourceIndex(arrayOffset, mipOffset);
+                        uint32_t subresource = texture.GetSubresourceIndex(layerOffset, mipOffset);
                         AddResourceBarrier(commandListType, texture, barrierDesc.before.access, barrierDesc.after.access, *ptr++, subresource);
                     }
                 }

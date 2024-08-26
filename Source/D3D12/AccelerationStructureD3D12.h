@@ -8,7 +8,8 @@ struct DeviceD3D12;
 struct BufferD3D12;
 
 struct AccelerationStructureD3D12 {
-    inline AccelerationStructureD3D12(DeviceD3D12& device) : m_Device(device) {
+    inline AccelerationStructureD3D12(DeviceD3D12& device)
+        : m_Device(device) {
     }
 
     inline DeviceD3D12& GetDevice() const {

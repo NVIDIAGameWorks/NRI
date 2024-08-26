@@ -35,7 +35,8 @@ private:
 };
 
 struct ExclusiveScope {
-    inline ExclusiveScope(Lock& lock) : m_Lock(lock) {
+    inline ExclusiveScope(Lock& lock)
+        : m_Lock(lock) {
         m_Lock.Acquire();
     }
 

@@ -18,7 +18,8 @@ struct MemoryD3D12;
 constexpr bool ACCELERATION_STRUCTURE_BUFFER = true;
 
 struct BufferD3D12 {
-    inline BufferD3D12(DeviceD3D12& device) : m_Device(device) {
+    inline BufferD3D12(DeviceD3D12& device)
+        : m_Device(device) {
     }
 
     inline ~BufferD3D12() {

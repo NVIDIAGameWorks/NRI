@@ -46,6 +46,7 @@ struct SwapChainVK : public DisplayDescHelper {
     Result GetLatencyReport(LatencyReport& latencyReport);
 
 private:
+    DeviceVK& m_Device;
     Vector<TextureVK*> m_Textures;
     FenceVK* m_LatencyFence = nullptr;
     std::array<VkSemaphore, MAX_NUMBER_OF_FRAMES_IN_FLIGHT> m_ImageAcquiredSemaphores = {VK_NULL_HANDLE};
@@ -53,7 +54,6 @@ private:
     SwapChainDesc m_Desc = {};
     VkSwapchainKHR m_Handle = VK_NULL_HANDLE;
     VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
-    DeviceVK& m_Device;
     CommandQueueVK* m_CommandQueue = nullptr;
     uint64_t m_PresentId = 0;
     uint32_t m_TextureIndex = 0;

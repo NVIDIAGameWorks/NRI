@@ -104,14 +104,17 @@ struct StdAllocator {
     typedef std::true_type propagate_on_container_move_assignment;
     typedef std::false_type is_always_equal;
 
-    StdAllocator(const AllocationCallbacks& allocationCallbacks) : m_Interface(allocationCallbacks) {
+    StdAllocator(const AllocationCallbacks& allocationCallbacks)
+        : m_Interface(allocationCallbacks) {
     }
 
-    StdAllocator(const StdAllocator<T>& allocator) : m_Interface(allocator.GetInterface()) {
+    StdAllocator(const StdAllocator<T>& allocator)
+        : m_Interface(allocator.GetInterface()) {
     }
 
     template <class U>
-    StdAllocator(const StdAllocator<U>& allocator) : m_Interface(allocator.GetInterface()) {
+    StdAllocator(const StdAllocator<U>& allocator)
+        : m_Interface(allocator.GetInterface()) {
     }
 
     StdAllocator<T>& operator=(const StdAllocator<T>& allocator) {

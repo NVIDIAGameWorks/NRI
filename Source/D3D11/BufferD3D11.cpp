@@ -203,7 +203,7 @@ TextureD3D11& BufferD3D11::RecreateReadbackTexture(const TextureD3D11& srcTextur
         TextureDesc textureDesc = {};
         textureDesc.mipNum = 1;
         textureDesc.sampleNum = 1;
-        textureDesc.arraySize = 1;
+        textureDesc.layerNum = 1;
         textureDesc.format = srcTexture.GetDesc().format;
         textureDesc.width = srcRegionDesc.width;
         textureDesc.height = srcRegionDesc.height;

@@ -4,18 +4,23 @@
 
 using namespace nri;
 
-HelperDeviceMemoryAllocator::MemoryHeap::MemoryHeap(MemoryType memoryType, const StdAllocator<uint8_t>& stdAllocator) :
-    buffers(stdAllocator), bufferOffsets(stdAllocator), textures(stdAllocator), textureOffsets(stdAllocator), size(0), type(memoryType) {
+HelperDeviceMemoryAllocator::MemoryHeap::MemoryHeap(MemoryType memoryType, const StdAllocator<uint8_t>& stdAllocator)
+    : buffers(stdAllocator)
+    , bufferOffsets(stdAllocator)
+    , textures(stdAllocator)
+    , textureOffsets(stdAllocator)
+    , size(0)
+    , type(memoryType) {
 }
 
-HelperDeviceMemoryAllocator::HelperDeviceMemoryAllocator(const CoreInterface& NRI, Device& device) :
-    m_NRI(NRI),
-    m_Device(device),
-    m_Heaps(((DeviceBase&)device).GetStdAllocator()),
-    m_DedicatedBuffers(((DeviceBase&)device).GetStdAllocator()),
-    m_DedicatedTextures(((DeviceBase&)device).GetStdAllocator()),
-    m_BufferBindingDescs(((DeviceBase&)device).GetStdAllocator()),
-    m_TextureBindingDescs(((DeviceBase&)device).GetStdAllocator()) {
+HelperDeviceMemoryAllocator::HelperDeviceMemoryAllocator(const CoreInterface& NRI, Device& device)
+    : m_NRI(NRI)
+    , m_Device(device)
+    , m_Heaps(((DeviceBase&)device).GetStdAllocator())
+    , m_DedicatedBuffers(((DeviceBase&)device).GetStdAllocator())
+    , m_DedicatedTextures(((DeviceBase&)device).GetStdAllocator())
+    , m_BufferBindingDescs(((DeviceBase&)device).GetStdAllocator())
+    , m_TextureBindingDescs(((DeviceBase&)device).GetStdAllocator()) {
 }
 
 uint32_t HelperDeviceMemoryAllocator::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) {

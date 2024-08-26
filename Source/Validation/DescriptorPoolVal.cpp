@@ -89,13 +89,10 @@ Result DescriptorPoolVal::AllocateDescriptorSets(
     const PipelineLayoutDesc& pipelineLayoutDesc = pipelineLayoutVal.GetPipelineLayoutDesc();
 
     RETURN_ON_FAILURE(&m_Device, instanceNum != 0, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: 'instanceNum' is 0");
-
-    RETURN_ON_FAILURE(&m_Device, m_DescriptorSetsNum + instanceNum <= m_Desc.descriptorSetMaxNum, Result::INVALID_ARGUMENT,
-        "AllocateDescriptorSets: the maximum number of descriptor sets exceeded");
+    RETURN_ON_FAILURE(&m_Device, m_DescriptorSetsNum + instanceNum <= m_Desc.descriptorSetMaxNum, Result::INVALID_ARGUMENT,"AllocateDescriptorSets: the maximum number of descriptor sets exceeded");
 
     if (!m_SkipValidation) {
-        RETURN_ON_FAILURE(
-            &m_Device, setIndexInPipelineLayout < pipelineLayoutDesc.descriptorSetNum, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: 'setIndexInPipelineLayout' is invalid");
+        RETURN_ON_FAILURE(&m_Device, setIndexInPipelineLayout < pipelineLayoutDesc.descriptorSetNum, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: 'setIndexInPipelineLayout' is invalid");
 
         const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[setIndexInPipelineLayout];
 

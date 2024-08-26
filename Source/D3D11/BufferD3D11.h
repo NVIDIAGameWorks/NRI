@@ -17,7 +17,8 @@ struct QueryRange {
 };
 
 struct BufferD3D11 {
-    inline BufferD3D11(DeviceD3D11& device) : m_Device(device) {
+    inline BufferD3D11(DeviceD3D11& device)
+        : m_Device(device) {
     }
 
     inline operator ID3D11Buffer*() const {

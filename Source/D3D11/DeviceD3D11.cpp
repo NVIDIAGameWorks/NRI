@@ -80,7 +80,8 @@ Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc,
     return result;
 }
 
-DeviceD3D11::DeviceD3D11(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator) : DeviceBase(callbacks, stdAllocator) {
+DeviceD3D11::DeviceD3D11(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator)
+    : DeviceBase(callbacks, stdAllocator) {
     m_Desc.graphicsAPI = GraphicsAPI::D3D11;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
@@ -324,7 +325,7 @@ void DeviceD3D11::FillDesc() {
     m_Desc.texture1DMaxDim = D3D11_REQ_TEXTURE1D_U_DIMENSION;
     m_Desc.texture2DMaxDim = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
     m_Desc.texture3DMaxDim = D3D11_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
-    m_Desc.textureArrayMaxDim = D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
+    m_Desc.textureArrayMaxLayerNum = D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
     m_Desc.texelBufferMaxDim = (1 << D3D11_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP) - 1;
 
     m_Desc.memoryAllocationMaxNum = 0xFFFFFFFF;
@@ -363,8 +364,7 @@ void DeviceD3D11::FillDesc() {
     m_Desc.tessControlShaderPerVertexInputComponentMaxNum = D3D11_HS_CONTROL_POINT_PHASE_INPUT_REGISTER_COUNT * D3D11_HS_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessControlShaderPerVertexOutputComponentMaxNum = D3D11_HS_CONTROL_POINT_PHASE_OUTPUT_REGISTER_COUNT * D3D11_HS_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessControlShaderPerPatchOutputComponentMaxNum = D3D11_HS_OUTPUT_PATCH_CONSTANT_REGISTER_SCALAR_COMPONENTS;
-    m_Desc.tessControlShaderTotalOutputComponentMaxNum =
-        m_Desc.tessControlShaderPatchPointMaxNum * m_Desc.tessControlShaderPerVertexOutputComponentMaxNum + m_Desc.tessControlShaderPerPatchOutputComponentMaxNum;
+    m_Desc.tessControlShaderTotalOutputComponentMaxNum = m_Desc.tessControlShaderPatchPointMaxNum * m_Desc.tessControlShaderPerVertexOutputComponentMaxNum + m_Desc.tessControlShaderPerPatchOutputComponentMaxNum;
 
     m_Desc.tessEvaluationShaderInputComponentMaxNum = D3D11_DS_INPUT_CONTROL_POINT_REGISTER_COUNT * D3D11_DS_INPUT_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessEvaluationShaderOutputComponentMaxNum = D3D11_DS_INPUT_CONTROL_POINT_REGISTER_COUNT * D3D11_DS_INPUT_CONTROL_POINT_REGISTER_COMPONENTS;
@@ -552,9 +552,12 @@ inline FormatSupportBits DeviceD3D11::GetFormatSupport(Format format) const {
     if ((formatSupport2.OutFormatSupport2 & (optional)) != 0) \
         mask |= bit;
 
-    const uint32_t anyAtomics = D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_ADD | D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_BITWISE_OPS |
-                                D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_COMPARE_STORE_OR_COMPARE_EXCHANGE | D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_EXCHANGE |
-                                D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_SIGNED_MIN_OR_MAX | D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_UNSIGNED_MIN_OR_MAX;
+    const uint32_t anyAtomics = D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_ADD
+        | D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_BITWISE_OPS
+        | D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_COMPARE_STORE_OR_COMPARE_EXCHANGE
+        | D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_EXCHANGE
+        | D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_SIGNED_MIN_OR_MAX
+        | D3D11_FORMAT_SUPPORT2_UAV_ATOMIC_UNSIGNED_MIN_OR_MAX;
 
     if (SUCCEEDED(hr)) {
         if (mask & FormatSupportBits::STORAGE_TEXTURE)

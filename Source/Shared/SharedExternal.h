@@ -213,7 +213,8 @@ struct IUnknown;
 // This struct acts as a smart pointer for IUnknown pointers making sure to call AddRef() and Release() as needed.
 template <typename T>
 struct ComPtr {
-    inline ComPtr(T* lComPtr = nullptr) : m_ComPtr(lComPtr) {
+    inline ComPtr(T* lComPtr = nullptr)
+        : m_ComPtr(lComPtr) {
         static_assert(std::is_base_of<IUnknown, T>::value, "T needs to be IUnknown based");
 
         if (m_ComPtr)
