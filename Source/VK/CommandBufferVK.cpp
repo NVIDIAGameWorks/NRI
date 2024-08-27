@@ -175,26 +175,21 @@ inline void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, uint3
         memcpy(&attachment.clearValue, &desc.value, sizeof(VkClearValue));
     }
 
-    VkClearRect* clearRects = nullptr;
-    if (rectNum == 0) {
-        clearRects = StackAlloc(VkClearRect, clearDescNum);
-        rectNum = clearDescNum;
-
-        for (uint32_t i = 0; i < clearDescNum; i++) {
-            VkClearRect& clearRect = clearRects[i];
-            clearRect.baseArrayLayer = 0;
-            clearRect.layerCount = m_RenderLayerNum;
-            clearRect.rect = {{0, 0}, {m_RenderWidth, m_RenderHeight}};
-        }
-    } else {
-        clearRects = StackAlloc(VkClearRect, rectNum);
-
+    VkClearRect* clearRects = StackAlloc(VkClearRect, rectNum ? rectNum : clearDescNum);
+    if (rectNum) {
         for (uint32_t i = 0; i < rectNum; i++) {
             const Rect& rect = rects[i];
             VkClearRect& clearRect = clearRects[i];
             clearRect.baseArrayLayer = 0;
             clearRect.layerCount = 1;
             clearRect.rect = {{rect.x, rect.y}, {rect.width, rect.height}};
+        }
+    } else {
+        for (uint32_t i = 0; i < clearDescNum; i++) {
+            VkClearRect& clearRect = clearRects[i];
+            clearRect.baseArrayLayer = 0;
+            clearRect.layerCount = m_RenderLayerNum;
+            clearRect.rect = {{0, 0}, {m_RenderWidth, m_RenderHeight}};
         }
     }
 
@@ -225,32 +220,28 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
     m_RenderWidth = deviceDesc.attachmentMaxDim;
     m_RenderHeight = deviceDesc.attachmentMaxDim;
 
-    VkRenderingAttachmentInfo* colors = nullptr;
-    if (attachmentsDesc.colorNum) {
-        colors = StackAlloc(VkRenderingAttachmentInfo, attachmentsDesc.colorNum);
+    VkRenderingAttachmentInfo* colors = StackAlloc(VkRenderingAttachmentInfo, attachmentsDesc.colorNum);
+    for (uint32_t i = 0; i < attachmentsDesc.colorNum; i++) {
+        const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.colors[i];
 
-        for (uint32_t i = 0; i < attachmentsDesc.colorNum; i++) {
-            const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.colors[i];
+        VkRenderingAttachmentInfo& color = colors[i];
+        color = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+        color.imageView = descriptor.GetImageView();
+        color.imageLayout = descriptor.GetImageLayout();
+        color.resolveMode = VK_RESOLVE_MODE_NONE;
+        color.resolveImageView = VK_NULL_HANDLE;
+        color.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        color.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        color.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        color.clearValue = {};
 
-            VkRenderingAttachmentInfo& color = colors[i];
-            color = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
-            color.imageView = descriptor.GetImageView();
-            color.imageLayout = descriptor.GetImageLayout();
-            color.resolveMode = VK_RESOLVE_MODE_NONE;
-            color.resolveImageView = VK_NULL_HANDLE;
-            color.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            color.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-            color.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-            color.clearValue = {};
+        const DescriptorTextureDesc& desc = descriptor.GetTextureDesc();
+        Dim_t w = desc.texture->GetSize(0, desc.mipOffset);
+        Dim_t h = desc.texture->GetSize(1, desc.mipOffset);
 
-            const DescriptorTextureDesc& desc = descriptor.GetTextureDesc();
-            Dim_t w = desc.texture->GetSize(0, desc.mipOffset);
-            Dim_t h = desc.texture->GetSize(1, desc.mipOffset);
-
-            m_RenderLayerNum = std::min(m_RenderLayerNum, desc.layerNum);
-            m_RenderWidth = std::min(m_RenderWidth, w);
-            m_RenderHeight = std::min(m_RenderHeight, h);
-        }
+        m_RenderLayerNum = std::min(m_RenderLayerNum, desc.layerNum);
+        m_RenderWidth = std::min(m_RenderWidth, w);
+        m_RenderHeight = std::min(m_RenderHeight, h);
     }
 
     VkRenderingAttachmentInfo depthStencil = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
