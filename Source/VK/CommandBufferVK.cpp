@@ -175,8 +175,12 @@ inline void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, uint3
         memcpy(&attachment.clearValue, &desc.value, sizeof(VkClearValue));
     }
 
-    VkClearRect* clearRects = StackAlloc(VkClearRect, rectNum ? rectNum : clearDescNum);
-    if (rectNum) {
+    bool hasRects = rectNum != 0;
+    if (!hasRects)
+        rectNum = clearDescNum;
+
+    VkClearRect* clearRects = StackAlloc(VkClearRect, rectNum);
+    if (hasRects) {
         for (uint32_t i = 0; i < rectNum; i++) {
             const Rect& rect = rects[i];
             VkClearRect& clearRect = clearRects[i];
@@ -185,7 +189,7 @@ inline void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, uint3
             clearRect.rect = {{rect.x, rect.y}, {rect.width, rect.height}};
         }
     } else {
-        for (uint32_t i = 0; i < clearDescNum; i++) {
+        for (uint32_t i = 0; i < rectNum; i++) {
             VkClearRect& clearRect = clearRects[i];
             clearRect.baseArrayLayer = 0;
             clearRect.layerCount = m_RenderLayerNum;
