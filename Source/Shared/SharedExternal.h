@@ -174,6 +174,8 @@ inline nri::Vendor GetVendorFromID(uint32_t vendorID) {
             return nri::Vendor::AMD;
         case 0x8086:
             return nri::Vendor::INTEL;
+        case 0x106b:
+            return nri::Vendor::APPLE;
     }
 
     return nri::Vendor::UNKNOWN;
