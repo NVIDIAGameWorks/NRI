@@ -6,6 +6,9 @@
 
 NRI_NAMESPACE_BEGIN
 
+
+
+
 NRI_STRUCT(DeviceCreationMTLDesc)
 {
     bool enableNRIValidation;
@@ -17,6 +20,20 @@ NRI_STRUCT(CommandBufferMTLDesc)
 
 }
 
+NRI_STRUCT(BufferMTLDesc)
+{
+  id<MTLBuffer> buffer;
+  void* mappedMemory;
+  MTLResourceOptions options; 
+}
+
+
+NRI_STRUCT(MemoryMTLDesc)
+{
+  id<MTLBuffer> buffer;
+  void* mappedMemory;
+  MTLResourceOptions options; 
+}
 
 NRI_API NRI_NAME(Result) NRI_CALL nriCreateDeviceFromMtlDevice(const NRI_NAME_REF(DeviceCreationMTLDesc) deviceDesc, NRI_NAME_REF(Device*) device);
 
