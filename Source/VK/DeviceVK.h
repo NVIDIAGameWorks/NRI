@@ -2,6 +2,7 @@
 
 #pragma once
 
+
 namespace nri {
 
 struct CommandQueueVK;
@@ -25,7 +26,7 @@ struct DeviceVK final : public DeviceBase {
         return m_Device;
     }
 
-    inline operator VkPhysicalDevice() const {
+    inline operator VkPhysicalDevice() const {DeviceB
         return m_PhysicalDevice;
     }
 
