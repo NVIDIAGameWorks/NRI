@@ -18,7 +18,12 @@ Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBas
 Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, DeviceBase*& device);
 #endif
 
-#if NRI_USE_VK
+#if NRI_USE_MTL
+Result CreateDeviceMTL(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
+Result CreateDeviceMTL(const DeviceCreationMTLDesc& deviceCreationDesc, DeviceBase*& device);
+#endif
+
+#if NRI_USE_VULKAN
 Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
 Result CreateDeviceVK(const DeviceCreationVKDesc& deviceDesc, DeviceBase*& device);
 #endif
@@ -275,6 +280,24 @@ NRI_API Result NRI_CALL nriCreateDeviceFromD3D12Device(const DeviceCreationD3D12
     DeviceBase* deviceImpl = nullptr;
 
 #if NRI_USE_D3D12
+    result = CreateDeviceD3D12(tempDeviceCreationD3D12Desc, deviceImpl);
+#endif
+
+    if (result != Result::SUCCESS)
+        return result;
+
+    return FinalizeDeviceCreation(deviceCreationDesc, *deviceImpl, device);
+}
+
+NRI_API Result NRI_CALL nriCreateDeviceFromMtlDevice(const DeviceCreationMTLDesc& deviceCreationMtlDesc, Device*& device) {
+    DeviceCreationDesc deviceCreationDesc = {};
+    deviceCreationDesc.graphicsAPI = GraphicsAPI::MTL;
+    deviceCreationDesc.enableNRIValidation = deviceCreationMtlDesc.enableNRIValidation;
+    
+    Result result = Result::UNSUPPORTED;
+    DeviceBase* deviceImpl = nullptr;
+
+#if NRI_USE_MTL
     result = CreateDeviceD3D12(tempDeviceCreationD3D12Desc, deviceImpl);
 #endif
 

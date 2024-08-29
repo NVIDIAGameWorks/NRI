@@ -1,4 +1,4 @@
-﻿// © 2021 NVIDIA Corporation
+// © 2021 NVIDIA Corporation
 
 #pragma once
 
@@ -1284,11 +1284,23 @@ NriStruct(PipelineStatisticsDesc) {
 #pragma region [ Device desc ]
 //============================================================================================================================================================================================
 
+NriEnum(GraphicsAPI, uint8_t,
+    D3D11,
+    D3D12,
+    VK,
+    MTL,
+
+    MAX_NUM
+);
+
 NriEnum(Vendor, uint8_t,
     UNKNOWN,
     NVIDIA,
     AMD,
-    INTEL
+    INTEL,
+    APPLE,
+
+    MAX_NUM
 );
 
 NriStruct(AdapterDesc) {
