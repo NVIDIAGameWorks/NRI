@@ -122,16 +122,19 @@ constexpr bool IsAccessMaskSupported(BufferUsageBits usageMask, AccessBits acces
     if (accessMask & AccessBits::COLOR_ATTACHMENT)
         return false;
 
-    if (accessMask & AccessBits::DEPTH_STENCIL_WRITE)
+    if (accessMask & AccessBits::DEPTH_STENCIL_ATTACHMENT_WRITE)
         return false;
 
-    if (accessMask & AccessBits::DEPTH_STENCIL_READ)
+    if (accessMask & AccessBits::DEPTH_STENCIL_ATTACHMENT_READ)
         return false;
 
     if (accessMask & AccessBits::ACCELERATION_STRUCTURE_READ)
         return false;
 
     if (accessMask & AccessBits::ACCELERATION_STRUCTURE_WRITE)
+        return false;
+
+    if (accessMask & AccessBits::SHADING_RATE_ATTACHMENT)
         return false;
 
     return (uint32_t)(requiredUsageMask & usageMask) == (uint32_t)requiredUsageMask;
@@ -161,11 +164,14 @@ constexpr bool IsAccessMaskSupported(TextureUsageBits usageMask, AccessBits acce
     if (accessMask & AccessBits::COLOR_ATTACHMENT)
         requiredUsageMask |= TextureUsageBits::COLOR_ATTACHMENT;
 
-    if (accessMask & AccessBits::DEPTH_STENCIL_WRITE)
+    if (accessMask & AccessBits::DEPTH_STENCIL_ATTACHMENT_WRITE)
         requiredUsageMask |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
 
-    if (accessMask & AccessBits::DEPTH_STENCIL_READ)
+    if (accessMask & AccessBits::DEPTH_STENCIL_ATTACHMENT_READ)
         requiredUsageMask |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
+
+    if (accessMask & AccessBits::SHADING_RATE_ATTACHMENT)
+        requiredUsageMask |= TextureUsageBits::SHADING_RATE_ATTACHMENT;
 
     if (accessMask & AccessBits::ACCELERATION_STRUCTURE_READ)
         return false;
@@ -179,13 +185,14 @@ constexpr bool IsAccessMaskSupported(TextureUsageBits usageMask, AccessBits acce
 constexpr std::array<TextureUsageBits, (size_t)Layout::MAX_NUM> TEXTURE_USAGE_FOR_TEXTURE_LAYOUT_TABLE = {
     TextureUsageBits::NONE,                     // UNKNOWN
     TextureUsageBits::COLOR_ATTACHMENT,         // COLOR_ATTACHMENT
-    TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_STENCIL
+    TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_STENCIL_ATTACHMENT
     TextureUsageBits::DEPTH_STENCIL_ATTACHMENT, // DEPTH_STENCIL_READONLY
     TextureUsageBits::SHADER_RESOURCE,          // SHADER_RESOURCE
     TextureUsageBits::SHADER_RESOURCE_STORAGE,  // SHADER_RESOURCE_STORAGE
     TextureUsageBits::NONE,                     // COPY_SOURCE
     TextureUsageBits::NONE,                     // COPY_DESTINATION
     TextureUsageBits::NONE,                     // PRESENT
+    TextureUsageBits::SHADING_RATE_ATTACHMENT,  // SHADING_RATE_ATTACHMENT
 };
 
 constexpr bool IsTextureLayoutSupported(TextureUsageBits usageMask, Layout textureLayout) {

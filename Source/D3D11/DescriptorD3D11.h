@@ -18,10 +18,6 @@ struct DescriptorD3D11 {
         return m_Device;
     }
 
-    inline operator void*() const {
-        return (void*)m_Descriptor.GetInterface();
-    }
-
     inline operator ID3D11View*() const {
         return (ID3D11View*)m_Descriptor.GetInterface();
     }
@@ -37,6 +33,12 @@ struct DescriptorD3D11 {
     inline operator ID3D11UnorderedAccessView*() const {
         return (ID3D11UnorderedAccessView*)m_Descriptor.GetInterface();
     }
+
+#if NRI_USE_EXT_LIBS
+    inline operator ID3D11NvShadingRateResourceView*() const {
+        return (ID3D11NvShadingRateResourceView*)m_Descriptor.GetInterface();
+    }
+#endif
 
     inline uint32_t GetElementOffset() const {
         return m_ElementOffset;

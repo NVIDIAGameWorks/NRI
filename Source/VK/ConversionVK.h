@@ -4,22 +4,26 @@
 
 namespace nri {
 
-constexpr std::array<VkIndexType, (uint32_t)IndexType::MAX_NUM> INDEX_TYPE_TABLE = {VK_INDEX_TYPE_UINT16, VK_INDEX_TYPE_UINT32};
+constexpr std::array<VkIndexType, (uint32_t)IndexType::MAX_NUM> INDEX_TYPE_TABLE = {
+    VK_INDEX_TYPE_UINT16, // UINT16
+    VK_INDEX_TYPE_UINT32, // UINT32
+};
 
 constexpr VkIndexType GetIndexType(IndexType indexType) {
     return INDEX_TYPE_TABLE[(uint32_t)indexType];
 }
 
 constexpr std::array<VkImageLayout, (uint32_t)Layout::MAX_NUM> LAYOUT_TABLE = {
-    VK_IMAGE_LAYOUT_UNDEFINED,                        // UNKNOWN
-    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,         // COLOR_ATTACHMENT
-    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // DEPTH_STENCIL
-    VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,  // DEPTH_STENCIL_READONLY
-    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // SHADER_RESOURCE
-    VK_IMAGE_LAYOUT_GENERAL,                          // SHADER_RESOURCE_STORAGE
-    IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,                // COPY_SOURCE
-    IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,                // COPY_DESTINATION
-    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,                  // PRESENT
+    VK_IMAGE_LAYOUT_UNDEFINED,                                    // UNKNOWN
+    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                     // COLOR_ATTACHMENT
+    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,             // DEPTH_STENCIL_ATTACHMENT
+    VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,              // DEPTH_STENCIL_READONLY
+    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                     // SHADER_RESOURCE
+    VK_IMAGE_LAYOUT_GENERAL,                                      // SHADER_RESOURCE_STORAGE
+    IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,                            // COPY_SOURCE
+    IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,                            // COPY_DESTINATION
+    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,                              // PRESENT
+    VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, // SHADING_RATE_ATTACHMENT
 };
 
 constexpr VkImageLayout GetImageLayout(Layout layout) {
@@ -40,143 +44,6 @@ constexpr std::array<VkDescriptorType, (uint32_t)DescriptorType::MAX_NUM> DESCRI
 
 constexpr VkDescriptorType GetDescriptorType(DescriptorType type) {
     return DESCRIPTOR_TYPES[(uint32_t)type];
-}
-
-constexpr VkPipelineStageFlags2 GetPipelineStageFlags(StageBits stageBits) {
-    // Check non-mask values first
-    if (stageBits == StageBits::ALL)
-        return VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-
-    if (stageBits == StageBits::NONE)
-        return VK_PIPELINE_STAGE_2_NONE;
-
-    // Gather bits
-    VkPipelineStageFlags2 flags = 0;
-
-    if (stageBits & StageBits::INDEX_INPUT)
-        flags |= VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
-
-    if (stageBits & StageBits::VERTEX_SHADER)
-        flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT;
-
-    if (stageBits & StageBits::TESS_CONTROL_SHADER)
-        flags |= VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT;
-
-    if (stageBits & StageBits::TESS_EVALUATION_SHADER)
-        flags |= VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT;
-
-    if (stageBits & StageBits::GEOMETRY_SHADER)
-        flags |= VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT;
-
-    if (stageBits & StageBits::MESH_CONTROL_SHADER)
-        flags |= VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT;
-
-    if (stageBits & StageBits::MESH_EVALUATION_SHADER)
-        flags |= VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT;
-
-    if (stageBits & StageBits::FRAGMENT_SHADER)
-        flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-
-    if (stageBits & StageBits::DEPTH_STENCIL_ATTACHMENT)
-        flags |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
-
-    if (stageBits & StageBits::COLOR_ATTACHMENT)
-        flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-    if (stageBits & StageBits::COMPUTE_SHADER)
-        flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
-
-    if (stageBits & StageBits::RAY_TRACING_SHADERS)
-        flags |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
-
-    if (stageBits & StageBits::INDIRECT)
-        flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
-
-    if (stageBits & (StageBits::COPY | StageBits::CLEAR_STORAGE))
-        flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-
-    if (stageBits & StageBits::ACCELERATION_STRUCTURE)
-        flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
-
-    return flags;
-}
-
-constexpr VkShaderStageFlags GetShaderStageFlags(StageBits stage) {
-    // Check non-mask values first
-    if (stage == StageBits::ALL)
-        return VK_SHADER_STAGE_ALL;
-
-    // Gather bits
-    VkShaderStageFlags stageFlags = 0;
-
-    if (stage & StageBits::VERTEX_SHADER)
-        stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
-
-    if (stage & StageBits::TESS_CONTROL_SHADER)
-        stageFlags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-
-    if (stage & StageBits::TESS_EVALUATION_SHADER)
-        stageFlags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-
-    if (stage & StageBits::GEOMETRY_SHADER)
-        stageFlags |= VK_SHADER_STAGE_GEOMETRY_BIT;
-
-    if (stage & StageBits::FRAGMENT_SHADER)
-        stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    if (stage & StageBits::COMPUTE_SHADER)
-        stageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
-
-    if (stage & StageBits::RAYGEN_SHADER)
-        stageFlags |= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
-
-    if (stage & StageBits::MISS_SHADER)
-        stageFlags |= VK_SHADER_STAGE_MISS_BIT_KHR;
-
-    if (stage & StageBits::INTERSECTION_SHADER)
-        stageFlags |= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
-
-    if (stage & StageBits::CLOSEST_HIT_SHADER)
-        stageFlags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-
-    if (stage & StageBits::ANY_HIT_SHADER)
-        stageFlags |= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
-
-    if (stage & StageBits::CALLABLE_SHADER)
-        stageFlags |= VK_SHADER_STAGE_CALLABLE_BIT_KHR;
-
-    if (stage & StageBits::MESH_CONTROL_SHADER)
-        stageFlags |= VK_SHADER_STAGE_TASK_BIT_EXT;
-
-    if (stage & StageBits::MESH_EVALUATION_SHADER)
-        stageFlags |= VK_SHADER_STAGE_MESH_BIT_EXT;
-
-    return stageFlags;
-}
-
-inline VkFormat GetVkFormat(Format format, bool demoteSrgb = false) {
-    if (demoteSrgb) {
-        const FormatProps& formatProps = GetFormatProps(format);
-        if (formatProps.isSrgb)
-            format = (Format)((uint32_t)format - 1);
-    }
-
-    return (VkFormat)NRIFormatToVKFormat(format);
-}
-
-inline bool HasStencil(Format format) {
-    switch (format) {
-        case nri::Format::D24_UNORM_S8_UINT:
-            return true;
-        case nri::Format::D32_SFLOAT_S8_UINT_X24:
-            return true;
-        case nri::Format::X24_G8_UINT:
-            return true;
-        case nri::Format::X32_G8_UINT_X24:
-            return true;
-        default:
-            return false;
-    }
 }
 
 constexpr std::array<VkPrimitiveTopology, (uint32_t)Topology::MAX_NUM> TOPOLOGIES = {
@@ -307,35 +174,14 @@ constexpr VkBlendOp GetBlendOp(BlendFunc blendFunc) {
     return BLEND_OP[(uint32_t)blendFunc];
 }
 
-constexpr VkColorComponentFlags GetColorComponent(ColorWriteBits colorWriteMask) {
-    return VkColorComponentFlags(colorWriteMask & ColorWriteBits::RGBA);
-}
-
-constexpr std::array<VkImageType, (uint32_t)TextureType::MAX_NUM> IMAGE_TYPES = {VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D};
+constexpr std::array<VkImageType, (uint32_t)TextureType::MAX_NUM> IMAGE_TYPES = {
+    VK_IMAGE_TYPE_1D, // TEXTURE_1D
+    VK_IMAGE_TYPE_2D, // TEXTURE_2D
+    VK_IMAGE_TYPE_3D, // TEXTURE_3D
+};
 
 constexpr VkImageType GetImageType(TextureType type) {
     return IMAGE_TYPES[(uint32_t)type];
-}
-
-constexpr VkImageAspectFlags GetImageAspectFlags(Format format) {
-    switch (format) {
-        case Format::D16_UNORM:
-        case Format::D32_SFLOAT:
-        case Format::R24_UNORM_X8:
-        case Format::R32_SFLOAT_X8_X24:
-            return VK_IMAGE_ASPECT_DEPTH_BIT;
-
-        case Format::D24_UNORM_S8_UINT:
-        case Format::D32_SFLOAT_S8_UINT_X24:
-            return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-
-        case Format::X32_G8_UINT_X24:
-        case Format::X24_G8_UINT:
-            return VK_IMAGE_ASPECT_STENCIL_BIT;
-
-        default:
-            return VK_IMAGE_ASPECT_COLOR_BIT;
-    }
 }
 
 constexpr std::array<VkFilter, (uint32_t)Filter::MAX_NUM> FILTER = {
@@ -376,6 +222,10 @@ constexpr std::array<VkImageViewType, (uint32_t)Texture1DViewType::MAX_NUM> IMAG
     VK_IMAGE_VIEW_TYPE_1D,       // DEPTH_STENCIL_ATTACHMENT
 };
 
+constexpr VkImageViewType GetImageViewType(Texture1DViewType type) {
+    return IMAGE_VIEW_TYPE_1D[(uint32_t)type];
+}
+
 constexpr std::array<VkImageViewType, (uint32_t)Texture2DViewType::MAX_NUM> IMAGE_VIEW_TYPE_2D = {
     VK_IMAGE_VIEW_TYPE_2D,         // SHADER_RESOURCE_2D,
     VK_IMAGE_VIEW_TYPE_2D_ARRAY,   // SHADER_RESOURCE_2D_ARRAY,
@@ -385,21 +235,18 @@ constexpr std::array<VkImageViewType, (uint32_t)Texture2DViewType::MAX_NUM> IMAG
     VK_IMAGE_VIEW_TYPE_2D_ARRAY,   // SHADER_RESOURCE_STORAGE_2D_ARRAY,
     VK_IMAGE_VIEW_TYPE_2D,         // COLOR_ATTACHMENT,
     VK_IMAGE_VIEW_TYPE_2D,         // DEPTH_STENCIL_ATTACHMENT
+    VK_IMAGE_VIEW_TYPE_2D,         // SHADING_RATE_ATTACHMENT
 };
+
+constexpr VkImageViewType GetImageViewType(Texture2DViewType type) {
+    return IMAGE_VIEW_TYPE_2D[(uint32_t)type];
+}
 
 constexpr std::array<VkImageViewType, (uint32_t)Texture3DViewType::MAX_NUM> IMAGE_VIEW_TYPE_3D = {
     VK_IMAGE_VIEW_TYPE_3D, // SHADER_RESOURCE_3D,
     VK_IMAGE_VIEW_TYPE_3D, // SHADER_RESOURCE_STORAGE_3D,
     VK_IMAGE_VIEW_TYPE_3D, // COLOR_ATTACHMENT
 };
-
-constexpr VkImageViewType GetImageViewType(Texture1DViewType type) {
-    return IMAGE_VIEW_TYPE_1D[(uint32_t)type];
-}
-
-constexpr VkImageViewType GetImageViewType(Texture2DViewType type) {
-    return IMAGE_VIEW_TYPE_2D[(uint32_t)type];
-}
 
 constexpr VkImageViewType GetImageViewType(Texture3DViewType type) {
     return IMAGE_VIEW_TYPE_3D[(uint32_t)type];
@@ -414,30 +261,31 @@ constexpr std::array<VkImageUsageFlags, (uint32_t)Texture1DViewType::MAX_NUM> IM
     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, // DEPTH_STENCIL_ATTACHMENT
 };
 
+constexpr VkImageUsageFlags GetImageViewUsage(Texture1DViewType type) {
+    return IMAGE_VIEW_USAGE_1D[(uint32_t)type];
+}
+
 constexpr std::array<VkImageUsageFlags, (uint32_t)Texture2DViewType::MAX_NUM> IMAGE_VIEW_USAGE_2D = {
-    VK_IMAGE_USAGE_SAMPLED_BIT,                  // SHADER_RESOURCE_2D,
-    VK_IMAGE_USAGE_SAMPLED_BIT,                  // SHADER_RESOURCE_2D_ARRAY,
-    VK_IMAGE_USAGE_SAMPLED_BIT,                  // SHADER_RESOURCE_CUBE,
-    VK_IMAGE_USAGE_SAMPLED_BIT,                  // SHADER_RESOURCE_CUBE_ARRAY,
-    VK_IMAGE_USAGE_STORAGE_BIT,                  // SHADER_RESOURCE_STORAGE_2D,
-    VK_IMAGE_USAGE_STORAGE_BIT,                  // SHADER_RESOURCE_STORAGE_2D_ARRAY,
-    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,         // COLOR_ATTACHMENT,
-    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, // DEPTH_STENCIL_ATTACHMENT
+    VK_IMAGE_USAGE_SAMPLED_BIT,                              // SHADER_RESOURCE_2D,
+    VK_IMAGE_USAGE_SAMPLED_BIT,                              // SHADER_RESOURCE_2D_ARRAY,
+    VK_IMAGE_USAGE_SAMPLED_BIT,                              // SHADER_RESOURCE_CUBE,
+    VK_IMAGE_USAGE_SAMPLED_BIT,                              // SHADER_RESOURCE_CUBE_ARRAY,
+    VK_IMAGE_USAGE_STORAGE_BIT,                              // SHADER_RESOURCE_STORAGE_2D,
+    VK_IMAGE_USAGE_STORAGE_BIT,                              // SHADER_RESOURCE_STORAGE_2D_ARRAY,
+    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,                     // COLOR_ATTACHMENT,
+    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,             // DEPTH_STENCIL_ATTACHMENT
+    VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR, // SHADING_RATE_ATTACHMENT
 };
+
+constexpr VkImageUsageFlags GetImageViewUsage(Texture2DViewType type) {
+    return IMAGE_VIEW_USAGE_2D[(uint32_t)type];
+}
 
 constexpr std::array<VkImageUsageFlags, (uint32_t)Texture3DViewType::MAX_NUM> IMAGE_VIEW_USAGE_3D = {
     VK_IMAGE_USAGE_SAMPLED_BIT,          // SHADER_RESOURCE_3D,
     VK_IMAGE_USAGE_STORAGE_BIT,          // SHADER_RESOURCE_STORAGE_3D,
     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // COLOR_ATTACHMENT
 };
-
-constexpr VkImageUsageFlags GetImageViewUsage(Texture1DViewType type) {
-    return IMAGE_VIEW_USAGE_1D[(uint32_t)type];
-}
-
-constexpr VkImageUsageFlags GetImageViewUsage(Texture2DViewType type) {
-    return IMAGE_VIEW_USAGE_2D[(uint32_t)type];
-}
 
 constexpr VkImageUsageFlags GetImageViewUsage(Texture3DViewType type) {
     return IMAGE_VIEW_USAGE_3D[(uint32_t)type];
@@ -452,16 +300,47 @@ constexpr std::array<VkImageLayout, (uint32_t)Texture1DViewType::MAX_NUM> IMAGE_
     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // DEPTH_STENCIL_ATTACHMENT
 };
 
+constexpr VkImageLayout GetImageLayoutForView(Texture1DViewType type, ResourceViewBits flags) {
+    if (type == Texture1DViewType::DEPTH_STENCIL_ATTACHMENT && flags != ResourceViewBits::NONE) {
+        if (flags == (ResourceViewBits::READONLY_DEPTH | ResourceViewBits::READONLY_STENCIL))
+            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        else if (flags == ResourceViewBits::READONLY_DEPTH)
+            return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
+        else if (flags == ResourceViewBits::READONLY_STENCIL)
+            return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR;
+        else
+            CHECK(false, "Bad flags");
+    }
+
+    return IMAGE_LAYOUT_1D[(uint32_t)type];
+}
+
 constexpr std::array<VkImageLayout, (uint32_t)Texture2DViewType::MAX_NUM> IMAGE_LAYOUT_2D = {
-    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // SHADER_RESOURCE_2D,
-    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // SHADER_RESOURCE_2D_ARRAY,
-    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // SHADER_RESOURCE_CUBE,
-    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // SHADER_RESOURCE_CUBE_ARRAY,
-    VK_IMAGE_LAYOUT_GENERAL,                          // SHADER_RESOURCE_STORAGE_2D,
-    VK_IMAGE_LAYOUT_GENERAL,                          // SHADER_RESOURCE_STORAGE_2D_ARRAY,
-    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,         // COLOR_ATTACHMENT,
-    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // DEPTH_STENCIL_ATTACHMENT
+    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                     // SHADER_RESOURCE_2D,
+    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                     // SHADER_RESOURCE_2D_ARRAY,
+    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                     // SHADER_RESOURCE_CUBE,
+    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                     // SHADER_RESOURCE_CUBE_ARRAY,
+    VK_IMAGE_LAYOUT_GENERAL,                                      // SHADER_RESOURCE_STORAGE_2D,
+    VK_IMAGE_LAYOUT_GENERAL,                                      // SHADER_RESOURCE_STORAGE_2D_ARRAY,
+    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                     // COLOR_ATTACHMENT,
+    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,             // DEPTH_STENCIL_ATTACHMENT
+    VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, // SHADING_RATE_ATTACHMENT
 };
+
+constexpr VkImageLayout GetImageLayoutForView(Texture2DViewType type, ResourceViewBits flags) {
+    if (type == Texture2DViewType::DEPTH_STENCIL_ATTACHMENT && flags != ResourceViewBits::NONE) {
+        if (flags == (ResourceViewBits::READONLY_DEPTH | ResourceViewBits::READONLY_STENCIL))
+            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        else if (flags == ResourceViewBits::READONLY_DEPTH)
+            return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
+        else if (flags == ResourceViewBits::READONLY_STENCIL)
+            return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR;
+        else
+            CHECK(false, "Bad flags");
+    }
+
+    return IMAGE_LAYOUT_2D[(uint32_t)type];
+}
 
 constexpr std::array<VkImageLayout, (uint32_t)Texture3DViewType::MAX_NUM> IMAGE_LAYOUT_3D = {
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // SHADER_RESOURCE_3D,
@@ -469,54 +348,21 @@ constexpr std::array<VkImageLayout, (uint32_t)Texture3DViewType::MAX_NUM> IMAGE_
     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // COLOR_ATTACHMENT
 };
 
-constexpr VkImageLayout GetImageLayoutForView(Texture1DViewType type) {
-    return IMAGE_LAYOUT_1D[(uint32_t)type];
-}
-
-constexpr VkImageLayout GetImageLayoutForView(Texture2DViewType type) {
-    return IMAGE_LAYOUT_2D[(uint32_t)type];
-}
-
 constexpr VkImageLayout GetImageLayoutForView(Texture3DViewType type) {
     return IMAGE_LAYOUT_3D[(uint32_t)type];
 }
 
-constexpr VkAccelerationStructureTypeKHR GetAccelerationStructureType(AccelerationStructureType type) {
-    static_assert(VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR == (uint32_t)AccelerationStructureType::TOP_LEVEL, "Enum mismatch.");
-    static_assert(VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR == (uint32_t)AccelerationStructureType::BOTTOM_LEVEL, "Enum mismatch.");
-    return (VkAccelerationStructureTypeKHR)type;
-}
+constexpr std::array<VkFragmentShadingRateCombinerOpKHR, (uint32_t)ShadingRateCombiner::MAX_NUM> SHADING_RATE_COMBINER = {
+    VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR, // REPLACE,
+    VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,    // KEEP,
+    VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MIN_KHR,     // MIN,
+    VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_KHR,     // MAX,
+    VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MUL_KHR,     // SUM, // TODO: SUM vs MUL?
+};
 
-constexpr VkBuildAccelerationStructureFlagsKHR GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits flags) {
-    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::ALLOW_UPDATE, "Enum mismatch.");
-    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::ALLOW_COMPACTION, "Enum mismatch.");
-    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_TRACE, "Enum mismatch.");
-    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_BUILD, "Enum mismatch.");
-    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::MINIMIZE_MEMORY, "Enum mismatch.");
-    return (VkBuildAccelerationStructureFlagsKHR)flags;
+constexpr VkFragmentShadingRateCombinerOpKHR GetShadingRateCombiner(ShadingRateCombiner combiner) {
+    return SHADING_RATE_COMBINER[(uint32_t)combiner];
 }
-
-constexpr VkGeometryFlagsKHR GetGeometryFlags(BottomLevelGeometryBits geometryFlags) {
-    static_assert(VK_GEOMETRY_OPAQUE_BIT_KHR == (uint32_t)BottomLevelGeometryBits::OPAQUE_GEOMETRY, "Enum mismatch.");
-    static_assert(VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR == (uint32_t)BottomLevelGeometryBits::NO_DUPLICATE_ANY_HIT_INVOCATION, "Enum mismatch.");
-    return (VkGeometryFlagsKHR)geometryFlags;
-}
-
-constexpr VkGeometryTypeKHR GetGeometryType(GeometryType geometryType) {
-    static_assert(VK_GEOMETRY_TYPE_TRIANGLES_KHR == (uint32_t)GeometryType::TRIANGLES, "Enum mismatch.");
-    static_assert(VK_GEOMETRY_TYPE_AABBS_KHR == (uint32_t)GeometryType::AABBS, "Enum mismatch.");
-    return (VkGeometryTypeKHR)geometryType;
-}
-
-constexpr VkCopyAccelerationStructureModeKHR GetCopyMode(CopyMode copyMode) {
-    static_assert(VK_COPY_ACCELERATION_STRUCTURE_MODE_CLONE_KHR == (uint32_t)CopyMode::CLONE, "Enum mismatch.");
-    static_assert(VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR == (uint32_t)CopyMode::COMPACT, "Enum mismatch.");
-    return (VkCopyAccelerationStructureModeKHR)copyMode;
-}
-
-void ConvertGeometryObjectSizesVK(VkAccelerationStructureGeometryKHR* destObjects, uint32_t* primitiveNums, const GeometryObject* sourceObjects, uint32_t objectNum);
-void ConvertGeometryObjectsVK(
-    VkAccelerationStructureGeometryKHR* destObjects, VkAccelerationStructureBuildRangeInfoKHR* ranges, const GeometryObject* sourceObjects, uint32_t objectNum);
 
 constexpr std::array<TextureType, (uint32_t)TextureType::MAX_NUM> TEXTURE_TYPE_TABLE = {
     TextureType::TEXTURE_1D, // VK_IMAGE_TYPE_1D
@@ -529,6 +375,154 @@ constexpr TextureType GetTextureType(VkImageType type) {
         return TEXTURE_TYPE_TABLE[(uint32_t)type];
 
     return TextureType::MAX_NUM;
+}
+
+constexpr VkPipelineStageFlags2 GetPipelineStageFlags(StageBits stageBits) {
+    // Check non-mask values first
+    if (stageBits == StageBits::ALL)
+        return VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+
+    if (stageBits == StageBits::NONE)
+        return VK_PIPELINE_STAGE_2_NONE;
+
+    // Gather bits
+    VkPipelineStageFlags2 flags = 0;
+
+    if (stageBits & StageBits::INDEX_INPUT)
+        flags |= VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
+
+    if (stageBits & StageBits::VERTEX_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT;
+
+    if (stageBits & StageBits::TESS_CONTROL_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT;
+
+    if (stageBits & StageBits::TESS_EVALUATION_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT;
+
+    if (stageBits & StageBits::GEOMETRY_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT;
+
+    if (stageBits & StageBits::MESH_CONTROL_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT;
+
+    if (stageBits & StageBits::MESH_EVALUATION_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT;
+
+    if (stageBits & StageBits::FRAGMENT_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+
+    if (stageBits & StageBits::DEPTH_STENCIL_ATTACHMENT)
+        flags |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+
+    if (stageBits & StageBits::COLOR_ATTACHMENT)
+        flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+    if (stageBits & StageBits::COMPUTE_SHADER)
+        flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+
+    if (stageBits & StageBits::RAY_TRACING_SHADERS)
+        flags |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+
+    if (stageBits & StageBits::INDIRECT)
+        flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
+
+    if (stageBits & (StageBits::COPY | StageBits::CLEAR_STORAGE))
+        flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+
+    if (stageBits & StageBits::ACCELERATION_STRUCTURE)
+        flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+
+    return flags;
+}
+
+constexpr VkShaderStageFlags GetShaderStageFlags(StageBits stage) {
+    // Check non-mask values first
+    if (stage == StageBits::ALL)
+        return VK_SHADER_STAGE_ALL;
+
+    // Gather bits
+    VkShaderStageFlags stageFlags = 0;
+
+    if (stage & StageBits::VERTEX_SHADER)
+        stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
+
+    if (stage & StageBits::TESS_CONTROL_SHADER)
+        stageFlags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+
+    if (stage & StageBits::TESS_EVALUATION_SHADER)
+        stageFlags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+
+    if (stage & StageBits::GEOMETRY_SHADER)
+        stageFlags |= VK_SHADER_STAGE_GEOMETRY_BIT;
+
+    if (stage & StageBits::FRAGMENT_SHADER)
+        stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    if (stage & StageBits::COMPUTE_SHADER)
+        stageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
+
+    if (stage & StageBits::RAYGEN_SHADER)
+        stageFlags |= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+
+    if (stage & StageBits::MISS_SHADER)
+        stageFlags |= VK_SHADER_STAGE_MISS_BIT_KHR;
+
+    if (stage & StageBits::INTERSECTION_SHADER)
+        stageFlags |= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+
+    if (stage & StageBits::CLOSEST_HIT_SHADER)
+        stageFlags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+
+    if (stage & StageBits::ANY_HIT_SHADER)
+        stageFlags |= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+
+    if (stage & StageBits::CALLABLE_SHADER)
+        stageFlags |= VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+
+    if (stage & StageBits::MESH_CONTROL_SHADER)
+        stageFlags |= VK_SHADER_STAGE_TASK_BIT_EXT;
+
+    if (stage & StageBits::MESH_EVALUATION_SHADER)
+        stageFlags |= VK_SHADER_STAGE_MESH_BIT_EXT;
+
+    return stageFlags;
+}
+
+constexpr VkImageAspectFlags GetImageAspectFlags(Format format) {
+    switch (format) {
+        case Format::D16_UNORM:
+        case Format::D32_SFLOAT:
+        case Format::R24_UNORM_X8:
+        case Format::R32_SFLOAT_X8_X24:
+            return VK_IMAGE_ASPECT_DEPTH_BIT;
+
+        case Format::D24_UNORM_S8_UINT:
+        case Format::D32_SFLOAT_S8_UINT_X24:
+            return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+
+        case Format::X32_G8_UINT_X24:
+        case Format::X24_G8_UINT:
+            return VK_IMAGE_ASPECT_STENCIL_BIT;
+
+        default:
+            return VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+}
+
+constexpr bool HasStencil(Format format) {
+    switch (format) {
+        case nri::Format::D24_UNORM_S8_UINT:
+            return true;
+        case nri::Format::D32_SFLOAT_S8_UINT_X24:
+            return true;
+        case nri::Format::X24_G8_UINT:
+            return true;
+        case nri::Format::X32_G8_UINT_X24:
+            return true;
+        default:
+            return false;
+    }
 }
 
 constexpr Result GetReturnCode(VkResult result) {
@@ -577,5 +571,81 @@ constexpr Result GetReturnCode(VkResult result) {
             return Result::FAILURE;
     }
 }
+
+constexpr VkColorComponentFlags GetColorComponent(ColorWriteBits colorWriteMask) {
+    return VkColorComponentFlags(colorWriteMask & ColorWriteBits::RGBA);
+}
+
+constexpr VkAccelerationStructureTypeKHR GetAccelerationStructureType(AccelerationStructureType type) {
+    static_assert(VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR == (uint32_t)AccelerationStructureType::TOP_LEVEL, "Enum mismatch");
+    static_assert(VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR == (uint32_t)AccelerationStructureType::BOTTOM_LEVEL, "Enum mismatch");
+
+    return (VkAccelerationStructureTypeKHR)type;
+}
+
+constexpr VkBuildAccelerationStructureFlagsKHR GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits flags) {
+    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::ALLOW_UPDATE, "Enum mismatch");
+    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::ALLOW_COMPACTION, "Enum mismatch");
+    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_TRACE, "Enum mismatch");
+    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_BUILD, "Enum mismatch");
+    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::MINIMIZE_MEMORY, "Enum mismatch");
+
+    return (VkBuildAccelerationStructureFlagsKHR)flags;
+}
+
+constexpr VkGeometryFlagsKHR GetGeometryFlags(BottomLevelGeometryBits geometryFlags) {
+    static_assert(VK_GEOMETRY_OPAQUE_BIT_KHR == (uint32_t)BottomLevelGeometryBits::OPAQUE_GEOMETRY, "Enum mismatch");
+    static_assert(VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR == (uint32_t)BottomLevelGeometryBits::NO_DUPLICATE_ANY_HIT_INVOCATION, "Enum mismatch");
+
+    return (VkGeometryFlagsKHR)geometryFlags;
+}
+
+constexpr VkGeometryTypeKHR GetGeometryType(GeometryType geometryType) {
+    static_assert(VK_GEOMETRY_TYPE_TRIANGLES_KHR == (uint32_t)GeometryType::TRIANGLES, "Enum mismatch");
+    static_assert(VK_GEOMETRY_TYPE_AABBS_KHR == (uint32_t)GeometryType::AABBS, "Enum mismatch");
+
+    return (VkGeometryTypeKHR)geometryType;
+}
+
+constexpr VkCopyAccelerationStructureModeKHR GetCopyMode(CopyMode copyMode) {
+    static_assert(VK_COPY_ACCELERATION_STRUCTURE_MODE_CLONE_KHR == (uint32_t)CopyMode::CLONE, "Enum mismatch");
+    static_assert(VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR == (uint32_t)CopyMode::COMPACT, "Enum mismatch");
+
+    return (VkCopyAccelerationStructureModeKHR)copyMode;
+}
+
+inline VkFormat GetVkFormat(Format format, bool demoteSrgb = false) {
+    if (demoteSrgb) {
+        const FormatProps& formatProps = GetFormatProps(format);
+        if (formatProps.isSrgb)
+            format = (Format)((uint32_t)format - 1);
+    }
+
+    return (VkFormat)NRIFormatToVKFormat(format);
+}
+
+inline VkExtent2D GetShadingRate(ShadingRate shadingRate) {
+    switch (shadingRate) {
+        case ShadingRate::_1x1:
+            return {1, 1};
+        case ShadingRate::_1x2:
+            return {1, 2};
+        case ShadingRate::_2x1:
+            return {2, 1};
+        case ShadingRate::_2x2:
+            return {2, 2};
+        case ShadingRate::_2x4:
+            return {2, 4};
+        case ShadingRate::_4x2:
+            return {4, 2};
+        case ShadingRate::_4x4:
+            return {4, 4};
+    }
+
+    return {};
+}
+
+void ConvertGeometryObjectSizesVK(VkAccelerationStructureGeometryKHR* destObjects, uint32_t* primitiveNums, const GeometryObject* sourceObjects, uint32_t objectNum);
+void ConvertGeometryObjectsVK(VkAccelerationStructureGeometryKHR* destObjects, VkAccelerationStructureBuildRangeInfoKHR* ranges, const GeometryObject* sourceObjects, uint32_t objectNum);
 
 } // namespace nri

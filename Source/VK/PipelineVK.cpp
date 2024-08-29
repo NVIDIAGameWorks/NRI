@@ -187,7 +187,7 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
         colorFormats[i] = GetVkFormat(om.color[i].format);
 
     VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
-    // pipelineRenderingCreateInfo.viewMask; // TODO
+    // pipelineRenderingCreateInfo.viewMask; // TODO: add multi-view support
     pipelineRenderingCreateInfo.colorAttachmentCount = om.colorNum;
     pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats;
     pipelineRenderingCreateInfo.depthAttachmentFormat = GetVkFormat(om.depthStencilFormat);
@@ -206,18 +206,24 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
         dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT;
     if (isConstantColorReferenced)
         dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_BLEND_CONSTANTS;
+    if (r.shadingRate)
+        dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR;
 
     VkPipelineDynamicStateCreateInfo dynamicState = {VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
     dynamicState.dynamicStateCount = dynamicStateNum;
     dynamicState.pDynamicStates = dynamicStates.data();
 
     // Create
+    VkPipelineCreateFlags flags = 0;
+    if (r.shadingRate)
+        flags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+
     const PipelineLayoutVK& pipelineLayoutVK = *(const PipelineLayoutVK*)graphicsPipelineDesc.pipelineLayout;
 
     const VkGraphicsPipelineCreateInfo info = {
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         &pipelineRenderingCreateInfo,
-        (VkPipelineCreateFlags)0,
+        flags,
         graphicsPipelineDesc.shaderNum,
         stages,
         &vertexInputState,

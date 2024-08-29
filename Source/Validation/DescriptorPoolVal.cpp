@@ -88,11 +88,11 @@ Result DescriptorPoolVal::AllocateDescriptorSets(
     const PipelineLayoutVal& pipelineLayoutVal = (const PipelineLayoutVal&)pipelineLayout;
     const PipelineLayoutDesc& pipelineLayoutDesc = pipelineLayoutVal.GetPipelineLayoutDesc();
 
-    RETURN_ON_FAILURE(&m_Device, instanceNum != 0, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: 'instanceNum' is 0");
-    RETURN_ON_FAILURE(&m_Device, m_DescriptorSetsNum + instanceNum <= m_Desc.descriptorSetMaxNum, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: the maximum number of descriptor sets exceeded");
+    RETURN_ON_FAILURE(&m_Device, instanceNum != 0, Result::INVALID_ARGUMENT, "'instanceNum' is 0");
+    RETURN_ON_FAILURE(&m_Device, m_DescriptorSetsNum + instanceNum <= m_Desc.descriptorSetMaxNum, Result::INVALID_ARGUMENT, "the maximum number of descriptor sets exceeded");
 
     if (!m_SkipValidation) {
-        RETURN_ON_FAILURE(&m_Device, setIndexInPipelineLayout < pipelineLayoutDesc.descriptorSetNum, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: 'setIndexInPipelineLayout' is invalid");
+        RETURN_ON_FAILURE(&m_Device, setIndexInPipelineLayout < pipelineLayoutDesc.descriptorSetNum, Result::INVALID_ARGUMENT, "'setIndexInPipelineLayout' is invalid");
 
         const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[setIndexInPipelineLayout];
 
@@ -100,13 +100,13 @@ Result DescriptorPoolVal::AllocateDescriptorSets(
             const DescriptorRangeDesc& rangeDesc = descriptorSetDesc.ranges[i];
             bool enoughDescriptors = CheckDescriptorRange(rangeDesc, variableDescriptorNum);
 
-            RETURN_ON_FAILURE(&m_Device, enoughDescriptors, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: the maximum number of descriptors exceeded ('%s')",
+            RETURN_ON_FAILURE(&m_Device, enoughDescriptors, Result::INVALID_ARGUMENT, "the maximum number of descriptors exceeded ('%s')",
                 GetDescriptorTypeName(rangeDesc.descriptorType));
         }
 
         bool enoughDescriptors = m_DynamicConstantBufferNum + descriptorSetDesc.dynamicConstantBufferNum <= m_Desc.dynamicConstantBufferMaxNum;
 
-        RETURN_ON_FAILURE(&m_Device, enoughDescriptors, Result::INVALID_ARGUMENT, "AllocateDescriptorSets: the maximum number of descriptors exceeded ('DYNAMIC_CONSTANT_BUFFER')");
+        RETURN_ON_FAILURE(&m_Device, enoughDescriptors, Result::INVALID_ARGUMENT, "the maximum number of descriptors exceeded ('DYNAMIC_CONSTANT_BUFFER')");
     }
 
     PipelineLayout* pipelineLayoutImpl = NRI_GET_IMPL(PipelineLayout, &pipelineLayout);

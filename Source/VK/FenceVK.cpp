@@ -23,7 +23,7 @@ Result FenceVK::Create(uint64_t initialValue) {
 
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.CreateSemaphore((VkDevice)m_Device, &semaphoreCreateInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vk.CreateSemaphore returned %d", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateSemaphore returned %d", (int32_t)result);
 
     return Result::SUCCESS;
 }

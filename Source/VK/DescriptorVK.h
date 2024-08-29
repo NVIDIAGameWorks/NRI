@@ -28,6 +28,8 @@ struct DescriptorTextureDesc {
     VkImageAspectFlags aspectFlags;
     Dim_t layerOffset;
     Dim_t layerNum;
+    Dim_t sliceOffset;
+    Dim_t sliceNum;
     Mip_t mipOffset;
     Mip_t mipNum;
 };

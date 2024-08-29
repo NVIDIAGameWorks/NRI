@@ -146,6 +146,17 @@ inline void CommandBufferVK::SetBlendConstants(const Color32f& color) {
     vk.CmdSetBlendConstants(m_Handle, &color.x);
 }
 
+inline void CommandBufferVK::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
+    VkExtent2D shadingRate = GetShadingRate(shadingRateDesc.shadingRate);
+    VkFragmentShadingRateCombinerOpKHR combiners[2] = {
+        GetShadingRateCombiner(shadingRateDesc.primitiveCombiner),
+        GetShadingRateCombiner(shadingRateDesc.attachmentCombiner),
+    };
+
+    const auto& vk = m_Device.GetDispatchTable();
+    vk.CmdSetFragmentShadingRateKHR(m_Handle, &shadingRate, combiners);
+}
+
 inline void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     VkClearAttachment* attachments = StackAlloc(VkClearAttachment, clearDescNum);
 
@@ -224,6 +235,7 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
     m_RenderWidth = deviceDesc.attachmentMaxDim;
     m_RenderHeight = deviceDesc.attachmentMaxDim;
 
+    // Color
     VkRenderingAttachmentInfo* colors = StackAlloc(VkRenderingAttachmentInfo, attachmentsDesc.colorNum);
     for (uint32_t i = 0; i < attachmentsDesc.colorNum; i++) {
         const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.colors[i];
@@ -248,6 +260,7 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
         m_RenderHeight = std::min(m_RenderHeight, h);
     }
 
+    // Depth-stencil
     VkRenderingAttachmentInfo depthStencil = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
     bool hasStencil = false;
     if (attachmentsDesc.depthStencil) {
@@ -273,6 +286,17 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
         hasStencil = HasStencil(descriptor.GetTexture().GetDesc().format);
     }
 
+    // Shading rate
+    VkRenderingFragmentShadingRateAttachmentInfoKHR shadingRate = {VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR};
+    if (attachmentsDesc.shadingRate) {
+        uint32_t tileSize = m_Device.GetDesc().shadingRateAttachmentTileSize;
+        const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.shadingRate;
+
+        shadingRate.imageView = descriptor.GetImageView();
+        shadingRate.imageLayout = descriptor.GetImageLayout();
+        shadingRate.shadingRateAttachmentTexelSize = {tileSize, tileSize};
+    }
+
     // TODO: matches D3D behavior?
     bool hasAttachment = attachmentsDesc.depthStencil || attachmentsDesc.colors;
     if (!hasAttachment) {
@@ -290,6 +314,9 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
     renderingInfo.pColorAttachments = colors;
     renderingInfo.pDepthAttachment = attachmentsDesc.depthStencil ? &depthStencil : nullptr;
     renderingInfo.pStencilAttachment = hasStencil ? &depthStencil : nullptr;
+
+    if (attachmentsDesc.shadingRate)
+        renderingInfo.pNext = &shadingRate;
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBeginRendering(m_Handle, &renderingInfo);
@@ -537,10 +564,10 @@ static inline VkAccessFlags2 GetAccessFlags(AccessBits accessBits) {
     if (accessBits & AccessBits::COLOR_ATTACHMENT)
         flags |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
 
-    if (accessBits & AccessBits::DEPTH_STENCIL_WRITE)
+    if (accessBits & AccessBits::DEPTH_STENCIL_ATTACHMENT_WRITE)
         flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-    if (accessBits & AccessBits::DEPTH_STENCIL_READ)
+    if (accessBits & AccessBits::DEPTH_STENCIL_ATTACHMENT_READ)
         flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 
     if (accessBits & AccessBits::COPY_SOURCE)
@@ -555,7 +582,7 @@ static inline VkAccessFlags2 GetAccessFlags(AccessBits accessBits) {
     if (accessBits & AccessBits::ACCELERATION_STRUCTURE_WRITE)
         flags |= VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
 
-    if (accessBits & AccessBits::SHADING_RATE)
+    if (accessBits & AccessBits::SHADING_RATE_ATTACHMENT)
         flags |= VK_ACCESS_2_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR;
 
     return flags;

@@ -115,6 +115,9 @@ Draw parameters:
     NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 5, baseVertex); \
     NRI_BUFFER_WRITE(buffer, cmdIndex * 7, 6, baseInstance)
 
+// Shading rate
+#define NRI_SHADING_RATE(xLogSize, yLogSize) ((xLogSize << 2) | yLogSize)
+
 // SPIRV
 #ifdef NRI_SPIRV
     #define NRI_RESOURCE(resourceType, name, regName, bindingIndex, setIndex) \

@@ -67,7 +67,7 @@ inline void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc, const
 
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.QueueSubmit2(m_Handle, 1, &submitInfo, VK_NULL_HANDLE);
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(), "Submit: vkQueueSubmit returned %d", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(), "vkQueueSubmit returned %d", (int32_t)result);
 }
 
 inline Result CommandQueueVK::UploadData(
@@ -82,7 +82,7 @@ inline Result CommandQueueVK::WaitForIdle() {
 
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.QueueWaitIdle(m_Handle);
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "WaitForIdle: vkQueueWaitIdle returned %d", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkQueueWaitIdle returned %d", (int32_t)result);
 
     return Result::SUCCESS;
 }

@@ -216,8 +216,8 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
 
 #if NRI_USE_EXT_LIBS
             if (m_Ext.HasNVAPI()) {
-                NvAPI_D3D12_SetNvShaderExtnSlotSpace(m_Device, shaderExtRegister, deviceCreationDesc.shaderExtSpace);
-                NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported);
+                REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_SetNvShaderExtnSlotSpace(deviceTemp, shaderExtRegister, deviceCreationDesc.shaderExtSpace));
+                REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(deviceTemp, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported));
             }
         }
 
@@ -324,6 +324,10 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &options6, sizeof(options6));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options6) failed, result = 0x%08X!", hr);
+    m_Desc.isPipelineShadingRateSupported = options6.VariableShadingRateTier >= D3D12_VARIABLE_SHADING_RATE_TIER_1;
+    m_Desc.isPrimitiveShadingRateSupported = options6.VariableShadingRateTier >= D3D12_VARIABLE_SHADING_RATE_TIER_2;
+    m_Desc.isAttachmentShadingRateSupported = options6.VariableShadingRateTier >= D3D12_VARIABLE_SHADING_RATE_TIER_2;
+    m_Desc.shadingRateAttachmentTileSize = (uint8_t)options6.ShadingRateImageTileSize;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7));
@@ -585,8 +589,8 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     bool isShaderAtomicsF16Supported = false;
     bool isShaderAtomicsF32Supported = false;
 #if NRI_USE_EXT_LIBS
-    NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported);
-    NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported);
+    REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported));
+    REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported));
 #endif
 
     m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;

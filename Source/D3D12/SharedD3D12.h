@@ -82,6 +82,8 @@ D3D12_BLEND_OP GetBlendOp(BlendFunc blendFunc);
 D3D12_SHADER_VISIBILITY GetShaderVisibility(StageBits shaderStage);
 D3D12_DESCRIPTOR_RANGE_TYPE GetDescriptorRangesType(DescriptorType descriptorType);
 D3D12_RESOURCE_DIMENSION GetResourceDimension(TextureType textureType);
+D3D12_SHADING_RATE GetShadingRate(ShadingRate shadingRate);
+D3D12_SHADING_RATE_COMBINER GetShadingRateCombiner(ShadingRateCombiner shadingRateCombiner);
 } // namespace nri
 
 #if NRI_USE_EXT_LIBS

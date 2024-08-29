@@ -160,6 +160,7 @@ struct SamplePositionsState {
 
     inline void Reset() {
         memset(&positions, 0, sizeof(positions));
+
         positionNum = 0;
         positionHash = 0;
     }
@@ -168,6 +169,7 @@ struct SamplePositionsState {
         const uint32_t size = sizeof(SamplePosition) * samplePositionNum;
 
         memcpy(&positions, samplePositions, size);
+
         positionHash = ComputeHash(samplePositions, size);
         positionNum = samplePositionNum;
     }

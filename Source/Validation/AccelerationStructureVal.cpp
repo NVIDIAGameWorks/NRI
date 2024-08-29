@@ -26,13 +26,13 @@ uint64_t AccelerationStructureVal::GetBuildScratchBufferSize() const {
 }
 
 uint64_t AccelerationStructureVal::GetHandle() const {
-    RETURN_ON_FAILURE(&m_Device, IsBoundToMemory(), 0, "GetAccelerationStructureHandle: AccelerationStructure is not bound to memory");
+    RETURN_ON_FAILURE(&m_Device, IsBoundToMemory(), 0, "AccelerationStructure is not bound to memory");
 
     return GetRayTracingInterface().GetAccelerationStructureHandle(*GetImpl());
 }
 
 uint64_t AccelerationStructureVal::GetNativeObject() const {
-    RETURN_ON_FAILURE(&m_Device, IsBoundToMemory(), 0, "GetAccelerationStructureNativeObject: AccelerationStructure is not bound to memory");
+    RETURN_ON_FAILURE(&m_Device, IsBoundToMemory(), 0, "AccelerationStructure is not bound to memory");
 
     return GetRayTracingInterface().GetAccelerationStructureNativeObject(*GetImpl());
 }

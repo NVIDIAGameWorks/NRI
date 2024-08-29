@@ -14,7 +14,7 @@ struct DeviceD3D11 final : public DeviceBase {
     ~DeviceD3D11();
 
     inline ID3D11DeviceBest* GetNativeObject() const {
-        return m_Device;
+        return m_Device.GetInterface();
     }
 
     inline ID3D11DeviceBest* operator->() const {

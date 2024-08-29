@@ -178,7 +178,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
                 result = m_Ext.m_AGS.CreateDeviceD3D11(m_Ext.m_AGSContext, &deviceCreationParams, &extensionsParams, &agsParams);
             }
 
-            RETURN_ON_FAILURE(this, result == AGS_SUCCESS, Result::FAILURE, "agsDriverExtensionsDX11_CreateDevice() failed: %d", (int32_t)result);
+            RETURN_ON_FAILURE(this, result == AGS_SUCCESS, Result::FAILURE, "agsDriverExtensionsDX11_CreateDevice() returned %d", (int32_t)result);
 
             deviceTemp = (ID3D11DeviceBest*)agsParams.pDevice;
             isDepthBoundsTestSupported = agsParams.extensionsSupported.depthBoundsDeferredContexts;
@@ -196,9 +196,9 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
 
 #if NRI_USE_EXT_LIBS
             if (m_Ext.HasNVAPI()) {
-                NvAPI_D3D_RegisterDevice(m_Device);
-                NvAPI_D3D11_SetNvShaderExtnSlot(m_Device, shaderExtRegister);
-                NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported);
+                REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D_RegisterDevice(deviceTemp));
+                REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_SetNvShaderExtnSlot(deviceTemp, shaderExtRegister));
+                REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(deviceTemp, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported));
                 isDepthBoundsTestSupported = true;
             }
         }
@@ -411,12 +411,21 @@ void DeviceD3D11::FillDesc() {
     bool isShaderAtomicsF16Supported = false;
     bool isShaderAtomicsF32Supported = false;
 #if NRI_USE_EXT_LIBS
-    NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported);
-    NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported);
+    REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported));
+    REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported));
 
     NV_D3D11_FEATURE_DATA_RASTERIZER_SUPPORT rasterizerFeatures = {};
-    NvAPI_D3D11_CheckFeatureSupport(m_Device, NV_D3D11_FEATURE_RASTERIZER, &rasterizerFeatures, sizeof(rasterizerFeatures));
+    REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_CheckFeatureSupport(m_Device, NV_D3D11_FEATURE_RASTERIZER, &rasterizerFeatures, sizeof(rasterizerFeatures)));
+
+    NV_D3D1x_GRAPHICS_CAPS caps = {};
+    REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D1x_GetGraphicsCapabilities(m_Device, NV_D3D1x_GRAPHICS_CAPS_VER, &caps));
+
     m_Desc.programmableSampleLocationsTier = rasterizerFeatures.ProgrammableSamplePositions ? 2 : 0;
+
+    m_Desc.isPipelineShadingRateSupported = false;
+    m_Desc.isPrimitiveShadingRateSupported = false;
+    m_Desc.isAttachmentShadingRateSupported = caps.bVariablePixelRateShadingSupported;
+    m_Desc.shadingRateAttachmentTileSize = NV_VARIABLE_PIXEL_SHADING_TILE_WIDTH;
 #endif
 
     // TODO: report fake COMPUTE and COPY queues support since multi-queue supporting code is NOP. Can it hurt?

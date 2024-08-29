@@ -11,6 +11,8 @@
 #include "QueryPoolD3D11.h"
 #include "TextureD3D11.h"
 
+#include "NRICompatibility.hlsli"
+
 using namespace nri;
 
 static constexpr uint64_t s_nullOffsets[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {0};
@@ -163,6 +165,10 @@ void CommandBufferD3D11::SetBlendConstants(const Color32f& color) {
     m_BlendFactor = color;
 }
 
+void CommandBufferD3D11::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
+    MaybeUnused(shadingRateDesc); // doesn't exist in D3D11
+}
+
 void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     if (!rects || !rectNum) {
         for (uint32_t i = 0; i < clearDescNum; i++) {
@@ -233,14 +239,15 @@ void CommandBufferD3D11::ClearStorageTexture(const ClearStorageTextureDesc& clea
 }
 
 void CommandBufferD3D11::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
+    // Render targets
     m_RenderTargetNum = attachmentsDesc.colors ? attachmentsDesc.colorNum : 0;
 
-    uint32_t i = 0;
+    size_t i = 0;
     for (; i < m_RenderTargetNum; i++) {
         const DescriptorD3D11& descriptor = *(DescriptorD3D11*)attachmentsDesc.colors[i];
         m_RenderTargets[i] = descriptor;
     }
-    for (; i < (uint32_t)m_RenderTargets.size(); i++)
+    for (; i < m_RenderTargets.size(); i++)
         m_RenderTargets[i] = nullptr;
 
     if (attachmentsDesc.depthStencil) {
@@ -250,6 +257,46 @@ void CommandBufferD3D11::BeginRendering(const AttachmentsDesc& attachmentsDesc) 
         m_DepthStencil = nullptr;
 
     m_DeferredContext->OMSetRenderTargets(m_RenderTargetNum, m_RenderTargets.data(), m_DepthStencil);
+
+    // Shading rate
+#if NRI_USE_EXT_LIBS
+    if (m_Device.GetExt()->HasNVAPI()) {
+        ID3D11NvShadingRateResourceView* shadingRateImage = nullptr;
+        if (attachmentsDesc.shadingRate) {
+            const DescriptorD3D11& descriptor = *(DescriptorD3D11*)attachmentsDesc.shadingRate;
+            shadingRateImage = descriptor;
+
+            // Program shading rate lookup table
+            if (!m_IsShadingRateLookupTableSet) {
+                std::array<NV_D3D11_VIEWPORT_SHADING_RATE_DESC_V1, D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE> shadingRates = {};
+                for (i = 0; i < shadingRates.size(); i++) {
+                    shadingRates[i].enableVariablePixelShadingRate = true;
+
+                    for (size_t j = 0; j < GetCountOf(shadingRates[i].shadingRateTable); j++)
+                        shadingRates[i].shadingRateTable[j] = NV_PIXEL_X1_PER_RASTER_PIXEL; // be on the safe side, avoid culling
+
+                    shadingRates[i].shadingRateTable[NRI_SHADING_RATE(0, 0)] = NV_PIXEL_X1_PER_RASTER_PIXEL;
+                    shadingRates[i].shadingRateTable[NRI_SHADING_RATE(0, 1)] = NV_PIXEL_X1_PER_1X2_RASTER_PIXELS;
+                    shadingRates[i].shadingRateTable[NRI_SHADING_RATE(1, 0)] = NV_PIXEL_X1_PER_2X1_RASTER_PIXELS;
+                    shadingRates[i].shadingRateTable[NRI_SHADING_RATE(1, 1)] = NV_PIXEL_X1_PER_2X2_RASTER_PIXELS;
+                    shadingRates[i].shadingRateTable[NRI_SHADING_RATE(1, 2)] = NV_PIXEL_X1_PER_2X4_RASTER_PIXELS;
+                    shadingRates[i].shadingRateTable[NRI_SHADING_RATE(2, 1)] = NV_PIXEL_X1_PER_4X2_RASTER_PIXELS;
+                    shadingRates[i].shadingRateTable[NRI_SHADING_RATE(2, 2)] = NV_PIXEL_X1_PER_4X4_RASTER_PIXELS;
+                }
+
+                NV_D3D11_VIEWPORTS_SHADING_RATE_DESC shadingRateDesc = {NV_D3D11_VIEWPORTS_SHADING_RATE_DESC_VER};
+                shadingRateDesc.numViewports = (uint32_t)shadingRates.size();
+                shadingRateDesc.pViewports = shadingRates.data();
+
+                REPORT_ERROR_ON_BAD_STATUS(&m_Device, NvAPI_D3D11_RSSetViewportsPixelShadingRates(m_DeferredContext, &shadingRateDesc));
+
+                m_IsShadingRateLookupTableSet = true;
+            }
+        }
+
+        REPORT_ERROR_ON_BAD_STATUS(&m_Device, NvAPI_D3D11_RSSetShadingRateResourceView(m_DeferredContext, shadingRateImage));
+    }
+#endif
 }
 
 void CommandBufferD3D11::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {

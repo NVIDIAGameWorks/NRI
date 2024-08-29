@@ -126,7 +126,7 @@ void* BufferD3D11::Map(uint64_t offset) {
     D3D11_MAPPED_SUBRESOURCE mappedData = {};
     HRESULT hr = m_Device.GetImmediateContext()->Map(m_Buffer, 0, map, 0, &mappedData);
     if (FAILED(hr)) {
-        REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
+        REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map()  failed!");
         return nullptr;
     }
 
@@ -144,7 +144,7 @@ void* BufferD3D11::Map(uint64_t offset) {
         hr = m_Device.GetImmediateContext()->Map(*m_ReadbackTexture, 0, D3D11_MAP_READ, 0, &srcData);
         if (FAILED(hr)) {
             m_Device.GetImmediateContext()->Unmap(m_Buffer, 0);
-            REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map() - FAILED!");
+            REPORT_ERROR(&m_Device, "ID3D11DeviceContext::Map()  failed!");
             return nullptr;
         }
 

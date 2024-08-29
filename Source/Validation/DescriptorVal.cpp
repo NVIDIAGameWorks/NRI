@@ -75,8 +75,11 @@ DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Te
         case Texture2DViewType::DEPTH_STENCIL_ATTACHMENT:
             m_ResourceViewType = ResourceViewType::DEPTH_STENCIL_ATTACHMENT;
             break;
+        case Texture2DViewType::SHADING_RATE_ATTACHMENT:
+            m_ResourceViewType = ResourceViewType::SHADING_RATE_ATTACHMENT;
+            break;
         default:
-            CHECK(false, "unexpected TextureView");
+            CHECK(false, "unexpected 'viewType'");
             break;
     }
 }

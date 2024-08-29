@@ -71,6 +71,10 @@ static void NRI_CALL CmdSetBlendConstants(CommandBuffer& commandBuffer, const Co
     ((CommandBufferEmuD3D11&)commandBuffer).SetBlendConstants(color);
 }
 
+static void NRI_CALL CmdSetShadingRate(CommandBuffer& commandBuffer, const ShadingRateDesc& shadingRateDesc) {
+    ((CommandBufferEmuD3D11&)commandBuffer).SetShadingRate(shadingRateDesc);
+}
+
 static void NRI_CALL CmdClearAttachments(CommandBuffer& commandBuffer, const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     ((CommandBufferEmuD3D11&)commandBuffer).ClearAttachments(clearDescs, clearDescNum, rects, rectNum);
 }
@@ -185,6 +189,7 @@ void Core_CommandBufferEmu_PartiallyFillFunctionTable(CoreInterface& table) {
     table.CmdSetStencilReference = ::CmdSetStencilReference;
     table.CmdSetSamplePositions = ::CmdSetSamplePositions;
     table.CmdSetBlendConstants = ::CmdSetBlendConstants;
+    table.CmdSetShadingRate = ::CmdSetShadingRate;
     table.CmdSetIndexBuffer = ::CmdSetIndexBuffer;
     table.CmdSetVertexBuffers = ::CmdSetVertexBuffers;
     table.CmdDraw = ::CmdDraw;

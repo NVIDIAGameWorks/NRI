@@ -9,6 +9,7 @@ using namespace nri;
 
 void nri::GetResourceDesc(D3D12_RESOURCE_DESC* desc, const TextureDesc& textureDesc) {
     uint16_t blockWidth = (uint16_t)GetFormatProps(textureDesc.format).blockWidth;
+    const DxgiFormat& dxgiFormat = GetDxgiFormat(textureDesc.format);
 
     desc->Dimension = GetResourceDimension(textureDesc.type);
     desc->Alignment = textureDesc.sampleNum > 1 ? 0 : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
@@ -16,7 +17,7 @@ void nri::GetResourceDesc(D3D12_RESOURCE_DESC* desc, const TextureDesc& textureD
     desc->Height = Align(textureDesc.height, blockWidth);
     desc->DepthOrArraySize = textureDesc.type == TextureType::TEXTURE_3D ? textureDesc.depth : textureDesc.layerNum;
     desc->MipLevels = textureDesc.mipNum;
-    desc->Format = GetDxgiFormat(textureDesc.format).typeless;
+    desc->Format = (textureDesc.usageMask & nri::TextureUsageBits::SHADING_RATE_ATTACHMENT) ? dxgiFormat.typed : dxgiFormat.typeless;
     desc->SampleDesc.Count = textureDesc.sampleNum;
     desc->Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     desc->Flags = GetTextureFlags(textureDesc.usageMask);

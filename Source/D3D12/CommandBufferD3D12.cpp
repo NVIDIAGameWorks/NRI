@@ -118,10 +118,10 @@ static inline D3D12_BARRIER_ACCESS GetBarrierAccessFlags(AccessBits accessBits) 
     if (accessBits & AccessBits::COLOR_ATTACHMENT)
         flags |= D3D12_BARRIER_ACCESS_RENDER_TARGET;
 
-    if (accessBits & AccessBits::DEPTH_STENCIL_WRITE)
+    if (accessBits & AccessBits::DEPTH_STENCIL_ATTACHMENT_WRITE)
         flags |= D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE;
 
-    if (accessBits & AccessBits::DEPTH_STENCIL_READ)
+    if (accessBits & AccessBits::DEPTH_STENCIL_ATTACHMENT_READ)
         flags |= D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ;
 
     if (accessBits & AccessBits::COPY_SOURCE)
@@ -136,22 +136,23 @@ static inline D3D12_BARRIER_ACCESS GetBarrierAccessFlags(AccessBits accessBits) 
     if (accessBits & AccessBits::ACCELERATION_STRUCTURE_WRITE)
         flags |= D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_WRITE;
 
-    if (accessBits & AccessBits::SHADING_RATE)
+    if (accessBits & AccessBits::SHADING_RATE_ATTACHMENT)
         flags |= D3D12_BARRIER_ACCESS_SHADING_RATE_SOURCE;
 
     return flags;
 }
 
-constexpr std::array<D3D12_BARRIER_LAYOUT, (uint32_t)DescriptorType::MAX_NUM> LAYOUTS = {
+constexpr std::array<D3D12_BARRIER_LAYOUT, (uint32_t)Layout::MAX_NUM> LAYOUTS = {
     D3D12_BARRIER_LAYOUT_UNDEFINED,           // UNKNOWN
     D3D12_BARRIER_LAYOUT_RENDER_TARGET,       // COLOR_ATTACHMENT
-    D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE, // DEPTH_STENCIL
+    D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE, // DEPTH_STENCIL_ATTACHMENT
     D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_READ,  // DEPTH_STENCIL_READONLY
     D3D12_BARRIER_LAYOUT_SHADER_RESOURCE,     // SHADER_RESOURCE
     D3D12_BARRIER_LAYOUT_UNORDERED_ACCESS,    // SHADER_RESOURCE_STORAGE
     D3D12_BARRIER_LAYOUT_COPY_SOURCE,         // COPY_SOURCE
     D3D12_BARRIER_LAYOUT_COPY_DEST,           // COPY_DESTINATION
     D3D12_BARRIER_LAYOUT_PRESENT,             // PRESENT
+    D3D12_BARRIER_LAYOUT_SHADING_RATE_SOURCE, // SHADING_RATE_ATTACHMENT
 };
 
 static inline D3D12_BARRIER_LAYOUT GetBarrierLayout(Layout layout) {
@@ -164,31 +165,45 @@ static inline D3D12_RESOURCE_STATES GetResourceStates(AccessBits accessMask, D3D
 
     if (accessMask & (AccessBits::CONSTANT_BUFFER | AccessBits::VERTEX_BUFFER))
         resourceStates |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+
     if (accessMask & AccessBits::INDEX_BUFFER)
         resourceStates |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
+
     if (accessMask & AccessBits::ARGUMENT_BUFFER)
         resourceStates |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+
     if (accessMask & AccessBits::SHADER_RESOURCE_STORAGE)
         resourceStates |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+
     if (accessMask & AccessBits::COLOR_ATTACHMENT)
         resourceStates |= D3D12_RESOURCE_STATE_RENDER_TARGET;
-    if (accessMask & AccessBits::DEPTH_STENCIL_READ)
+
+    if (accessMask & AccessBits::DEPTH_STENCIL_ATTACHMENT_READ)
         resourceStates |= D3D12_RESOURCE_STATE_DEPTH_READ;
-    if (accessMask & AccessBits::DEPTH_STENCIL_WRITE)
+
+    if (accessMask & AccessBits::DEPTH_STENCIL_ATTACHMENT_WRITE)
         resourceStates |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
+
     if (accessMask & AccessBits::COPY_SOURCE)
         resourceStates |= D3D12_RESOURCE_STATE_COPY_SOURCE;
+
     if (accessMask & AccessBits::COPY_DESTINATION)
         resourceStates |= D3D12_RESOURCE_STATE_COPY_DEST;
+
     if (accessMask & AccessBits::SHADER_RESOURCE) {
         resourceStates |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
         if (commandListType == D3D12_COMMAND_LIST_TYPE_DIRECT)
             resourceStates |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
     }
+
     if (accessMask & AccessBits::ACCELERATION_STRUCTURE_READ)
         resourceStates |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+
     if (accessMask & AccessBits::ACCELERATION_STRUCTURE_WRITE)
         resourceStates |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+
+    if (accessMask & AccessBits::SHADING_RATE_ATTACHMENT)
+        resourceStates |= D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE;
 
     return resourceStates;
 }
@@ -305,6 +320,16 @@ inline void CommandBufferD3D12::SetBlendConstants(const Color32f& color) {
     m_GraphicsCommandList->OMSetBlendFactor(&color.x);
 }
 
+inline void CommandBufferD3D12::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
+    D3D12_SHADING_RATE shadingRate = GetShadingRate(shadingRateDesc.shadingRate);
+    D3D12_SHADING_RATE_COMBINER shadingRateCombiners[2] = {
+        GetShadingRateCombiner(shadingRateDesc.primitiveCombiner),
+        GetShadingRateCombiner(shadingRateDesc.attachmentCombiner),
+    };
+
+    m_GraphicsCommandList->RSSetShadingRate(shadingRate, shadingRateCombiners);
+}
+
 inline void CommandBufferD3D12::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     D3D12_RECT* rectsD3D12 = StackAlloc(D3D12_RECT, rectNum);
     ConvertRects(rectsD3D12, rects, rectNum);
@@ -355,6 +380,7 @@ inline void CommandBufferD3D12::ClearStorageTexture(const ClearStorageTextureDes
 }
 
 inline void CommandBufferD3D12::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
+    // Render targets
     m_RenderTargetNum = attachmentsDesc.colors ? attachmentsDesc.colorNum : 0;
 
     uint32_t i = 0;
@@ -372,6 +398,13 @@ inline void CommandBufferD3D12::BeginRendering(const AttachmentsDesc& attachment
         m_DepthStencil.ptr = NULL;
 
     m_GraphicsCommandList->OMSetRenderTargets(m_RenderTargetNum, m_RenderTargets.data(), FALSE, m_DepthStencil.ptr ? &m_DepthStencil : nullptr);
+
+    // Shading rate
+    ID3D12Resource* shadingRateImage = nullptr;
+    if (attachmentsDesc.shadingRate)
+        shadingRateImage = *(DescriptorD3D12*)attachmentsDesc.shadingRate;
+
+    m_GraphicsCommandList->RSSetShadingRateImage(shadingRateImage);
 }
 
 inline void CommandBufferD3D12::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {

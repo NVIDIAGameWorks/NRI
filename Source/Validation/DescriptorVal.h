@@ -18,7 +18,8 @@ enum class ResourceViewType {
     DEPTH_STENCIL_ATTACHMENT,
     SHADER_RESOURCE,
     SHADER_RESOURCE_STORAGE,
-    CONSTANT_BUFFER_VIEW
+    CONSTANT_BUFFER_VIEW,
+    SHADING_RATE_ATTACHMENT
 };
 
 struct DescriptorVal : public DeviceObjectVal<Descriptor> {

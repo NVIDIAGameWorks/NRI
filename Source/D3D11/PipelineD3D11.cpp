@@ -103,7 +103,7 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
         rasterizerDesc.AntialiasedLineEnable = r.antialiasedLines;
         rasterizerDesc.MultisampleEnable = sampleNum > 1 ? TRUE : FALSE;
         // D3D11_RASTERIZER_DESC1
-        rasterizerDesc.ForcedSampleCount = sampleNum;
+        rasterizerDesc.ForcedSampleCount = sampleNum > 1 ? sampleNum : 0;
         // D3D11_RASTERIZER_DESC2
         rasterizerDesc.ConservativeRaster = r.conservativeRasterization ? D3D11_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D11_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
@@ -123,7 +123,7 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
         // Ex
         memcpy(&m_RasterizerDesc, &rasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
 #if NRI_USE_EXT_LIBS
-        m_RasterizerDesc.ForcedSampleCount = sampleNum;
+        m_RasterizerDesc.ForcedSampleCount = sampleNum > 1 ? sampleNum : 0;
         m_RasterizerDesc.ProgrammableSamplePositionsEnable = true;
         m_RasterizerDesc.SampleCount = sampleNum;
         m_RasterizerDesc.ConservativeRasterEnable = r.conservativeRasterization;
@@ -239,11 +239,8 @@ void PipelineD3D11::ChangeSamplePositions(ID3D11DeviceContextBest* deferredConte
             m_RasterizerDesc.SamplePositionsY[j] = samplePositionState.positions[j].y + 8;
         }
 
-        if (m_Device.GetExt()->HasNVAPI()) {
-            NvAPI_Status result = NvAPI_D3D11_CreateRasterizerState(m_Device.GetNativeObject(), &m_RasterizerDesc, (ID3D11RasterizerState**)&newState.ptr);
-            if (result != NVAPI_OK)
-                REPORT_ERROR(&m_Device, "NvAPI_D3D11_CreateRasterizerState() - FAILED!");
-        }
+        if (m_Device.GetExt()->HasNVAPI())
+            REPORT_ERROR_ON_BAD_STATUS(&m_Device, NvAPI_D3D11_CreateRasterizerState(m_Device.GetNativeObject(), &m_RasterizerDesc, (ID3D11RasterizerState**)&newState.ptr));
 
         if (newState.ptr)
             m_RasterizerStates.push_back(newState);

@@ -109,7 +109,7 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc) {
             hr = m_SwapChain->SetColorSpace1(colorSpace);
 
         if (FAILED(hr))
-            REPORT_WARNING(&m_Device, "IDXGISwapChain3::SetColorSpace1() - FAILED!");
+            REPORT_WARNING(&m_Device, "IDXGISwapChain3::SetColorSpace1()  failed!");
     } else
         REPORT_ERROR(&m_Device, "IDXGISwapChain3::SetColorSpace1() is not supported by the OS!");
 
@@ -118,7 +118,7 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc) {
         DXGI_RGBA color = {0.0f, 0.0f, 0.0f, 1.0f};
         hr = m_SwapChain->SetBackgroundColor(&color);
         if (FAILED(hr))
-            REPORT_WARNING(&m_Device, "IDXGISwapChain1::SetBackgroundColor() - FAILED!");
+            REPORT_WARNING(&m_Device, "IDXGISwapChain1::SetBackgroundColor()  failed!");
     }
 
     // Maximum frame latency

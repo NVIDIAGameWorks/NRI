@@ -86,7 +86,7 @@ NRI_ENUM
     // Plain: 8 bits per channel
     R8_UNORM,                            // +  +  +  -  +  -  +  +  +  -
     R8_SNORM,                            // +  +  +  -  +  -  +  +  +  -
-    R8_UINT,                             // +  +  +  -  -  -  +  +  +  -
+    R8_UINT,                             // +  +  +  -  -  -  +  +  +  - // SHADING_RATE compatible
     R8_SINT,                             // +  +  +  -  -  -  +  +  +  -
 
     RG8_UNORM,                           // +  +  +  -  +  -  +  +  +  -
@@ -381,6 +381,7 @@ NRI_ENUM
     SHADER_RESOURCE_STORAGE_2D_ARRAY,
     COLOR_ATTACHMENT,
     DEPTH_STENCIL_ATTACHMENT,
+    SHADING_RATE_ATTACHMENT,
 
     MAX_NUM
 );
@@ -432,7 +433,8 @@ NRI_ENUM_BITS
     SHADER_RESOURCE                     = NRI_SET_BIT(0),
     SHADER_RESOURCE_STORAGE             = NRI_SET_BIT(1),
     COLOR_ATTACHMENT                    = NRI_SET_BIT(2),
-    DEPTH_STENCIL_ATTACHMENT            = NRI_SET_BIT(3)
+    DEPTH_STENCIL_ATTACHMENT            = NRI_SET_BIT(3),
+    SHADING_RATE_ATTACHMENT             = NRI_SET_BIT(4)
 );
 
 NRI_ENUM_BITS
@@ -454,6 +456,7 @@ NRI_ENUM_BITS
 (
     ResourceViewBits, uint8_t,
 
+    NONE                                = 0,
     READONLY_DEPTH                      = NRI_SET_BIT(0),
     READONLY_STENCIL                    = NRI_SET_BIT(1)
 );
@@ -513,7 +516,6 @@ NRI_STRUCT(Texture3DViewDesc)
     NRI_NAME(Mip_t) mipNum;
     NRI_NAME(Dim_t) sliceOffset;
     NRI_NAME(Dim_t) sliceNum;
-    NRI_NAME(ResourceViewBits) flags;
 };
 
 NRI_STRUCT(BufferViewDesc)
@@ -718,6 +720,34 @@ NRI_ENUM
     MAX_NUM
 );
 
+NRI_ENUM
+(
+    ShadingRate, uint8_t,
+
+    _1x1,
+    _1x2,
+    _2x1,
+    _2x2,
+    _2x4,
+    _4x2,
+    _4x4,
+
+    MAX_NUM
+);
+
+NRI_ENUM
+(
+    ShadingRateCombiner, uint8_t,
+
+    REPLACE,
+    KEEP,
+    MIN,
+    MAX,
+    SUM,
+
+    MAX_NUM
+);
+
 NRI_STRUCT(RasterizationDesc)
 {
     uint32_t viewportNum;
@@ -728,8 +758,15 @@ NRI_STRUCT(RasterizationDesc)
     NRI_NAME(CullMode) cullMode;
     bool frontCounterClockwise;
     bool depthClamp;
-    bool antialiasedLines; // Requires "isLineSmoothingSupported"
-    bool conservativeRasterization; // Requires "conservativeRasterTier > 0"
+
+    // Requires "isLineSmoothingSupported"
+    bool antialiasedLines;
+
+    // Requires "conservativeRasterTier > 0"
+    bool conservativeRasterization;
+
+    // Requires "is[Pipeline/Primitive/Attachment]ShadingRateSupported", expects "CmdSetShadingRate" and optionally "AttachmentsDesc::shadingRate"
+    bool shadingRate;
 };
 
 NRI_STRUCT(MultisampleDesc)
@@ -737,7 +774,16 @@ NRI_STRUCT(MultisampleDesc)
     uint32_t sampleMask;
     NRI_NAME(Sample_t) sampleNum;
     bool alphaToCoverage;
-    bool programmableSampleLocations; // Requires "isProgrammableSampleLocationsSupported"
+
+    // Requires "isProgrammableSampleLocationsSupported", expects "CmdSetSamplePositions"
+    bool programmableSampleLocations;
+};
+
+NRI_STRUCT(ShadingRateDesc)
+{
+    NRI_NAME(ShadingRate) shadingRate;
+    NRI_NAME(ShadingRateCombiner) primitiveCombiner;
+    NRI_NAME(ShadingRateCombiner) attachmentCombiner;
 };
 
 #pragma endregion
@@ -749,11 +795,11 @@ NRI_STRUCT(MultisampleDesc)
 
 NRI_ENUM
 (
+    // Requires "isLogicOpSupported"
     LogicFunc, uint8_t,
 
     NONE,
 
-    // Requires "isLogicOpSupported"
     // S - source color 0
     // D - destination color
 
@@ -940,13 +986,17 @@ NRI_STRUCT(DepthAttachmentDesc)
 {
     NRI_NAME(CompareFunc) compareFunc;
     bool write;
-    bool boundsTest; // Requires "isDepthBoundsTestSupported", expects "CmdSetDepthBounds"
+
+    // Requires "isDepthBoundsTestSupported", expects "CmdSetDepthBounds"
+    bool boundsTest;
 };
 
 NRI_STRUCT(StencilAttachmentDesc)
 {
     NRI_NAME(StencilDesc) front;
-    NRI_NAME(StencilDesc) back; // "back.writeMask" requires "isIndependentFrontAndBackStencilReferenceAndMasksSupported"
+
+    // Requires "isIndependentFrontAndBackStencilReferenceAndMasksSupported" for "back.writeMask"
+    NRI_NAME(StencilDesc) back;
 };
 
 NRI_STRUCT(OutputMergerDesc)
@@ -962,6 +1012,7 @@ NRI_STRUCT(OutputMergerDesc)
 NRI_STRUCT(AttachmentsDesc)
 {
     NRI_OPTIONAL const NRI_NAME(Descriptor)* depthStencil;
+    NRI_OPTIONAL const NRI_NAME(Descriptor)* shadingRate;
     const NRI_NAME(Descriptor)* const* colors;
     uint32_t colorNum;
 };
@@ -999,11 +1050,10 @@ NRI_ENUM
 
 NRI_ENUM
 (
+    // Requires "isTextureFilterMinMaxSupported"
     FilterExt, uint8_t,
 
     NONE,
-
-    // Requires "isTextureFilterMinMaxSupported"
     MIN,
     MAX,
 
@@ -1091,36 +1141,37 @@ NRI_ENUM
 
     UNKNOWN,
     COLOR_ATTACHMENT,
-    DEPTH_STENCIL,
-    DEPTH_STENCIL_READONLY,
+    DEPTH_STENCIL_ATTACHMENT,
+    DEPTH_STENCIL_READONLY, // attachment or shader resource
     SHADER_RESOURCE,
     SHADER_RESOURCE_STORAGE,
     COPY_SOURCE,
     COPY_DESTINATION,
     PRESENT,
+    SHADING_RATE_ATTACHMENT,
 
     MAX_NUM
 );
 
 NRI_ENUM_BITS
 (
-    AccessBits, uint16_t,                           // Compatible "StageBits" (including ALL):
+    AccessBits, uint16_t,                              // Compatible "StageBits" (including ALL):
 
-    UNKNOWN                      = 0,
-    INDEX_BUFFER                 = NRI_SET_BIT(0),  // INDEX_INPUT
-    VERTEX_BUFFER                = NRI_SET_BIT(1),  // VERTEX_SHADER
-    CONSTANT_BUFFER              = NRI_SET_BIT(2),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS
-    SHADER_RESOURCE              = NRI_SET_BIT(3),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS
-    SHADER_RESOURCE_STORAGE      = NRI_SET_BIT(4),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS, CLEAR_STORAGE
-    ARGUMENT_BUFFER              = NRI_SET_BIT(5),  // INDIRECT
-    COLOR_ATTACHMENT             = NRI_SET_BIT(6),  // COLOR_ATTACHMENT
-    DEPTH_STENCIL_WRITE          = NRI_SET_BIT(7),  // DEPTH_STENCIL_ATTACHMENT
-    DEPTH_STENCIL_READ           = NRI_SET_BIT(8),  // DEPTH_STENCIL_ATTACHMENT
-    COPY_SOURCE                  = NRI_SET_BIT(9),  // COPY
-    COPY_DESTINATION             = NRI_SET_BIT(10), // COPY
-    ACCELERATION_STRUCTURE_READ  = NRI_SET_BIT(11), // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
-    ACCELERATION_STRUCTURE_WRITE = NRI_SET_BIT(12), // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
-    SHADING_RATE                 = NRI_SET_BIT(13)  // FRAGMENT_SHADER // TODO: WIP
+    UNKNOWN                         = 0,
+    INDEX_BUFFER                    = NRI_SET_BIT(0),  // INDEX_INPUT
+    VERTEX_BUFFER                   = NRI_SET_BIT(1),  // VERTEX_SHADER
+    CONSTANT_BUFFER                 = NRI_SET_BIT(2),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS
+    SHADER_RESOURCE                 = NRI_SET_BIT(3),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS
+    SHADER_RESOURCE_STORAGE         = NRI_SET_BIT(4),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS, CLEAR_STORAGE
+    ARGUMENT_BUFFER                 = NRI_SET_BIT(5),  // INDIRECT
+    COLOR_ATTACHMENT                = NRI_SET_BIT(6),  // COLOR_ATTACHMENT
+    DEPTH_STENCIL_ATTACHMENT_WRITE  = NRI_SET_BIT(7),  // DEPTH_STENCIL_ATTACHMENT
+    DEPTH_STENCIL_ATTACHMENT_READ   = NRI_SET_BIT(8),  // DEPTH_STENCIL_ATTACHMENT
+    COPY_SOURCE                     = NRI_SET_BIT(9),  // COPY
+    COPY_DESTINATION                = NRI_SET_BIT(10), // COPY
+    ACCELERATION_STRUCTURE_READ     = NRI_SET_BIT(11), // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
+    ACCELERATION_STRUCTURE_WRITE    = NRI_SET_BIT(12), // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
+    SHADING_RATE_ATTACHMENT         = NRI_SET_BIT(13)  // FRAGMENT_SHADER
 );
 
 NRI_STRUCT(AccessStage)
@@ -1566,6 +1617,7 @@ NRI_STRUCT(DeviceDesc)
     uint32_t combinedClipAndCullDistanceMaxNum;
     uint8_t conservativeRasterTier;
     uint8_t programmableSampleLocationsTier;
+    uint8_t shadingRateAttachmentTileSize;
 
     // Features
     uint32_t isComputeQueueSupported : 1;
@@ -1582,6 +1634,9 @@ NRI_STRUCT(DeviceDesc)
     uint32_t isMeshShaderPipelineStatsSupported : 1;
     uint32_t isEnchancedBarrierSupported : 1; // aka - can "Layout" be ignored?
     uint32_t isMemoryTier2Supported : 1; // a memory object can support resources from all 3 categories (buffers, attachments, all other textures)
+    uint32_t isPipelineShadingRateSupported : 1;
+    uint32_t isPrimitiveShadingRateSupported : 1;
+    uint32_t isAttachmentShadingRateSupported : 1;
 
     // Shader features
     uint32_t isShaderNativeI16Supported : 1;

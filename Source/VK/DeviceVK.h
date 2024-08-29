@@ -118,15 +118,16 @@ private:
     Result ResolveDispatchTable(const Vector<const char*>& desiredDeviceExts);
 
 public:
-    bool m_IsDescriptorIndexingSupported = false;
-    bool m_IsDeviceAddressSupported = false;
-    bool m_IsSwapChainMutableFormatSupported = false;
-    bool m_IsPresentIdSupported = false;
-    bool m_IsPresentWaitSupported = false;
-    bool m_IsLowLatencySupported = false;
-    bool m_IsMemoryPrioritySupported = false;
-    bool m_IsMemoryBudgetSupported = false;
-    bool m_IsMaintenance5Supported = false;
+    uint32_t m_IsDescriptorIndexingSupported : 1;
+    uint32_t m_IsDeviceAddressSupported : 1;
+    uint32_t m_IsSwapChainMutableFormatSupported : 1;
+    uint32_t m_IsPresentIdSupported : 1;
+    uint32_t m_IsPresentWaitSupported : 1;
+    uint32_t m_IsLowLatencySupported : 1;
+    uint32_t m_IsMemoryPrioritySupported : 1;
+    uint32_t m_IsMemoryBudgetSupported : 1;
+    uint32_t m_IsMaintenance5Supported : 1;
+    uint32_t m_IsImageSlicedViewSupported : 1;
 
 private:
     VkPhysicalDevice m_PhysicalDevice = nullptr;

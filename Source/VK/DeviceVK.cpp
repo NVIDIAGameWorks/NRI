@@ -78,6 +78,9 @@ constexpr VkImageUsageFlags GetImageUsageFlags(TextureUsageBits textureUsageBits
     if (textureUsageBits & TextureUsageBits::DEPTH_STENCIL_ATTACHMENT)
         flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
+    if (textureUsageBits & TextureUsageBits::SHADING_RATE_ATTACHMENT)
+        flags |= VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+
     return flags;
 }
 
@@ -304,6 +307,9 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
 
     if (IsExtensionSupported(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_EXT_IMAGE_SLICED_VIEW_OF_3D_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_IMAGE_SLICED_VIEW_OF_3D_EXTENSION_NAME);
 
     // Optional
     if (IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, supportedExts))
@@ -604,6 +610,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(memoryPriorityFeatures);
     }
 
+    VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT slicedViewFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_IMAGE_SLICED_VIEW_OF_3D_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(slicedViewFeatures);
+    }
+
     if (IsExtensionSupported(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, desiredDeviceExts))
         m_IsMemoryBudgetSupported = true;
 
@@ -699,6 +710,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             APPEND_EXT(sampleLocationsProps);
         }
 
+        VkPhysicalDeviceFragmentShadingRatePropertiesKHR shadingRateProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, desiredDeviceExts)) {
+            APPEND_EXT(shadingRateProps);
+        }
+
         VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
         if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(rayTracingProps);
@@ -723,9 +739,10 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_IsDeviceAddressSupported = features12.bufferDeviceAddress;
         m_IsSwapChainMutableFormatSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, desiredDeviceExts);
         m_IsPresentIdSupported = presentIdFeatures.presentId;
-        m_IsPresentWaitSupported = m_IsPresentIdSupported && presentWaitFeatures.presentWait;
+        m_IsPresentWaitSupported = m_IsPresentIdSupported != 0 && presentWaitFeatures.presentWait != 0;
         m_IsMemoryPrioritySupported = memoryPriorityFeatures.memoryPriority;
-        m_IsLowLatencySupported = m_IsPresentIdSupported && IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
+        m_IsLowLatencySupported = m_IsPresentIdSupported != 0 && IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
+        m_IsImageSlicedViewSupported = slicedViewFeatures.imageSlicedViewOf3D != 0;
 
         // Fill desc
         const VkPhysicalDeviceLimits& limits = props.properties.limits;
@@ -867,6 +884,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         if (sampleLocationsProps.sampleLocationSampleCounts)
             m_Desc.programmableSampleLocationsTier = sampleLocationsProps.variableSampleLocations ? 2 : 1; // TODO: best guess
 
+        m_Desc.isPipelineShadingRateSupported = shadingRateFeatures.pipelineFragmentShadingRate != 0;
+        m_Desc.isPrimitiveShadingRateSupported = shadingRateFeatures.primitiveFragmentShadingRate != 0;
+        m_Desc.isAttachmentShadingRateSupported = shadingRateFeatures.attachmentFragmentShadingRate != 0;
+        m_Desc.shadingRateAttachmentTileSize = (uint8_t)shadingRateProps.minFragmentShadingRateAttachmentTexelSize.width;
+
         m_Desc.isComputeQueueSupported = m_QueueFamilyIndices[(uint32_t)CommandQueueType::COMPUTE] != INVALID_FAMILY_INDEX;
         m_Desc.isCopyQueueSupported = m_QueueFamilyIndices[(uint32_t)CommandQueueType::COPY] != INVALID_FAMILY_INDEX;
 
@@ -923,8 +945,10 @@ void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo&
         flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT; // allow cube maps
     if (textureDesc.type == nri::TextureType::TEXTURE_3D)
         flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT; // allow 3D demotion to a set of layers // TODO: hook up "VK_EXT_image_2d_view_of_3d"?
-    if (m_Desc.programmableSampleLocationsTier && textureDesc.format >= Format::D16_UNORM)
+    if (m_Desc.programmableSampleLocationsTier && formatProps.isDepth)
         flags |= VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
+    if (textureDesc.depth > 1)
+        flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
 
     info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO; // should be already set
     info.flags = flags;
@@ -1599,6 +1623,10 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
         m_IsDeviceAddressSupported = false;
 
     // IMPORTANT: {} is mandatory here!
+
+    if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, desiredDeviceExts)) {
+        GET_DEVICE_PROC(CmdSetFragmentShadingRateKHR);
+    }
 
     if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, desiredDeviceExts)) {
         GET_DEVICE_PROC(AcquireNextImageKHR);

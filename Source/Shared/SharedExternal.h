@@ -99,17 +99,21 @@ typedef uint32_t DXGI_FORMAT;
 #define NRI_STRINGIFY_(token) #token
 #define NRI_STRINGIFY(token) NRI_STRINGIFY_(token)
 
-#define RETURN_ON_BAD_HRESULT(deviceBase, hr, msg) \
+#define RETURN_ON_BAD_HRESULT(deviceBase, hr, format) \
     if (FAILED(hr)) { \
-        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, msg " failed, result = 0x%08X!", hr); \
+        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, __FUNCTION__ ": " format " failed, result = 0x%08X!", hr); \
         return GetResultFromHRESULT(hr); \
     }
 
 #define RETURN_ON_FAILURE(deviceBase, condition, returnCode, format, ...) \
     if (!(condition)) { \
-        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__); \
+        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, __FUNCTION__ ": " format, ##__VA_ARGS__); \
         return returnCode; \
     }
+
+#define REPORT_ERROR_ON_BAD_STATUS(deviceBase, expression) \
+    if ((expression) != 0) \
+        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, __FUNCTION__ ": " NRI_STRINGIFY(expression) " failed!")
 
 #define CHECK(condition, message) assert((condition) && message)
 

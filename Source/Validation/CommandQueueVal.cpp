@@ -15,16 +15,16 @@ using namespace nri;
 
 static bool ValidateTextureUploadDesc(DeviceVal& device, uint32_t i, const TextureUploadDesc& textureUploadDesc) {
     if (!textureUploadDesc.subresources) {
-        REPORT_WARNING(&device, "UploadData: the number of subresources in 'textureUploadDescs[%u]' is 0 (nothing to upload)", i);
+        REPORT_WARNING(&device, "the number of subresources in 'textureUploadDescs[%u]' is 0 (nothing to upload)", i);
         return true;
     }
 
     const TextureVal& textureVal = *(TextureVal*)textureUploadDesc.texture;
     const TextureDesc& textureDesc = textureVal.GetDesc();
 
-    RETURN_ON_FAILURE(&device, textureUploadDesc.texture != nullptr, false, "UploadData: 'textureUploadDescs[%u].texture' is NULL", i);
-    RETURN_ON_FAILURE(&device, textureUploadDesc.after.layout < Layout::MAX_NUM, false, "UploadData: 'textureUploadDescs[%u].nextLayout' is invalid", i);
-    RETURN_ON_FAILURE(&device, textureVal.IsBoundToMemory(), false, "UploadData: 'textureUploadDescs[%u].texture' is not bound to memory", i);
+    RETURN_ON_FAILURE(&device, textureUploadDesc.texture != nullptr, false, "'textureUploadDescs[%u].texture' is NULL", i);
+    RETURN_ON_FAILURE(&device, textureUploadDesc.after.layout < Layout::MAX_NUM, false, "'textureUploadDescs[%u].nextLayout' is invalid", i);
+    RETURN_ON_FAILURE(&device, textureVal.IsBoundToMemory(), false, "'textureUploadDescs[%u].texture' is not bound to memory", i);
 
     uint32_t subresourceNum = textureDesc.layerNum * textureDesc.mipNum;
     for (uint32_t j = 0; j < subresourceNum; j++) {
@@ -35,9 +35,9 @@ static bool ValidateTextureUploadDesc(DeviceVal& device, uint32_t i, const Textu
             continue;
         }
 
-        RETURN_ON_FAILURE(&device, subresource.slices != nullptr, false, "UploadData: 'textureUploadDescs[%u].subresources[%u].slices' is invalid", i, j);
-        RETURN_ON_FAILURE(&device, subresource.rowPitch != 0, false, "UploadData: 'textureUploadDescs[%u].subresources[%u].rowPitch' is 0", i, j);
-        RETURN_ON_FAILURE(&device, subresource.slicePitch != 0, false, "UploadData: 'textureUploadDescs[%u].subresources[%u].slicePitch' is 0", i, j);
+        RETURN_ON_FAILURE(&device, subresource.slices != nullptr, false, "'textureUploadDescs[%u].subresources[%u].slices' is invalid", i, j);
+        RETURN_ON_FAILURE(&device, subresource.rowPitch != 0, false, "'textureUploadDescs[%u].subresources[%u].rowPitch' is 0", i, j);
+        RETURN_ON_FAILURE(&device, subresource.slicePitch != 0, false, "'textureUploadDescs[%u].subresources[%u].slicePitch' is 0", i, j);
     }
 
     return true;
@@ -45,17 +45,17 @@ static bool ValidateTextureUploadDesc(DeviceVal& device, uint32_t i, const Textu
 
 static bool ValidateBufferUploadDesc(DeviceVal& device, uint32_t i, const BufferUploadDesc& bufferUploadDesc) {
     if (bufferUploadDesc.dataSize == 0) {
-        REPORT_WARNING(&device, "UploadData: 'bufferUploadDescs[%u].dataSize' is 0 (nothing to upload)", i);
+        REPORT_WARNING(&device, "'bufferUploadDescs[%u].dataSize' is 0 (nothing to upload)", i);
         return true;
     }
 
     const BufferVal& bufferVal = *(BufferVal*)bufferUploadDesc.buffer;
     const uint64_t rangeEnd = bufferUploadDesc.bufferOffset + bufferUploadDesc.dataSize;
 
-    RETURN_ON_FAILURE(&device, bufferUploadDesc.buffer != nullptr, false, "UploadData: 'bufferUploadDescs[%u].buffer' is invalid", i);
-    RETURN_ON_FAILURE(&device, bufferUploadDesc.data != nullptr, false, "UploadData: 'bufferUploadDescs[%u].data' is invalid", i);
-    RETURN_ON_FAILURE(&device, bufferVal.IsBoundToMemory(), false, "UploadData: 'bufferUploadDescs[%u].buffer' is not bound to memory", i);
-    RETURN_ON_FAILURE(&device, rangeEnd <= bufferVal.GetDesc().size, false, "UploadData: 'bufferUploadDescs[%u].bufferOffset + bufferUploadDescs[%u].dataSize' is out of bounds", i, i);
+    RETURN_ON_FAILURE(&device, bufferUploadDesc.buffer != nullptr, false, "'bufferUploadDescs[%u].buffer' is invalid", i);
+    RETURN_ON_FAILURE(&device, bufferUploadDesc.data != nullptr, false, "'bufferUploadDescs[%u].data' is invalid", i);
+    RETURN_ON_FAILURE(&device, bufferVal.IsBoundToMemory(), false, "'bufferUploadDescs[%u].buffer' is not bound to memory", i);
+    RETURN_ON_FAILURE(&device, rangeEnd <= bufferVal.GetDesc().size, false, "'bufferUploadDescs[%u].bufferOffset + bufferUploadDescs[%u].dataSize' is out of bounds", i, i);
 
     return true;
 }
@@ -98,8 +98,8 @@ void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapC
 
 Result CommandQueueVal::UploadData(
     const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
-    RETURN_ON_FAILURE(&m_Device, textureUploadDescNum == 0 || textureUploadDescs != nullptr, Result::INVALID_ARGUMENT, "UploadData: 'textureUploadDescs' is NULL");
-    RETURN_ON_FAILURE(&m_Device, bufferUploadDescNum == 0 || bufferUploadDescs != nullptr, Result::INVALID_ARGUMENT, "UploadData: 'bufferUploadDescs' is NULL");
+    RETURN_ON_FAILURE(&m_Device, textureUploadDescNum == 0 || textureUploadDescs != nullptr, Result::INVALID_ARGUMENT, "'textureUploadDescs' is NULL");
+    RETURN_ON_FAILURE(&m_Device, bufferUploadDescNum == 0 || bufferUploadDescs != nullptr, Result::INVALID_ARGUMENT, "'bufferUploadDescs' is NULL");
 
     TextureUploadDesc* textureUploadDescsImpl = StackAlloc(TextureUploadDesc, textureUploadDescNum);
 
@@ -144,37 +144,37 @@ const Command* ReadCommand(const uint8_t*& begin, const uint8_t* end) {
 
 void CommandQueueVal::ProcessValidationCommandBeginQuery(const uint8_t*& begin, const uint8_t* end) {
     const ValidationCommandUseQuery* command = ReadCommand<ValidationCommandUseQuery>(begin, end);
-    CHECK(command != nullptr, "ProcessValidationCommandBeginQuery() failed: can't parse command");
-    CHECK(command->queryPool != nullptr, "ProcessValidationCommandBeginQuery() failed: query pool is invalid");
+    CHECK(command != nullptr, "can't parse command");
+    CHECK(command->queryPool != nullptr, "query pool is invalid");
 
     QueryPoolVal& queryPool = *(QueryPoolVal*)command->queryPool;
     const bool used = queryPool.SetQueryState(command->queryPoolOffset, true);
 
     if (used)
-        REPORT_ERROR(&m_Device, "CmdBeginQuery: it must be reset before use. (QueryPool='%s', offset=%u)", queryPool.GetDebugName(), command->queryPoolOffset);
+        REPORT_ERROR(&m_Device, "it must be reset before use. (QueryPool='%s', offset=%u)", queryPool.GetDebugName(), command->queryPoolOffset);
 }
 
 void CommandQueueVal::ProcessValidationCommandEndQuery(const uint8_t*& begin, const uint8_t* end) {
     const ValidationCommandUseQuery* command = ReadCommand<ValidationCommandUseQuery>(begin, end);
-    CHECK(command != nullptr, "ProcessValidationCommandEndQuery() failed: can't parse command");
-    CHECK(command->queryPool != nullptr, "ProcessValidationCommandEndQuery() failed: query pool is invalid");
+    CHECK(command != nullptr, "can't parse command");
+    CHECK(command->queryPool != nullptr, "query pool is invalid");
 
     QueryPoolVal& queryPool = *(QueryPoolVal*)command->queryPool;
     const bool used = queryPool.SetQueryState(command->queryPoolOffset, true);
 
     if (queryPool.GetQueryType() == QueryType::TIMESTAMP) {
         if (used)
-            REPORT_ERROR(&m_Device, "CmdEndQuery: it must be reset before use. (QueryPool='%s', offset=%u)", queryPool.GetDebugName(), command->queryPoolOffset);
+            REPORT_ERROR(&m_Device, "it must be reset before use. (QueryPool='%s', offset=%u)", queryPool.GetDebugName(), command->queryPoolOffset);
     } else {
         if (!used)
-            REPORT_ERROR(&m_Device, "CmdEndQuery: it's not in active state. (QueryPool='%s', offset=%u)", queryPool.GetDebugName(), command->queryPoolOffset);
+            REPORT_ERROR(&m_Device, "it's not in active state. (QueryPool='%s', offset=%u)", queryPool.GetDebugName(), command->queryPoolOffset);
     }
 }
 
 void CommandQueueVal::ProcessValidationCommandResetQuery(const uint8_t*& begin, const uint8_t* end) {
     const ValidationCommandResetQuery* command = ReadCommand<ValidationCommandResetQuery>(begin, end);
-    CHECK(command != nullptr, "ProcessValidationCommandResetQuery() failed: can't parse command");
-    CHECK(command->queryPool != nullptr, "ProcessValidationCommandResetQuery() failed: query pool is invalid");
+    CHECK(command != nullptr, "can't parse command");
+    CHECK(command->queryPool != nullptr, "query pool is invalid");
 
     QueryPoolVal& queryPool = *(QueryPoolVal*)command->queryPool;
     queryPool.ResetQueries(command->queryPoolOffset, command->queryNum);

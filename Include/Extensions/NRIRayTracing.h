@@ -217,7 +217,7 @@ NRI_STRUCT(RayTracingInterface)
     // Shader table
     NRI_NAME(Result) (NRI_CALL *WriteShaderGroupIdentifiers)(const NRI_NAME_REF(Pipeline) pipeline, uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer); // TODO: add stride
 
-    // Command buffer
+    // Compute
     void (NRI_CALL *CmdBuildTopLevelAccelerationStructure)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t instanceNum, const NRI_NAME_REF(Buffer) buffer, uint64_t bufferOffset,
         NRI_NAME(AccelerationStructureBuildBits) flags, NRI_NAME_REF(AccelerationStructure) dst, NRI_NAME_REF(Buffer) scratch, uint64_t scratchOffset);
     void (NRI_CALL *CmdBuildBottomLevelAccelerationStructure)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t geometryObjectNum, const NRI_NAME(GeometryObject)* geometryObjects,
@@ -227,12 +227,12 @@ NRI_STRUCT(RayTracingInterface)
     void (NRI_CALL *CmdUpdateBottomLevelAccelerationStructure)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t geometryObjectNum, const NRI_NAME(GeometryObject)* geometryObjects,
         NRI_NAME(AccelerationStructureBuildBits) flags, NRI_NAME_REF(AccelerationStructure) dst, NRI_NAME_REF(AccelerationStructure) src, NRI_NAME_REF(Buffer) scratch, uint64_t scratchOffset);
 
-    void (NRI_CALL *CmdCopyAccelerationStructure)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(AccelerationStructure) dst, NRI_NAME_REF(AccelerationStructure) src, NRI_NAME(CopyMode) copyMode);
-    void (NRI_CALL *CmdWriteAccelerationStructureSize)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME(AccelerationStructure)* const* accelerationStructures, uint32_t accelerationStructureNum,
-        NRI_NAME_REF(QueryPool) queryPool, uint32_t queryPoolOffset);
-
     void (NRI_CALL *CmdDispatchRays)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(DispatchRaysDesc) dispatchRaysDesc);
     void (NRI_CALL *CmdDispatchRaysIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset); // buffer contains "DispatchRaysIndirectDesc" commands
+
+    // Copy
+    void (NRI_CALL *CmdCopyAccelerationStructure)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(AccelerationStructure) dst, NRI_NAME_REF(AccelerationStructure) src, NRI_NAME(CopyMode) copyMode);
+    void (NRI_CALL *CmdWriteAccelerationStructureSize)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME(AccelerationStructure)* const* accelerationStructures, uint32_t accelerationStructureNum, NRI_NAME_REF(QueryPool) queryPool, uint32_t queryPoolOffset);
 
     // Debug name
     void (NRI_CALL *SetAccelerationStructureDebugName)(NRI_NAME_REF(AccelerationStructure) accelerationStructure, const char* name);

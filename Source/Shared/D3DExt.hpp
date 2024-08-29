@@ -98,33 +98,33 @@ void Ext::InitializeAMDExt(const nri::DeviceBase* deviceBase, AGSContext* agsCon
 void Ext::BeginUAVOverlap(ID3D11DeviceContext* deviceContext) const {
     if (m_IsNvAPIAvailable) {
         const NvAPI_Status res = NvAPI_D3D11_BeginUAVOverlap(deviceContext);
-        RETURN_ON_FAILURE(m_DeviceBase, res == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_BeginUAVOverlap() - FAILED!");
+        RETURN_ON_FAILURE(m_DeviceBase, res == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_BeginUAVOverlap()  failed!");
     } else if (m_AGSContext) {
         const AGSReturnCode res = m_AGS.BeginUAVOverlap(m_AGSContext, deviceContext);
-        RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_BeginUAVOverlap() - FAILED!");
+        RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_BeginUAVOverlap()  failed!");
     }
 }
 
 void Ext::EndUAVOverlap(ID3D11DeviceContext* deviceContext) const {
     if (m_IsNvAPIAvailable) {
         const NvAPI_Status status = NvAPI_D3D11_EndUAVOverlap(deviceContext);
-        RETURN_ON_FAILURE(m_DeviceBase, status == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_EndUAVOverlap() - FAILED!");
+        RETURN_ON_FAILURE(m_DeviceBase, status == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_EndUAVOverlap()  failed!");
     } else if (m_AGSContext) {
         const AGSReturnCode res = m_AGS.EndUAVOverlap(m_AGSContext, deviceContext);
-        RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_EndUAVOverlap() - FAILED!");
+        RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_EndUAVOverlap()  failed!");
     }
 }
 
 void Ext::WaitForDrain(ID3D11DeviceContext* deviceContext, uint32_t flags) const {
     if (m_IsNvAPIAvailable) {
         const NvAPI_Status res = NvAPI_D3D11_BeginUAVOverlapEx(deviceContext, flags);
-        RETURN_ON_FAILURE(m_DeviceBase, res == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_BeginUAVOverlap() - FAILED!");
+        RETURN_ON_FAILURE(m_DeviceBase, res == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_BeginUAVOverlap()  failed!");
     } else if (m_AGSContext) {
         // TODO: verify that this code actually works on AMD!
         const AGSReturnCode res1 = m_AGS.EndUAVOverlap(m_AGSContext, deviceContext);
-        RETURN_ON_FAILURE(m_DeviceBase, res1 == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_EndUAVOverlap() - FAILED!");
+        RETURN_ON_FAILURE(m_DeviceBase, res1 == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_EndUAVOverlap()  failed!");
         const AGSReturnCode res2 = m_AGS.BeginUAVOverlap(m_AGSContext, deviceContext);
-        RETURN_ON_FAILURE(m_DeviceBase, res2 == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_BeginUAVOverlap() - FAILED!");
+        RETURN_ON_FAILURE(m_DeviceBase, res2 == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_BeginUAVOverlap()  failed!");
     }
 }
 
@@ -133,10 +133,10 @@ void Ext::SetDepthBounds(ID3D11DeviceContext* deviceContext, float minBound, flo
 
     if (m_IsNvAPIAvailable) {
         const NvAPI_Status status = NvAPI_D3D11_SetDepthBoundsTest(deviceContext, isEnabled, minBound, maxBound);
-        RETURN_ON_FAILURE(m_DeviceBase, status == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_SetDepthBoundsTest() - FAILED!");
+        RETURN_ON_FAILURE(m_DeviceBase, status == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_SetDepthBoundsTest()  failed!");
     } else if (m_AGSContext) {
         const AGSReturnCode res = m_AGS.SetDepthBounds(m_AGSContext, deviceContext, isEnabled, minBound, maxBound);
-        RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_SetDepthBounds() - FAILED!");
+        RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_SetDepthBounds()  failed!");
     }
 }
 
@@ -145,15 +145,15 @@ void Ext::DrawIndirect(
     if (countBuffer) {
         if (m_AGSContext) {
             const AGSReturnCode res = m_AGS.DrawIndirectCount(m_AGSContext, deviceContext, countBuffer, countBufferOffset, buffer, (uint32_t)offset, stride);
-            RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_MultiDrawInstancedIndirectCountIndirect() - FAILED!");
+            RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_MultiDrawInstancedIndirectCountIndirect()  failed!");
         }
     } else {
         if (m_IsNvAPIAvailable && drawNum > 1) {
             const NvAPI_Status status = NvAPI_D3D11_MultiDrawInstancedIndirect(deviceContext, drawNum, buffer, (uint32_t)offset, stride);
-            RETURN_ON_FAILURE(m_DeviceBase, status == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_MultiDrawInstancedIndirect() - FAILED!");
+            RETURN_ON_FAILURE(m_DeviceBase, status == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_MultiDrawInstancedIndirect()  failed!");
         } else if (m_AGSContext && drawNum > 1) {
             const AGSReturnCode res = m_AGS.DrawIndirect(m_AGSContext, deviceContext, drawNum, buffer, (uint32_t)offset, stride);
-            RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_MultiDrawInstancedIndirect() - FAILED!");
+            RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_MultiDrawInstancedIndirect()  failed!");
         } else {
             for (uint32_t i = 0; i < drawNum; i++) {
                 deviceContext->DrawInstancedIndirect(buffer, (uint32_t)offset);
@@ -168,15 +168,15 @@ void Ext::DrawIndexedIndirect(
     if (countBuffer) {
         if (m_AGSContext) {
             const AGSReturnCode res = m_AGS.DrawIndexedIndirectCount(m_AGSContext, deviceContext, countBuffer, countBufferOffset, buffer, (uint32_t)offset, stride);
-            RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirectCountIndirect() - FAILED!");
+            RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirectCountIndirect()  failed!");
         }
     } else {
         if (m_IsNvAPIAvailable && drawNum > 1) {
             const NvAPI_Status status = NvAPI_D3D11_MultiDrawIndexedInstancedIndirect(deviceContext, drawNum, buffer, (uint32_t)offset, stride);
-            RETURN_ON_FAILURE(m_DeviceBase, status == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_MultiDrawIndexedInstancedIndirect() - FAILED!");
+            RETURN_ON_FAILURE(m_DeviceBase, status == NVAPI_OK, ReturnVoid(), "NvAPI_D3D11_MultiDrawIndexedInstancedIndirect()  failed!");
         } else if (m_AGSContext && drawNum > 1) {
             const AGSReturnCode res = m_AGS.DrawIndexedIndirect(m_AGSContext, deviceContext, drawNum, buffer, (uint32_t)offset, stride);
-            RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect() - FAILED!");
+            RETURN_ON_FAILURE(m_DeviceBase, res == AGS_SUCCESS, ReturnVoid(), "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect()  failed!");
         } else {
             for (uint32_t i = 0; i < drawNum; i++) {
                 deviceContext->DrawIndexedInstancedIndirect(buffer, (uint32_t)offset);

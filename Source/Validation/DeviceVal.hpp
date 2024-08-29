@@ -343,15 +343,15 @@ Result DeviceVal::FillFunctionTable(RayTracingInterface& table) const {
 #pragma region[  ResourceAllocator  ]
 
 static Result AllocateBuffer(Device& device, const AllocateBufferDesc& bufferDesc, Buffer*& buffer) {
-    return ((DeviceVal&)device).CreateBuffer(bufferDesc, buffer);
+    return ((DeviceVal&)device).AllocateBuffer(bufferDesc, buffer);
 }
 
 static Result AllocateTexture(Device& device, const AllocateTextureDesc& textureDesc, Texture*& texture) {
-    return ((DeviceVal&)device).CreateTexture(textureDesc, texture);
+    return ((DeviceVal&)device).AllocateTexture(textureDesc, texture);
 }
 
 static Result AllocateAccelerationStructure(Device& device, const AllocateAccelerationStructureDesc& acelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
-    return ((DeviceVal&)device).CreateAccelerationStructure(acelerationStructureDesc, accelerationStructure);
+    return ((DeviceVal&)device).AllocateAccelerationStructure(acelerationStructureDesc, accelerationStructure);
 }
 
 Result DeviceVal::FillFunctionTable(ResourceAllocatorInterface& table) const {
@@ -379,7 +379,7 @@ static Result CreateStreamer(Device& device, const StreamerDesc& streamerDesc, S
     DeviceVal& deviceVal = (DeviceVal&)device;
     bool isUpload = (streamerDesc.constantBufferMemoryLocation == MemoryLocation::HOST_UPLOAD || streamerDesc.constantBufferMemoryLocation == MemoryLocation::DEVICE_UPLOAD)
         && (streamerDesc.dynamicBufferMemoryLocation == MemoryLocation::HOST_UPLOAD || streamerDesc.dynamicBufferMemoryLocation == MemoryLocation::DEVICE_UPLOAD);
-    RETURN_ON_FAILURE(&deviceVal, isUpload, Result::INVALID_ARGUMENT, "CreateStreamer: memory location must be an UPLOAD heap");
+    RETURN_ON_FAILURE(&deviceVal, isUpload, Result::INVALID_ARGUMENT, "memory location must be an UPLOAD heap");
 
     Streamer* impl = nullptr;
     Result result = deviceVal.GetStreamerInterface().CreateStreamer(deviceVal.GetImpl(), streamerDesc, impl);

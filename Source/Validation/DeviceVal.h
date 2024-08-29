@@ -73,12 +73,12 @@ struct DeviceVal final : public DeviceBase {
     Result CreateMemory(const MemoryVKDesc& memoryVKDesc, Memory*& memory);
     Result CreateMemory(const MemoryD3D12Desc& memoryDesc, Memory*& memory);
     Result CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer);
-    Result CreateBuffer(const AllocateBufferDesc& bufferDesc, Buffer*& buffer);
+    Result AllocateBuffer(const AllocateBufferDesc& bufferDesc, Buffer*& buffer);
     Result CreateBuffer(const BufferVKDesc& bufferDesc, Buffer*& buffer);
     Result CreateBuffer(const BufferD3D11Desc& bufferDesc, Buffer*& buffer);
     Result CreateBuffer(const BufferD3D12Desc& bufferDesc, Buffer*& buffer);
     Result CreateTexture(const TextureDesc& textureDesc, Texture*& texture);
-    Result CreateTexture(const AllocateTextureDesc& textureDesc, Texture*& texture);
+    Result AllocateTexture(const AllocateTextureDesc& textureDesc, Texture*& texture);
     Result CreateTexture(const TextureVKDesc& textureVKDesc, Texture*& texture);
     Result CreateTexture(const TextureD3D11Desc& textureDesc, Texture*& texture);
     Result CreateTexture(const TextureD3D12Desc& textureDesc, Texture*& texture);
@@ -106,7 +106,7 @@ struct DeviceVal final : public DeviceBase {
     Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
     Result CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator);
     Result CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
-    Result CreateAccelerationStructure(const AllocateAccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
+    Result AllocateAccelerationStructure(const AllocateAccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
     Result CreateAccelerationStructure(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
     Result CreateAccelerationStructure(const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
 

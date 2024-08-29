@@ -194,13 +194,10 @@ void PipelineLayoutD3D11::BindDescriptorSetImpl(BindingState& currentBindingStat
 
                     constantFirst[i] = offset;
                     constantNum[i] = descriptor->GetElementNum();
-                } else if (bindingRange.descriptorType == DescriptorTypeDX11::STORAGE) {
-                    currentBindingState.TrackSubresource_UnbindIfNeeded_PostponeGraphicsStorageBinding(
-                        deferredContext, descriptor->GetSubresourceInfo(), *descriptor, bindingRange.baseSlot + i, isGraphics, true);
-                } else if (bindingRange.descriptorType == DescriptorTypeDX11::RESOURCE) {
-                    currentBindingState.TrackSubresource_UnbindIfNeeded_PostponeGraphicsStorageBinding(
-                        deferredContext, descriptor->GetSubresourceInfo(), *descriptor, bindingRange.baseSlot + i, isGraphics, false);
-                }
+                } else if (bindingRange.descriptorType == DescriptorTypeDX11::STORAGE)
+                    currentBindingState.TrackSubresource_UnbindIfNeeded_PostponeGraphicsStorageBinding(deferredContext, descriptor->GetSubresourceInfo(), *descriptor, bindingRange.baseSlot + i, isGraphics, true);
+                else if (bindingRange.descriptorType == DescriptorTypeDX11::RESOURCE)
+                    currentBindingState.TrackSubresource_UnbindIfNeeded_PostponeGraphicsStorageBinding(deferredContext, descriptor->GetSubresourceInfo(), *descriptor, bindingRange.baseSlot + i, isGraphics, false);
             } else {
                 descriptors[i] = nullptr;
                 constantFirst[i] = 0;

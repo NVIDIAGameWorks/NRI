@@ -6,62 +6,25 @@
 
 using namespace nri;
 
-D3D12_COMMAND_LIST_TYPE nri::GetCommandListType(CommandQueueType commandQueueType) {
-    switch (commandQueueType) {
-        case CommandQueueType::GRAPHICS:
-            return D3D12_COMMAND_LIST_TYPE_DIRECT;
-        case CommandQueueType::COMPUTE:
-            return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-        case CommandQueueType::COPY:
-        case CommandQueueType::HIGH_PRIORITY_COPY:
-            return D3D12_COMMAND_LIST_TYPE_COPY;
-        default:
-            CHECK(false, "Wrong value");
-            return D3D12_COMMAND_LIST_TYPE_DIRECT;
-    }
-}
-
-D3D12_HEAP_FLAGS nri::GetHeapFlags(MemoryType memoryType) {
-    return (D3D12_HEAP_FLAGS)(memoryType & 0xffff);
-}
-
-D3D12_RESOURCE_FLAGS nri::GetBufferFlags(BufferUsageBits bufferUsageMask) {
-    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-
-    if (bufferUsageMask & (BufferUsageBits::SHADER_RESOURCE_STORAGE | BufferUsageBits::RAY_TRACING_BUFFER))
-        flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-
-    return flags;
+constexpr std::array<D3D12_COMMAND_LIST_TYPE, (uint32_t)CommandQueueType::MAX_NUM> COMMAND_LIST_TYPES = {
+    D3D12_COMMAND_LIST_TYPE_DIRECT,  // GRAPHICS,
+    D3D12_COMMAND_LIST_TYPE_COMPUTE, // COMPUTE,
+    D3D12_COMMAND_LIST_TYPE_COPY,    // COPY,
+    D3D12_COMMAND_LIST_TYPE_COPY,    // HIGH_PRIORITY_COPY,
 };
 
-D3D12_RESOURCE_FLAGS nri::GetTextureFlags(TextureUsageBits textureUsageMask) {
-    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+D3D12_COMMAND_LIST_TYPE nri::GetCommandListType(CommandQueueType commandQueueType) {
+    return COMMAND_LIST_TYPES[(size_t)commandQueueType];
+}
 
-    if (textureUsageMask & TextureUsageBits::SHADER_RESOURCE_STORAGE)
-        flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-
-    if (textureUsageMask & TextureUsageBits::COLOR_ATTACHMENT)
-        flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-
-    if (textureUsageMask & TextureUsageBits::DEPTH_STENCIL_ATTACHMENT) {
-        flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-
-        if (!(textureUsageMask & TextureUsageBits::SHADER_RESOURCE))
-            flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-    }
-
-    return flags;
+constexpr std::array<D3D12_RESOURCE_DIMENSION, (uint32_t)TextureType::MAX_NUM> RESOURCE_DIMENSIONS = {
+    D3D12_RESOURCE_DIMENSION_TEXTURE1D, // TEXTURE_1D,
+    D3D12_RESOURCE_DIMENSION_TEXTURE2D, // TEXTURE_2D,
+    D3D12_RESOURCE_DIMENSION_TEXTURE3D, // TEXTURE_3D,
 };
 
 D3D12_RESOURCE_DIMENSION nri::GetResourceDimension(TextureType textureType) {
-    if (textureType == TextureType::TEXTURE_1D)
-        return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
-    else if (textureType == TextureType::TEXTURE_2D)
-        return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-    else if (textureType == TextureType::TEXTURE_3D)
-        return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
-
-    return D3D12_RESOURCE_DIMENSION_UNKNOWN;
+    return RESOURCE_DIMENSIONS[(size_t)textureType];
 }
 
 constexpr std::array<D3D12_DESCRIPTOR_RANGE_TYPE, (uint32_t)DescriptorType::MAX_NUM> DESCRIPTOR_RANGE_TYPES = {
@@ -77,40 +40,7 @@ constexpr std::array<D3D12_DESCRIPTOR_RANGE_TYPE, (uint32_t)DescriptorType::MAX_
 };
 
 D3D12_DESCRIPTOR_RANGE_TYPE nri::GetDescriptorRangesType(DescriptorType descriptorType) {
-    return DESCRIPTOR_RANGE_TYPES[(uint32_t)descriptorType];
-}
-
-D3D12_DESCRIPTOR_HEAP_TYPE nri::GetDescriptorHeapType(DescriptorType descriptorType) {
-    return descriptorType == DescriptorType::SAMPLER ? D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER : D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-}
-
-D3D12_SHADER_VISIBILITY nri::GetShaderVisibility(StageBits shaderStages) {
-    if (shaderStages == StageBits::ALL || shaderStages == StageBits::COMPUTE_SHADER || (shaderStages & StageBits::RAY_TRACING_SHADERS) != 0)
-        return D3D12_SHADER_VISIBILITY_ALL;
-
-    if (shaderStages == StageBits::VERTEX_SHADER)
-        return D3D12_SHADER_VISIBILITY_VERTEX;
-
-    if (shaderStages == StageBits::TESS_CONTROL_SHADER)
-        return D3D12_SHADER_VISIBILITY_HULL;
-
-    if (shaderStages == StageBits::TESS_EVALUATION_SHADER)
-        return D3D12_SHADER_VISIBILITY_DOMAIN;
-
-    if (shaderStages == StageBits::GEOMETRY_SHADER)
-        return D3D12_SHADER_VISIBILITY_GEOMETRY;
-
-    if (shaderStages == StageBits::FRAGMENT_SHADER)
-        return D3D12_SHADER_VISIBILITY_PIXEL;
-
-    if (shaderStages == StageBits::MESH_CONTROL_SHADER)
-        return D3D12_SHADER_VISIBILITY_AMPLIFICATION;
-
-    if (shaderStages == StageBits::MESH_EVALUATION_SHADER)
-        return D3D12_SHADER_VISIBILITY_MESH;
-
-    // Should be unreachable
-    return D3D12_SHADER_VISIBILITY_ALL;
+    return DESCRIPTOR_RANGE_TYPES[(size_t)descriptorType];
 }
 
 constexpr std::array<D3D12_PRIMITIVE_TOPOLOGY_TYPE, (uint32_t)Topology::MAX_NUM> PRIMITIVE_TOPOLOGY_TYPES = {
@@ -127,7 +57,7 @@ constexpr std::array<D3D12_PRIMITIVE_TOPOLOGY_TYPE, (uint32_t)Topology::MAX_NUM>
 };
 
 D3D12_PRIMITIVE_TOPOLOGY_TYPE nri::GetPrimitiveTopologyType(Topology topology) {
-    return PRIMITIVE_TOPOLOGY_TYPES[(uint32_t)topology];
+    return PRIMITIVE_TOPOLOGY_TYPES[(size_t)topology];
 }
 
 constexpr std::array<D3D_PRIMITIVE_TOPOLOGY, 9> PRIMITIVE_TOPOLOGIES = {
@@ -146,7 +76,7 @@ D3D_PRIMITIVE_TOPOLOGY nri::GetPrimitiveTopology(Topology topology, uint8_t tess
     if (topology == Topology::PATCH_LIST)
         return (D3D_PRIMITIVE_TOPOLOGY)((uint8_t)D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ + tessControlPointNum);
     else
-        return PRIMITIVE_TOPOLOGIES[(uint32_t)topology];
+        return PRIMITIVE_TOPOLOGIES[(size_t)topology];
 }
 
 constexpr std::array<D3D12_FILL_MODE, (uint32_t)FillMode::MAX_NUM> FILL_MODES = {
@@ -155,7 +85,7 @@ constexpr std::array<D3D12_FILL_MODE, (uint32_t)FillMode::MAX_NUM> FILL_MODES = 
 };
 
 D3D12_FILL_MODE nri::GetFillMode(FillMode fillMode) {
-    return FILL_MODES[(uint32_t)fillMode];
+    return FILL_MODES[(size_t)fillMode];
 }
 
 constexpr std::array<D3D12_CULL_MODE, (uint32_t)CullMode::MAX_NUM> CULL_MODES = {
@@ -165,11 +95,7 @@ constexpr std::array<D3D12_CULL_MODE, (uint32_t)CullMode::MAX_NUM> CULL_MODES = 
 };
 
 D3D12_CULL_MODE nri::GetCullMode(CullMode cullMode) {
-    return CULL_MODES[(uint32_t)cullMode];
-}
-
-UINT8 nri::GetRenderTargetWriteMask(ColorWriteBits colorWriteMask) {
-    return colorWriteMask & ColorWriteBits::RGBA;
+    return CULL_MODES[(size_t)cullMode];
 }
 
 constexpr std::array<D3D12_COMPARISON_FUNC, (uint32_t)CompareFunc::MAX_NUM> COMPARISON_FUNCS = {
@@ -189,7 +115,7 @@ constexpr std::array<D3D12_COMPARISON_FUNC, (uint32_t)CompareFunc::MAX_NUM> COMP
 };
 
 D3D12_COMPARISON_FUNC nri::GetComparisonFunc(CompareFunc compareFunc) {
-    return COMPARISON_FUNCS[(uint32_t)compareFunc];
+    return COMPARISON_FUNCS[(size_t)compareFunc];
 }
 
 constexpr std::array<D3D12_STENCIL_OP, (uint32_t)StencilFunc::MAX_NUM> STENCIL_OPS = {
@@ -204,7 +130,7 @@ constexpr std::array<D3D12_STENCIL_OP, (uint32_t)StencilFunc::MAX_NUM> STENCIL_O
 };
 
 D3D12_STENCIL_OP nri::GetStencilOp(StencilFunc stencilFunc) {
-    return STENCIL_OPS[(uint32_t)stencilFunc];
+    return STENCIL_OPS[(size_t)stencilFunc];
 }
 
 constexpr std::array<D3D12_LOGIC_OP, (uint32_t)LogicFunc::MAX_NUM> LOGIC_OPS = {
@@ -227,7 +153,7 @@ constexpr std::array<D3D12_LOGIC_OP, (uint32_t)LogicFunc::MAX_NUM> LOGIC_OPS = {
 };
 
 D3D12_LOGIC_OP nri::GetLogicOp(LogicFunc logicFunc) {
-    return LOGIC_OPS[(uint32_t)logicFunc];
+    return LOGIC_OPS[(size_t)logicFunc];
 }
 
 constexpr std::array<D3D12_BLEND, (uint32_t)BlendFactor::MAX_NUM> BLENDS = {
@@ -259,7 +185,7 @@ constexpr std::array<D3D12_BLEND, (uint32_t)BlendFactor::MAX_NUM> BLENDS = {
 };
 
 D3D12_BLEND nri::GetBlend(BlendFactor blendFactor) {
-    return BLENDS[(uint32_t)blendFactor];
+    return BLENDS[(size_t)blendFactor];
 }
 
 constexpr std::array<D3D12_BLEND_OP, (uint32_t)BlendFunc::MAX_NUM> BLEND_OPS = {
@@ -271,7 +197,7 @@ constexpr std::array<D3D12_BLEND_OP, (uint32_t)BlendFunc::MAX_NUM> BLEND_OPS = {
 };
 
 D3D12_BLEND_OP nri::GetBlendOp(BlendFunc blendFunc) {
-    return BLEND_OPS[(uint32_t)blendFunc];
+    return BLEND_OPS[(size_t)blendFunc];
 }
 
 constexpr std::array<D3D12_TEXTURE_ADDRESS_MODE, (uint32_t)AddressMode::MAX_NUM> TEXTURE_ADDRESS_MODES = {
@@ -282,7 +208,69 @@ constexpr std::array<D3D12_TEXTURE_ADDRESS_MODE, (uint32_t)AddressMode::MAX_NUM>
 };
 
 D3D12_TEXTURE_ADDRESS_MODE nri::GetAddressMode(AddressMode addressMode) {
-    return TEXTURE_ADDRESS_MODES[(uint32_t)addressMode];
+    return TEXTURE_ADDRESS_MODES[(size_t)addressMode];
+}
+
+constexpr std::array<D3D12_HEAP_TYPE, (uint32_t)MemoryLocation::MAX_NUM> HEAP_TYPES = {
+    D3D12_HEAP_TYPE_DEFAULT, // DEVICE
+#ifdef NRI_USE_AGILITY_SDK
+    D3D12_HEAP_TYPE_GPU_UPLOAD, // DEVICE_UPLOAD (Prerequisite: D3D12_FEATURE_D3D12_OPTIONS16)
+#else
+    D3D12_HEAP_TYPE_UPLOAD, // DEVICE_UPLOAD (silent fallback to HOST_UPLOAD)
+#endif
+    D3D12_HEAP_TYPE_UPLOAD,   // HOST_UPLOAD
+    D3D12_HEAP_TYPE_READBACK, // HOST_READBACK
+};
+
+D3D12_HEAP_TYPE nri::GetHeapType(MemoryLocation memoryLocation) {
+    return HEAP_TYPES[(size_t)memoryLocation];
+}
+
+constexpr std::array<D3D12_SHADING_RATE, (uint32_t)ShadingRate::MAX_NUM> SHADING_RATES = {
+    D3D12_SHADING_RATE_1X1, // _1x1,
+    D3D12_SHADING_RATE_1X2, // _1x2,
+    D3D12_SHADING_RATE_2X1, // _2x1,
+    D3D12_SHADING_RATE_2X2, // _2x2,
+    D3D12_SHADING_RATE_2X4, // _2x4,
+    D3D12_SHADING_RATE_4X2, // _4x2,
+    D3D12_SHADING_RATE_4X4, // _4x4,
+};
+
+D3D12_SHADING_RATE nri::GetShadingRate(ShadingRate shadingRate) {
+    return SHADING_RATES[(size_t)shadingRate];
+}
+
+constexpr std::array<D3D12_SHADING_RATE_COMBINER, (uint32_t)ShadingRate::MAX_NUM> SHADING_RATE_COMBINERS = {
+    D3D12_SHADING_RATE_COMBINER_OVERRIDE,    // REPLACE,
+    D3D12_SHADING_RATE_COMBINER_PASSTHROUGH, // KEEP,
+    D3D12_SHADING_RATE_COMBINER_MIN,         // MIN,
+    D3D12_SHADING_RATE_COMBINER_MAX,         // MAX,
+    D3D12_SHADING_RATE_COMBINER_SUM,         // SUM,
+};
+
+D3D12_SHADING_RATE_COMBINER nri::GetShadingRateCombiner(ShadingRateCombiner shadingRateCombiner) {
+    return SHADING_RATE_COMBINERS[(size_t)shadingRateCombiner];
+}
+
+UINT8 nri::GetRenderTargetWriteMask(ColorWriteBits colorWriteMask) {
+    return colorWriteMask & ColorWriteBits::RGBA;
+}
+
+D3D12_DESCRIPTOR_HEAP_TYPE nri::GetDescriptorHeapType(DescriptorType descriptorType) {
+    return descriptorType == DescriptorType::SAMPLER ? D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER : D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+}
+
+D3D12_HEAP_FLAGS nri::GetHeapFlags(MemoryType memoryType) {
+    return (D3D12_HEAP_FLAGS)(memoryType & 0xffff);
+}
+
+D3D12_RESOURCE_FLAGS nri::GetBufferFlags(BufferUsageBits bufferUsageMask) {
+    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+
+    if (bufferUsageMask & (BufferUsageBits::SHADER_RESOURCE_STORAGE | BufferUsageBits::RAY_TRACING_BUFFER))
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+    return flags;
 }
 
 D3D12_FILTER nri::GetFilterIsotropic(Filter mip, Filter magnification, Filter minification, FilterExt filterExt, bool useComparison) {
@@ -308,6 +296,116 @@ D3D12_FILTER nri::GetFilterAnisotropic(FilterExt filterExt, bool useComparison) 
         return D3D12_FILTER_MAXIMUM_ANISOTROPIC;
 
     return useComparison ? D3D12_FILTER_COMPARISON_ANISOTROPIC : D3D12_FILTER_ANISOTROPIC;
+}
+
+D3D12_SHADER_VISIBILITY nri::GetShaderVisibility(StageBits shaderStages) {
+    if (shaderStages == StageBits::ALL || shaderStages == StageBits::COMPUTE_SHADER || (shaderStages & StageBits::RAY_TRACING_SHADERS) != 0)
+        return D3D12_SHADER_VISIBILITY_ALL;
+
+    if (shaderStages == StageBits::VERTEX_SHADER)
+        return D3D12_SHADER_VISIBILITY_VERTEX;
+
+    if (shaderStages == StageBits::TESS_CONTROL_SHADER)
+        return D3D12_SHADER_VISIBILITY_HULL;
+
+    if (shaderStages == StageBits::TESS_EVALUATION_SHADER)
+        return D3D12_SHADER_VISIBILITY_DOMAIN;
+
+    if (shaderStages == StageBits::GEOMETRY_SHADER)
+        return D3D12_SHADER_VISIBILITY_GEOMETRY;
+
+    if (shaderStages == StageBits::FRAGMENT_SHADER)
+        return D3D12_SHADER_VISIBILITY_PIXEL;
+
+    if (shaderStages == StageBits::MESH_CONTROL_SHADER)
+        return D3D12_SHADER_VISIBILITY_AMPLIFICATION;
+
+    if (shaderStages == StageBits::MESH_EVALUATION_SHADER)
+        return D3D12_SHADER_VISIBILITY_MESH;
+
+    // Should be unreachable
+    return D3D12_SHADER_VISIBILITY_ALL;
+}
+
+D3D12_RESOURCE_FLAGS nri::GetTextureFlags(TextureUsageBits textureUsageMask) {
+    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+
+    if (textureUsageMask & TextureUsageBits::SHADER_RESOURCE_STORAGE)
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+    if (textureUsageMask & TextureUsageBits::COLOR_ATTACHMENT)
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+    if (textureUsageMask & TextureUsageBits::DEPTH_STENCIL_ATTACHMENT) {
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+        if (!(textureUsageMask & TextureUsageBits::SHADER_RESOURCE))
+            flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+    }
+
+    return flags;
+}
+
+D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE nri::GetAccelerationStructureType(AccelerationStructureType accelerationStructureType) {
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL == (uint32_t)AccelerationStructureType::TOP_LEVEL, "Enum mismatch");
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL == (uint32_t)AccelerationStructureType::BOTTOM_LEVEL, "Enum mismatch");
+
+    return (D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE)accelerationStructureType;
+}
+
+D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS nri::GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits accelerationStructureBuildFlags) {
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE == (uint32_t)AccelerationStructureBuildBits::ALLOW_UPDATE, "Enum mismatch");
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION == (uint32_t)AccelerationStructureBuildBits::ALLOW_COMPACTION, "Enum mismatch");
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_TRACE, "Enum mismatch");
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_BUILD, "Enum mismatch");
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY == (uint32_t)AccelerationStructureBuildBits::MINIMIZE_MEMORY, "Enum mismatch");
+
+    return (D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS)accelerationStructureBuildFlags;
+}
+
+D3D12_RAYTRACING_GEOMETRY_TYPE GetGeometryType(GeometryType geometryType) {
+    static_assert(D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES == (uint32_t)GeometryType::TRIANGLES, "Enum mismatch");
+    static_assert(D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS == (uint32_t)GeometryType::AABBS, "Enum mismatch");
+
+    return (D3D12_RAYTRACING_GEOMETRY_TYPE)geometryType;
+}
+
+D3D12_RAYTRACING_GEOMETRY_FLAGS GetGeometryFlags(BottomLevelGeometryBits geometryFlagMask) {
+    static_assert(D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE == (uint32_t)BottomLevelGeometryBits::OPAQUE_GEOMETRY, "Enum mismatch");
+    static_assert(D3D12_RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION == (uint32_t)BottomLevelGeometryBits::NO_DUPLICATE_ANY_HIT_INVOCATION, "Enum mismatch");
+
+    return (D3D12_RAYTRACING_GEOMETRY_FLAGS)geometryFlagMask;
+}
+
+D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE nri::GetCopyMode(CopyMode copyMode) {
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE_CLONE == (uint32_t)CopyMode::CLONE, "Enum mismatch");
+    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE_COMPACT == (uint32_t)CopyMode::COMPACT, "Enum mismatch");
+
+    return (D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE)copyMode;
+}
+
+void nri::ConvertGeometryDescs(D3D12_RAYTRACING_GEOMETRY_DESC* geometryDescs, const GeometryObject* geometryObjects, uint32_t geometryObjectNum) {
+    for (uint32_t i = 0; i < geometryObjectNum; i++) {
+        geometryDescs[i].Type = GetGeometryType(geometryObjects[i].type);
+        geometryDescs[i].Flags = GetGeometryFlags(geometryObjects[i].flags);
+
+        if (geometryDescs[i].Type == D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES) {
+            const Triangles& triangles = geometryObjects[i].geometry.triangles;
+            geometryDescs[i].Triangles.Transform3x4 = triangles.transformBuffer ? ((BufferD3D12*)triangles.transformBuffer)->GetPointerGPU() + triangles.transformOffset : 0;
+            geometryDescs[i].Triangles.IndexFormat = triangles.indexType == IndexType::UINT16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
+            geometryDescs[i].Triangles.VertexFormat = GetDxgiFormat(triangles.vertexFormat).typed;
+            geometryDescs[i].Triangles.IndexCount = triangles.indexNum;
+            geometryDescs[i].Triangles.VertexCount = triangles.vertexNum;
+            geometryDescs[i].Triangles.IndexBuffer = triangles.indexBuffer ? ((BufferD3D12*)triangles.indexBuffer)->GetPointerGPU() + triangles.indexOffset : 0;
+            geometryDescs[i].Triangles.VertexBuffer.StartAddress = ((BufferD3D12*)triangles.vertexBuffer)->GetPointerGPU() + triangles.vertexOffset;
+            geometryDescs[i].Triangles.VertexBuffer.StrideInBytes = triangles.vertexStride;
+        } else if (geometryDescs[i].Type == D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS) {
+            const AABBs& aabbs = geometryObjects[i].geometry.aabbs;
+            geometryDescs[i].AABBs.AABBCount = aabbs.boxNum;
+            geometryDescs[i].AABBs.AABBs.StartAddress = ((BufferD3D12*)aabbs.buffer)->GetPointerGPU() + aabbs.offset;
+            geometryDescs[i].AABBs.AABBs.StrideInBytes = aabbs.stride;
+        }
+    }
 }
 
 void nri::ConvertRects(D3D12_RECT* rectsD3D12, const Rect* rects, uint32_t rectNum) {
@@ -412,87 +510,4 @@ bool nri::GetBufferDesc(const BufferD3D12Desc& bufferD3D12Desc, BufferDesc& buff
         bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE_STORAGE;
 
     return true;
-}
-
-constexpr std::array<D3D12_HEAP_TYPE, (uint32_t)MemoryLocation::MAX_NUM> HEAP_TYPES = {
-    D3D12_HEAP_TYPE_DEFAULT, // DEVICE
-#ifdef NRI_USE_AGILITY_SDK
-    D3D12_HEAP_TYPE_GPU_UPLOAD, // DEVICE_UPLOAD (Prerequisite: D3D12_FEATURE_D3D12_OPTIONS16)
-#else
-    D3D12_HEAP_TYPE_UPLOAD, // DEVICE_UPLOAD (silent fallback to HOST_UPLOAD)
-#endif
-    D3D12_HEAP_TYPE_UPLOAD,   // HOST_UPLOAD
-    D3D12_HEAP_TYPE_READBACK, // HOST_READBACK
-};
-
-D3D12_HEAP_TYPE nri::GetHeapType(MemoryLocation memoryLocation) {
-    return HEAP_TYPES[(size_t)memoryLocation];
-}
-
-D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE nri::GetAccelerationStructureType(AccelerationStructureType accelerationStructureType) {
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL == (uint32_t)AccelerationStructureType::TOP_LEVEL, "Unsupported AccelerationStructureType.");
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL == (uint32_t)AccelerationStructureType::BOTTOM_LEVEL, "Unsupported AccelerationStructureType.");
-
-    return (D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE)accelerationStructureType;
-}
-
-D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS nri::GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits accelerationStructureBuildFlags) {
-    static_assert(
-        D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE == (uint32_t)AccelerationStructureBuildBits::ALLOW_UPDATE, "Unsupported AccelerationStructureBuildBits.");
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION == (uint32_t)AccelerationStructureBuildBits::ALLOW_COMPACTION,
-        "Unsupported AccelerationStructureBuildBits.");
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_TRACE,
-        "Unsupported AccelerationStructureBuildBits.");
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_BUILD,
-        "Unsupported AccelerationStructureBuildBits.");
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY == (uint32_t)AccelerationStructureBuildBits::MINIMIZE_MEMORY,
-        "Unsupported AccelerationStructureBuildBits.");
-
-    return (D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS)accelerationStructureBuildFlags;
-}
-
-D3D12_RAYTRACING_GEOMETRY_TYPE GetGeometryType(GeometryType geometryType) {
-    static_assert(D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES == (uint32_t)GeometryType::TRIANGLES, "Unsupported GeometryType.");
-    static_assert(D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS == (uint32_t)GeometryType::AABBS, "Unsupported GeometryType.");
-
-    return (D3D12_RAYTRACING_GEOMETRY_TYPE)geometryType;
-}
-
-D3D12_RAYTRACING_GEOMETRY_FLAGS GetGeometryFlags(BottomLevelGeometryBits geometryFlagMask) {
-    static_assert(D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE == (uint32_t)BottomLevelGeometryBits::OPAQUE_GEOMETRY, "Unsupported GeometryFlagMask.");
-    static_assert(
-        D3D12_RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION == (uint32_t)BottomLevelGeometryBits::NO_DUPLICATE_ANY_HIT_INVOCATION, "Unsupported GeometryFlagMask.");
-
-    return (D3D12_RAYTRACING_GEOMETRY_FLAGS)geometryFlagMask;
-}
-
-void nri::ConvertGeometryDescs(D3D12_RAYTRACING_GEOMETRY_DESC* geometryDescs, const GeometryObject* geometryObjects, uint32_t geometryObjectNum) {
-    for (uint32_t i = 0; i < geometryObjectNum; i++) {
-        geometryDescs[i].Type = GetGeometryType(geometryObjects[i].type);
-        geometryDescs[i].Flags = GetGeometryFlags(geometryObjects[i].flags);
-
-        if (geometryDescs[i].Type == D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES) {
-            const Triangles& triangles = geometryObjects[i].geometry.triangles;
-            geometryDescs[i].Triangles.Transform3x4 = triangles.transformBuffer ? ((BufferD3D12*)triangles.transformBuffer)->GetPointerGPU() + triangles.transformOffset : 0;
-            geometryDescs[i].Triangles.IndexFormat = triangles.indexType == IndexType::UINT16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
-            geometryDescs[i].Triangles.VertexFormat = GetDxgiFormat(triangles.vertexFormat).typed;
-            geometryDescs[i].Triangles.IndexCount = triangles.indexNum;
-            geometryDescs[i].Triangles.VertexCount = triangles.vertexNum;
-            geometryDescs[i].Triangles.IndexBuffer = triangles.indexBuffer ? ((BufferD3D12*)triangles.indexBuffer)->GetPointerGPU() + triangles.indexOffset : 0;
-            geometryDescs[i].Triangles.VertexBuffer.StartAddress = ((BufferD3D12*)triangles.vertexBuffer)->GetPointerGPU() + triangles.vertexOffset;
-            geometryDescs[i].Triangles.VertexBuffer.StrideInBytes = triangles.vertexStride;
-        } else if (geometryDescs[i].Type == D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS) {
-            const AABBs& aabbs = geometryObjects[i].geometry.aabbs;
-            geometryDescs[i].AABBs.AABBCount = aabbs.boxNum;
-            geometryDescs[i].AABBs.AABBs.StartAddress = ((BufferD3D12*)aabbs.buffer)->GetPointerGPU() + aabbs.offset;
-            geometryDescs[i].AABBs.AABBs.StrideInBytes = aabbs.stride;
-        }
-    }
-}
-
-D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE nri::GetCopyMode(CopyMode copyMode) {
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE_CLONE == (uint32_t)CopyMode::CLONE, "Unsupported CopyMode.");
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE_COMPACT == (uint32_t)CopyMode::COMPACT, "Unsupported CopyMode.");
-
-    return (D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE)copyMode;
 }

@@ -89,7 +89,6 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
             D3D12_DEPTH_STENCIL_VIEW_DESC desc = {};
             desc.Format = format;
             desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
-            desc.Flags = D3D12_DSV_FLAG_NONE;
             desc.Texture1DArray.MipSlice = textureViewDesc.mipOffset;
             desc.Texture1DArray.FirstArraySlice = textureViewDesc.layerOffset;
             desc.Texture1DArray.ArraySize = remainingLayers;
@@ -207,7 +206,6 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
         case Texture2DViewType::DEPTH_STENCIL_ATTACHMENT: {
             D3D12_DEPTH_STENCIL_VIEW_DESC desc = {};
             desc.Format = format;
-            desc.Flags = D3D12_DSV_FLAG_NONE;
             desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
             desc.Texture2DArray.MipSlice = textureViewDesc.mipOffset;
             desc.Texture2DArray.FirstArraySlice = textureViewDesc.layerOffset;
@@ -219,6 +217,10 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
                 desc.Flags |= D3D12_DSV_FLAG_READ_ONLY_STENCIL;
 
             return CreateDepthStencilView(texture, desc);
+        }
+        case Texture2DViewType::SHADING_RATE_ATTACHMENT: {
+            m_Resource = texture; // a resource view is not needed
+            return Result::SUCCESS;
         }
     }
 
