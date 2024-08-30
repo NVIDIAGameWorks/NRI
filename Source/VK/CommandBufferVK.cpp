@@ -158,58 +158,62 @@ inline void CommandBufferVK::SetShadingRate(const ShadingRateDesc& shadingRateDe
 }
 
 inline void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
+    static_assert(sizeof(VkClearValue) == sizeof(ClearValue), "Sizeof mismatch");
+
+    if (!clearDescNum)
+        return;
+
+    // Attachments
+    uint32_t attachmentNum = 0;
     VkClearAttachment* attachments = StackAlloc(VkClearAttachment, clearDescNum);
 
     for (uint32_t i = 0; i < clearDescNum; i++) {
         const ClearDesc& desc = clearDescs[i];
-        VkClearAttachment& attachment = attachments[i];
 
-        switch (desc.attachmentContentType) {
-            case AttachmentContentType::COLOR:
-                attachment.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-            case AttachmentContentType::DEPTH:
-                attachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-                break;
-            case AttachmentContentType::STENCIL:
-                attachment.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
-                break;
-            case AttachmentContentType::DEPTH_STENCIL:
-                attachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-                break;
-            default:
-                attachment.aspectMask = 0;
-                break;
+        VkImageAspectFlags aspectMask = 0;
+        if (desc.planes & PlaneBits::COLOR)
+            aspectMask |= VK_IMAGE_ASPECT_COLOR_BIT;
+        if ((desc.planes & PlaneBits::DEPTH) && m_DepthStencil->IsDepthWritable())
+            aspectMask |= VK_IMAGE_ASPECT_DEPTH_BIT;
+        if ((desc.planes & PlaneBits::STENCIL) && m_DepthStencil->IsStencilWritable())
+            aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+
+        if (aspectMask) {
+            VkClearAttachment& attachment = attachments[attachmentNum++];
+
+            attachment = {};
+            attachment.aspectMask = aspectMask;
+            attachment.colorAttachment = desc.colorAttachmentIndex;
+            attachment.clearValue = *(VkClearValue*)&desc.value;
         }
-
-        attachment.colorAttachment = desc.colorAttachmentIndex;
-        memcpy(&attachment.clearValue, &desc.value, sizeof(VkClearValue));
     }
 
+    // Rects
     bool hasRects = rectNum != 0;
     if (!hasRects)
-        rectNum = clearDescNum;
+        rectNum = 1;
 
     VkClearRect* clearRects = StackAlloc(VkClearRect, rectNum);
-    if (hasRects) {
-        for (uint32_t i = 0; i < rectNum; i++) {
+
+    for (uint32_t i = 0; i < rectNum; i++) {
+        VkClearRect& clearRect = clearRects[i];
+
+        clearRect = {};
+        clearRect.baseArrayLayer = 0;
+        if (hasRects) {
             const Rect& rect = rects[i];
-            VkClearRect& clearRect = clearRects[i];
-            clearRect.baseArrayLayer = 0;
             clearRect.layerCount = 1;
             clearRect.rect = {{rect.x, rect.y}, {rect.width, rect.height}};
-        }
-    } else {
-        for (uint32_t i = 0; i < rectNum; i++) {
-            VkClearRect& clearRect = clearRects[i];
-            clearRect.baseArrayLayer = 0;
+        } else {
             clearRect.layerCount = m_RenderLayerNum;
             clearRect.rect = {{0, 0}, {m_RenderWidth, m_RenderHeight}};
         }
     }
 
-    const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdClearAttachments(m_Handle, clearDescNum, attachments, rectNum, clearRects);
+    if (attachmentNum) {
+        const auto& vk = m_Device.GetDispatchTable();
+        vk.CmdClearAttachments(m_Handle, attachmentNum, attachments, rectNum, clearRects);
+    }
 }
 
 inline void CommandBufferVK::ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc) {
@@ -239,11 +243,12 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
     VkRenderingAttachmentInfo* colors = StackAlloc(VkRenderingAttachmentInfo, attachmentsDesc.colorNum);
     for (uint32_t i = 0; i < attachmentsDesc.colorNum; i++) {
         const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.colors[i];
+        const DescriptorTexDesc& desc = descriptor.GetTexDesc();
 
         VkRenderingAttachmentInfo& color = colors[i];
         color = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
         color.imageView = descriptor.GetImageView();
-        color.imageLayout = descriptor.GetImageLayout();
+        color.imageLayout = descriptor.GetTexDesc().layout;
         color.resolveMode = VK_RESOLVE_MODE_NONE;
         color.resolveImageView = VK_NULL_HANDLE;
         color.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -251,7 +256,6 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
         color.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         color.clearValue = {};
 
-        const DescriptorTextureDesc& desc = descriptor.GetTextureDesc();
         Dim_t w = desc.texture->GetSize(0, desc.mipOffset);
         Dim_t h = desc.texture->GetSize(1, desc.mipOffset);
 
@@ -265,9 +269,10 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
     bool hasStencil = false;
     if (attachmentsDesc.depthStencil) {
         const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.depthStencil;
+        const DescriptorTexDesc& desc = descriptor.GetTexDesc();
 
         depthStencil.imageView = descriptor.GetImageView();
-        depthStencil.imageLayout = descriptor.GetImageLayout();
+        depthStencil.imageLayout = desc.layout;
         depthStencil.resolveMode = VK_RESOLVE_MODE_NONE;
         depthStencil.resolveImageView = VK_NULL_HANDLE;
         depthStencil.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -275,7 +280,6 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
         depthStencil.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         depthStencil.clearValue = {};
 
-        const DescriptorTextureDesc& desc = descriptor.GetTextureDesc();
         Dim_t w = desc.texture->GetSize(0, desc.mipOffset);
         Dim_t h = desc.texture->GetSize(1, desc.mipOffset);
 
@@ -284,7 +288,10 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
         m_RenderHeight = std::min(m_RenderHeight, h);
 
         hasStencil = HasStencil(descriptor.GetTexture().GetDesc().format);
-    }
+
+        m_DepthStencil = &descriptor;
+    } else
+        m_DepthStencil = nullptr;
 
     // Shading rate
     VkRenderingFragmentShadingRateAttachmentInfoKHR shadingRate = {VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR};
@@ -293,7 +300,7 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
         const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.shadingRate;
 
         shadingRate.imageView = descriptor.GetImageView();
-        shadingRate.imageLayout = descriptor.GetImageLayout();
+        shadingRate.imageLayout = descriptor.GetTexDesc().layout;
         shadingRate.shadingRateAttachmentTexelSize = {tileSize, tileSize};
     }
 
@@ -325,6 +332,8 @@ inline void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDe
 inline void CommandBufferVK::EndRendering() {
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdEndRendering(m_Handle);
+
+    m_DepthStencil = nullptr;
 }
 
 inline void CommandBufferVK::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
@@ -436,13 +445,11 @@ inline void CommandBufferVK::CopyTexture(Texture& dstTexture, const TextureRegio
         return;
     }
 
-    VkImageCopy region;
+    VkImageCopy region = {};
 
-    if (srcRegionDesc != nullptr) {
+    if (srcRegionDesc) {
         region.srcSubresource = {srcTextureImpl.GetImageAspectFlags(), srcRegionDesc->mipOffset, srcRegionDesc->layerOffset, 1};
-
         region.srcOffset = {(int32_t)srcRegionDesc->x, (int32_t)srcRegionDesc->y, (int32_t)srcRegionDesc->z};
-
         region.extent = {
             (srcRegionDesc->width == WHOLE_SIZE) ? srcTextureImpl.GetSize(0, srcRegionDesc->mipOffset) : srcRegionDesc->width,
             (srcRegionDesc->height == WHOLE_SIZE) ? srcTextureImpl.GetSize(1, srcRegionDesc->mipOffset) : srcRegionDesc->height,
@@ -450,18 +457,15 @@ inline void CommandBufferVK::CopyTexture(Texture& dstTexture, const TextureRegio
         };
     } else {
         region.srcSubresource = {srcTextureImpl.GetImageAspectFlags(), 0, 0, 1};
-
         region.srcOffset = {};
         region.extent = srcTextureImpl.GetExtent();
     }
 
-    if (dstRegionDesc != nullptr) {
+    if (dstRegionDesc) {
         region.dstSubresource = {dstTextureImpl.GetImageAspectFlags(), dstRegionDesc->mipOffset, dstRegionDesc->layerOffset, 1};
-
         region.dstOffset = {(int32_t)dstRegionDesc->x, (int32_t)dstRegionDesc->y, (int32_t)dstRegionDesc->z};
     } else {
         region.dstSubresource = {dstTextureImpl.GetImageAspectFlags(), 0, 0, 1};
-
         region.dstOffset = {};
     }
 
@@ -469,12 +473,11 @@ inline void CommandBufferVK::CopyTexture(Texture& dstTexture, const TextureRegio
     vk.CmdCopyImage(m_Handle, srcTextureImpl.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTextureImpl.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
-inline void CommandBufferVK::UploadBufferToTexture(
-    Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
+inline void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
     const BufferVK& srcBufferImpl = (const BufferVK&)srcBuffer;
     const TextureVK& dstTextureImpl = (const TextureVK&)dstTexture;
-
     const FormatProps& formatProps = GetFormatProps(dstTextureImpl.GetDesc().format);
+
     const uint32_t rowBlockNum = srcDataLayoutDesc.rowPitch / formatProps.stride;
     const uint32_t bufferRowLength = rowBlockNum * formatProps.blockWidth;
 
@@ -485,8 +488,17 @@ inline void CommandBufferVK::UploadBufferToTexture(
         srcDataLayoutDesc.offset,
         bufferRowLength,
         bufferImageHeight,
-        VkImageSubresourceLayers{dstTextureImpl.GetImageAspectFlags(), dstRegionDesc.mipOffset, dstRegionDesc.layerOffset, 1},
-        VkOffset3D{dstRegionDesc.x, dstRegionDesc.y, dstRegionDesc.z},
+        VkImageSubresourceLayers{
+            dstTextureImpl.GetImageAspectFlags(),
+            dstRegionDesc.mipOffset,
+            dstRegionDesc.layerOffset,
+            1,
+        },
+        VkOffset3D{
+            dstRegionDesc.x,
+            dstRegionDesc.y,
+            dstRegionDesc.z,
+        },
         VkExtent3D{
             (dstRegionDesc.width == WHOLE_SIZE) ? dstTextureImpl.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.width,
             (dstRegionDesc.height == WHOLE_SIZE) ? dstTextureImpl.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.height,
@@ -498,8 +510,7 @@ inline void CommandBufferVK::UploadBufferToTexture(
     vk.CmdCopyBufferToImage(m_Handle, srcBufferImpl.GetHandle(), dstTextureImpl.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
-inline void CommandBufferVK::ReadbackTextureToBuffer(
-    Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
+inline void CommandBufferVK::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
     const TextureVK& srcTextureImpl = (const TextureVK&)srcTexture;
     const BufferVK& dstBufferImpl = (const BufferVK&)dstBuffer;
 
@@ -627,6 +638,18 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
         const TextureBarrierDesc& in = barrierGroupDesc.textures[i];
         const TextureVK& textureImpl = *(const TextureVK*)in.texture;
 
+        VkImageAspectFlags aspectFlags = 0;
+        if (in.planes == PlaneBits::ALL)
+            aspectFlags = textureImpl.GetImageAspectFlags();
+        else {
+            if (in.planes & PlaneBits::COLOR)
+                aspectFlags |= VK_IMAGE_ASPECT_COLOR_BIT;
+            if (in.planes & PlaneBits::DEPTH)
+                aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
+            if (in.planes & PlaneBits::STENCIL)
+                aspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+
         VkImageMemoryBarrier2& out = textureBarriers[i];
         out = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2};
         out.srcStageMask = GetPipelineStageFlags(in.before.stages);
@@ -639,7 +662,7 @@ inline void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
         out.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         out.image = textureImpl.GetHandle();
         out.subresourceRange = {
-            textureImpl.GetImageAspectFlags(),
+            aspectFlags,
             in.mipOffset,
             (in.mipNum == REMAINING_MIPS) ? VK_REMAINING_MIP_LEVELS : in.mipNum,
             in.layerOffset,
@@ -730,8 +753,7 @@ inline void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, const
     vk.CmdCopyImage(m_Handle, srcTexture.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTexture.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstTextureDesc.mipNum, regions);
 }
 
-inline void CommandBufferVK::BuildTopLevelAccelerationStructure(
-    uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {
+inline void CommandBufferVK::BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {
     const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
     const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress() + scratchOffset;
     const VkDeviceAddress bufferAddress = ((BufferVK&)buffer).GetDeviceAddress() + bufferOffset;
@@ -761,8 +783,7 @@ inline void CommandBufferVK::BuildTopLevelAccelerationStructure(
     vk.CmdBuildAccelerationStructuresKHR(m_Handle, 1, &buildGeometryInfo, rangeArrays);
 }
 
-inline void CommandBufferVK::BuildBottomLevelAccelerationStructure(
-    uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {
+inline void CommandBufferVK::BuildBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {
     const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
     const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress() + scratchOffset;
 
@@ -859,8 +880,7 @@ inline void CommandBufferVK::CopyAccelerationStructure(AccelerationStructure& ds
     vk.CmdCopyAccelerationStructureKHR(m_Handle, &info);
 }
 
-inline void CommandBufferVK::WriteAccelerationStructureSize(
-    const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryPoolOffset) {
+inline void CommandBufferVK::WriteAccelerationStructureSize(const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryPoolOffset) {
     Scratch<VkAccelerationStructureKHR> ASes = AllocateScratch(m_Device, VkAccelerationStructureKHR, accelerationStructureNum);
 
     for (uint32_t i = 0; i < accelerationStructureNum; i++)

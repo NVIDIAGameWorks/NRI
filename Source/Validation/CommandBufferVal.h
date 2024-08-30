@@ -4,6 +4,9 @@
 
 namespace nri {
 
+struct DescriptorVal;
+struct PipelineVal;
+
 struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     CommandBufferVal(DeviceVal& device, CommandBuffer* commandBuffer, bool isWrapped)
         : DeviceObjectVal(device, commandBuffer)
@@ -18,6 +21,14 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
 
     inline void* GetNativeObject() const {
         return GetCoreInterface().GetCommandBufferNativeObject(*GetImpl());
+    }
+
+    inline void ResetAttachments() {
+        m_RenderTargetNum = 0;
+        for (size_t i = 0; i < m_RenderTargets.size(); i++)
+            m_RenderTargets[i] = nullptr;
+
+        m_DepthStencil = nullptr;
     }
 
     //================================================================================================================
@@ -62,30 +73,27 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     void ResetQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num);
     void BeginAnnotation(const char* name);
     void EndAnnotation();
-
-    void BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
-        Buffer& scratch, uint64_t scratchOffset);
-    void BuildBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
-        Buffer& scratch, uint64_t scratchOffset);
-    void UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
-        AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset);
-    void UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
-        AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset);
-
+    void BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset);
+    void BuildBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset);
+    void UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset);
+    void UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset);
     void CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode);
     void WriteAccelerationStructureSize(const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryOffset);
-
     void DispatchRays(const DispatchRaysDesc& dispatchRaysDesc);
     void DispatchRaysIndirect(const Buffer& buffer, uint64_t offset);
-
     void DrawMeshTasks(const DrawMeshTasksDesc& drawMeshTasksDesc);
     void DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
 
 private:
     template <typename Command>
     Command& AllocateValidationCommand();
+    void ValidateReadonlyDepthStencil();
 
     Vector<uint8_t> m_ValidationCommands;
+    std::array<DescriptorVal*, 16> m_RenderTargets = {};
+    DescriptorVal* m_DepthStencil = nullptr;
+    PipelineVal* m_Pipeline = nullptr;
+    uint32_t m_RenderTargetNum = 0;
     int32_t m_AnnotationStack = 0;
     bool m_IsRecordingStarted = false;
     bool m_IsWrapped = false;

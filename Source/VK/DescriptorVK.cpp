@@ -63,7 +63,7 @@ Result DescriptorVK::CreateTextureView(const T& textureViewDesc) {
     m_Format = createInfo.format;
     m_TextureDesc.handle = texture.GetHandle();
     m_TextureDesc.texture = &texture;
-    m_TextureDesc.layout = GetImageLayoutForView(textureViewDesc.viewType, textureViewDesc.flags);
+    m_TextureDesc.layout = GetImageLayoutForView(textureViewDesc.viewType);
     m_TextureDesc.aspectFlags = GetImageAspectFlags(textureViewDesc.format);
     m_TextureDesc.layerOffset = textureViewDesc.layerOffset;
     m_TextureDesc.layerNum = (Dim_t)subresource.layerCount;

@@ -40,6 +40,7 @@ struct TextureD3D11 {
     }
 
     inline uint32_t GetSubresourceIndex(const TextureRegionDesc& regionDesc) const {
+        // https://learn.microsoft.com/en-us/windows/win32/direct3d12/subresources#plane-slice
         return regionDesc.mipOffset + regionDesc.layerOffset * m_Desc.mipNum;
     }
 

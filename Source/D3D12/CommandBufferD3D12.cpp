@@ -208,8 +208,7 @@ static inline D3D12_RESOURCE_STATES GetResourceStates(AccessBits accessMask, D3D
     return resourceStates;
 }
 
-static void AddResourceBarrier(
-    D3D12_COMMAND_LIST_TYPE commandListType, ID3D12Resource* resource, AccessBits before, AccessBits after, D3D12_RESOURCE_BARRIER& resourceBarrier, uint32_t subresource) {
+static void AddResourceBarrier(D3D12_COMMAND_LIST_TYPE commandListType, ID3D12Resource* resource, AccessBits before, AccessBits after, D3D12_RESOURCE_BARRIER& resourceBarrier, uint32_t subresource) {
     D3D12_RESOURCE_STATES resourceStateBefore = GetResourceStates(before, commandListType);
     D3D12_RESOURCE_STATES resourceStateAfter = GetResourceStates(after, commandListType);
 
@@ -267,6 +266,8 @@ inline Result CommandBufferD3D12::Begin(const DescriptorPool* descriptorPool) {
     m_Pipeline = nullptr;
     m_PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
+    ResetAttachments();
+
     return Result::SUCCESS;
 }
 
@@ -278,10 +279,10 @@ inline Result CommandBufferD3D12::End() {
 }
 
 inline void CommandBufferD3D12::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
-    static_assert(offsetof(Viewport, x) == 0, "Unsupported viewport data layout.");
-    static_assert(offsetof(Viewport, width) == 8, "Unsupported viewport data layout.");
-    static_assert(offsetof(Viewport, depthRangeMin) == 16, "Unsupported viewport data layout.");
-    static_assert(offsetof(Viewport, depthRangeMax) == 20, "Unsupported viewport data layout.");
+    static_assert(offsetof(Viewport, x) == 0, "Unsupported viewport data layout");
+    static_assert(offsetof(Viewport, width) == 8, "Unsupported viewport data layout");
+    static_assert(offsetof(Viewport, depthRangeMin) == 16, "Unsupported viewport data layout");
+    static_assert(offsetof(Viewport, depthRangeMax) == 20, "Unsupported viewport data layout");
 
     m_GraphicsCommandList->RSSetViewports(viewportNum, (D3D12_VIEWPORT*)viewports);
 }
@@ -331,28 +332,23 @@ inline void CommandBufferD3D12::SetShadingRate(const ShadingRateDesc& shadingRat
 }
 
 inline void CommandBufferD3D12::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
+    if (!clearDescNum)
+        return;
+
     D3D12_RECT* rectsD3D12 = StackAlloc(D3D12_RECT, rectNum);
     ConvertRects(rectsD3D12, rects, rectNum);
 
     for (uint32_t i = 0; i < clearDescNum; i++) {
-        if (AttachmentContentType::COLOR == clearDescs[i].attachmentContentType)
+        if (clearDescs[i].planes & PlaneBits::COLOR)
             m_GraphicsCommandList->ClearRenderTargetView(m_RenderTargets[clearDescs[i].colorAttachmentIndex], &clearDescs[i].value.color32f.x, rectNum, rectsD3D12);
-        else if (m_DepthStencil.ptr) {
+        else {
             D3D12_CLEAR_FLAGS clearFlags = (D3D12_CLEAR_FLAGS)0;
-            switch (clearDescs[i].attachmentContentType) {
-                case AttachmentContentType::DEPTH:
-                    clearFlags = D3D12_CLEAR_FLAG_DEPTH;
-                    break;
-                case AttachmentContentType::STENCIL:
-                    clearFlags = D3D12_CLEAR_FLAG_STENCIL;
-                    break;
-                case AttachmentContentType::DEPTH_STENCIL:
-                    clearFlags = D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL;
-                    break;
-            }
+            if (clearDescs[i].planes & PlaneBits::DEPTH)
+                clearFlags |= D3D12_CLEAR_FLAG_DEPTH;
+            if (clearDescs[i].planes & PlaneBits::STENCIL)
+                clearFlags |= D3D12_CLEAR_FLAG_STENCIL;
 
-            m_GraphicsCommandList->ClearDepthStencilView(
-                m_DepthStencil, clearFlags, clearDescs[i].value.depthStencil.depth, clearDescs[i].value.depthStencil.stencil, rectNum, rectsD3D12);
+            m_GraphicsCommandList->ClearDepthStencilView(m_DepthStencil, clearFlags, clearDescs[i].value.depthStencil.depth, clearDescs[i].value.depthStencil.stencil, rectNum, rectsD3D12);
         }
     }
 }
@@ -561,8 +557,7 @@ inline void CommandBufferD3D12::CopyTexture(Texture& dstTexture, const TextureRe
     }
 }
 
-inline void CommandBufferD3D12::UploadBufferToTexture(
-    Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
+inline void CommandBufferD3D12::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
     TextureD3D12& dstTextureD3D12 = (TextureD3D12&)dstTexture;
     D3D12_TEXTURE_COPY_LOCATION dstTextureCopyLocation = {
         dstTextureD3D12,
@@ -598,8 +593,7 @@ inline void CommandBufferD3D12::UploadBufferToTexture(
     m_GraphicsCommandList->CopyTextureRegion(&dstTextureCopyLocation, dstRegionDesc.x, dstRegionDesc.y, dstRegionDesc.z, &srcTextureCopyLocation, &box);
 }
 
-inline void CommandBufferD3D12::ReadbackTextureToBuffer(
-    Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
+inline void CommandBufferD3D12::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
     TextureD3D12& srcTextureD3D12 = (TextureD3D12&)srcTexture;
     D3D12_TEXTURE_COPY_LOCATION srcTextureCopyLocation = {
         srcTextureD3D12,
@@ -788,12 +782,12 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
             const Dim_t layerNum = barrierDesc.layerNum == REMAINING_LAYERS ? textureDesc.layerNum : barrierDesc.layerNum;
             const Mip_t mipNum = barrierDesc.mipNum == REMAINING_MIPS ? textureDesc.mipNum : barrierDesc.mipNum;
 
-            if (barrierDesc.layerOffset == 0 && layerNum == textureDesc.layerNum && barrierDesc.mipOffset == 0 && mipNum == textureDesc.mipNum)
+            if (barrierDesc.layerOffset == 0 && layerNum == textureDesc.layerNum && barrierDesc.mipOffset == 0 && mipNum == textureDesc.mipNum && barrierDesc.planes == PlaneBits::ALL)
                 AddResourceBarrier(commandListType, texture, barrierDesc.before.access, barrierDesc.after.access, *ptr++, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
             else {
                 for (Dim_t layerOffset = barrierDesc.layerOffset; layerOffset < barrierDesc.layerOffset + layerNum; layerOffset++) {
                     for (Mip_t mipOffset = barrierDesc.mipOffset; mipOffset < barrierDesc.mipOffset + mipNum; mipOffset++) {
-                        uint32_t subresource = texture.GetSubresourceIndex(layerOffset, mipOffset);
+                        uint32_t subresource = texture.GetSubresourceIndex(layerOffset, mipOffset, barrierDesc.planes);
                         AddResourceBarrier(commandListType, texture, barrierDesc.before.access, barrierDesc.after.access, *ptr++, subresource);
                     }
                 }

@@ -23,6 +23,7 @@ NRI_STRUCT(TextureUploadDesc)
     NRI_OPTIONAL const NRI_NAME(TextureSubresourceUploadDesc)* subresources; // if provided, must include ALL subresources = layerNum * mipNum
     NRI_NAME(Texture)* texture;
     NRI_NAME(AccessLayoutStage) after;
+    NRI_NAME(PlaneBits) planes;
 };
 
 NRI_STRUCT(BufferUploadDesc)

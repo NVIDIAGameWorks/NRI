@@ -183,6 +183,16 @@ NRI_ENUM
 
 NRI_ENUM_BITS
 (
+    PlaneBits, uint8_t,
+
+    ALL                             = 0,
+    COLOR                           = NRI_SET_BIT(0),
+    DEPTH                           = NRI_SET_BIT(1),
+    STENCIL                         = NRI_SET_BIT(2)
+);
+
+NRI_ENUM_BITS
+(
     FormatSupportBits, uint16_t,
 
     UNSUPPORTED                     = 0,
@@ -365,6 +375,9 @@ NRI_ENUM
     SHADER_RESOURCE_STORAGE_1D_ARRAY,
     COLOR_ATTACHMENT,
     DEPTH_STENCIL_ATTACHMENT,
+    DEPTH_READONLY_STENCIL_ATTACHMENT,
+    DEPTH_ATTACHMENT_STENCIL_READONLY,
+    DEPTH_STENCIL_READONLY,
 
     MAX_NUM
 );
@@ -381,6 +394,9 @@ NRI_ENUM
     SHADER_RESOURCE_STORAGE_2D_ARRAY,
     COLOR_ATTACHMENT,
     DEPTH_STENCIL_ATTACHMENT,
+    DEPTH_READONLY_STENCIL_ATTACHMENT,
+    DEPTH_ATTACHMENT_STENCIL_READONLY,
+    DEPTH_STENCIL_READONLY,
     SHADING_RATE_ATTACHMENT,
 
     MAX_NUM
@@ -452,15 +468,6 @@ NRI_ENUM_BITS
     ACCELERATION_STRUCTURE_BUILD_READ   = NRI_SET_BIT(7)
 );
 
-NRI_ENUM_BITS
-(
-    ResourceViewBits, uint8_t,
-
-    NONE                                = 0,
-    READONLY_DEPTH                      = NRI_SET_BIT(0),
-    READONLY_STENCIL                    = NRI_SET_BIT(1)
-);
-
 // Resources
 NRI_STRUCT(TextureDesc)
 {
@@ -492,7 +499,6 @@ NRI_STRUCT(Texture1DViewDesc)
     NRI_NAME(Mip_t) mipNum;
     NRI_NAME(Dim_t) layerOffset;
     NRI_NAME(Dim_t) layerNum;
-    NRI_NAME(ResourceViewBits) flags;
 };
 
 NRI_STRUCT(Texture2DViewDesc)
@@ -504,7 +510,6 @@ NRI_STRUCT(Texture2DViewDesc)
     NRI_NAME(Mip_t) mipNum;
     NRI_NAME(Dim_t) layerOffset;
     NRI_NAME(Dim_t) layerNum;
-    NRI_NAME(ResourceViewBits) flags;
 };
 
 NRI_STRUCT(Texture3DViewDesc)
@@ -912,18 +917,6 @@ NRI_ENUM
     MAX_NUM
 );
 
-NRI_ENUM
-(
-    AttachmentContentType, uint8_t,
-
-    COLOR,
-    DEPTH,
-    STENCIL,
-    DEPTH_STENCIL,
-
-    MAX_NUM
-);
-
 NRI_ENUM_BITS
 (
     ColorWriteBits, uint8_t,
@@ -952,7 +945,7 @@ NRI_UNION(ClearValue)
 NRI_STRUCT(ClearDesc)
 {
     NRI_NAME(ClearValue) value;
-    NRI_NAME(AttachmentContentType) attachmentContentType;
+    NRI_NAME(PlaneBits) planes;
     uint32_t colorAttachmentIndex;
 };
 
@@ -1209,6 +1202,7 @@ NRI_STRUCT(TextureBarrierDesc)
     NRI_NAME(Mip_t) mipNum;
     NRI_NAME(Dim_t) layerOffset;
     NRI_NAME(Dim_t) layerNum;
+    NRI_NAME(PlaneBits) planes;
 };
 
 NRI_STRUCT(BarrierGroupDesc)

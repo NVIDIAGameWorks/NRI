@@ -125,8 +125,8 @@ typedef uint32_t DXGI_FORMAT;
 
 constexpr uint32_t TIMEOUT_PRESENT = 1000; // 1 sec
 constexpr uint32_t TIMEOUT_FENCE = 5000;   // 5 sec
-
 constexpr uint64_t PRESENT_INDEX_BIT_NUM = 56ull;
+constexpr uint32_t BOUND_DESCRIPTOR_SET_MAX_NUM = 32; // like in VK
 
 constexpr uint64_t MsToUs(uint32_t x) {
     return x * 1000000ull;

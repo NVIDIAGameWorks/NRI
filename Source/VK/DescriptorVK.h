@@ -15,13 +15,13 @@ enum class DescriptorTypeVK {
     ACCELERATION_STRUCTURE
 };
 
-struct DescriptorBufferDesc {
+struct DescriptorBufDesc {
     VkBuffer handle;
     uint64_t offset;
     uint64_t size;
 };
 
-struct DescriptorTextureDesc {
+struct DescriptorTexDesc {
     VkImage handle;
     const TextureVK* texture;
     VkImageLayout layout;
@@ -79,16 +79,20 @@ struct DescriptorVK {
         return m_Format;
     }
 
-    inline VkImageLayout GetImageLayout() const {
-        return m_TextureDesc.layout;
-    }
-
-    inline const DescriptorTextureDesc& GetTextureDesc() const {
+    inline const DescriptorTexDesc& GetTexDesc() const {
         return m_TextureDesc;
     }
 
-    inline const DescriptorBufferDesc& GetBufferDesc() const {
+    inline const DescriptorBufDesc& GetBufDesc() const {
         return m_BufferDesc;
+    }
+
+    inline bool IsDepthWritable() const {
+        return m_TextureDesc.layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL && m_TextureDesc.layout != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    }
+
+    inline bool IsStencilWritable() const {
+        return m_TextureDesc.layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL && m_TextureDesc.layout != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     }
 
     inline void GetBufferInfo(VkDescriptorBufferInfo& info) const {
@@ -128,15 +132,15 @@ private:
     DeviceVK& m_Device;
 
     union {
-        VkBufferView m_BufferView = VK_NULL_HANDLE;
-        VkImageView m_ImageView;
+        VkImageView m_ImageView = VK_NULL_HANDLE;
+        VkBufferView m_BufferView;
         VkAccelerationStructureKHR m_AccelerationStructure;
         VkSampler m_Sampler;
     };
 
     union {
-        DescriptorBufferDesc m_BufferDesc;
-        DescriptorTextureDesc m_TextureDesc = {};
+        DescriptorTexDesc m_TextureDesc = {};
+        DescriptorBufDesc m_BufferDesc;
     };
 
     DescriptorTypeVK m_Type = DescriptorTypeVK::NONE;

@@ -28,6 +28,7 @@ static void DoTransition(const CoreInterface& NRI, CommandBuffer* commandBuffer,
             barrier.layerNum = textureDesc.layerNum;
             barrier.before = isInitial ? initialState : state;
             barrier.after = isInitial ? state : textureUploadDesc.after;
+            barrier.planes = isInitial ? PlaneBits::ALL : textureUploadDesc.planes;
         }
 
         BarrierGroupDesc barrierGroup = {};

@@ -70,6 +70,14 @@ struct DescriptorVal : public DeviceObjectVal<Descriptor> {
         return m_ResourceType != ResourceType::NONE && !IsSampler() && m_ResourceViewType == ResourceViewType::SHADER_RESOURCE_STORAGE;
     }
 
+    inline bool IsDepthReadonly() const {
+        return m_IsDepthReadonly;
+    }
+
+    inline bool IsStencilReadonly() const {
+        return m_IsStencilReadonly;
+    }
+
     //================================================================================================================
     // NRI
     //================================================================================================================
@@ -78,6 +86,8 @@ struct DescriptorVal : public DeviceObjectVal<Descriptor> {
 private:
     ResourceType m_ResourceType = ResourceType::NONE;
     ResourceViewType m_ResourceViewType = ResourceViewType::NONE;
+    bool m_IsDepthReadonly = false;
+    bool m_IsStencilReadonly = false;
 };
 
 } // namespace nri

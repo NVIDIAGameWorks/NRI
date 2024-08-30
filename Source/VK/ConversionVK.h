@@ -4,16 +4,16 @@
 
 namespace nri {
 
-constexpr std::array<VkIndexType, (uint32_t)IndexType::MAX_NUM> INDEX_TYPE_TABLE = {
+constexpr std::array<VkIndexType, (size_t)IndexType::MAX_NUM> INDEX_TYPE_TABLE = {
     VK_INDEX_TYPE_UINT16, // UINT16
     VK_INDEX_TYPE_UINT32, // UINT32
 };
 
 constexpr VkIndexType GetIndexType(IndexType indexType) {
-    return INDEX_TYPE_TABLE[(uint32_t)indexType];
+    return INDEX_TYPE_TABLE[(size_t)indexType];
 }
 
-constexpr std::array<VkImageLayout, (uint32_t)Layout::MAX_NUM> LAYOUT_TABLE = {
+constexpr std::array<VkImageLayout, (size_t)Layout::MAX_NUM> LAYOUT_TABLE = {
     VK_IMAGE_LAYOUT_UNDEFINED,                                    // UNKNOWN
     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                     // COLOR_ATTACHMENT
     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,             // DEPTH_STENCIL_ATTACHMENT
@@ -27,10 +27,10 @@ constexpr std::array<VkImageLayout, (uint32_t)Layout::MAX_NUM> LAYOUT_TABLE = {
 };
 
 constexpr VkImageLayout GetImageLayout(Layout layout) {
-    return LAYOUT_TABLE[(uint32_t)layout];
+    return LAYOUT_TABLE[(size_t)layout];
 }
 
-constexpr std::array<VkDescriptorType, (uint32_t)DescriptorType::MAX_NUM> DESCRIPTOR_TYPES = {
+constexpr std::array<VkDescriptorType, (size_t)DescriptorType::MAX_NUM> DESCRIPTOR_TYPES = {
     VK_DESCRIPTOR_TYPE_SAMPLER,                    // SAMPLER
     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             // CONSTANT_BUFFER
     VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,              // TEXTURE
@@ -43,10 +43,10 @@ constexpr std::array<VkDescriptorType, (uint32_t)DescriptorType::MAX_NUM> DESCRI
 };
 
 constexpr VkDescriptorType GetDescriptorType(DescriptorType type) {
-    return DESCRIPTOR_TYPES[(uint32_t)type];
+    return DESCRIPTOR_TYPES[(size_t)type];
 }
 
-constexpr std::array<VkPrimitiveTopology, (uint32_t)Topology::MAX_NUM> TOPOLOGIES = {
+constexpr std::array<VkPrimitiveTopology, (size_t)Topology::MAX_NUM> TOPOLOGIES = {
     VK_PRIMITIVE_TOPOLOGY_POINT_LIST,                    // POINT_LIST
     VK_PRIMITIVE_TOPOLOGY_LINE_LIST,                     // LINE_LIST
     VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,                    // LINE_STRIP
@@ -60,29 +60,29 @@ constexpr std::array<VkPrimitiveTopology, (uint32_t)Topology::MAX_NUM> TOPOLOGIE
 };
 
 constexpr VkPrimitiveTopology GetTopology(Topology topology) {
-    return TOPOLOGIES[(uint32_t)topology];
+    return TOPOLOGIES[(size_t)topology];
 }
 
-constexpr std::array<VkCullModeFlags, (uint32_t)CullMode::MAX_NUM> CULL_MODES = {
+constexpr std::array<VkCullModeFlags, (size_t)CullMode::MAX_NUM> CULL_MODES = {
     VK_CULL_MODE_NONE,      // NONE
     VK_CULL_MODE_FRONT_BIT, // FRONT
     VK_CULL_MODE_BACK_BIT   // BACK
 };
 
 constexpr VkCullModeFlags GetCullMode(CullMode cullMode) {
-    return CULL_MODES[(uint32_t)cullMode];
+    return CULL_MODES[(size_t)cullMode];
 }
 
-constexpr std::array<VkPolygonMode, (uint32_t)FillMode::MAX_NUM> POLYGON_MODES = {
+constexpr std::array<VkPolygonMode, (size_t)FillMode::MAX_NUM> POLYGON_MODES = {
     VK_POLYGON_MODE_FILL, // SOLID
     VK_POLYGON_MODE_LINE, // WIREFRAME
 };
 
 constexpr VkPolygonMode GetPolygonMode(FillMode fillMode) {
-    return POLYGON_MODES[(uint32_t)fillMode];
+    return POLYGON_MODES[(size_t)fillMode];
 }
 
-constexpr std::array<VkCompareOp, (uint32_t)CompareFunc::MAX_NUM> COMPARE_OP = {
+constexpr std::array<VkCompareOp, (size_t)CompareFunc::MAX_NUM> COMPARE_OP = {
     VK_COMPARE_OP_NEVER,            // NONE
     VK_COMPARE_OP_ALWAYS,           // ALWAYS
     VK_COMPARE_OP_NEVER,            // NEVER
@@ -95,10 +95,10 @@ constexpr std::array<VkCompareOp, (uint32_t)CompareFunc::MAX_NUM> COMPARE_OP = {
 };
 
 constexpr VkCompareOp GetCompareOp(CompareFunc compareFunc) {
-    return COMPARE_OP[(uint32_t)compareFunc];
+    return COMPARE_OP[(size_t)compareFunc];
 }
 
-constexpr std::array<VkStencilOp, (uint32_t)StencilFunc::MAX_NUM> STENCIL_OP = {
+constexpr std::array<VkStencilOp, (size_t)StencilFunc::MAX_NUM> STENCIL_OP = {
     VK_STENCIL_OP_KEEP,                // KEEP,
     VK_STENCIL_OP_ZERO,                // ZERO,
     VK_STENCIL_OP_REPLACE,             // REPLACE,
@@ -110,10 +110,10 @@ constexpr std::array<VkStencilOp, (uint32_t)StencilFunc::MAX_NUM> STENCIL_OP = {
 };
 
 constexpr VkStencilOp GetStencilOp(StencilFunc stencilFunc) {
-    return STENCIL_OP[(uint32_t)stencilFunc];
+    return STENCIL_OP[(size_t)stencilFunc];
 }
 
-constexpr std::array<VkLogicOp, (uint32_t)LogicFunc::MAX_NUM> LOGIC_OP = {
+constexpr std::array<VkLogicOp, (size_t)LogicFunc::MAX_NUM> LOGIC_OP = {
     VK_LOGIC_OP_MAX_ENUM,      // NONE
     VK_LOGIC_OP_CLEAR,         // CLEAR
     VK_LOGIC_OP_AND,           // AND
@@ -133,10 +133,10 @@ constexpr std::array<VkLogicOp, (uint32_t)LogicFunc::MAX_NUM> LOGIC_OP = {
 };
 
 constexpr VkLogicOp GetLogicOp(LogicFunc logicFunc) {
-    return LOGIC_OP[(uint32_t)logicFunc];
+    return LOGIC_OP[(size_t)logicFunc];
 }
 
-constexpr std::array<VkBlendFactor, (uint32_t)BlendFactor::MAX_NUM> BLEND_FACTOR = {
+constexpr std::array<VkBlendFactor, (size_t)BlendFactor::MAX_NUM> BLEND_FACTOR = {
     VK_BLEND_FACTOR_ZERO,                     // ZERO
     VK_BLEND_FACTOR_ONE,                      // ONE
     VK_BLEND_FACTOR_SRC_COLOR,                // SRC_COLOR
@@ -159,10 +159,10 @@ constexpr std::array<VkBlendFactor, (uint32_t)BlendFactor::MAX_NUM> BLEND_FACTOR
 };
 
 constexpr VkBlendFactor GetBlendFactor(BlendFactor blendFactor) {
-    return BLEND_FACTOR[(uint32_t)blendFactor];
+    return BLEND_FACTOR[(size_t)blendFactor];
 }
 
-constexpr std::array<VkBlendOp, (uint32_t)BlendFunc::MAX_NUM> BLEND_OP = {
+constexpr std::array<VkBlendOp, (size_t)BlendFunc::MAX_NUM> BLEND_OP = {
     VK_BLEND_OP_ADD,              // ADD
     VK_BLEND_OP_SUBTRACT,         // SUBTRACT
     VK_BLEND_OP_REVERSE_SUBTRACT, // REVERSE_SUBTRACT
@@ -171,38 +171,38 @@ constexpr std::array<VkBlendOp, (uint32_t)BlendFunc::MAX_NUM> BLEND_OP = {
 };
 
 constexpr VkBlendOp GetBlendOp(BlendFunc blendFunc) {
-    return BLEND_OP[(uint32_t)blendFunc];
+    return BLEND_OP[(size_t)blendFunc];
 }
 
-constexpr std::array<VkImageType, (uint32_t)TextureType::MAX_NUM> IMAGE_TYPES = {
+constexpr std::array<VkImageType, (size_t)TextureType::MAX_NUM> IMAGE_TYPES = {
     VK_IMAGE_TYPE_1D, // TEXTURE_1D
     VK_IMAGE_TYPE_2D, // TEXTURE_2D
     VK_IMAGE_TYPE_3D, // TEXTURE_3D
 };
 
 constexpr VkImageType GetImageType(TextureType type) {
-    return IMAGE_TYPES[(uint32_t)type];
+    return IMAGE_TYPES[(size_t)type];
 }
 
-constexpr std::array<VkFilter, (uint32_t)Filter::MAX_NUM> FILTER = {
+constexpr std::array<VkFilter, (size_t)Filter::MAX_NUM> FILTER = {
     VK_FILTER_NEAREST, // NEAREST
     VK_FILTER_LINEAR,  // LINEAR
 };
 
 constexpr VkFilter GetFilter(Filter filter) {
-    return FILTER[(uint32_t)filter];
+    return FILTER[(size_t)filter];
 }
 
-constexpr std::array<VkSamplerMipmapMode, (uint32_t)Filter::MAX_NUM> SAMPLER_MIPMAP_MODE = {
+constexpr std::array<VkSamplerMipmapMode, (size_t)Filter::MAX_NUM> SAMPLER_MIPMAP_MODE = {
     VK_SAMPLER_MIPMAP_MODE_NEAREST, // NEAREST
     VK_SAMPLER_MIPMAP_MODE_LINEAR,  // LINEAR
 };
 
 constexpr VkSamplerMipmapMode GetSamplerMipmapMode(Filter filter) {
-    return SAMPLER_MIPMAP_MODE[(uint32_t)filter];
+    return SAMPLER_MIPMAP_MODE[(size_t)filter];
 }
 
-constexpr std::array<VkSamplerAddressMode, (uint32_t)AddressMode::MAX_NUM> SAMPLER_ADDRESS_MODE = {
+constexpr std::array<VkSamplerAddressMode, (size_t)AddressMode::MAX_NUM> SAMPLER_ADDRESS_MODE = {
     VK_SAMPLER_ADDRESS_MODE_REPEAT,          // REPEAT
     VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT, // MIRRORED_REPEAT
     VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // CLAMP_TO_EDGE
@@ -210,23 +210,26 @@ constexpr std::array<VkSamplerAddressMode, (uint32_t)AddressMode::MAX_NUM> SAMPL
 };
 
 constexpr VkSamplerAddressMode GetSamplerAddressMode(AddressMode addressMode) {
-    return SAMPLER_ADDRESS_MODE[(uint32_t)addressMode];
+    return SAMPLER_ADDRESS_MODE[(size_t)addressMode];
 }
 
-constexpr std::array<VkImageViewType, (uint32_t)Texture1DViewType::MAX_NUM> IMAGE_VIEW_TYPE_1D = {
+constexpr std::array<VkImageViewType, (size_t)Texture1DViewType::MAX_NUM> IMAGE_VIEW_TYPE_1D = {
     VK_IMAGE_VIEW_TYPE_1D,       // SHADER_RESOURCE_1D,
     VK_IMAGE_VIEW_TYPE_1D_ARRAY, // SHADER_RESOURCE_1D_ARRAY,
     VK_IMAGE_VIEW_TYPE_1D,       // SHADER_RESOURCE_STORAGE_1D,
     VK_IMAGE_VIEW_TYPE_1D_ARRAY, // SHADER_RESOURCE_STORAGE_1D_ARRAY,
     VK_IMAGE_VIEW_TYPE_1D,       // COLOR_ATTACHMENT,
     VK_IMAGE_VIEW_TYPE_1D,       // DEPTH_STENCIL_ATTACHMENT
+    VK_IMAGE_VIEW_TYPE_1D,       // DEPTH_READONLY_STENCIL_ATTACHMENT,
+    VK_IMAGE_VIEW_TYPE_1D,       // DEPTH_ATTACHMENT_STENCIL_READONLY,
+    VK_IMAGE_VIEW_TYPE_1D,       // DEPTH_STENCIL_READONLY,
 };
 
 constexpr VkImageViewType GetImageViewType(Texture1DViewType type) {
-    return IMAGE_VIEW_TYPE_1D[(uint32_t)type];
+    return IMAGE_VIEW_TYPE_1D[(size_t)type];
 }
 
-constexpr std::array<VkImageViewType, (uint32_t)Texture2DViewType::MAX_NUM> IMAGE_VIEW_TYPE_2D = {
+constexpr std::array<VkImageViewType, (size_t)Texture2DViewType::MAX_NUM> IMAGE_VIEW_TYPE_2D = {
     VK_IMAGE_VIEW_TYPE_2D,         // SHADER_RESOURCE_2D,
     VK_IMAGE_VIEW_TYPE_2D_ARRAY,   // SHADER_RESOURCE_2D_ARRAY,
     VK_IMAGE_VIEW_TYPE_CUBE,       // SHADER_RESOURCE_CUBE,
@@ -235,37 +238,43 @@ constexpr std::array<VkImageViewType, (uint32_t)Texture2DViewType::MAX_NUM> IMAG
     VK_IMAGE_VIEW_TYPE_2D_ARRAY,   // SHADER_RESOURCE_STORAGE_2D_ARRAY,
     VK_IMAGE_VIEW_TYPE_2D,         // COLOR_ATTACHMENT,
     VK_IMAGE_VIEW_TYPE_2D,         // DEPTH_STENCIL_ATTACHMENT
+    VK_IMAGE_VIEW_TYPE_2D,         // DEPTH_READONLY_STENCIL_ATTACHMENT,
+    VK_IMAGE_VIEW_TYPE_2D,         // DEPTH_ATTACHMENT_STENCIL_READONLY,
+    VK_IMAGE_VIEW_TYPE_2D,         // DEPTH_STENCIL_READONLY,
     VK_IMAGE_VIEW_TYPE_2D,         // SHADING_RATE_ATTACHMENT
 };
 
 constexpr VkImageViewType GetImageViewType(Texture2DViewType type) {
-    return IMAGE_VIEW_TYPE_2D[(uint32_t)type];
+    return IMAGE_VIEW_TYPE_2D[(size_t)type];
 }
 
-constexpr std::array<VkImageViewType, (uint32_t)Texture3DViewType::MAX_NUM> IMAGE_VIEW_TYPE_3D = {
+constexpr std::array<VkImageViewType, (size_t)Texture3DViewType::MAX_NUM> IMAGE_VIEW_TYPE_3D = {
     VK_IMAGE_VIEW_TYPE_3D, // SHADER_RESOURCE_3D,
     VK_IMAGE_VIEW_TYPE_3D, // SHADER_RESOURCE_STORAGE_3D,
     VK_IMAGE_VIEW_TYPE_3D, // COLOR_ATTACHMENT
 };
 
 constexpr VkImageViewType GetImageViewType(Texture3DViewType type) {
-    return IMAGE_VIEW_TYPE_3D[(uint32_t)type];
+    return IMAGE_VIEW_TYPE_3D[(size_t)type];
 }
 
-constexpr std::array<VkImageUsageFlags, (uint32_t)Texture1DViewType::MAX_NUM> IMAGE_VIEW_USAGE_1D = {
+constexpr std::array<VkImageUsageFlags, (size_t)Texture1DViewType::MAX_NUM> IMAGE_VIEW_USAGE_1D = {
     VK_IMAGE_USAGE_SAMPLED_BIT,                  // SHADER_RESOURCE_1D,
     VK_IMAGE_USAGE_SAMPLED_BIT,                  // SHADER_RESOURCE_1D_ARRAY,
     VK_IMAGE_USAGE_STORAGE_BIT,                  // SHADER_RESOURCE_STORAGE_1D,
     VK_IMAGE_USAGE_STORAGE_BIT,                  // SHADER_RESOURCE_STORAGE_1D_ARRAY,
     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,         // COLOR_ATTACHMENT,
     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, // DEPTH_STENCIL_ATTACHMENT
+    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, // DEPTH_READONLY_STENCIL_ATTACHMENT,
+    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, // DEPTH_ATTACHMENT_STENCIL_READONLY,
+    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, // DEPTH_STENCIL_READONLY,
 };
 
 constexpr VkImageUsageFlags GetImageViewUsage(Texture1DViewType type) {
-    return IMAGE_VIEW_USAGE_1D[(uint32_t)type];
+    return IMAGE_VIEW_USAGE_1D[(size_t)type];
 }
 
-constexpr std::array<VkImageUsageFlags, (uint32_t)Texture2DViewType::MAX_NUM> IMAGE_VIEW_USAGE_2D = {
+constexpr std::array<VkImageUsageFlags, (size_t)Texture2DViewType::MAX_NUM> IMAGE_VIEW_USAGE_2D = {
     VK_IMAGE_USAGE_SAMPLED_BIT,                              // SHADER_RESOURCE_2D,
     VK_IMAGE_USAGE_SAMPLED_BIT,                              // SHADER_RESOURCE_2D_ARRAY,
     VK_IMAGE_USAGE_SAMPLED_BIT,                              // SHADER_RESOURCE_CUBE,
@@ -274,48 +283,43 @@ constexpr std::array<VkImageUsageFlags, (uint32_t)Texture2DViewType::MAX_NUM> IM
     VK_IMAGE_USAGE_STORAGE_BIT,                              // SHADER_RESOURCE_STORAGE_2D_ARRAY,
     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,                     // COLOR_ATTACHMENT,
     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,             // DEPTH_STENCIL_ATTACHMENT
+    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,             // DEPTH_READONLY_STENCIL_ATTACHMENT,
+    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,             // DEPTH_ATTACHMENT_STENCIL_READONLY,
+    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,             // DEPTH_STENCIL_READONLY,
     VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR, // SHADING_RATE_ATTACHMENT
 };
 
 constexpr VkImageUsageFlags GetImageViewUsage(Texture2DViewType type) {
-    return IMAGE_VIEW_USAGE_2D[(uint32_t)type];
+    return IMAGE_VIEW_USAGE_2D[(size_t)type];
 }
 
-constexpr std::array<VkImageUsageFlags, (uint32_t)Texture3DViewType::MAX_NUM> IMAGE_VIEW_USAGE_3D = {
+constexpr std::array<VkImageUsageFlags, (size_t)Texture3DViewType::MAX_NUM> IMAGE_VIEW_USAGE_3D = {
     VK_IMAGE_USAGE_SAMPLED_BIT,          // SHADER_RESOURCE_3D,
     VK_IMAGE_USAGE_STORAGE_BIT,          // SHADER_RESOURCE_STORAGE_3D,
     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // COLOR_ATTACHMENT
 };
 
 constexpr VkImageUsageFlags GetImageViewUsage(Texture3DViewType type) {
-    return IMAGE_VIEW_USAGE_3D[(uint32_t)type];
+    return IMAGE_VIEW_USAGE_3D[(size_t)type];
 }
 
-constexpr std::array<VkImageLayout, (uint32_t)Texture1DViewType::MAX_NUM> IMAGE_LAYOUT_1D = {
-    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // SHADER_RESOURCE_1D,
-    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // SHADER_RESOURCE_1D_ARRAY,
-    VK_IMAGE_LAYOUT_GENERAL,                          // SHADER_RESOURCE_STORAGE_1D,
-    VK_IMAGE_LAYOUT_GENERAL,                          // SHADER_RESOURCE_STORAGE_1D_ARRAY,
-    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,         // COLOR_ATTACHMENT,
-    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // DEPTH_STENCIL_ATTACHMENT
+constexpr std::array<VkImageLayout, (size_t)Texture1DViewType::MAX_NUM> IMAGE_LAYOUT_1D = {
+    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                   // SHADER_RESOURCE_1D,
+    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                   // SHADER_RESOURCE_1D_ARRAY,
+    VK_IMAGE_LAYOUT_GENERAL,                                    // SHADER_RESOURCE_STORAGE_1D,
+    VK_IMAGE_LAYOUT_GENERAL,                                    // SHADER_RESOURCE_STORAGE_1D_ARRAY,
+    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                   // COLOR_ATTACHMENT,
+    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,           // DEPTH_STENCIL_ATTACHMENT
+    VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL, // DEPTH_READONLY_STENCIL_ATTACHMENT,
+    VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL, // DEPTH_ATTACHMENT_STENCIL_READONLY,
+    VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,            // DEPTH_STENCIL_READONLY,
 };
 
-constexpr VkImageLayout GetImageLayoutForView(Texture1DViewType type, ResourceViewBits flags) {
-    if (type == Texture1DViewType::DEPTH_STENCIL_ATTACHMENT && flags != ResourceViewBits::NONE) {
-        if (flags == (ResourceViewBits::READONLY_DEPTH | ResourceViewBits::READONLY_STENCIL))
-            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-        else if (flags == ResourceViewBits::READONLY_DEPTH)
-            return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
-        else if (flags == ResourceViewBits::READONLY_STENCIL)
-            return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR;
-        else
-            CHECK(false, "Bad flags");
-    }
-
-    return IMAGE_LAYOUT_1D[(uint32_t)type];
+constexpr VkImageLayout GetImageLayoutForView(Texture1DViewType type) {
+    return IMAGE_LAYOUT_1D[(size_t)type];
 }
 
-constexpr std::array<VkImageLayout, (uint32_t)Texture2DViewType::MAX_NUM> IMAGE_LAYOUT_2D = {
+constexpr std::array<VkImageLayout, (size_t)Texture2DViewType::MAX_NUM> IMAGE_LAYOUT_2D = {
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                     // SHADER_RESOURCE_2D,
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                     // SHADER_RESOURCE_2D_ARRAY,
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                     // SHADER_RESOURCE_CUBE,
@@ -324,35 +328,27 @@ constexpr std::array<VkImageLayout, (uint32_t)Texture2DViewType::MAX_NUM> IMAGE_
     VK_IMAGE_LAYOUT_GENERAL,                                      // SHADER_RESOURCE_STORAGE_2D_ARRAY,
     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                     // COLOR_ATTACHMENT,
     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,             // DEPTH_STENCIL_ATTACHMENT
+    VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,   // DEPTH_READONLY_STENCIL_ATTACHMENT,
+    VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,   // DEPTH_ATTACHMENT_STENCIL_READONLY,
+    VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,              // DEPTH_STENCIL_READONLY,
     VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, // SHADING_RATE_ATTACHMENT
 };
 
-constexpr VkImageLayout GetImageLayoutForView(Texture2DViewType type, ResourceViewBits flags) {
-    if (type == Texture2DViewType::DEPTH_STENCIL_ATTACHMENT && flags != ResourceViewBits::NONE) {
-        if (flags == (ResourceViewBits::READONLY_DEPTH | ResourceViewBits::READONLY_STENCIL))
-            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-        else if (flags == ResourceViewBits::READONLY_DEPTH)
-            return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
-        else if (flags == ResourceViewBits::READONLY_STENCIL)
-            return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR;
-        else
-            CHECK(false, "Bad flags");
-    }
-
-    return IMAGE_LAYOUT_2D[(uint32_t)type];
+constexpr VkImageLayout GetImageLayoutForView(Texture2DViewType type) {
+    return IMAGE_LAYOUT_2D[(size_t)type];
 }
 
-constexpr std::array<VkImageLayout, (uint32_t)Texture3DViewType::MAX_NUM> IMAGE_LAYOUT_3D = {
+constexpr std::array<VkImageLayout, (size_t)Texture3DViewType::MAX_NUM> IMAGE_LAYOUT_3D = {
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // SHADER_RESOURCE_3D,
     VK_IMAGE_LAYOUT_GENERAL,                  // SHADER_RESOURCE_STORAGE_3D,
     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // COLOR_ATTACHMENT
 };
 
 constexpr VkImageLayout GetImageLayoutForView(Texture3DViewType type) {
-    return IMAGE_LAYOUT_3D[(uint32_t)type];
+    return IMAGE_LAYOUT_3D[(size_t)type];
 }
 
-constexpr std::array<VkFragmentShadingRateCombinerOpKHR, (uint32_t)ShadingRateCombiner::MAX_NUM> SHADING_RATE_COMBINER = {
+constexpr std::array<VkFragmentShadingRateCombinerOpKHR, (size_t)ShadingRateCombiner::MAX_NUM> SHADING_RATE_COMBINER = {
     VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR, // REPLACE,
     VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,    // KEEP,
     VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MIN_KHR,     // MIN,
@@ -361,10 +357,10 @@ constexpr std::array<VkFragmentShadingRateCombinerOpKHR, (uint32_t)ShadingRateCo
 };
 
 constexpr VkFragmentShadingRateCombinerOpKHR GetShadingRateCombiner(ShadingRateCombiner combiner) {
-    return SHADING_RATE_COMBINER[(uint32_t)combiner];
+    return SHADING_RATE_COMBINER[(size_t)combiner];
 }
 
-constexpr std::array<TextureType, (uint32_t)TextureType::MAX_NUM> TEXTURE_TYPE_TABLE = {
+constexpr std::array<TextureType, (size_t)TextureType::MAX_NUM> TEXTURE_TYPE_TABLE = {
     TextureType::TEXTURE_1D, // VK_IMAGE_TYPE_1D
     TextureType::TEXTURE_2D, // VK_IMAGE_TYPE_2D
     TextureType::TEXTURE_3D, // VK_IMAGE_TYPE_3D
@@ -372,7 +368,7 @@ constexpr std::array<TextureType, (uint32_t)TextureType::MAX_NUM> TEXTURE_TYPE_T
 
 constexpr TextureType GetTextureType(VkImageType type) {
     if ((size_t)type < TEXTURE_TYPE_TABLE.size())
-        return TEXTURE_TYPE_TABLE[(uint32_t)type];
+        return TEXTURE_TYPE_TABLE[(size_t)type];
 
     return TextureType::MAX_NUM;
 }

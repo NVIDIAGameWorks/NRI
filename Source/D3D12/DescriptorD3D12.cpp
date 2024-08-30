@@ -85,7 +85,10 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
 
             return CreateRenderTargetView(texture, desc);
         }
-        case Texture1DViewType::DEPTH_STENCIL_ATTACHMENT: {
+        case Texture1DViewType::DEPTH_STENCIL_ATTACHMENT:
+        case Texture1DViewType::DEPTH_READONLY_STENCIL_ATTACHMENT:
+        case Texture1DViewType::DEPTH_ATTACHMENT_STENCIL_READONLY:
+        case Texture1DViewType::DEPTH_STENCIL_READONLY: {
             D3D12_DEPTH_STENCIL_VIEW_DESC desc = {};
             desc.Format = format;
             desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
@@ -93,10 +96,12 @@ Result DescriptorD3D12::Create(const Texture1DViewDesc& textureViewDesc) {
             desc.Texture1DArray.FirstArraySlice = textureViewDesc.layerOffset;
             desc.Texture1DArray.ArraySize = remainingLayers;
 
-            if (textureViewDesc.flags & ResourceViewBits::READONLY_DEPTH)
-                desc.Flags |= D3D12_DSV_FLAG_READ_ONLY_DEPTH;
-            if (textureViewDesc.flags & ResourceViewBits::READONLY_STENCIL)
-                desc.Flags |= D3D12_DSV_FLAG_READ_ONLY_STENCIL;
+            if (textureViewDesc.viewType == Texture1DViewType::DEPTH_READONLY_STENCIL_ATTACHMENT)
+                desc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH;
+            else if (textureViewDesc.viewType == Texture1DViewType::DEPTH_ATTACHMENT_STENCIL_READONLY)
+                desc.Flags = D3D12_DSV_FLAG_READ_ONLY_STENCIL;
+            else if (textureViewDesc.viewType == Texture1DViewType::DEPTH_STENCIL_READONLY)
+                desc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH | D3D12_DSV_FLAG_READ_ONLY_STENCIL;
 
             return CreateDepthStencilView(texture, desc);
         }
@@ -203,7 +208,10 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
 
             return CreateRenderTargetView(texture, desc);
         }
-        case Texture2DViewType::DEPTH_STENCIL_ATTACHMENT: {
+        case Texture2DViewType::DEPTH_STENCIL_ATTACHMENT:
+        case Texture2DViewType::DEPTH_READONLY_STENCIL_ATTACHMENT:
+        case Texture2DViewType::DEPTH_ATTACHMENT_STENCIL_READONLY:
+        case Texture2DViewType::DEPTH_STENCIL_READONLY: {
             D3D12_DEPTH_STENCIL_VIEW_DESC desc = {};
             desc.Format = format;
             desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
@@ -211,10 +219,12 @@ Result DescriptorD3D12::Create(const Texture2DViewDesc& textureViewDesc) {
             desc.Texture2DArray.FirstArraySlice = textureViewDesc.layerOffset;
             desc.Texture2DArray.ArraySize = remainingLayers;
 
-            if (textureViewDesc.flags & ResourceViewBits::READONLY_DEPTH)
-                desc.Flags |= D3D12_DSV_FLAG_READ_ONLY_DEPTH;
-            if (textureViewDesc.flags & ResourceViewBits::READONLY_STENCIL)
-                desc.Flags |= D3D12_DSV_FLAG_READ_ONLY_STENCIL;
+            if (textureViewDesc.viewType == Texture2DViewType::DEPTH_READONLY_STENCIL_ATTACHMENT)
+                desc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH;
+            else if (textureViewDesc.viewType == Texture2DViewType::DEPTH_ATTACHMENT_STENCIL_READONLY)
+                desc.Flags = D3D12_DSV_FLAG_READ_ONLY_STENCIL;
+            else if (textureViewDesc.viewType == Texture2DViewType::DEPTH_STENCIL_READONLY)
+                desc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH | D3D12_DSV_FLAG_READ_ONLY_STENCIL;
 
             return CreateDepthStencilView(texture, desc);
         }

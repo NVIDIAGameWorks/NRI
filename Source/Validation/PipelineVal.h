@@ -14,6 +14,14 @@ struct PipelineVal : public DeviceObjectVal<Pipeline> {
         return m_PipelineLayout;
     }
 
+    inline bool WritesToDepth() const {
+        return m_WritesToDepth;
+    }
+
+    inline bool WritesToStencil() const {
+        return m_WritesToStencil;
+    }
+
     //================================================================================================================
     // NRI
     //================================================================================================================
@@ -22,6 +30,8 @@ struct PipelineVal : public DeviceObjectVal<Pipeline> {
 
 private:
     const PipelineLayout* m_PipelineLayout = nullptr;
+    bool m_WritesToDepth = false;
+    bool m_WritesToStencil = false;
 };
 
 } // namespace nri

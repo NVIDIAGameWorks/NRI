@@ -96,6 +96,8 @@ Result CommandBufferD3D11::Begin(const DescriptorPool* descriptorPool) {
     m_IndexBuffer = nullptr;
     m_VertexBuffer = nullptr;
 
+    ResetAttachments();
+
     // Dynamic state
     m_SamplePositionsState.Reset();
     m_StencilRef = 0;
@@ -170,24 +172,23 @@ void CommandBufferD3D11::SetShadingRate(const ShadingRateDesc& shadingRateDesc) 
 }
 
 void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
-    if (!rects || !rectNum) {
+    if (!clearDescNum)
+        return;
+
+    if (!rectNum) {
         for (uint32_t i = 0; i < clearDescNum; i++) {
             const ClearDesc& clearDesc = clearDescs[i];
 
-            switch (clearDesc.attachmentContentType) {
-                case AttachmentContentType::COLOR:
-                    m_DeferredContext->ClearRenderTargetView(m_RenderTargets[clearDesc.colorAttachmentIndex], &clearDesc.value.color32f.x);
-                    break;
-                case AttachmentContentType::DEPTH:
-                    m_DeferredContext->ClearDepthStencilView(m_DepthStencil, D3D11_CLEAR_DEPTH, clearDesc.value.depthStencil.depth, 0);
-                    break;
-                case AttachmentContentType::STENCIL:
-                    m_DeferredContext->ClearDepthStencilView(m_DepthStencil, D3D11_CLEAR_STENCIL, 0.0f, clearDesc.value.depthStencil.stencil);
-                    break;
-                case AttachmentContentType::DEPTH_STENCIL:
-                    m_DeferredContext->ClearDepthStencilView(
-                        m_DepthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDesc.value.depthStencil.depth, clearDesc.value.depthStencil.stencil);
-                    break;
+            if (clearDesc.planes & PlaneBits::COLOR)
+                m_DeferredContext->ClearRenderTargetView(m_RenderTargets[clearDesc.colorAttachmentIndex], &clearDesc.value.color32f.x);
+            else {
+                uint32_t clearFlags = 0;
+                if (clearDescs[i].planes & PlaneBits::DEPTH)
+                    clearFlags |= D3D11_CLEAR_DEPTH;
+                if (clearDescs[i].planes & PlaneBits::STENCIL)
+                    clearFlags |= D3D11_CLEAR_STENCIL;
+
+                m_DeferredContext->ClearDepthStencilView(m_DepthStencil, clearFlags, clearDesc.value.depthStencil.depth, clearDesc.value.depthStencil.stencil);
             }
         }
     } else {
@@ -202,20 +203,14 @@ void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t 
             FLOAT color[4] = {};
             for (uint32_t i = 0; i < clearDescNum; i++) {
                 const ClearDesc& clearDesc = clearDescs[i];
-                switch (clearDesc.attachmentContentType) {
-                    case AttachmentContentType::COLOR:
-                        m_DeferredContext->ClearView(m_RenderTargets[clearDesc.colorAttachmentIndex], &clearDesc.value.color32f.x, rectsD3D, rectNum);
-                        break;
-                    case AttachmentContentType::DEPTH:
-                    case AttachmentContentType::DEPTH_STENCIL:
-                        color[0] = clearDesc.value.depthStencil.depth;
-                        m_DeferredContext->ClearView(m_DepthStencil, color, rectsD3D, rectNum);
-                        break;
-                    case AttachmentContentType::STENCIL:
-                        color[0] = clearDesc.value.depthStencil.stencil;
-                        m_DeferredContext->ClearView(m_DepthStencil, color, rectsD3D, rectNum);
-                        break;
-                }
+
+                if (clearDesc.planes & PlaneBits::COLOR)
+                    m_DeferredContext->ClearView(m_RenderTargets[clearDesc.colorAttachmentIndex], &clearDesc.value.color32f.x, rectsD3D, rectNum);
+                else if (clearDesc.planes & PlaneBits::DEPTH) {
+                    color[0] = clearDesc.value.depthStencil.depth;
+                    m_DeferredContext->ClearView(m_DepthStencil, color, rectsD3D, rectNum);
+                } else
+                    CHECK(false, "Bad or unsupported plane");
             }
         } else
             CHECK(false, "'ClearView' emulation for 11.0 is not implemented!");

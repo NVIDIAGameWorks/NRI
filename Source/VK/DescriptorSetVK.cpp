@@ -33,8 +33,7 @@ private:
     uint8_t* m_Memory;
 };
 
-static bool WriteTextures(
-    const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab) {
+static bool WriteTextures(const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab) {
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
     uint32_t itemNumForWriting = totalItemNum;
     VkDescriptorImageInfo* infoArray = slab.Allocate<VkDescriptorImageInfo>(itemNumForWriting);
@@ -43,7 +42,7 @@ static bool WriteTextures(
         const DescriptorVK& descriptorImpl = *(DescriptorVK*)update.descriptors[descriptorOffset + i];
 
         infoArray[i].imageView = descriptorImpl.GetImageView();
-        infoArray[i].imageLayout = descriptorImpl.GetImageLayout();
+        infoArray[i].imageLayout = descriptorImpl.GetTexDesc().layout;
         infoArray[i].sampler = VK_NULL_HANDLE;
     }
 
@@ -56,8 +55,7 @@ static bool WriteTextures(
     return itemNumForWriting == totalItemNum;
 }
 
-static bool WriteTypedBuffers(
-    const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab) {
+static bool WriteTypedBuffers(const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab) {
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
     uint32_t itemNumForWriting = totalItemNum;
     VkBufferView* viewArray = slab.Allocate<VkBufferView>(itemNumForWriting);
@@ -76,8 +74,7 @@ static bool WriteTypedBuffers(
     return itemNumForWriting == totalItemNum;
 }
 
-static bool WriteBuffers(
-    const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab) {
+static bool WriteBuffers(const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab) {
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
     uint32_t itemNumForWriting = totalItemNum;
     VkDescriptorBufferInfo* infoArray = slab.Allocate<VkDescriptorBufferInfo>(itemNumForWriting);
@@ -96,8 +93,7 @@ static bool WriteBuffers(
     return itemNumForWriting == totalItemNum;
 }
 
-static bool WriteSamplers(
-    const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab) {
+static bool WriteSamplers(const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab) {
     MaybeUnused(rangeDesc);
 
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
@@ -120,8 +116,7 @@ static bool WriteSamplers(
     return itemNumForWriting == totalItemNum;
 }
 
-static bool WriteAccelerationStructures(
-    const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab) {
+static bool WriteAccelerationStructures(const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab) {
     MaybeUnused(rangeDesc);
 
     const uint32_t totalItemNum = update.descriptorNum - descriptorOffset;
@@ -154,8 +149,7 @@ static bool WriteAccelerationStructures(
     return itemNumForWriting == totalItemNum;
 }
 
-typedef bool (*WriteDescriptorsFunc)(
-    const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab);
+typedef bool (*WriteDescriptorsFunc)(const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab);
 
 constexpr std::array<WriteDescriptorsFunc, (uint32_t)DescriptorType::MAX_NUM> WRITE_FUNCS = {
     (WriteDescriptorsFunc)&WriteSamplers,               // SAMPLER

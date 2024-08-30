@@ -215,7 +215,7 @@ void CommandBufferEmuD3D11::Submit() {
                 commandBuffer.BeginRendering(attachmentsDesc);
             } break;
             case END_RENDERING: {
-                commandBuffer.EndRendering();
+                commandBuffer.ResetAttachments();
             } break;
             case BIND_VERTEX_BUFFERS: {
                 uint32_t baseSlot;

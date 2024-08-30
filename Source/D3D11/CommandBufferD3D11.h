@@ -24,6 +24,14 @@ struct CommandBufferD3D11 final : public CommandBufferHelper {
         return m_DeferredContext;
     }
 
+    inline void ResetAttachments() {
+        m_RenderTargetNum = 0;
+        for (size_t i = 0; i < m_RenderTargets.size(); i++)
+            m_RenderTargets[i] = nullptr;
+
+        m_DepthStencil = nullptr;
+    }
+
     Result Create(ID3D11DeviceContext* precreatedContext);
     void Submit();
     StdAllocator<uint8_t>& GetStdAllocator() const;
@@ -35,9 +43,6 @@ struct CommandBufferD3D11 final : public CommandBufferHelper {
     inline void SetDebugName(const char* name) {
         SET_D3D_DEBUG_OBJECT_NAME(m_DeferredContext, name);
         SET_D3D_DEBUG_OBJECT_NAME(m_CommandList, name);
-    }
-
-    inline void EndRendering() {
     }
 
     Result Begin(const DescriptorPool* descriptorPool);

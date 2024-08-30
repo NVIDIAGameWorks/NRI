@@ -35,8 +35,19 @@ struct TextureD3D12 {
         return m_Texture.GetInterface();
     }
 
-    inline uint32_t GetSubresourceIndex(Dim_t layerOffset, Mip_t mipOffset) const {
-        return layerOffset * m_Desc.mipNum + mipOffset;
+    inline uint32_t GetSubresourceIndex(uint32_t layerOffset, uint32_t mipOffset, PlaneBits planes = PlaneBits::ALL) const {
+        // https://learn.microsoft.com/en-us/windows/win32/direct3d12/subresources#plane-slice
+        uint32_t planeIndex = 0;
+        if (planes != PlaneBits::ALL) {
+            if (planes & PlaneBits::DEPTH)
+                planeIndex = 0;
+            else if (planes & PlaneBits::STENCIL)
+                planeIndex = 1;
+            else
+                CHECK(false, "Bad plane");
+        }
+
+        return mipOffset + (layerOffset + planeIndex * m_Desc.layerNum) * m_Desc.mipNum;
     }
 
     inline Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const {

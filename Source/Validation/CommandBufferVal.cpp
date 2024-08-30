@@ -61,6 +61,9 @@ Result CommandBufferVal::Begin(const DescriptorPool* descriptorPool) {
         m_IsRecordingStarted = true;
 
     m_ValidationCommands.clear();
+    m_Pipeline = nullptr;
+
+    ResetAttachments();
 
     return result;
 }
@@ -74,7 +77,6 @@ Result CommandBufferVal::End() {
         REPORT_ERROR(&m_Device, "'CmdEndAnnotation' is called more times than 'CmdBeginAnnotation'");
 
     Result result = GetCoreInterface().EndCommandBuffer(*GetImpl());
-
     if (result == Result::SUCCESS)
         m_IsRecordingStarted = m_IsWrapped;
 
@@ -84,10 +86,10 @@ Result CommandBufferVal::End() {
 void CommandBufferVal::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
 
-    if (viewportNum == 0)
+    if (!viewportNum)
         return;
 
-    RETURN_ON_FAILURE(&m_Device, viewports != nullptr, ReturnVoid(), "'viewports' is NULL");
+    RETURN_ON_FAILURE(&m_Device, viewports, ReturnVoid(), "'viewports' is NULL");
 
     GetCoreInterface().CmdSetViewports(*GetImpl(), viewports, viewportNum);
 }
@@ -95,10 +97,10 @@ void CommandBufferVal::SetViewports(const Viewport* viewports, uint32_t viewport
 void CommandBufferVal::SetScissors(const Rect* rects, uint32_t rectNum) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
 
-    if (rectNum == 0)
+    if (!rectNum)
         return;
 
-    RETURN_ON_FAILURE(&m_Device, rects != nullptr, ReturnVoid(), "'rects' is NULL");
+    RETURN_ON_FAILURE(&m_Device, rects, ReturnVoid(), "'rects' is NULL");
 
     GetCoreInterface().CmdSetScissors(*GetImpl(), rects, rectNum);
 }
@@ -140,13 +142,29 @@ void CommandBufferVal::ClearAttachments(const ClearDesc* clearDescs, uint32_t cl
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, m_IsRenderPass, ReturnVoid(), "must be called inside 'CmdBeginRendering/CmdEndRendering'");
 
+    const DeviceDesc& deviceDesc = m_Device.GetDesc();
+    for (uint32_t i = 0; i < clearDescNum; i++) {
+        RETURN_ON_FAILURE(&m_Device, (clearDescs[i].planes & (PlaneBits::COLOR | PlaneBits::DEPTH | PlaneBits::STENCIL)) != 0, ReturnVoid(), "'clearDesc[%u].planes' is not COLOR, DEPTH or STENCIL", i);
+
+        if (clearDescs[i].planes & PlaneBits::COLOR) {
+            RETURN_ON_FAILURE(&m_Device, clearDescs[i].colorAttachmentIndex < deviceDesc.colorAttachmentMaxNum, ReturnVoid(), "'clearDesc[%u].colorAttachmentIndex = %u' is out of bounds", i, clearDescs[i].colorAttachmentIndex);
+            RETURN_ON_FAILURE(&m_Device, m_RenderTargets[clearDescs[i].colorAttachmentIndex], ReturnVoid(), "'clearDesc[%u].colorAttachmentIndex = %u' references a NULL COLOR attachment", i, clearDescs[i].colorAttachmentIndex);
+        }
+
+        if (clearDescs[i].planes & (PlaneBits::DEPTH | PlaneBits::STENCIL))
+            RETURN_ON_FAILURE(&m_Device, m_DepthStencil, ReturnVoid(), "DEPTH_STENCIL attachment is NULL", i);
+
+        if (clearDescs[i].colorAttachmentIndex != 0)
+            RETURN_ON_FAILURE(&m_Device, (clearDescs[i].planes & PlaneBits::COLOR), ReturnVoid(), "'clearDesc[%u].planes' is not COLOR, but `colorAttachmentIndex != 0`", i);
+    }
+
     GetCoreInterface().CmdClearAttachments(*GetImpl(), clearDescs, clearDescNum, rects, rectNum);
 }
 
 void CommandBufferVal::ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
-    RETURN_ON_FAILURE(&m_Device, clearDesc.storageBuffer != nullptr, ReturnVoid(), "'clearDesc.storageBuffer' is NULL");
+    RETURN_ON_FAILURE(&m_Device, clearDesc.storageBuffer, ReturnVoid(), "'clearDesc.storageBuffer' is NULL");
 
     auto clearDescImpl = clearDesc;
     clearDescImpl.storageBuffer = NRI_GET_IMPL(Descriptor, clearDesc.storageBuffer);
@@ -157,7 +175,7 @@ void CommandBufferVal::ClearStorageBuffer(const ClearStorageBufferDesc& clearDes
 void CommandBufferVal::ClearStorageTexture(const ClearStorageTextureDesc& clearDesc) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
-    RETURN_ON_FAILURE(&m_Device, clearDesc.storageTexture != nullptr, ReturnVoid(), "'clearDesc.storageTexture' is NULL");
+    RETURN_ON_FAILURE(&m_Device, clearDesc.storageTexture, ReturnVoid(), "'clearDesc.storageTexture' is NULL");
 
     auto clearDescImpl = clearDesc;
     clearDescImpl.storageTexture = NRI_GET_IMPL(Descriptor, clearDesc.storageTexture);
@@ -179,18 +197,34 @@ void CommandBufferVal::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
     attachmentsDescImpl.colors = colors;
     attachmentsDescImpl.colorNum = attachmentsDesc.colorNum;
 
-    GetCoreInterface().CmdBeginRendering(*GetImpl(), attachmentsDescImpl);
-
     m_IsRenderPass = true;
+    m_RenderTargetNum = attachmentsDesc.colors ? attachmentsDesc.colorNum : 0;
+
+    size_t i = 0;
+    for (; i < m_RenderTargetNum; i++)
+        m_RenderTargets[i] = (DescriptorVal*)attachmentsDesc.colors[i];
+    for (; i < m_RenderTargets.size(); i++)
+        m_RenderTargets[i] = nullptr;
+
+    if (attachmentsDesc.depthStencil)
+        m_DepthStencil = (DescriptorVal*)attachmentsDesc.depthStencil;
+    else
+        m_DepthStencil = nullptr;
+
+    ValidateReadonlyDepthStencil();
+
+    GetCoreInterface().CmdBeginRendering(*GetImpl(), attachmentsDescImpl);
 }
 
 void CommandBufferVal::EndRendering() {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, m_IsRenderPass, ReturnVoid(), "'CmdBeginRendering' has not been called");
 
-    GetCoreInterface().CmdEndRendering(*GetImpl());
-
     m_IsRenderPass = false;
+
+    ResetAttachments();
+
+    GetCoreInterface().CmdEndRendering(*GetImpl());
 }
 
 void CommandBufferVal::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
@@ -223,6 +257,9 @@ void CommandBufferVal::SetPipeline(const Pipeline& pipeline) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
 
     Pipeline* pipelineImpl = NRI_GET_IMPL(Pipeline, &pipeline);
+
+    m_Pipeline = (PipelineVal*)&pipeline;
+    ValidateReadonlyDepthStencil();
 
     GetCoreInterface().CmdSetPipeline(*GetImpl(), *pipelineImpl);
 }
@@ -495,7 +532,7 @@ void CommandBufferVal::BuildBottomLevelAccelerationStructure(
 
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
-    RETURN_ON_FAILURE(&m_Device, geometryObjects != nullptr, ReturnVoid(), "'geometryObjects' is NULL");
+    RETURN_ON_FAILURE(&m_Device, geometryObjects, ReturnVoid(), "'geometryObjects' is NULL");
     RETURN_ON_FAILURE(&m_Device, scratchOffset < scratchVal.GetDesc().size, ReturnVoid(), "'scratchOffset = %llu' is out of bounds", scratchOffset);
 
     AccelerationStructure& dstImpl = *NRI_GET_IMPL(AccelerationStructure, &dst);
@@ -530,7 +567,7 @@ void CommandBufferVal::UpdateBottomLevelAccelerationStructure(uint32_t geometryO
     AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
-    RETURN_ON_FAILURE(&m_Device, geometryObjects != nullptr, ReturnVoid(), "'geometryObjects' is NULL");
+    RETURN_ON_FAILURE(&m_Device, geometryObjects, ReturnVoid(), "'geometryObjects' is NULL");
 
     BufferVal& scratchVal = (BufferVal&)scratch;
 
@@ -561,11 +598,11 @@ void CommandBufferVal::WriteAccelerationStructureSize(
     const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryOffset) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
-    RETURN_ON_FAILURE(&m_Device, accelerationStructures != nullptr, ReturnVoid(), "'accelerationStructures' is NULL");
+    RETURN_ON_FAILURE(&m_Device, accelerationStructures, ReturnVoid(), "'accelerationStructures' is NULL");
 
     AccelerationStructure** accelerationStructureArray = StackAlloc(AccelerationStructure*, accelerationStructureNum);
     for (uint32_t i = 0; i < accelerationStructureNum; i++) {
-        RETURN_ON_FAILURE(&m_Device, accelerationStructures[i] != nullptr, ReturnVoid(), "'accelerationStructures[%u]' is NULL", i);
+        RETURN_ON_FAILURE(&m_Device, accelerationStructures[i], ReturnVoid(), "'accelerationStructures[%u]' is NULL", i);
 
         accelerationStructureArray[i] = NRI_GET_IMPL(AccelerationStructure, accelerationStructures[i]);
     }
@@ -579,7 +616,7 @@ void CommandBufferVal::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc) {
     uint64_t align = m_Device.GetDesc().rayTracingShaderTableAlignment;
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
-    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.buffer != nullptr, ReturnVoid(), "'dispatchRaysDesc.raygenShader.buffer' is NULL");
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.buffer, ReturnVoid(), "'dispatchRaysDesc.raygenShader.buffer' is NULL");
     RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.size != 0, ReturnVoid(), "'dispatchRaysDesc.raygenShader.size' is 0");
     RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.offset % align == 0, ReturnVoid(), "'dispatchRaysDesc.raygenShader.offset' is misaligned");
     RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.missShaders.offset % align == 0, ReturnVoid(), "'dispatchRaysDesc.missShaders.offset' is misaligned");
@@ -615,10 +652,20 @@ void CommandBufferVal::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offs
     RETURN_ON_FAILURE(&m_Device, m_IsRenderPass, ReturnVoid(), "must be called inside 'CmdBeginRendering/CmdEndRendering'");
 
     const BufferDesc& bufferDesc = ((BufferVal&)buffer).GetDesc();
-    RETURN_ON_FAILURE(&m_Device, offset < bufferDesc.size, ReturnVoid(), "Cmdoffset is greater than the buffer size");
+    RETURN_ON_FAILURE(&m_Device, offset < bufferDesc.size, ReturnVoid(), "'offset' is greater than the buffer size");
 
     Buffer* bufferImpl = NRI_GET_IMPL(Buffer, &buffer);
     GetMeshShaderInterface().CmdDrawMeshTasksIndirect(*GetImpl(), *bufferImpl, offset, drawNum, stride);
+}
+
+void CommandBufferVal::ValidateReadonlyDepthStencil() {
+    if (m_Pipeline && m_DepthStencil) {
+        if (m_DepthStencil->IsDepthReadonly() && m_Pipeline->WritesToDepth())
+            REPORT_WARNING(&m_Device, "Depth is read-only, but the pipeline writes to depth. Writing happens only in VK!");
+
+        if (m_DepthStencil->IsStencilReadonly() && m_Pipeline->WritesToStencil())
+            REPORT_WARNING(&m_Device, "Stencil is read-only, but the pipeline writes to stencil. Writing happens only in VK!");
+    }
 }
 
 template <typename Command>

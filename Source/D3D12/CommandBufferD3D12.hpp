@@ -44,7 +44,7 @@ static void NRI_CALL CmdBeginRendering(CommandBuffer& commandBuffer, const Attac
 }
 
 static void NRI_CALL CmdEndRendering(CommandBuffer& commandBuffer) {
-    ((CommandBufferD3D12&)commandBuffer).EndRendering();
+    ((CommandBufferD3D12&)commandBuffer).ResetAttachments();
 }
 
 static void NRI_CALL CmdSetViewports(CommandBuffer& commandBuffer, const Viewport* viewports, uint32_t viewportNum) {

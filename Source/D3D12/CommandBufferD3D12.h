@@ -37,6 +37,14 @@ struct CommandBufferD3D12 {
         return m_Device;
     }
 
+    inline void ResetAttachments() {
+        m_RenderTargetNum = 0;
+        for (size_t i = 0; i < m_RenderTargets.size(); i++)
+            m_RenderTargets[i].ptr = NULL;
+
+        m_DepthStencil.ptr = NULL;
+    }
+
     Result Create(D3D12_COMMAND_LIST_TYPE commandListType, ID3D12CommandAllocator* commandAllocator);
     Result Create(const CommandBufferD3D12Desc& commandBufferDesc);
 
@@ -46,9 +54,6 @@ struct CommandBufferD3D12 {
 
     inline void SetDebugName(const char* name) {
         SET_D3D_DEBUG_OBJECT_NAME(m_GraphicsCommandList, name);
-    }
-
-    inline void EndRendering() {
     }
 
     Result Begin(const DescriptorPool* descriptorPool);
@@ -87,20 +92,14 @@ struct CommandBufferD3D12 {
     void CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& buffer, uint64_t alignedBufferOffset);
     void BeginAnnotation(const char* name);
     void EndAnnotation();
-
-    void BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
-        Buffer& scratch, uint64_t scratchOffset);
-    void BuildBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
-        Buffer& scratch, uint64_t scratchOffset);
-    void UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
-        AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset);
-    void UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst,
-        AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset);
+    void BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset);
+    void BuildBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset);
+    void UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset);
+    void UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset);
     void CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode);
     void WriteAccelerationStructureSize(const AccelerationStructure* const* accelerationStructures, uint32_t accelerationStructureNum, QueryPool& queryPool, uint32_t queryOffset);
     void DispatchRays(const DispatchRaysDesc& dispatchRaysDesc);
     void DispatchRaysIndirect(const Buffer& buffer, uint64_t offset);
-
     void DrawMeshTasks(const DrawMeshTasksDesc& drawMeshTasksDesc);
     void DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
 
@@ -113,7 +112,7 @@ private:
     const PipelineLayoutD3D12* m_PipelineLayout = nullptr;
     PipelineD3D12* m_Pipeline = nullptr;
     D3D12_PRIMITIVE_TOPOLOGY m_PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    std::array<DescriptorSetD3D12*, 64> m_DescriptorSets = {}; // in VK "maxBoundDescriptorSets" is 32
+    std::array<DescriptorSetD3D12*, BOUND_DESCRIPTOR_SET_MAX_NUM> m_DescriptorSets = {};
     uint32_t m_RenderTargetNum = 0;
     uint8_t m_Version = 0;
     bool m_IsGraphicsPipelineLayout = false;
