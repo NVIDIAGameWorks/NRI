@@ -7,6 +7,22 @@
 NRI_NAMESPACE_BEGIN
 
 
+NRI_ENUM
+(
+    MTLGPUFamily, uint8_t,
+
+    Apple1,
+    Apple2,
+    Apple3,
+    Apple4,
+    Apple5,
+    Apple6,
+    Apple7,
+    Mac1,
+    Mac2,
+    
+    MAX_APPLE_FAMILY_NUM
+);
 
 
 NRI_STRUCT(DeviceCreationMTLDesc)
