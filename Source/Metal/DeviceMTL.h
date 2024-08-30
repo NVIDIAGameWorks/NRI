@@ -7,6 +7,9 @@ struct DeviceMTl final : public DeviceBase {
     ~BufferMetal();
 
 
+
+    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
+
     //================================================================================================================
     // DeviceBase
     //================================================================================================================
@@ -30,6 +33,7 @@ struct DeviceMTl final : public DeviceBase {
 private:
     DeviceDesc m_Desc = {};
     id<MTLDevice>     m_Device;
+    std::array<CommandQueueMTL*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     DeviceDesc m_Desc = {};
     MTLGPUFamily m_Family;
     bool m_OwnsNativeObjects = true;
