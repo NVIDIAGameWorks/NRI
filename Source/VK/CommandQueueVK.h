@@ -39,6 +39,7 @@ struct CommandQueueVK {
 
     void SetDebugName(const char* name);
     void Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain);
+    Result UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum);
     Result WaitForIdle();
 
 private:

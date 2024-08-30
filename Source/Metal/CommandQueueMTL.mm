@@ -15,7 +15,17 @@ Result CommandQueueMTL::Create(CommandQueueType type, uint32_t familyIndex, id<M
     m_Handle = handle;
     return Result::SUCCESS;
 }
-    
-void CommandQueueMTL::SetDebugName(const char* name) {
 
+inline void CommandQueueMTL::SetDebugName(const char* name) {
+    [m_Handle setLabel:[NSString stringWithUTF8String:name]];
+}
+
+Result CommandQueueVK::WaitForIdle() {
+
+    id<MTLCommandBuffer> waitCmdBuf = [m_Handle commandBufferWithUnretainedReferences];
+
+    [waitCmdBuf commit];
+    [waitCmdBuf waitUntilCompleted];
+
+    waitCmdBuf = nil;
 }
