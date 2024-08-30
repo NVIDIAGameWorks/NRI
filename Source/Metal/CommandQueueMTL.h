@@ -1,7 +1,5 @@
 // © 2021 NVIDIA Corporation
-
 #pragma once
-
 
 namespace nri {
 
