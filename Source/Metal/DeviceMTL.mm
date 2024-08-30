@@ -2,6 +2,10 @@
 
 using namespace nri;
 
+
+static inline bool FindMTLGpuFamily(id<MTLDevice> device, MTLGPUFamily *family); 
+
+
 BufferMetal::BufferMetal(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator) 
     : DeviceBase(callbacks, stdAllocator) {
     m_Desc.graphicsAPI = GraphicsAPI::VK;
@@ -23,42 +27,6 @@ Result CreateDeviceMTL(const DeviceCreationMTLDesc& deviceCreationDesc, DeviceBa
 
 }
 
-//ResultOrError<MTLGPUFamily> GetMTLGPUFamily(id<MTLDevice> device) {
-//    // https://developer.apple.com/documentation/metal/mtldevice/detecting_gpu_features_and_metal_software_versions?language=objc
-//
-//    if (@available(macOS 10.15, iOS 10.13, *)) {
-//        if ([device supportsFamily:MTLGPUFamilyApple7]) {
-//            return MTLGPUFamily::Apple7;
-//        }
-//        if ([device supportsFamily:MTLGPUFamilyApple6]) {
-//            return MTLGPUFamily::Apple6;
-//        }
-//        if ([device supportsFamily:MTLGPUFamilyApple5]) {
-//            return MTLGPUFamily::Apple5;
-//        }
-//        if ([device supportsFamily:MTLGPUFamilyApple4]) {
-//            return MTLGPUFamily::Apple4;
-//        }
-//        if ([device supportsFamily:MTLGPUFamilyApple3]) {
-//            return MTLGPUFamily::Apple3;
-//        }
-//        if ([device supportsFamily:MTLGPUFamilyApple2]) {
-//            return MTLGPUFamily::Apple2;
-//        }
-//        if ([device supportsFamily:MTLGPUFamilyApple1]) {
-//            return MTLGPUFamily::Apple1;
-//        }
-//
-//        // This family is no longer supported in the macOS 10.15 SDK but still exists so
-//        // default to it.
-//        return MTLGPUFamily::Mac1;
-//    }
-//
-//    return DAWN_INTERNAL_ERROR("Unsupported Metal device");
-//}
-//
-//}  // anonymous namespace
-
 FormatSupportBits DeviceMTL::GetFormatSupport(const Device& device, Format format) {
   int currentFamily = HIGHEST_GPU_FAMILY;
   for (; currentFamily >= (int)MTLGPUFamilyApple1; currentFamily--) {
@@ -69,40 +37,12 @@ FormatSupportBits DeviceMTL::GetFormatSupport(const Device& device, Format forma
   }
 }
 
-static inline bool FindMTLGpuFamily(id<MTLDevice> device, MTLGPUFamily* family) {
-    //https://developer.apple.com/documentation/metal/mtldevice/detecting_gpu_features_and_metal_software_versions?language=objc 
-    if (@available(macOS 10.15, iOS 10.13, *)) {
-        if ([device supportsFamily:MTLGPUFamilyApple7]) {
-            return MTLGPUFamily::Apple7;
-        }
-        if ([device supportsFamily:MTLGPUFamilyApple6]) {
-            return MTLGPUFamily::Apple6;
-        }
-        if ([device supportsFamily:MTLGPUFamilyApple5]) {
-            return MTLGPUFamily::Apple5;
-        }
-        if ([device supportsFamily:MTLGPUFamilyApple4]) {
-            return MTLGPUFamily::Apple4;
-        }
-        if ([device supportsFamily:MTLGPUFamilyApple3]) {
-            return MTLGPUFamily::Apple3;
-        }
-        if ([device supportsFamily:MTLGPUFamilyApple2]) {
-            return MTLGPUFamily::Apple2;
-        }
-        if ([device supportsFamily:MTLGPUFamilyApple1]) {
-            return MTLGPUFamily::Apple1;
-        }
 
-        // This family is no longer supported in the macOS 10.15 SDK but still exists so
-        // default to it.
-        //return MTLGPUFamily::Mac1;
-        (*family) = MTLGPUFamily::Mac1;
-        return true;
-    }
+Result DeviceMTL::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
 
-    return false;
 }
+
+
 
 
 Result DeviceMTL::Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationMTLDesc& deviceCreationMTLDesc, bool isWrapper) {
@@ -134,9 +74,66 @@ Result DeviceMTL::Create(const DeviceCreationDesc& deviceCreationDesc, const Dev
         }
     }
 
+    MTLGPUFamily family;
+    if(!FindMTLGpuFamily(m_Device, family)) {
+        return Result::UNSUPPORTED;
+    }
+    // https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf
+    //TODO: fill desc 
+    switch(family) {
+        case MTLGPUFamily::Apple1:
+            break;
+        default:
+            break;
+    }
+
     m_Desc.adapterDesc.luid = 0;
     m_Desc.adapterDesc.videoMemorySize = 0;
     m_Desc.adapterDesc.systemMemorySize = 0;
     return Result::SUCCESS;
 
 }
+
+
+static inline bool FindMTLGpuFamily(id<MTLDevice> device,
+                                    MTLGPUFamily *family) {
+    // https://developer.apple.com/documentation/metal/mtldevice/detecting_gpu_features_and_metal_software_versions?language=objc
+    if (@available(macOS 10.15, iOS 10.13, *)) {
+        if ([device supportsFamily:MTLGPUFamilyApple7]) {
+            (*family) = MTLGPUFamily::Apple7;
+            return true;
+        }
+        if ([device supportsFamily:MTLGPUFamilyApple6]) {
+            (*family) = MTLGPUFamily::Apple6;
+            return true;
+        }
+        if ([device supportsFamily:MTLGPUFamilyApple5]) {
+            (*family) = MTLGPUFamily::Apple5;
+            return true;
+        }
+        if ([device supportsFamily:MTLGPUFamilyApple4]) {
+            (*family) = MTLGPUFamily::Apple4;
+            return true;
+        }
+        if ([device supportsFamily:MTLGPUFamilyApple3]) {
+            (*family) = MTLGPUFamily::Apple3;
+            return true;
+        }
+        if ([device supportsFamily:MTLGPUFamilyApple2]) {
+            (*family) = MTLGPUFamily::Apple2;
+            return true;
+        }
+        if ([device supportsFamily:MTLGPUFamilyApple1]) {
+            (*family) = MTLGPUFamily::Apple1;
+            return true;
+        }
+        
+        // This family is no longer supported in the macOS 10.15 SDK but still
+        // exists so default to it.
+        // return MTLGPUFamily::Mac1;
+        (*family) = MTLGPUFamily::Mac1;
+        return true;
+    }
+    return false;
+}
+
