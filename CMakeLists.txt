@@ -242,6 +242,13 @@ if (NRI_ENABLE_METAL_SUPPORT AND APPLE)
     file (GLOB MTL_SOURCE "Source/Metal/*.cpp" "Source/Metal/*.mm" "Source/Metal/*.h" "Source/Metal/*.hpp" )
     source_group ("" FILES ${MTL_SOURCE})
     add_library (NRI_MTL STATIC ${MTL_SOURCE})
+    target_link_libraries(NRI_MTL        
+        "-framework Metal"
+        "-framework MetalKit"
+        "-framework AppKit"
+        "-framework Foundation"
+        "-framework QuartzCore"
+    )
     target_include_directories (NRI_MTL PRIVATE "Include" "Source/Shared" "External")
     target_compile_definitions (NRI_MTL PRIVATE ${COMPILE_DEFINITIONS})
 endif()

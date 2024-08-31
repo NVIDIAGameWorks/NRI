@@ -42,8 +42,16 @@ Result DeviceMTL::GetCommandQueue(CommandQueueType commandQueueType, CommandQueu
 
 }
 
-
-
+void DeviceMTL::FillCreateInfo(const TextureDesc& textureDesc, MTLTextureDescriptor* info) const {
+    info.textureType = ::GetImageTypeMTL(textureDesc.type);
+    into.pixelFormat = ::GetFormatMTL(textureDesc.format, true);
+    into.width = pDesc->mWidth;
+    into.height = pDesc->mHeight;
+    into.depth = pDesc->mDepth;
+    into.mipmapLevelCount = mipLevels;
+    into.sampleCount = pDesc->mSampleCount;
+    into.arrayLength = pDesc->mArraySize;
+}
 
 Result DeviceMTL::Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationMTLDesc& deviceCreationMTLDesc, bool isWrapper) {
     m_OwnsNativeObjects = !isWrapper;

@@ -348,6 +348,17 @@ NRI_API Format NRI_CALL nriConvertDXGIFormatToNRI(uint32_t dxgiFormat) {
     return DXGIFormatToNRIFormat(dxgiFormat);
 }
 
+NRI_API uint32_t NRI_CALL nriConvertNRIFormatToMTL(Format format) {
+    MaybeUnused(format);
+
+#if NRI_USE_VULKAN
+    return NRIFormatToMTLFormat(format);
+#else
+    return 0;
+#endif
+}
+
+
 NRI_API uint32_t NRI_CALL nriConvertNRIFormatToVK(Format format) {
     MaybeUnused(format);
 
