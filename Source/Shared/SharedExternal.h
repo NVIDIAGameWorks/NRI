@@ -169,6 +169,7 @@ nri::Format VKFormatToNRIFormat(uint32_t vkFormat);
 
 uint32_t NRIFormatToDXGIFormat(nri::Format format);
 uint32_t NRIFormatToVKFormat(nri::Format format);
+uint32_t NRIFormatToMTLFormat(nri::Format format);
 
 // Misc
 inline nri::Vendor GetVendorFromID(uint32_t vendorID) {
