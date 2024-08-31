@@ -42,7 +42,13 @@ NRI_STRUCT(BufferMTLDesc)
   void* mappedMemory;
   MTLResourceOptions options; 
 }
-
+ 
+NRI_STRUCT(TextureMTLDesc)
+{
+  id<MTLTexture> mtlTexture;
+  MTLTextureDescriptor* descriptor; 
+}
+ 
 
 NRI_STRUCT(MemoryMTLDesc)
 {
