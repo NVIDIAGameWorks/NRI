@@ -14,11 +14,11 @@ struct MemoryMTL {
         : m_Device(device) {
     }
 
-    inline VkDeviceMemory GetHandle() const {
-        return m_Handle;
+    inline id<MTLBuffer> GetHandle() const {
+        return m_Buffer;
     }
 
-    inline DeviceVK& GetDevice() const {
+    inline DeviceMTL& GetDevice() const {
         return m_Device;
     }
 
