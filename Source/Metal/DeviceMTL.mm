@@ -39,7 +39,7 @@ FormatSupportBits DeviceMTL::GetFormatSupport(const Device& device, Format forma
 
 
 Result DeviceMTL::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
-
+    return Result::SUCCESS;
 }
 
 void DeviceMTL::FillCreateInfo(const TextureDesc& textureDesc, MTLTextureDescriptor* info) const {
