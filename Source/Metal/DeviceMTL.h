@@ -2,9 +2,9 @@
 
 namespace nri {
 
-struct DeviceMTl final : public DeviceBase {
-    DeviceMTl(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator);
-    ~DeviceMTl();
+struct DeviceMTL final : public DeviceBase {
+    DeviceMTL(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator);
+    ~DeviceMTL();
 
 
     Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);

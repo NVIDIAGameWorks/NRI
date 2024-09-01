@@ -11,7 +11,6 @@ struct TextureMTL {
     inline TextureMTL(DeviceMTL& device)
         : m_Device(device) {
     }
-
     ~TextureMTL();
     
     inline id<MTLTexture>& GetHandle() const {
@@ -22,15 +21,17 @@ struct TextureMTL {
         return m_Device;
     }
 
+    inline const TextureDesc& GetDesc() const {
+        return m_Desc;
+    }
 
     Result Create(const TextureDesc& textureDesc);
     Result Create(const TextureMTLDesc& textureDesc);
-//    Result Create(const AllocateTextureDesc& textureDesc);
 
 private:
     DeviceMTL& m_Device;
-    id<MTLTexture> m_Handle;
     TextureDesc m_Desc = {};
+    id<MTLTexture> m_Handle;
 };
-}
 
+} // namespace nri
