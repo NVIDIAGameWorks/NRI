@@ -1,5 +1,3 @@
-
-
 #import <MetalKit/MetalKit.h>
 
 struct DeviceMTL;
