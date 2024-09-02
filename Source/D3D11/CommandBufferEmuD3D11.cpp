@@ -667,7 +667,7 @@ inline void CommandBufferEmuD3D11::UploadBufferToTexture(
 }
 
 inline void CommandBufferEmuD3D11::ReadbackTextureToBuffer(
-    Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
+    Buffer& dstBuffer, const TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
     Push(m_PushBuffer, READBACK_TEXTURE_TO_BUFFER);
     Push(m_PushBuffer, &dstBuffer);
     Push(m_PushBuffer, dstDataLayoutDesc);

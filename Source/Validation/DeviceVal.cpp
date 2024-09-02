@@ -401,10 +401,13 @@ Result DeviceVal::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& 
     RETURN_ON_FAILURE(this, samplerDesc.addressModes.v < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT, "'samplerDesc.addressModes.v' is invalid");
     RETURN_ON_FAILURE(this, samplerDesc.addressModes.w < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT, "'samplerDesc.addressModes.w' is invalid");
     RETURN_ON_FAILURE(this, samplerDesc.compareFunc < CompareFunc::MAX_NUM, Result::INVALID_ARGUMENT, "'samplerDesc.compareFunc' is invalid");
-    RETURN_ON_FAILURE(this, samplerDesc.borderColor < BorderColor::MAX_NUM, Result::INVALID_ARGUMENT, "'samplerDesc.borderColor' is invalid");
 
-    if (!GetDesc().isTextureFilterMinMaxSupported)
-        RETURN_ON_FAILURE(this, samplerDesc.filters.ext == FilterExt::NONE, Result::INVALID_ARGUMENT, "'isTextureFilterMinMaxSupported' is unsupported");
+    if (samplerDesc.filters.ext != FilterExt::NONE)
+        RETURN_ON_FAILURE(this, GetDesc().isTextureFilterMinMaxSupported, Result::INVALID_ARGUMENT, "'isTextureFilterMinMaxSupported' is unsupported");
+
+    if ((samplerDesc.addressModes.u != AddressMode::CLAMP_TO_BORDER && samplerDesc.addressModes.v != AddressMode::CLAMP_TO_BORDER && samplerDesc.addressModes.w != AddressMode::CLAMP_TO_BORDER) &&
+        (samplerDesc.borderColor.ui.x != 0 || samplerDesc.borderColor.ui.y != 0 || samplerDesc.borderColor.ui.z != 0 && samplerDesc.borderColor.ui.w != 0))
+        REPORT_WARNING(this, "'samplerDesc.borderColor' is provided, but 'CLAMP_TO_BORDER' is not requested");
 
     Descriptor* samplerImpl = nullptr;
     Result result = m_CoreAPI.CreateSampler(m_Device, samplerDesc, samplerImpl);
@@ -728,7 +731,7 @@ void DeviceVal::FreeMemory(Memory& memory) {
 
     if (memoryVal.HasBoundResources()) {
         memoryVal.ReportBoundResources();
-        REPORT_ERROR(this, "FreeMemory: some resources are still bound to the memory");
+        REPORT_ERROR(this, "some resources are still bound to the memory");
         return;
     }
 

@@ -2,80 +2,54 @@
 
 #pragma once
 
-NRI_NAMESPACE_BEGIN
+NriNamespaceBegin
 
-NRI_FORWARD_STRUCT(AccelerationStructure);
+NriForwardStruct(AccelerationStructure);
 
-NRI_ENUM
-(
-    GeometryType, uint8_t,
-
+NriEnum(GeometryType, uint8_t,
     TRIANGLES,
-    AABBS,
-
-    MAX_NUM
+    AABBS
 );
 
-NRI_ENUM
-(
-    AccelerationStructureType, uint8_t,
-
+NriEnum(AccelerationStructureType, uint8_t,
     TOP_LEVEL,
-    BOTTOM_LEVEL,
-
-    MAX_NUM
+    BOTTOM_LEVEL
 );
 
-NRI_ENUM
-(
-    CopyMode, uint8_t,
-
+NriEnum(CopyMode, uint8_t,
     CLONE,
-    COMPACT,
-
-    MAX_NUM
+    COMPACT
 );
 
-NRI_ENUM_BITS
-(
-    BottomLevelGeometryBits, uint32_t,
-
+NriBits(BottomLevelGeometryBits, uint32_t,
     NONE                                = 0,
-    OPAQUE_GEOMETRY                     = NRI_SET_BIT(0),
-    NO_DUPLICATE_ANY_HIT_INVOCATION     = NRI_SET_BIT(1)
+    OPAQUE_GEOMETRY                     = NriBit(0),
+    NO_DUPLICATE_ANY_HIT_INVOCATION     = NriBit(1)
 );
 
-NRI_ENUM_BITS
-(
-    TopLevelInstanceBits, uint32_t,
-
+NriBits(TopLevelInstanceBits, uint32_t,
     NONE                                = 0,
-    TRIANGLE_CULL_DISABLE               = NRI_SET_BIT(0),
-    TRIANGLE_FRONT_COUNTERCLOCKWISE     = NRI_SET_BIT(1),
-    FORCE_OPAQUE                        = NRI_SET_BIT(2),
-    FORCE_NON_OPAQUE                    = NRI_SET_BIT(3)
+    TRIANGLE_CULL_DISABLE               = NriBit(0),
+    TRIANGLE_FRONT_COUNTERCLOCKWISE     = NriBit(1),
+    FORCE_OPAQUE                        = NriBit(2),
+    FORCE_NON_OPAQUE                    = NriBit(3)
 );
 
-NRI_ENUM_BITS
-(
-    AccelerationStructureBuildBits, uint32_t,
-
+NriBits(AccelerationStructureBuildBits, uint32_t,
     NONE                                = 0,
-    ALLOW_UPDATE                        = NRI_SET_BIT(0),
-    ALLOW_COMPACTION                    = NRI_SET_BIT(1),
-    PREFER_FAST_TRACE                   = NRI_SET_BIT(2),
-    PREFER_FAST_BUILD                   = NRI_SET_BIT(3),
-    MINIMIZE_MEMORY                     = NRI_SET_BIT(4)
+    ALLOW_UPDATE                        = NriBit(0),
+    ALLOW_COMPACTION                    = NriBit(1),
+    PREFER_FAST_TRACE                   = NriBit(2),
+    PREFER_FAST_BUILD                   = NriBit(3),
+    MINIMIZE_MEMORY                     = NriBit(4)
 );
 
-NRI_STRUCT(ShaderLibrary)
-{
-    const NRI_NAME(ShaderDesc)* shaders;
+NriStruct(ShaderLibrary) {
+    const NriPtr(ShaderDesc) shaders;
     uint32_t shaderNum;
 };
 
-NRI_STRUCT(ShaderGroupDesc)
-{
+NriStruct(ShaderGroupDesc) {
     // Use cases:
     //  - general: RAYGEN_SHADER, MISS_SHADER or CALLABLE_SHADER
     //  - HitGroup: CLOSEST_HIT_SHADER and/or ANY_HIT_SHADER in any order
@@ -83,98 +57,85 @@ NRI_STRUCT(ShaderGroupDesc)
     uint32_t shaderIndices[3]; // in ShaderLibrary, starting with 1 (0 - unused)
 };
 
-NRI_STRUCT(RayTracingPipelineDesc)
-{
-    const NRI_NAME(PipelineLayout)* pipelineLayout;
-    const NRI_NAME(ShaderLibrary)* shaderLibrary;
-    const NRI_NAME(ShaderGroupDesc)* shaderGroupDescs;
+NriStruct(RayTracingPipelineDesc) {
+    const NriPtr(PipelineLayout) pipelineLayout;
+    const NriPtr(ShaderLibrary) shaderLibrary;
+    const NriPtr(ShaderGroupDesc) shaderGroupDescs;
     uint32_t shaderGroupDescNum;
     uint32_t recursionDepthMax;
     uint32_t payloadAttributeSizeMax;
     uint32_t intersectionAttributeSizeMax;
 };
 
-NRI_STRUCT(Triangles)
-{
-    NRI_NAME(Buffer)* vertexBuffer;
+NriStruct(Triangles) {
+    NriPtr(Buffer) vertexBuffer;
     uint64_t vertexOffset;
     uint32_t vertexNum;
     uint64_t vertexStride;
-    NRI_NAME(Format) vertexFormat;
-    NRI_NAME(Buffer)* indexBuffer;
+    Nri(Format) vertexFormat;
+    NriPtr(Buffer) indexBuffer;
     uint64_t indexOffset;
     uint32_t indexNum;
-    NRI_NAME(IndexType) indexType;
-    NRI_NAME(Buffer)* transformBuffer;
+    Nri(IndexType) indexType;
+    NriPtr(Buffer) transformBuffer;
     uint64_t transformOffset;
 };
 
-NRI_STRUCT(AABBs)
-{
-    NRI_NAME(Buffer)* buffer;
+NriStruct(AABBs) {
+    NriPtr(Buffer) buffer;
     uint32_t boxNum;
     uint32_t stride;
     uint64_t offset;
 };
 
-NRI_STRUCT(GeometryObject)
-{
-    NRI_NAME(GeometryType) type;
-    NRI_NAME(BottomLevelGeometryBits) flags;
-    union
-    {
-        NRI_NAME(Triangles) triangles;
-        NRI_NAME(AABBs) aabbs;
+NriStruct(GeometryObject) {
+    Nri(GeometryType) type;
+    Nri(BottomLevelGeometryBits) flags;
+    union {
+        Nri(Triangles) triangles;
+        Nri(AABBs) aabbs;
     } geometry;
 };
 
-NRI_STRUCT(GeometryObjectInstance)
-{
+NriStruct(GeometryObjectInstance) {
     float transform[3][4];
     uint32_t instanceId : 24;
     uint32_t mask : 8;
     uint32_t shaderBindingTableLocalOffset : 24;
-    NRI_NAME(TopLevelInstanceBits) flags : 8;
+    Nri(TopLevelInstanceBits) flags : 8;
     uint64_t accelerationStructureHandle;
 };
 
-NRI_STRUCT(AccelerationStructureDesc)
-{
-    NRI_NAME(AccelerationStructureType) type;
-    NRI_NAME(AccelerationStructureBuildBits) flags;
+NriStruct(AccelerationStructureDesc) {
+    Nri(AccelerationStructureType) type;
+    Nri(AccelerationStructureBuildBits) flags;
     uint32_t instanceOrGeometryObjectNum;
-    const NRI_NAME(GeometryObject)* geometryObjects; // needed only for BOTTOM_LEVEL
+    const NriPtr(GeometryObject) geometryObjects; // needed only for BOTTOM_LEVEL
 };
 
-NRI_STRUCT(AccelerationStructureMemoryBindingDesc)
-{
-    NRI_NAME(Memory)* memory;
-    NRI_NAME(AccelerationStructure)* accelerationStructure;
+NriStruct(AccelerationStructureMemoryBindingDesc) {
+    NriPtr(Memory) memory;
+    NriPtr(AccelerationStructure) accelerationStructure;
     uint64_t offset;
 };
 
-NRI_STRUCT(StridedBufferRegion)
-{
-    const NRI_NAME(Buffer)* buffer;
+NriStruct(StridedBufferRegion) {
+    const NriPtr(Buffer) buffer;
     uint64_t offset;
     uint64_t size;
     uint64_t stride;
 };
 
-NRI_STRUCT(DispatchRaysDesc)
-{
-    NRI_NAME(StridedBufferRegion) raygenShader;
-    NRI_NAME(StridedBufferRegion) missShaders;
-    NRI_NAME(StridedBufferRegion) hitShaderGroups;
-    NRI_NAME(StridedBufferRegion) callableShaders;
+NriStruct(DispatchRaysDesc) {
+    Nri(StridedBufferRegion) raygenShader;
+    Nri(StridedBufferRegion) missShaders;
+    Nri(StridedBufferRegion) hitShaderGroups;
+    Nri(StridedBufferRegion) callableShaders;
 
-    uint32_t x;
-    uint32_t y;
-    uint32_t z;
+    uint32_t x, y, z;
 };
 
-NRI_STRUCT(DispatchRaysIndirectDesc)
-{
+NriStruct(DispatchRaysIndirectDesc) {
     uint64_t raygenShaderRecordAddress;
     uint64_t raygenShaderRecordSize;
 
@@ -190,55 +151,53 @@ NRI_STRUCT(DispatchRaysIndirectDesc)
     uint64_t callableShaderBindingTableSize;
     uint64_t callableShaderBindingTableStride;
 
-    uint32_t x;
-    uint32_t y;
-    uint32_t z;
+    uint32_t x, y, z;
 };
 
-NRI_STRUCT(RayTracingInterface)
-{
+NriStruct(RayTracingInterface) {
     // Get
-    void (NRI_CALL *GetAccelerationStructureMemoryDesc)(const NRI_NAME_REF(Device) device, const NRI_NAME_REF(AccelerationStructureDesc) accelerationStructureDesc, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(MemoryDesc) memoryDesc);
-    uint64_t (NRI_CALL *GetAccelerationStructureUpdateScratchBufferSize)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure);
-    uint64_t (NRI_CALL *GetAccelerationStructureBuildScratchBufferSize)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure);
-    uint64_t (NRI_CALL *GetAccelerationStructureHandle)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure);
+    void (NRI_CALL *GetAccelerationStructureMemoryDesc)(const NriRef(Device) device, const NriRef(AccelerationStructureDesc) accelerationStructureDesc, Nri(MemoryLocation) memoryLocation, NriOut NriRef(MemoryDesc) memoryDesc);
+    uint64_t (NRI_CALL *GetAccelerationStructureUpdateScratchBufferSize)(const NriRef(AccelerationStructure) accelerationStructure);
+    uint64_t (NRI_CALL *GetAccelerationStructureBuildScratchBufferSize)(const NriRef(AccelerationStructure) accelerationStructure);
+    uint64_t (NRI_CALL *GetAccelerationStructureHandle)(const NriRef(AccelerationStructure) accelerationStructure);
 
     // Create
-    NRI_NAME(Result) (NRI_CALL *CreateRayTracingPipeline)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(RayTracingPipelineDesc) rayTracingPipelineDesc, NRI_NAME_REF(Pipeline*) pipeline);
-    NRI_NAME(Result) (NRI_CALL *CreateAccelerationStructure)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(AccelerationStructureDesc) accelerationStructureDesc, NRI_NAME_REF(AccelerationStructure*) accelerationStructure);
-    NRI_NAME(Result) (NRI_CALL *CreateAccelerationStructureDescriptor)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure, NRI_NAME_REF(Descriptor*) descriptor);
+    Nri(Result) (NRI_CALL *CreateRayTracingPipeline)(NriRef(Device) device, const NriRef(RayTracingPipelineDesc) rayTracingPipelineDesc, NriOut NriRef(Pipeline*) pipeline);
+    Nri(Result) (NRI_CALL *CreateAccelerationStructure)(NriRef(Device) device, const NriRef(AccelerationStructureDesc) accelerationStructureDesc, NriOut NriRef(AccelerationStructure*) accelerationStructure);
+    Nri(Result) (NRI_CALL *CreateAccelerationStructureDescriptor)(const NriRef(AccelerationStructure) accelerationStructure, NriOut NriRef(Descriptor*) descriptor);
 
     // Destroy
-    void (NRI_CALL *DestroyAccelerationStructure)(NRI_NAME_REF(AccelerationStructure) accelerationStructure);
+    void (NRI_CALL *DestroyAccelerationStructure)(NriRef(AccelerationStructure) accelerationStructure);
 
     // Memory
-    NRI_NAME(Result) (NRI_CALL *BindAccelerationStructureMemory)(NRI_NAME_REF(Device) device, const NRI_NAME(AccelerationStructureMemoryBindingDesc)* memoryBindingDescs, uint32_t memoryBindingDescNum);
+    Nri(Result) (NRI_CALL *BindAccelerationStructureMemory)(NriRef(Device) device, const NriPtr(AccelerationStructureMemoryBindingDesc) memoryBindingDescs, uint32_t memoryBindingDescNum);
 
     // Shader table
-    NRI_NAME(Result) (NRI_CALL *WriteShaderGroupIdentifiers)(const NRI_NAME_REF(Pipeline) pipeline, uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer); // TODO: add stride
+    Nri(Result) (NRI_CALL *WriteShaderGroupIdentifiers)(const NriRef(Pipeline) pipeline, uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer); // TODO: add stride
 
     // Compute
-    void (NRI_CALL *CmdBuildTopLevelAccelerationStructure)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t instanceNum, const NRI_NAME_REF(Buffer) buffer, uint64_t bufferOffset,
-        NRI_NAME(AccelerationStructureBuildBits) flags, NRI_NAME_REF(AccelerationStructure) dst, NRI_NAME_REF(Buffer) scratch, uint64_t scratchOffset);
-    void (NRI_CALL *CmdBuildBottomLevelAccelerationStructure)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t geometryObjectNum, const NRI_NAME(GeometryObject)* geometryObjects,
-        NRI_NAME(AccelerationStructureBuildBits) flags, NRI_NAME_REF(AccelerationStructure) dst, NRI_NAME_REF(Buffer) scratch, uint64_t scratchOffset);
-    void (NRI_CALL *CmdUpdateTopLevelAccelerationStructure)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t instanceNum, const NRI_NAME_REF(Buffer) buffer, uint64_t bufferOffset,
-        NRI_NAME(AccelerationStructureBuildBits) flags, NRI_NAME_REF(AccelerationStructure) dst, NRI_NAME_REF(AccelerationStructure) src, NRI_NAME_REF(Buffer) scratch, uint64_t scratchOffset);
-    void (NRI_CALL *CmdUpdateBottomLevelAccelerationStructure)(NRI_NAME_REF(CommandBuffer) commandBuffer, uint32_t geometryObjectNum, const NRI_NAME(GeometryObject)* geometryObjects,
-        NRI_NAME(AccelerationStructureBuildBits) flags, NRI_NAME_REF(AccelerationStructure) dst, NRI_NAME_REF(AccelerationStructure) src, NRI_NAME_REF(Buffer) scratch, uint64_t scratchOffset);
+    void (NRI_CALL *CmdBuildTopLevelAccelerationStructure)(NriRef(CommandBuffer) commandBuffer, uint32_t instanceNum, const NriRef(Buffer) buffer, uint64_t bufferOffset,
+        Nri(AccelerationStructureBuildBits) flags, NriRef(AccelerationStructure) dst, NriRef(Buffer) scratch, uint64_t scratchOffset);
+    void (NRI_CALL *CmdBuildBottomLevelAccelerationStructure)(NriRef(CommandBuffer) commandBuffer, uint32_t geometryObjectNum, const NriPtr(GeometryObject) geometryObjects,
+        Nri(AccelerationStructureBuildBits) flags, NriRef(AccelerationStructure) dst, NriRef(Buffer) scratch, uint64_t scratchOffset);
+    void (NRI_CALL *CmdUpdateTopLevelAccelerationStructure)(NriRef(CommandBuffer) commandBuffer, uint32_t instanceNum, const NriRef(Buffer) buffer, uint64_t bufferOffset,
+        Nri(AccelerationStructureBuildBits) flags, NriRef(AccelerationStructure) dst, const NriRef(AccelerationStructure) src, NriRef(Buffer) scratch, uint64_t scratchOffset);
+    void (NRI_CALL *CmdUpdateBottomLevelAccelerationStructure)(NriRef(CommandBuffer) commandBuffer, uint32_t geometryObjectNum, const NriPtr(GeometryObject) geometryObjects,
+        Nri(AccelerationStructureBuildBits) flags, NriRef(AccelerationStructure) dst, const NriRef(AccelerationStructure) src, NriRef(Buffer) scratch, uint64_t scratchOffset);
 
-    void (NRI_CALL *CmdDispatchRays)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(DispatchRaysDesc) dispatchRaysDesc);
-    void (NRI_CALL *CmdDispatchRaysIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset); // buffer contains "DispatchRaysIndirectDesc" commands
+    void (NRI_CALL *CmdDispatchRays)(NriRef(CommandBuffer) commandBuffer, const NriRef(DispatchRaysDesc) dispatchRaysDesc);
+    void (NRI_CALL *CmdDispatchRaysIndirect)(NriRef(CommandBuffer) commandBuffer, const NriRef(Buffer) buffer, uint64_t offset); // buffer contains "DispatchRaysIndirectDesc" commands
 
     // Copy
-    void (NRI_CALL *CmdCopyAccelerationStructure)(NRI_NAME_REF(CommandBuffer) commandBuffer, NRI_NAME_REF(AccelerationStructure) dst, NRI_NAME_REF(AccelerationStructure) src, NRI_NAME(CopyMode) copyMode);
-    void (NRI_CALL *CmdWriteAccelerationStructureSize)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME(AccelerationStructure)* const* accelerationStructures, uint32_t accelerationStructureNum, NRI_NAME_REF(QueryPool) queryPool, uint32_t queryPoolOffset);
+    void (NRI_CALL *CmdCopyAccelerationStructure)(NriRef(CommandBuffer) commandBuffer, NriRef(AccelerationStructure) dst, const NriRef(AccelerationStructure) src, Nri(CopyMode) copyMode);
+    void (NRI_CALL *CmdWriteAccelerationStructureSize)(NriRef(CommandBuffer) commandBuffer, const NriPtr(AccelerationStructure) const* accelerationStructures,
+        uint32_t accelerationStructureNum, NriRef(QueryPool) queryPool, uint32_t queryPoolOffset);
 
     // Debug name
-    void (NRI_CALL *SetAccelerationStructureDebugName)(NRI_NAME_REF(AccelerationStructure) accelerationStructure, const char* name);
+    void (NRI_CALL *SetAccelerationStructureDebugName)(NriRef(AccelerationStructure) accelerationStructure, const char* name);
 
     // Native object
-    uint64_t (NRI_CALL* GetAccelerationStructureNativeObject)(const NRI_NAME_REF(AccelerationStructure) accelerationStructure); // ID3D12Resource* or VkAccelerationStructureKHR
+    uint64_t (NRI_CALL* GetAccelerationStructureNativeObject)(const NriRef(AccelerationStructure) accelerationStructure); // ID3D12Resource* or VkAccelerationStructureKHR
 };
 
-NRI_NAMESPACE_END
+NriNamespaceEnd

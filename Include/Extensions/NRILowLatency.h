@@ -2,36 +2,30 @@
 
 #pragma once
 
-NRI_NAMESPACE_BEGIN
+NriNamespaceBegin
 
-NRI_FORWARD_STRUCT(SwapChain);
-NRI_FORWARD_STRUCT(CommandQueue);
+NriForwardStruct(SwapChain);
+NriForwardStruct(CommandQueue);
 
 // us = microseconds
 
-NRI_ENUM
-(
-    LatencyMarker, uint8_t,
+NriEnum(LatencyMarker, uint8_t,
 
                              // Should be called:
     SIMULATION_START    = 0, // at the start of the simulation execution each frame, but after the call to "LatencySleep"
     SIMULATION_END      = 1, // at the end of the simulation execution each frame
     RENDER_SUBMIT_START = 2, // at the beginning of the render submission execution each frame (must not span into asynchronous rendering)
     RENDER_SUBMIT_END   = 3, // at the end of the render submission execution each frame
-    INPUT_SAMPLE        = 6, // just before the application gathers input data, but between SIMULATION_START and SIMULATION_END (yes, 6!)
-
-    MAX_NUM
+    INPUT_SAMPLE        = 6  // just before the application gathers input data, but between SIMULATION_START and SIMULATION_END (yes, 6!)
 );
 
-NRI_STRUCT(LatencySleepMode)
-{
+NriStruct(LatencySleepMode) {
     uint32_t minIntervalUs; // minimum allowed frame interval (0 - no frame rate limit)
     bool lowLatencyMode;    // low latency mode enablement
     bool lowLatencyBoost;   // hint to increase performance to provide additional latency savings at a cost of increased power consumption
 };
 
-NRI_STRUCT(LatencyReport)
-{
+NriStruct(LatencyReport) {
                                        // The time stamp written:
     uint64_t inputSampleTimeUs;        // when "SetLatencyMarker(INPUT_SAMPLE)" is called
     uint64_t simulationStartTimeUs;    // when "SetLatencyMarker(SIMULATION_START)" is called
@@ -49,15 +43,14 @@ NRI_STRUCT(LatencyReport)
 };
 
 // Multi-swapchain is supported only by VK
-NRI_STRUCT(LowLatencyInterface)
-{
-    NRI_NAME(Result) (NRI_CALL *SetLatencySleepMode)(NRI_NAME_REF(SwapChain) swapChain, const NRI_NAME_REF(LatencySleepMode) latencySleepMode);
-    NRI_NAME(Result) (NRI_CALL *SetLatencyMarker)(NRI_NAME_REF(SwapChain) swapChain, NRI_NAME(LatencyMarker) latencyMarker);
-    NRI_NAME(Result) (NRI_CALL *LatencySleep)(NRI_NAME_REF(SwapChain) swapChain); // call once before INPUT_SAMPLE
-    NRI_NAME(Result) (NRI_CALL *GetLatencyReport)(const NRI_NAME_REF(SwapChain) swapChain, NRI_NAME_REF(LatencyReport) latencyReport);
+NriStruct(LowLatencyInterface) {
+    Nri(Result) (NRI_CALL *SetLatencySleepMode)(NriRef(SwapChain) swapChain, const NriRef(LatencySleepMode) latencySleepMode);
+    Nri(Result) (NRI_CALL *SetLatencyMarker)(NriRef(SwapChain) swapChain, Nri(LatencyMarker) latencyMarker);
+    Nri(Result) (NRI_CALL *LatencySleep)(NriRef(SwapChain) swapChain); // call once before INPUT_SAMPLE
+    Nri(Result) (NRI_CALL *GetLatencyReport)(const NriRef(SwapChain) swapChain, NriOut NriRef(LatencyReport) latencyReport);
 
     // This function must be used in "low latency" mode instead of "QueueSubmit"
-    void (NRI_CALL *QueueSubmitTrackable)(NRI_NAME_REF(CommandQueue) commandQueue, const NRI_NAME_REF(QueueSubmitDesc) queueSubmitDesc, const NRI_NAME_REF(SwapChain) swapChain);
+    void (NRI_CALL *QueueSubmitTrackable)(NriRef(CommandQueue) commandQueue, const NriRef(QueueSubmitDesc) queueSubmitDesc, const NriRef(SwapChain) swapChain);
 };
 
-NRI_NAMESPACE_END
+NriNamespaceEnd

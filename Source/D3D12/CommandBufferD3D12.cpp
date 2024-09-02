@@ -340,7 +340,7 @@ inline void CommandBufferD3D12::ClearAttachments(const ClearDesc* clearDescs, ui
 
     for (uint32_t i = 0; i < clearDescNum; i++) {
         if (clearDescs[i].planes & PlaneBits::COLOR)
-            m_GraphicsCommandList->ClearRenderTargetView(m_RenderTargets[clearDescs[i].colorAttachmentIndex], &clearDescs[i].value.color32f.x, rectNum, rectsD3D12);
+            m_GraphicsCommandList->ClearRenderTargetView(m_RenderTargets[clearDescs[i].colorAttachmentIndex], &clearDescs[i].value.color.f.x, rectNum, rectsD3D12);
         else {
             D3D12_CLEAR_FLAGS clearFlags = (D3D12_CLEAR_FLAGS)0;
             if (clearDescs[i].planes & PlaneBits::DEPTH)
@@ -368,10 +368,10 @@ inline void CommandBufferD3D12::ClearStorageTexture(const ClearStorageTextureDes
 
     if (resourceView->IsIntegerFormat()) {
         m_GraphicsCommandList->ClearUnorderedAccessViewUint({descriptorSet->GetPointerGPU(clearDesc.rangeIndex, clearDesc.offsetInRange)}, {resourceView->GetPointerCPU()},
-            *resourceView, &clearDesc.value.color32ui.x, 0, nullptr);
+            *resourceView, &clearDesc.value.color.ui.x, 0, nullptr);
     } else {
         m_GraphicsCommandList->ClearUnorderedAccessViewFloat(
-            {descriptorSet->GetPointerGPU(clearDesc.rangeIndex, clearDesc.offsetInRange)}, {resourceView->GetPointerCPU()}, *resourceView, &clearDesc.value.color32f.x, 0, nullptr);
+            {descriptorSet->GetPointerGPU(clearDesc.rangeIndex, clearDesc.offsetInRange)}, {resourceView->GetPointerCPU()}, *resourceView, &clearDesc.value.color.f.x, 0, nullptr);
     }
 }
 
@@ -593,7 +593,7 @@ inline void CommandBufferD3D12::UploadBufferToTexture(Texture& dstTexture, const
     m_GraphicsCommandList->CopyTextureRegion(&dstTextureCopyLocation, dstRegionDesc.x, dstRegionDesc.y, dstRegionDesc.z, &srcTextureCopyLocation, &box);
 }
 
-inline void CommandBufferD3D12::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
+inline void CommandBufferD3D12::ReadbackTextureToBuffer(Buffer& dstBuffer, const TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
     TextureD3D12& srcTextureD3D12 = (TextureD3D12&)srcTexture;
     D3D12_TEXTURE_COPY_LOCATION srcTextureCopyLocation = {
         srcTextureD3D12,
@@ -875,7 +875,7 @@ inline void CommandBufferD3D12::BuildBottomLevelAccelerationStructure(
 }
 
 inline void CommandBufferD3D12::UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags,
-    AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
+    AccelerationStructure& dst, const AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC desc = {};
     desc.DestAccelerationStructureData = ((AccelerationStructureD3D12&)dst).GetHandle();
     desc.SourceAccelerationStructureData = ((AccelerationStructureD3D12&)src).GetHandle();
@@ -892,7 +892,7 @@ inline void CommandBufferD3D12::UpdateTopLevelAccelerationStructure(uint32_t ins
 }
 
 inline void CommandBufferD3D12::UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags,
-    AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
+    AccelerationStructure& dst, const AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC desc = {};
     desc.DestAccelerationStructureData = ((AccelerationStructureD3D12&)dst).GetHandle();
     desc.SourceAccelerationStructureData = ((AccelerationStructureD3D12&)src).GetHandle();
@@ -910,7 +910,7 @@ inline void CommandBufferD3D12::UpdateBottomLevelAccelerationStructure(uint32_t 
         m_GraphicsCommandList->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
 }
 
-inline void CommandBufferD3D12::CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode) {
+inline void CommandBufferD3D12::CopyAccelerationStructure(AccelerationStructure& dst, const AccelerationStructure& src, CopyMode copyMode) {
     m_GraphicsCommandList->CopyRaytracingAccelerationStructure(
         ((AccelerationStructureD3D12&)dst).GetHandle(), ((AccelerationStructureD3D12&)src).GetHandle(), GetCopyMode(copyMode));
 }

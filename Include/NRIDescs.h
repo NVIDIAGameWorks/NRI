@@ -2,91 +2,108 @@
 
 #pragma once
 
+#include <stdint.h>
+
+#if defined(__clang__) || defined(__GNUC__)
+    #define NRI_CALL __attribute__((stdcall))
+#else
+    #define NRI_CALL __stdcall
+#endif
+
+#ifndef NRI_API
+    #if defined(__cplusplus)
+        #define NRI_API extern "C"
+    #else
+        #define NRI_API extern
+    #endif
+#endif
+
+#ifdef __cplusplus
+    #if !defined(NRI_FORCE_C)
+        #define NRI_CPP
+    #endif
+#else
+    #include <stdbool.h>
+#endif
+
 #include "NRIMacro.h"
 
-NRI_NAMESPACE_BEGIN
+#define NRI_INTERFACE(name) #name, sizeof(name)
+
+NriNamespaceBegin
 
 // Entities
-NRI_FORWARD_STRUCT(Buffer);
-NRI_FORWARD_STRUCT(CommandQueue);
-NRI_FORWARD_STRUCT(CommandBuffer);
-NRI_FORWARD_STRUCT(CommandAllocator);
-NRI_FORWARD_STRUCT(Device);
-NRI_FORWARD_STRUCT(Descriptor);
-NRI_FORWARD_STRUCT(DescriptorPool);
-NRI_FORWARD_STRUCT(DescriptorSet);
-NRI_FORWARD_STRUCT(Fence);
-NRI_FORWARD_STRUCT(Memory);
-NRI_FORWARD_STRUCT(PipelineLayout);
-NRI_FORWARD_STRUCT(Pipeline);
-NRI_FORWARD_STRUCT(QueryPool);
-NRI_FORWARD_STRUCT(Texture);
+NriForwardStruct(Fence);
+NriForwardStruct(Memory);
+NriForwardStruct(Buffer);
+NriForwardStruct(Device);
+NriForwardStruct(Texture);
+NriForwardStruct(Pipeline);
+NriForwardStruct(QueryPool);
+NriForwardStruct(Descriptor);
+NriForwardStruct(CommandQueue);
+NriForwardStruct(CommandBuffer);
+NriForwardStruct(DescriptorSet);
+NriForwardStruct(DescriptorPool);
+NriForwardStruct(PipelineLayout);
+NriForwardStruct(CommandAllocator);
 
 // Types
-typedef uint32_t NRI_NAME(MemoryType);
-typedef uint16_t NRI_NAME(Dim_t);
-typedef uint8_t NRI_NAME(Mip_t);
-typedef uint8_t NRI_NAME(Sample_t);
+typedef uint8_t Nri(Mip_t);
+typedef uint8_t Nri(Sample_t);
+typedef uint32_t Nri(MemoryType);
+typedef uint16_t Nri(Dim_t);
 
 // Aliases
-static const NRI_NAME(Dim_t) NRI_CONST_NAME(REMAINING_LAYERS) = 0; // only for "layerNum"
-static const NRI_NAME(Mip_t) NRI_CONST_NAME(REMAINING_MIPS) = 0; // only for "mipNum"
-static const NRI_NAME(Dim_t) NRI_CONST_NAME(WHOLE_SIZE) = 0; // only for "Dim_t" and "size"
-static const uint32_t NRI_CONST_NAME(ALL_SAMPLES) = 0; // only for "sampleMask"
-static const uint32_t NRI_CONST_NAME(ONE_VIEWPORT) = 0; // only for "viewportNum"
-static const bool NRI_CONST_NAME(VARIABLE_DESCRIPTOR_NUM) = true; // helper for "DescriptorRangeDesc::isDescriptorNumVariable"
-static const bool NRI_CONST_NAME(DESCRIPTOR_ARRAY) = true; // helper for "DescriptorRangeDesc::isArray"
-static const bool NRI_CONST_NAME(PARTIALLY_BOUND) = true; // helper for "DescriptorSetDesc::partiallyBound"
+static const bool NriConstant(PARTIALLY_BOUND) = true;          // helper for "DescriptorSetDesc::partiallyBound"
+static const bool NriConstant(DESCRIPTOR_ARRAY) = true;         // helper for "DescriptorRangeDesc::isArray"
+static const bool NriConstant(VARIABLE_DESCRIPTOR_NUM) = true;  // helper for "DescriptorRangeDesc::isDescriptorNumVariable"
+static const uint32_t NriConstant(ALL_SAMPLES) = 0;             // only for "sampleMask"
+static const uint32_t NriConstant(ONE_VIEWPORT) = 0;            // only for "viewportNum"
+static const Nri(Dim_t) NriConstant(WHOLE_SIZE) = 0;            // only for "Dim_t" and "size"
+static const Nri(Mip_t) NriConstant(REMAINING_MIPS) = 0;        // only for "mipNum"
+static const Nri(Dim_t) NriConstant(REMAINING_LAYERS) = 0;      // only for "layerNum"
 
 // Readability
-#define NRI_OPTIONAL // i.e. can be 0 (keep an eye on comments)
+#define NriOptional // i.e. can be 0 (keep an eye on comments)
+#define NriOut      // highlights output argument
 
-//===============================================================================================================================
-// Common
 //===============================================================================================================================
 #pragma region [ Common ]
+//===============================================================================================================================
 
-NRI_ENUM
-(
-    Result, uint8_t,
-
+NriEnum(Result, uint8_t,
     SUCCESS,
     FAILURE,
     INVALID_ARGUMENT,
     OUT_OF_MEMORY,
     UNSUPPORTED,
     DEVICE_LOST,
-    OUT_OF_DATE, // VK only: swap chain is out of date
-
-    MAX_NUM
+    OUT_OF_DATE // VK only: swap chain is out of date
 );
 
 // left -> right : low -> high bits
 // Expected (but not guaranteed) "FormatSupportBits" are provided, but "GetFormatSupport" should be used for querying real HW support
 // To demote sRGB use the previous format, i.e. "format - 1"
-NRI_ENUM
-(
-    //                                            STORAGE_BUFFER_ATOMICS
-    //                                                  VERTEX_BUFFER  |
-    //                                              STORAGE_BUFFER  |  |
-    //                                                   BUFFER  |  |  |
-    //                               STORAGE_TEXTURE_ATOMICS  |  |  |  |
-    //                                              BLEND  |  |  |  |  |
-    //                        DEPTH_STENCIL_ATTACHMENT  |  |  |  |  |  |
-    //                             COLOR_ATTACHMENT  |  |  |  |  |  |  |
-    //                           STORAGE_TEXTURE  |  |  |  |  |  |  |  |
-    //                                TEXTURE  |  |  |  |  |  |  |  |  |
-    //                                      |  |  |  |  |  |  |  |  |  |
-    //                                      |    FormatSupportBits     |
-
-    Format, uint8_t,
-
+//                                                STORAGE_BUFFER_ATOMICS
+//                                                      VERTEX_BUFFER  |
+//                                                  STORAGE_BUFFER  |  |
+//                                                       BUFFER  |  |  |
+//                                   STORAGE_TEXTURE_ATOMICS  |  |  |  |
+//                                                  BLEND  |  |  |  |  |
+//                            DEPTH_STENCIL_ATTACHMENT  |  |  |  |  |  |
+//                                 COLOR_ATTACHMENT  |  |  |  |  |  |  |
+//                               STORAGE_TEXTURE  |  |  |  |  |  |  |  |
+//                                    TEXTURE  |  |  |  |  |  |  |  |  |
+//                                          |  |  |  |  |  |  |  |  |  |
+//                                          |    FormatSupportBits     |
+NriEnum(Format, uint8_t,
     UNKNOWN,                             // -  -  -  -  -  -  -  -  -  -
 
     // Plain: 8 bits per channel
     R8_UNORM,                            // +  +  +  -  +  -  +  +  +  -
     R8_SNORM,                            // +  +  +  -  +  -  +  +  +  -
-    R8_UINT,                             // +  +  +  -  -  -  +  +  +  - // SHADING_RATE compatible
+    R8_UINT,                             // +  +  +  -  -  -  +  +  +  - // SHADING_RATE compatible, see NRI_SHADING_RATE macro
     R8_SINT,                             // +  +  +  -  -  -  +  +  +  -
 
     RG8_UNORM,                           // +  +  +  -  +  -  +  +  +  -
@@ -176,119 +193,106 @@ NRI_ENUM
     R24_UNORM_X8,       // .x - depth    // +  -  -  -  -  -  -  -  -  -
     X24_G8_UINT,        // .y - stencil  // +  -  -  -  -  -  -  -  -  -
     R32_SFLOAT_X8_X24,  // .x - depth    // +  -  -  -  -  -  -  -  -  -
-    X32_G8_UINT_X24,    // .y - stencil  // +  -  -  -  -  -  -  -  -  -
-
-    MAX_NUM
+    X32_G8_UINT_X24     // .y - stencil  // +  -  -  -  -  -  -  -  -  -
 );
 
-NRI_ENUM_BITS
-(
-    PlaneBits, uint8_t,
-
+NriBits(PlaneBits, uint8_t,
     ALL                             = 0,
-    COLOR                           = NRI_SET_BIT(0),
-    DEPTH                           = NRI_SET_BIT(1),
-    STENCIL                         = NRI_SET_BIT(2)
+    COLOR                           = NriBit(0),
+    DEPTH                           = NriBit(1),
+    STENCIL                         = NriBit(2)
 );
 
-NRI_ENUM_BITS
-(
-    FormatSupportBits, uint16_t,
-
+NriBits(FormatSupportBits, uint16_t,
     UNSUPPORTED                     = 0,
 
     // Texture
-    TEXTURE                         = NRI_SET_BIT(0),
-    STORAGE_TEXTURE                 = NRI_SET_BIT(1),
-    COLOR_ATTACHMENT                = NRI_SET_BIT(2),
-    DEPTH_STENCIL_ATTACHMENT        = NRI_SET_BIT(3),
-    BLEND                           = NRI_SET_BIT(4),
-    STORAGE_TEXTURE_ATOMICS         = NRI_SET_BIT(5),  // other than Load / Store
+    TEXTURE                         = NriBit(0),
+    STORAGE_TEXTURE                 = NriBit(1),
+    COLOR_ATTACHMENT                = NriBit(2),
+    DEPTH_STENCIL_ATTACHMENT        = NriBit(3),
+    BLEND                           = NriBit(4),
+    STORAGE_TEXTURE_ATOMICS         = NriBit(5),  // other than Load / Store
 
     // Buffer
-    BUFFER                          = NRI_SET_BIT(6),
-    STORAGE_BUFFER                  = NRI_SET_BIT(7),
-    VERTEX_BUFFER                   = NRI_SET_BIT(8),
-    STORAGE_BUFFER_ATOMICS          = NRI_SET_BIT(9)   // other than Load / Store
+    BUFFER                          = NriBit(6),
+    STORAGE_BUFFER                  = NriBit(7),
+    VERTEX_BUFFER                   = NriBit(8),
+    STORAGE_BUFFER_ATOMICS          = NriBit(9)   // other than Load / Store
 );
 
-NRI_ENUM_BITS
-(
-    StageBits, uint32_t,
-
+NriBits(StageBits, uint32_t,
     // Special
-    ALL                             = 0,               // Lazy default for barriers
+    ALL                             = 0,          // Lazy default for barriers
     NONE                            = 0x7FFFFFFF,
 
-    // Graphics                                        // Invoked by "CmdDraw*"
-    INDEX_INPUT                     = NRI_SET_BIT(0),  //    Index buffer consumption
-    VERTEX_SHADER                   = NRI_SET_BIT(1),  //    Vertex shader
-    TESS_CONTROL_SHADER             = NRI_SET_BIT(2),  //    Tessellation control (hull) shader
-    TESS_EVALUATION_SHADER          = NRI_SET_BIT(3),  //    Tessellation evaluation (domain) shader
-    GEOMETRY_SHADER                 = NRI_SET_BIT(4),  //    Geometry shader
-    MESH_CONTROL_SHADER             = NRI_SET_BIT(5),  //    Mesh control (task) shader
-    MESH_EVALUATION_SHADER          = NRI_SET_BIT(6),  //    Mesh evaluation (amplification) shader
-    FRAGMENT_SHADER                 = NRI_SET_BIT(7),  //    Fragment (pixel) shader
-    DEPTH_STENCIL_ATTACHMENT        = NRI_SET_BIT(8),  //    Depth-stencil R/W operations
-    COLOR_ATTACHMENT                = NRI_SET_BIT(9),  //    Color R/W operations
+    // Graphics                                   // Invoked by "CmdDraw*"
+    INDEX_INPUT                     = NriBit(0),  //    Index buffer consumption
+    VERTEX_SHADER                   = NriBit(1),  //    Vertex shader
+    TESS_CONTROL_SHADER             = NriBit(2),  //    Tessellation control (hull) shader
+    TESS_EVALUATION_SHADER          = NriBit(3),  //    Tessellation evaluation (domain) shader
+    GEOMETRY_SHADER                 = NriBit(4),  //    Geometry shader
+    MESH_CONTROL_SHADER             = NriBit(5),  //    Mesh control (task) shader
+    MESH_EVALUATION_SHADER          = NriBit(6),  //    Mesh evaluation (amplification) shader
+    FRAGMENT_SHADER                 = NriBit(7),  //    Fragment (pixel) shader
+    DEPTH_STENCIL_ATTACHMENT        = NriBit(8),  //    Depth-stencil R/W operations
+    COLOR_ATTACHMENT                = NriBit(9),  //    Color R/W operations
 
-    // Compute                                         // Invoked by  "CmdDispatch*" (not Rays)
-    COMPUTE_SHADER                  = NRI_SET_BIT(10), //    Compute shader
+    // Compute                                    // Invoked by  "CmdDispatch*" (not Rays)
+    COMPUTE_SHADER                  = NriBit(10), //    Compute shader
 
-    // Ray tracing                                     // Invoked by "CmdDispatchRays*"
-    RAYGEN_SHADER                   = NRI_SET_BIT(11), //    Ray generation shader
-    MISS_SHADER                     = NRI_SET_BIT(12), //    Miss shader
-    INTERSECTION_SHADER             = NRI_SET_BIT(13), //    Intersection shader
-    CLOSEST_HIT_SHADER              = NRI_SET_BIT(14), //    Closest hit shader
-    ANY_HIT_SHADER                  = NRI_SET_BIT(15), //    Any hit shader
-    CALLABLE_SHADER                 = NRI_SET_BIT(16), //    Callable shader
+    // Ray tracing                                // Invoked by "CmdDispatchRays*"
+    RAYGEN_SHADER                   = NriBit(11), //    Ray generation shader
+    MISS_SHADER                     = NriBit(12), //    Miss shader
+    INTERSECTION_SHADER             = NriBit(13), //    Intersection shader
+    CLOSEST_HIT_SHADER              = NriBit(14), //    Closest hit shader
+    ANY_HIT_SHADER                  = NriBit(15), //    Any hit shader
+    CALLABLE_SHADER                 = NriBit(16), //    Callable shader
 
     // Other stages
-    COPY                            = NRI_SET_BIT(17), // Invoked by "CmdCopy*", "CmdUpload*" and "CmdReadback*"
-    CLEAR_STORAGE                   = NRI_SET_BIT(18), // Invoked by "CmdClearStorage*"
-    ACCELERATION_STRUCTURE          = NRI_SET_BIT(19), // Invoked by "Cmd*AccelerationStructure*"
+    COPY                            = NriBit(17), // Invoked by "CmdCopy*", "CmdUpload*" and "CmdReadback*"
+    CLEAR_STORAGE                   = NriBit(18), // Invoked by "CmdClearStorage*"
+    ACCELERATION_STRUCTURE          = NriBit(19), // Invoked by "Cmd*AccelerationStructure*"
 
     // Modifiers
-    INDIRECT                        = NRI_SET_BIT(20), // Invoked by "Indirect" command (used in addition to other bits)
+    INDIRECT                        = NriBit(20), // Invoked by "Indirect" command (used in addition to other bits)
 
     // Umbrella stages
-    TESSELLATION_SHADERS            = NRI_ENUM_MEMBER_UNSCOPED(StageBits, TESS_CONTROL_SHADER) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, TESS_EVALUATION_SHADER),
+    TESSELLATION_SHADERS            = NriMember(StageBits, TESS_CONTROL_SHADER) |
+                                      NriMember(StageBits, TESS_EVALUATION_SHADER),
 
-    MESH_SHADERS                    = NRI_ENUM_MEMBER_UNSCOPED(StageBits, MESH_CONTROL_SHADER) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, MESH_EVALUATION_SHADER),
+    MESH_SHADERS                    = NriMember(StageBits, MESH_CONTROL_SHADER) |
+                                      NriMember(StageBits, MESH_EVALUATION_SHADER),
 
-    GRAPHICS_SHADERS                = NRI_ENUM_MEMBER_UNSCOPED(StageBits, VERTEX_SHADER) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, TESSELLATION_SHADERS) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, GEOMETRY_SHADER) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, MESH_SHADERS) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, FRAGMENT_SHADER),
+    GRAPHICS_SHADERS                = NriMember(StageBits, VERTEX_SHADER) |
+                                      NriMember(StageBits, TESSELLATION_SHADERS) |
+                                      NriMember(StageBits, GEOMETRY_SHADER) |
+                                      NriMember(StageBits, MESH_SHADERS) |
+                                      NriMember(StageBits, FRAGMENT_SHADER),
 
     // Invoked by "CmdDispatchRays"
-    RAY_TRACING_SHADERS             = NRI_ENUM_MEMBER_UNSCOPED(StageBits, RAYGEN_SHADER) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, MISS_SHADER) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, INTERSECTION_SHADER) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, CLOSEST_HIT_SHADER) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, ANY_HIT_SHADER) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, CALLABLE_SHADER),
+    RAY_TRACING_SHADERS             = NriMember(StageBits, RAYGEN_SHADER) |
+                                      NriMember(StageBits, MISS_SHADER) |
+                                      NriMember(StageBits, INTERSECTION_SHADER) |
+                                      NriMember(StageBits, CLOSEST_HIT_SHADER) |
+                                      NriMember(StageBits, ANY_HIT_SHADER) |
+                                      NriMember(StageBits, CALLABLE_SHADER),
 
     // Invoked by "CmdDraw*"
-    DRAW                            = NRI_ENUM_MEMBER_UNSCOPED(StageBits, INDEX_INPUT) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, GRAPHICS_SHADERS) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, DEPTH_STENCIL_ATTACHMENT) |
-                                      NRI_ENUM_MEMBER_UNSCOPED(StageBits, COLOR_ATTACHMENT)
+    DRAW                            = NriMember(StageBits, INDEX_INPUT) |
+                                      NriMember(StageBits, GRAPHICS_SHADERS) |
+                                      NriMember(StageBits, DEPTH_STENCIL_ATTACHMENT) |
+                                      NriMember(StageBits, COLOR_ATTACHMENT)
 );
 
-NRI_STRUCT(Rect)
-{
+NriStruct(Rect) {
     int16_t x;
     int16_t y;
-    NRI_NAME(Dim_t) width;
-    NRI_NAME(Dim_t) height;
+    Nri(Dim_t) width;
+    Nri(Dim_t) height;
 };
 
-NRI_STRUCT(Viewport)
-{
+NriStruct(Viewport) {
     float x;
     float y;
     float width;
@@ -297,78 +301,60 @@ NRI_STRUCT(Viewport)
     float depthRangeMax;
 };
 
-NRI_STRUCT(Color32f)
-{
+NriStruct(Color32f) {
     float x, y, z, w;
 };
 
-NRI_STRUCT(Color32ui)
-{
+NriStruct(Color32ui) {
     uint32_t x, y, z, w;
 };
 
-NRI_STRUCT(Color32i)
-{
+NriStruct(Color32i) {
     int32_t x, y, z, w;
 };
 
-NRI_STRUCT(DepthStencil)
-{
+NriStruct(DepthStencil) {
     float depth;
     uint8_t stencil;
 };
 
-NRI_STRUCT(SamplePosition)
-{
+NriUnion(Color) {
+    Nri(Color32f) f;
+    Nri(Color32ui) ui;
+    Nri(Color32i) i;
+};
+
+NriStruct(SamplePosition) {
     int8_t x, y; // [-8; 7]
 };
 
 #pragma endregion
 
 //===============================================================================================================================
-// Creation
-//===============================================================================================================================
 #pragma region [ Creation ]
+//===============================================================================================================================
 
-NRI_ENUM
-(
-    CommandQueueType, uint8_t,
-
+NriEnum(CommandQueueType, uint8_t,
     GRAPHICS,
     COMPUTE,
     COPY,
-    HIGH_PRIORITY_COPY,
-
-    MAX_NUM
+    HIGH_PRIORITY_COPY
 );
 
-NRI_ENUM
-(
-    MemoryLocation, uint8_t,
-
+NriEnum(MemoryLocation, uint8_t,
     DEVICE,
     DEVICE_UPLOAD, // soft fallback to HOST_UPLOAD
     HOST_UPLOAD,
-    HOST_READBACK,
-
-    MAX_NUM
+    HOST_READBACK
 );
 
-NRI_ENUM
-(
-    TextureType, uint8_t,
-
+NriEnum(TextureType, uint8_t,
     TEXTURE_1D,
     TEXTURE_2D,
-    TEXTURE_3D,
-
-    MAX_NUM
+    TEXTURE_3D
 );
 
-NRI_ENUM
-(
-    Texture1DViewType, uint8_t,
-
+NriEnum(Texture1DViewType, uint8_t,
     SHADER_RESOURCE_1D,
     SHADER_RESOURCE_1D_ARRAY,
     SHADER_RESOURCE_STORAGE_1D,
@@ -377,15 +363,10 @@ NRI_ENUM
     DEPTH_STENCIL_ATTACHMENT,
     DEPTH_READONLY_STENCIL_ATTACHMENT,
     DEPTH_ATTACHMENT_STENCIL_READONLY,
-    DEPTH_STENCIL_READONLY,
-
-    MAX_NUM
+    DEPTH_STENCIL_READONLY
 );
 
-NRI_ENUM
-(
-    Texture2DViewType, uint8_t,
-
+NriEnum(Texture2DViewType, uint8_t,
     SHADER_RESOURCE_2D,
     SHADER_RESOURCE_2D_ARRAY,
     SHADER_RESOURCE_CUBE,
@@ -397,37 +378,22 @@ NRI_ENUM
     DEPTH_READONLY_STENCIL_ATTACHMENT,
     DEPTH_ATTACHMENT_STENCIL_READONLY,
     DEPTH_STENCIL_READONLY,
-    SHADING_RATE_ATTACHMENT,
-
-    MAX_NUM
+    SHADING_RATE_ATTACHMENT
 );
 
-NRI_ENUM
-(
-    Texture3DViewType, uint8_t,
-
+NriEnum(Texture3DViewType, uint8_t,
     SHADER_RESOURCE_3D,
     SHADER_RESOURCE_STORAGE_3D,
-    COLOR_ATTACHMENT,
-
-    MAX_NUM
+    COLOR_ATTACHMENT
 );
 
-NRI_ENUM
-(
-    BufferViewType, uint8_t,
-
+NriEnum(BufferViewType, uint8_t,
     SHADER_RESOURCE,
     SHADER_RESOURCE_STORAGE,
-    CONSTANT,
-
-    MAX_NUM
+    CONSTANT
 );
 
-NRI_ENUM
-(
-    DescriptorType, uint8_t,
-
+NriEnum(DescriptorType, uint8_t,
     SAMPLER,
     CONSTANT_BUFFER,
     TEXTURE,
@@ -436,105 +402,90 @@ NRI_ENUM
     STORAGE_BUFFER,
     STRUCTURED_BUFFER,
     STORAGE_STRUCTURED_BUFFER,
-    ACCELERATION_STRUCTURE,
-
-    MAX_NUM
+    ACCELERATION_STRUCTURE
 );
 
-NRI_ENUM_BITS
-(
-    TextureUsageBits, uint8_t,
-
+NriBits(TextureUsageBits, uint8_t,
     NONE                                = 0,
-    SHADER_RESOURCE                     = NRI_SET_BIT(0),
-    SHADER_RESOURCE_STORAGE             = NRI_SET_BIT(1),
-    COLOR_ATTACHMENT                    = NRI_SET_BIT(2),
-    DEPTH_STENCIL_ATTACHMENT            = NRI_SET_BIT(3),
-    SHADING_RATE_ATTACHMENT             = NRI_SET_BIT(4)
+    SHADER_RESOURCE                     = NriBit(0),
+    SHADER_RESOURCE_STORAGE             = NriBit(1),
+    COLOR_ATTACHMENT                    = NriBit(2),
+    DEPTH_STENCIL_ATTACHMENT            = NriBit(3),
+    SHADING_RATE_ATTACHMENT             = NriBit(4)
 );
 
-NRI_ENUM_BITS
-(
-    BufferUsageBits, uint8_t,
-
+NriBits(BufferUsageBits, uint8_t,
     NONE                                = 0,
-    SHADER_RESOURCE                     = NRI_SET_BIT(0),
-    SHADER_RESOURCE_STORAGE             = NRI_SET_BIT(1),
-    VERTEX_BUFFER                       = NRI_SET_BIT(2),
-    INDEX_BUFFER                        = NRI_SET_BIT(3),
-    CONSTANT_BUFFER                     = NRI_SET_BIT(4),
-    ARGUMENT_BUFFER                     = NRI_SET_BIT(5),
-    RAY_TRACING_BUFFER                  = NRI_SET_BIT(6),
-    ACCELERATION_STRUCTURE_BUILD_READ   = NRI_SET_BIT(7)
+    SHADER_RESOURCE                     = NriBit(0),
+    SHADER_RESOURCE_STORAGE             = NriBit(1),
+    VERTEX_BUFFER                       = NriBit(2),
+    INDEX_BUFFER                        = NriBit(3),
+    CONSTANT_BUFFER                     = NriBit(4),
+    ARGUMENT_BUFFER                     = NriBit(5),
+    RAY_TRACING_BUFFER                  = NriBit(6),
+    ACCELERATION_STRUCTURE_BUILD_READ   = NriBit(7)
 );
 
 // Resources
-NRI_STRUCT(TextureDesc)
-{
-    NRI_NAME(TextureType) type;
-    NRI_NAME(TextureUsageBits) usageMask;
-    NRI_NAME(Format) format;
-    NRI_NAME(Dim_t) width;
-    NRI_NAME(Dim_t) height;
-    NRI_NAME(Dim_t) depth;
-    NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) layerNum;
-    NRI_NAME(Sample_t) sampleNum;
+NriStruct(TextureDesc) {
+    Nri(TextureType) type;
+    Nri(TextureUsageBits) usageMask;
+    Nri(Format) format;
+    Nri(Dim_t) width;
+    Nri(Dim_t) height;
+    Nri(Dim_t) depth;
+    Nri(Mip_t) mipNum;
+    Nri(Dim_t) layerNum;
+    Nri(Sample_t) sampleNum;
 };
 
-NRI_STRUCT(BufferDesc)
-{
+NriStruct(BufferDesc) {
     uint64_t size;
     uint32_t structureStride; // use 4 to allow "byte address" (raw) views
-    NRI_NAME(BufferUsageBits) usageMask;
+    Nri(BufferUsageBits) usageMask;
 };
 
 // Descriptors (Views)
-NRI_STRUCT(Texture1DViewDesc)
-{
-    const NRI_NAME(Texture)* texture;
-    NRI_NAME(Texture1DViewType) viewType;
-    NRI_NAME(Format) format;
-    NRI_NAME(Mip_t) mipOffset;
-    NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) layerOffset;
-    NRI_NAME(Dim_t) layerNum;
+NriStruct(Texture1DViewDesc) {
+    const NriPtr(Texture) texture;
+    Nri(Texture1DViewType) viewType;
+    Nri(Format) format;
+    Nri(Mip_t) mipOffset;
+    Nri(Mip_t) mipNum;
+    Nri(Dim_t) layerOffset;
+    Nri(Dim_t) layerNum;
 };
 
-NRI_STRUCT(Texture2DViewDesc)
-{
-    const NRI_NAME(Texture)* texture;
-    NRI_NAME(Texture2DViewType) viewType;
-    NRI_NAME(Format) format;
-    NRI_NAME(Mip_t) mipOffset;
-    NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) layerOffset;
-    NRI_NAME(Dim_t) layerNum;
+NriStruct(Texture2DViewDesc) {
+    const NriPtr(Texture) texture;
+    Nri(Texture2DViewType) viewType;
+    Nri(Format) format;
+    Nri(Mip_t) mipOffset;
+    Nri(Mip_t) mipNum;
+    Nri(Dim_t) layerOffset;
+    Nri(Dim_t) layerNum;
 };
 
-NRI_STRUCT(Texture3DViewDesc)
-{
-    const NRI_NAME(Texture)* texture;
-    NRI_NAME(Texture3DViewType) viewType;
-    NRI_NAME(Format) format;
-    NRI_NAME(Mip_t) mipOffset;
-    NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) sliceOffset;
-    NRI_NAME(Dim_t) sliceNum;
+NriStruct(Texture3DViewDesc) {
+    const NriPtr(Texture) texture;
+    Nri(Texture3DViewType) viewType;
+    Nri(Format) format;
+    Nri(Mip_t) mipOffset;
+    Nri(Mip_t) mipNum;
+    Nri(Dim_t) sliceOffset;
+    Nri(Dim_t) sliceNum;
 };
 
-NRI_STRUCT(BufferViewDesc)
-{
-    const NRI_NAME(Buffer)* buffer;
-    NRI_NAME(BufferViewType) viewType;
-    NRI_NAME(Format) format;
+NriStruct(BufferViewDesc) {
+    const NriPtr(Buffer) buffer;
+    Nri(BufferViewType) viewType;
+    Nri(Format) format;
     uint64_t offset;
     uint64_t size;
 };
 
 // Descriptor pool
-NRI_STRUCT(DescriptorPoolDesc)
-{
+NriStruct(DescriptorPoolDesc) {
     uint32_t descriptorSetMaxNum;
     uint32_t samplerMaxNum;
     uint32_t constantBufferMaxNum;
@@ -551,50 +502,44 @@ NRI_STRUCT(DescriptorPoolDesc)
 #pragma endregion
 
 //===============================================================================================================================
-// Pipeline layout
-//===============================================================================================================================
 #pragma region [ Pipeline layout ]
+//===============================================================================================================================
 
-NRI_STRUCT(PushConstantDesc)
-{
+NriStruct(PushConstantDesc) {
     uint32_t registerIndex;
     uint32_t size;
-    NRI_NAME(StageBits) shaderStages;
+    Nri(StageBits) shaderStages;
 };
 
-NRI_STRUCT(DescriptorRangeDesc)
-{
+NriStruct(DescriptorRangeDesc) {
     uint32_t baseRegisterIndex;
     uint32_t descriptorNum;
-    NRI_NAME(DescriptorType) descriptorType;
-    NRI_NAME(StageBits) shaderStages;
+    Nri(DescriptorType) descriptorType;
+    Nri(StageBits) shaderStages;
     bool isDescriptorNumVariable;
     bool isArray;
 };
 
-NRI_STRUCT(DynamicConstantBufferDesc)
-{
+NriStruct(DynamicConstantBufferDesc) {
     uint32_t registerIndex;
-    NRI_NAME(StageBits) shaderStages;
+    Nri(StageBits) shaderStages;
 };
 
-NRI_STRUCT(DescriptorSetDesc)
-{
+NriStruct(DescriptorSetDesc) {
     uint32_t registerSpace;
-    const NRI_NAME(DescriptorRangeDesc)* ranges;
+    const NriPtr(DescriptorRangeDesc) ranges;
     uint32_t rangeNum;
-    const NRI_NAME(DynamicConstantBufferDesc)* dynamicConstantBuffers; // a dynamic constant buffer allows to dynamically specify an offset in the buffer via "CmdSetDescriptorSet" call
+    const NriPtr(DynamicConstantBufferDesc) dynamicConstantBuffers; // a dynamic constant buffer allows to dynamically specify an offset in the buffer via "CmdSetDescriptorSet" call
     uint32_t dynamicConstantBufferNum;
     bool partiallyBound;
 };
 
-NRI_STRUCT(PipelineLayoutDesc)
-{
-    const NRI_NAME(DescriptorSetDesc)* descriptorSets;
-    const NRI_NAME(PushConstantDesc)* pushConstants;
+NriStruct(PipelineLayoutDesc) {
+    const NriPtr(DescriptorSetDesc) descriptorSets;
+    const NriPtr(PushConstantDesc) pushConstants;
     uint32_t descriptorSetNum;
     uint32_t pushConstantNum;
-    NRI_NAME(StageBits) shaderStages;
+    Nri(StageBits) shaderStages;
     bool ignoreGlobalSPIRVOffsets;
     bool enableD3D12DrawParametersEmulation; // implicitly expects "enableD3D12DrawParametersEmulation" passed during device creation
 };
@@ -602,45 +547,26 @@ NRI_STRUCT(PipelineLayoutDesc)
 #pragma endregion
 
 //===============================================================================================================================
-// Input assembly
-//===============================================================================================================================
 #pragma region [ Input assembly ]
+//===============================================================================================================================
 
-NRI_ENUM
-(
-    VertexStreamStepRate, uint8_t,
-
+NriEnum(VertexStreamStepRate, uint8_t,
     PER_VERTEX,
-    PER_INSTANCE,
-
-    MAX_NUM
+    PER_INSTANCE
 );
 
-NRI_ENUM
-(
-    IndexType, uint8_t,
-
+NriEnum(IndexType, uint8_t,
     UINT16,
-    UINT32,
-
-    MAX_NUM
+    UINT32
 );
 
-NRI_ENUM
-(
-    PrimitiveRestart, uint8_t,
-
+NriEnum(PrimitiveRestart, uint8_t,
     DISABLED,
     INDICES_UINT16,
-    INDICES_UINT32,
-
-    MAX_NUM
+    INDICES_UINT32
 );
 
-NRI_ENUM
-(
-    Topology, uint8_t,
-
+NriEnum(Topology, uint8_t,
     POINT_LIST,
     LINE_LIST,
     LINE_STRIP,
@@ -650,49 +576,41 @@ NRI_ENUM
     LINE_STRIP_WITH_ADJACENCY,
     TRIANGLE_LIST_WITH_ADJACENCY,
     TRIANGLE_STRIP_WITH_ADJACENCY,
-    PATCH_LIST,
-
-    MAX_NUM
+    PATCH_LIST
 );
 
-NRI_STRUCT(InputAssemblyDesc)
-{
-    NRI_NAME(Topology) topology;
+NriStruct(InputAssemblyDesc) {
+    Nri(Topology) topology;
     uint8_t tessControlPointNum;
-    NRI_NAME(PrimitiveRestart) primitiveRestart;
+    Nri(PrimitiveRestart) primitiveRestart;
 };
 
-NRI_STRUCT(VertexAttributeD3D)
-{
+NriStruct(VertexAttributeD3D) {
     const char* semanticName;
     uint32_t semanticIndex;
 };
 
-NRI_STRUCT(VertexAttributeVK)
-{
+NriStruct(VertexAttributeVK) {
     uint32_t location;
 };
 
-NRI_STRUCT(VertexAttributeDesc)
-{
-    NRI_NAME(VertexAttributeD3D) d3d;
-    NRI_NAME(VertexAttributeVK) vk;
+NriStruct(VertexAttributeDesc) {
+    Nri(VertexAttributeD3D) d3d;
+    Nri(VertexAttributeVK) vk;
     uint32_t offset;
-    NRI_NAME(Format) format;
+    Nri(Format) format;
     uint16_t streamIndex;
 };
 
-NRI_STRUCT(VertexStreamDesc)
-{
+NriStruct(VertexStreamDesc) {
     uint16_t stride;
     uint16_t bindingSlot;
-    NRI_NAME(VertexStreamStepRate) stepRate;
+    Nri(VertexStreamStepRate) stepRate;
 };
 
-NRI_STRUCT(VertexInputDesc)
-{
-    const NRI_NAME(VertexAttributeDesc)* attributes;
-    const NRI_NAME(VertexStreamDesc)* streams;
+NriStruct(VertexInputDesc) {
+    const NriPtr(VertexAttributeDesc) attributes;
+    const NriPtr(VertexStreamDesc) streams;
     uint8_t attributeNum;
     uint8_t streamNum;
 };
@@ -700,114 +618,76 @@ NRI_STRUCT(VertexInputDesc)
 #pragma endregion
 
 //===============================================================================================================================
-// Rasterization
-//===============================================================================================================================
 #pragma region [ Rasterization ]
+//===============================================================================================================================
 
-NRI_ENUM
-(
-    FillMode, uint8_t,
-
+NriEnum(FillMode, uint8_t,
     SOLID,
-    WIREFRAME,
-
-    MAX_NUM
+    WIREFRAME
 );
 
-NRI_ENUM
-(
-    CullMode, uint8_t,
-
+NriEnum(CullMode, uint8_t,
     NONE,
     FRONT,
-    BACK,
-
-    MAX_NUM
+    BACK
 );
 
-NRI_ENUM
-(
-    ShadingRate, uint8_t,
-
-    _1x1,
-    _1x2,
-    _2x1,
-    _2x2,
-    _2x4,
-    _4x2,
-    _4x4,
-
-    MAX_NUM
+NriEnum(ShadingRate, uint8_t,
+    FRAGMENT_SIZE_1X1,
+    FRAGMENT_SIZE_1X2,
+    FRAGMENT_SIZE_2X1,
+    FRAGMENT_SIZE_2X2,
+    FRAGMENT_SIZE_2X4,
+    FRAGMENT_SIZE_4X2,
+    FRAGMENT_SIZE_4X4
 );
 
-NRI_ENUM
-(
-    ShadingRateCombiner, uint8_t,
-
+NriEnum(ShadingRateCombiner, uint8_t,
     REPLACE,
     KEEP,
     MIN,
     MAX,
-    SUM,
-
-    MAX_NUM
+    SUM
 );
 
-NRI_STRUCT(RasterizationDesc)
-{
+NriStruct(RasterizationDesc) {
     uint32_t viewportNum;
     float depthBias;
     float depthBiasClamp;
     float depthBiasSlopeFactor;
-    NRI_NAME(FillMode) fillMode;
-    NRI_NAME(CullMode) cullMode;
+    Nri(FillMode) fillMode;
+    Nri(CullMode) cullMode;
     bool frontCounterClockwise;
     bool depthClamp;
-
-    // Requires "isLineSmoothingSupported"
-    bool antialiasedLines;
-
-    // Requires "conservativeRasterTier > 0"
-    bool conservativeRasterization;
-
-    // Requires "is[Pipeline/Primitive/Attachment]ShadingRateSupported", expects "CmdSetShadingRate" and optionally "AttachmentsDesc::shadingRate"
-    bool shadingRate;
+    bool antialiasedLines; // Requires "isLineSmoothingSupported"
+    bool conservativeRasterization; // Requires "conservativeRasterTier > 0"
+    bool shadingRate; // Requires "is[Pipeline/Primitive/Attachment]ShadingRateSupported", expects "CmdSetShadingRate" and optionally "AttachmentsDesc::shadingRate"
 };
 
-NRI_STRUCT(MultisampleDesc)
-{
+NriStruct(MultisampleDesc) {
     uint32_t sampleMask;
-    NRI_NAME(Sample_t) sampleNum;
+    Nri(Sample_t) sampleNum;
     bool alphaToCoverage;
-
-    // Requires "isProgrammableSampleLocationsSupported", expects "CmdSetSamplePositions"
-    bool programmableSampleLocations;
+    bool programmableSampleLocations; // Requires "isProgrammableSampleLocationsSupported", expects "CmdSetSamplePositions"
 };
 
-NRI_STRUCT(ShadingRateDesc)
-{
-    NRI_NAME(ShadingRate) shadingRate;
-    NRI_NAME(ShadingRateCombiner) primitiveCombiner;
-    NRI_NAME(ShadingRateCombiner) attachmentCombiner;
+NriStruct(ShadingRateDesc) {
+    Nri(ShadingRate) shadingRate;
+    Nri(ShadingRateCombiner) primitiveCombiner;
+    Nri(ShadingRateCombiner) attachmentCombiner;
 };
 
 #pragma endregion
 
 //===============================================================================================================================
-// Output merger
-//===============================================================================================================================
 #pragma region [ Output merger ]
+//===============================================================================================================================
 
-NRI_ENUM
-(
-    // Requires "isLogicOpSupported"
-    LogicFunc, uint8_t,
-
+// Requires "isLogicOpSupported"
+// S - source color 0
+// D - destination color
+NriEnum(LogicFunc, uint8_t,
     NONE,
-
-    // S - source color 0
-    // D - destination color
-
     CLEAR,                      // 0
     AND,                        // S & D
     AND_REVERSE,                // S & ~D
@@ -822,18 +702,12 @@ NRI_ENUM
     COPY_INVERTED,              // ~S
     OR_INVERTED,                // ~S | D
     NAND,                       // ~(S & D)
-    SET,                        // 1
-
-    MAX_NUM
+    SET                         // 1
 );
 
-NRI_ENUM
-(
-    CompareFunc, uint8_t,
-
-    // R - fragment's depth or stencil reference
-    // D - depth or stencil buffer
-
+// R - fragment's depth or stencil reference
+// D - depth or stencil buffer
+NriEnum(CompareFunc, uint8_t,
     NONE,                       // test is disabled
     ALWAYS,                     // true
     NEVER,                      // false
@@ -842,18 +716,12 @@ NRI_ENUM
     LESS,                       // R < D
     LESS_EQUAL,                 // R <= D
     GREATER,                    // R > D
-    GREATER_EQUAL,              // R >= D
-
-    MAX_NUM
+    GREATER_EQUAL               // R >= D
 );
 
-NRI_ENUM
-(
-    StencilFunc, uint8_t,
-
-    // R - reference, set by "CmdSetStencilReference"
-    // D - stencil buffer
-
+// R - reference, set by "CmdSetStencilReference"
+// D - stencil buffer
+NriEnum(StencilFunc, uint8_t,
     KEEP,                       // D = D
     ZERO,                       // D = 0
     REPLACE,                    // D = R
@@ -861,21 +729,14 @@ NRI_ENUM
     DECREMENT_AND_CLAMP,        // D = max(D--, 0)
     INVERT,                     // D = ~D
     INCREMENT_AND_WRAP,         // D++
-    DECREMENT_AND_WRAP,         // D--
-
-    MAX_NUM
+    DECREMENT_AND_WRAP          // D--
 );
 
-NRI_ENUM
-(
-    BlendFactor, uint8_t,
-
-    // S0 - source color 0
-    // S1 - source color 1
-    // D - destination color
-    // C - blend constants (CmdSetBlendConstants)
-
-                                // RGB                               ALPHA
+// S0 - source color 0
+// S1 - source color 1
+// D - destination color
+// C - blend constants, set by "CmdSetBlendConstants"
+NriEnum(BlendFactor, uint8_t,   // RGB                               ALPHA
     ZERO,                       // 0                                 0
     ONE,                        // 1                                 1
     SRC_COLOR,                  // S0.r, S0.g, S0.b                  S0.a
@@ -894,244 +755,178 @@ NRI_ENUM
     SRC1_COLOR,                 // S1.r, S1.g, S1.b                  S1.a
     ONE_MINUS_SRC1_COLOR,       // 1 - S1.r, 1 - S1.g, 1 - S1.b      1 - S1.a
     SRC1_ALPHA,                 // S1.a                              S1.a
-    ONE_MINUS_SRC1_ALPHA,       // 1 - S1.a                          1 - S1.a
-
-    MAX_NUM
+    ONE_MINUS_SRC1_ALPHA        // 1 - S1.a                          1 - S1.a
 );
 
-NRI_ENUM
-(
-    BlendFunc, uint8_t,
-
-    // S - source color
-    // D - destination color
-    // Sf - source factor, produced by BlendFactor
-    // Df - destination factor, produced by BlendFactor
-
+// S - source color
+// D - destination color
+// Sf - source factor, produced by "BlendFactor"
+// Df - destination factor, produced by "BlendFactor"
+NriEnum(BlendFunc, uint8_t,
     ADD,                        // S * Sf + D * Df
     SUBTRACT,                   // S * Sf - D * Df
     REVERSE_SUBTRACT,           // D * Df - S * Sf
     MIN,                        // min(S, D)
-    MAX,                        // max(S, D)
-
-    MAX_NUM
+    MAX                         // max(S, D)
 );
 
-NRI_ENUM_BITS
-(
-    ColorWriteBits, uint8_t,
+NriBits(ColorWriteBits, uint8_t,
+    R    = NriBit(0),
+    G    = NriBit(1),
+    B    = NriBit(2),
+    A    = NriBit(3),
 
-    R    = NRI_SET_BIT(0),
-    G    = NRI_SET_BIT(1),
-    B    = NRI_SET_BIT(2),
-    A    = NRI_SET_BIT(3),
+    RGB  = NriMember(ColorWriteBits, R) | // "wingdi.h" must not be included after
+           NriMember(ColorWriteBits, G) |
+           NriMember(ColorWriteBits, B),
 
-    RGB  = NRI_ENUM_MEMBER_UNSCOPED(ColorWriteBits, R) |
-           NRI_ENUM_MEMBER_UNSCOPED(ColorWriteBits, G) |
-           NRI_ENUM_MEMBER_UNSCOPED(ColorWriteBits, B),
-
-    RGBA = NRI_ENUM_MEMBER_UNSCOPED(ColorWriteBits, RGB) |
-           NRI_ENUM_MEMBER_UNSCOPED(ColorWriteBits, A)
+    RGBA = NriMember(ColorWriteBits, RGB) |
+           NriMember(ColorWriteBits, A)
 );
 
-NRI_UNION(ClearValue)
-{
-    NRI_NAME(DepthStencil) depthStencil;
-    NRI_NAME(Color32f) color32f;
-    NRI_NAME(Color32ui) color32ui;
-    NRI_NAME(Color32i) color32i;
+NriUnion(ClearValue) {
+    Nri(DepthStencil) depthStencil;
+    Nri(Color) color;
 };
 
-NRI_STRUCT(ClearDesc)
-{
-    NRI_NAME(ClearValue) value;
-    NRI_NAME(PlaneBits) planes;
+NriStruct(ClearDesc) {
+    Nri(ClearValue) value;
+    Nri(PlaneBits) planes;
     uint32_t colorAttachmentIndex;
 };
 
-NRI_STRUCT(StencilDesc)
-{
-    NRI_NAME(CompareFunc) compareFunc; // compareFunc != NONE, expects "CmdSetStencilReference"
-    NRI_NAME(StencilFunc) fail;
-    NRI_NAME(StencilFunc) pass;
-    NRI_NAME(StencilFunc) depthFail;
+NriStruct(StencilDesc) {
+    Nri(CompareFunc) compareFunc; // compareFunc != NONE, expects "CmdSetStencilReference"
+    Nri(StencilFunc) fail;
+    Nri(StencilFunc) pass;
+    Nri(StencilFunc) depthFail;
     uint8_t writeMask;
     uint8_t compareMask;
 };
 
-NRI_STRUCT(BlendingDesc)
-{
-    NRI_NAME(BlendFactor) srcFactor;
-    NRI_NAME(BlendFactor) dstFactor;
-    NRI_NAME(BlendFunc) func;
+NriStruct(BlendingDesc) {
+    Nri(BlendFactor) srcFactor;
+    Nri(BlendFactor) dstFactor;
+    Nri(BlendFunc) func;
 };
 
-NRI_STRUCT(ColorAttachmentDesc)
-{
-    NRI_NAME(Format) format;
-    NRI_NAME(BlendingDesc) colorBlend;
-    NRI_NAME(BlendingDesc) alphaBlend;
-    NRI_NAME(ColorWriteBits) colorWriteMask;
+NriStruct(ColorAttachmentDesc) {
+    Nri(Format) format;
+    Nri(BlendingDesc) colorBlend;
+    Nri(BlendingDesc) alphaBlend;
+    Nri(ColorWriteBits) colorWriteMask;
     bool blendEnabled;
 };
 
-NRI_STRUCT(DepthAttachmentDesc)
-{
-    NRI_NAME(CompareFunc) compareFunc;
+NriStruct(DepthAttachmentDesc) {
+    Nri(CompareFunc) compareFunc;
     bool write;
-
-    // Requires "isDepthBoundsTestSupported", expects "CmdSetDepthBounds"
-    bool boundsTest;
+    bool boundsTest; // Requires "isDepthBoundsTestSupported", expects "CmdSetDepthBounds"
 };
 
-NRI_STRUCT(StencilAttachmentDesc)
-{
-    NRI_NAME(StencilDesc) front;
-
-    // Requires "isIndependentFrontAndBackStencilReferenceAndMasksSupported" for "back.writeMask"
-    NRI_NAME(StencilDesc) back;
+NriStruct(StencilAttachmentDesc) {
+    Nri(StencilDesc) front;
+    Nri(StencilDesc) back; // Requires "isIndependentFrontAndBackStencilReferenceAndMasksSupported" for "back.writeMask"
 };
 
-NRI_STRUCT(OutputMergerDesc)
-{
-    const NRI_NAME(ColorAttachmentDesc)* color;
-    NRI_NAME(DepthAttachmentDesc) depth;
-    NRI_NAME(StencilAttachmentDesc) stencil;
-    NRI_NAME(Format) depthStencilFormat;
-    NRI_NAME(LogicFunc) colorLogicFunc;
+NriStruct(OutputMergerDesc) {
+    const NriPtr(ColorAttachmentDesc) color;
+    Nri(DepthAttachmentDesc) depth;
+    Nri(StencilAttachmentDesc) stencil;
+    Nri(Format) depthStencilFormat;
+    Nri(LogicFunc) colorLogicFunc;
     uint32_t colorNum;
 };
 
-NRI_STRUCT(AttachmentsDesc)
-{
-    NRI_OPTIONAL const NRI_NAME(Descriptor)* depthStencil;
-    NRI_OPTIONAL const NRI_NAME(Descriptor)* shadingRate;
-    const NRI_NAME(Descriptor)* const* colors;
+NriStruct(AttachmentsDesc) {
+    NriOptional const NriPtr(Descriptor) depthStencil;
+    NriOptional const NriPtr(Descriptor) shadingRate;
+    const NriPtr(Descriptor) const* colors;
     uint32_t colorNum;
 };
 
 #pragma endregion
 
 //===============================================================================================================================
-// Sampler
-//===============================================================================================================================
 #pragma region [ Sampler ]
+//===============================================================================================================================
 
-NRI_ENUM
-(
-    BorderColor, uint8_t,
-
-    FLOAT_TRANSPARENT_BLACK,
-    FLOAT_OPAQUE_BLACK,
-    FLOAT_OPAQUE_WHITE,
-    INT_TRANSPARENT_BLACK,
-    INT_OPAQUE_BLACK,
-    INT_OPAQUE_WHITE,
-
-    MAX_NUM
-);
-
-NRI_ENUM
-(
-    Filter, uint8_t,
-
+NriEnum(Filter, uint8_t,
     NEAREST,
-    LINEAR,
-
-    MAX_NUM
+    LINEAR
 );
 
-NRI_ENUM
-(
-    // Requires "isTextureFilterMinMaxSupported"
-    FilterExt, uint8_t,
-
+// Requires "isTextureFilterMinMaxSupported"
+NriEnum(FilterExt, uint8_t,
     NONE,
     MIN,
-    MAX,
-
-    MAX_NUM
+    MAX
 );
 
-NRI_ENUM
-(
-    AddressMode, uint8_t,
-
+NriEnum(AddressMode, uint8_t,
     REPEAT,
     MIRRORED_REPEAT,
     CLAMP_TO_EDGE,
-    CLAMP_TO_BORDER,
-
-    MAX_NUM
+    CLAMP_TO_BORDER
 );
 
-NRI_STRUCT(AddressModes)
-{
-    NRI_NAME(AddressMode) u, v, w;
+NriStruct(AddressModes) {
+    Nri(AddressMode) u, v, w;
 };
 
-NRI_STRUCT(Filters)
-{
-    NRI_NAME(Filter) min, mag, mip;
-    NRI_NAME(FilterExt) ext;
+NriStruct(Filters) {
+    Nri(Filter) min, mag, mip;
+    Nri(FilterExt) ext;
 };
 
-NRI_STRUCT(SamplerDesc)
-{
-    NRI_NAME(Filters) filters;
+NriStruct(SamplerDesc) {
+    Nri(Filters) filters;
     uint8_t anisotropy;
     float mipBias;
     float mipMin;
     float mipMax;
-    NRI_NAME(AddressModes) addressModes;
-    NRI_NAME(CompareFunc) compareFunc;
-    NRI_NAME(BorderColor) borderColor;
+    Nri(AddressModes) addressModes;
+    Nri(CompareFunc) compareFunc;
+    Nri(Color) borderColor;
+    bool isInteger;
 };
 
 #pragma endregion
 
 //===============================================================================================================================
-// Pipeline
-//===============================================================================================================================
 #pragma region [ Pipeline ]
+//===============================================================================================================================
 
-NRI_STRUCT(ShaderDesc)
-{
-    NRI_NAME(StageBits) stage;
+NriStruct(ShaderDesc) {
+    Nri(StageBits) stage;
     const void* bytecode;
     uint64_t size;
-    NRI_OPTIONAL const char* entryPointName;
+    NriOptional const char* entryPointName;
 };
 
-NRI_STRUCT(GraphicsPipelineDesc)
-{
-    const NRI_NAME(PipelineLayout)* pipelineLayout;
-    NRI_OPTIONAL const NRI_NAME(VertexInputDesc)* vertexInput;
-    NRI_NAME(InputAssemblyDesc) inputAssembly;
-    NRI_NAME(RasterizationDesc) rasterization;
-    NRI_OPTIONAL const NRI_NAME(MultisampleDesc)* multisample;
-    NRI_NAME(OutputMergerDesc) outputMerger;
-    const NRI_NAME(ShaderDesc)* shaders;
+NriStruct(GraphicsPipelineDesc) {
+    const NriPtr(PipelineLayout) pipelineLayout;
+    NriOptional const NriPtr(VertexInputDesc) vertexInput;
+    Nri(InputAssemblyDesc) inputAssembly;
+    Nri(RasterizationDesc) rasterization;
+    NriOptional const NriPtr(MultisampleDesc) multisample;
+    Nri(OutputMergerDesc) outputMerger;
+    const NriPtr(ShaderDesc) shaders;
     uint32_t shaderNum;
 };
 
-NRI_STRUCT(ComputePipelineDesc)
-{
-    const NRI_NAME(PipelineLayout)* pipelineLayout;
-    NRI_NAME(ShaderDesc) shader;
+NriStruct(ComputePipelineDesc) {
+    const NriPtr(PipelineLayout) pipelineLayout;
+    Nri(ShaderDesc) shader;
 };
 
 #pragma endregion
 
 //===============================================================================================================================
-// Barrier
-//===============================================================================================================================
 #pragma region [ Barrier ]
+//===============================================================================================================================
 
-NRI_ENUM
-(
-    Layout, uint8_t,
-
+NriEnum(Layout, uint8_t,
     UNKNOWN,
     COLOR_ATTACHMENT,
     DEPTH_STENCIL_ATTACHMENT,
@@ -1141,75 +936,64 @@ NRI_ENUM
     COPY_SOURCE,
     COPY_DESTINATION,
     PRESENT,
-    SHADING_RATE_ATTACHMENT,
-
-    MAX_NUM
+    SHADING_RATE_ATTACHMENT
 );
 
-NRI_ENUM_BITS
-(
-    AccessBits, uint16_t,                              // Compatible "StageBits" (including ALL):
-
+NriBits(AccessBits, uint16_t,                     // Compatible "StageBits" (including ALL):
     UNKNOWN                         = 0,
-    INDEX_BUFFER                    = NRI_SET_BIT(0),  // INDEX_INPUT
-    VERTEX_BUFFER                   = NRI_SET_BIT(1),  // VERTEX_SHADER
-    CONSTANT_BUFFER                 = NRI_SET_BIT(2),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS
-    SHADER_RESOURCE                 = NRI_SET_BIT(3),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS
-    SHADER_RESOURCE_STORAGE         = NRI_SET_BIT(4),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS, CLEAR_STORAGE
-    ARGUMENT_BUFFER                 = NRI_SET_BIT(5),  // INDIRECT
-    COLOR_ATTACHMENT                = NRI_SET_BIT(6),  // COLOR_ATTACHMENT
-    DEPTH_STENCIL_ATTACHMENT_WRITE  = NRI_SET_BIT(7),  // DEPTH_STENCIL_ATTACHMENT
-    DEPTH_STENCIL_ATTACHMENT_READ   = NRI_SET_BIT(8),  // DEPTH_STENCIL_ATTACHMENT
-    COPY_SOURCE                     = NRI_SET_BIT(9),  // COPY
-    COPY_DESTINATION                = NRI_SET_BIT(10), // COPY
-    ACCELERATION_STRUCTURE_READ     = NRI_SET_BIT(11), // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
-    ACCELERATION_STRUCTURE_WRITE    = NRI_SET_BIT(12), // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
-    SHADING_RATE_ATTACHMENT         = NRI_SET_BIT(13)  // FRAGMENT_SHADER
+    INDEX_BUFFER                    = NriBit(0),  // INDEX_INPUT
+    VERTEX_BUFFER                   = NriBit(1),  // VERTEX_SHADER
+    CONSTANT_BUFFER                 = NriBit(2),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS
+    SHADER_RESOURCE                 = NriBit(3),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS
+    SHADER_RESOURCE_STORAGE         = NriBit(4),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS, CLEAR_STORAGE
+    ARGUMENT_BUFFER                 = NriBit(5),  // INDIRECT
+    COLOR_ATTACHMENT                = NriBit(6),  // COLOR_ATTACHMENT
+    DEPTH_STENCIL_ATTACHMENT_WRITE  = NriBit(7),  // DEPTH_STENCIL_ATTACHMENT
+    DEPTH_STENCIL_ATTACHMENT_READ   = NriBit(8),  // DEPTH_STENCIL_ATTACHMENT
+    COPY_SOURCE                     = NriBit(9),  // COPY
+    COPY_DESTINATION                = NriBit(10), // COPY
+    ACCELERATION_STRUCTURE_READ     = NriBit(11), // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
+    ACCELERATION_STRUCTURE_WRITE    = NriBit(12), // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
+    SHADING_RATE_ATTACHMENT         = NriBit(13)  // FRAGMENT_SHADER
 );
 
-NRI_STRUCT(AccessStage)
-{
-    NRI_NAME(AccessBits) access;
-    NRI_NAME(StageBits) stages;
+NriStruct(AccessStage) {
+    Nri(AccessBits) access;
+    Nri(StageBits) stages;
 };
 
-NRI_STRUCT(AccessLayoutStage)
-{
-    NRI_NAME(AccessBits) access;
-    NRI_NAME(Layout) layout;
-    NRI_NAME(StageBits) stages;
+NriStruct(AccessLayoutStage) {
+    Nri(AccessBits) access;
+    Nri(Layout) layout;
+    Nri(StageBits) stages;
 };
 
-NRI_STRUCT(GlobalBarrierDesc)
-{
-    NRI_NAME(AccessStage) before;
-    NRI_NAME(AccessStage) after;
+NriStruct(GlobalBarrierDesc) {
+    Nri(AccessStage) before;
+    Nri(AccessStage) after;
 };
 
-NRI_STRUCT(BufferBarrierDesc)
-{
-    NRI_NAME(Buffer)* buffer;
-    NRI_NAME(AccessStage) before;
-    NRI_NAME(AccessStage) after;
+NriStruct(BufferBarrierDesc) {
+    NriPtr(Buffer) buffer;
+    Nri(AccessStage) before;
+    Nri(AccessStage) after;
 };
 
-NRI_STRUCT(TextureBarrierDesc)
-{
-    NRI_NAME(Texture)* texture;
-    NRI_NAME(AccessLayoutStage) before;
-    NRI_NAME(AccessLayoutStage) after;
-    NRI_NAME(Mip_t) mipOffset;
-    NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) layerOffset;
-    NRI_NAME(Dim_t) layerNum;
-    NRI_NAME(PlaneBits) planes;
+NriStruct(TextureBarrierDesc) {
+    NriPtr(Texture) texture;
+    Nri(AccessLayoutStage) before;
+    Nri(AccessLayoutStage) after;
+    Nri(Mip_t) mipOffset;
+    Nri(Mip_t) mipNum;
+    Nri(Dim_t) layerOffset;
+    Nri(Dim_t) layerNum;
+    Nri(PlaneBits) planes;
 };
 
-NRI_STRUCT(BarrierGroupDesc)
-{
-    const NRI_NAME(GlobalBarrierDesc)* globals;
-    const NRI_NAME(BufferBarrierDesc)* buffers;
-    const NRI_NAME(TextureBarrierDesc)* textures;
+NriStruct(BarrierGroupDesc) {
+    const NriPtr(GlobalBarrierDesc) globals;
+    const NriPtr(BufferBarrierDesc) buffers;
+    const NriPtr(TextureBarrierDesc) textures;
     uint16_t globalNum;
     uint16_t bufferNum;
     uint16_t textureNum;
@@ -1218,108 +1002,95 @@ NRI_STRUCT(BarrierGroupDesc)
 #pragma endregion
 
 //===============================================================================================================================
-// Other
-//===============================================================================================================================
 #pragma region [ Other ]
+//===============================================================================================================================
 
 // Copy
-NRI_STRUCT(TextureRegionDesc)
-{
+NriStruct(TextureRegionDesc) {
     uint16_t x;
     uint16_t y;
     uint16_t z;
-    NRI_NAME(Dim_t) width;
-    NRI_NAME(Dim_t) height;
-    NRI_NAME(Dim_t) depth;
-    NRI_NAME(Mip_t) mipOffset;
-    NRI_NAME(Dim_t) layerOffset;
+    Nri(Dim_t) width;
+    Nri(Dim_t) height;
+    Nri(Dim_t) depth;
+    Nri(Mip_t) mipOffset;
+    Nri(Dim_t) layerOffset;
 };
 
-NRI_STRUCT(TextureDataLayoutDesc)
-{
+NriStruct(TextureDataLayoutDesc) {
     uint64_t offset;
     uint32_t rowPitch;
     uint32_t slicePitch;
 };
 
 // Work submission
-NRI_STRUCT(FenceSubmitDesc)
-{
-    NRI_NAME(Fence)* fence;
+NriStruct(FenceSubmitDesc) {
+    NriPtr(Fence) fence;
     uint64_t value;
-    NRI_NAME(StageBits) stages;
+    Nri(StageBits) stages;
 };
 
-NRI_STRUCT(QueueSubmitDesc)
-{
-    const NRI_NAME(FenceSubmitDesc)* waitFences;
+NriStruct(QueueSubmitDesc) {
+    const NriPtr(FenceSubmitDesc) waitFences;
     uint32_t waitFenceNum;
-    const NRI_NAME(CommandBuffer)* const* commandBuffers;
+    const NriPtr(CommandBuffer) const* commandBuffers;
     uint32_t commandBufferNum;
-    const NRI_NAME(FenceSubmitDesc)* signalFences;
+    const NriPtr(FenceSubmitDesc) signalFences;
     uint32_t signalFenceNum;
 };
 
 // Memory
-NRI_STRUCT(MemoryDesc)
-{
+NriStruct(MemoryDesc) {
     uint64_t size;
     uint32_t alignment;
-    NRI_NAME(MemoryType) type;
+    Nri(MemoryType) type;
     bool mustBeDedicated; // must be put into a dedicated Memory, containing only 1 object with offset = 0
 };
 
-NRI_STRUCT(AllocateMemoryDesc)
-{
+NriStruct(AllocateMemoryDesc) {
     uint64_t size;
-    NRI_NAME(MemoryType) type;
+    Nri(MemoryType) type;
     float priority; // [-1; 1]: low < 0, normal = 0, high > 0
 };
 
-NRI_STRUCT(BufferMemoryBindingDesc)
-{
-    NRI_NAME(Memory)* memory;
-    NRI_NAME(Buffer)* buffer;
+NriStruct(BufferMemoryBindingDesc) {
+    NriPtr(Memory) memory;
+    NriPtr(Buffer) buffer;
     uint64_t offset;
 };
 
-NRI_STRUCT(TextureMemoryBindingDesc)
-{
-    NRI_NAME(Memory)* memory;
-    NRI_NAME(Texture)* texture;
+NriStruct(TextureMemoryBindingDesc) {
+    NriPtr(Memory) memory;
+    NriPtr(Texture) texture;
     uint64_t offset;
 };
 
 // Clear storage
-NRI_STRUCT(ClearStorageBufferDesc)
-{
-    const NRI_NAME(Descriptor)* storageBuffer;
+NriStruct(ClearStorageBufferDesc) {
+    const NriPtr(Descriptor) storageBuffer;
     uint32_t value;
     uint32_t setIndexInPipelineLayout;
     uint32_t rangeIndex;
     uint32_t offsetInRange;
 };
 
-NRI_STRUCT(ClearStorageTextureDesc)
-{
-    const NRI_NAME(Descriptor)* storageTexture;
-    NRI_NAME(ClearValue) value;
+NriStruct(ClearStorageTextureDesc) {
+    const NriPtr(Descriptor) storageTexture;
+    Nri(ClearValue) value;
     uint32_t setIndexInPipelineLayout;
     uint32_t rangeIndex;
     uint32_t offsetInRange;
 };
 
 // Descriptor set
-NRI_STRUCT(DescriptorRangeUpdateDesc)
-{
-    const NRI_NAME(Descriptor)* const* descriptors;
+NriStruct(DescriptorRangeUpdateDesc) {
+    const NriPtr(Descriptor) const* descriptors;
     uint32_t descriptorNum;
     uint32_t offsetInRange;
 };
 
-NRI_STRUCT(DescriptorSetCopyDesc)
-{
-    const NRI_NAME(DescriptorSet)* srcDescriptorSet;
+NriStruct(DescriptorSetCopyDesc) {
+    const NriPtr(DescriptorSet) srcDescriptorSet;
     uint32_t baseSrcRange;
     uint32_t baseDstRange;
     uint32_t rangeNum;
@@ -1330,16 +1101,14 @@ NRI_STRUCT(DescriptorSetCopyDesc)
 
 // Command signatures (default)
 // To fill commands for indirect drawing in a shader use one of "NRI_FILL_X_DESC" macros
-NRI_STRUCT(DrawDesc) // see NRI_FILL_DRAW_COMMAND
-{
+NriStruct(DrawDesc) { // see NRI_FILL_DRAW_COMMAND
     uint32_t vertexNum;
     uint32_t instanceNum;
     uint32_t baseVertex; // vertex buffer offset = CmdSetVertexBuffers.offset + baseVertex * VertexStreamDesc::stride
     uint32_t baseInstance;
 };
 
-NRI_STRUCT(DrawIndexedDesc) // see NRI_FILL_DRAW_INDEXED_COMMAND
-{
+NriStruct(DrawIndexedDesc) { // see NRI_FILL_DRAW_INDEXED_COMMAND
     uint32_t indexNum;
     uint32_t instanceNum;
     uint32_t baseIndex; // index buffer offset = CmdSetIndexBuffer.offset + baseIndex * sizeof(CmdSetIndexBuffer.indexType)
@@ -1347,19 +1116,15 @@ NRI_STRUCT(DrawIndexedDesc) // see NRI_FILL_DRAW_INDEXED_COMMAND
     uint32_t baseInstance;
 };
 
-NRI_STRUCT(DispatchDesc)
-{
-    uint32_t x;
-    uint32_t y;
-    uint32_t z;
+NriStruct(DispatchDesc) {
+    uint32_t x, y, z;
 };
 
 // Modified draw command signatures (D3D12 only)
 //  If "DeviceDesc::isDrawParametersEmulationEnabled = true" (emulation globally enabled and allowed) and if a shader has "PipelineLayout::enableDrawParametersEmulation = true" (emulation requested)
 //  - the following structs must be used instead
 // - "NRI_ENABLE_DRAW_PARAMETERS_EMULATION" must be defined prior inclusion of "NRICompatibility.hlsli"
-NRI_STRUCT(DrawBaseDesc) // see NRI_FILL_DRAW_COMMAND
-{
+NriStruct(DrawBaseDesc) { // see NRI_FILL_DRAW_COMMAND
     uint32_t shaderEmulatedBaseVertex; // root constant
     uint32_t shaderEmulatedBaseInstance; // root constant
     uint32_t vertexNum;
@@ -1368,8 +1133,7 @@ NRI_STRUCT(DrawBaseDesc) // see NRI_FILL_DRAW_COMMAND
     uint32_t baseInstance;
 };
 
-NRI_STRUCT(DrawIndexedBaseDesc) // see NRI_FILL_DRAW_INDEXED_COMMAND
-{
+NriStruct(DrawIndexedBaseDesc) { // see NRI_FILL_DRAW_INDEXED_COMMAND
     int32_t shaderEmulatedBaseVertex; // root constant
     uint32_t shaderEmulatedBaseInstance; // root constant
     uint32_t indexNum;
@@ -1382,33 +1146,25 @@ NRI_STRUCT(DrawIndexedBaseDesc) // see NRI_FILL_DRAW_INDEXED_COMMAND
 #pragma endregion
 
 //===============================================================================================================================
-// Queries
-//===============================================================================================================================
 #pragma region [ Queries ]
+//===============================================================================================================================
 
-NRI_ENUM
-(
-    QueryType, uint8_t,
-
+NriEnum(QueryType, uint8_t,
     TIMESTAMP,
     TIMESTAMP_COPY_QUEUE, // requires "isCopyQueueTimestampSupported"
     OCCLUSION,
     PIPELINE_STATISTICS,
-    ACCELERATION_STRUCTURE_COMPACTED_SIZE,
-
-    MAX_NUM
+    ACCELERATION_STRUCTURE_COMPACTED_SIZE
 );
 
-NRI_STRUCT(QueryPoolDesc)
-{
-    NRI_NAME(QueryType) queryType;
+NriStruct(QueryPoolDesc) {
+    Nri(QueryType) queryType;
     uint32_t capacity;
 };
 
 // Data layout for QueryType::PIPELINE_STATISTICS
 // Never used, only describes the data layout for various cases
-NRI_STRUCT(PipelineStatisticsDesc)
-{
+NriStruct(PipelineStatisticsDesc) {
     // Common part
     uint64_t inputVertexNum;
     uint64_t inputPrimitiveNum;
@@ -1433,48 +1189,35 @@ NRI_STRUCT(PipelineStatisticsDesc)
 #pragma endregion
 
 //===============================================================================================================================
-// Device desc
-//===============================================================================================================================
 #pragma region [ Device desc ]
+//===============================================================================================================================
 
-NRI_ENUM
-(
-    GraphicsAPI, uint8_t,
-
+NriEnum(GraphicsAPI, uint8_t,
     D3D11,
     D3D12,
-    VK,
-
-    MAX_NUM
+    VK
 );
 
-NRI_ENUM
-(
-    Vendor, uint8_t,
-
+NriEnum(Vendor, uint8_t,
     UNKNOWN,
     NVIDIA,
     AMD,
-    INTEL,
-
-    MAX_NUM
+    INTEL
 );
 
-NRI_STRUCT(AdapterDesc)
-{
+NriStruct(AdapterDesc) {
     char name[256];
     uint64_t luid;
     uint64_t videoMemorySize;
     uint64_t systemMemorySize;
     uint32_t deviceId;
-    NRI_NAME(Vendor) vendor;
+    Nri(Vendor) vendor;
 };
 
-NRI_STRUCT(DeviceDesc)
-{
+NriStruct(DeviceDesc) {
     // Common
-    NRI_NAME(AdapterDesc) adapterDesc;
-    NRI_NAME(GraphicsAPI) graphicsAPI;
+    Nri(AdapterDesc) adapterDesc;
+    Nri(GraphicsAPI) graphicsAPI;
     uint16_t nriVersionMajor;
     uint16_t nriVersionMinor;
 
@@ -1484,26 +1227,26 @@ NRI_STRUCT(DeviceDesc)
     int32_t viewportBoundsRange[2];
 
     // Attachments
-    NRI_NAME(Dim_t) attachmentMaxDim;
-    NRI_NAME(Dim_t) attachmentLayerMaxNum;
-    NRI_NAME(Dim_t) colorAttachmentMaxNum;
+    Nri(Dim_t) attachmentMaxDim;
+    Nri(Dim_t) attachmentLayerMaxNum;
+    Nri(Dim_t) colorAttachmentMaxNum;
 
     // Multi-sampling
-    NRI_NAME(Sample_t) colorSampleMaxNum;
-    NRI_NAME(Sample_t) depthSampleMaxNum;
-    NRI_NAME(Sample_t) stencilSampleMaxNum;
-    NRI_NAME(Sample_t) zeroAttachmentsSampleMaxNum;
-    NRI_NAME(Sample_t) textureColorSampleMaxNum;
-    NRI_NAME(Sample_t) textureIntegerSampleMaxNum;
-    NRI_NAME(Sample_t) textureDepthSampleMaxNum;
-    NRI_NAME(Sample_t) textureStencilSampleMaxNum;
-    NRI_NAME(Sample_t) storageTextureSampleMaxNum;
+    Nri(Sample_t) colorSampleMaxNum;
+    Nri(Sample_t) depthSampleMaxNum;
+    Nri(Sample_t) stencilSampleMaxNum;
+    Nri(Sample_t) zeroAttachmentsSampleMaxNum;
+    Nri(Sample_t) textureColorSampleMaxNum;
+    Nri(Sample_t) textureIntegerSampleMaxNum;
+    Nri(Sample_t) textureDepthSampleMaxNum;
+    Nri(Sample_t) textureStencilSampleMaxNum;
+    Nri(Sample_t) storageTextureSampleMaxNum;
 
     // Resource dimensions
-    NRI_NAME(Dim_t) texture1DMaxDim;
-    NRI_NAME(Dim_t) texture2DMaxDim;
-    NRI_NAME(Dim_t) texture3DMaxDim;
-    NRI_NAME(Dim_t) textureArrayLayerMaxNum;
+    Nri(Dim_t) texture1DMaxDim;
+    Nri(Dim_t) texture2DMaxDim;
+    Nri(Dim_t) texture3DMaxDim;
+    Nri(Dim_t) textureArrayLayerMaxNum;
     uint32_t texelBufferMaxDim;
 
     // Memory
@@ -1659,4 +1402,4 @@ NRI_STRUCT(DeviceDesc)
 
 #pragma endregion
 
-NRI_NAMESPACE_END
+NriNamespaceEnd

@@ -96,7 +96,7 @@ VK only:
 D3D12 only:
 - `NRI_ENABLE_AGILITY_SDK_SUPPORT` - enable Agility SDK (`off` by default)
 - `NRI_AGILITY_SDK_PATH` - path to a directory containing Agility SDK: contents of `.nupkg/build/native/` (`C:/AgilitySDK` by default)
-- `NRI_AGILITY_SDK_VERSION` - Agility SDK version (`711` or newer)
+- `NRI_AGILITY_SDK_VERSION` - Agility SDK version (`614` or newer)
 - `NRI_AGILITY_SDK_DIR` - directory where Agility SDK binaries will be copied to relative to `CMAKE_RUNTIME_OUTPUT_DIRECTORY` (`AgilitySDK` by default)
 
 ## AGILITY SDK

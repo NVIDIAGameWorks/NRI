@@ -510,7 +510,7 @@ inline void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, const Te
     vk.CmdCopyBufferToImage(m_Handle, srcBufferImpl.GetHandle(), dstTextureImpl.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
-inline void CommandBufferVK::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
+inline void CommandBufferVK::ReadbackTextureToBuffer(Buffer& dstBuffer, const TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
     const TextureVK& srcTextureImpl = (const TextureVK&)srcTexture;
     const BufferVK& dstBufferImpl = (const BufferVK&)dstBuffer;
 
@@ -808,7 +808,7 @@ inline void CommandBufferVK::BuildBottomLevelAccelerationStructure(uint32_t geom
 }
 
 inline void CommandBufferVK::UpdateTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags,
-    AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
+    AccelerationStructure& dst, const AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
     const VkAccelerationStructureKHR srcASHandle = ((const AccelerationStructureVK&)src).GetHandle();
     const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
     const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress() + scratchOffset;
@@ -841,7 +841,7 @@ inline void CommandBufferVK::UpdateTopLevelAccelerationStructure(uint32_t instan
 }
 
 inline void CommandBufferVK::UpdateBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags,
-    AccelerationStructure& dst, AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
+    AccelerationStructure& dst, const AccelerationStructure& src, Buffer& scratch, uint64_t scratchOffset) {
     const VkAccelerationStructureKHR srcASHandle = ((const AccelerationStructureVK&)src).GetHandle();
     const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
     const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress() + scratchOffset;
@@ -867,7 +867,7 @@ inline void CommandBufferVK::UpdateBottomLevelAccelerationStructure(uint32_t geo
     vk.CmdBuildAccelerationStructuresKHR(m_Handle, 1, &buildGeometryInfo, rangeArrays);
 }
 
-inline void CommandBufferVK::CopyAccelerationStructure(AccelerationStructure& dst, AccelerationStructure& src, CopyMode copyMode) {
+inline void CommandBufferVK::CopyAccelerationStructure(AccelerationStructure& dst, const AccelerationStructure& src, CopyMode copyMode) {
     const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
     const VkAccelerationStructureKHR srcASHandle = ((const AccelerationStructureVK&)src).GetHandle();
 

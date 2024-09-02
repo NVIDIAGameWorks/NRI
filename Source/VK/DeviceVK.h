@@ -128,6 +128,7 @@ public:
     uint32_t m_IsMemoryBudgetSupported : 1;
     uint32_t m_IsMaintenance5Supported : 1;
     uint32_t m_IsImageSlicedViewSupported : 1;
+    uint32_t m_IsCustomBorderColorSupported : 1;
 
 private:
     VkPhysicalDevice m_PhysicalDevice = nullptr;

@@ -155,7 +155,6 @@ Result DescriptorVK::Create(const BufferViewDesc& bufferViewDesc) {
 
 Result DescriptorVK::Create(const SamplerDesc& samplerDesc) {
     VkSamplerCreateInfo info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-    info.pNext = nullptr;
     info.flags = (VkSamplerCreateFlags)0;
     info.magFilter = GetFilter(samplerDesc.filters.mag);
     info.minFilter = GetFilter(samplerDesc.filters.min);
@@ -170,8 +169,15 @@ Result DescriptorVK::Create(const SamplerDesc& samplerDesc) {
     info.compareOp = GetCompareOp(samplerDesc.compareFunc);
     info.minLod = samplerDesc.mipMin;
     info.maxLod = samplerDesc.mipMax;
-    info.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
-    info.unnormalizedCoordinates = false;
+
+    VkSamplerCustomBorderColorCreateInfoEXT borderColorInfo = {VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT};
+    if (m_Device.m_IsCustomBorderColorSupported) {
+        info.pNext = &borderColorInfo;
+        info.borderColor = samplerDesc.isInteger ? VK_BORDER_COLOR_INT_CUSTOM_EXT : VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
+
+        static_assert(sizeof(VkClearColorValue) == sizeof(samplerDesc.borderColor), "Unexpected sizeof");
+        memcpy(&borderColorInfo.customBorderColor, &samplerDesc.borderColor, sizeof(borderColorInfo.customBorderColor));
+    }
 
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.CreateSampler(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Sampler);

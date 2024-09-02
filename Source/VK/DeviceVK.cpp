@@ -311,6 +311,9 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_EXT_IMAGE_SLICED_VIEW_OF_3D_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_EXT_IMAGE_SLICED_VIEW_OF_3D_EXTENSION_NAME);
 
+    if (IsExtensionSupported(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
+
     // Optional
     if (IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
@@ -615,6 +618,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(slicedViewFeatures);
     }
 
+    VkPhysicalDeviceCustomBorderColorFeaturesEXT borderColorFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(borderColorFeatures);
+    }
+
     if (IsExtensionSupported(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, desiredDeviceExts))
         m_IsMemoryBudgetSupported = true;
 
@@ -743,6 +751,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_IsMemoryPrioritySupported = memoryPriorityFeatures.memoryPriority;
         m_IsLowLatencySupported = m_IsPresentIdSupported != 0 && IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
         m_IsImageSlicedViewSupported = slicedViewFeatures.imageSlicedViewOf3D != 0;
+        m_IsCustomBorderColorSupported = borderColorFeatures.customBorderColors != 0 && borderColorFeatures.customBorderColorWithoutFormat != 0;
 
         // Fill desc
         const VkPhysicalDeviceLimits& limits = props.properties.limits;
@@ -947,8 +956,6 @@ void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo&
         flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT; // allow 3D demotion to a set of layers // TODO: hook up "VK_EXT_image_2d_view_of_3d"?
     if (m_Desc.programmableSampleLocationsTier && formatProps.isDepth)
         flags |= VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
-    if (textureDesc.depth > 1)
-        flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
 
     info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO; // should be already set
     info.flags = flags;
@@ -1235,8 +1242,7 @@ const char* GetObjectTypeName(VkObjectType objectType) {
     }
 }
 
-VkBool32 VKAPI_PTR DebugUtilsMessenger(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData) {
+VkBool32 VKAPI_PTR DebugUtilsMessenger(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData) {
     MaybeUnused(messageType);
 
     /*
@@ -1245,11 +1251,11 @@ VkBool32 VKAPI_PTR DebugUtilsMessenger(
         return VK_FALSE;
     */
 
-    Message severity = Message::TYPE_INFO;
+    Message severity = Message::INFO;
     if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-        severity = Message::TYPE_ERROR;
+        severity = Message::ERROR;
     else if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-        severity = Message::TYPE_WARNING;
+        severity = Message::WARNING;
 
     DeviceVK& device = *(DeviceVK*)userData;
     device.ReportMessage(severity, __FILE__, __LINE__, "%s", callbackData->pMessage);

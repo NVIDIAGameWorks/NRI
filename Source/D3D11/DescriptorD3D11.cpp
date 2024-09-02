@@ -464,13 +464,11 @@ Result DescriptorD3D11::Create(const SamplerDesc& samplerDesc) {
         ? GetFilterAnisotropic(samplerDesc.filters.ext, isComparison)
         : GetFilterIsotropic(samplerDesc.filters.mip, samplerDesc.filters.mag, samplerDesc.filters.min, samplerDesc.filters.ext, isComparison);
 
-    if (samplerDesc.borderColor == BorderColor::FLOAT_OPAQUE_BLACK || samplerDesc.borderColor == BorderColor::INT_OPAQUE_BLACK)
-        desc.BorderColor[3] = 1.0f;
-    else if (samplerDesc.borderColor == BorderColor::FLOAT_OPAQUE_WHITE || samplerDesc.borderColor == BorderColor::INT_OPAQUE_WHITE) {
-        desc.BorderColor[0] = 1.0f;
-        desc.BorderColor[1] = 1.0f;
-        desc.BorderColor[2] = 1.0f;
-        desc.BorderColor[3] = 1.0f;
+    if (!samplerDesc.isInteger) { // TODO: the spec is not clear about the behavior, keep black
+        desc.BorderColor[0] = samplerDesc.borderColor.f.x;
+        desc.BorderColor[1] = samplerDesc.borderColor.f.y;
+        desc.BorderColor[2] = samplerDesc.borderColor.f.z;
+        desc.BorderColor[3] = samplerDesc.borderColor.f.w;
     }
 
     HRESULT hr = m_Device->CreateSamplerState(&desc, (ID3D11SamplerState**)&m_Descriptor);

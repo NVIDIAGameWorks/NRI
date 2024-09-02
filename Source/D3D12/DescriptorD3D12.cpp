@@ -339,13 +339,23 @@ Result DescriptorD3D12::Create(const AccelerationStructure& accelerationStructur
 }
 
 Result DescriptorD3D12::Create(const SamplerDesc& samplerDesc) {
+    m_HeapType = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+
+    Result result = m_Device.GetDescriptorHandle(m_HeapType, m_Handle);
+    if (result != Result::SUCCESS)
+        return result;
+
+    m_DescriptorPointerCPU = m_Device.GetDescriptorPointerCPU(m_Handle);
+
     bool useAnisotropy = samplerDesc.anisotropy > 1 ? true : false;
     bool useComparison = samplerDesc.compareFunc != CompareFunc::NONE;
-
-    D3D12_SAMPLER_DESC desc = {};
-    desc.Filter = useAnisotropy
+    D3D12_FILTER filter = useAnisotropy
         ? GetFilterAnisotropic(samplerDesc.filters.ext, useComparison)
         : GetFilterIsotropic(samplerDesc.filters.mip, samplerDesc.filters.mag, samplerDesc.filters.min, samplerDesc.filters.ext, useComparison);
+
+#ifdef NRI_USE_AGILITY_SDK
+    D3D12_SAMPLER_DESC2 desc = {};
+    desc.Filter = filter;
     desc.AddressU = GetAddressMode(samplerDesc.addressModes.u);
     desc.AddressV = GetAddressMode(samplerDesc.addressModes.v);
     desc.AddressW = GetAddressMode(samplerDesc.addressModes.w);
@@ -355,24 +365,44 @@ Result DescriptorD3D12::Create(const SamplerDesc& samplerDesc) {
     desc.MinLOD = samplerDesc.mipMin;
     desc.MaxLOD = samplerDesc.mipMax;
 
-    if (samplerDesc.borderColor == BorderColor::FLOAT_OPAQUE_BLACK || samplerDesc.borderColor == BorderColor::INT_OPAQUE_BLACK)
-        desc.BorderColor[3] = 1.0f;
-    else if (samplerDesc.borderColor == BorderColor::FLOAT_OPAQUE_WHITE || samplerDesc.borderColor == BorderColor::INT_OPAQUE_WHITE) {
-        desc.BorderColor[0] = 1.0f;
-        desc.BorderColor[1] = 1.0f;
-        desc.BorderColor[2] = 1.0f;
-        desc.BorderColor[3] = 1.0f;
+    if (samplerDesc.isInteger) {
+        desc.UintBorderColor[0] = samplerDesc.borderColor.ui.x;
+        desc.UintBorderColor[1] = samplerDesc.borderColor.ui.y;
+        desc.UintBorderColor[2] = samplerDesc.borderColor.ui.z;
+        desc.UintBorderColor[3] = samplerDesc.borderColor.ui.w;
+
+        desc.Flags |= D3D12_SAMPLER_FLAG_UINT_BORDER_COLOR;
+    } else {
+        desc.FloatBorderColor[0] = samplerDesc.borderColor.f.x;
+        desc.FloatBorderColor[1] = samplerDesc.borderColor.f.y;
+        desc.FloatBorderColor[2] = samplerDesc.borderColor.f.z;
+        desc.FloatBorderColor[3] = samplerDesc.borderColor.f.w;
     }
 
-    m_HeapType = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+    m_Device->CreateSampler2(&desc, {m_DescriptorPointerCPU});
+#else
+    D3D12_SAMPLER_DESC desc = {};
+    desc.Filter = filter;
+    desc.AddressU = GetAddressMode(samplerDesc.addressModes.u);
+    desc.AddressV = GetAddressMode(samplerDesc.addressModes.v);
+    desc.AddressW = GetAddressMode(samplerDesc.addressModes.w);
+    desc.MipLODBias = samplerDesc.mipBias;
+    desc.MaxAnisotropy = samplerDesc.anisotropy;
+    desc.ComparisonFunc = GetComparisonFunc(samplerDesc.compareFunc);
+    desc.MinLOD = samplerDesc.mipMin;
+    desc.MaxLOD = samplerDesc.mipMax;
 
-    Result result = m_Device.GetDescriptorHandle(m_HeapType, m_Handle);
-    if (result == Result::SUCCESS) {
-        m_DescriptorPointerCPU = m_Device.GetDescriptorPointerCPU(m_Handle);
-        m_Device->CreateSampler(&desc, {m_DescriptorPointerCPU});
+    if (!samplerDesc.isInteger) { // TODO: the spec is not clear about the behavior, keep black
+        desc.BorderColor[0] = samplerDesc.borderColor.f.x;
+        desc.BorderColor[1] = samplerDesc.borderColor.f.y;
+        desc.BorderColor[2] = samplerDesc.borderColor.f.z;
+        desc.BorderColor[3] = samplerDesc.borderColor.f.w;
     }
 
-    return result;
+    m_Device->CreateSampler(&desc, {m_DescriptorPointerCPU});
+#endif
+
+    return Result::SUCCESS;
 }
 
 Result DescriptorD3D12::CreateConstantBufferView(const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc) {

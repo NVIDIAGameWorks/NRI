@@ -2,53 +2,47 @@
 
 #pragma once
 
-NRI_NAMESPACE_BEGIN
+NriNamespaceBegin
 
-NRI_STRUCT(VideoMemoryInfo)
-{
-    uint64_t budgetSize; // the OS-provided video memory budget. If "usageSize" > "budgetSize", the application may incur stuttering or performance penalties
-    uint64_t usageSize; // specifies the application’s current video memory usage
+NriStruct(VideoMemoryInfo) {
+    uint64_t budgetSize;    // the OS-provided video memory budget. If "usageSize" > "budgetSize", the application may incur stuttering or performance penalties
+    uint64_t usageSize;     // specifies the application’s current video memory usage
 };
 
-NRI_STRUCT(TextureSubresourceUploadDesc)
-{
+NriStruct(TextureSubresourceUploadDesc) {
     const void* slices;
     uint32_t sliceNum;
     uint32_t rowPitch;
     uint32_t slicePitch;
 };
 
-NRI_STRUCT(TextureUploadDesc)
-{
-    NRI_OPTIONAL const NRI_NAME(TextureSubresourceUploadDesc)* subresources; // if provided, must include ALL subresources = layerNum * mipNum
-    NRI_NAME(Texture)* texture;
-    NRI_NAME(AccessLayoutStage) after;
-    NRI_NAME(PlaneBits) planes;
+NriStruct(TextureUploadDesc) {
+    NriOptional const NriPtr(TextureSubresourceUploadDesc) subresources; // if provided, must include ALL subresources = layerNum * mipNum
+    NriPtr(Texture) texture;
+    Nri(AccessLayoutStage) after;
+    Nri(PlaneBits) planes;
 };
 
-NRI_STRUCT(BufferUploadDesc)
-{
+NriStruct(BufferUploadDesc) {
     const void* data;
     uint64_t dataSize;
-    NRI_NAME(Buffer)* buffer;
+    NriPtr(Buffer) buffer;
     uint64_t bufferOffset;
-    NRI_NAME(AccessStage) after;
+    Nri(AccessStage) after;
 };
 
-NRI_STRUCT(ResourceGroupDesc)
-{
-    NRI_NAME(MemoryLocation) memoryLocation;
-    NRI_NAME(Texture)* const* textures;
+NriStruct(ResourceGroupDesc) {
+    Nri(MemoryLocation) memoryLocation;
+    NriPtr(Texture) const* textures;
     uint32_t textureNum;
-    NRI_NAME(Buffer)* const* buffers;
+    NriPtr(Buffer) const* buffers;
     uint32_t bufferNum;
     uint64_t preferredMemorySize; // desired chunk size (but can be greater if a resource doesn't fit), 256 Mb if 0
 };
 
-NRI_STRUCT(FormatProps)
-{
+NriStruct(FormatProps) {
     const char* name;            // format name
-    NRI_NAME(Format) format;     // self
+    Nri(Format) format;          // self
     uint8_t redBits;             // R (or depth) bits
     uint8_t greenBits;           // G (or stencil) bits (0 if channels < 2)
     uint8_t blueBits;            // B bits (0 if channels < 3)
@@ -70,67 +64,40 @@ NRI_STRUCT(FormatProps)
     uint32_t unused         : 7;
 };
 
-NRI_STRUCT(HelperInterface)
-{
+NriStruct(HelperInterface) {
     // Optimized memory allocation for a group of resources
-    uint32_t (NRI_CALL *CalculateAllocationNumber)(const NRI_NAME_REF(Device) device, const NRI_NAME_REF(ResourceGroupDesc) resourceGroupDesc);
-    NRI_NAME(Result) (NRI_CALL *AllocateAndBindMemory)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(ResourceGroupDesc) resourceGroupDesc, NRI_NAME(Memory)** allocations);
+    uint32_t (NRI_CALL *CalculateAllocationNumber)(const NriRef(Device) device, const NriRef(ResourceGroupDesc) resourceGroupDesc);
+    Nri(Result) (NRI_CALL *AllocateAndBindMemory)(NriRef(Device) device, const NriRef(ResourceGroupDesc) resourceGroupDesc, NriPtr(Memory)* allocations);
 
     // Populate resources with data (not for streaming!)
-    NRI_NAME(Result) (NRI_CALL *UploadData)(NRI_NAME_REF(CommandQueue) commandQueue, const NRI_NAME(TextureUploadDesc)* textureUploadDescs, uint32_t textureUploadDescNum,
-        const NRI_NAME(BufferUploadDesc)* bufferUploadDescs, uint32_t bufferUploadDescNum);
+    Nri(Result) (NRI_CALL *UploadData)(NriRef(CommandQueue) commandQueue, const NriPtr(TextureUploadDesc) textureUploadDescs, uint32_t textureUploadDescNum, const NriPtr(BufferUploadDesc) bufferUploadDescs, uint32_t bufferUploadDescNum);
 
     // WFI
-    NRI_NAME(Result) (NRI_CALL *WaitForIdle)(NRI_NAME_REF(CommandQueue) commandQueue);
+    Nri(Result) (NRI_CALL *WaitForIdle)(NriRef(CommandQueue) commandQueue);
 
     // Information about video memory
-    NRI_NAME(Result) (NRI_CALL *QueryVideoMemoryInfo)(const NRI_NAME_REF(Device) device, NRI_NAME(MemoryLocation) memoryLocation, NRI_NAME_REF(VideoMemoryInfo) videoMemoryInfo);
+    Nri(Result) (NRI_CALL *QueryVideoMemoryInfo)(const NriRef(Device) device, Nri(MemoryLocation) memoryLocation, NriOut NriRef(VideoMemoryInfo) videoMemoryInfo);
 };
 
 // Format utilities
-NRI_API NRI_NAME(Format) NRI_CALL nriConvertDXGIFormatToNRI(uint32_t dxgiFormat);
-NRI_API NRI_NAME(Format) NRI_CALL nriConvertVKFormatToNRI(uint32_t vkFormat);
-NRI_API uint32_t NRI_CALL nriConvertNRIFormatToDXGI(NRI_NAME(Format) format);
-NRI_API uint32_t NRI_CALL nriConvertNRIFormatToVK(NRI_NAME(Format) format);
-NRI_API const NRI_NAME_REF(FormatProps) NRI_CALL nriGetFormatProps(NRI_NAME(Format) format);
+NRI_API Nri(Format) NRI_CALL nriConvertDXGIFormatToNRI(uint32_t dxgiFormat);
+NRI_API Nri(Format) NRI_CALL nriConvertVKFormatToNRI(uint32_t vkFormat);
+NRI_API uint32_t NRI_CALL nriConvertNRIFormatToDXGI(Nri(Format) format);
+NRI_API uint32_t NRI_CALL nriConvertNRIFormatToVK(Nri(Format) format);
+NRI_API const NriRef(FormatProps) NRI_CALL nriGetFormatProps(Nri(Format) format);
 
 // Strings
-NRI_API const char* NRI_CALL nriGetGraphicsAPIString(NRI_NAME(GraphicsAPI) graphicsAPI);
-
-// A friendly way to get a supported depth format
-static inline NRI_NAME(Format) NRI_FUNC_NAME(GetSupportedDepthFormat)(const NRI_NAME_REF(CoreInterface) coreInterface, const NRI_NAME_REF(Device) device, uint32_t minBits, bool stencil)
-{
-    if (minBits <= 16 && !stencil) {
-        if (NRI_REF_ACCESS(coreInterface)->GetFormatSupport(device, NRI_ENUM_MEMBER(Format, D16_UNORM)) & NRI_ENUM_MEMBER(FormatSupportBits, DEPTH_STENCIL_ATTACHMENT))
-            return NRI_ENUM_MEMBER(Format, D16_UNORM);
-    }
-
-    if (minBits <= 24) {
-        if (NRI_REF_ACCESS(coreInterface)->GetFormatSupport(device, NRI_ENUM_MEMBER(Format, D24_UNORM_S8_UINT)) & NRI_ENUM_MEMBER(FormatSupportBits, DEPTH_STENCIL_ATTACHMENT))
-            return NRI_ENUM_MEMBER(Format, D24_UNORM_S8_UINT);
-    }
-
-    if (minBits <= 32 && !stencil) {
-        if (NRI_REF_ACCESS(coreInterface)->GetFormatSupport(device, NRI_ENUM_MEMBER(Format, D32_SFLOAT)) & NRI_ENUM_MEMBER(FormatSupportBits, DEPTH_STENCIL_ATTACHMENT))
-            return NRI_ENUM_MEMBER(Format, D32_SFLOAT);
-    }
-
-    if (NRI_REF_ACCESS(coreInterface)->GetFormatSupport(device, NRI_ENUM_MEMBER(Format, D32_SFLOAT_S8_UINT_X24)) & NRI_ENUM_MEMBER(FormatSupportBits, DEPTH_STENCIL_ATTACHMENT))
-        return NRI_ENUM_MEMBER(Format, D32_SFLOAT_S8_UINT_X24);
-
-    // Should be unreachable
-    return NRI_ENUM_MEMBER(Format, UNKNOWN);
-}
+NRI_API const char* NRI_CALL nriGetGraphicsAPIString(Nri(GraphicsAPI) graphicsAPI);
 
 // "TextureDesc" constructors
-static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture1D)(NRI_NAME(Format) format,
+static inline Nri(TextureDesc) NriFunc(Texture1D)(Nri(Format) format,
     uint16_t width,
-    NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(1),
-    NRI_NAME(Dim_t) layerNum NRI_DEFAULT_VALUE(1),
-    NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)))
+    Nri(Mip_t) mipNum NriDefault(1),
+    Nri(Dim_t) layerNum NriDefault(1),
+    Nri(TextureUsageBits) usageMask NriDefault(NriScopedMember(TextureUsageBits, SHADER_RESOURCE)))
 {
-    NRI_NAME(TextureDesc) textureDesc = NRI_ZERO_INIT;
-    textureDesc.type = NRI_ENUM_MEMBER(TextureType, TEXTURE_1D);
+    Nri(TextureDesc) textureDesc = NriZero;
+    textureDesc.type = NriScopedMember(TextureType, TEXTURE_1D);
     textureDesc.format = format;
     textureDesc.usageMask = usageMask;
     textureDesc.width = width;
@@ -143,16 +110,16 @@ static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture1D)(NRI_NAME(Format) fo
     return textureDesc;
 }
 
-static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture2D)(NRI_NAME(Format) format,
-    NRI_NAME(Dim_t) width,
-    NRI_NAME(Dim_t) height,
-    NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(1),
-    NRI_NAME(Dim_t) layerNum NRI_DEFAULT_VALUE(1),
-    NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)),
-    NRI_NAME(Sample_t) sampleNum NRI_DEFAULT_VALUE(1))
+static inline Nri(TextureDesc) NriFunc(Texture2D)(Nri(Format) format,
+    Nri(Dim_t) width,
+    Nri(Dim_t) height,
+    Nri(Mip_t) mipNum NriDefault(1),
+    Nri(Dim_t) layerNum NriDefault(1),
+    Nri(TextureUsageBits) usageMask NriDefault(NriScopedMember(TextureUsageBits, SHADER_RESOURCE)),
+    Nri(Sample_t) sampleNum NriDefault(1))
 {
-    NRI_NAME(TextureDesc) textureDesc = NRI_ZERO_INIT;
-    textureDesc.type = NRI_ENUM_MEMBER(TextureType, TEXTURE_2D);
+    Nri(TextureDesc) textureDesc = NriZero;
+    textureDesc.type = NriScopedMember(TextureType, TEXTURE_2D);
     textureDesc.format = format;
     textureDesc.usageMask = usageMask;
     textureDesc.width = width;
@@ -165,15 +132,15 @@ static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture2D)(NRI_NAME(Format) fo
     return textureDesc;
 }
 
-static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture3D)(NRI_NAME(Format) format,
-    NRI_NAME(Dim_t) width,
-    NRI_NAME(Dim_t) height,
+static inline Nri(TextureDesc) NriFunc(Texture3D)(Nri(Format) format,
+    Nri(Dim_t) width,
+    Nri(Dim_t) height,
     uint16_t depth,
-    NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(1),
-    NRI_NAME(TextureUsageBits) usageMask NRI_DEFAULT_VALUE(NRI_ENUM_MEMBER(TextureUsageBits, SHADER_RESOURCE)))
+    Nri(Mip_t) mipNum NriDefault(1),
+    Nri(TextureUsageBits) usageMask NriDefault(NriScopedMember(TextureUsageBits, SHADER_RESOURCE)))
 {
-    NRI_NAME(TextureDesc) textureDesc = NRI_ZERO_INIT;
-    textureDesc.type = NRI_ENUM_MEMBER(TextureType, TEXTURE_3D);
+    Nri(TextureDesc) textureDesc = NriZero;
+    textureDesc.type = NriScopedMember(TextureType, TEXTURE_3D);
     textureDesc.format = format;
     textureDesc.usageMask = usageMask;
     textureDesc.width = width;
@@ -187,15 +154,15 @@ static inline NRI_NAME(TextureDesc) NRI_FUNC_NAME(Texture3D)(NRI_NAME(Format) fo
 }
 
 // "TextureBarrierDesc" constructors
-static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrier)(NRI_NAME(Texture)* texture,
-    NRI_NAME(AccessLayoutStage) before,
-    NRI_NAME(AccessLayoutStage) after,
-    NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0),
-    NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIPS)),
-    NRI_NAME(Dim_t) layerOffset NRI_DEFAULT_VALUE(0),
-    NRI_NAME(Dim_t) layerNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_LAYERS)))
+static inline Nri(TextureBarrierDesc) NriFunc(TextureBarrier)(NriPtr(Texture) texture,
+    Nri(AccessLayoutStage) before,
+    Nri(AccessLayoutStage) after,
+    Nri(Mip_t) mipOffset NriDefault(0),
+    Nri(Mip_t) mipNum NriDefault(Nri(REMAINING_MIPS)),
+    Nri(Dim_t) layerOffset NriDefault(0),
+    Nri(Dim_t) layerNum NriDefault(Nri(REMAINING_LAYERS)))
 {
-    NRI_NAME(TextureBarrierDesc) textureBarrierDesc = NRI_ZERO_INIT;
+    Nri(TextureBarrierDesc) textureBarrierDesc = NriZero;
     textureBarrierDesc.texture = texture;
     textureBarrierDesc.before = before;
     textureBarrierDesc.after = after;
@@ -207,18 +174,18 @@ static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrier)(NRI_NAM
     return textureBarrierDesc;
 }
 
-static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrierFromUnknown)(NRI_NAME(Texture)* texture,
-    NRI_NAME(AccessLayoutStage) after,
-    NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0),
-    NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIPS)),
-    NRI_NAME(Dim_t) layerOffset NRI_DEFAULT_VALUE(0),
-    NRI_NAME(Dim_t) layerNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_LAYERS)))
+static inline Nri(TextureBarrierDesc) NriFunc(TextureBarrierFromUnknown)(NriPtr(Texture) texture,
+    Nri(AccessLayoutStage) after,
+    Nri(Mip_t) mipOffset NriDefault(0),
+    Nri(Mip_t) mipNum NriDefault(Nri(REMAINING_MIPS)),
+    Nri(Dim_t) layerOffset NriDefault(0),
+    Nri(Dim_t) layerNum NriDefault(Nri(REMAINING_LAYERS)))
 {
-    NRI_NAME(TextureBarrierDesc) textureBarrierDesc = NRI_ZERO_INIT;
+    Nri(TextureBarrierDesc) textureBarrierDesc = NriZero;
     textureBarrierDesc.texture = texture;
-    textureBarrierDesc.before.access = NRI_ENUM_MEMBER(AccessBits, UNKNOWN);
-    textureBarrierDesc.before.layout = NRI_ENUM_MEMBER(Layout, UNKNOWN);
-    textureBarrierDesc.before.stages = NRI_ENUM_MEMBER(StageBits, ALL);
+    textureBarrierDesc.before.access = NriScopedMember(AccessBits, UNKNOWN);
+    textureBarrierDesc.before.layout = NriScopedMember(Layout, UNKNOWN);
+    textureBarrierDesc.before.stages = NriScopedMember(StageBits, ALL);
     textureBarrierDesc.after = after;
     textureBarrierDesc.mipOffset = mipOffset;
     textureBarrierDesc.mipNum = mipNum;
@@ -228,17 +195,17 @@ static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrierFromUnkno
     return textureBarrierDesc;
 }
 
-static inline NRI_NAME(TextureBarrierDesc) NRI_FUNC_NAME(TextureBarrierFromState)(NRI_NAME_REF(TextureBarrierDesc) prevState,
-    NRI_NAME(AccessLayoutStage) after,
-    NRI_NAME(Mip_t) mipOffset NRI_DEFAULT_VALUE(0),
-    NRI_NAME(Mip_t) mipNum NRI_DEFAULT_VALUE(NRI_NAME(REMAINING_MIPS)))
+static inline Nri(TextureBarrierDesc) NriFunc(TextureBarrierFromState)(NriRef(TextureBarrierDesc) prevState,
+    Nri(AccessLayoutStage) after,
+    Nri(Mip_t) mipOffset NriDefault(0),
+    Nri(Mip_t) mipNum NriDefault(Nri(REMAINING_MIPS)))
 {
-    NRI_REF_ACCESS(prevState)->mipOffset = mipOffset;
-    NRI_REF_ACCESS(prevState)->mipNum = mipNum;
-    NRI_REF_ACCESS(prevState)->before = NRI_REF_ACCESS(prevState)->after;
-    NRI_REF_ACCESS(prevState)->after = after;
+    NriDeref(prevState)->mipOffset = mipOffset;
+    NriDeref(prevState)->mipNum = mipNum;
+    NriDeref(prevState)->before = NriDeref(prevState)->after;
+    NriDeref(prevState)->after = after;
 
-    return *NRI_REF_ACCESS(prevState);
+    return *NriDeref(prevState);
 }
 
-NRI_NAMESPACE_END
+NriNamespaceEnd

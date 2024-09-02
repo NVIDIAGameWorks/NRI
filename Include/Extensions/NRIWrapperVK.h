@@ -2,23 +2,22 @@
 
 #pragma once
 
-#include "NRIDeviceCreation.h"
+#include "NRIDeviceCreation.h" // CallbackInterface, AllocationCallbacks, SPIRVBindingOffsets, VKExtensions
 
-NRI_NAMESPACE_BEGIN
-
-// Forward and "mimic" declarations
-NRI_FORWARD_STRUCT(AccelerationStructure);
 typedef void* VKHandle;
-typedef uint64_t VKNonDispatchableHandle;
 typedef int32_t VKEnum;
 typedef uint32_t VKFlags;
+typedef uint64_t VKNonDispatchableHandle;
 
-NRI_STRUCT(DeviceCreationVKDesc)
-{
-    NRI_NAME(CallbackInterface) callbackInterface;
-    NRI_NAME(AllocationCallbacks) allocationCallbacks;
-    NRI_NAME(SPIRVBindingOffsets) spirvBindingOffsets;
-    NRI_NAME(VKExtensions) enabledExtensions;
+NriNamespaceBegin
+
+NriForwardStruct(AccelerationStructure);
+
+NriStruct(DeviceCreationVKDesc) {
+    Nri(CallbackInterface) callbackInterface;
+    Nri(AllocationCallbacks) allocationCallbacks;
+    Nri(SPIRVBindingOffsets) spirvBindingOffsets;
+    Nri(VKExtensions) enabledExtensions;
     VKHandle vkInstance;
     VKHandle vkDevice;
     VKHandle vkPhysicalDevice;
@@ -28,94 +27,84 @@ NRI_STRUCT(DeviceCreationVKDesc)
     uint8_t minorVersion; // >= 2
 };
 
-NRI_STRUCT(CommandQueueVKDesc)
-{
+NriStruct(CommandQueueVKDesc) {
     VKHandle vkQueue;
     uint32_t queueFamilyIndex;
-    NRI_NAME(CommandQueueType) commandQueueType;
+    Nri(CommandQueueType) commandQueueType;
 };
 
-NRI_STRUCT(CommandAllocatorVKDesc)
-{
+NriStruct(CommandAllocatorVKDesc) {
     VKNonDispatchableHandle vkCommandPool;
-    NRI_NAME(CommandQueueType) commandQueueType;
+    Nri(CommandQueueType) commandQueueType;
 };
 
-NRI_STRUCT(CommandBufferVKDesc)
-{
+NriStruct(CommandBufferVKDesc) {
     VKHandle vkCommandBuffer;
-    NRI_NAME(CommandQueueType) commandQueueType;
+    Nri(CommandQueueType) commandQueueType;
 };
 
-NRI_STRUCT(DescriptorPoolVKDesc)
-{
+NriStruct(DescriptorPoolVKDesc) {
     VKNonDispatchableHandle vkDescriptorPool;
     uint32_t descriptorSetMaxNum;
 };
 
-NRI_STRUCT(BufferVKDesc)
-{
+NriStruct(BufferVKDesc) {
     VKNonDispatchableHandle vkBuffer;
     uint64_t size;
-    NRI_OPTIONAL uint32_t structureStride; // must be provided if used as a structured or raw buffer
-    NRI_OPTIONAL uint8_t* mappedMemory; // must be provided if the underlying memory is mapped
-    NRI_OPTIONAL VKNonDispatchableHandle vkDeviceMemory; // must be provided *only* if the mapped memory exists and *not* HOST_COHERENT
-    NRI_OPTIONAL uint64_t deviceAddress; // must be provided for ray tracing
+    NriOptional uint32_t structureStride;               // must be provided if used as a structured or raw buffer
+    NriOptional uint8_t* mappedMemory;                  // must be provided if the underlying memory is mapped
+    NriOptional VKNonDispatchableHandle vkDeviceMemory; // must be provided *only* if the mapped memory exists and *not* HOST_COHERENT
+    NriOptional uint64_t deviceAddress;                 // must be provided for ray tracing
 };
 
-NRI_STRUCT(TextureVKDesc)
-{
+NriStruct(TextureVKDesc) {
     VKNonDispatchableHandle vkImage;
     VKEnum vkFormat;
     VKEnum vkImageType;
-    NRI_NAME(Dim_t) width;
-    NRI_NAME(Dim_t) height;
-    NRI_NAME(Dim_t) depth;
-    NRI_NAME(Mip_t) mipNum;
-    NRI_NAME(Dim_t) layerNum;
-    NRI_NAME(Sample_t) sampleNum;
+    Nri(Dim_t) width;
+    Nri(Dim_t) height;
+    Nri(Dim_t) depth;
+    Nri(Mip_t) mipNum;
+    Nri(Dim_t) layerNum;
+    Nri(Sample_t) sampleNum;
 };
 
-NRI_STRUCT(MemoryVKDesc)
-{
+NriStruct(MemoryVKDesc) {
     VKNonDispatchableHandle vkDeviceMemory;
     void* vkMappedMemory;
     uint64_t size;
     uint32_t memoryTypeIndex;
 };
 
-NRI_STRUCT(QueryPoolVKDesc)
-{
+NriStruct(QueryPoolVKDesc) {
     VKNonDispatchableHandle vkQueryPool;
     VKEnum vkQueryType;
 };
 
-NRI_STRUCT(AccelerationStructureVKDesc)
-{
+NriStruct(AccelerationStructureVKDesc) {
     VKNonDispatchableHandle vkAccelerationStructure;
     uint64_t buildScratchSize;
     uint64_t updateScratchSize;
 };
 
-NRI_STRUCT(WrapperVKInterface)
-{
-    NRI_NAME(Result) (NRI_CALL *CreateCommandQueueVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(CommandQueueVKDesc) commandQueueVKDesc, NRI_NAME_REF(CommandQueue*) commandQueue);
-    NRI_NAME(Result) (NRI_CALL *CreateCommandAllocatorVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(CommandAllocatorVKDesc) commandAllocatorVKDesc, NRI_NAME_REF(CommandAllocator*) commandAllocator);
-    NRI_NAME(Result) (NRI_CALL *CreateCommandBufferVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(CommandBufferVKDesc) commandBufferVKDesc, NRI_NAME_REF(CommandBuffer*) commandBuffer);
-    NRI_NAME(Result) (NRI_CALL *CreateDescriptorPoolVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(DescriptorPoolVKDesc) descriptorPoolVKDesc, NRI_NAME_REF(DescriptorPool*) descriptorPool);
-    NRI_NAME(Result) (NRI_CALL *CreateBufferVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(BufferVKDesc) bufferVKDesc, NRI_NAME_REF(Buffer*) buffer);
-    NRI_NAME(Result) (NRI_CALL *CreateTextureVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(TextureVKDesc) textureVKDesc, NRI_NAME_REF(Texture*) texture);
-    NRI_NAME(Result) (NRI_CALL *CreateMemoryVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(MemoryVKDesc) memoryVKDesc, NRI_NAME_REF(Memory*) memory);
-    NRI_NAME(Result) (NRI_CALL *CreateGraphicsPipelineVK)(NRI_NAME_REF(Device) device, VKNonDispatchableHandle vkPipeline, NRI_NAME_REF(Pipeline*) pipeline);
-    NRI_NAME(Result) (NRI_CALL *CreateComputePipelineVK)(NRI_NAME_REF(Device) device, VKNonDispatchableHandle vkPipeline, NRI_NAME_REF(Pipeline*) pipeline);
-    NRI_NAME(Result) (NRI_CALL *CreateQueryPoolVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(QueryPoolVKDesc) queryPoolVKDesc, NRI_NAME_REF(QueryPool*) queryPool);
-    NRI_NAME(Result) (NRI_CALL *CreateAccelerationStructureVK)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(AccelerationStructureVKDesc) accelerationStructureVKDesc, NRI_NAME_REF(AccelerationStructure*) accelerationStructure);
-    VKHandle (NRI_CALL *GetPhysicalDeviceVK)(const NRI_NAME_REF(Device) device);
-    VKHandle (NRI_CALL *GetInstanceVK)(const NRI_NAME_REF(Device) device);
-    void* (NRI_CALL *GetInstanceProcAddrVK)(const NRI_NAME_REF(Device) device);
-    void* (NRI_CALL *GetDeviceProcAddrVK)(const NRI_NAME_REF(Device) device);
+NriStruct(WrapperVKInterface) {
+    Nri(Result) (NRI_CALL *CreateCommandQueueVK)(NriRef(Device) device, const NriRef(CommandQueueVKDesc) commandQueueVKDesc, NriOut NriRef(CommandQueue*) commandQueue);
+    Nri(Result) (NRI_CALL *CreateCommandAllocatorVK)(NriRef(Device) device, const NriRef(CommandAllocatorVKDesc) commandAllocatorVKDesc, NriOut NriRef(CommandAllocator*) commandAllocator);
+    Nri(Result) (NRI_CALL *CreateCommandBufferVK)(NriRef(Device) device, const NriRef(CommandBufferVKDesc) commandBufferVKDesc, NriOut NriRef(CommandBuffer*) commandBuffer);
+    Nri(Result) (NRI_CALL *CreateDescriptorPoolVK)(NriRef(Device) device, const NriRef(DescriptorPoolVKDesc) descriptorPoolVKDesc, NriOut NriRef(DescriptorPool*) descriptorPool);
+    Nri(Result) (NRI_CALL *CreateBufferVK)(NriRef(Device) device, const NriRef(BufferVKDesc) bufferVKDesc, NriOut NriRef(Buffer*) buffer);
+    Nri(Result) (NRI_CALL *CreateTextureVK)(NriRef(Device) device, const NriRef(TextureVKDesc) textureVKDesc, NriOut NriRef(Texture*) texture);
+    Nri(Result) (NRI_CALL *CreateMemoryVK)(NriRef(Device) device, const NriRef(MemoryVKDesc) memoryVKDesc, NriOut NriRef(Memory*) memory);
+    Nri(Result) (NRI_CALL *CreateGraphicsPipelineVK)(NriRef(Device) device, VKNonDispatchableHandle vkPipeline, NriOut NriRef(Pipeline*) pipeline);
+    Nri(Result) (NRI_CALL *CreateComputePipelineVK)(NriRef(Device) device, VKNonDispatchableHandle vkPipeline, NriOut NriRef(Pipeline*) pipeline);
+    Nri(Result) (NRI_CALL *CreateQueryPoolVK)(NriRef(Device) device, const NriRef(QueryPoolVKDesc) queryPoolVKDesc, NriOut NriRef(QueryPool*) queryPool);
+    Nri(Result) (NRI_CALL *CreateAccelerationStructureVK)(NriRef(Device) device, const NriRef(AccelerationStructureVKDesc) accelerationStructureVKDesc, NriOut NriRef(AccelerationStructure*) accelerationStructure);
+    VKHandle (NRI_CALL *GetPhysicalDeviceVK)(const NriRef(Device) device);
+    VKHandle (NRI_CALL *GetInstanceVK)(const NriRef(Device) device);
+    void* (NRI_CALL *GetInstanceProcAddrVK)(const NriRef(Device) device);
+    void* (NRI_CALL *GetDeviceProcAddrVK)(const NriRef(Device) device);
 };
 
-NRI_API NRI_NAME(Result) NRI_CALL nriCreateDeviceFromVkDevice(const NRI_NAME_REF(DeviceCreationVKDesc) deviceDesc, NRI_NAME_REF(Device*) device);
+NRI_API Nri(Result) NRI_CALL nriCreateDeviceFromVkDevice(const NriRef(DeviceCreationVKDesc) deviceDesc, NriOut NriRef(Device*) device);
 
-NRI_NAMESPACE_END
+NriNamespaceEnd

@@ -2,50 +2,45 @@
 
 #pragma once
 
-#include "NRIDeviceCreation.h"
+#include "NRIDeviceCreation.h" // CallbackInterface, AllocationCallbacks
 
-NRI_FORWARD_STRUCT(AGSContext);
-NRI_FORWARD_STRUCT(ID3D11Device);
-NRI_FORWARD_STRUCT(ID3D11Resource);
-NRI_FORWARD_STRUCT(ID3D11DeviceContext);
+NonNriForwardStruct(AGSContext);
+NonNriForwardStruct(ID3D11Device);
+NonNriForwardStruct(ID3D11Resource);
+NonNriForwardStruct(ID3D11DeviceContext);
 
-NRI_NAMESPACE_BEGIN
+NriNamespaceBegin
 
-NRI_STRUCT(DeviceCreationD3D11Desc)
-{
+NriStruct(DeviceCreationD3D11Desc) {
     ID3D11Device* d3d11Device;
-    NRI_OPTIONAL AGSContext* agsContext;
-    NRI_NAME(CallbackInterface) callbackInterface;
-    NRI_NAME(AllocationCallbacks) allocationCallbacks;
+    NriOptional AGSContext* agsContext;
+    Nri(CallbackInterface) callbackInterface;
+    Nri(AllocationCallbacks) allocationCallbacks;
     bool enableD3D11CommandBufferEmulation;
     bool enableNRIValidation;
     bool isNVAPILoaded; // at least NVAPI requires calling "NvAPI_Initialize" in DLL/EXE where the device is created in addition to NRI
 };
 
-NRI_STRUCT(CommandBufferD3D11Desc)
-{
+NriStruct(CommandBufferD3D11Desc) {
     ID3D11DeviceContext* d3d11DeviceContext;
 };
 
-NRI_STRUCT(BufferD3D11Desc)
-{
+NriStruct(BufferD3D11Desc) {
     ID3D11Resource* d3d11Resource;
-    NRI_OPTIONAL const NRI_NAME(BufferDesc)* desc; // not all information can be retrieved from the resource if not provided
+    NriOptional const NriPtr(BufferDesc) desc; // not all information can be retrieved from the resource if not provided
 };
 
-NRI_STRUCT(TextureD3D11Desc)
-{
+NriStruct(TextureD3D11Desc) {
     ID3D11Resource* d3d11Resource;
-    NRI_OPTIONAL const NRI_NAME(TextureDesc)* desc; // not all information can be retrieved from the resource if not provided
+    NriOptional const NriPtr(TextureDesc) desc; // not all information can be retrieved from the resource if not provided
 };
 
-NRI_STRUCT(WrapperD3D11Interface)
-{
-    NRI_NAME(Result) (NRI_CALL *CreateCommandBufferD3D11)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(CommandBufferD3D11Desc) commandBufferD3D11Desc, NRI_NAME_REF(CommandBuffer*) commandBuffer);
-    NRI_NAME(Result) (NRI_CALL *CreateBufferD3D11)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(BufferD3D11Desc) bufferD3D11Desc, NRI_NAME_REF(Buffer*) buffer);
-    NRI_NAME(Result) (NRI_CALL *CreateTextureD3D11)(NRI_NAME_REF(Device) device, const NRI_NAME_REF(TextureD3D11Desc) textureD3D11Desc, NRI_NAME_REF(Texture*) texture);
+NriStruct(WrapperD3D11Interface) {
+    Nri(Result) (NRI_CALL *CreateCommandBufferD3D11)(NriRef(Device) device, const NriRef(CommandBufferD3D11Desc) commandBufferD3D11Desc, NriOut NriRef(CommandBuffer*) commandBuffer);
+    Nri(Result) (NRI_CALL *CreateBufferD3D11)(NriRef(Device) device, const NriRef(BufferD3D11Desc) bufferD3D11Desc, NriOut NriRef(Buffer*) buffer);
+    Nri(Result) (NRI_CALL *CreateTextureD3D11)(NriRef(Device) device, const NriRef(TextureD3D11Desc) textureD3D11Desc, NriOut NriRef(Texture*) texture);
 };
 
-NRI_API NRI_NAME(Result) NRI_CALL nriCreateDeviceFromD3D11Device(const NRI_NAME_REF(DeviceCreationD3D11Desc) deviceDesc, NRI_NAME_REF(Device*) device);
+NRI_API Nri(Result) NRI_CALL nriCreateDeviceFromD3D11Device(const NriRef(DeviceCreationD3D11Desc) deviceDesc, NriOut NriRef(Device*) device);
 
-NRI_NAMESPACE_END
+NriNamespaceEnd

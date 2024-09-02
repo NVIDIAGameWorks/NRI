@@ -2,20 +2,16 @@
 
 #pragma once
 
-NRI_NAMESPACE_BEGIN
+NriNamespaceBegin
 
-NRI_STRUCT(DrawMeshTasksDesc)
-{
-    uint32_t x;
-    uint32_t y;
-    uint32_t z;
+NriStruct(DrawMeshTasksDesc) {
+    uint32_t x, y, z;
 };
 
-NRI_STRUCT(MeshShaderInterface)
-{
+NriStruct(MeshShaderInterface) {
     // Draw
-    void (NRI_CALL *CmdDrawMeshTasks)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(DrawMeshTasksDesc) drawMeshTasksDesc);
-    void (NRI_CALL *CmdDrawMeshTasksIndirect)(NRI_NAME_REF(CommandBuffer) commandBuffer, const NRI_NAME_REF(Buffer) buffer, uint64_t offset, uint32_t drawNum, uint32_t stride); // buffer contains "DrawMeshTasksDesc" commands
+    void (NRI_CALL *CmdDrawMeshTasks)(NriRef(CommandBuffer) commandBuffer, const NriRef(DrawMeshTasksDesc) drawMeshTasksDesc);
+    void (NRI_CALL *CmdDrawMeshTasksIndirect)(NriRef(CommandBuffer) commandBuffer, const NriRef(Buffer) buffer, uint64_t offset, uint32_t drawNum, uint32_t stride); // buffer contains "DrawMeshTasksDesc" commands
 };
 
-NRI_NAMESPACE_END
+NriNamespaceEnd

@@ -417,7 +417,7 @@ static uint32_t UpdateStreamerConstantBuffer(Streamer& streamer, const void* dat
     StreamerVal& streamerVal = (StreamerVal&)streamer;
 
     if (!dataSize)
-        REPORT_WARNING(&deviceVal, "UpdateStreamerConstantBuffer: 'dataSize = 0'");
+        REPORT_WARNING(&deviceVal, "'dataSize = 0'");
 
     return streamerVal.GetStreamerInterface().UpdateStreamerConstantBuffer(*NRI_GET_IMPL(Streamer, &streamer), data, dataSize);
 }
@@ -428,7 +428,7 @@ static uint64_t AddStreamerBufferUpdateRequest(Streamer& streamer, const BufferU
     streamerVal.isDynamicBufferValid = false;
 
     if (!bufferUpdateRequestDesc.dataSize)
-        REPORT_WARNING(&deviceVal, "AddStreamerBufferUpdateRequest: 'bufferUpdateRequestDesc.dataSize = 0'");
+        REPORT_WARNING(&deviceVal, "'bufferUpdateRequestDesc.dataSize = 0'");
 
     BufferUpdateRequestDesc bufferUpdateRequestDescImpl = bufferUpdateRequestDesc;
     bufferUpdateRequestDescImpl.dstBuffer = NRI_GET_IMPL(Buffer, bufferUpdateRequestDesc.dstBuffer);
@@ -442,11 +442,11 @@ static uint64_t AddStreamerTextureUpdateRequest(Streamer& streamer, const Textur
     streamerVal.isDynamicBufferValid = false;
 
     if (!textureUpdateRequestDesc.dstTexture)
-        REPORT_ERROR(&deviceVal, "AddStreamerTextureUpdateRequest: 'textureUpdateRequestDesc.dstTexture' is NULL");
+        REPORT_ERROR(&deviceVal, "'textureUpdateRequestDesc.dstTexture' is NULL");
     if (!textureUpdateRequestDesc.dataRowPitch)
-        REPORT_WARNING(&deviceVal, "AddStreamerTextureUpdateRequest: 'textureUpdateRequestDesc.dataRowPitch = 0'");
+        REPORT_WARNING(&deviceVal, "'textureUpdateRequestDesc.dataRowPitch = 0'");
     if (!textureUpdateRequestDesc.dataSlicePitch)
-        REPORT_WARNING(&deviceVal, "AddStreamerTextureUpdateRequest: 'textureUpdateRequestDesc.dataSlicePitch = 0'");
+        REPORT_WARNING(&deviceVal, "'textureUpdateRequestDesc.dataSlicePitch = 0'");
 
     TextureUpdateRequestDesc textureUpdateRequestDescImpl = textureUpdateRequestDesc;
     textureUpdateRequestDescImpl.dstTexture = NRI_GET_IMPL(Texture, textureUpdateRequestDesc.dstTexture);

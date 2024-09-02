@@ -622,19 +622,19 @@ inline VkFormat GetVkFormat(Format format, bool demoteSrgb = false) {
 
 inline VkExtent2D GetShadingRate(ShadingRate shadingRate) {
     switch (shadingRate) {
-        case ShadingRate::_1x1:
+        case ShadingRate::FRAGMENT_SIZE_1X1:
             return {1, 1};
-        case ShadingRate::_1x2:
+        case ShadingRate::FRAGMENT_SIZE_1X2:
             return {1, 2};
-        case ShadingRate::_2x1:
+        case ShadingRate::FRAGMENT_SIZE_2X1:
             return {2, 1};
-        case ShadingRate::_2x2:
+        case ShadingRate::FRAGMENT_SIZE_2X2:
             return {2, 2};
-        case ShadingRate::_2x4:
+        case ShadingRate::FRAGMENT_SIZE_2X4:
             return {2, 4};
-        case ShadingRate::_4x2:
+        case ShadingRate::FRAGMENT_SIZE_4X2:
             return {4, 2};
-        case ShadingRate::_4x4:
+        case ShadingRate::FRAGMENT_SIZE_4X4:
             return {4, 4};
     }
 

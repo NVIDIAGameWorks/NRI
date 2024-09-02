@@ -1,13 +1,13 @@
 // © 2021 NVIDIA Corporation
 
-#include "SharedExternal.h"
-
 #ifdef _WIN32
 #    include <windows.h>
 #else
 #    include <csignal>
 #    include <cstdarg>
 #endif
+
+#include "SharedExternal.h"
 
 #ifdef _WIN32
 
@@ -831,9 +831,17 @@ void CheckAndSetDefaultCallbacks(nri::CallbackInterface& callbackInterface) {
         callbackInterface.AbortExecution = AbortExecution;
 }
 
-constexpr std::array<const char*, uint32_t(nri::Message::TYPE_ERROR) + 1> MESSAGE_TYPE_NAME = {"INFO", "WARNING", "ERROR"};
+constexpr std::array<const char*, (size_t)nri::Message::MAX_NUM> MESSAGE_TYPE_NAME = {
+    "INFO",
+    "WARNING",
+    "ERROR",
+};
 
-constexpr std::array<const char*, uint32_t(nri::GraphicsAPI::VK) + 1> GRAPHICS_API_NAME = {"D3D11", "D3D12", "VK"};
+constexpr std::array<const char*, (size_t)nri::GraphicsAPI::MAX_NUM> GRAPHICS_API_NAME = {
+    "D3D11",
+    "D3D12",
+    "VK",
+};
 
 void nri::DeviceBase::ReportMessage(nri::Message messageType, const char* file, uint32_t line, const char* format, ...) const {
     const nri::DeviceDesc& desc = GetDesc();
@@ -869,7 +877,7 @@ void nri::DeviceBase::ReportMessage(nri::Message messageType, const char* file, 
     if (m_CallbackInterface.MessageCallback)
         m_CallbackInterface.MessageCallback(messageType, file, line, message, m_CallbackInterface.userArg);
 
-    if (messageType == nri::Message::TYPE_ERROR && m_CallbackInterface.AbortExecution != nullptr)
+    if (messageType == nri::Message::ERROR && m_CallbackInterface.AbortExecution != nullptr)
         m_CallbackInterface.AbortExecution(m_CallbackInterface.userArg);
 }
 

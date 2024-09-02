@@ -2,6 +2,12 @@
 
 #pragma once
 
+#ifdef _WIN32
+#    include <dxgi1_6.h>
+#else
+typedef uint32_t DXGI_FORMAT;
+#endif
+
 #include "NRI.h"
 
 #include "Extensions/NRIDeviceCreation.h"
@@ -27,9 +33,9 @@
 typedef nri::AllocationCallbacks AllocationCallbacks;
 #include "StdAllocator.h"
 
-#define REPORT_INFO(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define REPORT_WARNING(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_WARNING, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define REPORT_ERROR(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define REPORT_INFO(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define REPORT_WARNING(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::WARNING, __FILE__, __LINE__, "%s: " format, __FUNCTION__, ##__VA_ARGS__)
+#define REPORT_ERROR(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::ERROR, __FILE__, __LINE__, "%s: " format, __FUNCTION__, ##__VA_ARGS__)
 
 #include "DeviceBase.h"
 
@@ -90,30 +96,24 @@ inline void Destroy(T* object) {
     }
 }
 
-#ifdef _WIN32
-#    include <dxgi1_6.h>
-#else
-typedef uint32_t DXGI_FORMAT;
-#endif
-
 #define NRI_STRINGIFY_(token) #token
 #define NRI_STRINGIFY(token) NRI_STRINGIFY_(token)
 
 #define RETURN_ON_BAD_HRESULT(deviceBase, hr, format) \
     if (FAILED(hr)) { \
-        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, "%s: " format " failed, result = 0x%08X!", __FUNCTION__, hr); \
+        (deviceBase)->ReportMessage(nri::Message::ERROR, __FILE__, __LINE__, "%s: " format " failed, result = 0x%08X!", __FUNCTION__, hr); \
         return GetResultFromHRESULT(hr); \
     }
 
 #define RETURN_ON_FAILURE(deviceBase, condition, returnCode, format, ...) \
     if (!(condition)) { \
-        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, "%s: " format, __FUNCTION__, ##__VA_ARGS__); \
+        (deviceBase)->ReportMessage(nri::Message::ERROR, __FILE__, __LINE__, "%s: " format, __FUNCTION__, ##__VA_ARGS__); \
         return returnCode; \
     }
 
 #define REPORT_ERROR_ON_BAD_STATUS(deviceBase, expression) \
     if ((expression) != 0) \
-        (deviceBase)->ReportMessage(nri::Message::TYPE_ERROR, __FILE__, __LINE__, "%s: " NRI_STRINGIFY(expression) " failed!", __FUNCTION__)
+        (deviceBase)->ReportMessage(nri::Message::ERROR, __FILE__, __LINE__, "%s: " NRI_STRINGIFY(expression) " failed!", __FUNCTION__)
 
 #define CHECK(condition, message) assert((condition) && message)
 

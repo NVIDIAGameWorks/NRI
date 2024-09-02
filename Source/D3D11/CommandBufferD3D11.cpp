@@ -180,7 +180,7 @@ void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t 
             const ClearDesc& clearDesc = clearDescs[i];
 
             if (clearDesc.planes & PlaneBits::COLOR)
-                m_DeferredContext->ClearRenderTargetView(m_RenderTargets[clearDesc.colorAttachmentIndex], &clearDesc.value.color32f.x);
+                m_DeferredContext->ClearRenderTargetView(m_RenderTargets[clearDesc.colorAttachmentIndex], &clearDesc.value.color.f.x);
             else {
                 uint32_t clearFlags = 0;
                 if (clearDescs[i].planes & PlaneBits::DEPTH)
@@ -205,7 +205,7 @@ void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t 
                 const ClearDesc& clearDesc = clearDescs[i];
 
                 if (clearDesc.planes & PlaneBits::COLOR)
-                    m_DeferredContext->ClearView(m_RenderTargets[clearDesc.colorAttachmentIndex], &clearDesc.value.color32f.x, rectsD3D, rectNum);
+                    m_DeferredContext->ClearView(m_RenderTargets[clearDesc.colorAttachmentIndex], &clearDesc.value.color.f.x, rectsD3D, rectNum);
                 else if (clearDesc.planes & PlaneBits::DEPTH) {
                     color[0] = clearDesc.value.depthStencil.depth;
                     m_DeferredContext->ClearView(m_DepthStencil, color, rectsD3D, rectNum);
@@ -228,9 +228,9 @@ void CommandBufferD3D11::ClearStorageTexture(const ClearStorageTextureDesc& clea
     const DescriptorD3D11& descriptor = *(const DescriptorD3D11*)clearDesc.storageTexture;
 
     if (descriptor.IsIntegerFormat())
-        m_DeferredContext->ClearUnorderedAccessViewUint(descriptor, &clearDesc.value.color32ui.x);
+        m_DeferredContext->ClearUnorderedAccessViewUint(descriptor, &clearDesc.value.color.ui.x);
     else
-        m_DeferredContext->ClearUnorderedAccessViewFloat(descriptor, &clearDesc.value.color32f.x);
+        m_DeferredContext->ClearUnorderedAccessViewFloat(descriptor, &clearDesc.value.color.f.x);
 }
 
 void CommandBufferD3D11::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
@@ -464,7 +464,7 @@ void CommandBufferD3D11::UploadBufferToTexture(
     src.Unmap();
 }
 
-void CommandBufferD3D11::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
+void CommandBufferD3D11::ReadbackTextureToBuffer(Buffer& dstBuffer, const TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
     CHECK(dstDataLayoutDesc.offset == 0, "D3D11 implementation currently supports copying a texture region to a buffer only with offset = 0!");
 
     BufferD3D11& dst = (BufferD3D11&)dstBuffer;
