@@ -2,6 +2,12 @@
 
 #pragma once
 
+#include <array>
+#include <atomic>
+#include <cassert>
+#include <cstring>
+#include <map>
+
 #ifdef _WIN32
 #    include <dxgi1_6.h>
 #else
@@ -21,12 +27,6 @@ typedef uint32_t DXGI_FORMAT;
 #include "Extensions/NRIWrapperD3D11.h"
 #include "Extensions/NRIWrapperD3D12.h"
 #include "Extensions/NRIWrapperVK.h"
-
-#include <array>
-#include <atomic>
-#include <cassert>
-#include <cstring>
-#include <map>
 
 #include "Lock.h"
 
