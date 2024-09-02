@@ -3,7 +3,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <stddef.h>
 
 #if defined(__clang__) || defined(__GNUC__)    
     #define NRI_CALL
