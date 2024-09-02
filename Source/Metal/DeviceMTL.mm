@@ -1,5 +1,7 @@
 #include "SharedMTL.h"
 
+#include "CommandQueueMTL.h"
+
 #include "DeviceMTL.h"
 
 using namespace nri;
@@ -48,13 +50,16 @@ static bool FindMTLGpuFamily(id<MTLDevice> device,
 
 
 
-
-DeviceMTL::DeviceMTL(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator)
-    : DeviceBase(callbacks, stdAllocator) {
+DeviceMTL::DeviceMTL(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator) : DeviceBase(callbacks, stdAllocator) {
     m_Desc.graphicsAPI = GraphicsAPI::VK;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
 
+}
+
+
+void DeviceMTL::Destruct() {
+    Destroy(GetStdAllocator(), this);
 }
 
 DeviceMTL::~DeviceMTL() {
@@ -74,7 +79,31 @@ DeviceMTL::~DeviceMTL() {
 
 
 Result DeviceMTL::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
-    return Result::SUCCESS;
+    ExclusiveScope lock(m_Lock);
+
+    // Check if already created (or wrapped)
+    uint32_t index = (uint32_t)commandQueueType;
+    if (m_CommandQueues[index]) {
+        commandQueue = (CommandQueue*)m_CommandQueues[index];
+        return Result::SUCCESS;
+    }
+
+    // Check if supported
+    //uint32_t queueFamilyIndex = m_QueueFamilyIndices[index];
+    //if (queueFamilyIndex == INVALID_FAMILY_INDEX) {
+    //    commandQueue = nullptr;
+    //    return Result::UNSUPPORTED;
+    //}
+
+    // Create
+    //VkQueue handle = VK_NULL_HANDLE;
+    //m_VK.GetDeviceQueue(m_Device, queueFamilyIndex, 0, &handle);
+
+    Result result = CreateImplementation<CommandQueueMTL>(commandQueue, commandQueueType);
+    if (result == Result::SUCCESS)
+        m_CommandQueues[index] = (CommandQueueMTL*)commandQueue;
+
+    return result;
 }
 
 //void DeviceMTL::FillCreateInfo(const TextureDesc& textureDesc, MTLTextureDescriptor* info) const {
@@ -90,36 +119,36 @@ Result DeviceMTL::GetCommandQueue(CommandQueueType commandQueueType, CommandQueu
 
 Result DeviceMTL::Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationMTLDesc& deviceCreationMTLDesc, bool isWrapper) {
     m_OwnsNativeObjects = !isWrapper;
-
+    
     if(isWrapper) {
-     //   m_Device = deviceCreationMTLDesc.MtlDevice;
+        //   m_Device = deviceCreationMTLDesc.MtlDevice;
     }
-  
+    
     strncpy(m_Desc.adapterDesc.name, [m_Device.name UTF8String], sizeof(m_Desc.adapterDesc.name));
     // No vendor id, device id for Apple GPUs
     if (strstr(m_Desc.adapterDesc.name, "Apple")) {
         m_Desc.adapterDesc.vendor = nri::Vendor::APPLE;
-    } 
-
+    }
+    
     const uint64_t regID = [m_Device registryID];
     if (regID)
     {
-      //  IORef<io_registry_entry_t> entry =AcquireIORef(IOServiceGetMatchingService(kIOMasterPortDefault, IORegistryEntryIDMatching(regID)));
-      //  if (entry)
-      //  {
-            // That returned the IOGraphicsAccelerator nub. Its parent, then, is the actual PCI device.
-      //  IORef<io_registry_entry_t> deviceEntry;
-     //       if (IORegistryEntryGetParentEntry(entry, kIOServicePlane, &deviceEntry) == kIOReturnSuccess)
-     //       {
-     //           m_Desc.adapterDesc.vendor = GetVendorFromID(GetEntryProperty(deviceEntry, CFSTR("vendor-id")));
-     //           m_Desc.adapterDesc.deviceId = GetEntryProperty(deviceEntry, CFSTR("device-id"));
-    //        }
-       // }
+        //  IORef<io_registry_entry_t> entry =AcquireIORef(IOServiceGetMatchingService(kIOMasterPortDefault, IORegistryEntryIDMatching(regID)));
+        //  if (entry)
+        //  {
+        // That returned the IOGraphicsAccelerator nub. Its parent, then, is the actual PCI device.
+        //  IORef<io_registry_entry_t> deviceEntry;
+        //       if (IORegistryEntryGetParentEntry(entry, kIOServicePlane, &deviceEntry) == kIOReturnSuccess)
+        //       {
+        //           m_Desc.adapterDesc.vendor = GetVendorFromID(GetEntryProperty(deviceEntry, CFSTR("vendor-id")));
+        //           m_Desc.adapterDesc.deviceId = GetEntryProperty(deviceEntry, CFSTR("device-id"));
+        //        }
+        // }
     }
-
+    
     MTLGPUFamily family;
-  //  if(!FindMTLGpuFamily(m_Device, family)) {
-   //     return Result::UNSUPPORTED;
+    //  if(!FindMTLGpuFamily(m_Device, family)) {
+    //     return Result::UNSUPPORTED;
     //}
     // https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf
     //TODO: fill desc 
