@@ -1,5 +1,7 @@
 #pragma once
 
+#import <MetalKit/MetalKit.h>
+
 namespace nri {
 
 struct DeviceMTL;
@@ -30,7 +32,7 @@ struct PipelineLayoutMTL {
 //    }
 //
 //    inline uint32_t GetDescriptorSetSpace(uint32_t setIndexInPipelineLayout) const {
-//        return m_DescriptorSetSpaces[setIndexInPipelineLayout];
+
 //    }
 //
     ~PipelineLayoutMTL();
@@ -46,7 +48,6 @@ struct PipelineLayoutMTL {
 
 private:
     DeviceMTL& m_Device;
-    id<MTLRenderPipelineDescriptor*> m_PipelineDesc;
     //Vector<MTLArgumentDescriptor*> m_DescriptorSetLayouts;
 
 };

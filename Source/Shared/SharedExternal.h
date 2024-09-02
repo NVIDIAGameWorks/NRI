@@ -1,4 +1,4 @@
-﻿// © 2021 NVIDIA Corporation
+// © 2021 NVIDIA Corporation
 
 #pragma once
 
@@ -29,6 +29,7 @@ typedef uint32_t DXGI_FORMAT;
 #include "Extensions/NRIWrapperD3D11.h"
 #include "Extensions/NRIWrapperD3D12.h"
 #include "Extensions/NRIWrapperVK.h"
+#include "Extensions/NRIWrapperMTL.h"
 
 #include "NRICompatibility.hlsli"
 
@@ -180,8 +181,6 @@ inline nri::Vendor GetVendorFromID(uint32_t vendorID) {
             return nri::Vendor::AMD;
         case 0x8086:
             return nri::Vendor::INTEL;
-        case 0x106b:
-            return nri::Vendor::APPLE;
     }
 
     return nri::Vendor::UNKNOWN;

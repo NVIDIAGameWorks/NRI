@@ -1,12 +1,13 @@
 // © 2021 NVIDIA Corporation
 
+#include "SharedMTL.h"
+
 #include "CommandQueueMTL.h"
 
 using namespace nri;
 
-
 CommandQueueMTL::~CommandQueueMTL() {
-  m_CommandQueue = nil;
+    m_Handle = nil;
 }
 
 Result CommandQueueMTL::Create(CommandQueueType type, uint32_t familyIndex, id<MTLCommandQueue> handle) {
@@ -20,7 +21,7 @@ inline void CommandQueueMTL::SetDebugName(const char* name) {
     [m_Handle setLabel:[NSString stringWithUTF8String:name]];
 }
 
-Result CommandQueueVK::WaitForIdle() {
+Result CommandQueueMTL::WaitForIdle() {
 
     id<MTLCommandBuffer> waitCmdBuf = [m_Handle commandBufferWithUnretainedReferences];
 
