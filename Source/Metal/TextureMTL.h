@@ -26,7 +26,7 @@ struct TextureMTL {
         return m_Desc;
     }
 
-    Result Create(const TextureDesc& textureDesc);
+    Result CreateFromTextureDesc(const TextureDesc& textureDesc);
     //Result Create(const TextureMTLDesc& textureDesc);
 
 private:
