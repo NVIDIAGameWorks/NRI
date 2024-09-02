@@ -4,6 +4,8 @@
 
 #include <limits>
 
+#import <MetalKit/MetalKit.h>
+
 namespace nri {
 
 struct DeviceMTL;

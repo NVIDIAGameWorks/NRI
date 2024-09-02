@@ -99,15 +99,18 @@ static Result NRI_CALL CreateGraphicsPipeline(Device& device, const GraphicsPipe
 }
 
 static Result NRI_CALL CreateComputePipeline(Device& device, const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline) {
-    return ((DeviceMTL&)device).CreateImplementation<PipelineD3D12>(pipeline, computePipelineDesc);
+    //return ((DeviceMTL&)device).CreateImplementation<PipelineD3D12>(pipeline, computePipelineDesc);
+    return Result::SUCCESS;
 }
 
 static Result NRI_CALL CreateFence(Device& device, uint64_t initialValue, Fence*& fence) {
-    return ((DeviceMTL&)device).CreateImplementation<FenceD3D12>(fence, initialValue);
+    //return ((DeviceMTL&)device).CreateImplementation<FenceD3D12>(fence, initialValue);
+    return Result::SUCCESS;
 }
 
 static Result NRI_CALL CreateQueryPool(Device& device, const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool) {
-    return ((DeviceMTL&)device).CreateImplementation<QueryPoolD3D12>(queryPool, queryPoolDesc);
+    //return ((DeviceMTL&)device).CreateImplementation<QueryPoolD3D12>(queryPool, queryPoolDesc);
+    return Result::SUCCESS;
 }
 
 static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer) {
@@ -119,74 +122,78 @@ static void NRI_CALL DestroyCommandAllocator(CommandAllocator& commandAllocator)
 }
 
 static void NRI_CALL DestroyDescriptorPool(DescriptorPool& descriptorPool) {
-    Destroy((DescriptorPoolD3D12*)&descriptorPool);
+    //Destroy((DescriptorPoolD3D12*)&descriptorPool);
 }
 
 static void NRI_CALL DestroyBuffer(Buffer& buffer) {
-    Destroy((BufferD3D12*)&buffer);
+    //Destroy((BufferD3D12*)&buffer);
 }
 
 static void NRI_CALL DestroyTexture(Texture& texture) {
-    Destroy((TextureD3D12*)&texture);
+    //Destroy((TextureD3D12*)&texture);
 }
 
 static void NRI_CALL DestroyDescriptor(Descriptor& descriptor) {
-    Destroy((DescriptorD3D12*)&descriptor);
+    //Destroy((DescriptorD3D12*)&descriptor);
 }
 
 static void NRI_CALL DestroyPipelineLayout(PipelineLayout& pipelineLayout) {
-    Destroy((PipelineLayoutD3D12*)&pipelineLayout);
+    //Destroy((PipelineLayoutD3D12*)&pipelineLayout);
 }
 
 static void NRI_CALL DestroyPipeline(Pipeline& pipeline) {
-    Destroy((PipelineD3D12*)&pipeline);
+    //Destroy((PipelineD3D12*)&pipeline);
 }
 
 static void NRI_CALL DestroyQueryPool(QueryPool& queryPool) {
-    Destroy((QueryPoolD3D12*)&queryPool);
+    //Destroy((QueryPoolD3D12*)&queryPool);
 }
 
 static void NRI_CALL DestroyFence(Fence& fence) {
-    Destroy((FenceD3D12*)&fence);
+    //Destroy((FenceD3D12*)&fence);
 }
 
 static Result NRI_CALL AllocateMemory(Device& device, const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
-    return ((DeviceMTL&)device).CreateImplementation<MemoryD3D12>(memory, allocateMemoryDesc);
+    return Result::SUCCESS;
+    //return ((DeviceMTL&)device).CreateImplementation<MemoryD3D12>(memory, allocateMemoryDesc);
 }
 
 static Result NRI_CALL BindBufferMemory(Device& device, const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
-    return ((DeviceMTL&)device).BindBufferMemory(memoryBindingDescs, memoryBindingDescNum);
+    //return ((DeviceMTL&)device).BindBufferMemory(memoryBindingDescs, memoryBindingDescNum);
+    return Result::SUCCESS;
 }
 
 static Result NRI_CALL BindTextureMemory(Device& device, const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
-    return ((DeviceMTL&)device).BindTextureMemory(memoryBindingDescs, memoryBindingDescNum);
+    //return ((DeviceMTL&)device).BindTextureMemory(memoryBindingDescs, memoryBindingDescNum);
+    return Result::SUCCESS;
 }
 
 static void NRI_CALL FreeMemory(Memory& memory) {
-    Destroy((MemoryD3D12*)&memory);
+//    Destroy((MemoryD3D12*)&memory);
 }
 
 static void NRI_CALL SetDeviceDebugName(Device& device, const char* name) {
-    ((DeviceMTL&)device).SetDebugName(name);
+//    ((DeviceMTL&)device).SetDebugName(name);
 }
 
 static void NRI_CALL SetPipelineDebugName(Pipeline& pipeline, const char* name) {
-    ((PipelineD3D12&)pipeline).SetDebugName(name);
+//    ((PipelineD3D12&)pipeline).SetDebugName(name);
 }
 
 static void NRI_CALL SetPipelineLayoutDebugName(PipelineLayout& pipelineLayout, const char* name) {
-    ((PipelineLayoutD3D12&)pipelineLayout).SetDebugName(name);
+//    ((PipelineLayoutD3D12&)pipelineLayout).SetDebugName(name);
 }
 
 static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name) {
-    ((MemoryMetal&)memory).SetDebugName(name);
+//    ((MemoryMetal&)memory).SetDebugName(name);
 }
 
 static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
     if (!(&device))
         return nullptr;
+    return (MTLDevice*)((DeviceMTL&)device);
 
-    return ((DeviceMetal&)device).GetNativeObject();
+    //return ((DeviceMetal&)device).GetNativeObject();
 }
 
 Result DeviceMetal::FillFunctionTable(CoreInterface& table) const {

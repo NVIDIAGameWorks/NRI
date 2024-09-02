@@ -1,7 +1,11 @@
+#include "SharedMTL.h"
+
 #include "ConversionMTL.h"
 
+using namespace nri;
+
 // Each depth/stencil format is only compatible with itself in VK
-constexpr std::array<MTLTextureType,(uint32_t)Format::MAX_NUM> MLT_FORMAT = {
+constexpr std::array<MTLPixelFormat,(uint32_t)Format::MAX_NUM> MTL_FORMAT = {
     MTLPixelFormatInvalid,             // UNKNOWN
     MTLPixelFormatR8Unorm,             // R8_UNORM
     MTLPixelFormatR8Snorm,             // R8_SNORM
@@ -39,9 +43,9 @@ constexpr std::array<MTLTextureType,(uint32_t)Format::MAX_NUM> MLT_FORMAT = {
     MTLPixelFormatRG32Uint,            // RG32_UINT
     MTLPixelFormatRG32Sint,            // RG32_SINT
     MTLPixelFormatRG32Float,           // RG32_SFLOAT
-    MTLPixelFormatRGB32Uint,           // RGB32_UINT
-    MTLPixelFormatRGB32Sint,           // RGB32_SINT
-    MTLPixelFormatRGB32Float,          // RGB32_SFLOAT
+    MTLPixelFormatInvalid,             // RGB32_UINT //TODO: lookup correct values
+    MTLPixelFormatInvalid,             // RGB32_SINT //TODO: lookup correct values
+    MTLPixelFormatInvalid,             // RGB32_SFLOAT //TODO: lookup correct values
     MTLPixelFormatRGBA32Uint,          // RGB32_UINT
     MTLPixelFormatRGBA32Sint,          // RGB32_SINT
     MTLPixelFormatRGBA32Float,         // RGB32_SFLOAT
@@ -77,6 +81,6 @@ constexpr std::array<MTLTextureType,(uint32_t)Format::MAX_NUM> MLT_FORMAT = {
 };
 
 uint32_t NRIFormatToMTLFormat(Format format) {
-    return (uint32_t)VK_FORMAT[(uint32_t)format];
+    return (uint32_t)MTL_FORMAT[(uint32_t)format];
 }
 

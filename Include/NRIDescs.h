@@ -1292,7 +1292,14 @@ NriEnum(GraphicsAPI, uint8_t,
     MAX_NUM
 );
 
-NriEnum(Vendor, uint8_t,
+// defined in apple framework
+#undef INTEL
+#undef AMD
+
+NRI_ENUM
+(
+
+    Vendor, uint8_t,
     UNKNOWN,
     NVIDIA,
     AMD,
@@ -1300,7 +1307,7 @@ NriEnum(Vendor, uint8_t,
     APPLE,
 
     MAX_NUM
-);
+); 
 
 NriStruct(AdapterDesc) {
     char name[256];
