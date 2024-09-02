@@ -157,6 +157,7 @@ protected:
         table.CmdSetSamplePositions = ::CmdSetSamplePositions; \
         table.CmdSetBlendConstants = ::CmdSetBlendConstants; \
         table.CmdSetShadingRate = ::CmdSetShadingRate; \
+        table.CmdSetDepthBias = ::CmdSetDepthBias; \
         table.CmdSetIndexBuffer = ::CmdSetIndexBuffer; \
         table.CmdSetVertexBuffers = ::CmdSetVertexBuffers; \
         table.CmdDraw = ::CmdDraw; \

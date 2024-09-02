@@ -157,6 +157,13 @@ inline void CommandBufferVK::SetShadingRate(const ShadingRateDesc& shadingRateDe
     vk.CmdSetFragmentShadingRateKHR(m_Handle, &shadingRate, combiners);
 }
 
+inline void CommandBufferVK::SetDepthBias(const DepthBiasDesc& depthBiasDesc) {
+    if (!m_CurrentPipeline || IsDepthBiasEnabled(m_CurrentPipeline->GetDepthBias())) {
+        const auto& vk = m_Device.GetDispatchTable();
+        vk.CmdSetDepthBias(m_Handle, depthBiasDesc.constant, depthBiasDesc.clamp, depthBiasDesc.slope);
+    }
+}
+
 inline void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     static_assert(sizeof(VkClearValue) == sizeof(ClearValue), "Sizeof mismatch");
 
@@ -369,6 +376,11 @@ inline void CommandBufferVK::SetPipeline(const Pipeline& pipeline) {
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBindPipeline(m_Handle, pipelineImpl.GetBindPoint(), pipelineImpl);
+
+    // In D3D12 dynamic depth bias overrides pipeline values...
+    const DepthBiasDesc& depthBias = pipelineImpl.GetDepthBias();
+    if (IsDepthBiasEnabled(depthBias))
+        vk.CmdSetDepthBias(m_Handle, depthBias.constant, depthBias.clamp, depthBias.slope);
 }
 
 inline void CommandBufferVK::SetDescriptorPool(const DescriptorPool& descriptorPool) {

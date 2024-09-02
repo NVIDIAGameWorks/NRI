@@ -19,6 +19,14 @@ struct alignas(void*) PipelineDescComponent {
     DescComponent desc = {};
 };
 
+#ifdef NRI_USE_AGILITY_SDK
+typedef PipelineDescComponent<D3D12_RASTERIZER_DESC1, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER> PipelineRasterizer;
+typedef PipelineDescComponent<D3D12_DEPTH_STENCIL_DESC2, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL2> PipelineDepthStencil;
+#else
+typedef PipelineDescComponent<D3D12_RASTERIZER_DESC, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER> PipelineRasterizer;
+typedef PipelineDescComponent<D3D12_DEPTH_STENCIL_DESC1, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL1> PipelineDepthStencil;
+#endif
+
 typedef PipelineDescComponent<ID3D12RootSignature*, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE> PipelineRootSignature;
 typedef PipelineDescComponent<D3D12_INPUT_LAYOUT_DESC, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_INPUT_LAYOUT> PipelineInputLayout;
 typedef PipelineDescComponent<D3D12_INDEX_BUFFER_STRIP_CUT_VALUE, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_IB_STRIP_CUT_VALUE> PipelineIndexBufferStripCutValue;
@@ -34,15 +42,9 @@ typedef PipelineDescComponent<UINT, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_NODE_MAS
 typedef PipelineDescComponent<DXGI_SAMPLE_DESC, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC> PipelineSampleDesc;
 typedef PipelineDescComponent<UINT, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK> PipelineSampleMask;
 typedef PipelineDescComponent<D3D12_BLEND_DESC, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND> PipelineBlend;
-#ifdef NRI_USE_AGILITY_SDK
-typedef PipelineDescComponent<D3D12_RASTERIZER_DESC1, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER> PipelineRasterizer;
-typedef PipelineDescComponent<D3D12_DEPTH_STENCIL_DESC2, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL2> PipelineDepthStencil;
-#else
-typedef PipelineDescComponent<D3D12_RASTERIZER_DESC, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER> PipelineRasterizer;
-typedef PipelineDescComponent<D3D12_DEPTH_STENCIL_DESC1, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL1> PipelineDepthStencil;
-#endif
 typedef PipelineDescComponent<DXGI_FORMAT, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT> PipelineDepthStencilFormat;
 typedef PipelineDescComponent<D3D12_RT_FORMAT_ARRAY, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS> PipelineRenderTargetFormats;
+typedef PipelineDescComponent<D3D12_PIPELINE_STATE_FLAGS, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_FLAGS> PipelineFlags;
 
 static_assert((uint32_t)PrimitiveRestart::DISABLED == D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED, "Enum mismatch");
 static_assert((uint32_t)PrimitiveRestart::INDICES_UINT16 == D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFF, "Enum mismatch");
@@ -54,11 +56,11 @@ static void FillRasterizerState(D3D12_RASTERIZER_DESC& rasterizerDesc, const Gra
     rasterizerDesc.FillMode = GetFillMode(r.fillMode);
     rasterizerDesc.CullMode = GetCullMode(r.cullMode);
     rasterizerDesc.FrontCounterClockwise = (BOOL)r.frontCounterClockwise;
-    rasterizerDesc.DepthBias = (INT)r.depthBias;
-    rasterizerDesc.DepthBiasClamp = r.depthBiasClamp;
-    rasterizerDesc.SlopeScaledDepthBias = r.depthBiasSlopeFactor;
+    rasterizerDesc.DepthBias = (INT)r.depthBias.constant;
+    rasterizerDesc.DepthBiasClamp = r.depthBias.clamp;
+    rasterizerDesc.SlopeScaledDepthBias = r.depthBias.slope;
     rasterizerDesc.DepthClipEnable = (BOOL)r.depthClamp;
-    rasterizerDesc.AntialiasedLineEnable = (BOOL)r.antialiasedLines;
+    rasterizerDesc.AntialiasedLineEnable = (BOOL)r.smoothLines;
     rasterizerDesc.ConservativeRaster = r.conservativeRasterization ? D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
     if (graphicsPipelineDesc.multisample) {
@@ -91,11 +93,11 @@ static void FillRasterizerState(D3D12_RASTERIZER_DESC1& rasterizerDesc, const Gr
     rasterizerDesc.FillMode = GetFillMode(r.fillMode);
     rasterizerDesc.CullMode = GetCullMode(r.cullMode);
     rasterizerDesc.FrontCounterClockwise = (BOOL)r.frontCounterClockwise;
-    rasterizerDesc.DepthBias = r.depthBias;
-    rasterizerDesc.DepthBiasClamp = r.depthBiasClamp;
-    rasterizerDesc.SlopeScaledDepthBias = r.depthBiasSlopeFactor;
+    rasterizerDesc.DepthBias = r.depthBias.constant;
+    rasterizerDesc.DepthBiasClamp = r.depthBias.clamp;
+    rasterizerDesc.SlopeScaledDepthBias = r.depthBias.slope;
     rasterizerDesc.DepthClipEnable = (BOOL)r.depthClamp;
-    rasterizerDesc.AntialiasedLineEnable = (BOOL)r.antialiasedLines;
+    rasterizerDesc.AntialiasedLineEnable = (BOOL)r.smoothLines;
     rasterizerDesc.ConservativeRaster = r.conservativeRasterization ? D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
     if (graphicsPipelineDesc.multisample) {
@@ -213,6 +215,7 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
         PipelineDepthStencil depthStencil;
         PipelineDepthStencilFormat depthStencilFormat;
         PipelineNodeMask nodeMask;
+        PipelineFlags flags;
     };
 
     Stream stream = {};
@@ -272,6 +275,10 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
 
     // Rasterizer
     FillRasterizerState(stream.rasterizer.desc, graphicsPipelineDesc);
+#ifdef NRI_USE_AGILITY_SDK
+    if (IsDepthBiasEnabled(graphicsPipelineDesc.rasterization.depthBias))
+        stream.flags = D3D12_PIPELINE_STATE_FLAG_DYNAMIC_DEPTH_BIAS;
+#endif
 
     // Depth stencil
 #ifdef NRI_USE_AGILITY_SDK
@@ -360,6 +367,10 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
 
     // Rasterizer
     FillRasterizerState(graphicsPipleineStateDesc.RasterizerState, graphicsPipelineDesc);
+#ifdef NRI_USE_AGILITY_SDK
+    if (IsDepthBiasEnabled(graphicsPipelineDesc.rasterization.depthBias))
+        graphicsPipleineStateDesc.Flags = D3D12_PIPELINE_STATE_FLAG_DYNAMIC_DEPTH_BIAS;
+#endif
 
     // Depth stencil
     FillDepthStencilState(&graphicsPipleineStateDesc.DepthStencilState, graphicsPipelineDesc.outputMerger);

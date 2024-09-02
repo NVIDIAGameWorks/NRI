@@ -138,6 +138,13 @@ void CommandBufferVal::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
     GetCoreInterface().CmdSetShadingRate(*GetImpl(), shadingRateDesc);
 }
 
+void CommandBufferVal::SetDepthBias(const DepthBiasDesc& depthBiasDesc) {
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
+    RETURN_ON_FAILURE(&m_Device, m_Device.GetDesc().isDynamicDepthBiasSupported, ReturnVoid(), "DeviceDesc::isDynamicDepthBiasSupported = false");
+
+    GetCoreInterface().CmdSetDepthBias(*GetImpl(), depthBiasDesc);
+}
+
 void CommandBufferVal::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, m_IsRenderPass, ReturnVoid(), "must be called inside 'CmdBeginRendering/CmdEndRendering'");

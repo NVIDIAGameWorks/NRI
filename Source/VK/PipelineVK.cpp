@@ -104,10 +104,10 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     rasterizationState.polygonMode = GetPolygonMode(r.fillMode);
     rasterizationState.cullMode = GetCullMode(r.cullMode);
     rasterizationState.frontFace = r.frontCounterClockwise ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
-    rasterizationState.depthBiasEnable = r.depthBias != 0.0f || r.depthBiasSlopeFactor != 0.0f;
-    rasterizationState.depthBiasConstantFactor = r.depthBias;
-    rasterizationState.depthBiasClamp = r.depthBiasClamp;
-    rasterizationState.depthBiasSlopeFactor = r.depthBiasSlopeFactor;
+    rasterizationState.depthBiasEnable = IsDepthBiasEnabled(r.depthBias) ? VK_TRUE : VK_FALSE;
+    rasterizationState.depthBiasConstantFactor = r.depthBias.constant;
+    rasterizationState.depthBiasClamp = r.depthBias.clamp;
+    rasterizationState.depthBiasSlopeFactor = r.depthBias.slope;
     rasterizationState.lineWidth = 1.0f;
 
     const void** tail = &rasterizationState.pNext;
@@ -119,11 +119,13 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
         APPEND_EXT(consetvativeRasterizationState);
     }
 
-    VkPipelineRasterizationLineStateCreateInfoEXT lineState = {VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT};
-    if (r.antialiasedLines) {
-        lineState.lineRasterizationMode = VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT;
+    VkPipelineRasterizationLineStateCreateInfoKHR lineState = {VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_KHR};
+    if (r.smoothLines) {
+        lineState.lineRasterizationMode = VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR;
         APPEND_EXT(lineState);
     }
+
+    m_DepthBias = r.depthBias;
 
     // Depth-stencil
     const DepthAttachmentDesc& da = graphicsPipelineDesc.outputMerger.depth;
@@ -195,9 +197,11 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
 
     // Dynamic state
     uint32_t dynamicStateNum = 0;
-    std::array<VkDynamicState, 8> dynamicStates;
+    std::array<VkDynamicState, 16> dynamicStates;
     dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_VIEWPORT;
     dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_SCISSOR;
+    if (rasterizationState.depthBiasEnable)
+        dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_DEPTH_BIAS;
     if (depthStencilState.depthBoundsTestEnable)
         dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_DEPTH_BOUNDS;
     if (depthStencilState.stencilTestEnable)

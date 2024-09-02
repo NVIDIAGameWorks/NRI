@@ -331,6 +331,13 @@ inline void CommandBufferD3D12::SetShadingRate(const ShadingRateDesc& shadingRat
     m_GraphicsCommandList->RSSetShadingRate(shadingRate, shadingRateCombiners);
 }
 
+inline void CommandBufferD3D12::SetDepthBias(const DepthBiasDesc& depthBiasDesc) {
+    MaybeUnused(depthBiasDesc);
+#ifdef NRI_USE_AGILITY_SDK
+    m_GraphicsCommandList->RSSetDepthBias(depthBiasDesc.constant, depthBiasDesc.clamp, depthBiasDesc.slope);
+#endif
+}
+
 inline void CommandBufferD3D12::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     if (!clearDescNum)
         return;

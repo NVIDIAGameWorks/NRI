@@ -188,6 +188,10 @@ inline nri::Dim_t GetDimension(nri::GraphicsAPI api, const nri::TextureDesc& tex
     return dim;
 }
 
+inline bool IsDepthBiasEnabled(const nri::DepthBiasDesc& depthBiasDesc) {
+    return depthBiasDesc.constant != 0.0f || depthBiasDesc.slope != 0.0f;
+}
+
 // Strings
 void ConvertCharToWchar(const char* in, wchar_t* out, size_t outLen);
 void ConvertWcharToChar(const wchar_t* in, char* out, size_t outLen);

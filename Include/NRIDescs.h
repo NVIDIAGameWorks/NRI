@@ -650,25 +650,41 @@ NriEnum(ShadingRateCombiner, uint8_t,
     SUM
 );
 
+/*
+R - minimum resolvable difference
+S - maximum slope
+
+bias = constant * R + slopeFactor * S
+if (clamp > 0)
+    bias = min(bias, clamp)
+else if (clamp < 0)
+    bias = max(bias, clamp)
+
+enabled if constant != 0 or slope != 0
+*/
+NriStruct(DepthBiasDesc) {
+    float constant;
+    float clamp;
+    float slope;
+};
+
 NriStruct(RasterizationDesc) {
     uint32_t viewportNum;
-    float depthBias;
-    float depthBiasClamp;
-    float depthBiasSlopeFactor;
+    Nri(DepthBiasDesc) depthBias;
     Nri(FillMode) fillMode;
     Nri(CullMode) cullMode;
     bool frontCounterClockwise;
     bool depthClamp;
-    bool antialiasedLines; // Requires "isLineSmoothingSupported"
-    bool conservativeRasterization; // Requires "conservativeRasterTier > 0"
-    bool shadingRate; // Requires "is[Pipeline/Primitive/Attachment]ShadingRateSupported", expects "CmdSetShadingRate" and optionally "AttachmentsDesc::shadingRate"
+    bool smoothLines;               // requires "isLineSmoothingSupported"
+    bool conservativeRasterization; // requires "conservativeRasterTier != 0"
+    bool shadingRate;               // requires "isShadingRateSupported", expects "CmdSetShadingRate" and optionally "AttachmentsDesc::shadingRate"
 };
 
 NriStruct(MultisampleDesc) {
     uint32_t sampleMask;
     Nri(Sample_t) sampleNum;
     bool alphaToCoverage;
-    bool programmableSampleLocations; // Requires "isProgrammableSampleLocationsSupported", expects "CmdSetSamplePositions"
+    bool programmableSampleLocations; // requires "isProgrammableSampleLocationsSupported", expects "CmdSetSamplePositions"
 };
 
 NriStruct(ShadingRateDesc) {
@@ -683,7 +699,6 @@ NriStruct(ShadingRateDesc) {
 #pragma region [ Output merger ]
 //===============================================================================================================================
 
-// Requires "isLogicOpSupported"
 // S - source color 0
 // D - destination color
 NriEnum(LogicFunc, uint8_t,
@@ -821,12 +836,12 @@ NriStruct(ColorAttachmentDesc) {
 NriStruct(DepthAttachmentDesc) {
     Nri(CompareFunc) compareFunc;
     bool write;
-    bool boundsTest; // Requires "isDepthBoundsTestSupported", expects "CmdSetDepthBounds"
+    bool boundsTest; // requires "isDepthBoundsTestSupported", expects "CmdSetDepthBounds"
 };
 
 NriStruct(StencilAttachmentDesc) {
     Nri(StencilDesc) front;
-    Nri(StencilDesc) back; // Requires "isIndependentFrontAndBackStencilReferenceAndMasksSupported" for "back.writeMask"
+    Nri(StencilDesc) back; // requires "isIndependentFrontAndBackStencilReferenceAndMasksSupported" for "back.writeMask"
 };
 
 NriStruct(OutputMergerDesc) {
@@ -834,7 +849,7 @@ NriStruct(OutputMergerDesc) {
     Nri(DepthAttachmentDesc) depth;
     Nri(StencilAttachmentDesc) stencil;
     Nri(Format) depthStencilFormat;
-    Nri(LogicFunc) colorLogicFunc;
+    Nri(LogicFunc) colorLogicFunc; // requires "isLogicOpSupported"
     uint32_t colorNum;
 };
 
@@ -856,7 +871,6 @@ NriEnum(Filter, uint8_t,
     LINEAR
 );
 
-// Requires "isTextureFilterMinMaxSupported"
 NriEnum(FilterExt, uint8_t,
     NONE,
     MIN,
@@ -877,7 +891,7 @@ NriStruct(AddressModes) {
 
 NriStruct(Filters) {
     Nri(Filter) min, mag, mip;
-    Nri(FilterExt) ext;
+    Nri(FilterExt) ext; // requires "isTextureFilterMinMaxSupported"
 };
 
 NriStruct(SamplerDesc) {
@@ -1375,6 +1389,7 @@ NriStruct(DeviceDesc) {
     uint32_t isPipelineShadingRateSupported : 1;
     uint32_t isPrimitiveShadingRateSupported : 1;
     uint32_t isAttachmentShadingRateSupported : 1;
+    uint32_t isDynamicDepthBiasSupported : 1;
 
     // Shader features
     uint32_t isShaderNativeI16Supported : 1;

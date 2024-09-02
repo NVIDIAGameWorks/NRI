@@ -280,6 +280,9 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME, supportedExts) && !disableRayTracing)
         desiredDeviceExts.push_back(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
 
+    if (IsExtensionSupported(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME);
+
     // Optional (EXT)
     if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts) && !disableRayTracing)
         desiredDeviceExts.push_back(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME);
@@ -289,9 +292,6 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
 
     if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
-
-    if (IsExtensionSupported(VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME, supportedExts))
-        desiredDeviceExts.push_back(VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME);
 
     if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
@@ -563,8 +563,8 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(presentWaitFeatures);
     }
 
-    VkPhysicalDeviceLineRasterizationFeaturesEXT lineRasterizationFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT};
-    if (IsExtensionSupported(VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
+    VkPhysicalDeviceLineRasterizationFeaturesKHR lineRasterizationFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(lineRasterizationFeatures);
     }
 
@@ -708,8 +708,8 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             APPEND_EXT(conservativeRasterProps);
         }
 
-        VkPhysicalDeviceLineRasterizationPropertiesEXT lineRasterizationProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT};
-        if (IsExtensionSupported(VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
+        VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(lineRasterizationProps);
         }
 
@@ -913,6 +913,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isDrawMeshTasksIndirectSupported = true;
         m_Desc.isEnchancedBarrierSupported = true;
         m_Desc.isMemoryTier2Supported = true; // TODO: seems to be the best match
+        m_Desc.isDynamicDepthBiasSupported = true;
 
         m_Desc.isShaderNativeI16Supported = features.features.shaderInt16;
         m_Desc.isShaderNativeF16Supported = features12.shaderFloat16;
@@ -1594,6 +1595,7 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
     GET_DEVICE_CORE_OR_KHR_PROC(CmdSetDepthBounds);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdSetStencilReference);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdSetBlendConstants);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdSetDepthBias);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdClearAttachments);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdClearColorImage);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdBindVertexBuffers);

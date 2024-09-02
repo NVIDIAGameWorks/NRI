@@ -167,10 +167,6 @@ void CommandBufferD3D11::SetBlendConstants(const Color32f& color) {
     m_BlendFactor = color;
 }
 
-void CommandBufferD3D11::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
-    MaybeUnused(shadingRateDesc); // doesn't exist in D3D11
-}
-
 void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     if (!clearDescNum)
         return;

@@ -24,6 +24,10 @@ struct PipelineVK {
         return m_BindPoint;
     }
 
+    inline const DepthBiasDesc& GetDepthBias() const {
+        return m_DepthBias;
+    }
+
     ~PipelineVK();
 
     Result Create(const GraphicsPipelineDesc& graphicsPipelineDesc);
@@ -45,6 +49,7 @@ private:
     DeviceVK& m_Device;
     VkPipeline m_Handle = VK_NULL_HANDLE;
     VkPipelineBindPoint m_BindPoint = (VkPipelineBindPoint)0;
+    DepthBiasDesc m_DepthBias = {};
     bool m_OwnsNativeObjects = true;
 };
 

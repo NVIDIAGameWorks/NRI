@@ -28,7 +28,20 @@ Key features:
  - validation layers (GAPI- and NRI- provided)
  - default D3D11 behavior is changed to match D3D12/VK using *NVAPI* or *AMD AGS* libraries, where applicable
  - supporting as much as possible VK-enabled platforms: Windows, Linux, MacOS, Android
- - can be used as a *shared* or *static* library.
+ - can be used as a *shared* or *static* library
+
+ Available interfaces:
+ - `NRI.h` - core functionality
+ - `NRIDeviceCreation.h` - device creation and related functionality
+ - `NRIHelper.h` - a collection of various helpers to ease use of the core interface
+ - `NRILowLatency.h` - low latency support (aka *NVIDIA REFLEX*)
+ - `NRIMeshShader.h` - mesh shaders
+ - `NRIRayTracing.h` - ray tracing
+ - `NRIResourceAllocator.h` - convenient creation of resources using *AMD Virtual Memory Allocator*, which get returned already bound to memory
+ - `NRIStreamer.h` - a convenient way to stream data into resources
+ - `NRISwapChain.h` - swap chain and related functionality
+
+ *(some interfaces can be missing in the listing)*
 
  *NRI* is used in:
  - [*NRI samples*](https://github.com/NVIDIAGameWorks/NRISamples)

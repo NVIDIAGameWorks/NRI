@@ -71,7 +71,11 @@ static void NRI_CALL CmdSetBlendConstants(CommandBuffer& commandBuffer, const Co
 }
 
 static void NRI_CALL CmdSetShadingRate(CommandBuffer& commandBuffer, const ShadingRateDesc& shadingRateDesc) {
-    ((CommandBufferD3D11&)commandBuffer).SetShadingRate(shadingRateDesc);
+    MaybeUnused(commandBuffer, shadingRateDesc);
+}
+
+static void NRI_CALL CmdSetDepthBias(CommandBuffer& commandBuffer, const DepthBiasDesc& depthBiasDesc) {
+    MaybeUnused(commandBuffer, depthBiasDesc);
 }
 
 static void NRI_CALL CmdClearAttachments(CommandBuffer& commandBuffer, const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {

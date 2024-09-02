@@ -95,12 +95,12 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
         rasterizerDesc.FillMode = r.fillMode == FillMode::SOLID ? D3D11_FILL_SOLID : D3D11_FILL_WIREFRAME;
         rasterizerDesc.CullMode = GetD3D11CullModeFromCullMode(r.cullMode);
         rasterizerDesc.FrontCounterClockwise = r.frontCounterClockwise;
-        rasterizerDesc.DepthBias = (INT)r.depthBias;
-        rasterizerDesc.DepthBiasClamp = r.depthBiasClamp;
-        rasterizerDesc.SlopeScaledDepthBias = r.depthBiasSlopeFactor;
+        rasterizerDesc.DepthBias = (INT)r.depthBias.constant;
+        rasterizerDesc.DepthBiasClamp = r.depthBias.clamp;
+        rasterizerDesc.SlopeScaledDepthBias = r.depthBias.slope;
         rasterizerDesc.DepthClipEnable = r.depthClamp;
         rasterizerDesc.ScissorEnable = TRUE;
-        rasterizerDesc.AntialiasedLineEnable = r.antialiasedLines;
+        rasterizerDesc.AntialiasedLineEnable = r.smoothLines;
         rasterizerDesc.MultisampleEnable = sampleNum > 1 ? TRUE : FALSE;
         // D3D11_RASTERIZER_DESC1
         rasterizerDesc.ForcedSampleCount = sampleNum > 1 ? sampleNum : 0;

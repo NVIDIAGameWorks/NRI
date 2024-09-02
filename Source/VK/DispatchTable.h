@@ -5,9 +5,7 @@
 #define VULKAN_FUNCTION(name) PFN_vk##name name
 
 struct DispatchTable {
-    //====================================================================
     // Instance
-    //====================================================================
     VULKAN_FUNCTION(GetInstanceProcAddr);
     VULKAN_FUNCTION(CreateInstance);
     VULKAN_FUNCTION(EnumerateInstanceExtensionProperties);
@@ -54,9 +52,7 @@ struct DispatchTable {
     VULKAN_FUNCTION(CmdBeginDebugUtilsLabelEXT);
     VULKAN_FUNCTION(CmdEndDebugUtilsLabelEXT);
 
-    //====================================================================
     // Device
-    //====================================================================
     VULKAN_FUNCTION(CreateBuffer);
     VULKAN_FUNCTION(CreateImage);
     VULKAN_FUNCTION(CreateBufferView);
@@ -113,6 +109,7 @@ struct DispatchTable {
     VULKAN_FUNCTION(CmdSetDepthBounds);
     VULKAN_FUNCTION(CmdSetStencilReference);
     VULKAN_FUNCTION(CmdSetBlendConstants);
+    VULKAN_FUNCTION(CmdSetDepthBias);
     VULKAN_FUNCTION(CmdClearAttachments);
     VULKAN_FUNCTION(CmdClearColorImage);
     VULKAN_FUNCTION(CmdBindVertexBuffers);

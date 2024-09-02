@@ -65,6 +65,7 @@ struct CommandBufferD3D12 {
     void SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum);
     void SetBlendConstants(const Color32f& color);
     void SetShadingRate(const ShadingRateDesc& shadingRateDesc);
+    void SetDepthBias(const DepthBiasDesc& depthBiasDesc);
     void ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum);
     void ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc);
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);

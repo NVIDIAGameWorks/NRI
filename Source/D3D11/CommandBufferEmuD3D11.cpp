@@ -19,7 +19,6 @@ enum OpCode : uint32_t {
     SET_STENCIL_REFERENCE,
     SET_SAMPLE_POSITIONS,
     SET_BLEND_CONSTANTS,
-    SET_SHADING_RATE,
     CLEAR_ATTACHMENTS,
     CLEAR_STORAGE_BUFFER,
     CLEAR_STORAGE_TEXTURE,
@@ -177,12 +176,6 @@ void CommandBufferEmuD3D11::Submit() {
                 Read(m_PushBuffer, i, color);
 
                 commandBuffer.SetBlendConstants(color);
-            } break;
-            case SET_SHADING_RATE: {
-                ShadingRateDesc shadingRateDesc = {};
-                Read(m_PushBuffer, i, shadingRateDesc);
-
-                commandBuffer.SetShadingRate(shadingRateDesc);
             } break;
             case CLEAR_ATTACHMENTS: {
                 ClearDesc* clearDescs;
@@ -527,11 +520,6 @@ inline void CommandBufferEmuD3D11::SetBlendConstants(const Color32f& color) {
     Push(m_PushBuffer, color);
 }
 
-inline void CommandBufferEmuD3D11::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
-    Push(m_PushBuffer, SET_SHADING_RATE);
-    Push(m_PushBuffer, shadingRateDesc);
-}
-
 inline void CommandBufferEmuD3D11::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     Push(m_PushBuffer, CLEAR_ATTACHMENTS);
     Push(m_PushBuffer, clearDescs, clearDescNum);
@@ -580,10 +568,6 @@ inline void CommandBufferEmuD3D11::SetPipelineLayout(const PipelineLayout& pipel
 inline void CommandBufferEmuD3D11::SetPipeline(const Pipeline& pipeline) {
     Push(m_PushBuffer, BIND_PIPELINE);
     Push(m_PushBuffer, &pipeline);
-}
-
-inline void CommandBufferEmuD3D11::SetDescriptorPool(const DescriptorPool& descriptorPool) {
-    MaybeUnused(descriptorPool);
 }
 
 inline void CommandBufferEmuD3D11::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {

@@ -3,7 +3,7 @@
 #pragma region[  Core  ]
 
 static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
-    ((CommandBufferEmuD3D11&)commandBuffer).SetDebugName(name);
+    MaybeUnused(commandBuffer, name);
 }
 
 static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool) {
@@ -27,7 +27,7 @@ static void NRI_CALL CmdBarrier(CommandBuffer& commandBuffer, const BarrierGroup
 }
 
 static void NRI_CALL CmdSetDescriptorPool(CommandBuffer& commandBuffer, const DescriptorPool& descriptorPool) {
-    ((CommandBufferEmuD3D11&)commandBuffer).SetDescriptorPool(descriptorPool);
+    MaybeUnused(commandBuffer, descriptorPool);
 }
 
 static void NRI_CALL CmdSetDescriptorSet(CommandBuffer& commandBuffer, uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
@@ -71,7 +71,11 @@ static void NRI_CALL CmdSetBlendConstants(CommandBuffer& commandBuffer, const Co
 }
 
 static void NRI_CALL CmdSetShadingRate(CommandBuffer& commandBuffer, const ShadingRateDesc& shadingRateDesc) {
-    ((CommandBufferEmuD3D11&)commandBuffer).SetShadingRate(shadingRateDesc);
+    MaybeUnused(commandBuffer, shadingRateDesc);
+}
+
+static void NRI_CALL CmdSetDepthBias(CommandBuffer& commandBuffer, const DepthBiasDesc& depthBiasDesc) {
+    MaybeUnused(commandBuffer, depthBiasDesc);
 }
 
 static void NRI_CALL CmdClearAttachments(CommandBuffer& commandBuffer, const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
@@ -185,6 +189,7 @@ void Core_CommandBufferEmu_PartiallyFillFunctionTable(CoreInterface& table) {
     table.CmdSetSamplePositions = ::CmdSetSamplePositions;
     table.CmdSetBlendConstants = ::CmdSetBlendConstants;
     table.CmdSetShadingRate = ::CmdSetShadingRate;
+    table.CmdSetDepthBias = ::CmdSetDepthBias;
     table.CmdSetIndexBuffer = ::CmdSetIndexBuffer;
     table.CmdSetVertexBuffers = ::CmdSetVertexBuffers;
     table.CmdDraw = ::CmdDraw;

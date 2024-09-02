@@ -50,6 +50,7 @@ struct CommandBufferVK {
     void SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum);
     void SetBlendConstants(const Color32f& color);
     void SetShadingRate(const ShadingRateDesc& shadingRateDesc);
+    void SetDepthBias(const DepthBiasDesc& depthBiasDesc);
     void ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum);
     void SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType);
     void SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets);

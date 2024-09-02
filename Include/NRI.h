@@ -24,8 +24,8 @@ Non-goals:
 #pragma once
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 145
-#define NRI_VERSION_DATE "1 September 2024"
+#define NRI_VERSION_MINOR 146
+#define NRI_VERSION_DATE "2 September 2024"
 
 #include "NRIDescs.h"
 
@@ -110,16 +110,19 @@ NriStruct(CoreInterface) {
         void (NRI_CALL *CmdSetIndexBuffer)(NriRef(CommandBuffer) commandBuffer, const NriRef(Buffer) buffer, uint64_t offset, Nri(IndexType) indexType);
         void (NRI_CALL *CmdSetVertexBuffers)(NriRef(CommandBuffer) commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const NriPtr(Buffer) const* buffers, const uint64_t* offsets);
 
-        // Mandatory state for "Graphics"
+        // Initial state
         void (NRI_CALL *CmdSetViewports)(NriRef(CommandBuffer) commandBuffer, const NriPtr(Viewport) viewports, uint32_t viewportNum);
         void (NRI_CALL *CmdSetScissors)(NriRef(CommandBuffer) commandBuffer, const NriPtr(Rect) rects, uint32_t rectNum);
 
-        // Mandatory state for "Graphics", if enabled in the pipeline (since this state is global in D3D11/D3D12 better treat it as global)
+        // Initial state, if enabled in the pipeline (since this state is global inside a command buffer in D3D11/D3D12 better treat it as global even in VK to avoid discrepancies)
         void (NRI_CALL *CmdSetStencilReference)(NriRef(CommandBuffer) commandBuffer, uint8_t frontRef, uint8_t backRef); // "backRef" requires "isIndependentFrontAndBackStencilReferenceAndMasksSupported"
         void (NRI_CALL *CmdSetDepthBounds)(NriRef(CommandBuffer) commandBuffer, float boundsMin, float boundsMax);
         void (NRI_CALL *CmdSetBlendConstants)(NriRef(CommandBuffer) commandBuffer, const NriRef(Color32f) color);
-        void (NRI_CALL *CmdSetSamplePositions)(NriRef(CommandBuffer) commandBuffer, const NriPtr(SamplePosition) positions, Nri(Sample_t) positionNum, Nri(Sample_t) sampleNum);
-        void (NRI_CALL *CmdSetShadingRate)(NriRef(CommandBuffer) commandBuffer, const NriRef(ShadingRateDesc) shadingRateDesc);
+        void (NRI_CALL *CmdSetSamplePositions)(NriRef(CommandBuffer) commandBuffer, const NriPtr(SamplePosition) positions, Nri(Sample_t) positionNum, Nri(Sample_t) sampleNum); // requires "isProgrammableSampleLocationsSupported"
+        void (NRI_CALL *CmdSetShadingRate)(NriRef(CommandBuffer) commandBuffer, const NriRef(ShadingRateDesc) shadingRateDesc); // requires "isShadingRateSupported"
+
+        // State override, if enabled in the pipeline
+        void (NRI_CALL *CmdSetDepthBias)(NriRef(CommandBuffer) commandBuffer, const NriRef(DepthBiasDesc) depthBiasDesc); // requires "isDynamicDepthBiasSupported"
 
         // Graphics
         void (NRI_CALL *CmdBeginRendering)(NriRef(CommandBuffer) commandBuffer, const NriRef(AttachmentsDesc) attachmentsDesc);

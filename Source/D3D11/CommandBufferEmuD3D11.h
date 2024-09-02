@@ -33,10 +33,6 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
     // NRI
     //================================================================================================================
 
-    inline void SetDebugName(const char* name) {
-        MaybeUnused(name);
-    }
-
     Result Begin(const DescriptorPool* descriptorPool);
     Result End();
     void SetViewports(const Viewport* viewports, uint32_t viewportNum);
@@ -45,7 +41,6 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
     void SetStencilReference(uint8_t frontRef, uint8_t backRef);
     void SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum);
     void SetBlendConstants(const Color32f& color);
-    void SetShadingRate(const ShadingRateDesc& shadingRateDesc);
     void ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum);
     void ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc);
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);
@@ -55,7 +50,6 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
     void SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType);
     void SetPipelineLayout(const PipelineLayout& pipelineLayout);
     void SetPipeline(const Pipeline& pipeline);
-    void SetDescriptorPool(const DescriptorPool& descriptorPool);
     void SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
     void SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size);
     void Draw(const DrawDesc& drawDesc);
