@@ -10,10 +10,17 @@ CommandQueueMTL::~CommandQueueMTL() {
     m_Handle = nil;
 }
 
-Result CommandQueueMTL::Create(CommandQueueType type, uint32_t familyIndex, id<MTLCommandQueue> handle) {
+Result CommandQueueMTL::Create(CommandQueueType type) {
     m_Type = type;
-    m_FamilyIndex = familyIndex;
-    m_Handle = handle;
+    const char* queueNames[] = {
+        "GRAPHICS_QUEUE", // GRAPHICS
+        "TRANSFER_QUEUE", // TRANSFER
+        "COMPUTE_QUEUE" // COMPUTE
+    };
+
+    m_Handle = [m_Device newCommandQueueWithMaxCommandBufferCount:512];
+    SetDebugName(queueNames[(uint32_t)type]);
+    
     return Result::SUCCESS;
 }
 

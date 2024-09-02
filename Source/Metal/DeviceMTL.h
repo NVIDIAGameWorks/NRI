@@ -21,11 +21,23 @@ struct DeviceMTL final : public DeviceBase {
         return m_Desc;
     }
     
-    //FormatSupportBits GetFormatSupport(const Device& device, Format format);
+    void Destruct() override;
 
-    //void FillCreateInfo(const TextureDesc& bufferDesc, MTLTextureDescriptor* info) const;
-  //  void FillCreateInfo(const TextureDesc& bufferDesc, MTLTextureDescriptor* info) const;
+    template <typename Implementation, typename Interface, typename... Args>
+    inline Result CreateImplementation(Interface*& entity, const Args&... args) {
+        Implementation* impl = Allocate<Implementation>(GetStdAllocator(), *this);
+        Result result = impl->Create(args...);
 
+        if (result != Result::SUCCESS) {
+            Destroy(GetStdAllocator(), impl);
+            entity = nullptr;
+        } else
+            entity = (Interface*)impl;
+
+        return result;
+    }
+
+    
     Result FillFunctionTable(CoreInterface& table) const;
     Result FillFunctionTable(HelperInterface& table) const;
     Result FillFunctionTable(LowLatencyInterface& table) const;
@@ -37,6 +49,7 @@ struct DeviceMTL final : public DeviceBase {
 
     Result Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationMTLDesc& deviceCreationVKDesc, bool isWrapper);
 private:
+    Lock m_Lock;
     id<MTLDevice>     m_Device;
     std::array<CommandQueueMTL*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     DeviceDesc m_Desc = {};

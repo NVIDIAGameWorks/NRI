@@ -214,24 +214,39 @@ Result DeviceMetal::FillFunctionTable(CoreInterface& table) const {
 
 #pragma endregion
 
-
 Result DeviceMetal::FillFunctionTable(HelperInterface& table) const {
-
+    table = {};
+    return ResVult::UNSUPPORTED;
 }
 
 Result DeviceMetal::FillFunctionTable(LowLatencyInterface& table) const {
+    table = {};
+    return ResVult::UNSUPPORTED;
 }
 
 Result DeviceMetal::FillFunctionTable(MeshShaderInterface& table) const {
+    table = {};
+    return ResVult::UNSUPPORTED;
 }
 
 Result DeviceMetal::FillFunctionTable(RayTracingInterface& table) const {
+    table = {};
+    return ResVult::UNSUPPORTED;
 }
+
 Result DeviceMetal::FillFunctionTable(StreamerInterface& table) const {
+    table = {};
+    return ResVult::UNSUPPORTED;
 }
+
 Result DeviceMetal::FillFunctionTable(SwapChainInterface& table) const {
+    table = {};
+    return ResVult::UNSUPPORTED;
 }
+
 Result DeviceMetal::FillFunctionTable(ResourceAllocatorInterface& table) const {
+    table = {};
+    return ResVult::UNSUPPORTED;
 }
 
 Define_Core_Device_PartiallyFillFunctionTable(MTL);
