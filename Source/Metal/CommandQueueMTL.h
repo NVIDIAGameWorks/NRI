@@ -1,6 +1,8 @@
 // © 2021 NVIDIA Corporation
 #pragma once
 
+#import <MetalKit/MetalKit.h>
+
 namespace nri {
 
 struct DeviceMTL;
@@ -32,12 +34,14 @@ struct CommandQueueMTL {
     inline Lock& GetLock() {
         return m_Lock;
     }
-
+    
+    Result WaitForIdle();
+        
     void SetDebugName(const char* name);
     Result Create(CommandQueueType type, uint32_t familyIndex, id<MTLCommandQueue> handle);
 private:
     DeviceMTL& m_Device;
-    uint32_t m_FamilyIndex = INVALID_FAMILY_INDEX;
+    uint32_t m_FamilyIndex = 0;
     CommandQueueType m_Type = CommandQueueType(-1);
     id<MTLCommandQueue> m_Handle;
     Lock m_Lock;

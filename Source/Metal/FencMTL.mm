@@ -1,3 +1,5 @@
+#include "SharedMTL.h"
+
 #include "FenceMTL.h"
 
 using namespace nri;

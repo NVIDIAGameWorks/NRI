@@ -1,10 +1,11 @@
 // © 2021 NVIDIA Corporation
-
 #pragma once
+
+#import <MetalKit/MetalKit.h>
 
 namespace nri {
 
-struct DeviceMTL;
+struct DeviceMTL;  
 
 struct TextureMTL {
 
@@ -13,9 +14,9 @@ struct TextureMTL {
     }
     ~TextureMTL();
     
-    inline id<MTLTexture>& GetHandle() const {
-        return m_Handle;
-    }
+    //inline id<MTLTexture> GetHandle() const {
+    //    return m_Handle;
+    //}
 
     inline DeviceMTL& GetDevice() const {
         return m_Device;
@@ -26,7 +27,7 @@ struct TextureMTL {
     }
 
     Result Create(const TextureDesc& textureDesc);
-    Result Create(const TextureMTLDesc& textureDesc);
+    //Result Create(const TextureMTLDesc& textureDesc);
 
 private:
     DeviceMTL& m_Device;
