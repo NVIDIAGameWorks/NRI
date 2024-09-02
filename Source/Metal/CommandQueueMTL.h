@@ -22,10 +22,6 @@ struct CommandQueueMTL {
     inline DeviceMTL& GetDevice() const {
         return m_Device;
     }
-    
-    inline uint32_t GetFamilyIndex() const {
-        return m_FamilyIndex;
-    }
 
     inline CommandQueueType GetType() const {
         return m_Type;
@@ -38,10 +34,9 @@ struct CommandQueueMTL {
     Result WaitForIdle();
         
     void SetDebugName(const char* name);
-    Result Create(CommandQueueType type, uint32_t familyIndex, id<MTLCommandQueue> handle);
+    Result Create(CommandQueueType type);
 private:
     DeviceMTL& m_Device;
-    uint32_t m_FamilyIndex = 0;
     CommandQueueType m_Type = CommandQueueType(-1);
     id<MTLCommandQueue> m_Handle;
     Lock m_Lock;

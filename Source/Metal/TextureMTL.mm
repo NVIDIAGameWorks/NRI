@@ -14,7 +14,7 @@ TextureMTL::~TextureMTL() {
 //    return Result::SUCCESS;
 //}
 
-Result TextureMTL::Create(const TextureDesc& textureDesc) {
+Result TextureMTL::CreateFromTextureDesc(const TextureDesc& textureDesc) {
     MTLTextureDescriptor* info = [[MTLTextureDescriptor alloc] init];
     info.textureType = ::GetImageTypeMTL(textureDesc.type);
     info.pixelFormat = ::GetFormatMTL(textureDesc.format, true);
@@ -22,8 +22,11 @@ Result TextureMTL::Create(const TextureDesc& textureDesc) {
     info.height = textureDesc.height;
     info.depth = textureDesc.depth;
     info.mipmapLevelCount = textureDesc.mipNum;
-  //  info.sampleCount = textureDesc->mSampleCount;
-  //  info.arrayLength = textureDesc->mArraySize;
+    info.sampleCount = textureDesc.sampleNum;
+    info.arrayLength = textureDesc.layerNum;
+    
+    m_Handle = [m_Device newTextureWithDescriptor:info];
+    m_Desc = textureDesc;
 
     //m_Handle = [m_Device newTextureWithDescriptor:textureDesc];
     return Result::SUCCESS;
