@@ -202,15 +202,8 @@ constexpr VkSamplerMipmapMode GetSamplerMipmapMode(Filter filter) {
     return SAMPLER_MIPMAP_MODE[(size_t)filter];
 }
 
-constexpr std::array<VkSamplerAddressMode, (size_t)AddressMode::MAX_NUM> SAMPLER_ADDRESS_MODE = {
-    VK_SAMPLER_ADDRESS_MODE_REPEAT,          // REPEAT
-    VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT, // MIRRORED_REPEAT
-    VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // CLAMP_TO_EDGE
-    VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER  // CLAMP_TO_BORDER
-};
-
 constexpr VkSamplerAddressMode GetSamplerAddressMode(AddressMode addressMode) {
-    return SAMPLER_ADDRESS_MODE[(size_t)addressMode];
+    return (VkSamplerAddressMode)(VK_SAMPLER_ADDRESS_MODE_REPEAT + (uint32_t)addressMode);
 }
 
 constexpr std::array<VkImageViewType, (size_t)Texture1DViewType::MAX_NUM> IMAGE_VIEW_TYPE_1D = {

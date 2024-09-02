@@ -8,11 +8,11 @@
 
 using namespace nri;
 
-inline D3D11_TEXTURE_ADDRESS_MODE GetD3D11AdressMode(AddressMode mode) {
+static inline D3D11_TEXTURE_ADDRESS_MODE GetAddressMode(AddressMode mode) {
     return (D3D11_TEXTURE_ADDRESS_MODE)(D3D11_TEXTURE_ADDRESS_WRAP + (uint32_t)mode);
 }
 
-inline D3D11_FILTER GetFilterIsotropic(Filter mip, Filter magnification, Filter minification, FilterExt filterExt, bool useComparison) {
+static inline D3D11_FILTER GetFilterIsotropic(Filter mip, Filter magnification, Filter minification, FilterExt filterExt, bool useComparison) {
     uint32_t combinedMask = mip == Filter::LINEAR ? 0x1 : 0;
     combinedMask |= magnification == Filter::LINEAR ? 0x4 : 0;
     combinedMask |= minification == Filter::LINEAR ? 0x10 : 0;
@@ -27,7 +27,7 @@ inline D3D11_FILTER GetFilterIsotropic(Filter mip, Filter magnification, Filter 
     return (D3D11_FILTER)combinedMask;
 }
 
-static DXGI_FORMAT GetShaderFormatForDepth(DXGI_FORMAT format) {
+static inline DXGI_FORMAT GetShaderFormatForDepth(DXGI_FORMAT format) {
     switch (format) {
         case DXGI_FORMAT_D16_UNORM:
             return DXGI_FORMAT_R16_UNORM;
@@ -42,7 +42,7 @@ static DXGI_FORMAT GetShaderFormatForDepth(DXGI_FORMAT format) {
     }
 }
 
-D3D11_FILTER GetFilterAnisotropic(FilterExt filterExt, bool useComparison) {
+static inline D3D11_FILTER GetFilterAnisotropic(FilterExt filterExt, bool useComparison) {
     if (filterExt == FilterExt::MIN)
         return D3D11_FILTER_MINIMUM_ANISOTROPIC;
     else if (filterExt == FilterExt::MAX)
@@ -452,9 +452,9 @@ Result DescriptorD3D11::Create(const SamplerDesc& samplerDesc) {
     bool isComparison = samplerDesc.compareFunc != CompareFunc::NONE;
 
     D3D11_SAMPLER_DESC desc = {};
-    desc.AddressU = GetD3D11AdressMode(samplerDesc.addressModes.u);
-    desc.AddressV = GetD3D11AdressMode(samplerDesc.addressModes.v);
-    desc.AddressW = GetD3D11AdressMode(samplerDesc.addressModes.w);
+    desc.AddressU = GetAddressMode(samplerDesc.addressModes.u);
+    desc.AddressV = GetAddressMode(samplerDesc.addressModes.v);
+    desc.AddressW = GetAddressMode(samplerDesc.addressModes.w);
     desc.MipLODBias = samplerDesc.mipBias;
     desc.MaxAnisotropy = samplerDesc.anisotropy;
     desc.ComparisonFunc = GetD3D11ComparisonFuncFromCompareFunc(samplerDesc.compareFunc);

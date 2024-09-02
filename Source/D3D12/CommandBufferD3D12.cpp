@@ -396,11 +396,13 @@ inline void CommandBufferD3D12::BeginRendering(const AttachmentsDesc& attachment
     m_GraphicsCommandList->OMSetRenderTargets(m_RenderTargetNum, m_RenderTargets.data(), FALSE, m_DepthStencil.ptr ? &m_DepthStencil : nullptr);
 
     // Shading rate
-    ID3D12Resource* shadingRateImage = nullptr;
-    if (attachmentsDesc.shadingRate)
-        shadingRateImage = *(DescriptorD3D12*)attachmentsDesc.shadingRate;
+    if (m_Device.GetDesc().isAttachmentShadingRateSupported) {
+        ID3D12Resource* shadingRateImage = nullptr;
+        if (attachmentsDesc.shadingRate)
+            shadingRateImage = *(DescriptorD3D12*)attachmentsDesc.shadingRate;
 
-    m_GraphicsCommandList->RSSetShadingRateImage(shadingRateImage);
+        m_GraphicsCommandList->RSSetShadingRateImage(shadingRateImage);
+    }
 }
 
 inline void CommandBufferD3D12::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {

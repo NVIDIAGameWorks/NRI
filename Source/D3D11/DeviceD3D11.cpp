@@ -411,14 +411,15 @@ void DeviceD3D11::FillDesc() {
     bool isShaderAtomicsF16Supported = false;
     bool isShaderAtomicsF32Supported = false;
 #if NRI_USE_EXT_LIBS
-    REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported));
-    REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported));
-
     NV_D3D11_FEATURE_DATA_RASTERIZER_SUPPORT rasterizerFeatures = {};
-    REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_CheckFeatureSupport(m_Device, NV_D3D11_FEATURE_RASTERIZER, &rasterizerFeatures, sizeof(rasterizerFeatures)));
-
     NV_D3D1x_GRAPHICS_CAPS caps = {};
-    REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D1x_GetGraphicsCapabilities(m_Device, NV_D3D1x_GRAPHICS_CAPS_VER, &caps));
+
+    if (m_Ext.HasNVAPI()) {
+        REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported));
+        REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported));
+        REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_CheckFeatureSupport(m_Device, NV_D3D11_FEATURE_RASTERIZER, &rasterizerFeatures, sizeof(rasterizerFeatures)));
+        REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D1x_GetGraphicsCapabilities(m_Device, NV_D3D1x_GRAPHICS_CAPS_VER, &caps));
+    }
 
     m_Desc.programmableSampleLocationsTier = rasterizerFeatures.ProgrammableSamplePositions ? 2 : 0;
 

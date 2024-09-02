@@ -867,7 +867,8 @@ NriEnum(AddressMode, uint8_t,
     REPEAT,
     MIRRORED_REPEAT,
     CLAMP_TO_EDGE,
-    CLAMP_TO_BORDER
+    CLAMP_TO_BORDER,
+    MIRROR_CLAMP_TO_EDGE
 );
 
 NriStruct(AddressModes) {

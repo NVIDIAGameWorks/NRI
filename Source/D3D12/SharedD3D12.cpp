@@ -200,15 +200,8 @@ D3D12_BLEND_OP nri::GetBlendOp(BlendFunc blendFunc) {
     return BLEND_OPS[(size_t)blendFunc];
 }
 
-constexpr std::array<D3D12_TEXTURE_ADDRESS_MODE, (size_t)AddressMode::MAX_NUM> TEXTURE_ADDRESS_MODES = {
-    D3D12_TEXTURE_ADDRESS_MODE_WRAP,   // REPEAT
-    D3D12_TEXTURE_ADDRESS_MODE_MIRROR, // MIRRORED_REPEAT
-    D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // CLAMP_TO_EDGE
-    D3D12_TEXTURE_ADDRESS_MODE_BORDER  // CLAMP_TO_BORDER
-};
-
 D3D12_TEXTURE_ADDRESS_MODE nri::GetAddressMode(AddressMode addressMode) {
-    return TEXTURE_ADDRESS_MODES[(size_t)addressMode];
+    return (D3D12_TEXTURE_ADDRESS_MODE)(D3D12_TEXTURE_ADDRESS_MODE_WRAP + (uint32_t)addressMode);
 }
 
 constexpr std::array<D3D12_HEAP_TYPE, (size_t)MemoryLocation::MAX_NUM> HEAP_TYPES = {

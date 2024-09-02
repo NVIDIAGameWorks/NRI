@@ -255,7 +255,7 @@ void CommandBufferD3D11::BeginRendering(const AttachmentsDesc& attachmentsDesc) 
 
     // Shading rate
 #if NRI_USE_EXT_LIBS
-    if (m_Device.GetExt()->HasNVAPI()) {
+    if (m_Device.GetExt()->HasNVAPI() && m_Device.GetDesc().isAttachmentShadingRateSupported) {
         ID3D11NvShadingRateResourceView* shadingRateImage = nullptr;
         if (attachmentsDesc.shadingRate) {
             const DescriptorD3D11& descriptor = *(DescriptorD3D11*)attachmentsDesc.shadingRate;
