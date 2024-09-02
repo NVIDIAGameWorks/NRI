@@ -1,5 +1,7 @@
 #pragma once
 
+#import <MetalKit/MetalKit.h>
+
 namespace nri {
 
 struct DeviceMTL;

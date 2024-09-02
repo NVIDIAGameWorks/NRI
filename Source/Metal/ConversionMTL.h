@@ -1,22 +1,8 @@
 #pragma once
 
-#import <MetalKit/MetalKit.h>
-
-#include "NRIMacro.h"
-#include "NRIDescs.h"
-#include "Extensions/NRIWrapperVK.h"
+#include <array>
 
 namespace nri {
-
-constexpr std::array<MTLTextureType, (size_t)TextureType::MAX_NUM> IMAGE_TYPES = {
-    MTLTextureType1D, // TEXTURE_1D
-    MTLTextureType2D, // TEXTURE_2D
-    MTLTextureType3D, // TEXTURE_3D
-};
-
-constexpr MTLTextureType GetImageTypeMTL(TextureType type) {
-    return IMAGE_TYPES[(size_t)type];
-}
 
 constexpr std::array<MTLBlendOperation, (size_t)BlendFunc::MAX_NUM> BLEND_OP = {
     MTLBlendOperationAdd,              // ADD
@@ -27,6 +13,16 @@ constexpr std::array<MTLBlendOperation, (size_t)BlendFunc::MAX_NUM> BLEND_OP = {
 };
 constexpr MTLBlendOperation GetBlendOp(BlendFunc blendFunc) {
     return BLEND_OP[(size_t)blendFunc];
+}
+
+constexpr std::array<MTLTextureType, (size_t)TextureType::MAX_NUM> IMAGE_TYPES = {
+    MTLTextureType1D, // TEXTURE_1D
+    MTLTextureType2D, // TEXTURE_2D
+    MTLTextureType3D, // TEXTURE_3D
+};
+
+constexpr MTLTextureType GetImageTypeMTL(TextureType type) {
+    return IMAGE_TYPES[(size_t)type];
 }
 
 constexpr std::array<MTLBlendFactor, (size_t)BlendFactor::MAX_NUM> BLEND_FACTOR = {
@@ -51,15 +47,12 @@ constexpr std::array<MTLBlendFactor, (size_t)BlendFactor::MAX_NUM> BLEND_FACTOR 
     MTLBlendFactorOneMinusSource1Alpha,     // ONE_MINUS_SRC1_ALPHA
 };
 
-
+constexpr MTLBlendFactor GetBlendFactor(BlendFactor blendFactor) {
+    return BLEND_FACTOR[(size_t)blendFactor];
+}
 
 constexpr MTLColorWriteMask GetColorComponent(ColorWriteBits colorWriteMask) {
     return MTLColorWriteMask(colorWriteMask) & MTLColorWriteMaskAll;
-}
-
-
-constexpr MTLBlendFactor GetBlendFactor(BlendFactor blendFactor) {
-    return BLEND_FACTOR[(size_t)blendFactor];
 }
 
 constexpr std::array<MTLCompareFunction, (size_t)CompareFunc::MAX_NUM> COMPARE_OP = {
@@ -117,7 +110,7 @@ constexpr std::array<MTLSamplerAddressMode, (size_t)AddressMode::MAX_NUM> SAMPLE
     MTLSamplerAddressModeRepeat,          // REPEAT
     MTLSamplerAddressModeMirrorRepeat,    // MIRRORED_REPEAT
     MTLSamplerAddressModeClampToEdge,     // CLAMP_TO_EDGE
-    MTLSamplerAddressModeClampToBorder    // CLAMP_TO_BORDER
+    MTLSamplerAddressModeClampToZero      // CLAMP_TO_BORDER
 };
 
 constexpr MTLSamplerAddressMode GetSamplerAddressMode(AddressMode addressMode) {
@@ -144,16 +137,14 @@ constexpr MTLPrimitiveTopologyClass GetTopologyMTL(Topology topology) {
     return TOPOLOGIES[(size_t)topology];
 }
 
-
-
-inline MTLTextureType GetFormatMTL(Format format, bool demoteSrgb = false) {
+inline MTLPixelFormat GetFormatMTL(Format format, bool demoteSrgb = false) {
     if (demoteSrgb) {
         const FormatProps& formatProps = GetFormatProps(format);
         if (formatProps.isSrgb)
             format = (Format)((uint32_t)format - 1);
     }
     
-    return (MTLTextureType)NRIFormatToMTLFormat(format);
+    return (MTLPixelFormat)NRIFormatToMTLFormat(format);
 }
 
 };

@@ -1,13 +1,18 @@
-#include "BufferMetal.h"
+#include "SharedMTL.h"
+
+#include "BufferMTL.h"
+
+using namespace nri;
+
 
 Result BufferMTL::Create(const BufferDesc& bufferDesc) {
-    return RESULT::SUCCESS;
+    return Result::SUCCESS;
 }
 
 Result BufferMTL::Create(const BufferVKDesc& bufferDesc) {
-    return RESULT::SUCCESS;
+    return Result::SUCCESS;
 }
 
 Result BufferMTL::Create(const AllocateBufferDesc& bufferDesc) {
-    return RESULT::SUCCESS;
+    return Result::SUCCESS;
 }

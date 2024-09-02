@@ -1,5 +1,8 @@
 // © 2021 NVIDIA Corporation
+
 #pragma once
+
+#import <MetalKit/MetalKit.h>
 
 namespace nri {
 
