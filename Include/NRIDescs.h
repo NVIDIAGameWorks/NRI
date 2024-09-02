@@ -3,9 +3,10 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
-#if defined(__clang__) || defined(__GNUC__)
-    #define NRI_CALL __attribute__((stdcall))
+#if defined(__clang__) || defined(__GNUC__)    
+    #define NRI_CALL
 #else
     #define NRI_CALL __stdcall
 #endif
