@@ -868,8 +868,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.subPixelPrecisionBits = limits.subPixelPrecisionBits;
         m_Desc.subTexelPrecisionBits = limits.subTexelPrecisionBits;
         m_Desc.mipmapPrecisionBits = limits.mipmapPrecisionBits;
-        m_Desc.drawIndexedIndex16ValueMax = std::min<uint32_t>(std::numeric_limits<uint16_t>::max(), limits.maxDrawIndexedIndexValue);
-        m_Desc.drawIndexedIndex32ValueMax = limits.maxDrawIndexedIndexValue;
         m_Desc.drawIndirectMaxNum = limits.maxDrawIndirectCount;
         m_Desc.samplerLodBiasMin = -limits.maxSamplerLodBias;
         m_Desc.samplerLodBiasMax = limits.maxSamplerLodBias;
@@ -906,7 +904,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isDepthBoundsTestSupported = features.features.depthBounds;
         m_Desc.isDrawIndirectCountSupported = features12.drawIndirectCount;
         m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = true;
-        m_Desc.isLineSmoothingSupported = lineRasterizationFeatures.smoothLines;
+        m_Desc.isLineSmoothingSupported = lineRasterizationFeatures.lineSmoothing;
         m_Desc.isCopyQueueTimestampSupported = limits.timestampComputeAndGraphics;
         m_Desc.isDispatchRaysIndirectSupported = rayTracingPipelineFeatures.rayTracingPipelineTraceRaysIndirect;
         m_Desc.isMeshShaderPipelineStatsSupported = meshShaderFeatures.meshShaderQueries == VK_TRUE;

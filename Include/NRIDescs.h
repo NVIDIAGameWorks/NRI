@@ -675,9 +675,9 @@ NriStruct(RasterizationDesc) {
     Nri(CullMode) cullMode;
     bool frontCounterClockwise;
     bool depthClamp;
-    bool smoothLines;               // requires "isLineSmoothingSupported"
-    bool conservativeRasterization; // requires "conservativeRasterTier != 0"
-    bool shadingRate;               // requires "isShadingRateSupported", expects "CmdSetShadingRate" and optionally "AttachmentsDesc::shadingRate"
+    bool lineSmoothing;         // requires "isLineSmoothingSupported"
+    bool conservativeRaster;    // requires "conservativeRasterTier"
+    bool shadingRate;           // requires "is*ShadingRateSupported", expects "CmdSetShadingRate" and optionally "AttachmentsDesc::shadingRate"
 };
 
 NriStruct(MultisampleDesc) {
@@ -855,7 +855,7 @@ NriStruct(OutputMergerDesc) {
 
 NriStruct(AttachmentsDesc) {
     NriOptional const NriPtr(Descriptor) depthStencil;
-    NriOptional const NriPtr(Descriptor) shadingRate;
+    NriOptional const NriPtr(Descriptor) shadingRate; // requires "isAttachmentShadingRateSupported"
     const NriPtr(Descriptor) const* colors;
     uint32_t colorNum;
 };
@@ -1354,8 +1354,6 @@ NriStruct(DeviceDesc) {
     uint32_t subPixelPrecisionBits;
     uint32_t subTexelPrecisionBits;
     uint32_t mipmapPrecisionBits;
-    uint32_t drawIndexedIndex16ValueMax;
-    uint32_t drawIndexedIndex32ValueMax;
     uint32_t drawIndirectMaxNum;
     float samplerLodBiasMin;
     float samplerLodBiasMax;

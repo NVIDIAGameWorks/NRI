@@ -24,7 +24,7 @@ Non-goals:
 #pragma once
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 146
+#define NRI_VERSION_MINOR 147
 #define NRI_VERSION_DATE "2 September 2024"
 
 #include "NRIDescs.h"
@@ -119,7 +119,7 @@ NriStruct(CoreInterface) {
         void (NRI_CALL *CmdSetDepthBounds)(NriRef(CommandBuffer) commandBuffer, float boundsMin, float boundsMax);
         void (NRI_CALL *CmdSetBlendConstants)(NriRef(CommandBuffer) commandBuffer, const NriRef(Color32f) color);
         void (NRI_CALL *CmdSetSamplePositions)(NriRef(CommandBuffer) commandBuffer, const NriPtr(SamplePosition) positions, Nri(Sample_t) positionNum, Nri(Sample_t) sampleNum); // requires "isProgrammableSampleLocationsSupported"
-        void (NRI_CALL *CmdSetShadingRate)(NriRef(CommandBuffer) commandBuffer, const NriRef(ShadingRateDesc) shadingRateDesc); // requires "isShadingRateSupported"
+        void (NRI_CALL *CmdSetShadingRate)(NriRef(CommandBuffer) commandBuffer, const NriRef(ShadingRateDesc) shadingRateDesc); // requires "is*ShadingRateSupported"
 
         // State override, if enabled in the pipeline
         void (NRI_CALL *CmdSetDepthBias)(NriRef(CommandBuffer) commandBuffer, const NriRef(DepthBiasDesc) depthBiasDesc); // requires "isDynamicDepthBiasSupported"

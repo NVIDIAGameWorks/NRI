@@ -60,8 +60,8 @@ static void FillRasterizerState(D3D12_RASTERIZER_DESC& rasterizerDesc, const Gra
     rasterizerDesc.DepthBiasClamp = r.depthBias.clamp;
     rasterizerDesc.SlopeScaledDepthBias = r.depthBias.slope;
     rasterizerDesc.DepthClipEnable = (BOOL)r.depthClamp;
-    rasterizerDesc.AntialiasedLineEnable = (BOOL)r.smoothLines;
-    rasterizerDesc.ConservativeRaster = r.conservativeRasterization ? D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+    rasterizerDesc.AntialiasedLineEnable = (BOOL)r.lineSmoothing;
+    rasterizerDesc.ConservativeRaster = r.conservativeRaster ? D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
     if (graphicsPipelineDesc.multisample) {
         rasterizerDesc.MultisampleEnable = graphicsPipelineDesc.multisample->sampleNum > 1 ? TRUE : FALSE;
@@ -97,8 +97,8 @@ static void FillRasterizerState(D3D12_RASTERIZER_DESC1& rasterizerDesc, const Gr
     rasterizerDesc.DepthBiasClamp = r.depthBias.clamp;
     rasterizerDesc.SlopeScaledDepthBias = r.depthBias.slope;
     rasterizerDesc.DepthClipEnable = (BOOL)r.depthClamp;
-    rasterizerDesc.AntialiasedLineEnable = (BOOL)r.smoothLines;
-    rasterizerDesc.ConservativeRaster = r.conservativeRasterization ? D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+    rasterizerDesc.AntialiasedLineEnable = (BOOL)r.lineSmoothing;
+    rasterizerDesc.ConservativeRaster = r.conservativeRaster ? D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
     if (graphicsPipelineDesc.multisample) {
         rasterizerDesc.MultisampleEnable = graphicsPipelineDesc.multisample->sampleNum > 1 ? TRUE : FALSE;

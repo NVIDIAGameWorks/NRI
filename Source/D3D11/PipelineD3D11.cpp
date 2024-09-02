@@ -100,12 +100,12 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
         rasterizerDesc.SlopeScaledDepthBias = r.depthBias.slope;
         rasterizerDesc.DepthClipEnable = r.depthClamp;
         rasterizerDesc.ScissorEnable = TRUE;
-        rasterizerDesc.AntialiasedLineEnable = r.smoothLines;
+        rasterizerDesc.AntialiasedLineEnable = r.lineSmoothing;
         rasterizerDesc.MultisampleEnable = sampleNum > 1 ? TRUE : FALSE;
         // D3D11_RASTERIZER_DESC1
         rasterizerDesc.ForcedSampleCount = sampleNum > 1 ? sampleNum : 0;
         // D3D11_RASTERIZER_DESC2
-        rasterizerDesc.ConservativeRaster = r.conservativeRasterization ? D3D11_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D11_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+        rasterizerDesc.ConservativeRaster = r.conservativeRaster ? D3D11_CONSERVATIVE_RASTERIZATION_MODE_ON : D3D11_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
         RasterizerState rasterizerState = {};
         if (m_Device.GetVersion() >= 3) {
@@ -126,7 +126,7 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
         m_RasterizerDesc.ForcedSampleCount = sampleNum > 1 ? sampleNum : 0;
         m_RasterizerDesc.ProgrammableSamplePositionsEnable = true;
         m_RasterizerDesc.SampleCount = sampleNum;
-        m_RasterizerDesc.ConservativeRasterEnable = r.conservativeRasterization;
+        m_RasterizerDesc.ConservativeRasterEnable = r.conservativeRaster;
         m_RasterizerDesc.TargetIndepentRasterWithDepth = true;
 #endif
     }
