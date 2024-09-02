@@ -24,7 +24,7 @@ NriStruct(AllocateTextureDesc) {
 };
 
 NriStruct(AllocateAccelerationStructureDesc) {
-    Nri(AccelerationStructureDesc) desc; // TODO: requires NRIRayTracing.h
+    Nri(AccelerationStructureDesc) desc;
     Nri(MemoryLocation) memoryLocation;
     float memoryPriority;
 };
