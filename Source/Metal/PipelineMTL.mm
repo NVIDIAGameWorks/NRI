@@ -12,9 +12,14 @@ Result PipelineMTL::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     MTLRenderPipelineDescriptor *renderPipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
     for (uint32_t i = 0; i < graphicsPipelineDesc.shaderNum; i++) {
     }
+    // Depth-stencil
+    const DepthAttachmentDesc& da = graphicsPipelineDesc.outputMerger.depth;
+    const StencilAttachmentDesc& sa = graphicsPipelineDesc.outputMerger.stencil;
     
+    const PipelineLayout *pl = graphicsPipelineDesc.pipelineLayout;
     const VertexInputDesc *vi = graphicsPipelineDesc.vertexInput;
     if (vi) {
+        
       //  VkVertexInputBindingDescription* streams const_cast<VkVertexInputBindingDescription*>(vertexInputState.pVertexBindingDescriptions);
         //for (uint32_t i = 0; i < vi->streamNum; i++) {
         //    const VertexStreamDesc &stream = vi->streams[i];
@@ -30,28 +35,25 @@ Result PipelineMTL::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
         // TODO: multisampling
     }
 
-
     // Blending
-    const OutputMergerDesc& om = graphicsPipelineDesc.outputMerger;
 
     // assign render target pixel format for all attachments
+    const OutputMergerDesc& om = graphicsPipelineDesc.outputMerger;
     for (uint32_t i = 0; i < om.colorNum; i++) {
         
-       // MTLRenderPipelineColorAttachmentDescriptor& colorAtachment = &renderPipelineDesc.colorAttachments[i];
         const ColorAttachmentDesc& attachmentDesc = om.color[i];
-
-        //colorAtachment.pixelFormat = GetFormatMTL(attachmentDesc.format, false);
+        renderPipelineDesc.colorAttachments[i].pixelFormat = GetFormatMTL(attachmentDesc.format, false);
         
-        //colorAtachment.blendingEnabled = attachmentDesc.blendEnabled;
-        //colorAtachment.rgbBlendOperation = GetBlendOp(attachmentDesc.colorBlend.func);
-        //colorAtachment.alphaBlendOperation = GetBlendOp(attachmentDesc.alphaBlend.func);
+        renderPipelineDesc.colorAttachments[i].blendingEnabled = attachmentDesc.blendEnabled;
+        renderPipelineDesc.colorAttachments[i].rgbBlendOperation = GetBlendOp(attachmentDesc.colorBlend.func);
+        renderPipelineDesc.colorAttachments[i].alphaBlendOperation = GetBlendOp(attachmentDesc.alphaBlend.func);
 
-        //colorAtachment.sourceRGBBlendFactor = GetBlendFactor(attachmentDesc.colorBlend.srcFactor);
-        //colorAtachment.destinationRGBBlendFactor = GetBlendFactor(attachmentDesc.colorBlend.dstFactor);
-        //colorAtachment.sourceAlphaBlendFactor = GetBlendFactor(attachmentDesc.alphaBlend.srcFactor);
-        //colorAtachment.destinationAlphaBlendFactor = GetBlendFactor(attachmentDesc.alphaBlend.dstFactor);
+        renderPipelineDesc.colorAttachments[i].sourceRGBBlendFactor = GetBlendFactor(attachmentDesc.colorBlend.srcFactor);
+        renderPipelineDesc.colorAttachments[i].destinationRGBBlendFactor = GetBlendFactor(attachmentDesc.colorBlend.dstFactor);
+        renderPipelineDesc.colorAttachments[i].sourceAlphaBlendFactor = GetBlendFactor(attachmentDesc.alphaBlend.srcFactor);
+        renderPipelineDesc.colorAttachments[i].destinationAlphaBlendFactor = GetBlendFactor(attachmentDesc.alphaBlend.dstFactor);
 
-        //colorAtachment.writeMask = GetColorComponent(pDesc->mColorWriteMasks[blendDescIndex]);
+        renderPipelineDesc.colorAttachments[i].writeMask = GetColorComponent(attachmentDesc.colorWriteMask);
         
     }
 

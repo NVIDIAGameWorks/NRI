@@ -55,6 +55,22 @@ constexpr MTLColorWriteMask GetColorComponent(ColorWriteBits colorWriteMask) {
     return MTLColorWriteMask(colorWriteMask) & MTLColorWriteMaskAll;
 }
 
+constexpr std::array<MTLDataType, (size_t)DescriptorType::MAX_NUM> DESCRIPTOR_TYPES = {
+    MTLDataTypeSampler, // SAMPLER
+    MTLDataTypeNone,    // CONSTANT_BUFFER
+    MTLDataTypeTexture, // TEXTURE
+    MTLDataTypeNone,    // STORAGE_TEXTURE
+    MTLDataTypeStruct,  // BUFFER
+    MTLDataTypeStruct,  // STORAGE_BUFFER
+    MTLDataTypeArray,   // STRUCTURED_BUFFER
+    MTLDataTypeStruct,    // STORAGE_STRUCTURED_BUFFER
+    MTLDataTypePrimitiveAccelerationStructure     // ACCELERATION_STRUCTURE
+};
+
+constexpr MTLDataType GetDescriptorType(DescriptorType type) {
+    return DESCRIPTOR_TYPES[(size_t)type];
+}
+
 constexpr std::array<MTLCompareFunction, (size_t)CompareFunc::MAX_NUM> COMPARE_OP = {
     MTLCompareFunctionNever,            // NONE
     MTLCompareFunctionAlways,           // ALWAYS
