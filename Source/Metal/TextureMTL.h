@@ -26,10 +26,12 @@ struct TextureMTL {
         return m_Desc;
     }
 
-    Result CreateFromTextureDesc(const TextureDesc& textureDesc);
+    Result Create(const TextureDesc& textureDesc);
     //Result Create(const TextureMTLDesc& textureDesc);
 
 private:
+   // Result CreateFromTextureDesc(const TextureDesc& textureDesc);
+    
     DeviceMTL& m_Device;
     TextureDesc m_Desc = {};
     id<MTLTexture> m_Handle;

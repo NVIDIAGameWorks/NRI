@@ -11,45 +11,22 @@ struct PipelineLayoutMTL {
         : m_Device(device) {
     }
 
-//    inline operator VkPipelineLayout() const {
-//        return m_Handle;
-//    }
-//
-//    inline DeviceVK& GetDevice() const {
-//        return m_Device;
-//    }
-//
-//    inline const RuntimeBindingInfo& GetRuntimeBindingInfo() const {
-//        return m_RuntimeBindingInfo;
-//    }
-//
-//    inline VkDescriptorSetLayout GetDescriptorSetLayout(uint32_t index) const {
-//        return m_DescriptorSetLayouts[index];
-//    }
-//
-//    inline VkPipelineBindPoint GetPipelineBindPoint() const {
-//        return m_PipelineBindPoint;
-//    }
-//
-//    inline uint32_t GetDescriptorSetSpace(uint32_t setIndexInPipelineLayout) const {
-
-//    }
-//
     ~PipelineLayoutMTL();
 //
-//    Result Create(const PipelineLayoutDesc& pipelineLayoutDesc);
-//
-//    //================================================================================================================
-//    // NRI
-//    //================================================================================================================
-//
-//    void SetDebugName(const char* name);
+    inline Result Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
+        return CreateDesc(pipelineLayoutDesc);
+    }
 
+
+    struct PipelineDescriptorSet {
+        NSMutableArray<MTLArgumentDescriptor*>* m_ArgumentDescriptors;
+    };
 
 private:
+    Result CreateDesc(const PipelineLayoutDesc& pipelineLayoutDesc);
     DeviceMTL& m_Device;
-    //Vector<MTLArgumentDescriptor*> m_DescriptorSetLayouts;
-
+    
+    std::vector<PipelineDescriptorSet> m_DescriptorSets;
 };
 
 }

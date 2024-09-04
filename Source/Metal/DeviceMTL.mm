@@ -4,6 +4,20 @@
 
 #include "DeviceMTL.h"
 
+//#include "AccelerationStructureVK.h"
+#include "BufferMTL.h"
+//#include "CommandAllocatorVK.h"
+//#include "CommandBufferMTL.h"
+#include "CommandQueueMTL.h"
+//#include "DescriptorPoolMTL.h"
+#include "DescriptorSetMTL.h"
+#include "TextureMTL.h"
+#include "FenceMTL.h"
+#include "MemoryMTL.h"
+#include "PipelineLayoutMTL.h"
+#include "PipelineMTL.h"
+
+
 using namespace nri;
 
 static bool FindMTLGpuFamily(id<MTLDevice> device,
@@ -130,6 +144,7 @@ Result DeviceMTL::Create(const DeviceCreationDesc& deviceCreationDesc, const Dev
         m_Desc.adapterDesc.vendor = nri::Vendor::APPLE;
     }
     
+    
     const uint64_t regID = [m_Device registryID];
     if (regID)
     {
@@ -165,4 +180,6 @@ Result DeviceMTL::Create(const DeviceCreationDesc& deviceCreationDesc, const Dev
     return Result::SUCCESS;
 
 }
+
+#include "DeviceMTL.hpp"
 

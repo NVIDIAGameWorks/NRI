@@ -14,7 +14,8 @@ TextureMTL::~TextureMTL() {
 //    return Result::SUCCESS;
 //}
 
-Result TextureMTL::CreateFromTextureDesc(const TextureDesc& textureDesc) {
+
+Result TextureMTL::Create(const TextureDesc& textureDesc) {
     MTLTextureDescriptor* info = [[MTLTextureDescriptor alloc] init];
     info.textureType = ::GetImageTypeMTL(textureDesc.type);
     info.pixelFormat = ::GetFormatMTL(textureDesc.format, true);
