@@ -17,7 +17,8 @@ static const TextureDesc& NRI_CALL GetTextureDesc(const Texture& texture) {
 }
 
 static FormatSupportBits NRI_CALL GetFormatSupport(const Device& device, Format format) {
-    return ((const DeviceDesc&)device).GetFormatSupport(format);
+    return (FormatSupportBits)0;
+    //return ((const DeviceDesc&)device).GetFormatSupport(format);
 }
 
 static void NRI_CALL GetBufferMemoryDesc(const Device& device, const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
@@ -45,18 +46,16 @@ static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, 
 }
 
 static Result NRI_CALL CreateDescriptorPool(Device& device, const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
-    //return ((DeviceMTL&)device).CreateImplementation<DescriptorPoolD3D12>(descriptorPool, descriptorPoolDesc);
+    //return ((DeviceMTL&)device).CreateImplementation<DescriptorPoolMTL>(descriptorPool, descriptorPoolDesc);
     return Result::SUCCESS;
 }
 
 static Result NRI_CALL CreateBuffer(Device& device, const BufferDesc& bufferDesc, Buffer*& buffer) {
-    //return ((DeviceMTL&)device).CreateImplementation<BufferD3D12>(buffer, bufferDesc);
-    return Result::SUCCESS;
+    return ((DeviceMTL&)device).CreateImplementation<BufferMTL>(buffer, bufferDesc);
 }
 
 static Result NRI_CALL CreateTexture(Device& device, const TextureDesc& textureDesc, Texture*& texture) {
-    //return ((DeviceMTL&)device).CreateImplementation<TextureD3D12>(texture, textureDesc);
-    return Result::SUCCESS;
+    return ((DeviceMTL&)device).CreateImplementation<TextureMTL>(texture, textureDesc);
 }
 
 static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
@@ -65,7 +64,12 @@ static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, De
     return Result::SUCCESS;
 }
 
+
 static Result NRI_CALL CreateTexture1DView(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
+    //DeviceMTL& device = ((const TextureMTL*)textureViewDesc.texture)->GetDevice();
+    //return device.CreateImplementation<DescriptorMTL>(textureView, textureViewDesc);
+
+    
     //DeviceMTL& device = ((const TextureD3D12*)textureViewDesc.texture)->GetDevice();
     //return device.CreateImplementation<DescriptorD3D12>(textureView, textureViewDesc);
     return Result::SUCCESS;
@@ -150,7 +154,7 @@ static void NRI_CALL DestroyQueryPool(QueryPool& queryPool) {
 }
 
 static void NRI_CALL DestroyFence(Fence& fence) {
-    //Destroy((FenceD3D12*)&fence);
+    Destroy((FenceMTL*)&fence);
 }
 
 static Result NRI_CALL AllocateMemory(Device& device, const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
@@ -191,12 +195,12 @@ static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name) {
 static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
     if (!(&device))
         return nullptr;
-    return (MTLDevice*)((DeviceMTL&)device);
+    return (DeviceMTL*)&((DeviceMTL&)device);
 
     //return ((DeviceMetal&)device).GetNativeObject();
 }
 
-Result DeviceMetal::FillFunctionTable(CoreInterface& table) const {
+Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table = {};
     Core_Device_PartiallyFillFunctionTableMTL(table);
     Core_Buffer_PartiallyFillFunctionTableMTL(table);
@@ -214,44 +218,44 @@ Result DeviceMetal::FillFunctionTable(CoreInterface& table) const {
 
 #pragma endregion
 
-Result DeviceMetal::FillFunctionTable(HelperInterface& table) const {
+Result DeviceMTL::FillFunctionTable(HelperInterface& table) const {
     table = {};
-    return ResVult::UNSUPPORTED;
+    return Result::UNSUPPORTED;
 }
 
-Result DeviceMetal::FillFunctionTable(LowLatencyInterface& table) const {
+Result DeviceMTL::FillFunctionTable(LowLatencyInterface& table) const {
     table = {};
-    return ResVult::UNSUPPORTED;
+    return Result::UNSUPPORTED;
 }
 
-Result DeviceMetal::FillFunctionTable(MeshShaderInterface& table) const {
+//Result DeviceMTL::FillFunctionTable(MeshShaderInterface& table) const {
+//    table = {};
+//    return Result::UNSUPPORTED;
+//}
+
+Result DeviceMTL::FillFunctionTable(RayTracingInterface& table) const {
     table = {};
-    return ResVult::UNSUPPORTED;
+    return Result::UNSUPPORTED;
 }
 
-Result DeviceMetal::FillFunctionTable(RayTracingInterface& table) const {
+Result DeviceMTL::FillFunctionTable(StreamerInterface& table) const {
     table = {};
-    return ResVult::UNSUPPORTED;
+    return Result::UNSUPPORTED;
 }
 
-Result DeviceMetal::FillFunctionTable(StreamerInterface& table) const {
+Result DeviceMTL::FillFunctionTable(SwapChainInterface& table) const {
     table = {};
-    return ResVult::UNSUPPORTED;
+    return Result::UNSUPPORTED;
 }
 
-Result DeviceMetal::FillFunctionTable(SwapChainInterface& table) const {
+Result DeviceMTL::FillFunctionTable(ResourceAllocatorInterface& table) const {
     table = {};
-    return ResVult::UNSUPPORTED;
-}
-
-Result DeviceMetal::FillFunctionTable(ResourceAllocatorInterface& table) const {
-    table = {};
-    return ResVult::UNSUPPORTED;
+    return Result::UNSUPPORTED;
 }
 
 Define_Core_Device_PartiallyFillFunctionTable(MTL);
-Define_Helper_Device_PartiallyFillFunctionTable(MTL);
-Define_RayTracing_Device_PartiallyFillFunctionTable(MTL);
-Define_Streamer_Device_PartiallyFillFunctionTable(MTL);
-Define_SwapChain_Device_PartiallyFillFunctionTable(MTL);
-Define_ResourceAllocator_Device_PartiallyFillFunctionTable(MTL);
+//Define_Helper_Device_PartiallyFillFunctionTable(MTL);
+//Define_RayTracing_Device_PartiallyFillFunctionTable(MTL);
+//Define_Streamer_Device_PartiallyFillFunctionTable(MTL);
+//Define_SwapChain_Device_PartiallyFillFunctionTable(MTL);
+//Define_ResourceAllocator_Device_PartiallyFillFunctionTable(MTL);
