@@ -90,6 +90,18 @@ DeviceMTL::~DeviceMTL() {
 //  }
 //}
 
+void DeviceMTL::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    
+}
+
+void DeviceMTL::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    
+}
+
+void DeviceMTL::GetMemoryDesc(const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc)  {
+    
+}
+
 
 Result DeviceMTL::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
     ExclusiveScope lock(m_Lock);
