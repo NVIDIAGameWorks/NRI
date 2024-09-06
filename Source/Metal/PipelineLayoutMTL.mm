@@ -8,7 +8,7 @@ PipelineLayoutMTL::~PipelineLayoutMTL() {
 
 }
 
-Result PipelineLayoutMTL::CreateDesc(const PipelineLayoutDesc& pipelineLayoutDesc) {
+Result PipelineLayoutMTL::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
     m_DescriptorSets.resize(pipelineLayoutDesc.descriptorSetNum);
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
         const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[i];

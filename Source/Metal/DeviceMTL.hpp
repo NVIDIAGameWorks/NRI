@@ -29,10 +29,8 @@ static void NRI_CALL GetBufferMemoryDesc(const Device& device, const BufferDesc&
 }
 
 static void NRI_CALL GetTextureMemoryDesc(const Device& device, const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
-    //D3D12_RESOURCE_DESC desc = {};
-    //GetResourceDesc(&desc, textureDesc);
-
-    //((const DeviceD3D12&)device).GetMemoryDesc(memoryLocation, desc, memoryDesc);
+    //return ((const DeviceMTL&)device).GetMemoryDesc(textureDesc, memoryLocation, memoryDesc);
+    
 }
 
 static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQueueType, CommandQueue*& commandQueue) {

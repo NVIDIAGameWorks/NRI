@@ -56,15 +56,15 @@ constexpr MTLColorWriteMask GetColorComponent(ColorWriteBits colorWriteMask) {
 }
 
 constexpr std::array<MTLDataType, (size_t)DescriptorType::MAX_NUM> DESCRIPTOR_TYPES = {
-    MTLDataTypeSampler, // SAMPLER
-    MTLDataTypeNone,    // CONSTANT_BUFFER
-    MTLDataTypeTexture, // TEXTURE
-    MTLDataTypeNone,    // STORAGE_TEXTURE
-    MTLDataTypeStruct,  // BUFFER
-    MTLDataTypeStruct,  // STORAGE_BUFFER
-    MTLDataTypeArray,   // STRUCTURED_BUFFER
-    MTLDataTypeStruct,    // STORAGE_STRUCTURED_BUFFER
-    MTLDataTypePrimitiveAccelerationStructure     // ACCELERATION_STRUCTURE
+    MTLDataTypeSampler,                       // SAMPLER
+    MTLDataTypeNone,                          // CONSTANT_BUFFER
+    MTLDataTypeTexture,                       // TEXTURE
+    MTLDataTypeNone,                          // STORAGE_TEXTURE
+    MTLDataTypeStruct,                        // BUFFER
+    MTLDataTypeStruct,                        // STORAGE_BUFFER
+    MTLDataTypeArray,                         // STRUCTURED_BUFFER
+    MTLDataTypeStruct,                        // STORAGE_STRUCTURED_BUFFER
+    MTLDataTypePrimitiveAccelerationStructure // ACCELERATION_STRUCTURE
 };
 
 constexpr MTLDataType GetDescriptorType(DescriptorType type) {
@@ -135,7 +135,7 @@ constexpr MTLSamplerAddressMode GetSamplerAddressMode(AddressMode addressMode) {
 
 
 
-constexpr std::array<MTLPrimitiveTopologyClass, (size_t)Topology::MAX_NUM> TOPOLOGIES = {
+constexpr std::array<MTLPrimitiveTopologyClass, (size_t)Topology::MAX_NUM> TOPOLOGIES_CLASSES = {
     MTLPrimitiveTopologyClassPoint,           // POINT_LIST
     MTLPrimitiveTopologyClassLine,            // LINE_LIST
     MTLPrimitiveTopologyClassLine,            // LINE_STRIP
@@ -150,7 +150,7 @@ constexpr std::array<MTLPrimitiveTopologyClass, (size_t)Topology::MAX_NUM> TOPOL
 
 
 constexpr MTLPrimitiveTopologyClass GetTopologyMTL(Topology topology) {
-    return TOPOLOGIES[(size_t)topology];
+    return TOPOLOGIES_CLASSES [(size_t)topology];
 }
 
 inline MTLPixelFormat GetFormatMTL(Format format, bool demoteSrgb = false) {
