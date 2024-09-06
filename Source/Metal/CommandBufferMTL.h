@@ -83,15 +83,11 @@ struct CommandBufferMTL {
         MTLIndexType m_Type;
         struct BufferMTL* m_Buffer;
     };
-
-
 private:
     DeviceMTL& m_Device;
     struct PipelineMTL* m_CurrentPipeline = nullptr;
-    
     struct CmdIndexBuffer m_CurrentIndexCmd;
     id<MTLCommandBuffer> m_Handle;
-    
     id<MTLRenderCommandEncoder> m_encoder;
     
     //id<MTLRenderCommandEncoder> renderEncoder;
