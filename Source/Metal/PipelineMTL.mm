@@ -19,27 +19,27 @@ Result PipelineMTL::Create(const RayTracingPipelineDesc& rayTracingPipelineDesc)
 Result PipelineMTL::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     MTLRenderPipelineDescriptor *renderPipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
    
-    m_type = PipelineMTL::Graphics;
+    //m_type = PipelineMTL::Graphics;
     const InputAssemblyDesc& ia = graphicsPipelineDesc.inputAssembly;
     switch (ia.topology) {
-    case Topology::POINT_LIST:
-        m_graphics.m_primitiveType = MTLPrimitiveType::MTLPrimitiveTypePoint;
-        break;
-    case Topology::LINE_LIST:
-    case Topology::LINE_STRIP:
-    case Topology::LINE_LIST_WITH_ADJACENCY:
-    case Topology::LINE_STRIP_WITH_ADJACENCY:
-        m_graphics.m_primitiveType = MTLPrimitiveType::MTLPrimitiveTypeLine;
-        break;
-    case Topology::TRIANGLE_LIST:
-    case Topology::TRIANGLE_STRIP:
-    case Topology::TRIANGLE_LIST_WITH_ADJACENCY:
-    case Topology::TRIANGLE_STRIP_WITH_ADJACENCY:
-        m_graphics.m_primitiveType = MTLPrimitiveType::MTLPrimitiveTypeTriangle;
-        break;
-    case Topology::PATCH_LIST:
-    default:
-        break;
+        case Topology::POINT_LIST:
+            m_primitiveType = MTLPrimitiveType::MTLPrimitiveTypePoint;
+            break;
+        case Topology::LINE_LIST:
+        case Topology::LINE_STRIP:
+        case Topology::LINE_LIST_WITH_ADJACENCY:
+        case Topology::LINE_STRIP_WITH_ADJACENCY:
+            m_primitiveType = MTLPrimitiveType::MTLPrimitiveTypeLine;
+            break;
+        case Topology::TRIANGLE_LIST:
+        case Topology::TRIANGLE_STRIP:
+        case Topology::TRIANGLE_LIST_WITH_ADJACENCY:
+        case Topology::TRIANGLE_STRIP_WITH_ADJACENCY:
+            m_primitiveType = MTLPrimitiveType::MTLPrimitiveTypeTriangle;
+            break;
+        case Topology::PATCH_LIST:
+        default:
+            break;
     }
 
     for (uint32_t i = 0; i < graphicsPipelineDesc.shaderNum; i++) {

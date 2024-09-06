@@ -23,18 +23,9 @@ struct PipelineMTL {
     Result Create(const GraphicsPipelineDesc& graphicsPipelineDesc);
     Result Create(const ComputePipelineDesc& computePipelineDesc);
     Result Create(const RayTracingPipelineDesc& rayTracingPipelineDesc);
-
-    enum PiplineType m_type = None; 
-    union {
-        struct {
-            MTLPrimitiveTopologyClass m_topologyClass;
-            MTLPrimitiveType m_primitiveType;
-        } m_graphics;
-        struct {
-
-        } m_compute;
-    };
-
+    
+    MTLPrimitiveTopologyClass m_topologyClass;
+    MTLPrimitiveType m_primitiveType;
 private:
     DeviceMTL& m_Device;
 };
