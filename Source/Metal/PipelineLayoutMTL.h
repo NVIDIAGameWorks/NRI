@@ -12,18 +12,14 @@ struct PipelineLayoutMTL {
     }
 
     ~PipelineLayoutMTL();
-//
-    inline Result Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
-        return CreateDesc(pipelineLayoutDesc);
-    }
 
-
+    Result Create(const PipelineLayoutDesc& pipelineLayoutDesc);
+    
     struct PipelineDescriptorSet {
         NSMutableArray<MTLArgumentDescriptor*>* m_ArgumentDescriptors;
     };
 
 private:
-    Result CreateDesc(const PipelineLayoutDesc& pipelineLayoutDesc);
     DeviceMTL& m_Device;
     
     std::vector<PipelineDescriptorSet> m_DescriptorSets;
