@@ -8,10 +8,9 @@ struct DeviceMTL;
 struct PipelineLayoutMTL;
 
 struct PipelineMTL {
-    enum PiplineType {
-        None,
-        Graphics,
+    enum PipelineType {
         Compute,
+        Graphics,
         Raytracing
     };
 
@@ -23,7 +22,8 @@ struct PipelineMTL {
     Result Create(const GraphicsPipelineDesc& graphicsPipelineDesc);
     Result Create(const ComputePipelineDesc& computePipelineDesc);
     Result Create(const RayTracingPipelineDesc& rayTracingPipelineDesc);
-    
+
+    PipelineType m_pipelineType;
     MTLPrimitiveTopologyClass m_topologyClass;
     MTLPrimitiveType m_primitiveType;
 private:

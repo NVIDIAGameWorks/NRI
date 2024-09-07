@@ -26,9 +26,11 @@ void CommandBufferMTL::SetDebugName(const char* name) {
 }
 
 Result CommandBufferMTL::Begin(const DescriptorPool* descriptorPool) {
-    
+    [m_Handle computeCommandEncoderWithDescriptor: NULL];
 }
 Result CommandBufferMTL::End() {
+    m_ComputeEncoder = nil;
+    m_RendererEncoder = nil;
     
 }
 void CommandBufferMTL::SetPipeline(const Pipeline& pipeline) {
@@ -36,7 +38,14 @@ void CommandBufferMTL::SetPipeline(const Pipeline& pipeline) {
         return;
     PipelineMTL& pipelineImpl = (PipelineMTL&)pipeline;
     m_CurrentPipeline = &pipelineImpl;
-    
+
+    switch(m_CurrentPipeline->m_pipelineType) {
+        case nri::PipelineMTL::Compute:
+            m_ComputeEncoder = [m_Handle computeCommandEncoderWithDescriptor: NULL];
+            break;
+        default:
+            break;
+    }
 
 }
 void CommandBufferMTL::SetPipelineLayout(const PipelineLayout& pipelineLayout) {}
@@ -45,19 +54,46 @@ void CommandBufferMTL::SetConstants(uint32_t pushConstantIndex, const void* data
 void CommandBufferMTL::SetDescriptorPool(const DescriptorPool& descriptorPool) {}
 void CommandBufferMTL::Barrier(const BarrierGroupDesc& barrierGroupDesc) {}
 void CommandBufferMTL::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
-    m_encoder = [m_Handle renderCommandEncoderWithDescriptor: NULL];
+    m_RendererEncoder = [m_Handle renderCommandEncoderWithDescriptor: NULL];
 }
 void CommandBufferMTL::EndRendering() {
-    [m_encoder endEncoding];
+    [m_RendererEncoder endEncoding];
+    m_RendererEncoder = nil;
+    m_ComputeEncoder = nil;
 }
 void CommandBufferMTL::SetViewports(const Viewport* viewports, uint32_t viewportNum) {}
-void CommandBufferMTL::SetScissors(const Rect* rects, uint32_t rectNum) {}
-void CommandBufferMTL::SetDepthBounds(float boundsMin, float boundsMax) {}
-void CommandBufferMTL::SetStencilReference(uint8_t frontRef, uint8_t backRef) {}
-void CommandBufferMTL::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {}
-void CommandBufferMTL::SetBlendConstants(const Color32f& color) {}
-void CommandBufferMTL::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {}
-void CommandBufferMTL::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {}
+void CommandBufferMTL::SetScissors(const Rect* rects, uint32_t rectNum) {
+    NSCAssert(m_RendererEncoder, @"encoder set");
+    MTLScissorRect rect;
+    rect.x = rects[rectNum].x;
+    rect.y = rects[rectNum].y;
+    rect.width = rects[rectNum].width;
+    rect.height = rects[rectNum].height;
+    [m_RendererEncoder setScissorRect:rect];
+}
+void CommandBufferMTL::SetDepthBounds(float boundsMin, float boundsMax) {
+}
+void CommandBufferMTL::SetStencilReference(uint8_t frontRef, uint8_t backRef) {
+    [m_RendererEncoder setStencilFrontReferenceValue: frontRef backReferenceValue:backRef];
+}
+void CommandBufferMTL::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
+    
+}
+void CommandBufferMTL::SetBlendConstants(const Color32f& color) {
+    [m_RendererEncoder
+     setBlendColorRed:color.x
+     green:color.y 
+     blue:color.z
+     alpha:color.w
+    ];
+}
+void CommandBufferMTL::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
+    
+}
+
+void CommandBufferMTL::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
+}
+
 void CommandBufferMTL::SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType) {
     m_CurrentIndexCmd.m_Buffer = &(BufferMTL&)buffer;
     switch(indexType) {
@@ -71,19 +107,28 @@ void CommandBufferMTL::SetIndexBuffer(const Buffer& buffer, uint64_t offset, Ind
     }
     m_CurrentIndexCmd.m_Offset = offset;
 }
+
 void CommandBufferMTL::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
+    for(size_t i = 0; i < bufferNum; i++) {
+        BufferMTL* mtlBuffer = (BufferMTL*)buffers[i];
+        [m_RendererEncoder setVertexBuffer: mtlBuffer->GetHandle()
+                                offset: offsets[i]
+                               atIndex: i + baseSlot];
+    }
     
 }
+
 void CommandBufferMTL::Draw(const DrawDesc& drawDesc) {
-    [m_encoder drawPrimitives: m_CurrentPipeline->m_primitiveType
+    [m_RendererEncoder drawPrimitives: m_CurrentPipeline->m_primitiveType
             vertexStart:drawDesc.baseVertex
             vertexCount:drawDesc.vertexNum
             instanceCount:drawDesc.instanceNum
             baseInstance:0];
 }
+
 void CommandBufferMTL::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc) {
     id<MTLBuffer> indexBuffer = m_CurrentIndexCmd.m_Buffer->GetHandle();
-    [m_encoder drawIndexedPrimitives: m_CurrentPipeline->m_primitiveType
+    [m_RendererEncoder drawIndexedPrimitives: m_CurrentPipeline->m_primitiveType
                               indexCount:drawIndexedDesc.indexNum
                                indexType: m_CurrentIndexCmd.m_Type
                              indexBuffer: indexBuffer
@@ -91,8 +136,9 @@ void CommandBufferMTL::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc) {
 }
 
 void CommandBufferMTL::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+    // TODO: implement count Buffer
     NSCAssert(!countBuffer, @"count buffer not supported");
-    [m_encoder
+    [m_RendererEncoder
        drawPrimitives: m_CurrentPipeline->m_primitiveType
        indirectBuffer:((BufferMTL&)buffer).GetHandle()
      indirectBufferOffset: offset];
@@ -101,7 +147,9 @@ void CommandBufferMTL::DrawIndirect(const Buffer& buffer, uint64_t offset, uint3
 void CommandBufferMTL::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
     
 }
-void CommandBufferMTL::Dispatch(const DispatchDesc& dispatchDesc) {}
+void CommandBufferMTL::Dispatch(const DispatchDesc& dispatchDesc) {
+    
+}
 void CommandBufferMTL::DispatchIndirect(const Buffer& buffer, uint64_t offset) {}
 void CommandBufferMTL::BeginQuery(const QueryPool& queryPool, uint32_t offset) {}
 void CommandBufferMTL::EndQuery(const QueryPool& queryPool, uint32_t offset) {}
@@ -124,7 +172,13 @@ void CommandBufferMTL::WriteAccelerationStructureSize(const AccelerationStructur
 void CommandBufferMTL::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc) {}
 void CommandBufferMTL::DispatchRaysIndirect(const Buffer& buffer, uint64_t offset) {}
 void CommandBufferMTL::DrawMeshTasks(const DrawMeshTasksDesc& drawMeshTasksDesc) {}
-void CommandBufferMTL::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {}
+void CommandBufferMTL::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
+    
+}
+
+void Create(id<MTLCommandBuffer> cmd);
+
+
 
 #include "CommandBufferMTL.hpp"
 

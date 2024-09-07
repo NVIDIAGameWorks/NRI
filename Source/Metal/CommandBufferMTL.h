@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <MacTypes.h>
 #import <MetalKit/MetalKit.h>
 
 namespace nri {
@@ -13,15 +14,18 @@ struct PipelineLayoutMTL;
 struct TextureMTL;
 struct DescriptorMTL;
 
+
+NriBits(CommandBufferDirtyBits, uint8_t,
+    NONE                            = 0,
+    CMD_DIRTY_STENCIL          = NriBit(0)
+);
+
 struct CommandBufferMTL {
+   
     inline CommandBufferMTL(DeviceMTL& device)
     : m_Device(device) {
     }
-    
-    // inline operator VkCommandBuffer() const {
-    //     return m_Handle;
-    // }
-    
+  
     inline DeviceMTL& GetDevice() const {
         return m_Device;
     }
@@ -77,20 +81,27 @@ struct CommandBufferMTL {
     void DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
     
     ~CommandBufferMTL();
-    
+   
+    void Create(id<MTLCommandBuffer> cmd);
+
     struct CmdIndexBuffer {
         size_t m_Offset;
         MTLIndexType m_Type;
         struct BufferMTL* m_Buffer;
     };
+ 
 private:
+    
+    void updateCommandBufferState();
+    
     DeviceMTL& m_Device;
     struct PipelineMTL* m_CurrentPipeline = nullptr;
     struct CmdIndexBuffer m_CurrentIndexCmd;
     id<MTLCommandBuffer> m_Handle;
-    id<MTLRenderCommandEncoder> m_encoder;
+    id<MTLRenderCommandEncoder> m_RendererEncoder = nil;
+    id<MTLComputeCommandEncoder> m_ComputeEncoder = nil;
     
-    //id<MTLRenderCommandEncoder> renderEncoder;
+    CommandBufferDirtyBits m_DirtyBits = CommandBufferDirtyBits::NONE;
 };
 };
 
