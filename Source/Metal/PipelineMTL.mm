@@ -43,6 +43,20 @@ Result PipelineMTL::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     }
 
     for (uint32_t i = 0; i < graphicsPipelineDesc.shaderNum; i++) {
+        const ShaderDesc& shader = graphicsPipelineDesc.shaders[i];
+        m_usedBits |= shader.stage;
+
+        dispatch_data_t byteCode =
+            dispatch_data_create(shader.bytecode, shader.size, nil,
+                                 DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+        id<MTLLibrary> lib = [m_Device newLibraryWithData:byteCode error:nil];
+
+        // Create a MTLFunction from the loaded MTLLibrary.
+        NSString *entryPointNStr = [lib functionNames][0];
+        if (shader.entryPointName) {
+          entryPointNStr =
+              [[NSString alloc] initWithUTF8String:shader.entryPointName];
+        }
     }
     // Depth-stencil
     const DepthAttachmentDesc& da = graphicsPipelineDesc.outputMerger.depth;
