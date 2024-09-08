@@ -39,20 +39,59 @@ void CommandBufferMTL::SetPipeline(const Pipeline& pipeline) {
     PipelineMTL& pipelineImpl = (PipelineMTL&)pipeline;
     m_CurrentPipeline = &pipelineImpl;
 
-    switch(m_CurrentPipeline->m_pipelineType) {
-        case nri::PipelineMTL::Compute:
-            m_ComputeEncoder = [m_Handle computeCommandEncoderWithDescriptor: NULL];
-            break;
-        default:
-            break;
-    }
+//    if(m_CurrentPipeline->m_pipelineType == nri::PipelineMTL::Compute) {
+ //       m_ComputeEncoder = [m_Handle computeCommandEncoderWithDescriptor: NULL];
+  //  }
 
 }
-void CommandBufferMTL::SetPipelineLayout(const PipelineLayout& pipelineLayout) {}
-void CommandBufferMTL::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {}
-void CommandBufferMTL::SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size) {}
+void CommandBufferMTL::SetPipelineLayout(const PipelineLayout& pipelineLayout) {
+
+}
+void CommandBufferMTL::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
+    
+}
+void CommandBufferMTL::SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size) {
+    //if (pDesc->mUsedStages & SHADER_STAGE_VERT)
+    //{
+    //    [m_RendererEncoder setVertexBytes:data length:size atIndex:pushConstantIndex];
+    //}
+
+    //if (pDesc->mUsedStages & SHADER_STAGE_FRAG)
+    //{
+    //    [m_RendererEncoder  setFragmentBytes:data length:size atIndex:pushConstantIndex];
+    //}
+
+    //if (pDesc->mUsedStages & SHADER_STAGE_COMP)
+    //{
+    //    [m_RendererEncoder setBytes:data length:size atIndex:pushConstantIndex];
+    //}
+
+}
 void CommandBufferMTL::SetDescriptorPool(const DescriptorPool& descriptorPool) {}
-void CommandBufferMTL::Barrier(const BarrierGroupDesc& barrierGroupDesc) {}
+void CommandBufferMTL::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
+    //if (pCmd->pQueue->mBarrierFlags & BARRIER_FLAG_BUFFERS)
+    {
+        [m_RendererEncoder memoryBarrierWithScope:MTLBarrierScopeBuffers
+                                         afterStages:MTLRenderStageFragment
+                                        beforeStages:MTLRenderStageVertex];
+    }
+
+    //if (pCmd->pQueue->mBarrierFlags & BARRIER_FLAG_TEXTURES)
+    {
+        [m_RendererEncoder memoryBarrierWithScope:MTLBarrierScopeTextures
+                                         afterStages:MTLRenderStageFragment
+                                        beforeStages:MTLRenderStageVertex];
+    }
+
+    //if (pCmd->pQueue->mBarrierFlags & BARRIER_FLAG_RENDERTARGETS)
+    {
+        [m_RendererEncoder memoryBarrierWithScope:MTLBarrierScopeRenderTargets
+                                         afterStages:MTLRenderStageFragment
+                                        beforeStages:MTLRenderStageVertex];
+    }
+
+    
+}
 void CommandBufferMTL::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
     m_RendererEncoder = [m_Handle renderCommandEncoderWithDescriptor: NULL];
 }
@@ -61,7 +100,11 @@ void CommandBufferMTL::EndRendering() {
     m_RendererEncoder = nil;
     m_ComputeEncoder = nil;
 }
-void CommandBufferMTL::SetViewports(const Viewport* viewports, uint32_t viewportNum) {}
+void CommandBufferMTL::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
+    MTLViewport* mtlViewports = StackAlloc(MTLViewport, viewportNum);
+
+  //  [m_RendererEncoder setViewports:<#(const MTLViewport * _Nonnull)#> count:<#(NSUInteger)#>
+}
 void CommandBufferMTL::SetScissors(const Rect* rects, uint32_t rectNum) {
     NSCAssert(m_RendererEncoder, @"encoder set");
     MTLScissorRect rect;
