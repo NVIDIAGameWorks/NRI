@@ -274,20 +274,15 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
 
     // Create indirect command signatures
     m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc), nullptr);
-    if (m_Desc.isDispatchRaysIndirectSupported)
+    if (m_Desc.rayTracingTier >= 2)
         m_DispatchRaysCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(DispatchRaysIndirectDesc), nullptr);
 
     return FillFunctionTable(m_CoreInterface);
 }
 
 void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
-    D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = {D3D_HIGHEST_SHADER_MODEL};
-    HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel));
-    if (FAILED(hr))
-        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(shaderModel) failed, result = 0x%08X!", hr);
-
     D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
-    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
+    HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options) failed, result = 0x%08X!", hr);
     m_Desc.isMemoryTier2Supported = options.ResourceHeapTier == D3D12_RESOURCE_HEAP_TIER_2 ? true : false;
@@ -318,23 +313,22 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options5) failed, result = 0x%08X!", hr);
     m_Desc.isRayTracingSupported = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0;
-    m_Desc.isDispatchRaysIndirectSupported = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1;
+    if (m_Desc.isRayTracingSupported)
+        m_Desc.rayTracingTier = options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1 ? 2 : 1;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS6 options6 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &options6, sizeof(options6));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options6) failed, result = 0x%08X!", hr);
-    m_Desc.isPipelineShadingRateSupported = options6.VariableShadingRateTier >= D3D12_VARIABLE_SHADING_RATE_TIER_1;
-    m_Desc.isPrimitiveShadingRateSupported = options6.VariableShadingRateTier >= D3D12_VARIABLE_SHADING_RATE_TIER_2;
-    m_Desc.isAttachmentShadingRateSupported = options6.VariableShadingRateTier >= D3D12_VARIABLE_SHADING_RATE_TIER_2;
+    m_Desc.shadingRateTier = (uint8_t)options6.VariableShadingRateTier;
     m_Desc.shadingRateAttachmentTileSize = (uint8_t)options6.ShadingRateImageTileSize;
+    m_Desc.isAdditionalShadingRatesSupported = options6.AdditionalShadingRatesSupported;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options7) failed, result = 0x%08X!", hr);
     m_Desc.isMeshShaderSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
-    m_Desc.isDrawMeshTasksIndirectSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
 
 #ifdef NRI_USE_AGILITY_SDK
     // Minimum supported client: Windows 10 Build 20348 (or Agility SDK)
@@ -448,7 +442,6 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     }
 
     m_Desc.viewportMaxNum = D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
-    m_Desc.viewportSubPixelBits = D3D12_SUBPIXEL_FRACTIONAL_BIT_COUNT;
     m_Desc.viewportBoundsRange[0] = D3D12_VIEWPORT_BOUNDS_MIN;
     m_Desc.viewportBoundsRange[1] = D3D12_VIEWPORT_BOUNDS_MAX;
 
@@ -551,10 +544,12 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
         m_Desc.meshEvaluationWorkGroupInvocationMaxNum = 128;
     }
 
-    m_Desc.timestampFrequencyHz = timestampFrequency;
+    m_Desc.viewportPrecisionBits = D3D12_SUBPIXEL_FRACTIONAL_BIT_COUNT;
     m_Desc.subPixelPrecisionBits = D3D12_SUBPIXEL_FRACTIONAL_BIT_COUNT;
     m_Desc.subTexelPrecisionBits = D3D12_SUBTEXEL_FRACTIONAL_BIT_COUNT;
     m_Desc.mipmapPrecisionBits = D3D12_MIP_LOD_FRACTIONAL_BIT_COUNT;
+
+    m_Desc.timestampFrequencyHz = timestampFrequency;
     m_Desc.drawIndirectMaxNum = (1ull << D3D12_REQ_DRAWINDEXED_INDEX_COUNT_2_TO_EXP) - 1;
     m_Desc.samplerLodBiasMin = D3D12_MIP_LOD_BIAS_MIN;
     m_Desc.samplerLodBiasMax = D3D12_MIP_LOD_BIAS_MAX;
@@ -567,7 +562,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.cullDistanceMaxNum = D3D12_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.combinedClipAndCullDistanceMaxNum = D3D12_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.conservativeRasterTier = (uint8_t)options.ConservativeRasterizationTier;
-    m_Desc.programmableSampleLocationsTier = (uint8_t)options2.ProgrammableSamplePositionsTier;
+    m_Desc.sampleLocationsTier = (uint8_t)options2.ProgrammableSamplePositionsTier;
 
     m_Desc.isComputeQueueSupported = true;
     m_Desc.isCopyQueueSupported = true;
@@ -601,6 +596,16 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.isShaderAtomicsI64Supported = m_Desc.isShaderAtomicsI64Supported || options9.AtomicInt64OnTypedResourceSupported || options9.AtomicInt64OnGroupSharedSupported || options11.AtomicInt64OnDescriptorHeapResourceSupported;
 #endif
 
+    D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = {D3D_HIGHEST_SHADER_MODEL};
+    for (; shaderModel.HighestShaderModel >= D3D_SHADER_MODEL_6_0; (*(uint32_t*)&shaderModel.HighestShaderModel)--) {
+        hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel));
+        if (SUCCEEDED(hr))
+            break;
+    }
+    if (shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_0)
+        shaderModel.HighestShaderModel = D3D_SHADER_MODEL_5_1;
+
+    m_Desc.shaderModel = (uint8_t)((shaderModel.HighestShaderModel / 0xF) * 10 + (shaderModel.HighestShaderModel & 0xF));
     m_Desc.isDrawParametersEmulationEnabled = deviceCreationDesc.enableD3D12DrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
 
     m_Desc.isSwapChainSupported = HasOutput();

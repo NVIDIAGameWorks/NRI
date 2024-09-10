@@ -154,7 +154,7 @@ static inline uint64_t ComputeHash(const void* key, uint32_t len) {
 }
 
 struct SamplePositionsState {
-    std::array<SamplePosition, 32> positions;
+    std::array<SampleLocation, 32> positions;
     uint64_t positionHash;
     Sample_t positionNum;
 
@@ -165,8 +165,8 @@ struct SamplePositionsState {
         positionHash = 0;
     }
 
-    inline void Set(const SamplePosition* samplePositions, Sample_t samplePositionNum) {
-        const uint32_t size = sizeof(SamplePosition) * samplePositionNum;
+    inline void Set(const SampleLocation* samplePositions, Sample_t samplePositionNum) {
+        const uint32_t size = sizeof(SampleLocation) * samplePositionNum;
 
         memcpy(&positions, samplePositions, size);
 

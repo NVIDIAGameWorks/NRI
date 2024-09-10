@@ -706,6 +706,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT};
         if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(conservativeRasterProps);
+            m_Desc.conservativeRasterTier = 1;
         }
 
         VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR};
@@ -716,11 +717,13 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         VkPhysicalDeviceSampleLocationsPropertiesEXT sampleLocationsProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT};
         if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(sampleLocationsProps);
+            m_Desc.sampleLocationsTier = 1;
         }
 
         VkPhysicalDeviceFragmentShadingRatePropertiesKHR shadingRateProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR};
         if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(shadingRateProps);
+            m_Desc.shadingRateTier = 1;
         }
 
         VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
@@ -731,6 +734,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         VkPhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
         if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(accelerationStructureProps);
+            m_Desc.rayTracingTier = 1;
             m_Desc.isRayTracingSupported = true;
         }
 
@@ -757,7 +761,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         const VkPhysicalDeviceLimits& limits = props.properties.limits;
 
         m_Desc.viewportMaxNum = limits.maxViewports;
-        m_Desc.viewportSubPixelBits = limits.viewportSubPixelBits;
         m_Desc.viewportBoundsRange[0] = int32_t(limits.viewportBoundsRange[0]);
         m_Desc.viewportBoundsRange[1] = int32_t(limits.viewportBoundsRange[1]);
 
@@ -864,10 +867,12 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.meshEvaluationSharedMemoryMaxSize = meshShaderProps.maxMeshSharedMemorySize;
         m_Desc.meshEvaluationWorkGroupInvocationMaxNum = meshShaderProps.maxMeshWorkGroupInvocations;
 
-        m_Desc.timestampFrequencyHz = uint64_t(1e9 / double(limits.timestampPeriod) + 0.5);
+        m_Desc.viewportPrecisionBits = limits.viewportSubPixelBits;
         m_Desc.subPixelPrecisionBits = limits.subPixelPrecisionBits;
         m_Desc.subTexelPrecisionBits = limits.subTexelPrecisionBits;
         m_Desc.mipmapPrecisionBits = limits.mipmapPrecisionBits;
+
+        m_Desc.timestampFrequencyHz = uint64_t(1e9 / double(limits.timestampPeriod) + 0.5);
         m_Desc.drawIndirectMaxNum = limits.maxDrawIndirectCount;
         m_Desc.samplerLodBiasMin = -limits.maxSamplerLodBias;
         m_Desc.samplerLodBiasMax = limits.maxSamplerLodBias;
@@ -879,26 +884,33 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.clipDistanceMaxNum = limits.maxClipDistances;
         m_Desc.cullDistanceMaxNum = limits.maxCullDistances;
         m_Desc.combinedClipAndCullDistanceMaxNum = limits.maxCombinedClipAndCullDistances;
-
-        if (conservativeRasterProps.fullyCoveredFragmentShaderInputVariable && conservativeRasterProps.primitiveOverestimationSize <= (1.0 / 256.0f))
-            m_Desc.conservativeRasterTier = 3;
-        else if (conservativeRasterProps.degenerateTrianglesRasterized && conservativeRasterProps.primitiveOverestimationSize < (1.0f / 2.0f))
-            m_Desc.conservativeRasterTier = 2;
-        else
-            m_Desc.conservativeRasterTier = 1;
-
-        m_Desc.programmableSampleLocationsTier = 0;
-        if (sampleLocationsProps.sampleLocationSampleCounts)
-            m_Desc.programmableSampleLocationsTier = sampleLocationsProps.variableSampleLocations ? 2 : 1; // TODO: best guess
-
-        m_Desc.isPipelineShadingRateSupported = shadingRateFeatures.pipelineFragmentShadingRate != 0;
-        m_Desc.isPrimitiveShadingRateSupported = shadingRateFeatures.primitiveFragmentShadingRate != 0;
-        m_Desc.isAttachmentShadingRateSupported = shadingRateFeatures.attachmentFragmentShadingRate != 0;
         m_Desc.shadingRateAttachmentTileSize = (uint8_t)shadingRateProps.minFragmentShadingRateAttachmentTexelSize.width;
+
+        if (m_Desc.conservativeRasterTier) {
+            if (conservativeRasterProps.primitiveOverestimationSize < 1.0f / 2.0f && conservativeRasterProps.degenerateTrianglesRasterized)
+                m_Desc.conservativeRasterTier = 2;
+            if (conservativeRasterProps.primitiveOverestimationSize <= 1.0 / 256.0f && conservativeRasterProps.degenerateTrianglesRasterized)
+                m_Desc.conservativeRasterTier = 3;
+        }
+
+        if (m_Desc.sampleLocationsTier) {
+            if (sampleLocationsProps.variableSampleLocations) // TODO: it's weird...
+                m_Desc.sampleLocationsTier = 2;
+        }
+
+        if (m_Desc.rayTracingTier) {
+            if (rayTracingPipelineFeatures.rayTracingPipelineTraceRaysIndirect && rayQueryFeatures.rayQuery)
+                m_Desc.rayTracingTier = 2;
+        }
+
+        if (m_Desc.shadingRateTier) {
+            m_Desc.isAdditionalShadingRatesSupported = shadingRateProps.maxFragmentSize.height > 2 || shadingRateProps.maxFragmentSize.width > 2;
+            if (shadingRateFeatures.primitiveFragmentShadingRate && shadingRateFeatures.attachmentFragmentShadingRate)
+                m_Desc.shadingRateTier = 2;
+        }
 
         m_Desc.isComputeQueueSupported = m_QueueFamilyIndices[(uint32_t)CommandQueueType::COMPUTE] != INVALID_FAMILY_INDEX;
         m_Desc.isCopyQueueSupported = m_QueueFamilyIndices[(uint32_t)CommandQueueType::COPY] != INVALID_FAMILY_INDEX;
-
         m_Desc.isTextureFilterMinMaxSupported = features12.samplerFilterMinmax;
         m_Desc.isLogicOpSupported = features.features.logicOp;
         m_Desc.isDepthBoundsTestSupported = features.features.depthBounds;
@@ -906,9 +918,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = true;
         m_Desc.isLineSmoothingSupported = lineRasterizationFeatures.smoothLines;
         m_Desc.isCopyQueueTimestampSupported = limits.timestampComputeAndGraphics;
-        m_Desc.isDispatchRaysIndirectSupported = rayTracingPipelineFeatures.rayTracingPipelineTraceRaysIndirect;
         m_Desc.isMeshShaderPipelineStatsSupported = meshShaderFeatures.meshShaderQueries == VK_TRUE;
-        m_Desc.isDrawMeshTasksIndirectSupported = true;
         m_Desc.isEnchancedBarrierSupported = true;
         m_Desc.isMemoryTier2Supported = true; // TODO: seems to be the best match
         m_Desc.isDynamicDepthBiasSupported = true;
@@ -928,6 +938,25 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
 
         m_Desc.isSwapChainSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, desiredDeviceExts);
         m_Desc.isLowLatencySupported = IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
+
+        // Based on https://docs.vulkan.org/guide/latest/hlsl.html#_shader_model_coverage // TODO: code below needs to be improved
+        m_Desc.shaderModel = 51;
+        if (m_Desc.isShaderNativeI64Supported)
+            m_Desc.shaderModel = 60;
+        if (features11.multiview)
+            m_Desc.shaderModel = 61;
+        if (m_Desc.isShaderNativeF16Supported || m_Desc.isShaderNativeI16Supported)
+            m_Desc.shaderModel = 62;
+        if (m_Desc.isRayTracingSupported)
+            m_Desc.shaderModel = 63;
+        if (m_Desc.shadingRateTier >= 2)
+            m_Desc.shaderModel = 64;
+        if (m_Desc.isMeshShaderSupported || m_Desc.rayTracingTier >= 2)
+            m_Desc.shaderModel = 65;
+        if (m_Desc.isShaderAtomicsI64Supported)
+            m_Desc.shaderModel = 66;
+        if (features.features.shaderStorageImageMultisample)
+            m_Desc.shaderModel = 67;
     }
 
     ReportDeviceGroupInfo();
@@ -953,7 +982,7 @@ void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo&
         flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT; // allow cube maps
     if (textureDesc.type == nri::TextureType::TEXTURE_3D)
         flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT; // allow 3D demotion to a set of layers // TODO: hook up "VK_EXT_image_2d_view_of_3d"?
-    if (m_Desc.programmableSampleLocationsTier && formatProps.isDepth)
+    if (m_Desc.sampleLocationsTier && formatProps.isDepth)
         flags |= VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
 
     info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO; // should be already set
@@ -1670,6 +1699,7 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
     if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, desiredDeviceExts)) {
         GET_DEVICE_PROC(CmdDrawMeshTasksEXT);
         GET_DEVICE_PROC(CmdDrawMeshTasksIndirectEXT);
+        GET_DEVICE_PROC(CmdDrawMeshTasksIndirectCountEXT);
     }
 
     if (IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts)) {

@@ -87,10 +87,11 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
         uint32_t groupedRangeNum = 0;
         D3D12_DESCRIPTOR_RANGE_TYPE groupedRangeType = {};
         for (uint32_t j = 0; j < descriptorSetDesc.rangeNum; j++) {
+            const DescriptorRangeDesc& descriptorRangeDesc = descriptorSetDesc.ranges[j];
             auto& descriptorRangeMapping = m_DescriptorSetMappings[i].descriptorRangeMappings[j];
 
-            D3D12_SHADER_VISIBILITY shaderVisibility = GetShaderVisibility(descriptorSetDesc.ranges[j].shaderStages);
-            D3D12_DESCRIPTOR_RANGE_TYPE rangeType = GetDescriptorRangesType(descriptorSetDesc.ranges[j].descriptorType);
+            D3D12_SHADER_VISIBILITY shaderVisibility = GetShaderVisibility(descriptorRangeDesc.shaderStages);
+            D3D12_DESCRIPTOR_RANGE_TYPE rangeType = GetDescriptorRangesType(descriptorRangeDesc.descriptorType);
 
             if (groupedRangeNum && (rootParameter.ShaderVisibility != shaderVisibility || groupedRangeType != rangeType || descriptorRangeMapping.descriptorHeapType != heapIndex)) {
                 rootParameter.DescriptorTable.NumDescriptorRanges = groupedRangeNum;
@@ -108,7 +109,7 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
             rootParameter.DescriptorTable.pDescriptorRanges = &descriptorRanges[totalRangeNum];
 
             D3D12_DESCRIPTOR_RANGE_FLAGS descriptorRangeFlags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
-            if (descriptorSetDesc.partiallyBound) {
+            if (descriptorRangeDesc.flags & DescriptorRangeBits::PARTIALLY_BOUND) {
                 descriptorRangeFlags |= D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE;
                 if (rangeType != D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER)
                     descriptorRangeFlags |= D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE;
@@ -116,8 +117,8 @@ Result PipelineLayoutD3D12::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
 
             D3D12_DESCRIPTOR_RANGE1& descriptorRange = descriptorRanges[totalRangeNum + groupedRangeNum];
             descriptorRange.RangeType = rangeType;
-            descriptorRange.NumDescriptors = descriptorSetDesc.ranges[j].descriptorNum;
-            descriptorRange.BaseShaderRegister = descriptorSetDesc.ranges[j].baseRegisterIndex;
+            descriptorRange.NumDescriptors = descriptorRangeDesc.descriptorNum;
+            descriptorRange.BaseShaderRegister = descriptorRangeDesc.baseRegisterIndex;
             descriptorRange.RegisterSpace = descriptorSetDesc.registerSpace;
             descriptorRange.Flags = descriptorRangeFlags;
             descriptorRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;

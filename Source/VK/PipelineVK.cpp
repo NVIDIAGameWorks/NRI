@@ -84,7 +84,7 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
         multisampleState.alphaToOneEnable = false;
 
         const void** tail = &multisampleState.pNext;
-        if (ms->programmableSampleLocations) {
+        if (ms->sampleLocations) {
             sampleLocationsState.sampleLocationsEnable = VK_TRUE;
 
             APPEND_EXT(sampleLocationsState);

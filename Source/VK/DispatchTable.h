@@ -174,6 +174,7 @@ struct DispatchTable {
     // VK_EXT_mesh_shader
     VULKAN_FUNCTION(CmdDrawMeshTasksEXT);
     VULKAN_FUNCTION(CmdDrawMeshTasksIndirectEXT);
+    VULKAN_FUNCTION(CmdDrawMeshTasksIndirectCountEXT);
 
     // VK_NV_low_latency2
     VULKAN_FUNCTION(GetLatencyTimingsNV);

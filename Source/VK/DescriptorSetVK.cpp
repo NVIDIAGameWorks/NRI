@@ -200,14 +200,20 @@ inline void DescriptorSetVK::UpdateDescriptorRanges(uint32_t rangeOffset, uint32
             const DescriptorRangeUpdateDesc& update = rangeUpdateDescs[j];
             const DescriptorRangeDesc& rangeDesc = m_Desc->ranges[rangeOffset + j];
 
-            const uint32_t bindingOffset = rangeDesc.isArray ? 0 : update.offsetInRange + descriptorOffset;
-            const uint32_t arrayElement = rangeDesc.isArray ? update.offsetInRange + descriptorOffset : 0;
+            uint32_t offset = update.offsetInRange + descriptorOffset;
 
             VkWriteDescriptorSet& write = writes[writeNum++];
             write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             write.dstSet = m_Handle;
-            write.dstBinding = rangeDesc.baseRegisterIndex + bindingOffset;
-            write.dstArrayElement = arrayElement;
+
+            bool isArray = rangeDesc.flags & (DescriptorRangeBits::ARRAY | DescriptorRangeBits::VARIABLE_SIZED_ARRAY);
+            if (isArray) {
+                write.dstBinding = rangeDesc.baseRegisterIndex;
+                write.dstArrayElement = offset;
+            } else {
+                write.dstBinding = rangeDesc.baseRegisterIndex + offset;
+                write.dstArrayElement = 0;
+            }
 
             const uint32_t index = (uint32_t)rangeDesc.descriptorType;
             slabHasFreeSpace = WRITE_FUNCS[index](rangeDesc, update, descriptorOffset, write, slab);

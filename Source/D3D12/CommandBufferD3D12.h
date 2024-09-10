@@ -62,7 +62,7 @@ struct CommandBufferD3D12 {
     void SetScissors(const Rect* rects, uint32_t rectNum);
     void SetDepthBounds(float boundsMin, float boundsMax);
     void SetStencilReference(uint8_t frontRef, uint8_t backRef);
-    void SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum);
+    void SetSampleLocations(const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum);
     void SetBlendConstants(const Color32f& color);
     void SetShadingRate(const ShadingRateDesc& shadingRateDesc);
     void SetDepthBias(const DepthBiasDesc& depthBiasDesc);
@@ -102,7 +102,7 @@ struct CommandBufferD3D12 {
     void DispatchRays(const DispatchRaysDesc& dispatchRaysDesc);
     void DispatchRaysIndirect(const Buffer& buffer, uint64_t offset);
     void DrawMeshTasks(const DrawMeshTasksDesc& drawMeshTasksDesc);
-    void DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
+    void DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset);
 
 private:
     DeviceD3D12& m_Device;

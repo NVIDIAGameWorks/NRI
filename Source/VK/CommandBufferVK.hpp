@@ -62,8 +62,8 @@ static void NRI_CALL CmdSetStencilReference(CommandBuffer& commandBuffer, uint8_
     ((CommandBufferVK&)commandBuffer).SetStencilReference(frontRef, backRef);
 }
 
-static void NRI_CALL CmdSetSamplePositions(CommandBuffer& commandBuffer, const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
-    ((CommandBufferVK&)commandBuffer).SetSamplePositions(positions, positionNum, sampleNum);
+static void NRI_CALL CmdSetSampleLocations(CommandBuffer& commandBuffer, const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
+    ((CommandBufferVK&)commandBuffer).SetSampleLocations(locations, locationNum, sampleNum);
 }
 
 static void NRI_CALL CmdSetBlendConstants(CommandBuffer& commandBuffer, const Color32f& color) {
@@ -214,8 +214,8 @@ static void NRI_CALL CmdDrawMeshTasks(CommandBuffer& commandBuffer, const DrawMe
     ((CommandBufferVK&)commandBuffer).DrawMeshTasks(drawMeshTasksDesc);
 }
 
-static void NRI_CALL CmdDrawMeshTasksIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
-    ((CommandBufferVK&)commandBuffer).DrawMeshTasksIndirect(buffer, offset, drawNum, stride);
+static void NRI_CALL CmdDrawMeshTasksIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+    ((CommandBufferVK&)commandBuffer).DrawMeshTasksIndirect(buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
 }
 
 #pragma endregion

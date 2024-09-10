@@ -48,7 +48,9 @@ Result DescriptorPoolD3D12::Create(const DescriptorPoolD3D12Desc& descriptorPool
     static_assert(static_cast<uint32_t>(DescriptorHeapType::SAMPLER) == 1, "DescriptorHeapType::SAMPLER != 1");
 
     const std::array<ID3D12DescriptorHeap*, DescriptorHeapType::MAX_NUM> descriptorHeaps = {
-        descriptorPoolDesc.d3d12ResourceDescriptorHeap, descriptorPoolDesc.d3d12SamplerDescriptorHeap};
+        descriptorPoolDesc.d3d12ResourceDescriptorHeap,
+        descriptorPoolDesc.d3d12SamplerDescriptorHeap,
+    };
 
     for (uint32_t i = 0; i < DescriptorHeapType::MAX_NUM; i++) {
         if (descriptorHeaps[i]) {

@@ -100,7 +100,7 @@ inline Result DescriptorPoolVK::AllocateDescriptorSets(
 
     const VkDescriptorSetLayout setLayout = pipelineLayoutVK.GetDescriptorSetLayout(setIndexInPipelineLayout);
     const DescriptorSetDesc& setDesc = pipelineLayoutVK.GetRuntimeBindingInfo().descriptorSetDescs[setIndexInPipelineLayout];
-    const bool hasVariableDescriptorNum = pipelineLayoutVK.GetRuntimeBindingInfo().hasVariableDescriptorNum[setIndexInPipelineLayout];
+    bool hasVariableDescriptorNum = pipelineLayoutVK.GetRuntimeBindingInfo().hasVariableDescriptorNum[setIndexInPipelineLayout];
 
     VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO};
     variableDescriptorCountInfo.descriptorSetCount = 1;

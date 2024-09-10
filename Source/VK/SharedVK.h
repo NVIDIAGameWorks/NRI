@@ -29,11 +29,6 @@ inline MemoryTypeInfo Unpack(const nri::MemoryType& memoryType) {
 
 static_assert(sizeof(MemoryTypeInfo) == sizeof(nri::MemoryType), "Must be equal");
 
-template <typename HandleType, typename ImplType, typename NRIType>
-constexpr HandleType GetHandle(NRIType* object) {
-    return (object != nullptr) ? (*(ImplType*)object).GetHandle() : HandleType(VK_NULL_HANDLE);
-}
-
 inline bool IsHostVisibleMemory(nri::MemoryLocation location) {
     return location > nri::MemoryLocation::DEVICE;
 }

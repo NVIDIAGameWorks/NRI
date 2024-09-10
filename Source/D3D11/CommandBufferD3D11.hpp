@@ -62,8 +62,8 @@ static void NRI_CALL CmdSetStencilReference(CommandBuffer& commandBuffer, uint8_
     ((CommandBufferD3D11&)commandBuffer).SetStencilReference(frontRef, backRef);
 }
 
-static void NRI_CALL CmdSetSamplePositions(CommandBuffer& commandBuffer, const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
-    ((CommandBufferD3D11&)commandBuffer).SetSamplePositions(positions, positionNum, sampleNum);
+static void NRI_CALL CmdSetSampleLocations(CommandBuffer& commandBuffer, const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
+    ((CommandBufferD3D11&)commandBuffer).SetSampleLocations(locations, locationNum, sampleNum);
 }
 
 static void NRI_CALL CmdSetBlendConstants(CommandBuffer& commandBuffer, const Color32f& color) {

@@ -14,7 +14,7 @@ void DescriptorPoolVal::SetDebugName(const char* name) {
 }
 
 bool DescriptorPoolVal::CheckDescriptorRange(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum) {
-    const uint32_t descriptorNum = rangeDesc.isDescriptorNumVariable ? variableDescriptorNum : rangeDesc.descriptorNum;
+    const uint32_t descriptorNum = (rangeDesc.flags & DescriptorRangeBits::VARIABLE_SIZED_ARRAY) ? variableDescriptorNum : rangeDesc.descriptorNum;
 
     if (descriptorNum > rangeDesc.descriptorNum) {
         REPORT_ERROR(&m_Device, "variableDescriptorNum (%u) is greater than DescriptorRangeDesc::descriptorNum (%u)", variableDescriptorNum, rangeDesc.descriptorNum);
@@ -47,7 +47,7 @@ bool DescriptorPoolVal::CheckDescriptorRange(const DescriptorRangeDesc& rangeDes
 }
 
 void DescriptorPoolVal::IncrementDescriptorNum(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum) {
-    const uint32_t descriptorNum = rangeDesc.isDescriptorNumVariable ? variableDescriptorNum : rangeDesc.descriptorNum;
+    const uint32_t descriptorNum = (rangeDesc.flags & DescriptorRangeBits::VARIABLE_SIZED_ARRAY) ? variableDescriptorNum : rangeDesc.descriptorNum;
 
     switch (rangeDesc.descriptorType) {
         case DescriptorType::SAMPLER:
@@ -83,8 +83,7 @@ void DescriptorPoolVal::IncrementDescriptorNum(const DescriptorRangeDesc& rangeD
     }
 }
 
-Result DescriptorPoolVal::AllocateDescriptorSets(
-    const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
+Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
     const PipelineLayoutVal& pipelineLayoutVal = (const PipelineLayoutVal&)pipelineLayout;
     const PipelineLayoutDesc& pipelineLayoutDesc = pipelineLayoutVal.GetPipelineLayoutDesc();
 

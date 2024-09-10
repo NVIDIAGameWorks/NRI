@@ -309,12 +309,12 @@ inline void CommandBufferD3D12::SetStencilReference(uint8_t frontRef, uint8_t ba
         m_GraphicsCommandList->OMSetStencilRef(frontRef);
 }
 
-inline void CommandBufferD3D12::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
-    static_assert(sizeof(D3D12_SAMPLE_POSITION) == sizeof(SamplePosition));
+inline void CommandBufferD3D12::SetSampleLocations(const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
+    static_assert(sizeof(D3D12_SAMPLE_POSITION) == sizeof(SampleLocation));
 
-    uint32_t pixelNum = positionNum / sampleNum;
+    uint32_t pixelNum = locationNum / sampleNum;
     if (m_Version >= 1)
-        m_GraphicsCommandList->SetSamplePositions(sampleNum, pixelNum, (D3D12_SAMPLE_POSITION*)positions);
+        m_GraphicsCommandList->SetSamplePositions(sampleNum, pixelNum, (D3D12_SAMPLE_POSITION*)locations);
 }
 
 inline void CommandBufferD3D12::SetBlendConstants(const Color32f& color) {
@@ -403,7 +403,7 @@ inline void CommandBufferD3D12::BeginRendering(const AttachmentsDesc& attachment
     m_GraphicsCommandList->OMSetRenderTargets(m_RenderTargetNum, m_RenderTargets.data(), FALSE, m_DepthStencil.ptr ? &m_DepthStencil : nullptr);
 
     // Shading rate
-    if (m_Device.GetDesc().isAttachmentShadingRateSupported) {
+    if (m_Device.GetDesc().shadingRateTier >= 2) {
         ID3D12Resource* shadingRateImage = nullptr;
         if (attachmentsDesc.shadingRate)
             shadingRateImage = *(DescriptorD3D12*)attachmentsDesc.shadingRate;
@@ -509,8 +509,7 @@ inline void CommandBufferD3D12::DrawIndexed(const DrawIndexedDesc& drawIndexedDe
         m_GraphicsCommandList->SetGraphicsRoot32BitConstants(0, 2, &baseVertexInstance, 0);
     }
 
-    m_GraphicsCommandList->DrawIndexedInstanced(
-        drawIndexedDesc.indexNum, drawIndexedDesc.instanceNum, drawIndexedDesc.baseIndex, drawIndexedDesc.baseVertex, drawIndexedDesc.baseInstance);
+    m_GraphicsCommandList->DrawIndexedInstanced(drawIndexedDesc.indexNum, drawIndexedDesc.instanceNum, drawIndexedDesc.baseIndex, drawIndexedDesc.baseVertex, drawIndexedDesc.baseInstance);
 }
 
 inline void CommandBufferD3D12::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
@@ -521,14 +520,12 @@ inline void CommandBufferD3D12::DrawIndirect(const Buffer& buffer, uint64_t offs
     m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDrawCommandSignature(stride, *m_PipelineLayout), drawNum, (BufferD3D12&)buffer, offset, pCountBuffer, countBufferOffset);
 }
 
-inline void CommandBufferD3D12::DrawIndexedIndirect(
-    const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+inline void CommandBufferD3D12::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
     ID3D12Resource* pCountBuffer = nullptr;
     if (countBuffer)
         pCountBuffer = *(BufferD3D12*)countBuffer;
 
-    m_GraphicsCommandList->ExecuteIndirect(
-        m_Device.GetDrawIndexedCommandSignature(stride, *m_PipelineLayout), drawNum, (BufferD3D12&)buffer, offset, pCountBuffer, countBufferOffset);
+    m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDrawIndexedCommandSignature(stride, *m_PipelineLayout), drawNum, (BufferD3D12&)buffer, offset, pCountBuffer, countBufferOffset);
 }
 
 inline void CommandBufferD3D12::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
@@ -982,11 +979,15 @@ inline void CommandBufferD3D12::DrawMeshTasks(const DrawMeshTasksDesc& drawMeshT
         m_GraphicsCommandList->DispatchMesh(drawMeshTasksDesc.x, drawMeshTasksDesc.y, drawMeshTasksDesc.z);
 }
 
-inline void CommandBufferD3D12::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
+inline void CommandBufferD3D12::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
     static_assert(sizeof(DrawMeshTasksDesc) == sizeof(D3D12_DISPATCH_MESH_ARGUMENTS));
 
+    ID3D12Resource* pCountBuffer = nullptr;
+    if (countBuffer)
+        pCountBuffer = *(BufferD3D12*)countBuffer;
+
     if (m_Version >= 6)
-        m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDrawMeshCommandSignature(stride), drawNum, (BufferD3D12&)buffer, offset, nullptr, 0);
+        m_GraphicsCommandList->ExecuteIndirect(m_Device.GetDrawMeshCommandSignature(stride), drawNum, (BufferD3D12&)buffer, offset, pCountBuffer, countBufferOffset);
 }
 
 #include "CommandBufferD3D12.hpp"

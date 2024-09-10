@@ -7,48 +7,41 @@
 
 using namespace nri;
 
-static void FillDescriptorBindings(
-    const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlags*& bindingFlags) {
-    const VkDescriptorBindingFlags commonBindingFlags = descriptorSetDesc.partiallyBound ? VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT : 0;
-    constexpr VkDescriptorBindingFlags variableSizedArrayFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
-
+static void FillDescriptorBindings(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlags*& bindingFlags) {
     for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++) {
         const DescriptorRangeDesc& range = descriptorSetDesc.ranges[i];
+        uint32_t baseBindingIndex = range.baseRegisterIndex + bindingOffsets[(uint32_t)range.descriptorType];
 
-        const uint32_t baseBindingIndex = range.baseRegisterIndex + bindingOffsets[(uint32_t)range.descriptorType];
+        VkDescriptorBindingFlags flags = (range.flags & DescriptorRangeBits::PARTIALLY_BOUND) ? VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT : 0;
+        uint32_t descriptorNum = 1;
 
-        if (range.isArray) {
-            *(bindingFlags++) = commonBindingFlags | (range.isDescriptorNumVariable ? variableSizedArrayFlags : 0);
+        bool isArray = range.flags & (DescriptorRangeBits::ARRAY | DescriptorRangeBits::VARIABLE_SIZED_ARRAY);
+        if (isArray) {
+            if (range.flags & DescriptorRangeBits::VARIABLE_SIZED_ARRAY)
+                flags |= VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+        } else
+            descriptorNum = range.descriptorNum;
 
-            VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
+        for (uint32_t j = 0; j < descriptorNum; j++) {
+            *bindingFlags++ = flags;
+
+            VkDescriptorSetLayoutBinding& descriptorBinding = *bindings++;
             descriptorBinding = {};
-            descriptorBinding.binding = baseBindingIndex;
             descriptorBinding.descriptorType = GetDescriptorType(range.descriptorType);
-            descriptorBinding.descriptorCount = range.descriptorNum;
             descriptorBinding.stageFlags = GetShaderStageFlags(range.shaderStages);
-        } else {
-            for (uint32_t j = 0; j < range.descriptorNum; j++) {
-                *(bindingFlags++) = commonBindingFlags;
-
-                VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
-                descriptorBinding = {};
-                descriptorBinding.binding = baseBindingIndex + j;
-                descriptorBinding.descriptorType = GetDescriptorType(range.descriptorType);
-                descriptorBinding.descriptorCount = 1;
-                descriptorBinding.stageFlags = GetShaderStageFlags(range.shaderStages);
-            }
+            descriptorBinding.binding = baseBindingIndex + j;
+            descriptorBinding.descriptorCount = isArray ? range.descriptorNum : 1;
         }
     }
 }
 
-static void FillDynamicConstantBufferBindings(
-    const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlags*& bindingFlags) {
+static void FillDynamicConstantBufferBindings(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets, VkDescriptorSetLayoutBinding*& bindings, VkDescriptorBindingFlags*& bindingFlags) {
     for (uint32_t i = 0; i < descriptorSetDesc.dynamicConstantBufferNum; i++) {
         const DynamicConstantBufferDesc& buffer = descriptorSetDesc.dynamicConstantBuffers[i];
 
-        *(bindingFlags++) = 0;
+        *bindingFlags++ = 0;
 
-        VkDescriptorSetLayoutBinding& descriptorBinding = *(bindings++);
+        VkDescriptorSetLayoutBinding& descriptorBinding = *bindings++;
         descriptorBinding = {};
         descriptorBinding.binding = buffer.registerIndex + bindingOffsets[(uint32_t)DescriptorType::CONSTANT_BUFFER];
         descriptorBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
@@ -171,10 +164,10 @@ void PipelineLayoutVK::FillBindingOffsets(bool ignoreGlobalSPIRVOffsets, uint32_
 
 VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc& descriptorSetDesc, const uint32_t* bindingOffsets) {
     uint32_t bindingMaxNum = descriptorSetDesc.dynamicConstantBufferNum;
-
     for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++) {
         const DescriptorRangeDesc& range = descriptorSetDesc.ranges[i];
-        bindingMaxNum += range.isArray ? 1 : range.descriptorNum;
+        bool isArray = range.flags & (DescriptorRangeBits::ARRAY | DescriptorRangeBits::VARIABLE_SIZED_ARRAY);
+        bindingMaxNum += isArray ? 1 : range.descriptorNum;
     }
 
     Scratch<VkDescriptorSetLayoutBinding> bindings = AllocateScratch(m_Device, VkDescriptorSetLayoutBinding, bindingMaxNum);
@@ -213,7 +206,6 @@ void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipeline
     const PipelineLayoutDesc& source = pipelineLayoutDesc;
 
     destination.descriptorSetDescs.insert(destination.descriptorSetDescs.begin(), source.descriptorSets, source.descriptorSets + source.descriptorSetNum);
-
     destination.pushConstantDescs.insert(destination.pushConstantDescs.begin(), source.pushConstants, source.pushConstants + source.pushConstantNum);
 
     destination.pushConstantBindings.resize(source.pushConstantNum);
@@ -237,9 +229,7 @@ void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipeline
         const DescriptorSetDesc& descriptorSetDesc = source.descriptorSets[i];
 
         destination.hasVariableDescriptorNum[i] = false;
-
         destination.descriptorSetDescs[i].ranges = destination.descriptorSetRangeDescs.data() + destination.descriptorSetRangeDescs.size();
-
         destination.descriptorSetDescs[i].dynamicConstantBuffers = destination.dynamicConstantBufferDescs.data() + destination.dynamicConstantBufferDescs.size();
 
         // Copy descriptor range descs
@@ -250,7 +240,7 @@ void PipelineLayoutVK::FillRuntimeBindingInfo(const PipelineLayoutDesc& pipeline
         for (uint32_t j = 0; j < descriptorSetDesc.rangeNum; j++) {
             ranges[j].baseRegisterIndex += bindingOffsets[(uint32_t)descriptorSetDesc.ranges[j].descriptorType];
 
-            if (m_Device.m_IsDescriptorIndexingSupported && descriptorSetDesc.ranges[j].isDescriptorNumVariable)
+            if (m_Device.m_IsDescriptorIndexingSupported && (descriptorSetDesc.ranges[j].flags & DescriptorRangeBits::VARIABLE_SIZED_ARRAY))
                 destination.hasVariableDescriptorNum[i] = true;
         }
 

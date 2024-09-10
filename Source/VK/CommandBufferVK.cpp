@@ -124,18 +124,18 @@ inline void CommandBufferVK::SetStencilReference(uint8_t frontRef, uint8_t backR
     }
 }
 
-inline void CommandBufferVK::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
-    VkSampleLocationEXT* locations = StackAlloc(VkSampleLocationEXT, positionNum);
-    for (uint32_t i = 0; i < positionNum; i++)
-        locations[i] = {(float)(positions[i].x + 8) / 16.0f, (float)(positions[i].y + 8) / 16.0f};
+inline void CommandBufferVK::SetSampleLocations(const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
+    VkSampleLocationEXT* sampleLocations = StackAlloc(VkSampleLocationEXT, locationNum);
+    for (uint32_t i = 0; i < locationNum; i++)
+        sampleLocations[i] = {(float)(locations[i].x + 8) / 16.0f, (float)(locations[i].y + 8) / 16.0f};
 
-    uint32_t gridDim = (uint32_t)sqrtf((float)positionNum / (float)sampleNum);
+    uint32_t gridDim = (uint32_t)sqrtf((float)locationNum / (float)sampleNum);
 
     VkSampleLocationsInfoEXT sampleLocationsInfo = {VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT};
     sampleLocationsInfo.sampleLocationsPerPixel = (VkSampleCountFlagBits)sampleNum;
     sampleLocationsInfo.sampleLocationGridSize = {gridDim, gridDim};
-    sampleLocationsInfo.sampleLocationsCount = positionNum;
-    sampleLocationsInfo.pSampleLocations = locations;
+    sampleLocationsInfo.sampleLocationsCount = locationNum;
+    sampleLocationsInfo.pSampleLocations = sampleLocations;
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdSetSampleLocationsEXT(m_Handle, &sampleLocationsInfo);
@@ -345,18 +345,18 @@ inline void CommandBufferVK::EndRendering() {
 
 inline void CommandBufferVK::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
     VkBuffer* bufferHandles = StackAlloc(VkBuffer, bufferNum);
-
     for (uint32_t i = 0; i < bufferNum; i++)
-        bufferHandles[i] = GetHandle<VkBuffer, BufferVK>(buffers[i]);
+        bufferHandles[i] = ((BufferVK*)buffers[i])->GetHandle();
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBindVertexBuffers(m_Handle, baseSlot, bufferNum, bufferHandles, offsets);
 }
 
 inline void CommandBufferVK::SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType) {
-    const VkBuffer bufferHandle = GetHandle<VkBuffer, BufferVK>(&buffer);
+    const BufferVK& bufferImpl = (const BufferVK&)buffer;
+
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdBindIndexBuffer(m_Handle, bufferHandle, offset, GetIndexType(indexType));
+    vk.CmdBindIndexBuffer(m_Handle, bufferImpl.GetHandle(), offset, GetIndexType(indexType));
 }
 
 inline void CommandBufferVK::SetPipelineLayout(const PipelineLayout& pipelineLayout) {
@@ -417,25 +417,25 @@ inline void CommandBufferVK::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc)
 }
 
 inline void CommandBufferVK::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
-    const VkBuffer bufferHandle = GetHandle<VkBuffer, BufferVK>(&buffer);
+    const BufferVK& bufferImpl = (const BufferVK&)buffer;
     const auto& vk = m_Device.GetDispatchTable();
 
     if (countBuffer) {
-        const VkBuffer countBufferHandle = GetHandle<VkBuffer, BufferVK>(countBuffer);
-        vk.CmdDrawIndirectCount(m_Handle, bufferHandle, offset, countBufferHandle, countBufferOffset, drawNum, (uint32_t)stride);
+        const BufferVK& countBufferImpl = *(BufferVK*)countBuffer;
+        vk.CmdDrawIndirectCount(m_Handle, bufferImpl.GetHandle(), offset, countBufferImpl.GetHandle(), countBufferOffset, drawNum, stride);
     } else
-        vk.CmdDrawIndirect(m_Handle, bufferHandle, offset, drawNum, (uint32_t)stride);
+        vk.CmdDrawIndirect(m_Handle, bufferImpl.GetHandle(), offset, drawNum, stride);
 }
 
 inline void CommandBufferVK::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
-    const VkBuffer bufferHandle = GetHandle<VkBuffer, BufferVK>(&buffer);
+    const BufferVK& bufferImpl = (const BufferVK&)buffer;
     const auto& vk = m_Device.GetDispatchTable();
 
     if (countBuffer) {
-        const VkBuffer countBufferHandle = GetHandle<VkBuffer, BufferVK>(countBuffer);
-        vk.CmdDrawIndexedIndirectCount(m_Handle, bufferHandle, offset, countBufferHandle, countBufferOffset, drawNum, (uint32_t)stride);
+        const BufferVK& countBufferImpl = *(BufferVK*)countBuffer;
+        vk.CmdDrawIndexedIndirectCount(m_Handle, bufferImpl.GetHandle(), offset, countBufferImpl.GetHandle(), countBufferOffset, drawNum, stride);
     } else
-        vk.CmdDrawIndexedIndirect(m_Handle, bufferHandle, offset, drawNum, (uint32_t)stride);
+        vk.CmdDrawIndexedIndirect(m_Handle, bufferImpl.GetHandle(), offset, drawNum, stride);
 }
 
 inline void CommandBufferVK::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
@@ -944,13 +944,17 @@ inline void CommandBufferVK::DrawMeshTasks(const DrawMeshTasksDesc& drawMeshTask
     vk.CmdDrawMeshTasksEXT(m_Handle, drawMeshTasksDesc.x, drawMeshTasksDesc.y, drawMeshTasksDesc.z);
 }
 
-inline void CommandBufferVK::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
+inline void CommandBufferVK::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
     static_assert(sizeof(DrawMeshTasksDesc) == sizeof(VkDrawMeshTasksIndirectCommandEXT));
 
     const BufferVK& bufferImpl = (const BufferVK&)buffer;
-
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdDrawMeshTasksIndirectEXT(m_Handle, bufferImpl.GetHandle(), offset, drawNum, stride);
+
+    if (countBuffer) {
+        const BufferVK& countBufferImpl = *(BufferVK*)countBuffer;
+        vk.CmdDrawMeshTasksIndirectCountEXT(m_Handle, bufferImpl.GetHandle(), offset, countBufferImpl.GetHandle(), countBufferOffset, drawNum, stride);
+    } else
+        vk.CmdDrawMeshTasksIndirectEXT(m_Handle, bufferImpl.GetHandle(), offset, drawNum, stride);
 }
 
 #include "CommandBufferVK.hpp"

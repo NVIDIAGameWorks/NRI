@@ -17,7 +17,7 @@ enum OpCode : uint32_t {
     SET_SCISSORS,
     SET_DEPTH_BOUNDS,
     SET_STENCIL_REFERENCE,
-    SET_SAMPLE_POSITIONS,
+    SET_SAMPLE_LOCATIONS,
     SET_BLEND_CONSTANTS,
     CLEAR_ATTACHMENTS,
     CLEAR_STORAGE_BUFFER,
@@ -162,14 +162,14 @@ void CommandBufferEmuD3D11::Submit() {
 
                 commandBuffer.SetStencilReference(frontRef, backRef);
             } break;
-            case SET_SAMPLE_POSITIONS: {
-                SamplePosition* positions;
+            case SET_SAMPLE_LOCATIONS: {
+                SampleLocation* positions;
                 uint32_t positionNum;
                 Sample_t sampleNum;
                 Read(m_PushBuffer, i, positions, positionNum);
                 Read(m_PushBuffer, i, sampleNum);
 
-                commandBuffer.SetSamplePositions(positions, (Sample_t)positionNum, sampleNum);
+                commandBuffer.SetSampleLocations(positions, (Sample_t)positionNum, sampleNum);
             } break;
             case SET_BLEND_CONSTANTS: {
                 Color32f color;
@@ -509,9 +509,9 @@ inline void CommandBufferEmuD3D11::SetStencilReference(uint8_t frontRef, uint8_t
     Push(m_PushBuffer, backRef);
 }
 
-inline void CommandBufferEmuD3D11::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
-    Push(m_PushBuffer, SET_SAMPLE_POSITIONS);
-    Push(m_PushBuffer, positions, (uint32_t)positionNum);
+inline void CommandBufferEmuD3D11::SetSampleLocations(const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
+    Push(m_PushBuffer, SET_SAMPLE_LOCATIONS);
+    Push(m_PushBuffer, locations, (uint32_t)locationNum);
     Push(m_PushBuffer, sampleNum);
 }
 

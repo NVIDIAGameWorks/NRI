@@ -39,7 +39,7 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
     void SetScissors(const Rect* rects, uint32_t rectNum);
     void SetDepthBounds(float boundsMin, float boundsMax);
     void SetStencilReference(uint8_t frontRef, uint8_t backRef);
-    void SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum);
+    void SetSampleLocations(const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum);
     void SetBlendConstants(const Color32f& color);
     void ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum);
     void ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc);

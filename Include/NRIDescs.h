@@ -51,18 +51,15 @@ NriForwardStruct(CommandAllocator);
 // Types
 typedef uint8_t Nri(Mip_t);
 typedef uint8_t Nri(Sample_t);
-typedef uint32_t Nri(MemoryType);
 typedef uint16_t Nri(Dim_t);
+typedef uint32_t Nri(MemoryType);
 
 // Aliases
-static const bool NriConstant(PARTIALLY_BOUND) = true;          // helper for "DescriptorSetDesc::partiallyBound"
-static const bool NriConstant(DESCRIPTOR_ARRAY) = true;         // helper for "DescriptorRangeDesc::isArray"
-static const bool NriConstant(VARIABLE_DESCRIPTOR_NUM) = true;  // helper for "DescriptorRangeDesc::isDescriptorNumVariable"
-static const uint32_t NriConstant(ALL_SAMPLES) = 0;             // only for "sampleMask"
-static const uint32_t NriConstant(ONE_VIEWPORT) = 0;            // only for "viewportNum"
-static const Nri(Dim_t) NriConstant(WHOLE_SIZE) = 0;            // only for "Dim_t" and "size"
-static const Nri(Mip_t) NriConstant(REMAINING_MIPS) = 0;        // only for "mipNum"
-static const Nri(Dim_t) NriConstant(REMAINING_LAYERS) = 0;      // only for "layerNum"
+static const uint32_t NriConstant(ALL_SAMPLES) = 0;         // only for "sampleMask"
+static const uint32_t NriConstant(ONE_VIEWPORT) = 0;        // only for "viewportNum"
+static const Nri(Dim_t) NriConstant(WHOLE_SIZE) = 0;        // only for "Dim_t" and "size"
+static const Nri(Mip_t) NriConstant(REMAINING_MIPS) = 0;    // only for "mipNum"
+static const Nri(Dim_t) NriConstant(REMAINING_LAYERS) = 0;  // only for "layerNum"
 
 // Readability
 #define NriOptional // i.e. can be 0 (keep an eye on comments)
@@ -324,7 +321,7 @@ NriUnion(Color) {
     Nri(Color32i) i;
 };
 
-NriStruct(SamplePosition) {
+NriStruct(SampleLocation) {
     int8_t x, y; // [-8; 7]
 };
 
@@ -505,6 +502,13 @@ NriStruct(DescriptorPoolDesc) {
 #pragma region [ Pipeline layout ]
 //===============================================================================================================================
 
+NriBits(DescriptorRangeBits, uint8_t,
+    NONE                    = 0,
+    PARTIALLY_BOUND         = NriBit(0), // descriptors in range may not contain valid descriptors at the time the descriptors are consumed (but referenced descriptors must be valid)
+    ARRAY                   = NriBit(1), // descriptors in range are organized into an array
+    VARIABLE_SIZED_ARRAY    = NriBit(2)  // descriptors in range are organized into a variable-sized array, whose size is specified via "variableDescriptorNum" argument of "AllocateDescriptorSets" function
+);
+
 NriStruct(PushConstantDesc) {
     uint32_t registerIndex;
     uint32_t size;
@@ -513,11 +517,10 @@ NriStruct(PushConstantDesc) {
 
 NriStruct(DescriptorRangeDesc) {
     uint32_t baseRegisterIndex;
-    uint32_t descriptorNum;
+    uint32_t descriptorNum; // treated as max size if "VARIABLE_SIZED_ARRAY" flag is set
     Nri(DescriptorType) descriptorType;
     Nri(StageBits) shaderStages;
-    bool isDescriptorNumVariable;
-    bool isArray;
+    Nri(DescriptorRangeBits) flags;
 };
 
 NriStruct(DynamicConstantBufferDesc) {
@@ -531,7 +534,6 @@ NriStruct(DescriptorSetDesc) {
     uint32_t rangeNum;
     const NriPtr(DynamicConstantBufferDesc) dynamicConstantBuffers; // a dynamic constant buffer allows to dynamically specify an offset in the buffer via "CmdSetDescriptorSet" call
     uint32_t dynamicConstantBufferNum;
-    bool partiallyBound;
 };
 
 NriStruct(PipelineLayoutDesc) {
@@ -637,6 +639,8 @@ NriEnum(ShadingRate, uint8_t,
     FRAGMENT_SIZE_1X2,
     FRAGMENT_SIZE_2X1,
     FRAGMENT_SIZE_2X2,
+
+    // Require "isAdditionalShadingRatesSupported"
     FRAGMENT_SIZE_2X4,
     FRAGMENT_SIZE_4X2,
     FRAGMENT_SIZE_4X4
@@ -676,15 +680,15 @@ NriStruct(RasterizationDesc) {
     bool frontCounterClockwise;
     bool depthClamp;
     bool lineSmoothing;         // requires "isLineSmoothingSupported"
-    bool conservativeRaster;    // requires "conservativeRasterTier"
-    bool shadingRate;           // requires "is*ShadingRateSupported", expects "CmdSetShadingRate" and optionally "AttachmentsDesc::shadingRate"
+    bool conservativeRaster;    // requires "conservativeRasterTier != 0"
+    bool shadingRate;           // requires "shadingRateTier != 0", expects "CmdSetShadingRate" and optionally "AttachmentsDesc::shadingRate"
 };
 
 NriStruct(MultisampleDesc) {
     uint32_t sampleMask;
     Nri(Sample_t) sampleNum;
     bool alphaToCoverage;
-    bool programmableSampleLocations; // requires "isProgrammableSampleLocationsSupported", expects "CmdSetSamplePositions"
+    bool sampleLocations; // requires "sampleLocationsTier != 0", expects "CmdSetSampleLocations"
 };
 
 NriStruct(ShadingRateDesc) {
@@ -855,7 +859,7 @@ NriStruct(OutputMergerDesc) {
 
 NriStruct(AttachmentsDesc) {
     NriOptional const NriPtr(Descriptor) depthStencil;
-    NriOptional const NriPtr(Descriptor) shadingRate; // requires "isAttachmentShadingRateSupported"
+    NriOptional const NriPtr(Descriptor) shadingRate; // requires "shadingRateTier >= 2"
     const NriPtr(Descriptor) const* colors;
     uint32_t colorNum;
 };
@@ -1238,7 +1242,6 @@ NriStruct(DeviceDesc) {
 
     // Viewports
     uint32_t viewportMaxNum;
-    uint32_t viewportSubPixelBits;
     int32_t viewportBoundsRange[2];
 
     // Attachments
@@ -1349,11 +1352,14 @@ NriStruct(DeviceDesc) {
     uint32_t meshEvaluationSharedMemoryMaxSize;
     uint32_t meshEvaluationWorkGroupInvocationMaxNum;
 
-    // Other
-    uint64_t timestampFrequencyHz;
+    // Precision bits
+    uint32_t viewportPrecisionBits;
     uint32_t subPixelPrecisionBits;
     uint32_t subTexelPrecisionBits;
     uint32_t mipmapPrecisionBits;
+
+    // Other
+    uint64_t timestampFrequencyHz;
     uint32_t drawIndirectMaxNum;
     float samplerLodBiasMin;
     float samplerLodBiasMax;
@@ -1365,9 +1371,26 @@ NriStruct(DeviceDesc) {
     uint32_t clipDistanceMaxNum;
     uint32_t cullDistanceMaxNum;
     uint32_t combinedClipAndCullDistanceMaxNum;
-    uint8_t conservativeRasterTier;
-    uint8_t programmableSampleLocationsTier;
     uint8_t shadingRateAttachmentTileSize;
+    uint8_t shaderModel; // major * 10 + minor
+
+    // Tiers (0 - unsupported)
+    // 1 - 1/2 pixel uncertainty region and does not support post-snap degenerates
+    // 2 - reduces the maximum uncertainty region to 1/256 and requires post-snap degenerates not be culled
+    // 3 - maintains a maximum 1/256 uncertainty region and adds support for inner input coverage, aka "SV_InnerCoverage"
+    uint8_t conservativeRasterTier;
+
+    // 1 - a single sample pattern can be specified to repeat for every pixel ("locationNum / sampleNum" must be 1 in "CmdSetSampleLocations")
+    // 2 - four separate sample patterns can be specified for each pixel in a 2x2 grid ("locationNum / sampleNum" can be up to 4 in "CmdSetSampleLocations")
+    uint8_t sampleLocationsTier;
+
+    // 1 - DXR 1.0: full raytracing functionality, except features below
+    // 2 - DXR 1.1: adds - ray query, "CmdDispatchRaysIndirect", "GeometryIndex()" intrinsic, additional ray flags & vertex formats
+    uint8_t rayTracingTier;
+
+    // 1 - shading rate can be specified only per draw
+    // 2 - adds: per primitive shading rate, per "shadingRateAttachmentTileSize" shading rate, combiners, "SV_ShadingRate" support
+    uint8_t shadingRateTier;
 
     // Features
     uint32_t isComputeQueueSupported : 1;
@@ -1379,15 +1402,11 @@ NriStruct(DeviceDesc) {
     uint32_t isIndependentFrontAndBackStencilReferenceAndMasksSupported : 1;
     uint32_t isLineSmoothingSupported : 1;
     uint32_t isCopyQueueTimestampSupported : 1;
-    uint32_t isDispatchRaysIndirectSupported : 1;
-    uint32_t isDrawMeshTasksIndirectSupported : 1;
     uint32_t isMeshShaderPipelineStatsSupported : 1;
     uint32_t isEnchancedBarrierSupported : 1; // aka - can "Layout" be ignored?
     uint32_t isMemoryTier2Supported : 1; // a memory object can support resources from all 3 categories (buffers, attachments, all other textures)
-    uint32_t isPipelineShadingRateSupported : 1;
-    uint32_t isPrimitiveShadingRateSupported : 1;
-    uint32_t isAttachmentShadingRateSupported : 1;
     uint32_t isDynamicDepthBiasSupported : 1;
+    uint32_t isAdditionalShadingRatesSupported : 1;
 
     // Shader features
     uint32_t isShaderNativeI16Supported : 1;
@@ -1396,7 +1415,6 @@ NriStruct(DeviceDesc) {
     uint32_t isShaderNativeF32Supported : 1;
     uint32_t isShaderNativeI64Supported : 1;
     uint32_t isShaderNativeF64Supported : 1;
-
     uint32_t isShaderAtomicsI16Supported : 1;
     uint32_t isShaderAtomicsF16Supported : 1;
     uint32_t isShaderAtomicsI32Supported : 1;

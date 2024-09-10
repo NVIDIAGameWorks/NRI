@@ -426,19 +426,13 @@ Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutD
 
     RETURN_ON_FAILURE(this, pipelineLayoutDesc.shaderStages != StageBits::NONE, Result::INVALID_ARGUMENT, "'pipelineLayoutDesc.shaderStages' can't be NONE");
     RETURN_ON_FAILURE(this, supportedTypes > 0, Result::INVALID_ARGUMENT, "'pipelineLayoutDesc.shaderStages' doesn't include any shader stages");
-    RETURN_ON_FAILURE(this, supportedTypes == 1, Result::INVALID_ARGUMENT,
-        "'pipelineLayoutDesc.shaderStages' is invalid, it can't be compatible with more than one type of pipeline");
+    RETURN_ON_FAILURE(this, supportedTypes == 1, Result::INVALID_ARGUMENT, "'pipelineLayoutDesc.shaderStages' is invalid, it can't be compatible with more than one type of pipeline");
 
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
         const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[i];
 
         for (uint32_t j = 0; j < descriptorSetDesc.rangeNum; j++) {
             const DescriptorRangeDesc& range = descriptorSetDesc.ranges[j];
-
-            RETURN_ON_FAILURE(this, !range.isDescriptorNumVariable || range.isArray, Result::INVALID_ARGUMENT,
-                "'pipelineLayoutDesc.descriptorSets[%u].ranges[%u]' is invalid, "
-                "'isArray' can't be false if 'isDescriptorNumVariable' is true",
-                i, j);
 
             RETURN_ON_FAILURE(this, range.descriptorNum > 0, Result::INVALID_ARGUMENT, "'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].descriptorNum' is 0", i, j);
             RETURN_ON_FAILURE(this, range.descriptorType < DescriptorType::MAX_NUM, Result::INVALID_ARGUMENT, "'pipelineLayoutDesc.descriptorSets[%u].ranges[%u].descriptorType' is invalid", i, j);

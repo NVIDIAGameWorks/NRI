@@ -304,7 +304,6 @@ void DeviceD3D11::FillDesc() {
     }
 
     m_Desc.viewportMaxNum = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
-    m_Desc.viewportSubPixelBits = D3D11_SUBPIXEL_FRACTIONAL_BIT_COUNT;
     m_Desc.viewportBoundsRange[0] = D3D11_VIEWPORT_BOUNDS_MIN;
     m_Desc.viewportBoundsRange[1] = D3D11_VIEWPORT_BOUNDS_MAX;
 
@@ -389,10 +388,12 @@ void DeviceD3D11::FillDesc() {
     m_Desc.computeShaderWorkGroupMaxDim[1] = D3D11_CS_THREAD_GROUP_MAX_Y;
     m_Desc.computeShaderWorkGroupMaxDim[2] = D3D11_CS_THREAD_GROUP_MAX_Z;
 
-    m_Desc.timestampFrequencyHz = timestampFrequency;
+    m_Desc.viewportPrecisionBits = D3D11_SUBPIXEL_FRACTIONAL_BIT_COUNT;
     m_Desc.subPixelPrecisionBits = D3D11_SUBPIXEL_FRACTIONAL_BIT_COUNT;
     m_Desc.subTexelPrecisionBits = D3D11_SUBTEXEL_FRACTIONAL_BIT_COUNT;
     m_Desc.mipmapPrecisionBits = D3D11_MIP_LOD_FRACTIONAL_BIT_COUNT;
+
+    m_Desc.timestampFrequencyHz = timestampFrequency;
     m_Desc.drawIndirectMaxNum = (1ull << D3D11_REQ_DRAWINDEXED_INDEX_COUNT_2_TO_EXP) - 1;
     m_Desc.samplerLodBiasMin = D3D11_MIP_LOD_BIAS_MIN;
     m_Desc.samplerLodBiasMax = D3D11_MIP_LOD_BIAS_MAX;
@@ -404,6 +405,8 @@ void DeviceD3D11::FillDesc() {
     m_Desc.clipDistanceMaxNum = D3D11_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.cullDistanceMaxNum = D3D11_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.combinedClipAndCullDistanceMaxNum = D3D11_CLIP_OR_CULL_DISTANCE_COUNT;
+    m_Desc.shaderModel = 51;
+
     m_Desc.conservativeRasterTier = (uint8_t)options2.ConservativeRasterizationTier;
 
     bool isShaderAtomicsF16Supported = false;
@@ -419,11 +422,9 @@ void DeviceD3D11::FillDesc() {
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D1x_GetGraphicsCapabilities(m_Device, NV_D3D1x_GRAPHICS_CAPS_VER, &caps));
     }
 
-    m_Desc.programmableSampleLocationsTier = rasterizerFeatures.ProgrammableSamplePositions ? 2 : 0;
+    m_Desc.sampleLocationsTier = rasterizerFeatures.ProgrammableSamplePositions ? 2 : 0;
 
-    m_Desc.isPipelineShadingRateSupported = false;
-    m_Desc.isPrimitiveShadingRateSupported = false;
-    m_Desc.isAttachmentShadingRateSupported = caps.bVariablePixelRateShadingSupported;
+    m_Desc.shadingRateTier = caps.bVariablePixelRateShadingSupported ? 2 : 0;
     m_Desc.shadingRateAttachmentTileSize = NV_VARIABLE_PIXEL_SHADING_TILE_WIDTH;
 #endif
 

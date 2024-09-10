@@ -118,11 +118,11 @@ void CommandBufferVal::SetStencilReference(uint8_t frontRef, uint8_t backRef) {
     GetCoreInterface().CmdSetStencilReference(*GetImpl(), frontRef, backRef);
 }
 
-void CommandBufferVal::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
+void CommandBufferVal::SetSampleLocations(const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
-    RETURN_ON_FAILURE(&m_Device, m_Device.GetDesc().programmableSampleLocationsTier != 0, ReturnVoid(), "DeviceDesc::isProgrammableSampleLocationsSupported = false");
+    RETURN_ON_FAILURE(&m_Device, m_Device.GetDesc().sampleLocationsTier != 0, ReturnVoid(), "DeviceDesc::sampleLocationsTier = 0");
 
-    GetCoreInterface().CmdSetSamplePositions(*GetImpl(), positions, positionNum, sampleNum);
+    GetCoreInterface().CmdSetSampleLocations(*GetImpl(), locations, locationNum, sampleNum);
 }
 
 void CommandBufferVal::SetBlendConstants(const Color32f& color) {
@@ -133,7 +133,7 @@ void CommandBufferVal::SetBlendConstants(const Color32f& color) {
 
 void CommandBufferVal::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
-    RETURN_ON_FAILURE(&m_Device, m_Device.GetDesc().isPipelineShadingRateSupported || m_Device.GetDesc().isPrimitiveShadingRateSupported, ReturnVoid(), "DeviceDesc::is[Pipeline/Primitive]ShadingRateSupported = false");
+    RETURN_ON_FAILURE(&m_Device, m_Device.GetDesc().shadingRateTier, ReturnVoid(), "DeviceDesc::shadingRateTier = 0");
 
     GetCoreInterface().CmdSetShadingRate(*GetImpl(), shadingRateDesc);
 }
@@ -654,7 +654,7 @@ void CommandBufferVal::DrawMeshTasks(const DrawMeshTasksDesc& drawMeshTasksDesc)
     GetMeshShaderInterface().CmdDrawMeshTasks(*GetImpl(), drawMeshTasksDesc);
 }
 
-void CommandBufferVal::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride) {
+void CommandBufferVal::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, m_IsRenderPass, ReturnVoid(), "must be called inside 'CmdBeginRendering/CmdEndRendering'");
 
@@ -662,7 +662,9 @@ void CommandBufferVal::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offs
     RETURN_ON_FAILURE(&m_Device, offset < bufferDesc.size, ReturnVoid(), "'offset' is greater than the buffer size");
 
     Buffer* bufferImpl = NRI_GET_IMPL(Buffer, &buffer);
-    GetMeshShaderInterface().CmdDrawMeshTasksIndirect(*GetImpl(), *bufferImpl, offset, drawNum, stride);
+    Buffer* countBufferImpl = NRI_GET_IMPL(Buffer, countBuffer);
+
+    GetMeshShaderInterface().CmdDrawMeshTasksIndirect(*GetImpl(), *bufferImpl, offset, drawNum, stride, countBufferImpl, countBufferOffset);
 }
 
 void CommandBufferVal::ValidateReadonlyDepthStencil() {

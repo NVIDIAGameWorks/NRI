@@ -154,7 +154,7 @@ protected:
         table.CmdSetScissors = ::CmdSetScissors; \
         table.CmdSetDepthBounds = ::CmdSetDepthBounds; \
         table.CmdSetStencilReference = ::CmdSetStencilReference; \
-        table.CmdSetSamplePositions = ::CmdSetSamplePositions; \
+        table.CmdSetSampleLocations = ::CmdSetSampleLocations; \
         table.CmdSetBlendConstants = ::CmdSetBlendConstants; \
         table.CmdSetShadingRate = ::CmdSetShadingRate; \
         table.CmdSetDepthBias = ::CmdSetDepthBias; \

@@ -151,10 +151,10 @@ void CommandBufferD3D11::SetStencilReference(uint8_t frontRef, uint8_t backRef) 
     m_StencilRef = frontRef;
 }
 
-void CommandBufferD3D11::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
+void CommandBufferD3D11::SetSampleLocations(const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
     MaybeUnused(sampleNum); // already have this in "m_RasterizerDesc"
 
-    m_SamplePositionsState.Set(positions, positionNum);
+    m_SamplePositionsState.Set(locations, locationNum);
 
     if (m_Pipeline)
         m_Pipeline->ChangeSamplePositions(m_DeferredContext, m_SamplePositionsState);
@@ -251,7 +251,7 @@ void CommandBufferD3D11::BeginRendering(const AttachmentsDesc& attachmentsDesc) 
 
     // Shading rate
 #if NRI_USE_EXT_LIBS
-    if (m_Device.GetExt()->HasNVAPI() && m_Device.GetDesc().isAttachmentShadingRateSupported) {
+    if (m_Device.GetExt()->HasNVAPI() && m_Device.GetDesc().shadingRateTier >= 2) {
         ID3D11NvShadingRateResourceView* shadingRateImage = nullptr;
         if (attachmentsDesc.shadingRate) {
             const DescriptorD3D11& descriptor = *(DescriptorD3D11*)attachmentsDesc.shadingRate;

@@ -62,8 +62,8 @@ static void NRI_CALL CmdSetStencilReference(CommandBuffer& commandBuffer, uint8_
     ((CommandBufferEmuD3D11&)commandBuffer).SetStencilReference(frontRef, backRef);
 }
 
-static void NRI_CALL CmdSetSamplePositions(CommandBuffer& commandBuffer, const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
-    ((CommandBufferEmuD3D11&)commandBuffer).SetSamplePositions(positions, positionNum, sampleNum);
+static void NRI_CALL CmdSetSampleLocations(CommandBuffer& commandBuffer, const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
+    ((CommandBufferEmuD3D11&)commandBuffer).SetSampleLocations(locations, locationNum, sampleNum);
 }
 
 static void NRI_CALL CmdSetBlendConstants(CommandBuffer& commandBuffer, const Color32f& color) {
@@ -186,7 +186,7 @@ void Core_CommandBufferEmu_PartiallyFillFunctionTable(CoreInterface& table) {
     table.CmdSetScissors = ::CmdSetScissors;
     table.CmdSetDepthBounds = ::CmdSetDepthBounds;
     table.CmdSetStencilReference = ::CmdSetStencilReference;
-    table.CmdSetSamplePositions = ::CmdSetSamplePositions;
+    table.CmdSetSampleLocations = ::CmdSetSampleLocations;
     table.CmdSetBlendConstants = ::CmdSetBlendConstants;
     table.CmdSetShadingRate = ::CmdSetShadingRate;
     table.CmdSetDepthBias = ::CmdSetDepthBias;
