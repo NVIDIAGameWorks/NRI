@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-#if defined(__clang__) || defined(__GNUC__)    
+#if defined(__clang__) || defined(__GNUC__)
     #define NRI_CALL
 #else
     #define NRI_CALL __stdcall
@@ -321,6 +321,11 @@ NriUnion(Color) {
     Nri(Color32i) i;
 };
 
+NriUnion(ClearValue) {
+    Nri(DepthStencil) depthStencil;
+    Nri(Color) color;
+};
+
 NriStruct(SampleLocation) {
     int8_t x, y; // [-8; 7]
 };
@@ -499,21 +504,20 @@ NriStruct(DescriptorPoolDesc) {
 #pragma endregion
 
 //===============================================================================================================================
-#pragma region [ Pipeline layout ]
+#pragma region [ Pipeline layout and descriptors management ]
 //===============================================================================================================================
 
+// "setIndex" means "descriptor set index in the pipeline layout, provided as an argument or bound to the pipeline"
+// "rangeIndex" and "baseRange" mean "descriptor range (base) index in the descriptor set"
+// "descriptorIndex" and "baseDescriptor" mean "descriptor (base) index in the descriptor range"
+
+// "DescriptorRange" consists of "Descriptor" entities
 NriBits(DescriptorRangeBits, uint8_t,
     NONE                    = 0,
     PARTIALLY_BOUND         = NriBit(0), // descriptors in range may not contain valid descriptors at the time the descriptors are consumed (but referenced descriptors must be valid)
     ARRAY                   = NriBit(1), // descriptors in range are organized into an array
     VARIABLE_SIZED_ARRAY    = NriBit(2)  // descriptors in range are organized into a variable-sized array, whose size is specified via "variableDescriptorNum" argument of "AllocateDescriptorSets" function
 );
-
-NriStruct(PushConstantDesc) {
-    uint32_t registerIndex;
-    uint32_t size;
-    Nri(StageBits) shaderStages;
-};
 
 NriStruct(DescriptorRangeDesc) {
     uint32_t baseRegisterIndex;
@@ -523,6 +527,7 @@ NriStruct(DescriptorRangeDesc) {
     Nri(DescriptorRangeBits) flags;
 };
 
+// "DescriptorSet" consists of "DescriptorRange" entities
 NriStruct(DynamicConstantBufferDesc) {
     uint32_t registerIndex;
     Nri(StageBits) shaderStages;
@@ -536,6 +541,13 @@ NriStruct(DescriptorSetDesc) {
     uint32_t dynamicConstantBufferNum;
 };
 
+// "PipelineLayout" consists of "DescriptorSet" descriptions
+NriStruct(PushConstantDesc) {
+    uint32_t registerIndex;
+    uint32_t size;
+    Nri(StageBits) shaderStages;
+};
+
 NriStruct(PipelineLayoutDesc) {
     const NriPtr(DescriptorSetDesc) descriptorSets;
     const NriPtr(PushConstantDesc) pushConstants;
@@ -544,6 +556,23 @@ NriStruct(PipelineLayoutDesc) {
     Nri(StageBits) shaderStages;
     bool ignoreGlobalSPIRVOffsets;
     bool enableD3D12DrawParametersEmulation; // implicitly expects "enableD3D12DrawParametersEmulation" passed during device creation
+};
+
+// Updating descriptors
+NriStruct(DescriptorRangeUpdateDesc) {
+    const NriPtr(Descriptor) const* descriptors;
+    uint32_t descriptorNum;
+    uint32_t baseDescriptor;
+};
+
+NriStruct(DescriptorSetCopyDesc) {
+    const NriPtr(DescriptorSet) srcDescriptorSet;
+    uint32_t srcBaseRange;
+    uint32_t dstBaseRange;
+    uint32_t rangeNum;
+    uint32_t srcBaseDynamicConstantBuffer;
+    uint32_t dstBaseDynamicConstantBuffer;
+    uint32_t dynamicConstantBufferNum;
 };
 
 #pragma endregion
@@ -790,23 +819,19 @@ NriEnum(BlendFunc, uint8_t,
 );
 
 NriBits(ColorWriteBits, uint8_t,
-    R    = NriBit(0),
-    G    = NriBit(1),
-    B    = NriBit(2),
-    A    = NriBit(3),
+    NONE    = 0,
+    R       = NriBit(0),
+    G       = NriBit(1),
+    B       = NriBit(2),
+    A       = NriBit(3),
 
-    RGB  = NriMember(ColorWriteBits, R) | // "wingdi.h" must not be included after
-           NriMember(ColorWriteBits, G) |
-           NriMember(ColorWriteBits, B),
+    RGB     = NriMember(ColorWriteBits, R) | // "wingdi.h" must not be included after
+              NriMember(ColorWriteBits, G) |
+              NriMember(ColorWriteBits, B),
 
-    RGBA = NriMember(ColorWriteBits, RGB) |
-           NriMember(ColorWriteBits, A)
+    RGBA    = NriMember(ColorWriteBits, RGB) |
+              NriMember(ColorWriteBits, A)
 );
-
-NriUnion(ClearValue) {
-    Nri(DepthStencil) depthStencil;
-    Nri(Color) color;
-};
 
 NriStruct(ClearDesc) {
     Nri(ClearValue) value;
@@ -1088,34 +1113,17 @@ NriStruct(TextureMemoryBindingDesc) {
 NriStruct(ClearStorageBufferDesc) {
     const NriPtr(Descriptor) storageBuffer;
     uint32_t value;
-    uint32_t setIndexInPipelineLayout;
+    uint32_t setIndex;
     uint32_t rangeIndex;
-    uint32_t offsetInRange;
+    uint32_t descriptorIndex;
 };
 
 NriStruct(ClearStorageTextureDesc) {
     const NriPtr(Descriptor) storageTexture;
     Nri(ClearValue) value;
-    uint32_t setIndexInPipelineLayout;
+    uint32_t setIndex;
     uint32_t rangeIndex;
-    uint32_t offsetInRange;
-};
-
-// Descriptor set
-NriStruct(DescriptorRangeUpdateDesc) {
-    const NriPtr(Descriptor) const* descriptors;
-    uint32_t descriptorNum;
-    uint32_t offsetInRange;
-};
-
-NriStruct(DescriptorSetCopyDesc) {
-    const NriPtr(DescriptorSet) srcDescriptorSet;
-    uint32_t baseSrcRange;
-    uint32_t baseDstRange;
-    uint32_t rangeNum;
-    uint32_t baseSrcDynamicConstantBuffer;
-    uint32_t baseDstDynamicConstantBuffer;
-    uint32_t dynamicConstantBufferNum;
+    uint32_t descriptorIndex;
 };
 
 // Command signatures (default)

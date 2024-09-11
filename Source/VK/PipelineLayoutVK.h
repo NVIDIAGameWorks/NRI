@@ -51,8 +51,8 @@ struct PipelineLayoutVK {
         return m_PipelineBindPoint;
     }
 
-    inline uint32_t GetDescriptorSetSpace(uint32_t setIndexInPipelineLayout) const {
-        return m_DescriptorSetSpaces[setIndexInPipelineLayout];
+    inline uint32_t GetDescriptorSetSpace(uint32_t setIndex) const {
+        return m_DescriptorSetSpaces[setIndex];
     }
 
     ~PipelineLayoutVK();

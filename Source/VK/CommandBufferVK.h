@@ -37,7 +37,7 @@ struct CommandBufferVK {
     Result End();
     void SetPipeline(const Pipeline& pipeline);
     void SetPipelineLayout(const PipelineLayout& pipelineLayout);
-    void SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
+    void SetDescriptorSet(uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
     void SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size);
     void SetDescriptorPool(const DescriptorPool& descriptorPool);
     void Barrier(const BarrierGroupDesc& barrierGroupDesc);

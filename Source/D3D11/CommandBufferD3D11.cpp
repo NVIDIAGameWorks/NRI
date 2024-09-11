@@ -352,9 +352,9 @@ void CommandBufferD3D11::SetDescriptorPool(const DescriptorPool& descriptorPool)
     MaybeUnused(descriptorPool);
 }
 
-void CommandBufferD3D11::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
+void CommandBufferD3D11::SetDescriptorSet(uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
     const DescriptorSetD3D11& descriptorSetImpl = (DescriptorSetD3D11&)descriptorSet;
-    m_PipelineLayout->BindDescriptorSet(m_BindingState, m_DeferredContext, setIndexInPipelineLayout, descriptorSetImpl, dynamicConstantBufferOffsets);
+    m_PipelineLayout->BindDescriptorSet(m_BindingState, m_DeferredContext, setIndex, descriptorSetImpl, dynamicConstantBufferOffsets);
 }
 
 void CommandBufferD3D11::SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size) {
@@ -489,8 +489,6 @@ void CommandBufferD3D11::DispatchIndirect(const Buffer& buffer, uint64_t offset)
 void CommandBufferD3D11::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
     MaybeUnused(barrierGroupDesc);
 #if NRI_USE_EXT_LIBS
-    constexpr AccessBits STORAGE_MASK = AccessBits::SHADER_RESOURCE_STORAGE;
-
     if (barrierGroupDesc.textureNum == 0 && barrierGroupDesc.bufferNum == 0)
         return;
 
@@ -498,7 +496,7 @@ void CommandBufferD3D11::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
 
     for (uint32_t i = 0; i < barrierGroupDesc.globalNum; i++) {
         const GlobalBarrierDesc& barrier = barrierGroupDesc.globals[i];
-        if ((barrier.before.access & STORAGE_MASK) && (barrier.after.access & STORAGE_MASK)) {
+        if ((barrier.before.access & AccessBits::SHADER_RESOURCE_STORAGE) && (barrier.after.access & AccessBits::SHADER_RESOURCE_STORAGE)) {
             bool isGraphics = barrier.before.stages == StageBits::ALL || (barrier.before.stages & (StageBits::DRAW));
             if (isGraphics)
                 flags |= NVAPI_D3D_BEGIN_UAV_OVERLAP_GFX_WFI;
@@ -511,7 +509,7 @@ void CommandBufferD3D11::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
 
     for (uint32_t i = 0; i < barrierGroupDesc.bufferNum; i++) {
         const BufferBarrierDesc& barrier = barrierGroupDesc.buffers[i];
-        if ((barrier.before.access & STORAGE_MASK) && (barrier.after.access & STORAGE_MASK)) {
+        if ((barrier.before.access & AccessBits::SHADER_RESOURCE_STORAGE) && (barrier.after.access & AccessBits::SHADER_RESOURCE_STORAGE)) {
             bool isGraphics = barrier.before.stages == StageBits::ALL || (barrier.before.stages & (StageBits::DRAW));
             if (isGraphics)
                 flags |= NVAPI_D3D_BEGIN_UAV_OVERLAP_GFX_WFI;
@@ -524,7 +522,7 @@ void CommandBufferD3D11::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
 
     for (uint32_t i = 0; i < barrierGroupDesc.textureNum; i++) {
         const TextureBarrierDesc& barrier = barrierGroupDesc.textures[i];
-        if ((barrier.before.access & STORAGE_MASK) && (barrier.after.access & STORAGE_MASK)) {
+        if ((barrier.before.access & AccessBits::SHADER_RESOURCE_STORAGE) && (barrier.after.access & AccessBits::SHADER_RESOURCE_STORAGE)) {
             bool isGraphics = barrier.before.stages == StageBits::ALL || (barrier.before.stages & (StageBits::DRAW));
             if (isGraphics)
                 flags |= NVAPI_D3D_BEGIN_UAV_OVERLAP_GFX_WFI;

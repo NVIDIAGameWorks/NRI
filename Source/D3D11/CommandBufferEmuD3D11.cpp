@@ -249,8 +249,8 @@ void CommandBufferEmuD3D11::Submit() {
                 commandBuffer.SetPipeline(*pipeline);
             } break;
             case BIND_DESCRIPTOR_SET: {
-                uint32_t setIndexInPipelineLayout;
-                Read(m_PushBuffer, i, setIndexInPipelineLayout);
+                uint32_t setIndex;
+                Read(m_PushBuffer, i, setIndex);
 
                 DescriptorSet* descriptorSet;
                 Read(m_PushBuffer, i, descriptorSet);
@@ -259,7 +259,7 @@ void CommandBufferEmuD3D11::Submit() {
                 uint32_t dynamicConstantBufferNum;
                 Read(m_PushBuffer, i, dynamicConstantBufferOffsets, dynamicConstantBufferNum);
 
-                commandBuffer.SetDescriptorSet(setIndexInPipelineLayout, *descriptorSet, dynamicConstantBufferOffsets);
+                commandBuffer.SetDescriptorSet(setIndex, *descriptorSet, dynamicConstantBufferOffsets);
             } break;
             case SET_CONSTANTS: {
                 uint32_t pushConstantRangeIndex;
@@ -570,11 +570,11 @@ inline void CommandBufferEmuD3D11::SetPipeline(const Pipeline& pipeline) {
     Push(m_PushBuffer, &pipeline);
 }
 
-inline void CommandBufferEmuD3D11::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
+inline void CommandBufferEmuD3D11::SetDescriptorSet(uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
     uint32_t dynamicConstantBufferNum = ((DescriptorSetD3D11&)descriptorSet).GetDynamicConstantBufferNum();
 
     Push(m_PushBuffer, BIND_DESCRIPTOR_SET);
-    Push(m_PushBuffer, setIndexInPipelineLayout);
+    Push(m_PushBuffer, setIndex);
     Push(m_PushBuffer, &descriptorSet);
     Push(m_PushBuffer, dynamicConstantBufferOffsets, dynamicConstantBufferNum);
 }

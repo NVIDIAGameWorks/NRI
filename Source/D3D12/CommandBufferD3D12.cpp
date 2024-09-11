@@ -361,24 +361,24 @@ inline void CommandBufferD3D12::ClearAttachments(const ClearDesc* clearDescs, ui
 }
 
 inline void CommandBufferD3D12::ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc) {
-    DescriptorSetD3D12* descriptorSet = m_DescriptorSets[clearDesc.setIndexInPipelineLayout];
+    DescriptorSetD3D12* descriptorSet = m_DescriptorSets[clearDesc.setIndex];
     DescriptorD3D12* resourceView = (DescriptorD3D12*)clearDesc.storageBuffer;
     const UINT clearValues[4] = {clearDesc.value, clearDesc.value, clearDesc.value, clearDesc.value};
 
     m_GraphicsCommandList->ClearUnorderedAccessViewUint(
-        {descriptorSet->GetPointerGPU(clearDesc.rangeIndex, clearDesc.offsetInRange)}, {resourceView->GetPointerCPU()}, *resourceView, clearValues, 0, nullptr);
+        {descriptorSet->GetPointerGPU(clearDesc.rangeIndex, clearDesc.descriptorIndex)}, {resourceView->GetPointerCPU()}, *resourceView, clearValues, 0, nullptr);
 }
 
 inline void CommandBufferD3D12::ClearStorageTexture(const ClearStorageTextureDesc& clearDesc) {
-    DescriptorSetD3D12* descriptorSet = m_DescriptorSets[clearDesc.setIndexInPipelineLayout];
+    DescriptorSetD3D12* descriptorSet = m_DescriptorSets[clearDesc.setIndex];
     DescriptorD3D12* resourceView = (DescriptorD3D12*)clearDesc.storageTexture;
 
     if (resourceView->IsIntegerFormat()) {
-        m_GraphicsCommandList->ClearUnorderedAccessViewUint({descriptorSet->GetPointerGPU(clearDesc.rangeIndex, clearDesc.offsetInRange)}, {resourceView->GetPointerCPU()},
+        m_GraphicsCommandList->ClearUnorderedAccessViewUint({descriptorSet->GetPointerGPU(clearDesc.rangeIndex, clearDesc.descriptorIndex)}, {resourceView->GetPointerCPU()},
             *resourceView, &clearDesc.value.color.ui.x, 0, nullptr);
     } else {
         m_GraphicsCommandList->ClearUnorderedAccessViewFloat(
-            {descriptorSet->GetPointerGPU(clearDesc.rangeIndex, clearDesc.offsetInRange)}, {resourceView->GetPointerCPU()}, *resourceView, &clearDesc.value.color.f.x, 0, nullptr);
+            {descriptorSet->GetPointerGPU(clearDesc.rangeIndex, clearDesc.descriptorIndex)}, {resourceView->GetPointerCPU()}, *resourceView, &clearDesc.value.color.f.x, 0, nullptr);
     }
 }
 
@@ -471,9 +471,9 @@ inline void CommandBufferD3D12::SetDescriptorPool(const DescriptorPool& descript
     ((DescriptorPoolD3D12&)descriptorPool).Bind(m_GraphicsCommandList);
 }
 
-inline void CommandBufferD3D12::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
-    m_PipelineLayout->SetDescriptorSet(*m_GraphicsCommandList, m_IsGraphicsPipelineLayout, setIndexInPipelineLayout, descriptorSet, dynamicConstantBufferOffsets);
-    m_DescriptorSets[setIndexInPipelineLayout] = (DescriptorSetD3D12*)&descriptorSet;
+inline void CommandBufferD3D12::SetDescriptorSet(uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
+    m_PipelineLayout->SetDescriptorSet(*m_GraphicsCommandList, m_IsGraphicsPipelineLayout, setIndex, descriptorSet, dynamicConstantBufferOffsets);
+    m_DescriptorSets[setIndex] = (DescriptorSetD3D12*)&descriptorSet;
 }
 
 inline void CommandBufferD3D12::SetConstants(uint32_t pushConstantRangeIndex, const void* data, uint32_t size) {
@@ -759,7 +759,7 @@ inline void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc
         bool isGlobalUavBarrierNeeded = false;
         for (uint32_t i = 0; i < barrierGroupDesc.globalNum && !isGlobalUavBarrierNeeded; i++) {
             const GlobalBarrierDesc& barrierDesc = barrierGroupDesc.globals[i];
-            if (barrierDesc.before.access == barrierDesc.after.access && (barrierDesc.before.access & AccessBits::SHADER_RESOURCE_STORAGE))
+            if ((barrierDesc.before.access & AccessBits::SHADER_RESOURCE_STORAGE) && (barrierDesc.after.access & AccessBits::SHADER_RESOURCE_STORAGE))
                 isGlobalUavBarrierNeeded = true;
         }
 

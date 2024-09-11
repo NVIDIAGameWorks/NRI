@@ -75,7 +75,7 @@ struct CommandBufferD3D12 {
     void SetPipelineLayout(const PipelineLayout& pipelineLayout);
     void SetPipeline(const Pipeline& pipeline);
     void SetDescriptorPool(const DescriptorPool& descriptorPool);
-    void SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
+    void SetDescriptorSet(uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
     void SetConstants(uint32_t pushConstantRangeIndex, const void* data, uint32_t size);
     void Draw(const DrawDesc& drawDesc);
     void DrawIndexed(const DrawIndexedDesc& drawIndexedDesc);

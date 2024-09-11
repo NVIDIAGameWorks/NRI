@@ -387,11 +387,11 @@ inline void CommandBufferVK::SetDescriptorPool(const DescriptorPool& descriptorP
     MaybeUnused(descriptorPool);
 }
 
-inline void CommandBufferVK::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
+inline void CommandBufferVK::SetDescriptorSet(uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
     const DescriptorSetVK& descriptorSetImpl = (DescriptorSetVK&)descriptorSet;
     VkDescriptorSet vkDescriptorSet = descriptorSetImpl.GetHandle();
 
-    uint32_t space = m_CurrentPipelineLayout->GetDescriptorSetSpace(setIndexInPipelineLayout);
+    uint32_t space = m_CurrentPipelineLayout->GetDescriptorSetSpace(setIndex);
     uint32_t dynamicOffsetNum = descriptorSetImpl.GetDynamicConstantBufferNum();
 
     const auto& vk = m_Device.GetDispatchTable();

@@ -24,8 +24,8 @@ Non-goals:
 #pragma once
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 148
-#define NRI_VERSION_DATE "10 September 2024"
+#define NRI_VERSION_MINOR 149
+#define NRI_VERSION_DATE "11 September 2024"
 
 #include "NRIDescs.h"
 
@@ -98,7 +98,7 @@ NriStruct(CoreInterface) {
     // {
         // Setup
         void (NRI_CALL *CmdSetDescriptorPool)(NriRef(CommandBuffer) commandBuffer, const NriRef(DescriptorPool) descriptorPool);
-        void (NRI_CALL *CmdSetDescriptorSet)(NriRef(CommandBuffer) commandBuffer, uint32_t setIndexInPipelineLayout, const NriRef(DescriptorSet) descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
+        void (NRI_CALL *CmdSetDescriptorSet)(NriRef(CommandBuffer) commandBuffer, uint32_t setIndex, const NriRef(DescriptorSet) descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
         void (NRI_CALL *CmdSetPipelineLayout)(NriRef(CommandBuffer) commandBuffer, const NriRef(PipelineLayout) pipelineLayout);
         void (NRI_CALL *CmdSetPipeline)(NriRef(CommandBuffer) commandBuffer, const NriRef(Pipeline) pipeline);
         void (NRI_CALL *CmdSetConstants)(NriRef(CommandBuffer) commandBuffer, uint32_t pushConstantIndex, const void* data, uint32_t size);
@@ -180,8 +180,8 @@ NriStruct(CoreInterface) {
     void (NRI_CALL *UpdateDynamicConstantBuffers)(NriRef(DescriptorSet) descriptorSet, uint32_t baseBuffer, uint32_t bufferNum, const NriPtr(Descriptor) const* descriptors);
     void (NRI_CALL *CopyDescriptorSet)(NriRef(DescriptorSet) descriptorSet, const NriRef(DescriptorSetCopyDesc) descriptorSetCopyDesc);
 
-    // Descriptor pool
-    Nri(Result) (NRI_CALL *AllocateDescriptorSets)(NriRef(DescriptorPool) descriptorPool, const NriRef(PipelineLayout) pipelineLayout, uint32_t setIndexInPipelineLayout, NriPtr(DescriptorSet)* descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
+    // Descriptor pool ("DescriptorSet" entities don't require destroying)
+    Nri(Result) (NRI_CALL *AllocateDescriptorSets)(NriRef(DescriptorPool) descriptorPool, const NriRef(PipelineLayout) pipelineLayout, uint32_t setIndex, NriPtr(DescriptorSet)* descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
     void (NRI_CALL *ResetDescriptorPool)(NriRef(DescriptorPool) descriptorPool);
 
     // Command allocator

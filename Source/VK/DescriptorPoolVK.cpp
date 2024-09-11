@@ -76,7 +76,7 @@ inline void DescriptorPoolVK::SetDebugName(const char* name) {
 }
 
 inline Result DescriptorPoolVK::AllocateDescriptorSets(
-    const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t numberOfCopies, uint32_t variableDescriptorNum) {
+    const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t numberOfCopies, uint32_t variableDescriptorNum) {
     const PipelineLayoutVK& pipelineLayoutVK = (const PipelineLayoutVK&)pipelineLayout;
 
     const uint32_t freeSetNum = (uint32_t)m_AllocatedSets.size() - m_UsedSets;
@@ -98,9 +98,9 @@ inline Result DescriptorPoolVK::AllocateDescriptorSets(
         descriptorSets[i] = (DescriptorSet*)m_AllocatedSets[m_UsedSets + i];
     m_UsedSets += numberOfCopies;
 
-    const VkDescriptorSetLayout setLayout = pipelineLayoutVK.GetDescriptorSetLayout(setIndexInPipelineLayout);
-    const DescriptorSetDesc& setDesc = pipelineLayoutVK.GetRuntimeBindingInfo().descriptorSetDescs[setIndexInPipelineLayout];
-    bool hasVariableDescriptorNum = pipelineLayoutVK.GetRuntimeBindingInfo().hasVariableDescriptorNum[setIndexInPipelineLayout];
+    const VkDescriptorSetLayout setLayout = pipelineLayoutVK.GetDescriptorSetLayout(setIndex);
+    const DescriptorSetDesc& setDesc = pipelineLayoutVK.GetRuntimeBindingInfo().descriptorSetDescs[setIndex];
+    bool hasVariableDescriptorNum = pipelineLayoutVK.GetRuntimeBindingInfo().hasVariableDescriptorNum[setIndex];
 
     VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO};
     variableDescriptorCountInfo.descriptorSetCount = 1;

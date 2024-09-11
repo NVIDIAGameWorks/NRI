@@ -279,12 +279,12 @@ void CommandBufferVal::SetDescriptorPool(const DescriptorPool& descriptorPool) {
     GetCoreInterface().CmdSetDescriptorPool(*GetImpl(), *descriptorPoolImpl);
 }
 
-void CommandBufferVal::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
+void CommandBufferVal::SetDescriptorSet(uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
 
     DescriptorSet* descriptorSetImpl = NRI_GET_IMPL(DescriptorSet, &descriptorSet);
 
-    GetCoreInterface().CmdSetDescriptorSet(*GetImpl(), setIndexInPipelineLayout, *descriptorSetImpl, dynamicConstantBufferOffsets);
+    GetCoreInterface().CmdSetDescriptorSet(*GetImpl(), setIndex, *descriptorSetImpl, dynamicConstantBufferOffsets);
 }
 
 void CommandBufferVal::SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size) {

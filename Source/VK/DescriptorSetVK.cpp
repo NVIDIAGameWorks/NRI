@@ -200,7 +200,7 @@ inline void DescriptorSetVK::UpdateDescriptorRanges(uint32_t rangeOffset, uint32
             const DescriptorRangeUpdateDesc& update = rangeUpdateDescs[j];
             const DescriptorRangeDesc& rangeDesc = m_Desc->ranges[rangeOffset + j];
 
-            uint32_t offset = update.offsetInRange + descriptorOffset;
+            uint32_t offset = update.baseDescriptor + descriptorOffset;
 
             VkWriteDescriptorSet& write = writes[writeNum++];
             write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -247,23 +247,23 @@ inline void DescriptorSetVK::UpdateDynamicConstantBuffers(uint32_t bufferOffset,
 }
 
 inline void DescriptorSetVK::Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc) {
-    const uint32_t descriptorRangeNum = descriptorSetCopyDesc.rangeNum + descriptorSetCopyDesc.dynamicConstantBufferNum;
+    const uint32_t rangeNum = descriptorSetCopyDesc.rangeNum + descriptorSetCopyDesc.dynamicConstantBufferNum;
 
-    VkCopyDescriptorSet* copies = StackAlloc(VkCopyDescriptorSet, descriptorRangeNum);
+    VkCopyDescriptorSet* copies = StackAlloc(VkCopyDescriptorSet, rangeNum);
     uint32_t copyNum = 0;
 
     const DescriptorSetVK& srcSetImpl = *(const DescriptorSetVK*)descriptorSetCopyDesc.srcDescriptorSet;
 
     for (uint32_t j = 0; j < descriptorSetCopyDesc.rangeNum; j++) {
-        const DescriptorRangeDesc& srcRangeDesc = srcSetImpl.m_Desc->ranges[descriptorSetCopyDesc.baseSrcRange + j];
-        const DescriptorRangeDesc& dstRangeDesc = m_Desc->ranges[descriptorSetCopyDesc.baseDstRange + j];
+        const DescriptorRangeDesc& srcRangeDesc = srcSetImpl.m_Desc->ranges[descriptorSetCopyDesc.srcBaseRange + j];
+        const DescriptorRangeDesc& dstRangeDesc = m_Desc->ranges[descriptorSetCopyDesc.dstBaseRange + j];
 
         copies[copyNum++] = {VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET, nullptr, srcSetImpl.GetHandle(), srcRangeDesc.baseRegisterIndex, 0, m_Handle, dstRangeDesc.baseRegisterIndex, 0,
             dstRangeDesc.descriptorNum};
     }
 
     for (uint32_t j = 0; j < descriptorSetCopyDesc.dynamicConstantBufferNum; j++) {
-        const uint32_t srcBufferIndex = descriptorSetCopyDesc.baseSrcDynamicConstantBuffer + j;
+        const uint32_t srcBufferIndex = descriptorSetCopyDesc.srcBaseDynamicConstantBuffer + j;
         const DynamicConstantBufferDesc& srcBuffer = srcSetImpl.m_Desc->dynamicConstantBuffers[srcBufferIndex];
         const DynamicConstantBufferDesc& dstBuffer = m_Desc->dynamicConstantBuffers[srcBufferIndex];
 

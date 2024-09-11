@@ -10,8 +10,8 @@ using namespace nri;
 #define BASE_CONSTANT_BUFFER 0
 #define BASE_RANGE m_DynamicConstantBuffersNum
 
-uint32_t DescriptorSetD3D11::Initialize(const PipelineLayoutD3D11& pipelineLayout, uint32_t setIndexInPipelineLayout, const DescriptorD3D11** descriptors) {
-    const BindingSet& bindingSet = pipelineLayout.GetBindingSet(setIndexInPipelineLayout);
+uint32_t DescriptorSetD3D11::Initialize(const PipelineLayoutD3D11& pipelineLayout, uint32_t setIndex, const DescriptorD3D11** descriptors) {
+    const BindingSet& bindingSet = pipelineLayout.GetBindingSet(setIndex);
 
     // Reset head, since this object can be reused via DescriptorPool::Reset() and DescriptorPool::AllocateDescriptorSets()
     m_Ranges.clear();
@@ -56,7 +56,7 @@ inline void DescriptorSetD3D11::UpdateDescriptorRanges(uint32_t rangeOffset, uin
         const DescriptorRangeUpdateDesc& range = rangeUpdateDescs[i];
 
         uint32_t descriptorOffset = m_Ranges[BASE_RANGE + rangeOffset + i].descriptorOffset;
-        descriptorOffset += range.offsetInRange;
+        descriptorOffset += range.baseDescriptor;
 
         const DescriptorD3D11** dstDescriptors = m_Descriptors + descriptorOffset;
         const DescriptorD3D11** srcDescriptors = (const DescriptorD3D11**)range.descriptors;
@@ -78,18 +78,18 @@ inline void DescriptorSetD3D11::Copy(const DescriptorSetCopyDesc& descriptorSetC
     DescriptorSetD3D11& srcSet = (DescriptorSetD3D11&)descriptorSetCopyDesc.srcDescriptorSet;
 
     for (uint32_t i = 0; i < descriptorSetCopyDesc.rangeNum; i++) {
-        const OffsetNum& dst = m_Ranges[BASE_RANGE + descriptorSetCopyDesc.baseDstRange + i];
+        const OffsetNum& dst = m_Ranges[BASE_RANGE + descriptorSetCopyDesc.dstBaseRange + i];
         const DescriptorD3D11** dstDescriptors = m_Descriptors + dst.descriptorOffset;
 
-        const OffsetNum& src = srcSet.m_Ranges[BASE_RANGE + descriptorSetCopyDesc.baseSrcRange + i];
+        const OffsetNum& src = srcSet.m_Ranges[BASE_RANGE + descriptorSetCopyDesc.srcBaseRange + i];
         const DescriptorD3D11** srcDescriptors = srcSet.m_Descriptors + src.descriptorOffset;
 
         memcpy(dstDescriptors, srcDescriptors, dst.descriptorNum * sizeof(DescriptorD3D11*));
     }
 
     for (uint32_t i = 0; i < descriptorSetCopyDesc.dynamicConstantBufferNum; i++) {
-        const OffsetNum& dst = m_Ranges[BASE_CONSTANT_BUFFER + descriptorSetCopyDesc.baseDstDynamicConstantBuffer + i];
-        const OffsetNum& src = srcSet.m_Ranges[BASE_CONSTANT_BUFFER + descriptorSetCopyDesc.baseSrcDynamicConstantBuffer + i];
+        const OffsetNum& dst = m_Ranges[BASE_CONSTANT_BUFFER + descriptorSetCopyDesc.dstBaseDynamicConstantBuffer + i];
+        const OffsetNum& src = srcSet.m_Ranges[BASE_CONSTANT_BUFFER + descriptorSetCopyDesc.srcBaseDynamicConstantBuffer + i];
 
         m_Descriptors[dst.descriptorOffset] = srcSet.m_Descriptors[src.descriptorOffset];
     }

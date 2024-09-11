@@ -29,7 +29,7 @@ Result DescriptorPoolD3D11::Create(const DescriptorPoolDesc& descriptorPoolDesc)
 //================================================================================================================
 
 inline Result DescriptorPoolD3D11::AllocateDescriptorSets(
-    const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
+    const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
     if (variableDescriptorNum)
         return Result::UNSUPPORTED;
 
@@ -38,7 +38,7 @@ inline Result DescriptorPoolD3D11::AllocateDescriptorSets(
     for (uint32_t i = 0; i < instanceNum; i++) {
         const DescriptorD3D11** descriptors = m_DescriptorPool.data() + m_DescriptorPoolOffset;
         DescriptorSetD3D11* descriptorSet = &m_DescriptorSets[m_DescriptorSetIndex++];
-        uint32_t descriptorNum = descriptorSet->Initialize(pipelineLayoutD3D11, setIndexInPipelineLayout, descriptors);
+        uint32_t descriptorNum = descriptorSet->Initialize(pipelineLayoutD3D11, setIndex, descriptors);
         descriptorSets[i] = (DescriptorSet*)descriptorSet;
 
         m_DescriptorPoolOffset += descriptorNum;

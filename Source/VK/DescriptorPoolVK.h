@@ -35,7 +35,7 @@ struct DescriptorPoolVK {
     void Reset();
 
     Result AllocateDescriptorSets(
-        const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t numberOfCopies, uint32_t variableDescriptorNum);
+        const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t numberOfCopies, uint32_t variableDescriptorNum);
 
 private:
     DeviceVK& m_Device;

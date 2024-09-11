@@ -25,7 +25,7 @@ struct DescriptorSetD3D11 {
         return m_DynamicConstantBuffersNum;
     }
 
-    uint32_t Initialize(const PipelineLayoutD3D11& pipelineLayout, uint32_t setIndexInPipelineLayout, const DescriptorD3D11** descriptors);
+    uint32_t Initialize(const PipelineLayoutD3D11& pipelineLayout, uint32_t setIndex, const DescriptorD3D11** descriptors);
 
     //================================================================================================================
     // NRI

@@ -83,7 +83,7 @@ void DescriptorPoolVal::IncrementDescriptorNum(const DescriptorRangeDesc& rangeD
     }
 }
 
-Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
+Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
     const PipelineLayoutVal& pipelineLayoutVal = (const PipelineLayoutVal&)pipelineLayout;
     const PipelineLayoutDesc& pipelineLayoutDesc = pipelineLayoutVal.GetPipelineLayoutDesc();
 
@@ -91,9 +91,9 @@ Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineL
     RETURN_ON_FAILURE(&m_Device, m_DescriptorSetsNum + instanceNum <= m_Desc.descriptorSetMaxNum, Result::INVALID_ARGUMENT, "the maximum number of descriptor sets exceeded");
 
     if (!m_SkipValidation) {
-        RETURN_ON_FAILURE(&m_Device, setIndexInPipelineLayout < pipelineLayoutDesc.descriptorSetNum, Result::INVALID_ARGUMENT, "'setIndexInPipelineLayout' is invalid");
+        RETURN_ON_FAILURE(&m_Device, setIndex < pipelineLayoutDesc.descriptorSetNum, Result::INVALID_ARGUMENT, "'setIndex' is invalid");
 
-        const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[setIndexInPipelineLayout];
+        const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[setIndex];
 
         for (uint32_t i = 0; i < descriptorSetDesc.rangeNum; i++) {
             const DescriptorRangeDesc& rangeDesc = descriptorSetDesc.ranges[i];
@@ -110,12 +110,12 @@ Result DescriptorPoolVal::AllocateDescriptorSets(const PipelineLayout& pipelineL
 
     PipelineLayout* pipelineLayoutImpl = NRI_GET_IMPL(PipelineLayout, &pipelineLayout);
 
-    Result result = GetCoreInterface().AllocateDescriptorSets(*GetImpl(), *pipelineLayoutImpl, setIndexInPipelineLayout, descriptorSets, instanceNum, variableDescriptorNum);
+    Result result = GetCoreInterface().AllocateDescriptorSets(*GetImpl(), *pipelineLayoutImpl, setIndex, descriptorSets, instanceNum, variableDescriptorNum);
 
     if (result != Result::SUCCESS)
         return result;
 
-    const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[setIndexInPipelineLayout];
+    const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[setIndex];
 
     if (!m_SkipValidation) {
         m_DynamicConstantBufferNum += descriptorSetDesc.dynamicConstantBufferNum;

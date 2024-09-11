@@ -105,15 +105,15 @@ inline void DescriptorPoolD3D12::SetDebugName(const char* name) {
 }
 
 inline Result DescriptorPoolD3D12::AllocateDescriptorSets(
-    const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
+    const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
     MaybeUnused(variableDescriptorNum);
 
     if (m_DescriptorSetNum + instanceNum > m_DescriptorSets.size())
         return Result::FAILURE;
 
     const PipelineLayoutD3D12& pipelineLayoutD3D12 = (PipelineLayoutD3D12&)pipelineLayout;
-    const DescriptorSetMapping& descriptorSetMapping = pipelineLayoutD3D12.GetDescriptorSetMapping(setIndexInPipelineLayout);
-    const DynamicConstantBufferMapping& dynamicConstantBufferMapping = pipelineLayoutD3D12.GetDynamicConstantBufferMapping(setIndexInPipelineLayout);
+    const DescriptorSetMapping& descriptorSetMapping = pipelineLayoutD3D12.GetDescriptorSetMapping(setIndex);
+    const DynamicConstantBufferMapping& dynamicConstantBufferMapping = pipelineLayoutD3D12.GetDynamicConstantBufferMapping(setIndex);
 
     for (uint32_t i = 0; i < instanceNum; i++) {
         DescriptorSetD3D12* descriptorSet = &m_DescriptorSets[m_DescriptorSetNum++];

@@ -37,7 +37,7 @@ struct DescriptorPoolD3D12 {
 
     void SetDebugName(const char* name);
     Result AllocateDescriptorSets(
-        const PipelineLayout& pipelineLayout, uint32_t setIndexInPipelineLayout, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
+        const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
     void Reset();
 
 private:

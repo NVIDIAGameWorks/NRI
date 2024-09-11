@@ -42,16 +42,16 @@ struct PipelineLayoutD3D12 {
         return m_DrawParametersEmulation;
     }
 
-    inline const DescriptorSetMapping& GetDescriptorSetMapping(uint32_t setIndexInPipelineLayout) const {
-        return m_DescriptorSetMappings[setIndexInPipelineLayout];
+    inline const DescriptorSetMapping& GetDescriptorSetMapping(uint32_t setIndex) const {
+        return m_DescriptorSetMappings[setIndex];
     }
 
-    inline const DescriptorSetRootMapping& GetDescriptorSetRootMapping(uint32_t setIndexInPipelineLayout) const {
-        return m_DescriptorSetRootMappings[setIndexInPipelineLayout];
+    inline const DescriptorSetRootMapping& GetDescriptorSetRootMapping(uint32_t setIndex) const {
+        return m_DescriptorSetRootMappings[setIndex];
     }
 
-    inline const DynamicConstantBufferMapping& GetDynamicConstantBufferMapping(uint32_t setIndexInPipelineLayout) const {
-        return m_DynamicConstantBufferMappings[setIndexInPipelineLayout];
+    inline const DynamicConstantBufferMapping& GetDynamicConstantBufferMapping(uint32_t setIndex) const {
+        return m_DynamicConstantBufferMappings[setIndex];
     }
 
     inline uint32_t GetPushConstantsRootOffset(uint32_t rangeIndex) const {
@@ -60,7 +60,7 @@ struct PipelineLayoutD3D12 {
 
     Result Create(const PipelineLayoutDesc& pipelineLayoutDesc);
 
-    void SetDescriptorSet(ID3D12GraphicsCommandList& graphicsCommandList, bool isGraphics, uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet,
+    void SetDescriptorSet(ID3D12GraphicsCommandList& graphicsCommandList, bool isGraphics, uint32_t setIndex, const DescriptorSet& descriptorSet,
         const uint32_t* dynamicConstantBufferOffsets) const;
 
     //================================================================================================================
@@ -74,7 +74,7 @@ struct PipelineLayoutD3D12 {
 private:
     template <bool isGraphics>
     void SetDescriptorSetImpl(
-        ID3D12GraphicsCommandList& graphicsCommandList, uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const;
+        ID3D12GraphicsCommandList& graphicsCommandList, uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const;
 
 private:
     ComPtr<ID3D12RootSignature> m_RootSignature;

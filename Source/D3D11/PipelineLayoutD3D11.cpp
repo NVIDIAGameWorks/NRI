@@ -150,18 +150,18 @@ void PipelineLayoutD3D11::SetConstants(ID3D11DeviceContextBest* deferredContext,
     deferredContext->UpdateSubresource(cb.buffer, 0, nullptr, data, 0, 0);
 }
 
-void PipelineLayoutD3D11::BindDescriptorSet(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndexInPipelineLayout,
+void PipelineLayoutD3D11::BindDescriptorSet(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndex,
     const DescriptorSetD3D11& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const {
     if (m_IsGraphicsPipelineLayout)
-        BindDescriptorSetImpl<true>(currentBindingState, deferredContext, setIndexInPipelineLayout, descriptorSet, dynamicConstantBufferOffsets);
+        BindDescriptorSetImpl<true>(currentBindingState, deferredContext, setIndex, descriptorSet, dynamicConstantBufferOffsets);
     else
-        BindDescriptorSetImpl<false>(currentBindingState, deferredContext, setIndexInPipelineLayout, descriptorSet, dynamicConstantBufferOffsets);
+        BindDescriptorSetImpl<false>(currentBindingState, deferredContext, setIndex, descriptorSet, dynamicConstantBufferOffsets);
 }
 
 template <bool isGraphics>
-void PipelineLayoutD3D11::BindDescriptorSetImpl(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndexInPipelineLayout,
+void PipelineLayoutD3D11::BindDescriptorSetImpl(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndex,
     const DescriptorSetD3D11& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const {
-    const BindingSet& bindingSet = m_BindingSets[setIndexInPipelineLayout];
+    const BindingSet& bindingSet = m_BindingSets[setIndex];
     bool isStorageRebindNeededInGraphics = false;
 
     uint8_t* memory = StackAlloc(uint8_t, bindingSet.descriptorNum * (sizeof(void*) + sizeof(uint32_t) * 2));

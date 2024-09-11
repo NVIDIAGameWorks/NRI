@@ -63,7 +63,7 @@ struct PipelineLayoutD3D11 {
     Result Create(const PipelineLayoutDesc& pipelineDesc);
     void SetConstants(ID3D11DeviceContextBest* deferredContext, uint32_t pushConstantIndex, const Vec4* data, uint32_t size) const;
     void Bind(ID3D11DeviceContextBest* deferredContext);
-    void BindDescriptorSet(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndexInPipelineLayout, const DescriptorSetD3D11& descriptorSet,
+    void BindDescriptorSet(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndex, const DescriptorSetD3D11& descriptorSet,
         const uint32_t* dynamicConstantBufferOffsets) const;
 
     //================================================================================================================
@@ -76,7 +76,7 @@ struct PipelineLayoutD3D11 {
 
 private:
     template <bool isGraphics>
-    void BindDescriptorSetImpl(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndexInPipelineLayout,
+    void BindDescriptorSetImpl(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndex,
         const DescriptorSetD3D11& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const;
 
     DeviceD3D11& m_Device;
