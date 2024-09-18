@@ -1,19 +1,20 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region[  Core  ]
-
-static void NRI_CALL SetCommandAllocatorDebugName(CommandAllocator& commandAllocator, const char* name) {
-    ((CommandAllocatorVal&)commandAllocator).SetDebugName(name);
+NRI_INLINE void CommandAllocatorVal::SetDebugName(const char* name) {
+    m_Name = name;
+    GetCoreInterface().SetCommandAllocatorDebugName(*GetImpl(), name);
 }
 
-static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, CommandBuffer*& commandBuffer) {
-    return ((CommandAllocatorVal&)commandAllocator).CreateCommandBuffer(commandBuffer);
+NRI_INLINE Result CommandAllocatorVal::CreateCommandBuffer(CommandBuffer*& commandBuffer) {
+    CommandBuffer* commandBufferImpl;
+    const Result result = GetCoreInterface().CreateCommandBuffer(*GetImpl(), commandBufferImpl);
+
+    if (result == Result::SUCCESS)
+        commandBuffer = (CommandBuffer*)Allocate<CommandBufferVal>(m_Device.GetStdAllocator(), m_Device, commandBufferImpl, false);
+
+    return result;
 }
 
-static void NRI_CALL ResetCommandAllocator(CommandAllocator& commandAllocator) {
-    ((CommandAllocatorVal&)commandAllocator).Reset();
+NRI_INLINE void CommandAllocatorVal::Reset() {
+    GetCoreInterface().ResetCommandAllocator(*GetImpl());
 }
-
-#pragma endregion
-
-Define_Core_CommandAllocator_PartiallyFillFunctionTable(Val)

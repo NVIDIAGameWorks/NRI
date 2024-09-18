@@ -6,6 +6,20 @@ namespace nri {
 
 struct CommandQueueVK;
 
+struct IsSupported {
+    uint32_t descriptorIndexing : 1;
+    uint32_t deviceAddress : 1;
+    uint32_t swapChainMutableFormat : 1;
+    uint32_t presentId : 1;
+    uint32_t presentWait : 1;
+    uint32_t lowLatency : 1;
+    uint32_t memoryPriority : 1;
+    uint32_t memoryBudget : 1;
+    uint32_t maintenance5 : 1;
+    uint32_t imageSlicedView : 1;
+    uint32_t customBorderColor : 1;
+};
+
 struct DeviceVK final : public DeviceBase {
     inline operator VkDevice() const {
         return m_Device;
@@ -74,19 +88,6 @@ struct DeviceVK final : public DeviceBase {
     void DestroyVma();
 
     //================================================================================================================
-    // NRI
-    //================================================================================================================
-
-    void SetDebugName(const char* name);
-    Result CreateCommandQueue(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
-    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
-    Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
-    Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
-    Result QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const;
-    Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
-    FormatSupportBits GetFormatSupport(Format format) const;
-
-    //================================================================================================================
     // DeviceBase
     //================================================================================================================
 
@@ -105,6 +106,19 @@ struct DeviceVK final : public DeviceBase {
     Result FillFunctionTable(ResourceAllocatorInterface& table) const;
     Result FillFunctionTable(WrapperVKInterface& table) const;
 
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
+
+    void SetDebugName(const char* name);
+    Result CreateCommandQueue(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
+    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
+    Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
+    Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
+    Result QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const;
+    Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
+    FormatSupportBits GetFormatSupport(Format format) const;
+
 private:
     void FilterInstanceLayers(Vector<const char*>& layers);
     void ProcessInstanceExtensions(Vector<const char*>& desiredInstanceExts);
@@ -118,17 +132,10 @@ private:
     Result ResolveDispatchTable(const Vector<const char*>& desiredDeviceExts);
 
 public:
-    uint32_t m_IsDescriptorIndexingSupported : 1;
-    uint32_t m_IsDeviceAddressSupported : 1;
-    uint32_t m_IsSwapChainMutableFormatSupported : 1;
-    uint32_t m_IsPresentIdSupported : 1;
-    uint32_t m_IsPresentWaitSupported : 1;
-    uint32_t m_IsLowLatencySupported : 1;
-    uint32_t m_IsMemoryPrioritySupported : 1;
-    uint32_t m_IsMemoryBudgetSupported : 1;
-    uint32_t m_IsMaintenance5Supported : 1;
-    uint32_t m_IsImageSlicedViewSupported : 1;
-    uint32_t m_IsCustomBorderColorSupported : 1;
+    union {
+        uint32_t m_IsSupportedStorage = 0;
+        IsSupported m_IsSupported;
+    };
 
 private:
     VkPhysicalDevice m_PhysicalDevice = nullptr;

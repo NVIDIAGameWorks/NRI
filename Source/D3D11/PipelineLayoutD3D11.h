@@ -2,11 +2,10 @@
 
 #pragma once
 
-struct NvAPI_D3D11_RASTERIZER_DESC_EX;
-
 namespace nri {
 
 struct DeviceD3D11;
+struct DescriptorD3D11;
 struct DescriptorSetD3D11;
 
 struct BindingSet {
@@ -37,7 +36,7 @@ union Vec4 {
 struct BindingData {
     void** descriptors;
     uint32_t* constantFirst;
-    uint32_t* constantNum;
+    uint32_t* rootConstantNum;
 };
 
 struct PipelineLayoutD3D11 {
@@ -60,11 +59,14 @@ struct PipelineLayoutD3D11 {
         return m_BindingRanges[range];
     }
 
+    inline uint32_t GetRootBindingIndex(uint32_t rootDescriptorIndex) const {
+        return m_RootBindingOffset + rootDescriptorIndex;
+    }
+
     Result Create(const PipelineLayoutDesc& pipelineDesc);
-    void SetConstants(ID3D11DeviceContextBest* deferredContext, uint32_t pushConstantIndex, const Vec4* data, uint32_t size) const;
+    void SetRootConstants(ID3D11DeviceContextBest* deferredContext, uint32_t rootConstantIndex, const Vec4* data, uint32_t size) const;
     void Bind(ID3D11DeviceContextBest* deferredContext);
-    void BindDescriptorSet(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndex, const DescriptorSetD3D11& descriptorSet,
-        const uint32_t* dynamicConstantBufferOffsets) const;
+    void BindDescriptorSet(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndex, const DescriptorSetD3D11* descriptorSet, const DescriptorD3D11* descriptor, const uint32_t* dynamicConstantBufferOffsets) const;
 
     //================================================================================================================
     // NRI
@@ -76,13 +78,13 @@ struct PipelineLayoutD3D11 {
 
 private:
     template <bool isGraphics>
-    void BindDescriptorSetImpl(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndex,
-        const DescriptorSetD3D11& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const;
+    void BindDescriptorSetImpl(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndex, const DescriptorSetD3D11* descriptorSet, const DescriptorD3D11* descriptor, const uint32_t* dynamicConstantBufferOffsets) const;
 
     DeviceD3D11& m_Device;
     Vector<BindingSet> m_BindingSets;
     Vector<BindingRange> m_BindingRanges;
     Vector<ConstantBuffer> m_ConstantBuffers;
+    uint32_t m_RootBindingOffset = 0;
     bool m_IsGraphicsPipelineLayout = false;
 };
 

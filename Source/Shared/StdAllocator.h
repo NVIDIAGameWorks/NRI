@@ -183,9 +183,9 @@ struct Scratch {
 constexpr size_t MAX_STACK_ALLOC_SIZE = 128 * 1024;
 
 #define AllocateScratch(device, T, elementNum) \
-    { ((elementNum) * sizeof(T) + alignof(T)) > MAX_STACK_ALLOC_SIZE \
+    {((elementNum) * sizeof(T) + alignof(T)) > MAX_STACK_ALLOC_SIZE \
             ? (T*)(device).GetStdAllocator().GetInterface().Allocate((device).GetStdAllocator().GetInterface().userArg, (elementNum) * sizeof(T), alignof(T)) \
             : (T*)Align((elementNum) ? (T*)_alloca(((elementNum) * sizeof(T) + alignof(T))) : nullptr, alignof(T)), \
-        (device).GetStdAllocator().GetInterface(), ((elementNum) * sizeof(T) + alignof(T)) > MAX_STACK_ALLOC_SIZE }
+        (device).GetStdAllocator().GetInterface(), ((elementNum) * sizeof(T) + alignof(T)) > MAX_STACK_ALLOC_SIZE}
 
 #define StackAlloc(T, elementNum) Align(((elementNum) ? (T*)_alloca((elementNum) * sizeof(T) + alignof(T)) : nullptr), alignof(T))

@@ -39,26 +39,26 @@ NriStruct(TextureUpdateRequestDesc) {
 };
 
 NriStruct(StreamerInterface) {
-    Nri(Result) (NRI_CALL *CreateStreamer)(NriRef(Device) device, const NriRef(StreamerDesc) streamerDesc, NriOut NriRef(Streamer*) streamer);
-    void (NRI_CALL *DestroyStreamer)(NriRef(Streamer) streamer);
+    Nri(Result)     (NRI_CALL *CreateStreamer)                  (NriRef(Device) device, const NriRef(StreamerDesc) streamerDesc, NriOut NriRef(Streamer*) streamer);
+    void            (NRI_CALL *DestroyStreamer)                 (NriRef(Streamer) streamer);
 
     // Get internal buffers
-    Nri(Buffer*) (NRI_CALL *GetStreamerConstantBuffer)(NriRef(Streamer) streamer);  // Never changes
-    Nri(Buffer*) (NRI_CALL *GetStreamerDynamicBuffer)(NriRef(Streamer) streamer);   // Valid only after "CopyStreamerUpdateRequests"
+    Nri(Buffer*)    (NRI_CALL *GetStreamerConstantBuffer)       (NriRef(Streamer) streamer);  // Never changes
+    Nri(Buffer*)    (NRI_CALL *GetStreamerDynamicBuffer)        (NriRef(Streamer) streamer);   // Valid only after "CopyStreamerUpdateRequests"
 
     // Add an update request. Return the offset in the ring buffer and don't invoke any work
-    uint64_t (NRI_CALL *AddStreamerBufferUpdateRequest)(NriRef(Streamer) streamer, const NriRef(BufferUpdateRequestDesc) bufferUpdateRequestDesc);
-    uint64_t (NRI_CALL *AddStreamerTextureUpdateRequest)(NriRef(Streamer) streamer, const NriRef(TextureUpdateRequestDesc) textureUpdateRequestDesc);
+    uint64_t        (NRI_CALL *AddStreamerBufferUpdateRequest)  (NriRef(Streamer) streamer, const NriRef(BufferUpdateRequestDesc) bufferUpdateRequestDesc);
+    uint64_t        (NRI_CALL *AddStreamerTextureUpdateRequest) (NriRef(Streamer) streamer, const NriRef(TextureUpdateRequestDesc) textureUpdateRequestDesc);
 
     // (HOST) Copy data and get the offset in the dedicated ring buffer (for dynamic constant buffers)
-    uint32_t (NRI_CALL *UpdateStreamerConstantBuffer)(NriRef(Streamer) streamer, const void* data, uint32_t dataSize);
+    uint32_t        (NRI_CALL *UpdateStreamerConstantBuffer)    (NriRef(Streamer) streamer, const void* data, uint32_t dataSize);
 
     // (HOST) Copy gathered requests to the internal buffer, potentially a new one if the capacity exceeded. Must be called once per frame
-    Nri(Result) (NRI_CALL *CopyStreamerUpdateRequests)(NriRef(Streamer) streamer);
+    Nri(Result)     (NRI_CALL *CopyStreamerUpdateRequests)      (NriRef(Streamer) streamer);
 
     // (DEVICE) Copy data to destinations (if any), barriers are externally controlled. Must be called after "CopyStreamerUpdateRequests"
     // WARNING: D3D12 can silently promote a resource state to COPY_DESTINATION!
-    void (NRI_CALL *CmdUploadStreamerUpdateRequests)(NriRef(CommandBuffer) commandBuffer, NriRef(Streamer) streamer);
+    void            (NRI_CALL *CmdUploadStreamerUpdateRequests) (NriRef(CommandBuffer) commandBuffer, NriRef(Streamer) streamer);
 };
 
 NriNamespaceEnd

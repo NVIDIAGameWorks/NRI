@@ -1,41 +1,74 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region[  Core  ]
+Result CommandQueueVK::Create(CommandQueueType type, uint32_t familyIndex, VkQueue handle) {
+    m_Type = type;
+    m_FamilyIndex = familyIndex;
+    m_Handle = handle;
 
-static void NRI_CALL SetCommandQueueDebugName(CommandQueue& commandQueue, const char* name) {
-    ((CommandQueueVK&)commandQueue).SetDebugName(name);
+    return Result::SUCCESS;
 }
 
-static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc) {
-    ((CommandQueueVK&)commandQueue).Submit(workSubmissionDesc, nullptr);
+NRI_INLINE void CommandQueueVK::SetDebugName(const char* name) {
+    m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_QUEUE, (uint64_t)m_Handle, name);
 }
 
-#pragma endregion
+NRI_INLINE void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
+    ExclusiveScope lock(m_Lock);
 
-#pragma region[  Helper  ]
+    VkSemaphoreSubmitInfo* waitSemaphores = StackAlloc(VkSemaphoreSubmitInfo, queueSubmitDesc.waitFenceNum);
+    for (uint32_t i = 0; i < queueSubmitDesc.waitFenceNum; i++) {
+        waitSemaphores[i] = {VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO};
+        waitSemaphores[i].semaphore = *(FenceVK*)queueSubmitDesc.waitFences[i].fence;
+        waitSemaphores[i].value = queueSubmitDesc.waitFences[i].value;
+        waitSemaphores[i].stageMask = GetPipelineStageFlags(queueSubmitDesc.waitFences[i].stages);
+    }
 
-static Result NRI_CALL UploadData(CommandQueue& commandQueue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs,
-    uint32_t bufferUploadDescNum) {
-    return ((CommandQueueVK&)commandQueue).UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
+    VkCommandBufferSubmitInfo* commandBuffers = StackAlloc(VkCommandBufferSubmitInfo, queueSubmitDesc.commandBufferNum);
+    for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++) {
+        commandBuffers[i] = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO};
+        commandBuffers[i].commandBuffer = *(CommandBufferVK*)queueSubmitDesc.commandBuffers[i];
+    }
+
+    VkSemaphoreSubmitInfo* signalSemaphores = StackAlloc(VkSemaphoreSubmitInfo, queueSubmitDesc.signalFenceNum);
+    for (uint32_t i = 0; i < queueSubmitDesc.signalFenceNum; i++) {
+        signalSemaphores[i] = {VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO};
+        signalSemaphores[i].semaphore = *(FenceVK*)queueSubmitDesc.signalFences[i].fence;
+        signalSemaphores[i].value = queueSubmitDesc.signalFences[i].value;
+        signalSemaphores[i].stageMask = GetPipelineStageFlags(queueSubmitDesc.signalFences[i].stages);
+    }
+
+    VkSubmitInfo2 submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO_2};
+    submitInfo.waitSemaphoreInfoCount = queueSubmitDesc.waitFenceNum;
+    submitInfo.pWaitSemaphoreInfos = waitSemaphores;
+    submitInfo.commandBufferInfoCount = queueSubmitDesc.commandBufferNum;
+    submitInfo.pCommandBufferInfos = commandBuffers;
+    submitInfo.signalSemaphoreInfoCount = queueSubmitDesc.signalFenceNum;
+    submitInfo.pSignalSemaphoreInfos = signalSemaphores;
+
+    VkLatencySubmissionPresentIdNV presentId = {VK_STRUCTURE_TYPE_LATENCY_SUBMISSION_PRESENT_ID_NV};
+    if (swapChain && m_Device.m_IsSupported.presentId) {
+        presentId.presentID = ((const SwapChainVK*)swapChain)->GetPresentId();
+        submitInfo.pNext = &presentId;
+    }
+
+    const auto& vk = m_Device.GetDispatchTable();
+    VkResult result = vk.QueueSubmit2(m_Handle, 1, &submitInfo, VK_NULL_HANDLE);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(), "vkQueueSubmit returned %d", (int32_t)result);
 }
 
-static Result NRI_CALL WaitForIdle(CommandQueue& commandQueue) {
-    if (!(&commandQueue))
-        return Result::SUCCESS;
+NRI_INLINE Result CommandQueueVK::UploadData(
+    const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
+    HelperDataUpload helperDataUpload(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
 
-    return ((CommandQueueVK&)commandQueue).WaitForIdle();
+    return helperDataUpload.UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
 }
 
-#pragma endregion
+NRI_INLINE Result CommandQueueVK::WaitForIdle() {
+    ExclusiveScope lock(m_Lock);
 
-#pragma region[  Low latency  ]
+    const auto& vk = m_Device.GetDispatchTable();
+    VkResult result = vk.QueueWaitIdle(m_Handle);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkQueueWaitIdle returned %d", (int32_t)result);
 
-static void NRI_CALL QueueSubmitTrackable(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc, const SwapChain& swapChain) {
-    ((CommandQueueVK&)commandQueue).Submit(workSubmissionDesc, &swapChain);
+    return Result::SUCCESS;
 }
-
-#pragma endregion
-
-Define_Core_CommandQueue_PartiallyFillFunctionTable(VK);
-Define_Helper_CommandQueue_PartiallyFillFunctionTable(VK);
-Define_LowLatency_CommandQueue_PartiallyFillFunctionTable(VK);

@@ -51,7 +51,7 @@ Documentation of all members: D3D12MemAlloc.h
   - [Thread safety](@ref general_considerations_thread_safety)
   - [Versioning and compatibility](@ref general_considerations_versioning_and_compatibility)
   - [Features not supported](@ref general_considerations_features_not_supported)
-        
+
 \section main_see_also See also
 
 - [Product page on GPUOpen](https://gpuopen.com/gaming-product/d3d12-memory-allocator/)
@@ -59,7 +59,7 @@ Documentation of all members: D3D12MemAlloc.h
 */
 
 // If using this library on a platform different than Windows PC or want to use different version of DXGI,
-// you should include D3D12-compatible headers before this library on your own and define 
+// you should include D3D12-compatible headers before this library on your own and define
 // D3D12MA_D3D12_HEADERS_ALREADY_INCLUDED.
 // Alternatively, if you are targeting the open sourced DirectX headers, defining D3D12MA_USING_DIRECTX_HEADERS
 // will include them rather the ones provided by the Windows SDK.
@@ -70,7 +70,7 @@ Documentation of all members: D3D12MemAlloc.h
     #else
         #include <d3d12.h>
     #endif
-    
+
     #include <dxgi1_4.h>
 #endif
 
@@ -160,9 +160,9 @@ class D3D12MA_API IUnknownImpl : public IUnknown
 {
 public:
     virtual ~IUnknownImpl() = default;
-    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
-    virtual ULONG STDMETHODCALLTYPE AddRef();
-    virtual ULONG STDMETHODCALLTYPE Release();
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override;
+    ULONG STDMETHODCALLTYPE AddRef() override;
+    ULONG STDMETHODCALLTYPE Release() override;
 protected:
     virtual void ReleaseThis() { delete this; }
 private:
@@ -224,7 +224,7 @@ enum ALLOCATION_FLAGS
 
     /**
     Set this flag if the allocation should have its own dedicated memory allocation (committed resource with implicit heap).
-    
+
     Use it for special, big resources, like fullscreen textures used as render targets.
 
     - When used with functions like D3D12MA::Allocator::CreateResource, it will use `ID3D12Device::CreateCommittedResource`,
@@ -258,7 +258,7 @@ enum ALLOCATION_FLAGS
     ALLOCATION_FLAG_UPPER_ADDRESS = 0x8,
 
     /** Set this flag if the allocated memory will have aliasing resources.
-    
+
     Use this when calling D3D12MA::Allocator::CreateResource() and similar to
     guarantee creation of explicit heap for desired allocation and prevent it from using `CreateCommittedResource`,
     so that new allocation object will always have `allocation->GetHeap() != NULL`.
@@ -309,7 +309,7 @@ struct ALLOCATION_DESC
     /** \brief Additional heap flags to be used when allocating memory.
 
     In most cases it can be 0.
-    
+
     - If you use D3D12MA::Allocator::CreateResource(), you don't need to care.
       Necessary flag `D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS`, `D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES`,
       or `D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES` is added automatically.
@@ -834,7 +834,7 @@ enum POOL_FLAGS
     POOL_FLAG_ALGORITHM_LINEAR = 0x1,
 
     /** \brief Optimization, allocate MSAA textures as committed resources always.
-    
+
     Specify this flag to create MSAA textures with implicit heaps, as if they were created
     with flag D3D12MA::ALLOCATION_FLAG_COMMITTED. Usage of this flags enables pool to create its heaps
     on smaller alignment not suitable for MSAA textures.
@@ -863,7 +863,7 @@ struct POOL_DESC
     `D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES`,
     `D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES`.
     Except if ResourceHeapTier = 2, then it may be `D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES` = 0.
-    
+
     You can specify additional flags if needed.
     */
     D3D12_HEAP_FLAGS HeapFlags;
@@ -888,18 +888,18 @@ struct POOL_DESC
     */
     UINT MaxBlockCount;
     /** \brief Additional minimum alignment to be used for all allocations created from this pool. Can be 0.
-    
+
     Leave 0 (default) not to impose any additional alignment. If not 0, it must be a power of two.
     */
     UINT64 MinAllocationAlignment;
     /** \brief Additional parameter allowing pool to create resources with passed protected session.
-    
+
     If not null then all the heaps and committed resources will be created with this parameter.
     Valid only if ID3D12Device4 interface is present in current Windows SDK!
     */
     ID3D12ProtectedResourceSession* pProtectedSession;
     /** \brief Residency priority to be set for all allocations made in this pool. Optional.
-    
+
     Set this parameter to one of the possible enum values e.g. `D3D12_RESIDENCY_PRIORITY_HIGH`
     to apply specific residency priority to all allocations made in this pool:
     `ID3D12Heap` memory blocks used to sub-allocate for placed resources, as well as
@@ -1044,7 +1044,7 @@ enum ALLOCATOR_FLAGS
     */
     ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED = 0x8,
     /** \brief Disable optimization that prefers creating small buffers as committed to avoid 64 KB alignment.
-    
+
     By default, the library prefers creating small buffers <= 32 KB as committed,
     because drivers tend to pack them better, while placed buffers require 64 KB alignment.
     This, however, may decrease performance, as creating committed resources involves allocation of implicit heaps,
@@ -1060,19 +1060,19 @@ struct ALLOCATOR_DESC
 {
     /// Flags.
     ALLOCATOR_FLAGS Flags;
-    
+
     /** Direct3D device object that the allocator should be attached to.
 
     Allocator is doing `AddRef`/`Release` on this object.
     */
     ID3D12Device* pDevice;
-    
+
     /** \brief Preferred size of a single `ID3D12Heap` block to be allocated.
-    
+
     Set to 0 to use default, which is currently 64 MiB.
     */
     UINT64 PreferredBlockSize;
-    
+
     /** \brief Custom CPU memory allocation callbacks. Optional.
 
     Optional, can be null. When specified, will be used for all CPU-side memory allocations.
@@ -1101,7 +1101,7 @@ public:
     /// Returns cached options retrieved from D3D12 device.
     const D3D12_FEATURE_DATA_D3D12_OPTIONS& GetD3D12Options() const;
     /** \brief Returns true if `D3D12_FEATURE_DATA_ARCHITECTURE1::UMA` was found to be true.
-    
+
     For more information about how to use it, see articles in Microsoft Docs articles:
 
     - "UMA Optimizations: CPU Accessible Textures and Standard Swizzle"
@@ -1126,7 +1126,7 @@ public:
     */
     BOOL IsGPUUploadHeapSupported() const;
     /** \brief Returns total amount of memory of specific segment group, in bytes.
-    
+
     \param memorySegmentGroup use `DXGI_MEMORY_SEGMENT_GROUP_LOCAL` or DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL`.
 
     This information is taken from `DXGI_ADAPTER_DESC`.
@@ -1182,7 +1182,7 @@ public:
 
 #ifdef __ID3D12Device8_INTERFACE_DEFINED__
     /** \brief Similar to Allocator::CreateResource, but supports new structure `D3D12_RESOURCE_DESC1`.
-    
+
     It internally uses `ID3D12Device8::CreateCommittedResource2` or `ID3D12Device8::CreatePlacedResource1`.
 
     To work correctly, `ID3D12Device8` interface must be available in the current system. Otherwise, `E_NOINTERFACE` is returned.
@@ -1198,7 +1198,7 @@ public:
 #endif // #ifdef __ID3D12Device8_INTERFACE_DEFINED__
 
 #ifdef __ID3D12Device10_INTERFACE_DEFINED__
-    /** \brief Similar to Allocator::CreateResource2, but there are initial layout instead of state and 
+    /** \brief Similar to Allocator::CreateResource2, but there are initial layout instead of state and
     castable formats list
 
     It internally uses `ID3D12Device10::CreateCommittedResource3` or `ID3D12Device10::CreatePlacedResource2`.
@@ -1273,7 +1273,7 @@ public:
 
 #ifdef __ID3D12Device8_INTERFACE_DEFINED__
     /** \brief Similar to Allocator::CreateAliasingResource, but supports new structure `D3D12_RESOURCE_DESC1`.
-    
+
     It internally uses `ID3D12Device8::CreatePlacedResource1`.
 
     To work correctly, `ID3D12Device8` interface must be available in the current system. Otherwise, `E_NOINTERFACE` is returned.
@@ -1288,7 +1288,7 @@ public:
 #endif // #ifdef __ID3D12Device8_INTERFACE_DEFINED__
 
 #ifdef __ID3D12Device10_INTERFACE_DEFINED__
-    /** \brief Similar to Allocator::CreateAliasingResource1, but there are initial layout instead of state and 
+    /** \brief Similar to Allocator::CreateAliasingResource1, but there are initial layout instead of state and
     castable formats list
 
     It internally uses `ID3D12Device10::CreatePlacedResource2`.
@@ -1346,7 +1346,7 @@ public:
     void CalculateStatistics(TotalStatistics* pStats);
 
     /** \brief Builds and returns statistics as a string in JSON format.
-    * 
+    *
     @param[out] ppStatsString Must be freed using Allocator::FreeStatsString.
     @param DetailedMap `TRUE` to include full list of allocations (can make the string quite long), `FALSE` to only return statistics.
     */
@@ -1376,9 +1376,9 @@ private:
 
     Allocator(const ALLOCATION_CALLBACKS& allocationCallbacks, const ALLOCATOR_DESC& desc);
     ~Allocator();
-    
+
     AllocatorPimpl* m_Pimpl;
-    
+
     D3D12MA_CLASS_NO_COPY(Allocator)
 };
 
@@ -1457,12 +1457,12 @@ struct VIRTUAL_ALLOCATION_DESC
     /// Flags.
     VIRTUAL_ALLOCATION_FLAGS Flags;
     /** \brief Size of the allocation.
-    
+
     Cannot be zero.
     */
     UINT64 Size;
     /** \brief Required alignment of the allocation.
-    
+
     Must be power of two. Special value 0 has the same meaning as 1 - means no special alignment is required, so allocation can start at any offset.
     */
     UINT64 Alignment;
@@ -1521,7 +1521,7 @@ public:
     */
     HRESULT Allocate(const VIRTUAL_ALLOCATION_DESC* pDesc, VirtualAllocation* pAllocation, UINT64* pOffset);
     /** \brief Frees the allocation.
-    
+
     Calling this function with `allocation.AllocHandle == 0` is correct and does nothing.
     */
     void FreeAllocation(VirtualAllocation allocation);
@@ -1550,7 +1550,7 @@ public:
     /** \brief Frees memory of a string returned from VirtualBlock::BuildStatsString.
     */
     void FreeStatsString(WCHAR* pStatsString) const;
-   
+
 protected:
     void ReleaseThis() override;
 
@@ -1961,7 +1961,7 @@ for(;;)
     {
         // Inspect pass.pMoves[i].pSrcAllocation, identify what buffer/texture it represents.
         MyEngineResourceData* resData = (MyEngineResourceData*)pMoves[i].pSrcAllocation->GetPrivateData();
-            
+
         // Recreate this buffer/texture as placed at pass.pMoves[i].pDstTmpAllocation.
         D3D12_RESOURCE_DESC resDesc = ...
         ID3D12Resource* newRes;
@@ -1979,14 +1979,14 @@ for(;;)
             pass.pMoves[i].pDstTmpAllocation->GetResource(),
             pass.pMoves[i].pSrcAllocation->GetResource());
     }
-        
+
     // Make sure the copy commands finished executing.
     cmdQueue->ExecuteCommandLists(...);
     // ...
     WaitForSingleObject(fenceEvent, INFINITE);
 
     // Update appropriate descriptors to point to the new places...
-        
+
     hr = defragCtx->EndPass(&pass);
     if(hr == S_OK)
         break;

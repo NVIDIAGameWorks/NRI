@@ -17,7 +17,7 @@ struct DescriptorSetVK {
     }
 
     inline uint32_t GetDynamicConstantBufferNum() const {
-        return m_DynamicConstantBufferNum;
+        return m_Desc->dynamicConstantBufferNum;
     }
 
     void Create(VkDescriptorSet handle, const DescriptorSetDesc& setDesc);
@@ -35,7 +35,6 @@ private:
     DeviceVK& m_Device;
     VkDescriptorSet m_Handle = VK_NULL_HANDLE;
     const DescriptorSetDesc* m_Desc = nullptr;
-    uint32_t m_DynamicConstantBufferNum = 0;
 };
 
 } // namespace nri

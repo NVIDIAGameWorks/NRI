@@ -66,17 +66,18 @@ NriStruct(FormatProps) {
 
 NriStruct(HelperInterface) {
     // Optimized memory allocation for a group of resources
-    uint32_t (NRI_CALL *CalculateAllocationNumber)(const NriRef(Device) device, const NriRef(ResourceGroupDesc) resourceGroupDesc);
-    Nri(Result) (NRI_CALL *AllocateAndBindMemory)(NriRef(Device) device, const NriRef(ResourceGroupDesc) resourceGroupDesc, NriPtr(Memory)* allocations);
+    uint32_t    (NRI_CALL *CalculateAllocationNumber)   (const NriRef(Device) device, const NriRef(ResourceGroupDesc) resourceGroupDesc);
+    Nri(Result) (NRI_CALL *AllocateAndBindMemory)       (NriRef(Device) device, const NriRef(ResourceGroupDesc) resourceGroupDesc, NriPtr(Memory)* allocations);
 
     // Populate resources with data (not for streaming!)
-    Nri(Result) (NRI_CALL *UploadData)(NriRef(CommandQueue) commandQueue, const NriPtr(TextureUploadDesc) textureUploadDescs, uint32_t textureUploadDescNum, const NriPtr(BufferUploadDesc) bufferUploadDescs, uint32_t bufferUploadDescNum);
+    Nri(Result) (NRI_CALL *UploadData)                  (NriRef(CommandQueue) commandQueue, const NriPtr(TextureUploadDesc) textureUploadDescs, uint32_t textureUploadDescNum,
+                                                            const NriPtr(BufferUploadDesc) bufferUploadDescs, uint32_t bufferUploadDescNum);
 
     // WFI
-    Nri(Result) (NRI_CALL *WaitForIdle)(NriRef(CommandQueue) commandQueue);
+    Nri(Result) (NRI_CALL *WaitForIdle)                 (NriRef(CommandQueue) commandQueue);
 
     // Information about video memory
-    Nri(Result) (NRI_CALL *QueryVideoMemoryInfo)(const NriRef(Device) device, Nri(MemoryLocation) memoryLocation, NriOut NriRef(VideoMemoryInfo) videoMemoryInfo);
+    Nri(Result) (NRI_CALL *QueryVideoMemoryInfo)        (const NriRef(Device) device, Nri(MemoryLocation) memoryLocation, NriOut NriRef(VideoMemoryInfo) videoMemoryInfo);
 };
 
 // Format utilities

@@ -1,19 +1,33 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region[  Core  ]
+Result CreateCommandBuffer(DeviceD3D11& device, ID3D11DeviceContext* precreatedContext, CommandBuffer*& commandBuffer) {
+    bool isImmediate = false;
+    if (precreatedContext)
+        isImmediate = precreatedContext->GetType() == D3D11_DEVICE_CONTEXT_IMMEDIATE;
+    else
+        isImmediate = device.IsDeferredContextEmulated();
 
-static void NRI_CALL SetCommandAllocatorDebugName(CommandAllocator& commandAllocator, const char* name) {
-    ((CommandAllocatorD3D11&)commandAllocator).SetDebugName(name);
+    void* impl;
+    if (isImmediate)
+        impl = Allocate<CommandBufferEmuD3D11>(device.GetStdAllocator(), device);
+    else
+        impl = Allocate<CommandBufferD3D11>(device.GetStdAllocator(), device);
+
+    const Result result = ((CommandBufferHelper*)impl)->Create(precreatedContext);
+
+    if (result == Result::SUCCESS) {
+        commandBuffer = (CommandBuffer*)impl;
+        return Result::SUCCESS;
+    }
+
+    if (isImmediate)
+        Destroy(device.GetStdAllocator(), (CommandBufferEmuD3D11*)impl);
+    else
+        Destroy(device.GetStdAllocator(), (CommandBufferD3D11*)impl);
+
+    return result;
 }
 
-static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, CommandBuffer*& commandBuffer) {
-    return ((CommandAllocatorD3D11&)commandAllocator).CreateCommandBuffer(commandBuffer);
+NRI_INLINE Result CommandAllocatorD3D11::CreateCommandBuffer(CommandBuffer*& commandBuffer) {
+    return ::CreateCommandBuffer(m_Device, nullptr, commandBuffer);
 }
-
-static void NRI_CALL ResetCommandAllocator(CommandAllocator& commandAllocator) {
-    ((CommandAllocatorD3D11&)commandAllocator).Reset();
-}
-
-#pragma endregion
-
-Define_Core_CommandAllocator_PartiallyFillFunctionTable(D3D11);

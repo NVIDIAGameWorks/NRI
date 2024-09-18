@@ -18,6 +18,7 @@ struct SwapChainVal : public DeviceObjectVal<SwapChain> {
     //================================================================================================================
     // NRI
     //================================================================================================================
+
     void SetDebugName(const char* name);
     Texture* const* GetTextures(uint32_t& textureNum);
     uint32_t AcquireNextTexture();

@@ -1,31 +1,52 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region[  RayTracing  ]
-
-static Result NRI_CALL CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, Descriptor*& descriptor) {
-    return ((AccelerationStructureD3D12&)accelerationStructure).CreateDescriptor(descriptor);
+AccelerationStructureD3D12::~AccelerationStructureD3D12() {
+    Destroy(m_Device.GetStdAllocator(), m_Buffer);
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureUpdateScratchBufferSize(const AccelerationStructure& accelerationStructure) {
-    return ((AccelerationStructureD3D12&)accelerationStructure).GetUpdateScratchBufferSize();
+Result AccelerationStructureD3D12::Create(const AccelerationStructureD3D12Desc& accelerationStructureDesc) {
+    m_PrebuildInfo.ScratchDataSizeInBytes = accelerationStructureDesc.scratchDataSize;
+    m_PrebuildInfo.UpdateScratchDataSizeInBytes = accelerationStructureDesc.updateScratchDataSize;
+
+    BufferD3D12Desc bufferDesc = {};
+    bufferDesc.d3d12Resource = accelerationStructureDesc.d3d12Resource;
+
+    return m_Device.CreateImplementation<BufferD3D12>((Buffer*&)m_Buffer, bufferDesc);
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureBuildScratchBufferSize(const AccelerationStructure& accelerationStructure) {
-    return ((AccelerationStructureD3D12&)accelerationStructure).GetBuildScratchBufferSize();
+Result AccelerationStructureD3D12::Create(const AccelerationStructureDesc& accelerationStructureDesc) {
+    if (m_Device.GetVersion() < 5)
+        return Result::UNSUPPORTED;
+
+    m_Device.GetAccelerationStructurePrebuildInfo(accelerationStructureDesc, m_PrebuildInfo);
+
+    BufferDesc bufferDesc = {};
+    bufferDesc.size = m_PrebuildInfo.ResultDataMaxSizeInBytes;
+    bufferDesc.usageMask = BufferUsageBits::RAY_TRACING_BUFFER;
+
+    return m_Device.CreateImplementation<BufferD3D12>((Buffer*&)m_Buffer, bufferDesc);
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure) {
-    return ((AccelerationStructureD3D12&)accelerationStructure).GetHandle();
+Result AccelerationStructureD3D12::BindMemory(Memory* memory, uint64_t offset) {
+    Result result = m_Buffer->BindMemory((MemoryD3D12*)memory, offset, ACCELERATION_STRUCTURE_BUFFER);
+
+    return result;
 }
 
-static void NRI_CALL SetAccelerationStructureDebugName(AccelerationStructure& accelerationStructure, const char* name) {
-    ((AccelerationStructureD3D12&)accelerationStructure).SetDebugName(name);
+Result AccelerationStructureD3D12::CreateDescriptor(Descriptor*& descriptor) const {
+    const AccelerationStructure& accelerationStructure = (const AccelerationStructure&)*this;
+
+    return m_Device.CreateImplementation<DescriptorD3D12>(descriptor, accelerationStructure);
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const AccelerationStructure& accelerationStructure) {
-    return uint64_t((ID3D12Resource*)((AccelerationStructureD3D12&)accelerationStructure));
+uint64_t AccelerationStructureD3D12::GetHandle() const {
+    return m_Buffer->GetPointerGPU();
 }
 
-#pragma endregion
+AccelerationStructureD3D12::operator ID3D12Resource*() const {
+    return (ID3D12Resource*)*m_Buffer;
+}
 
-Define_RayTracing_AccelerationStructure_PartiallyFillFunctionTable(D3D12);
+NRI_INLINE void AccelerationStructureD3D12::SetDebugName(const char* name) {
+    m_Buffer->SetDebugName(name);
+}

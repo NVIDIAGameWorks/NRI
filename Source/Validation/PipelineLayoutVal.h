@@ -14,12 +14,13 @@ struct PipelineLayoutVal : public DeviceObjectVal<PipelineLayout> {
     //================================================================================================================
     // NRI
     //================================================================================================================
+
     void SetDebugName(const char* name);
 
 private:
     PipelineLayoutDesc m_PipelineLayoutDesc;
     Vector<DescriptorSetDesc> m_DescriptorSetDescs;
-    Vector<PushConstantDesc> m_PushConstantDescs;
+    Vector<RootConstantDesc> m_RootConstantDescs;
     Vector<DescriptorRangeDesc> m_DescriptorRangeDescs;
     Vector<DynamicConstantBufferDesc> m_DynamicConstantBufferDescs;
 };

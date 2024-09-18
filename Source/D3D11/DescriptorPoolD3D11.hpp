@@ -1,20 +1,37 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region[  Core  ]
+Result DescriptorPoolD3D11::Create(const DescriptorPoolDesc& descriptorPoolDesc) {
+    uint32_t descriptorNum = descriptorPoolDesc.samplerMaxNum;
+    descriptorNum += descriptorPoolDesc.samplerMaxNum;
+    descriptorNum += descriptorPoolDesc.constantBufferMaxNum;
+    descriptorNum += descriptorPoolDesc.dynamicConstantBufferMaxNum;
+    descriptorNum += descriptorPoolDesc.textureMaxNum;
+    descriptorNum += descriptorPoolDesc.storageTextureMaxNum;
+    descriptorNum += descriptorPoolDesc.bufferMaxNum;
+    descriptorNum += descriptorPoolDesc.storageBufferMaxNum;
+    descriptorNum += descriptorPoolDesc.structuredBufferMaxNum;
+    descriptorNum += descriptorPoolDesc.storageStructuredBufferMaxNum;
 
-static void NRI_CALL SetDescriptorPoolDebugName(DescriptorPool& descriptorPool, const char* name) {
-    ((DescriptorPoolD3D11&)descriptorPool).SetDebugName(name);
+    m_DescriptorPool.resize(descriptorNum, nullptr);
+    m_DescriptorSets.resize(descriptorPoolDesc.descriptorSetMaxNum, DescriptorSetD3D11(m_Device));
+
+    return Result::SUCCESS;
 }
 
-static Result NRI_CALL AllocateDescriptorSets(DescriptorPool& descriptorPool, const PipelineLayout& pipelineLayout, uint32_t setIndex,
-    DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
-    return ((DescriptorPoolD3D11&)descriptorPool).AllocateDescriptorSets(pipelineLayout, setIndex, descriptorSets, instanceNum, variableDescriptorNum);
+NRI_INLINE Result DescriptorPoolD3D11::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
+    if (variableDescriptorNum)
+        return Result::UNSUPPORTED;
+
+    const PipelineLayoutD3D11& pipelineLayoutD3D11 = (PipelineLayoutD3D11&)pipelineLayout;
+
+    for (uint32_t i = 0; i < instanceNum; i++) {
+        const DescriptorD3D11** descriptors = m_DescriptorPool.data() + m_DescriptorPoolOffset;
+        DescriptorSetD3D11* descriptorSet = &m_DescriptorSets[m_DescriptorSetIndex++];
+        uint32_t descriptorNum = descriptorSet->Initialize(pipelineLayoutD3D11, setIndex, descriptors);
+        descriptorSets[i] = (DescriptorSet*)descriptorSet;
+
+        m_DescriptorPoolOffset += descriptorNum;
+    }
+
+    return Result::SUCCESS;
 }
-
-static void NRI_CALL ResetDescriptorPool(DescriptorPool& descriptorPool) {
-    ((DescriptorPoolD3D11&)descriptorPool).Reset();
-}
-
-#pragma endregion
-
-Define_Core_DescriptorPool_PartiallyFillFunctionTable(D3D11);

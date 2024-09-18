@@ -44,13 +44,13 @@ NriStruct(LatencyReport) {
 
 // Multi-swapchain is supported only by VK
 NriStruct(LowLatencyInterface) {
-    Nri(Result) (NRI_CALL *SetLatencySleepMode)(NriRef(SwapChain) swapChain, const NriRef(LatencySleepMode) latencySleepMode);
-    Nri(Result) (NRI_CALL *SetLatencyMarker)(NriRef(SwapChain) swapChain, Nri(LatencyMarker) latencyMarker);
-    Nri(Result) (NRI_CALL *LatencySleep)(NriRef(SwapChain) swapChain); // call once before INPUT_SAMPLE
-    Nri(Result) (NRI_CALL *GetLatencyReport)(const NriRef(SwapChain) swapChain, NriOut NriRef(LatencyReport) latencyReport);
+    Nri(Result) (NRI_CALL   *SetLatencySleepMode)   (NriRef(SwapChain) swapChain, const NriRef(LatencySleepMode) latencySleepMode);
+    Nri(Result) (NRI_CALL   *SetLatencyMarker)      (NriRef(SwapChain) swapChain, Nri(LatencyMarker) latencyMarker);
+    Nri(Result) (NRI_CALL   *LatencySleep)          (NriRef(SwapChain) swapChain); // call once before INPUT_SAMPLE
+    Nri(Result) (NRI_CALL   *GetLatencyReport)      (const NriRef(SwapChain) swapChain, NriOut NriRef(LatencyReport) latencyReport);
 
     // This function must be used in "low latency" mode instead of "QueueSubmit"
-    void (NRI_CALL *QueueSubmitTrackable)(NriRef(CommandQueue) commandQueue, const NriRef(QueueSubmitDesc) queueSubmitDesc, const NriRef(SwapChain) swapChain);
+    void        (NRI_CALL   *QueueSubmitTrackable)  (NriRef(CommandQueue) commandQueue, const NriRef(QueueSubmitDesc) queueSubmitDesc, const NriRef(SwapChain) swapChain);
 };
 
 NriNamespaceEnd

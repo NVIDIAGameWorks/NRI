@@ -140,6 +140,9 @@ struct DispatchTable {
     VULKAN_FUNCTION(CmdEndRendering);
     VULKAN_FUNCTION(EndCommandBuffer);
 
+    // VK_KHR_push_descriptor
+    VULKAN_FUNCTION(CmdPushDescriptorSetKHR);
+
     // VK_KHR_fragment_shading_rate
     VULKAN_FUNCTION(CmdSetFragmentShadingRateKHR);
 

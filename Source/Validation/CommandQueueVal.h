@@ -14,6 +14,7 @@ struct CommandQueueVal : public DeviceObjectVal<CommandQueue> {
     //================================================================================================================
     // NRI
     //================================================================================================================
+
     void SetDebugName(const char* name);
     void Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain);
 

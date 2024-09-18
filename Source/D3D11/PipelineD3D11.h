@@ -2,8 +2,6 @@
 
 #pragma once
 
-struct NvAPI_D3D11_RASTERIZER_DESC_EX;
-
 namespace nri {
 
 struct DeviceD3D11;

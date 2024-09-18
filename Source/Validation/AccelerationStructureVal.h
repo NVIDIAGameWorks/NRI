@@ -31,6 +31,7 @@ struct AccelerationStructureVal final : public DeviceObjectVal<AccelerationStruc
     //================================================================================================================
     // NRI
     //================================================================================================================
+
     uint64_t GetUpdateScratchBufferSize() const;
     uint64_t GetBuildScratchBufferSize() const;
     uint64_t GetHandle() const;

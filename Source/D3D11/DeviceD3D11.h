@@ -82,21 +82,6 @@ struct DeviceD3D11 final : public DeviceBase {
     void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
     //================================================================================================================
-    // NRI
-    //================================================================================================================
-
-    Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
-    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
-    Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
-    Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
-    FormatSupportBits GetFormatSupport(Format format) const;
-
-    inline void SetDebugName(const char* name) {
-        SET_D3D_DEBUG_OBJECT_NAME(m_Device, name);
-        SET_D3D_DEBUG_OBJECT_NAME(m_ImmediateContext, name);
-    }
-
-    //================================================================================================================
     // DeviceBase
     //================================================================================================================
 
@@ -112,6 +97,21 @@ struct DeviceD3D11 final : public DeviceBase {
     Result FillFunctionTable(SwapChainInterface& table) const;
     Result FillFunctionTable(ResourceAllocatorInterface& table) const;
     Result FillFunctionTable(WrapperD3D11Interface& table) const;
+
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
+
+    inline void SetDebugName(const char* name) {
+        SET_D3D_DEBUG_OBJECT_NAME(m_Device, name);
+        SET_D3D_DEBUG_OBJECT_NAME(m_ImmediateContext, name);
+    }
+
+    Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
+    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
+    Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
+    Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
+    FormatSupportBits GetFormatSupport(Format format) const;
 
 private:
     void FillDesc();

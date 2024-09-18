@@ -4,9 +4,10 @@ cmake_minimum_required (VERSION 3.15)
 option (NRI_STATIC_LIBRARY "Build static library" OFF)
 
 # Options: backends
-option (NRI_ENABLE_VK_SUPPORT "Enable VULKAN backend" ON)
+option (NRI_ENABLE_NONE_SUPPORT "Enable NONE backend" ON)
 option (NRI_ENABLE_D3D11_SUPPORT "Enable D3D11 backend" ON)
 option (NRI_ENABLE_D3D12_SUPPORT "Enable D3D12 backend" ON)
+option (NRI_ENABLE_VK_SUPPORT "Enable VULKAN backend" ON)
 
 # Options: VK specific
 option (NRI_ENABLE_XLIB_SUPPORT "Enable 'xlib' support" ON)
@@ -49,6 +50,12 @@ set (VERSION_MINOR ${CMAKE_MATCH_1})
 
 message ("NRI v${VERSION_MAJOR}.${VERSION_MINOR}")
 project (NRI LANGUAGES C CXX)
+
+if (IS_SUBMODULE)
+    file (RELATIVE_PATH PROJECT_FOLDER ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+else ()
+    set (PROJECT_FOLDER ${PROJECT_NAME})
+endif ()
 
 # Find Windows SDK
 if (WIN32)
@@ -126,15 +133,27 @@ endif ()
 
 # External libs
 if (WIN32 AND NRI_ENABLE_EXTERNAL_LIBRARIES AND (NRI_ENABLE_D3D11_SUPPORT OR NRI_ENABLE_D3D12_SUPPORT))
-    # Statically linked
-    find_library (NVAPI_LIB NAMES nvapi64 nvapi PATHS "External/nvapi/${NVAPI_BIN_ARCHITECTURE}" REQUIRED)
-    # Dynamically loaded
-    find_library (AGS_LIB NAMES amd_ags_${BIN_ARCHITECTURE} PATHS "External/amdags/ags_lib/lib" REQUIRED)
+    find_library (NVAPI_LIB NAMES nvapi64 nvapi PATHS "External/nvapi/${NVAPI_BIN_ARCHITECTURE}" REQUIRED) # statically linked
+    find_library (AGS_LIB NAMES amd_ags_${BIN_ARCHITECTURE} PATHS "External/amdags/ags_lib/lib" REQUIRED) # dynamically loaded
 
     file (GLOB NVAPI_HEADERS "External/nvapi/*.h")
     source_group ("External/nvapi" FILES ${NVAPI_HEADERS})
     file (GLOB AMDAGS_HEADERS "External/amdags/ags_lib/inc/*.h")
     source_group ("External/amdags" FILES ${AMDAGS_HEADERS})
+endif ()
+
+# NONE
+if (NRI_ENABLE_NONE_SUPPORT)
+    message ("NRI adding backend: NONE")
+    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_NONE=1)
+
+    file (GLOB NONE_SOURCE "Source/NONE/*")
+    source_group ("" FILES ${NONE_SOURCE})
+    add_library (NRI_NONE STATIC ${NONE_SOURCE})
+    target_include_directories (NRI_NONE PRIVATE "Include" "Source/Shared")
+    target_compile_definitions (NRI_NONE PRIVATE ${COMPILE_DEFINITIONS})
+    target_compile_options (NRI_NONE PRIVATE ${COMPILE_OPTIONS})
+    set_property (TARGET NRI_NONE PROPERTY FOLDER ${PROJECT_FOLDER})
 endif ()
 
 # D3D11
@@ -144,7 +163,7 @@ if (WIN32 AND NRI_ENABLE_D3D11_SUPPORT)
     set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_D3D11=1)
     set (INPUT_LIBS_D3D11 ${INPUT_LIB_D3D11} ${INPUT_LIB_DXGI})
 
-    file (GLOB D3D11_SOURCE "Source/D3D11/*.cpp" "Source/D3D11/*.h" "Source/D3D11/*.hpp")
+    file (GLOB D3D11_SOURCE "Source/D3D11/*")
     source_group ("" FILES ${D3D11_SOURCE})
 
     if (NRI_ENABLE_EXTERNAL_LIBRARIES)
@@ -158,8 +177,7 @@ if (WIN32 AND NRI_ENABLE_D3D11_SUPPORT)
     target_compile_definitions (NRI_D3D11 PRIVATE ${COMPILE_DEFINITIONS})
     target_compile_options (NRI_D3D11 PRIVATE ${COMPILE_OPTIONS})
     target_link_libraries (NRI_D3D11 PRIVATE NRI_Shared ${INPUT_LIBS_D3D11} ${INPUT_LIB_DXGUID})
-
-    set_property (TARGET NRI_D3D11 PROPERTY FOLDER ${PROJECT_NAME})
+    set_property (TARGET NRI_D3D11 PROPERTY FOLDER ${PROJECT_FOLDER})
 endif ()
 
 # D3D12
@@ -169,7 +187,7 @@ if (WIN32 AND NRI_ENABLE_D3D12_SUPPORT)
     set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_D3D12=1)
     set (INPUT_LIBS_D3D12 ${INPUT_LIB_D3D12} ${INPUT_LIB_DXGI})
 
-    file (GLOB D3D12_SOURCE "Source/D3D12/*.cpp" "Source/D3D12/*.h" "Source/D3D12/*.hpp" "External/memalloc/D3D12*.*")
+    file (GLOB D3D12_SOURCE "Source/D3D12/*" "External/memalloc/D3D12*.*")
     source_group ("" FILES ${D3D12_SOURCE})
 
     if (NRI_ENABLE_EXTERNAL_LIBRARIES)
@@ -183,8 +201,7 @@ if (WIN32 AND NRI_ENABLE_D3D12_SUPPORT)
     target_compile_definitions (NRI_D3D12 PRIVATE ${COMPILE_DEFINITIONS})
     target_compile_options (NRI_D3D12 PRIVATE ${COMPILE_OPTIONS})
     target_link_libraries (NRI_D3D12 PRIVATE NRI_Shared ${INPUT_LIBS_D3D12})
-
-    set_property (TARGET NRI_D3D12 PROPERTY FOLDER ${PROJECT_NAME})
+    set_property (TARGET NRI_D3D12 PROPERTY FOLDER ${PROJECT_FOLDER})
 
     if (NRI_ENABLE_AGILITY_SDK_SUPPORT)
         target_include_directories (NRI_D3D12 PRIVATE "${NRI_AGILITY_SDK_PATH}/include")
@@ -212,16 +229,16 @@ endif ()
 # VK
 if (NRI_ENABLE_VK_SUPPORT)
     message ("NRI adding backend: VK")
-    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_VULKAN=1)
+    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_VK=1)
 
-    file (GLOB VK_SOURCE "Source/VK/*.cpp" "Source/VK/*.h" "Source/VK/*.hpp" "External/memalloc/vk_mem_alloc.h")
+    file (GLOB VK_SOURCE "Source/VK/*" "External/memalloc/vk_mem_alloc.h")
     source_group ("" FILES ${VK_SOURCE})
     add_library (NRI_VK STATIC ${VK_SOURCE})
     target_include_directories (NRI_VK PRIVATE "Include" "Source/Shared" "External" "External/vulkan/include")
     target_compile_definitions (NRI_VK PRIVATE ${COMPILE_DEFINITIONS})
     target_compile_options (NRI_VK PRIVATE ${COMPILE_OPTIONS})
     target_link_libraries (NRI_VK PRIVATE NRI_Shared)
-    set_property (TARGET NRI_VK PROPERTY FOLDER ${PROJECT_NAME})
+    set_property (TARGET NRI_VK PROPERTY FOLDER ${PROJECT_FOLDER})
 
     if (WIN32)
         target_compile_definitions (NRI_VK PRIVATE VK_USE_PLATFORM_WIN32_KHR)
@@ -257,7 +274,7 @@ add_library (NRI_Shared STATIC ${SHARED_SOURCE})
 target_include_directories (NRI_Shared PRIVATE "Include" "Source/Shared")
 target_compile_definitions (NRI_Shared PRIVATE ${COMPILE_DEFINITIONS})
 target_compile_options (NRI_Shared PRIVATE ${COMPILE_OPTIONS})
-set_property (TARGET NRI_Shared PROPERTY FOLDER ${PROJECT_NAME})
+set_property (TARGET NRI_Shared PROPERTY FOLDER ${PROJECT_FOLDER})
 
 # Validation
 file (GLOB NRI_VALIDATION_SOURCE "Source/Validation/*.cpp" "Source/Validation/*.h" "Source/Validation/*.hpp")
@@ -267,7 +284,7 @@ target_include_directories (NRI_Validation PRIVATE "Include" "Source/Shared")
 target_compile_definitions (NRI_Validation PRIVATE ${COMPILE_DEFINITIONS})
 target_compile_options (NRI_Validation PRIVATE ${COMPILE_OPTIONS})
 target_link_libraries (NRI_Validation PRIVATE NRI_Shared)
-set_property (TARGET NRI_Validation PROPERTY FOLDER ${PROJECT_NAME})
+set_property (TARGET NRI_Validation PROPERTY FOLDER ${PROJECT_FOLDER})
 
 # NRI
 file (GLOB NRI_HEADERS "Include/*.h" "Include/*.hpp")
@@ -306,6 +323,9 @@ else ()
     target_link_libraries (${PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
 endif ()
 
+if (NRI_ENABLE_NONE_SUPPORT)
+    target_link_libraries (${PROJECT_NAME} PRIVATE NRI_NONE)
+endif ()
 if (WIN32 AND NRI_ENABLE_D3D11_SUPPORT)
     target_link_libraries (${PROJECT_NAME} PRIVATE NRI_D3D11)
 endif ()
@@ -316,7 +336,7 @@ if (NRI_ENABLE_VK_SUPPORT)
     target_link_libraries (${PROJECT_NAME} PRIVATE NRI_VK)
 endif ()
 
-set_property (TARGET ${PROJECT_NAME} PROPERTY FOLDER ${PROJECT_NAME})
+set_property (TARGET ${PROJECT_NAME} PROPERTY FOLDER ${PROJECT_FOLDER})
 
 set_target_properties (${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 message ("NRI output path: '${CMAKE_RUNTIME_OUTPUT_DIRECTORY}'")

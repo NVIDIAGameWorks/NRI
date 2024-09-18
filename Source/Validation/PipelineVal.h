@@ -25,6 +25,7 @@ struct PipelineVal : public DeviceObjectVal<Pipeline> {
     //================================================================================================================
     // NRI
     //================================================================================================================
+
     void SetDebugName(const char* name);
     Result WriteShaderGroupIdentifiers(uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer);
 

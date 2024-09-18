@@ -1,31 +1,43 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region[  RayTracing  ]
+AccelerationStructureVal::~AccelerationStructureVal() {
+    if (m_Memory)
+        m_Memory->UnbindAccelerationStructure(*this);
 
-static uint64_t NRI_CALL GetAccelerationStructureUpdateScratchBufferSize(const AccelerationStructure& accelerationStructure) {
-    return ((const AccelerationStructureVal&)accelerationStructure).GetUpdateScratchBufferSize();
+    GetRayTracingInterface().DestroyAccelerationStructure(*GetImpl());
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureBuildScratchBufferSize(const AccelerationStructure& accelerationStructure) {
-    return ((const AccelerationStructureVal&)accelerationStructure).GetBuildScratchBufferSize();
+NRI_INLINE uint64_t AccelerationStructureVal::GetUpdateScratchBufferSize() const {
+    return GetRayTracingInterface().GetAccelerationStructureUpdateScratchBufferSize(*GetImpl());
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStructure& accelerationStructure) {
-    return ((const AccelerationStructureVal&)accelerationStructure).GetHandle();
+NRI_INLINE uint64_t AccelerationStructureVal::GetBuildScratchBufferSize() const {
+    return GetRayTracingInterface().GetAccelerationStructureBuildScratchBufferSize(*GetImpl());
 }
 
-static Result NRI_CALL CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, Descriptor*& descriptor) {
-    return ((AccelerationStructureVal&)accelerationStructure).CreateDescriptor(descriptor);
+NRI_INLINE uint64_t AccelerationStructureVal::GetHandle() const {
+    RETURN_ON_FAILURE(&m_Device, IsBoundToMemory(), 0, "AccelerationStructure is not bound to memory");
+
+    return GetRayTracingInterface().GetAccelerationStructureHandle(*GetImpl());
 }
 
-static void NRI_CALL SetAccelerationStructureDebugName(AccelerationStructure& accelerationStructure, const char* name) {
-    ((AccelerationStructureVal&)accelerationStructure).SetDebugName(name);
+NRI_INLINE uint64_t AccelerationStructureVal::GetNativeObject() const {
+    RETURN_ON_FAILURE(&m_Device, IsBoundToMemory(), 0, "AccelerationStructure is not bound to memory");
+
+    return GetRayTracingInterface().GetAccelerationStructureNativeObject(*GetImpl());
 }
 
-static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const AccelerationStructure& accelerationStructure) {
-    return ((AccelerationStructureVal&)accelerationStructure).GetNativeObject();
+NRI_INLINE Result AccelerationStructureVal::CreateDescriptor(Descriptor*& descriptor) {
+    Descriptor* descriptorImpl = nullptr;
+    const Result result = GetRayTracingInterface().CreateAccelerationStructureDescriptor(*GetImpl(), descriptorImpl);
+
+    if (result == Result::SUCCESS)
+        descriptor = (Descriptor*)Allocate<DescriptorVal>(m_Device.GetStdAllocator(), m_Device, descriptorImpl, ResourceType::ACCELERATION_STRUCTURE);
+
+    return result;
 }
 
-#pragma endregion
-
-Define_RayTracing_AccelerationStructure_PartiallyFillFunctionTable(Val)
+NRI_INLINE void AccelerationStructureVal::SetDebugName(const char* name) {
+    m_Name = name;
+    GetRayTracingInterface().SetAccelerationStructureDebugName(*GetImpl(), name);
+}

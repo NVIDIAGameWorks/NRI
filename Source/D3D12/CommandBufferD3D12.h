@@ -76,7 +76,8 @@ struct CommandBufferD3D12 {
     void SetPipeline(const Pipeline& pipeline);
     void SetDescriptorPool(const DescriptorPool& descriptorPool);
     void SetDescriptorSet(uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
-    void SetConstants(uint32_t pushConstantRangeIndex, const void* data, uint32_t size);
+    void SetRootConstants(uint32_t rootConstantIndex, const void* data, uint32_t size);
+    void SetRootDescriptor(uint32_t rootDescriptorIndex, Descriptor& descriptor);
     void Draw(const DrawDesc& drawDesc);
     void DrawIndexed(const DrawIndexedDesc& drawIndexedDesc);
     void DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset);
@@ -113,7 +114,7 @@ private:
     const PipelineLayoutD3D12* m_PipelineLayout = nullptr;
     PipelineD3D12* m_Pipeline = nullptr;
     D3D12_PRIMITIVE_TOPOLOGY m_PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    std::array<DescriptorSetD3D12*, BOUND_DESCRIPTOR_SET_MAX_NUM> m_DescriptorSets = {};
+    std::array<DescriptorSetD3D12*, D3D_DESCRIPTOR_SET_MAX_NUM> m_DescriptorSets = {};
     uint32_t m_RenderTargetNum = 0;
     uint8_t m_Version = 0;
     bool m_IsGraphicsPipelineLayout = false;

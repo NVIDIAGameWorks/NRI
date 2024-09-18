@@ -1,26 +1,28 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region[  Core  ]
-
-static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name) {
-    ((BufferVal&)buffer).SetDebugName(name);
+BufferVal::~BufferVal() {
+    if (m_Memory != nullptr)
+        m_Memory->UnbindBuffer(*this);
 }
 
-static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer) {
-    if (!(&buffer))
-        return 0;
-
-    return ((BufferVal&)buffer).GetNativeObject();
+NRI_INLINE void BufferVal::SetDebugName(const char* name) {
+    m_Name = name;
+    GetCoreInterface().SetBufferDebugName(*GetImpl(), name);
 }
 
-static void* NRI_CALL MapBuffer(Buffer& buffer, uint64_t offset, uint64_t size) {
-    return ((BufferVal&)buffer).Map(offset, size);
+NRI_INLINE void* BufferVal::Map(uint64_t offset, uint64_t size) {
+    RETURN_ON_FAILURE(&m_Device, m_IsBoundToMemory, nullptr, "the buffer is not bound to memory");
+    RETURN_ON_FAILURE(&m_Device, !m_IsMapped, nullptr, "the buffer is already mapped (D3D11 doesn't support nested calls)");
+
+    m_IsMapped = true;
+
+    return GetCoreInterface().MapBuffer(*GetImpl(), offset, size);
 }
 
-static void NRI_CALL UnmapBuffer(Buffer& buffer) {
-    ((BufferVal&)buffer).Unmap();
+NRI_INLINE void BufferVal::Unmap() {
+    RETURN_ON_FAILURE(&m_Device, m_IsMapped, ReturnVoid(), "the buffer is not mapped");
+
+    m_IsMapped = false;
+
+    GetCoreInterface().UnmapBuffer(*GetImpl());
 }
-
-#pragma endregion
-
-Define_Core_Buffer_PartiallyFillFunctionTable(Val);

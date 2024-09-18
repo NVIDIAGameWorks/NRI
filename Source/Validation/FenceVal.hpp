@@ -1,19 +1,14 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region[  Core  ]
-
-static uint64_t NRI_CALL GetFenceValue(Fence& fence) {
-    return ((FenceVal&)fence).GetFenceValue();
+NRI_INLINE uint64_t FenceVal::GetFenceValue() const {
+    return GetCoreInterface().GetFenceValue(*GetImpl());
 }
 
-static void NRI_CALL Wait(Fence& fence, uint64_t value) {
-    ((FenceVal&)fence).Wait(value);
+NRI_INLINE void FenceVal::Wait(uint64_t value) {
+    GetCoreInterface().Wait(*GetImpl(), value);
 }
 
-static void NRI_CALL SetFenceDebugName(Fence& fence, const char* name) {
-    ((FenceVal&)fence).SetDebugName(name);
+NRI_INLINE void FenceVal::SetDebugName(const char* name) {
+    m_Name = name;
+    GetCoreInterface().SetFenceDebugName(*GetImpl(), name);
 }
-
-#pragma endregion
-
-Define_Core_Fence_PartiallyFillFunctionTable(Val);

@@ -25,8 +25,12 @@ struct DescriptorD3D12 {
         return m_DescriptorPointerCPU;
     }
 
-    inline D3D12_GPU_VIRTUAL_ADDRESS GetBufferLocation() const {
+    inline D3D12_GPU_VIRTUAL_ADDRESS GetPointerGPU() const {
         return m_BufferLocation;
+    }
+
+    inline BufferViewType GetBufferViewType() const {
+        return m_BufferViewType;
     }
 
     inline bool IsIntegerFormat() const {
@@ -63,9 +67,10 @@ private:
     DeviceD3D12& m_Device;
     ID3D12Resource* m_Resource = nullptr;
     D3D12_GPU_VIRTUAL_ADDRESS m_BufferLocation = 0;
-    DescriptorHandle m_Handle = {};
     DescriptorPointerCPU m_DescriptorPointerCPU = {};
-    D3D12_DESCRIPTOR_HEAP_TYPE m_HeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    DescriptorHandle m_Handle = {};
+    D3D12_DESCRIPTOR_HEAP_TYPE m_HeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV; // TODO: merge into m_Handle (2 bits needed)
+    BufferViewType m_BufferViewType = BufferViewType::MAX_NUM;
     bool m_IsIntegerFormat = false;
 };
 

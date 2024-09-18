@@ -30,11 +30,13 @@
 
 #define NRI_INTERFACE(name) #name, sizeof(name)
 
+// TIP: designated initializers are highly recommended
+
 NriNamespaceBegin
 
 // Entities
 NriForwardStruct(Fence);
-NriForwardStruct(Memory);
+NriForwardStruct(Memory); // heap
 NriForwardStruct(Buffer);
 NriForwardStruct(Device);
 NriForwardStruct(Texture);
@@ -42,10 +44,10 @@ NriForwardStruct(Pipeline);
 NriForwardStruct(QueryPool);
 NriForwardStruct(Descriptor);
 NriForwardStruct(CommandQueue);
-NriForwardStruct(CommandBuffer);
-NriForwardStruct(DescriptorSet);
-NriForwardStruct(DescriptorPool);
-NriForwardStruct(PipelineLayout);
+NriForwardStruct(CommandBuffer); // command list
+NriForwardStruct(DescriptorSet); // continuous set of descriptors in a descriptor heap
+NriForwardStruct(DescriptorPool); // descriptor heap
+NriForwardStruct(PipelineLayout); // root signature
 NriForwardStruct(CommandAllocator);
 
 // Types
@@ -65,9 +67,16 @@ static const Nri(Dim_t) NriConstant(REMAINING_LAYERS) = 0;  // only for "layerNu
 #define NriOptional // i.e. can be 0 (keep an eye on comments)
 #define NriOut      // highlights output argument
 
-//===============================================================================================================================
+//============================================================================================================================================================================================
 #pragma region [ Common ]
-//===============================================================================================================================
+//============================================================================================================================================================================================
+
+NriEnum(GraphicsAPI, uint8_t,
+    NONE,   // Supports everything, does nothing, returns dummy non-NULL objects and ~0-filled descs, available if "NRI_ENABLE_NONE_SUPPORT = ON" in CMake
+    D3D11,  // Direct3D 11 (feature set 11.1), available if "NRI_ENABLE_D3D11_SUPPORT = ON" in CMake
+    D3D12,  // Direct3D 12 (feature set 11.1+), available if "NRI_ENABLE_D3D12_SUPPORT = ON" in CMake
+    VK      // Vulkan 1.3 or 1.2+ (can be used on MacOS via MoltenVK), available if "NRI_ENABLE_VK_SUPPORT = ON" in CMake
+);
 
 NriEnum(Result, uint8_t,
     SUCCESS,
@@ -332,9 +341,9 @@ NriStruct(SampleLocation) {
 
 #pragma endregion
 
-//===============================================================================================================================
+//============================================================================================================================================================================================
 #pragma region [ Creation ]
-//===============================================================================================================================
+//============================================================================================================================================================================================
 
 NriEnum(CommandQueueType, uint8_t,
     GRAPHICS,
@@ -503,13 +512,46 @@ NriStruct(DescriptorPoolDesc) {
 
 #pragma endregion
 
-//===============================================================================================================================
+//============================================================================================================================================================================================
 #pragma region [ Pipeline layout and descriptors management ]
-//===============================================================================================================================
+//============================================================================================================================================================================================
 
-// "setIndex" means "descriptor set index in the pipeline layout, provided as an argument or bound to the pipeline"
-// "rangeIndex" and "baseRange" mean "descriptor range (base) index in the descriptor set"
-// "descriptorIndex" and "baseDescriptor" mean "descriptor (base) index in the descriptor range"
+/*
+All indices are local in the currently bound pipeline layout.
+
+Pipeline layout example:
+    Descriptor set                  #0          // "setIndex" - a descriptor set index in the pipeline layout, provided as an argument or bound to the pipeline
+        Descriptor range                #0      // "rangeIndex" and "baseRange" - a descriptor range (base) index in the descriptor set
+            Descriptor                      #0  // "descriptorIndex" and "baseDescriptor" - a descriptor (base) index in the descriptor range
+            Descriptor                      #1
+            Descriptor                      #2
+        Descriptor range                #1
+            Descriptor                      #0
+            Descriptor                      #1
+        Dynamic constant buffer         #0      // "baseDynamicConstantBuffer" - an offset in "dynamicConstantBuffers" in the currently bound pipeline layout for the provided descriptor set
+        Dynamic constant buffer         #1
+
+    Descriptor set                  #1
+        Descriptor range                #0
+            Descriptor                      #0
+
+    Descriptor set                  #2
+        Descriptor range                #0
+            Descriptor                      #0
+            Descriptor                      #1
+            Descriptor                      #2
+        Descriptor range                #1
+            Descriptor                      #0
+            Descriptor                      #1
+        Descriptor range                #2
+            Descriptor                      #0
+        Dynamic constant buffer         #0
+
+    RootConstantDesc                #0          // "rootConstantIndex" - an index in "rootConstants" in the currently bound pipeline layout
+
+    RootDescriptorSetDesc           #0          // "rootDescriptorIndex" - an index in "rootDescriptorSets" in the currently bound pipeline layout
+    RootDescriptorSetDesc           #1
+*/
 
 // "DescriptorRange" consists of "Descriptor" entities
 NriBits(DescriptorRangeBits, uint8_t,
@@ -541,18 +583,27 @@ NriStruct(DescriptorSetDesc) {
     uint32_t dynamicConstantBufferNum;
 };
 
-// "PipelineLayout" consists of "DescriptorSet" descriptions
-NriStruct(PushConstantDesc) {
+// "PipelineLayout" consists of "DescriptorSet" descriptions and root parameters
+NriStruct(RootConstantDesc) { // aka push constants
     uint32_t registerIndex;
     uint32_t size;
     Nri(StageBits) shaderStages;
 };
 
+NriStruct(RootDescriptorSetDesc) { // aka push descriptor
+    uint32_t registerSpace;
+    uint32_t registerIndex;
+    Nri(DescriptorType) descriptorType; // CONSTANT_BUFFER, STRUCTURED_BUFFER or STORAGE_STRUCTURED_BUFFER
+    Nri(StageBits) shaderStages;
+};
+
 NriStruct(PipelineLayoutDesc) {
     const NriPtr(DescriptorSetDesc) descriptorSets;
-    const NriPtr(PushConstantDesc) pushConstants;
     uint32_t descriptorSetNum;
-    uint32_t pushConstantNum;
+    const NriPtr(RootConstantDesc) rootConstants;
+    uint32_t rootConstantNum;
+    const NriPtr(RootDescriptorSetDesc) rootDescriptorSets;
+    uint32_t rootDescriptorSetNum;
     Nri(StageBits) shaderStages;
     bool ignoreGlobalSPIRVOffsets;
     bool enableD3D12DrawParametersEmulation; // implicitly expects "enableD3D12DrawParametersEmulation" passed during device creation
@@ -577,9 +628,9 @@ NriStruct(DescriptorSetCopyDesc) {
 
 #pragma endregion
 
-//===============================================================================================================================
+//============================================================================================================================================================================================
 #pragma region [ Input assembly ]
-//===============================================================================================================================
+//============================================================================================================================================================================================
 
 NriEnum(VertexStreamStepRate, uint8_t,
     PER_VERTEX,
@@ -641,16 +692,16 @@ NriStruct(VertexStreamDesc) {
 
 NriStruct(VertexInputDesc) {
     const NriPtr(VertexAttributeDesc) attributes;
-    const NriPtr(VertexStreamDesc) streams;
     uint8_t attributeNum;
+    const NriPtr(VertexStreamDesc) streams;
     uint8_t streamNum;
 };
 
 #pragma endregion
 
-//===============================================================================================================================
+//============================================================================================================================================================================================
 #pragma region [ Rasterization ]
-//===============================================================================================================================
+//============================================================================================================================================================================================
 
 NriEnum(FillMode, uint8_t,
     SOLID,
@@ -728,9 +779,9 @@ NriStruct(ShadingRateDesc) {
 
 #pragma endregion
 
-//===============================================================================================================================
+//============================================================================================================================================================================================
 #pragma region [ Output merger ]
-//===============================================================================================================================
+//============================================================================================================================================================================================
 
 // S - source color 0
 // D - destination color
@@ -874,12 +925,12 @@ NriStruct(StencilAttachmentDesc) {
 };
 
 NriStruct(OutputMergerDesc) {
-    const NriPtr(ColorAttachmentDesc) color;
+    const NriPtr(ColorAttachmentDesc) colors;
+    uint32_t colorNum;
     Nri(DepthAttachmentDesc) depth;
     Nri(StencilAttachmentDesc) stencil;
     Nri(Format) depthStencilFormat;
-    Nri(LogicFunc) colorLogicFunc; // requires "isLogicOpSupported"
-    uint32_t colorNum;
+    Nri(LogicFunc) logicFunc; // requires "isLogicFuncSupported"
 };
 
 NriStruct(AttachmentsDesc) {
@@ -891,9 +942,9 @@ NriStruct(AttachmentsDesc) {
 
 #pragma endregion
 
-//===============================================================================================================================
+//============================================================================================================================================================================================
 #pragma region [ Sampler ]
-//===============================================================================================================================
+//============================================================================================================================================================================================
 
 NriEnum(Filter, uint8_t,
     NEAREST,
@@ -937,10 +988,11 @@ NriStruct(SamplerDesc) {
 
 #pragma endregion
 
-//===============================================================================================================================
+//============================================================================================================================================================================================
 #pragma region [ Pipeline ]
-//===============================================================================================================================
+//============================================================================================================================================================================================
 
+// It's recommended to use "NRICompatibility.hlsli" in the shader code
 NriStruct(ShaderDesc) {
     Nri(StageBits) stage;
     const void* bytecode;
@@ -966,9 +1018,9 @@ NriStruct(ComputePipelineDesc) {
 
 #pragma endregion
 
-//===============================================================================================================================
+//============================================================================================================================================================================================
 #pragma region [ Barrier ]
-//===============================================================================================================================
+//============================================================================================================================================================================================
 
 NriEnum(Layout, uint8_t,
     UNKNOWN,
@@ -1045,9 +1097,9 @@ NriStruct(BarrierGroupDesc) {
 
 #pragma endregion
 
-//===============================================================================================================================
+//============================================================================================================================================================================================
 #pragma region [ Other ]
-//===============================================================================================================================
+//============================================================================================================================================================================================
 
 // Copy
 NriStruct(TextureRegionDesc) {
@@ -1172,9 +1224,9 @@ NriStruct(DrawIndexedBaseDesc) { // see NRI_FILL_DRAW_INDEXED_COMMAND
 
 #pragma endregion
 
-//===============================================================================================================================
+//============================================================================================================================================================================================
 #pragma region [ Queries ]
-//===============================================================================================================================
+//============================================================================================================================================================================================
 
 NriEnum(QueryType, uint8_t,
     TIMESTAMP,
@@ -1215,15 +1267,9 @@ NriStruct(PipelineStatisticsDesc) {
 
 #pragma endregion
 
-//===============================================================================================================================
+//============================================================================================================================================================================================
 #pragma region [ Device desc ]
-//===============================================================================================================================
-
-NriEnum(GraphicsAPI, uint8_t,
-    D3D11,
-    D3D12,
-    VK
-);
+//============================================================================================================================================================================================
 
 NriEnum(Vendor, uint8_t,
     UNKNOWN,
@@ -1283,7 +1329,6 @@ NriStruct(DeviceDesc) {
     uint32_t storageBufferMaxRange;
     uint32_t bufferTextureGranularity;
     uint64_t bufferMaxSize;
-    uint32_t pushConstantsMaxSize;
 
     // Memory alignment
     uint32_t uploadBufferTextureRowAlignment;
@@ -1294,14 +1339,16 @@ NriStruct(DeviceDesc) {
     uint32_t rayTracingShaderTableAlignment;
     uint32_t rayTracingScratchAlignment;
 
-    // Shader resources
-    uint32_t boundDescriptorSetMaxNum;
+    // Pipeline layout
+    uint32_t pipelineLayoutDescriptorSetMaxNum;
     uint32_t perStageDescriptorSamplerMaxNum;
     uint32_t perStageDescriptorConstantBufferMaxNum;
     uint32_t perStageDescriptorStorageBufferMaxNum;
     uint32_t perStageDescriptorTextureMaxNum;
     uint32_t perStageDescriptorStorageTextureMaxNum;
     uint32_t perStageResourceMaxNum;
+    uint32_t rootConstantMaxSize;
+    uint32_t rootDescriptorMaxNum;
 
     // Descriptor set
     uint32_t descriptorSetSamplerMaxNum;
@@ -1400,11 +1447,15 @@ NriStruct(DeviceDesc) {
     // 2 - adds: per primitive shading rate, per "shadingRateAttachmentTileSize" shading rate, combiners, "SV_ShadingRate" support
     uint8_t shadingRateTier;
 
+    // 1 - unbound arrays with dynamic indexing
+    // 2 - D3D12 dynamic resources: https://microsoft.github.io/DirectX-Specs/d3d/HLSL_SM_6_6_DynamicResources.html
+    uint8_t bindlessTier;
+
     // Features
     uint32_t isComputeQueueSupported : 1;
     uint32_t isCopyQueueSupported : 1;
     uint32_t isTextureFilterMinMaxSupported : 1;
-    uint32_t isLogicOpSupported : 1;
+    uint32_t isLogicFuncSupported : 1;
     uint32_t isDepthBoundsTestSupported : 1;
     uint32_t isDrawIndirectCountSupported : 1;
     uint32_t isIndependentFrontAndBackStencilReferenceAndMasksSupported : 1;

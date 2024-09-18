@@ -1,18 +1,11 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region[  Core  ]
-
-static void NRI_CALL SetTextureDebugName(Texture& texture, const char* name) {
-    ((TextureVal&)texture).SetDebugName(name);
+TextureVal::~TextureVal() {
+    if (m_Memory != nullptr)
+        m_Memory->UnbindTexture(*this);
 }
 
-static uint64_t NRI_CALL GetTextureNativeObject(const Texture& texture) {
-    if (!(&texture))
-        return 0;
-
-    return ((TextureVal&)texture).GetNativeObject();
+NRI_INLINE void TextureVal::SetDebugName(const char* name) {
+    m_Name = name;
+    GetCoreInterface().SetTextureDebugName(*GetImpl(), name);
 }
-
-#pragma endregion
-
-Define_Core_Texture_PartiallyFillFunctionTable(Val);

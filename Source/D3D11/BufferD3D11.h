@@ -46,7 +46,6 @@ struct BufferD3D11 {
     Result Create(const BufferD3D11Desc& bufferDesc);
     Result Create(MemoryLocation memoryLocation, float priority);
     TextureD3D11& RecreateReadbackTexture(const TextureD3D11& srcTexture, const TextureRegionDesc& srcRegionDesc, const TextureDataLayoutDesc& readbackDataLayoutDesc);
-    void* Map(uint64_t offset);
 
     //================================================================================================================
     // NRI
@@ -56,11 +55,8 @@ struct BufferD3D11 {
         SET_D3D_DEBUG_OBJECT_NAME(m_Buffer, name);
     }
 
+    void* Map(uint64_t offset);
     void Unmap();
-
-private:
-    void FinalizeQueries();
-    void FinalizeReadback();
 
 private:
     DeviceD3D11& m_Device;

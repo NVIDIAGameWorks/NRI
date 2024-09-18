@@ -19,7 +19,7 @@ struct DescriptorSetRootMapping {
 };
 
 struct DynamicConstantBufferMapping {
-    uint16_t constantNum;
+    uint16_t rootConstantNum;
     uint16_t rootOffset;
 };
 
@@ -46,22 +46,20 @@ struct PipelineLayoutD3D12 {
         return m_DescriptorSetMappings[setIndex];
     }
 
-    inline const DescriptorSetRootMapping& GetDescriptorSetRootMapping(uint32_t setIndex) const {
-        return m_DescriptorSetRootMappings[setIndex];
-    }
-
     inline const DynamicConstantBufferMapping& GetDynamicConstantBufferMapping(uint32_t setIndex) const {
         return m_DynamicConstantBufferMappings[setIndex];
     }
 
-    inline uint32_t GetPushConstantsRootOffset(uint32_t rangeIndex) const {
-        return m_PushConstantsBaseIndex + rangeIndex;
+    inline uint32_t GetBaseRootConstant() const {
+        return m_BaseRootConstant;
+    }
+
+    inline uint32_t GetBaseRootDescriptor() const {
+        return m_BaseRootDescriptor;
     }
 
     Result Create(const PipelineLayoutDesc& pipelineLayoutDesc);
-
-    void SetDescriptorSet(ID3D12GraphicsCommandList& graphicsCommandList, bool isGraphics, uint32_t setIndex, const DescriptorSet& descriptorSet,
-        const uint32_t* dynamicConstantBufferOffsets) const;
+    void SetDescriptorSet(ID3D12GraphicsCommandList& graphicsCommandList, bool isGraphics, uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const;
 
     //================================================================================================================
     // NRI
@@ -73,18 +71,18 @@ struct PipelineLayoutD3D12 {
 
 private:
     template <bool isGraphics>
-    void SetDescriptorSetImpl(
-        ID3D12GraphicsCommandList& graphicsCommandList, uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const;
+    void SetDescriptorSetImpl(ID3D12GraphicsCommandList& graphicsCommandList, uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const;
 
 private:
+    DeviceD3D12& m_Device;
     ComPtr<ID3D12RootSignature> m_RootSignature;
-    bool m_IsGraphicsPipelineLayout = false;
-    bool m_DrawParametersEmulation = false;
-    uint32_t m_PushConstantsBaseIndex = 0;
     Vector<DescriptorSetMapping> m_DescriptorSetMappings;
     Vector<DescriptorSetRootMapping> m_DescriptorSetRootMappings;
     Vector<DynamicConstantBufferMapping> m_DynamicConstantBufferMappings;
-    DeviceD3D12& m_Device;
+    uint32_t m_BaseRootConstant = 0;
+    uint32_t m_BaseRootDescriptor = 0;
+    bool m_IsGraphicsPipelineLayout = false;
+    bool m_DrawParametersEmulation = false;
 };
 
 } // namespace nri

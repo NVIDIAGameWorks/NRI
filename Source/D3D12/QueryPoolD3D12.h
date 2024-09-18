@@ -50,6 +50,7 @@ struct QueryPoolD3D12 {
 private:
     Result CreateReadbackBuffer(const QueryPoolDesc& queryPoolDesc);
 
+private:
     DeviceD3D12& m_Device;
     D3D12_QUERY_TYPE m_QueryType = QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE;
     uint32_t m_QuerySize = 0;

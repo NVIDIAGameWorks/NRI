@@ -30,9 +30,9 @@ D3D11_PRIMITIVE_TOPOLOGY GetD3D11TopologyFromTopology(Topology topology, uint32_
 D3D11_CULL_MODE GetD3D11CullModeFromCullMode(CullMode cullMode);
 D3D11_COMPARISON_FUNC GetD3D11ComparisonFuncFromCompareFunc(CompareFunc compareFunc);
 D3D11_STENCIL_OP GetD3D11StencilOpFromStencilFunc(StencilFunc stencilFunc);
-D3D11_BLEND_OP GetD3D11BlendOpFromBlendFunc(BlendFunc blendFunc);
+D3D11_BLEND_OP GetyD3D11BlendOp(BlendFunc blendFunc);
 D3D11_BLEND GetD3D11BlendFromBlendFactor(BlendFactor blendFactor);
-D3D11_LOGIC_OP GetD3D11LogicOpFromLogicFunc(LogicFunc logicalFunc);
+D3D11_LOGIC_OP GetyD3D11LogicOp(LogicFunc logicalFunc);
 bool GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& textureDesc);
 bool GetBufferDesc(const BufferD3D11Desc& bufferD3D11Desc, BufferDesc& bufferDesc);
 uint32_t ConvertPriority(float priority);
@@ -64,10 +64,9 @@ struct SubresourceAndSlot {
 struct BindingState {
     std::vector<SubresourceAndSlot> resources; // max expected size - D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT
     std::vector<SubresourceAndSlot> storages;  // max expected size - D3D11_1_UAV_SLOT_COUNT
-    std::array<ID3D11UnorderedAccessView*, D3D11_PS_CS_UAV_REGISTER_COUNT> graphicsStorageDescriptors = {};
+    std::array<ID3D11UnorderedAccessView*, D3D11_1_UAV_SLOT_COUNT> graphicsStorageDescriptors = {};
 
-    inline void TrackSubresource_UnbindIfNeeded_PostponeGraphicsStorageBinding(
-        ID3D11DeviceContextBest* deferredContext, const SubresourceInfo& subresource, void* descriptor, uint32_t slot, bool isGraphics, bool isStorage) {
+    inline void TrackSubresource_UnbindIfNeeded_PostponeGraphicsStorageBinding(ID3D11DeviceContextBest* deferredContext, const SubresourceInfo& subresource, void* descriptor, uint32_t slot, bool isGraphics, bool isStorage) {
         constexpr void* null = nullptr;
 
         if (isStorage) {

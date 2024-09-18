@@ -26,12 +26,12 @@ Constants:
     };
 
 Push constants:
-    struct PushConstants {
+    struct RootConstants {
         float const1;
         uint32_t const2;
     };
 
-    NRI_PUSH_CONSTANTS(PushConstants, gPushConstants, 7); // a constant buffer in DXBC
+    NRI_ROOT_CONSTANTS(RootConstants, gRootConstants, 7); // a constant buffer in DXBC
 
 Draw parameters:
     - Add to the global scope:
@@ -123,7 +123,7 @@ Draw parameters:
     #define NRI_RESOURCE(resourceType, name, regName, bindingIndex, setIndex) \
         resourceType name : register(NRI_MERGE_TOKENS(regName, bindingIndex), NRI_MERGE_TOKENS(space, setIndex))
 
-    #define NRI_PUSH_CONSTANTS(structName, name, bindingIndex) \
+    #define NRI_ROOT_CONSTANTS(structName, name, bindingIndex) \
         [[vk::push_constant]] structName name
 
     // Draw parameters (full support, requires SPV_KHR_shader_draw_parameters)
@@ -144,7 +144,7 @@ Draw parameters:
     #define NRI_RESOURCE(resourceType, name, regName, bindingIndex, setIndex) \
         resourceType name : register(NRI_MERGE_TOKENS(regName, bindingIndex), NRI_MERGE_TOKENS(space, setIndex))
 
-    #define NRI_PUSH_CONSTANTS(structName, name, bindingIndex) \
+    #define NRI_ROOT_CONSTANTS(structName, name, bindingIndex) \
         ConstantBuffer<structName> name : register(NRI_MERGE_TOKENS(b, bindingIndex), space0)
 
     // Draw parameters
@@ -202,7 +202,7 @@ Draw parameters:
     #define NRI_RESOURCE(resourceType, name, regName, bindingIndex, setIndex) \
         resourceType name : register(NRI_MERGE_TOKENS(regName, bindingIndex))
 
-    #define NRI_PUSH_CONSTANTS(structName, name, bindingIndex) \
+    #define NRI_ROOT_CONSTANTS(structName, name, bindingIndex) \
         cbuffer structName##_##name : register(NRI_MERGE_TOKENS(b, bindingIndex)) { \
             structName name; \
         }

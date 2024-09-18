@@ -35,7 +35,12 @@ struct MemoryD3D11 {
         return m_Priority;
     }
 
-    Result Create(const AllocateMemoryDesc& allocateMemoryDesc);
+    inline Result MemoryD3D11::Create(const AllocateMemoryDesc& allocateMemoryDesc) {
+        m_Location = (MemoryLocation)allocateMemoryDesc.type;
+        m_Priority = allocateMemoryDesc.priority;
+
+        return Result::SUCCESS;
+    }
 
     //================================================================================================================
     // NRI

@@ -91,14 +91,14 @@ NriStruct(DisplayDesc) {
 };
 
 NriStruct(SwapChainInterface) {
-    Nri(Result) (NRI_CALL *CreateSwapChain)(NriRef(Device) device, const NriRef(SwapChainDesc) swapChainDesc, NriOut NriRef(SwapChain*) swapChain);
-    void (NRI_CALL *DestroySwapChain)(NriRef(SwapChain) swapChain);
-    void (NRI_CALL *SetSwapChainDebugName)(NriRef(SwapChain) swapChain, const char* name);
-    NriPtr(Texture) const* (NRI_CALL *GetSwapChainTextures)(const NriRef(SwapChain) swapChain, NriOut NonNriRef(uint32_t) textureNum);
-    uint32_t (NRI_CALL *AcquireNextSwapChainTexture)(NriRef(SwapChain) swapChain); // can return OUT_OF_DATE (VK only)
-    Nri(Result) (NRI_CALL *WaitForPresent)(NriRef(SwapChain) swapChain); // call once right before input sampling (must be called starting from the 1st frame)
-    Nri(Result) (NRI_CALL *QueuePresent)(NriRef(SwapChain) swapChain);
-    Nri(Result) (NRI_CALL *GetDisplayDesc)(NriRef(SwapChain) swapChain, NriOut NriRef(DisplayDesc) displayDesc); // returns FAILURE if window is outside of all monitors
+    Nri(Result)             (NRI_CALL *CreateSwapChain)             (NriRef(Device) device, const NriRef(SwapChainDesc) swapChainDesc, NriOut NriRef(SwapChain*) swapChain);
+    void                    (NRI_CALL *DestroySwapChain)            (NriRef(SwapChain) swapChain);
+    void                    (NRI_CALL *SetSwapChainDebugName)       (NriRef(SwapChain) swapChain, const char* name);
+    NriPtr(Texture) const*  (NRI_CALL *GetSwapChainTextures)        (const NriRef(SwapChain) swapChain, NriOut NonNriRef(uint32_t) textureNum);
+    uint32_t                (NRI_CALL *AcquireNextSwapChainTexture) (NriRef(SwapChain) swapChain); // can return OUT_OF_DATE (VK only)
+    Nri(Result)             (NRI_CALL *WaitForPresent)              (NriRef(SwapChain) swapChain); // call once right before input sampling (must be called starting from the 1st frame)
+    Nri(Result)             (NRI_CALL *QueuePresent)                (NriRef(SwapChain) swapChain);
+    Nri(Result)             (NRI_CALL *GetDisplayDesc)              (NriRef(SwapChain) swapChain, NriOut NriRef(DisplayDesc) displayDesc); // returns FAILURE if window is outside of all monitors
 };
 
 NriNamespaceEnd

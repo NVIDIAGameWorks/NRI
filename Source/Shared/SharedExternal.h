@@ -28,17 +28,26 @@ typedef uint32_t DXGI_FORMAT;
 #include "Extensions/NRIWrapperD3D12.h"
 #include "Extensions/NRIWrapperVK.h"
 
-#include "Lock.h"
+#include "NRICompatibility.hlsli"
 
 typedef nri::AllocationCallbacks AllocationCallbacks;
 #include "StdAllocator.h"
 
-#define REPORT_INFO(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define REPORT_WARNING(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::WARNING, __FILE__, __LINE__, "%s: " format, __FUNCTION__, ##__VA_ARGS__)
-#define REPORT_ERROR(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::ERROR, __FILE__, __LINE__, "%s: " format, __FUNCTION__, ##__VA_ARGS__)
-
 #include "DeviceBase.h"
+#include "Lock.h"
 
+// Consts
+constexpr uint32_t NRI_NODE_MASK = 0x1;    // mGPU is not planned
+constexpr uint32_t TIMEOUT_PRESENT = 1000; // 1 sec
+constexpr uint32_t TIMEOUT_FENCE = 5000;   // 5 sec
+constexpr uint64_t PRESENT_INDEX_BIT_NUM = 56ull;
+
+// https://learn.microsoft.com/en-us/windows/win32/direct3d12/root-signature-limits
+constexpr uint32_t D3D_DESCRIPTOR_SET_MAX_NUM = 64 / 1;
+constexpr uint32_t D3D_ROOT_CONSTANT_MAX_SIZE = sizeof(uint32_t) * 64 / 1;
+constexpr uint32_t D3D_ROOT_DESCRIPTOR_MAX_NUM = 64 / 2;
+
+// Helpers
 template <typename T>
 inline T Align(T x, size_t alignment) {
     return (T)((size_t(x) + alignment - 1) & ~(alignment - 1));
@@ -96,6 +105,20 @@ inline void Destroy(T* object) {
     }
 }
 
+constexpr uint64_t MsToUs(uint32_t x) {
+    return x * 1000000ull;
+}
+
+constexpr void ReturnVoid() {
+}
+
+template <typename... Args>
+constexpr void MaybeUnused([[maybe_unused]] const Args&... args) {
+}
+
+// Macro stuff
+#define NRI_INLINE inline // we want to inline all functions, which are actually wrappers for the interface functions
+
 #define NRI_STRINGIFY_(token) #token
 #define NRI_STRINGIFY(token) NRI_STRINGIFY_(token)
 
@@ -113,7 +136,7 @@ inline void Destroy(T* object) {
 
 #define REPORT_ERROR_ON_BAD_STATUS(deviceBase, expression) \
     if ((expression) != 0) \
-        (deviceBase)->ReportMessage(nri::Message::ERROR, __FILE__, __LINE__, "%s: " NRI_STRINGIFY(expression) " failed!", __FUNCTION__)
+    (deviceBase)->ReportMessage(nri::Message::ERROR, __FILE__, __LINE__, "%s: " NRI_STRINGIFY(expression) " failed!", __FUNCTION__)
 
 #define CHECK(condition, message) assert((condition) && message)
 
@@ -121,23 +144,9 @@ inline void Destroy(T* object) {
     if (obj) \
     obj->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)std::strlen(name), name)
 
-#define NRI_NODE_MASK 0x1 // mGPU is not planned
-
-constexpr uint32_t TIMEOUT_PRESENT = 1000; // 1 sec
-constexpr uint32_t TIMEOUT_FENCE = 5000;   // 5 sec
-constexpr uint64_t PRESENT_INDEX_BIT_NUM = 56ull;
-constexpr uint32_t BOUND_DESCRIPTOR_SET_MAX_NUM = 32; // like in VK
-
-constexpr uint64_t MsToUs(uint32_t x) {
-    return x * 1000000ull;
-}
-
-constexpr void ReturnVoid() {
-}
-
-template <typename... Args>
-constexpr void MaybeUnused([[maybe_unused]] const Args&... args) {
-}
+#define REPORT_INFO(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define REPORT_WARNING(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::WARNING, __FILE__, __LINE__, "%s: " format, __FUNCTION__, ##__VA_ARGS__)
+#define REPORT_ERROR(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::ERROR, __FILE__, __LINE__, "%s: " format, __FUNCTION__, ##__VA_ARGS__)
 
 // Format conversion
 struct DxgiFormat {

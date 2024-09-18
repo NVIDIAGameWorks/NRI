@@ -18,7 +18,7 @@ enum class ResourceViewType {
     DEPTH_STENCIL_ATTACHMENT,
     SHADER_RESOURCE,
     SHADER_RESOURCE_STORAGE,
-    CONSTANT_BUFFER_VIEW,
+    CONSTANT_BUFFER,
     SHADING_RATE_ATTACHMENT
 };
 
@@ -50,8 +50,8 @@ struct DescriptorVal : public DeviceObjectVal<Descriptor> {
         return m_ResourceType == ResourceType::ACCELERATION_STRUCTURE;
     }
 
-    inline bool IsConstantBufferView() const {
-        return m_ResourceType == ResourceType::BUFFER && m_ResourceViewType == ResourceViewType::CONSTANT_BUFFER_VIEW;
+    inline bool IsConstantBuffer() const {
+        return m_ResourceType == ResourceType::BUFFER && m_ResourceViewType == ResourceViewType::CONSTANT_BUFFER;
     }
 
     inline bool IsColorAttachment() const {
@@ -81,6 +81,7 @@ struct DescriptorVal : public DeviceObjectVal<Descriptor> {
     //================================================================================================================
     // NRI
     //================================================================================================================
+
     void SetDebugName(const char* name);
 
 private:

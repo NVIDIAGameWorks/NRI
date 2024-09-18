@@ -4,6 +4,10 @@
 
 using namespace nri;
 
+#if NRI_USE_NONE
+Result CreateDeviceNONE(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
+#endif
+
 #if NRI_USE_D3D11
 Result CreateDeviceD3D11(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
 Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceDesc, DeviceBase*& device);
@@ -14,7 +18,7 @@ Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBas
 Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, DeviceBase*& device);
 #endif
 
-#if NRI_USE_VULKAN
+#if NRI_USE_VK
 Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
 Result CreateDeviceVK(const DeviceCreationVKDesc& deviceDesc, DeviceBase*& device);
 #endif
@@ -30,6 +34,8 @@ NRI_API Result NRI_CALL nriGetInterface(const Device& device, const char* interf
     size_t realInterfaceSize = size_t(-1);
     Result result = Result::INVALID_ARGUMENT;
     const DeviceBase& deviceBase = (DeviceBase&)device;
+
+    memset(interfacePtr, 0, interfaceSize);
 
     if (hash == Hash(NRI_STRINGIFY(nri::CoreInterface)) || hash == Hash(NRI_STRINGIFY(NRI_NAME_C(CoreInterface)))) {
         realInterfaceSize = sizeof(CoreInterface);
@@ -83,15 +89,25 @@ NRI_API Result NRI_CALL nriGetInterface(const Device& device, const char* interf
         REPORT_ERROR(&deviceBase, "Interface '%s' has invalid size = %u bytes, while %u bytes expected by the implementation", interfaceName, interfaceSize, realInterfaceSize);
     else if (result == Result::UNSUPPORTED)
         REPORT_WARNING(&deviceBase, "Interface '%s' is not supported by the device!", interfaceName);
+    else {
+        const void* const* const begin = (void**)interfacePtr;
+        const void* const* const end = begin + realInterfaceSize / sizeof(void*);
+        for (const void* const* current = begin; current != end; current++) {
+            if (!(*current)) {
+                REPORT_ERROR(&deviceBase, "Invalid function table: function #%u is NULL!", uint32_t(current - begin));
+                return Result::FAILURE;
+            }
+        }
+    }
 
     return result;
 }
 
 template <typename T>
 Result FinalizeDeviceCreation(const T& deviceCreationDesc, DeviceBase& deviceImpl, Device*& device) {
-    if (deviceCreationDesc.enableNRIValidation) {
+    if (deviceCreationDesc.enableNRIValidation && deviceCreationDesc.graphicsAPI != GraphicsAPI::NONE) {
         Device* deviceVal = (Device*)CreateDeviceValidation(deviceCreationDesc, deviceImpl);
-        if (deviceVal == nullptr) {
+        if (!deviceVal) {
             nriDestroyDevice((Device&)deviceImpl);
             return Result::FAILURE;
         }
@@ -111,6 +127,11 @@ NRI_API Result NRI_CALL nriCreateDevice(const DeviceCreationDesc& deviceCreation
     CheckAndSetDefaultCallbacks(modifiedDeviceCreationDesc.callbackInterface);
     CheckAndSetDefaultAllocator(modifiedDeviceCreationDesc.allocationCallbacks);
 
+#if NRI_USE_NONE
+    if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::NONE)
+        result = CreateDeviceNONE(modifiedDeviceCreationDesc, deviceImpl);
+#endif
+
 #if NRI_USE_D3D11
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::D3D11)
         result = CreateDeviceD3D11(modifiedDeviceCreationDesc, deviceImpl);
@@ -121,7 +142,7 @@ NRI_API Result NRI_CALL nriCreateDevice(const DeviceCreationDesc& deviceCreation
         result = CreateDeviceD3D12(modifiedDeviceCreationDesc, deviceImpl);
 #endif
 
-#if NRI_USE_VULKAN
+#if NRI_USE_VK
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::VK)
         result = CreateDeviceVK(modifiedDeviceCreationDesc, deviceImpl);
 #endif
@@ -207,7 +228,7 @@ NRI_API Result NRI_CALL nriCreateDeviceFromVkDevice(const DeviceCreationVKDesc& 
     Result result = Result::UNSUPPORTED;
     DeviceBase* deviceImpl = nullptr;
 
-#if NRI_USE_VULKAN
+#if NRI_USE_VK
     result = CreateDeviceVK(tempDeviceCreationVKDesc, deviceImpl);
 #endif
 
@@ -232,7 +253,7 @@ NRI_API Format NRI_CALL nriConvertDXGIFormatToNRI(uint32_t dxgiFormat) {
 NRI_API uint32_t NRI_CALL nriConvertNRIFormatToVK(Format format) {
     MaybeUnused(format);
 
-#if NRI_USE_VULKAN
+#if NRI_USE_VK
     return NRIFormatToVKFormat(format);
 #else
     return 0;
@@ -349,7 +370,7 @@ NRI_API void NRI_CALL nriReportLiveObjects() {
 #    include <vulkan/vulkan.h>
 #    define GET_VK_FUNCTION(instance, name) \
         const auto name = (PFN_##name)vkGetInstanceProcAddr(instance, #name); \
-        if (name == nullptr) \
+        if (!name) \
         return Result::UNSUPPORTED
 
 static int SortAdaptersByDedicatedVideoMemorySize(const void* pa, const void* pb) {

@@ -1,43 +1,31 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region[  Core  ]
+NRI_INLINE void CommandQueueD3D11::Submit(const QueueSubmitDesc& queueSubmitDesc) {
+    for (uint32_t i = 0; i < queueSubmitDesc.waitFenceNum; i++) {
+        const FenceSubmitDesc& fenceSubmitDesc = queueSubmitDesc.waitFences[i];
+        FenceD3D11* fence = (FenceD3D11*)fenceSubmitDesc.fence;
+        fence->QueueWait(fenceSubmitDesc.value);
+    }
 
-static void NRI_CALL SetCommandQueueDebugName(CommandQueue& commandQueue, const char* name) {
-    ((CommandQueueD3D11&)commandQueue).SetDebugName(name);
+    for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++) {
+        CommandBufferHelper* commandBuffer = (CommandBufferHelper*)queueSubmitDesc.commandBuffers[i];
+        commandBuffer->Submit();
+    }
+
+    for (uint32_t i = 0; i < queueSubmitDesc.signalFenceNum; i++) {
+        const FenceSubmitDesc& fenceSubmitDesc = queueSubmitDesc.signalFences[i];
+        FenceD3D11* fence = (FenceD3D11*)fenceSubmitDesc.fence;
+        fence->QueueSignal(fenceSubmitDesc.value);
+    }
 }
 
-static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& queueSubmitDesc) {
-    ((CommandQueueD3D11&)commandQueue).Submit(queueSubmitDesc);
+NRI_INLINE Result CommandQueueD3D11::UploadData(
+    const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
+    HelperDataUpload helperDataUpload(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
+
+    return helperDataUpload.UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
 }
 
-#pragma endregion
-
-#pragma region[  Helper  ]
-
-static Result NRI_CALL UploadData(CommandQueue& commandQueue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs,
-    uint32_t bufferUploadDescNum) {
-    return ((CommandQueueD3D11&)commandQueue).UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
+NRI_INLINE Result CommandQueueD3D11::WaitForIdle() {
+    return WaitIdle(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
 }
-
-static Result NRI_CALL WaitForIdle(CommandQueue& commandQueue) {
-    if (!(&commandQueue))
-        return Result::SUCCESS;
-
-    return ((CommandQueueD3D11&)commandQueue).WaitForIdle();
-}
-
-#pragma endregion
-
-#pragma region[  Low latency  ]
-
-static void NRI_CALL QueueSubmitTrackable(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc, const SwapChain& swapChain) {
-    MaybeUnused(swapChain);
-
-    ((CommandQueueD3D11&)commandQueue).Submit(workSubmissionDesc);
-}
-
-#pragma endregion
-
-Define_Core_CommandQueue_PartiallyFillFunctionTable(D3D11);
-Define_Helper_CommandQueue_PartiallyFillFunctionTable(D3D11);
-Define_LowLatency_CommandQueue_PartiallyFillFunctionTable(D3D11);

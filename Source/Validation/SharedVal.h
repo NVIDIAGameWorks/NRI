@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "SharedExternal.h"
+
 #include "DeviceVal.h"
 
 namespace nri {

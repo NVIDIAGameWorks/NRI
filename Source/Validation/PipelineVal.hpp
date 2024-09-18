@@ -1,13 +1,31 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region[  RayTracing  ]
-
-static Result NRI_CALL WriteShaderGroupIdentifiers(const Pipeline& pipeline, uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer) {
-    return ((PipelineVal&)pipeline).WriteShaderGroupIdentifiers(baseShaderGroupIndex, shaderGroupNum, buffer);
+PipelineVal::PipelineVal(DeviceVal& device, Pipeline* pipeline)
+    : DeviceObjectVal(device, pipeline) {
 }
 
-void FillFunctionTablePipelineVal(RayTracingInterface& table) {
-    table.WriteShaderGroupIdentifiers = ::WriteShaderGroupIdentifiers;
+PipelineVal::PipelineVal(DeviceVal& device, Pipeline* pipeline, const GraphicsPipelineDesc& graphicsPipelineDesc)
+    : DeviceObjectVal(device, pipeline)
+    , m_PipelineLayout(graphicsPipelineDesc.pipelineLayout) {
+    m_WritesToDepth = graphicsPipelineDesc.outputMerger.depth.write;
+    m_WritesToStencil = graphicsPipelineDesc.outputMerger.stencil.front.writeMask != 0 || graphicsPipelineDesc.outputMerger.stencil.back.writeMask != 0;
 }
 
-#pragma endregion
+PipelineVal::PipelineVal(DeviceVal& device, Pipeline* pipeline, const ComputePipelineDesc& computePipelineDesc)
+    : DeviceObjectVal(device, pipeline)
+    , m_PipelineLayout(computePipelineDesc.pipelineLayout) {
+}
+
+PipelineVal::PipelineVal(DeviceVal& device, Pipeline* pipeline, const RayTracingPipelineDesc& rayTracingPipelineDesc)
+    : DeviceObjectVal(device, pipeline)
+    , m_PipelineLayout(rayTracingPipelineDesc.pipelineLayout) {
+}
+
+NRI_INLINE void PipelineVal::SetDebugName(const char* name) {
+    m_Name = name;
+    GetCoreInterface().SetPipelineDebugName(*GetImpl(), name);
+}
+
+NRI_INLINE Result PipelineVal::WriteShaderGroupIdentifiers(uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer) {
+    return GetRayTracingInterface().WriteShaderGroupIdentifiers(*GetImpl(), baseShaderGroupIndex, shaderGroupNum, buffer);
+}

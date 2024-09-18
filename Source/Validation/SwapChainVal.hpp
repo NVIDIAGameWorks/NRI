@@ -1,52 +1,66 @@
 // © 2021 NVIDIA Corporation
 
-#pragma region[  SwapChain  ]
-
-static void NRI_CALL SetSwapChainDebugName(SwapChain& swapChain, const char* name) {
-    ((SwapChainVal&)swapChain).SetDebugName(name);
+SwapChainVal::~SwapChainVal() {
+    for (size_t i = 0; i < m_Textures.size(); i++)
+        Destroy(m_Device.GetStdAllocator(), m_Textures[i]);
 }
 
-static Texture* const* NRI_CALL GetSwapChainTextures(const SwapChain& swapChain, uint32_t& textureNum) {
-    return ((SwapChainVal&)swapChain).GetTextures(textureNum);
+NRI_INLINE void SwapChainVal::SetDebugName(const char* name) {
+    m_Name = name;
+    GetSwapChainInterface().SetSwapChainDebugName(*GetImpl(), name);
 }
 
-static uint32_t NRI_CALL AcquireNextSwapChainTexture(SwapChain& swapChain) {
-    return ((SwapChainVal&)swapChain).AcquireNextTexture();
+NRI_INLINE Texture* const* SwapChainVal::GetTextures(uint32_t& textureNum) {
+    Texture* const* textures = GetSwapChainInterface().GetSwapChainTextures(*GetImpl(), textureNum);
+
+    if (m_Textures.empty()) {
+        for (uint32_t i = 0; i < textureNum; i++) {
+            TextureVal* textureVal = Allocate<TextureVal>(m_Device.GetStdAllocator(), m_Device, textures[i], true);
+            m_Textures.push_back(textureVal);
+        }
+    }
+
+    return (Texture* const*)m_Textures.data();
 }
 
-static Result NRI_CALL WaitForPresent(SwapChain& swapChain) {
-    return ((SwapChainVal&)swapChain).WaitForPresent();
+NRI_INLINE uint32_t SwapChainVal::AcquireNextTexture() {
+    return GetSwapChainInterface().AcquireNextSwapChainTexture(*GetImpl());
 }
 
-static Result NRI_CALL QueuePresent(SwapChain& swapChain) {
-    return ((SwapChainVal&)swapChain).Present();
+NRI_INLINE Result SwapChainVal::WaitForPresent() {
+    RETURN_ON_FAILURE(&m_Device, m_SwapChainDesc.waitable, Result::FAILURE, "Swap chain has not been created with 'waitable = true'");
+
+    return GetSwapChainInterface().WaitForPresent(*GetImpl());
 }
 
-static Result NRI_CALL GetDisplayDesc(SwapChain& swapChain, DisplayDesc& displayDesc) {
-    return ((SwapChainVal&)swapChain).GetDisplayDesc(displayDesc);
+NRI_INLINE Result SwapChainVal::Present() {
+    return GetSwapChainInterface().QueuePresent(*GetImpl());
 }
 
-#pragma endregion
-
-#pragma region[  Low latency  ]
-
-static Result SetLatencySleepMode(SwapChain& swapChain, const LatencySleepMode& latencySleepMode) {
-    return ((SwapChainVal&)swapChain).SetLatencySleepMode(latencySleepMode);
+NRI_INLINE Result SwapChainVal::GetDisplayDesc(DisplayDesc& displayDesc) const {
+    return GetSwapChainInterface().GetDisplayDesc(*GetImpl(), displayDesc);
 }
 
-static Result SetLatencyMarker(SwapChain& swapChain, LatencyMarker latencyMarker) {
-    return ((SwapChainVal&)swapChain).SetLatencyMarker(latencyMarker);
+NRI_INLINE Result SwapChainVal::SetLatencySleepMode(const LatencySleepMode& latencySleepMode) {
+    RETURN_ON_FAILURE(&m_Device, m_SwapChainDesc.allowLowLatency, Result::FAILURE, "Swap chain has not been created with 'allowLowLatency = true'");
+
+    return GetLowLatencyInterface().SetLatencySleepMode(*GetImpl(), latencySleepMode);
 }
 
-static Result LatencySleep(SwapChain& swapChain) {
-    return ((SwapChainVal&)swapChain).LatencySleep();
+NRI_INLINE Result SwapChainVal::SetLatencyMarker(LatencyMarker latencyMarker) {
+    RETURN_ON_FAILURE(&m_Device, m_SwapChainDesc.allowLowLatency, Result::FAILURE, "Swap chain has not been created with 'allowLowLatency = true'");
+
+    return GetLowLatencyInterface().SetLatencyMarker(*GetImpl(), latencyMarker);
 }
 
-static Result GetLatencyReport(const SwapChain& swapChain, LatencyReport& latencyReport) {
-    return ((SwapChainVal&)swapChain).GetLatencyReport(latencyReport);
+NRI_INLINE Result SwapChainVal::LatencySleep() {
+    RETURN_ON_FAILURE(&m_Device, m_SwapChainDesc.allowLowLatency, Result::FAILURE, "Swap chain has not been created with 'allowLowLatency = true'");
+
+    return GetLowLatencyInterface().LatencySleep(*GetImpl());
 }
 
-#pragma endregion
+NRI_INLINE Result SwapChainVal::GetLatencyReport(LatencyReport& latencyReport) {
+    RETURN_ON_FAILURE(&m_Device, m_SwapChainDesc.allowLowLatency, Result::FAILURE, "Swap chain has not been created with 'allowLowLatency = true'");
 
-Define_SwapChain_SwapChain_PartiallyFillFunctionTable(Val);
-Define_LowLatency_SwapChain_SwapChain_PartiallyFillFunctionTable(Val);
+    return GetLowLatencyInterface().GetLatencyReport(*GetImpl(), latencyReport);
+}

@@ -12,9 +12,6 @@ struct MemoryVal : public DeviceObjectVal<Memory> {
     MemoryVal(DeviceVal& device, Memory* memory, uint64_t size, MemoryLocation memoryLocation);
     MemoryVal(DeviceVal& device, Memory* memory, const MemoryD3D12Desc& memoryD3D12Desc);
 
-    bool HasBoundResources();
-    void ReportBoundResources();
-
     inline uint64_t GetSize() const {
         return m_Size;
     }
@@ -23,15 +20,18 @@ struct MemoryVal : public DeviceObjectVal<Memory> {
         return m_MemoryLocation;
     }
 
-    //================================================================================================================
-    // NRI
-    //================================================================================================================
-    void BindBuffer(BufferVal& buffer);
-    void BindTexture(TextureVal& texture);
-    void BindAccelerationStructure(AccelerationStructureVal& accelerationStructure);
+    bool HasBoundResources();
+    void ReportBoundResources();
     void UnbindBuffer(BufferVal& buffer);
     void UnbindTexture(TextureVal& texture);
     void UnbindAccelerationStructure(AccelerationStructureVal& accelerationStructure);
+    void BindBuffer(BufferVal& buffer);
+    void BindTexture(TextureVal& texture);
+    void BindAccelerationStructure(AccelerationStructureVal& accelerationStructure);
+
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
 
     void SetDebugName(const char* name);
 

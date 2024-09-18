@@ -55,5 +55,4 @@ constexpr uint32_t INVALID_FAMILY_INDEX = uint32_t(-1);
 struct VmaAllocator_T;
 struct VmaAllocation_T;
 
-#include "ConversionVK.h"
 #include "DeviceVK.h"

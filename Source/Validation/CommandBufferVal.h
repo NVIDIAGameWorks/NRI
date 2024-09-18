@@ -34,6 +34,7 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     //================================================================================================================
     // NRI
     //================================================================================================================
+
     void SetDebugName(const char* name);
     Result Begin(const DescriptorPool* descriptorPool);
     Result End();
@@ -56,7 +57,8 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     void SetPipeline(const Pipeline& pipeline);
     void SetDescriptorPool(const DescriptorPool& descriptorPool);
     void SetDescriptorSet(uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
-    void SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size);
+    void SetRootConstants(uint32_t rootConstantIndex, const void* data, uint32_t size);
+    void SetRootDescriptor(uint32_t rootDescriptorIndex, Descriptor& descriptor);
     void Draw(const DrawDesc& drawDesc);
     void DrawIndexed(const DrawIndexedDesc& drawIndexedDesc);
     void DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset);

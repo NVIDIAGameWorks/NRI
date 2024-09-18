@@ -19,6 +19,7 @@ struct DescriptorBufDesc {
     VkBuffer handle;
     uint64_t offset;
     uint64_t size;
+    BufferViewType viewType;
 };
 
 struct DescriptorTexDesc {
@@ -73,10 +74,6 @@ struct DescriptorVK {
 
     inline DescriptorTypeVK GetType() const {
         return m_Type;
-    }
-
-    inline VkFormat GetFormat() const {
-        return m_Format;
     }
 
     inline const DescriptorTexDesc& GetTexDesc() const {
@@ -144,7 +141,6 @@ private:
     };
 
     DescriptorTypeVK m_Type = DescriptorTypeVK::NONE;
-    VkFormat m_Format = VK_FORMAT_UNDEFINED;
 };
 
 } // namespace nri

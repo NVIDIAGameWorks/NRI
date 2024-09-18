@@ -24,10 +24,16 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
     // CommandBufferHelper
     //================================================================================================================
 
+    inline ID3D11DeviceContext* CommandBufferEmuD3D11::GetNativeObject() const {
+        return m_Device.GetImmediateContext();
+    }
+
+    inline StdAllocator<uint8_t>& CommandBufferEmuD3D11::GetStdAllocator() const {
+        return m_Device.GetStdAllocator();
+    }
+
     Result Create(ID3D11DeviceContext* precreatedContext);
     void Submit();
-    ID3D11DeviceContext* GetNativeObject() const;
-    StdAllocator<uint8_t>& GetStdAllocator() const;
 
     //================================================================================================================
     // NRI
@@ -51,7 +57,8 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
     void SetPipelineLayout(const PipelineLayout& pipelineLayout);
     void SetPipeline(const Pipeline& pipeline);
     void SetDescriptorSet(uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
-    void SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size);
+    void SetRootConstants(uint32_t rootConstantIndex, const void* data, uint32_t size);
+    void SetRootDescriptor(uint32_t rootDescriptorIndex, Descriptor& descriptor);
     void Draw(const DrawDesc& drawDesc);
     void DrawIndexed(const DrawIndexedDesc& drawIndexedDesc);
     void DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset);

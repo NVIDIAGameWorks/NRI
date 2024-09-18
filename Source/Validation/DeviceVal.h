@@ -6,6 +6,16 @@ namespace nri {
 
 struct CommandQueueVal;
 
+struct IsExtSupported {
+    uint32_t lowLatency : 1;
+    uint32_t meshShader : 1;
+    uint32_t rayTracing : 1;
+    uint32_t swapChain : 1;
+    uint32_t wrapperD3D11 : 1;
+    uint32_t wrapperD3D12 : 1;
+    uint32_t wrapperVK : 1;
+};
+
 struct DeviceVal final : public DeviceBase {
     DeviceVal(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator, DeviceBase& device);
     ~DeviceVal();
@@ -66,6 +76,24 @@ struct DeviceVal final : public DeviceBase {
     void RegisterMemoryType(MemoryType memoryType, MemoryLocation memoryLocation);
 
     //================================================================================================================
+    // DeviceBase
+    //================================================================================================================
+
+    const DeviceDesc& GetDesc() const;
+    void Destruct();
+    Result FillFunctionTable(CoreInterface& table) const;
+    Result FillFunctionTable(HelperInterface& table) const;
+    Result FillFunctionTable(LowLatencyInterface& table) const;
+    Result FillFunctionTable(MeshShaderInterface& table) const;
+    Result FillFunctionTable(ResourceAllocatorInterface& table) const;
+    Result FillFunctionTable(RayTracingInterface& table) const;
+    Result FillFunctionTable(StreamerInterface& table) const;
+    Result FillFunctionTable(SwapChainInterface& table) const;
+    Result FillFunctionTable(WrapperD3D11Interface& table) const;
+    Result FillFunctionTable(WrapperD3D12Interface& table) const;
+    Result FillFunctionTable(WrapperVKInterface& table) const;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
@@ -73,18 +101,18 @@ struct DeviceVal final : public DeviceBase {
     Result CreateMemory(const MemoryVKDesc& memoryVKDesc, Memory*& memory);
     Result CreateMemory(const MemoryD3D12Desc& memoryDesc, Memory*& memory);
     Result CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer);
-    Result AllocateBuffer(const AllocateBufferDesc& bufferDesc, Buffer*& buffer);
     Result CreateBuffer(const BufferVKDesc& bufferDesc, Buffer*& buffer);
     Result CreateBuffer(const BufferD3D11Desc& bufferDesc, Buffer*& buffer);
     Result CreateBuffer(const BufferD3D12Desc& bufferDesc, Buffer*& buffer);
     Result CreateTexture(const TextureDesc& textureDesc, Texture*& texture);
-    Result AllocateTexture(const AllocateTextureDesc& textureDesc, Texture*& texture);
     Result CreateTexture(const TextureVKDesc& textureVKDesc, Texture*& texture);
     Result CreateTexture(const TextureD3D11Desc& textureDesc, Texture*& texture);
     Result CreateTexture(const TextureD3D12Desc& textureDesc, Texture*& texture);
     Result CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline);
     Result CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline);
     Result CreatePipeline(const RayTracingPipelineDesc& pipelineDesc, Pipeline*& pipeline);
+    Result AllocateBuffer(const AllocateBufferDesc& bufferDesc, Buffer*& buffer);
+    Result AllocateTexture(const AllocateTextureDesc& textureDesc, Texture*& texture);
     Result CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool);
     Result CreateQueryPool(const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool);
     Result CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain);
@@ -135,24 +163,6 @@ struct DeviceVal final : public DeviceBase {
     uint32_t CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const;
     FormatSupportBits GetFormatSupport(Format format) const;
 
-    //================================================================================================================
-    // DeviceBase
-    //================================================================================================================
-    const DeviceDesc& GetDesc() const;
-
-    void Destruct();
-    Result FillFunctionTable(CoreInterface& table) const;
-    Result FillFunctionTable(HelperInterface& table) const;
-    Result FillFunctionTable(LowLatencyInterface& table) const;
-    Result FillFunctionTable(MeshShaderInterface& table) const;
-    Result FillFunctionTable(ResourceAllocatorInterface& table) const;
-    Result FillFunctionTable(RayTracingInterface& table) const;
-    Result FillFunctionTable(StreamerInterface& table) const;
-    Result FillFunctionTable(SwapChainInterface& table) const;
-    Result FillFunctionTable(WrapperD3D11Interface& table) const;
-    Result FillFunctionTable(WrapperD3D12Interface& table) const;
-    Result FillFunctionTable(WrapperVKInterface& table) const;
-
 private:
     Device& m_Device;
     String m_Name;
@@ -169,13 +179,12 @@ private:
     WrapperVKInterface m_WrapperVKAPI = {};
     std::array<CommandQueueVal*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     UnorderedMap<MemoryType, MemoryLocation> m_MemoryTypeMap;
-    bool m_IsLowLatencySupported = false;
-    bool m_IsMeshShaderSupported = false;
-    bool m_IsRayTracingSupported = false;
-    bool m_IsSwapChainSupported = false;
-    bool m_IsWrapperD3D11Supported = false;
-    bool m_IsWrapperD3D12Supported = false;
-    bool m_IsWrapperVKSupported = false;
+
+    union {
+        uint32_t m_IsExtSupportedStorage = 0;
+        IsExtSupported m_IsExtSupported;
+    };
+
     Lock m_Lock;
 };
 

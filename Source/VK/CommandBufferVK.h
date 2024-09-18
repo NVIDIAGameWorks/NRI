@@ -38,7 +38,8 @@ struct CommandBufferVK {
     void SetPipeline(const Pipeline& pipeline);
     void SetPipelineLayout(const PipelineLayout& pipelineLayout);
     void SetDescriptorSet(uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
-    void SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size);
+    void SetRootConstants(uint32_t rootConstantIndex, const void* data, uint32_t size);
+    void SetRootDescriptor(uint32_t rootDescriptorIndex, Descriptor& descriptor);
     void SetDescriptorPool(const DescriptorPool& descriptorPool);
     void Barrier(const BarrierGroupDesc& barrierGroupDesc);
     void BeginRendering(const AttachmentsDesc& attachmentsDesc);
@@ -94,8 +95,6 @@ private:
     VkCommandBuffer m_Handle = VK_NULL_HANDLE;
     VkCommandPool m_CommandPool = VK_NULL_HANDLE;
     CommandQueueType m_Type = (CommandQueueType)0;
-    VkPipelineBindPoint m_CurrentPipelineBindPoint = VK_PIPELINE_BIND_POINT_MAX_ENUM;
-    VkPipelineLayout m_CurrentPipelineLayoutHandle = VK_NULL_HANDLE;
     Dim_t m_RenderLayerNum = 0;
     Dim_t m_RenderWidth = 0;
     Dim_t m_RenderHeight = 0;
