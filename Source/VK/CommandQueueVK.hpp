@@ -15,7 +15,7 @@ NRI_INLINE void CommandQueueVK::SetDebugName(const char* name) {
 NRI_INLINE void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
     ExclusiveScope lock(m_Lock);
 
-    VkSemaphoreSubmitInfo* waitSemaphores = StackAlloc(VkSemaphoreSubmitInfo, queueSubmitDesc.waitFenceNum);
+    Scratch<VkSemaphoreSubmitInfo> waitSemaphores = AllocateScratch(m_Device, VkSemaphoreSubmitInfo, queueSubmitDesc.waitFenceNum);
     for (uint32_t i = 0; i < queueSubmitDesc.waitFenceNum; i++) {
         waitSemaphores[i] = {VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO};
         waitSemaphores[i].semaphore = *(FenceVK*)queueSubmitDesc.waitFences[i].fence;
@@ -23,13 +23,13 @@ NRI_INLINE void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc, c
         waitSemaphores[i].stageMask = GetPipelineStageFlags(queueSubmitDesc.waitFences[i].stages);
     }
 
-    VkCommandBufferSubmitInfo* commandBuffers = StackAlloc(VkCommandBufferSubmitInfo, queueSubmitDesc.commandBufferNum);
+    Scratch<VkCommandBufferSubmitInfo> commandBuffers = AllocateScratch(m_Device, VkCommandBufferSubmitInfo, queueSubmitDesc.commandBufferNum);
     for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++) {
         commandBuffers[i] = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO};
         commandBuffers[i].commandBuffer = *(CommandBufferVK*)queueSubmitDesc.commandBuffers[i];
     }
 
-    VkSemaphoreSubmitInfo* signalSemaphores = StackAlloc(VkSemaphoreSubmitInfo, queueSubmitDesc.signalFenceNum);
+    Scratch<VkSemaphoreSubmitInfo> signalSemaphores = AllocateScratch(m_Device, VkSemaphoreSubmitInfo, queueSubmitDesc.signalFenceNum);
     for (uint32_t i = 0; i < queueSubmitDesc.signalFenceNum; i++) {
         signalSemaphores[i] = {VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO};
         signalSemaphores[i].semaphore = *(FenceVK*)queueSubmitDesc.signalFences[i].fence;

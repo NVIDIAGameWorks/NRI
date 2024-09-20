@@ -29,68 +29,126 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
     else if (pipelineLayoutDesc.shaderStages & StageBits::RAY_TRACING_SHADERS)
         m_PipelineBindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
 
-    // Create set layouts
+    // Binding offsets
+    SPIRVBindingOffsets spirvBindingOffsets = {};
+    if (!pipelineLayoutDesc.ignoreGlobalSPIRVOffsets)
+        spirvBindingOffsets = m_Device.GetSPIRVBindingOffsets();
+
+    std::array<uint32_t, (size_t)DescriptorType::MAX_NUM> bindingOffsets = {};
+    bindingOffsets[(uint32_t)DescriptorType::SAMPLER] = spirvBindingOffsets.samplerOffset;
+    bindingOffsets[(uint32_t)DescriptorType::CONSTANT_BUFFER] = spirvBindingOffsets.constantBufferOffset;
+    bindingOffsets[(uint32_t)DescriptorType::TEXTURE] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(uint32_t)DescriptorType::STORAGE_TEXTURE] = spirvBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(uint32_t)DescriptorType::BUFFER] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(uint32_t)DescriptorType::STORAGE_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(uint32_t)DescriptorType::STRUCTURED_BUFFER] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(uint32_t)DescriptorType::STORAGE_STRUCTURED_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(uint32_t)DescriptorType::ACCELERATION_STRUCTURE] = spirvBindingOffsets.textureOffset;
+
+    // Binding info
+    size_t rangeNum = 0;
+    size_t dynamicConstantBufferNum = 0;
+    for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
+        rangeNum += pipelineLayoutDesc.descriptorSets[i].rangeNum;
+        dynamicConstantBufferNum += pipelineLayoutDesc.descriptorSets[i].dynamicConstantBufferNum;
+    }
+
+    m_BindingInfo.descriptorSetDescs.insert(m_BindingInfo.descriptorSetDescs.begin(), pipelineLayoutDesc.descriptorSets, pipelineLayoutDesc.descriptorSets + pipelineLayoutDesc.descriptorSetNum);
+    m_BindingInfo.hasVariableDescriptorNum.resize(pipelineLayoutDesc.descriptorSetNum);
+    m_BindingInfo.descriptorSetRangeDescs.reserve(rangeNum);
+    m_BindingInfo.dynamicConstantBufferDescs.reserve(dynamicConstantBufferNum);
+
+    // Descriptor sets
     uint32_t setNum = 0;
 
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
         const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[i];
 
-        // Non-push
-        VkDescriptorSetLayout descriptorSetLayout = CreateSetLayout(descriptorSetDesc, pipelineLayoutDesc.ignoreGlobalSPIRVOffsets, false);
+        setNum = std::max(setNum, descriptorSetDesc.registerSpace);
+
+        // Create set layout
+        VkDescriptorSetLayout descriptorSetLayout = CreateSetLayout(descriptorSetDesc, pipelineLayoutDesc.ignoreGlobalSPIRVOffsets, false); // non-push
         m_DescriptorSetLayouts.push_back(descriptorSetLayout);
 
-        setNum = std::max(setNum, descriptorSetDesc.registerSpace);
+        // Binding info
+        m_BindingInfo.hasVariableDescriptorNum[i] = false;
+        m_BindingInfo.descriptorSetDescs[i].ranges = m_BindingInfo.descriptorSetRangeDescs.data() + m_BindingInfo.descriptorSetRangeDescs.size();
+        m_BindingInfo.descriptorSetDescs[i].dynamicConstantBuffers = m_BindingInfo.dynamicConstantBufferDescs.data() + m_BindingInfo.dynamicConstantBufferDescs.size();
+        m_BindingInfo.descriptorSetRangeDescs.insert(m_BindingInfo.descriptorSetRangeDescs.end(), descriptorSetDesc.ranges, descriptorSetDesc.ranges + descriptorSetDesc.rangeNum);
+        m_BindingInfo.dynamicConstantBufferDescs.insert(m_BindingInfo.dynamicConstantBufferDescs.end(), descriptorSetDesc.dynamicConstantBuffers, descriptorSetDesc.dynamicConstantBuffers + descriptorSetDesc.dynamicConstantBufferNum);
+
+        DescriptorRangeDesc* ranges = (DescriptorRangeDesc*)m_BindingInfo.descriptorSetDescs[i].ranges;
+        for (uint32_t j = 0; j < descriptorSetDesc.rangeNum; j++) {
+            ranges[j].baseRegisterIndex += bindingOffsets[(uint32_t)descriptorSetDesc.ranges[j].descriptorType];
+
+            if (m_Device.m_IsSupported.descriptorIndexing && (descriptorSetDesc.ranges[j].flags & DescriptorRangeBits::VARIABLE_SIZED_ARRAY))
+                m_BindingInfo.hasVariableDescriptorNum[i] = true;
+        }
+
+        DynamicConstantBufferDesc* dynamicConstantBuffers = (DynamicConstantBufferDesc*)m_BindingInfo.descriptorSetDescs[i].dynamicConstantBuffers;
+        for (uint32_t j = 0; j < descriptorSetDesc.dynamicConstantBufferNum; j++)
+            dynamicConstantBuffers[j].registerIndex += bindingOffsets[(uint32_t)DescriptorType::CONSTANT_BUFFER];
     }
 
-    if (m_Device.GetDesc().rootDescriptorMaxNum) {
-        for (uint32_t i = 0; i < pipelineLayoutDesc.rootDescriptorSetNum; i++) {
-            const RootDescriptorSetDesc& rootDescriptorDesc = pipelineLayoutDesc.rootDescriptorSets[i];
+    // Root descriptors
+    m_BindingInfo.pushDescriptorBindings.resize(pipelineLayoutDesc.rootDescriptorNum);
 
-            DescriptorRangeDesc range = {};
+    if (pipelineLayoutDesc.rootDescriptorNum) {
+        Scratch<DescriptorRangeDesc> rootRanges = AllocateScratch(m_Device, DescriptorRangeDesc, pipelineLayoutDesc.rootDescriptorNum);
+
+        DescriptorSetDesc rootSet = {};
+        rootSet.ranges = rootRanges;
+        rootSet.registerSpace = pipelineLayoutDesc.rootRegisterSpace;
+        rootSet.rangeNum = pipelineLayoutDesc.rootDescriptorNum;
+
+        setNum = std::max(setNum, rootSet.registerSpace);
+
+        for (uint32_t i = 0; i < pipelineLayoutDesc.rootDescriptorNum; i++) {
+            const RootDescriptorDesc& rootDescriptorDesc = pipelineLayoutDesc.rootDescriptors[i];
+            DescriptorRangeDesc& range = rootRanges[i];
+
+            range = {};
             range.baseRegisterIndex = rootDescriptorDesc.registerIndex;
             range.descriptorNum = 1;
             range.descriptorType = rootDescriptorDesc.descriptorType;
             range.shaderStages = rootDescriptorDesc.shaderStages;
 
-            DescriptorSetDesc descriptorSetDesc = {};
-            descriptorSetDesc.registerSpace = rootDescriptorDesc.registerSpace;
-            descriptorSetDesc.ranges = &range;
-            descriptorSetDesc.rangeNum = 1;
-
-            // Push
-            VkDescriptorSetLayout descriptorSetLayout = CreateSetLayout(descriptorSetDesc, pipelineLayoutDesc.ignoreGlobalSPIRVOffsets, true);
-            m_DescriptorSetLayouts.push_back(descriptorSetLayout);
-
-            setNum = std::max(setNum, descriptorSetDesc.registerSpace);
+            // Binding info
+            uint32_t registerIndex = rootDescriptorDesc.registerIndex + bindingOffsets[(uint32_t)rootDescriptorDesc.descriptorType];
+            m_BindingInfo.pushDescriptorBindings[i] = {rootSet.registerSpace, registerIndex};
         }
+
+        VkDescriptorSetLayout descriptorSetLayout = CreateSetLayout(rootSet, pipelineLayoutDesc.ignoreGlobalSPIRVOffsets, true); // push
+        m_DescriptorSetLayouts.push_back(descriptorSetLayout);
     }
 
-    setNum++;
-
     // Allocate temp memory for ALL "register spaces" making the entire range consecutive (thanks VK API!)
+    setNum++;
     Scratch<VkDescriptorSetLayout> descriptorSetLayouts = AllocateScratch(m_Device, VkDescriptorSetLayout, setNum);
 
-    if (setNum != pipelineLayoutDesc.descriptorSetNum + pipelineLayoutDesc.rootDescriptorSetNum) {
-        // Create "dummy" set layout (needed only if "register space" indices are not consecutive)
-        VkDescriptorSetLayout dummyDescriptorSetLayout = CreateSetLayout({}, pipelineLayoutDesc.ignoreGlobalSPIRVOffsets, true); // created as "push"
+    bool hasGaps = setNum > pipelineLayoutDesc.descriptorSetNum + (pipelineLayoutDesc.rootDescriptorNum ? 1 : 0);
+    if (hasGaps) {
+        // Create a "dummy" set layout (needed only if "register space" indices are not consecutive)
+        VkDescriptorSetLayout dummyDescriptorSetLayout = CreateSetLayout({}, pipelineLayoutDesc.ignoreGlobalSPIRVOffsets, false); // non-push
         m_DescriptorSetLayouts.push_back(dummyDescriptorSetLayout);
 
         for (uint32_t i = 0; i < setNum; i++)
             descriptorSetLayouts[i] = dummyDescriptorSetLayout;
     }
 
-    // Populate descriptor set layouts in proper order
+    // Populate descriptor set layouts in "register space" order
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
         uint32_t setIndex = pipelineLayoutDesc.descriptorSets[i].registerSpace;
         descriptorSetLayouts[setIndex] = m_DescriptorSetLayouts[i];
     }
 
-    for (uint32_t i = 0; i < pipelineLayoutDesc.rootDescriptorSetNum; i++) {
-        uint32_t setIndex = pipelineLayoutDesc.rootDescriptorSets[i].registerSpace;
-        descriptorSetLayouts[setIndex] = m_DescriptorSetLayouts[pipelineLayoutDesc.descriptorSetNum + i];
+    if (pipelineLayoutDesc.rootDescriptorNum) {
+        uint32_t setIndex = pipelineLayoutDesc.rootRegisterSpace;
+        descriptorSetLayouts[setIndex] = m_DescriptorSetLayouts[pipelineLayoutDesc.descriptorSetNum];
     }
 
     // Root constants
+    m_BindingInfo.pushConstantBindings.resize(pipelineLayoutDesc.rootConstantNum);
     Scratch<VkPushConstantRange> pushConstantRanges = AllocateScratch(m_Device, VkPushConstantRange, pipelineLayoutDesc.rootConstantNum);
 
     uint32_t offset = 0;
@@ -102,6 +160,9 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
         range.stageFlags = GetShaderStageFlags(pushConstantDesc.shaderStages);
         range.offset = offset;
         range.size = pushConstantDesc.size;
+
+        // Binding info
+        m_BindingInfo.pushConstantBindings[i] = {GetShaderStageFlags(pushConstantDesc.shaderStages), offset};
 
         offset += pushConstantDesc.size;
     }
@@ -116,8 +177,6 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.CreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, Result::FAILURE, "vkCreatePipelineLayout returned %d", (int32_t)result);
-
-    FillBindingInfo(pipelineLayoutDesc);
 
     return Result::SUCCESS;
 }
@@ -207,8 +266,7 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
     info.pNext = m_Device.m_IsSupported.descriptorIndexing ? &bindingFlagsInfo : nullptr;
     info.bindingCount = bindingNum;
     info.pBindings = bindingsBegin;
-    if (m_Device.GetDesc().rootDescriptorMaxNum)
-        info.flags = isPush ? VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR : 0;
+    info.flags = isPush ? VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR : 0;
 
     VkDescriptorSetLayout handle = VK_NULL_HANDLE;
     const auto& vk = m_Device.GetDispatchTable();
@@ -216,81 +274,6 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, 0, "vkCreateDescriptorSetLayout returned %d", (int32_t)result);
 
     return handle;
-}
-
-void PipelineLayoutVK::FillBindingInfo(const PipelineLayoutDesc& pipelineLayoutDesc) {
-    // Binding offsets
-    SPIRVBindingOffsets spirvBindingOffsets = {};
-    if (!pipelineLayoutDesc.ignoreGlobalSPIRVOffsets)
-        spirvBindingOffsets = m_Device.GetSPIRVBindingOffsets();
-
-    std::array<uint32_t, (size_t)DescriptorType::MAX_NUM> bindingOffsets = {};
-    bindingOffsets[(uint32_t)DescriptorType::SAMPLER] = spirvBindingOffsets.samplerOffset;
-    bindingOffsets[(uint32_t)DescriptorType::CONSTANT_BUFFER] = spirvBindingOffsets.constantBufferOffset;
-    bindingOffsets[(uint32_t)DescriptorType::TEXTURE] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(uint32_t)DescriptorType::STORAGE_TEXTURE] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(uint32_t)DescriptorType::BUFFER] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(uint32_t)DescriptorType::STORAGE_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(uint32_t)DescriptorType::STRUCTURED_BUFFER] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(uint32_t)DescriptorType::STORAGE_STRUCTURED_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(uint32_t)DescriptorType::ACCELERATION_STRUCTURE] = spirvBindingOffsets.textureOffset;
-
-    // Count
-    size_t rangeNum = 0;
-    size_t dynamicConstantBufferNum = 0;
-    for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
-        rangeNum += pipelineLayoutDesc.descriptorSets[i].rangeNum;
-        dynamicConstantBufferNum += pipelineLayoutDesc.descriptorSets[i].dynamicConstantBufferNum;
-    }
-
-    // Copy descriptor set descs with dependencies
-    m_BindingInfo.descriptorSetDescs.insert(m_BindingInfo.descriptorSetDescs.begin(), pipelineLayoutDesc.descriptorSets, pipelineLayoutDesc.descriptorSets + pipelineLayoutDesc.descriptorSetNum);
-    m_BindingInfo.hasVariableDescriptorNum.resize(pipelineLayoutDesc.descriptorSetNum);
-    m_BindingInfo.descriptorSetRangeDescs.reserve(rangeNum);
-    m_BindingInfo.dynamicConstantBufferDescs.reserve(dynamicConstantBufferNum);
-
-    for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
-        const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[i];
-
-        m_BindingInfo.hasVariableDescriptorNum[i] = false;
-        m_BindingInfo.descriptorSetDescs[i].ranges = m_BindingInfo.descriptorSetRangeDescs.data() + m_BindingInfo.descriptorSetRangeDescs.size();
-        m_BindingInfo.descriptorSetDescs[i].dynamicConstantBuffers = m_BindingInfo.dynamicConstantBufferDescs.data() + m_BindingInfo.dynamicConstantBufferDescs.size();
-
-        // Copy descriptor range descs
-        m_BindingInfo.descriptorSetRangeDescs.insert(m_BindingInfo.descriptorSetRangeDescs.end(), descriptorSetDesc.ranges, descriptorSetDesc.ranges + descriptorSetDesc.rangeNum);
-
-        // Fix descriptor range binding offsets and check for variable descriptor num
-        DescriptorRangeDesc* ranges = const_cast<DescriptorRangeDesc*>(m_BindingInfo.descriptorSetDescs[i].ranges);
-        for (uint32_t j = 0; j < descriptorSetDesc.rangeNum; j++) {
-            ranges[j].baseRegisterIndex += bindingOffsets[(uint32_t)descriptorSetDesc.ranges[j].descriptorType];
-
-            if (m_Device.m_IsSupported.descriptorIndexing && (descriptorSetDesc.ranges[j].flags & DescriptorRangeBits::VARIABLE_SIZED_ARRAY))
-                m_BindingInfo.hasVariableDescriptorNum[i] = true;
-        }
-
-        // Copy dynamic constant buffer descs
-        m_BindingInfo.dynamicConstantBufferDescs.insert(m_BindingInfo.dynamicConstantBufferDescs.end(), descriptorSetDesc.dynamicConstantBuffers, descriptorSetDesc.dynamicConstantBuffers + descriptorSetDesc.dynamicConstantBufferNum);
-
-        // Copy dynamic constant buffer binding offsets
-        DynamicConstantBufferDesc* dynamicConstantBuffers = const_cast<DynamicConstantBufferDesc*>(m_BindingInfo.descriptorSetDescs[i].dynamicConstantBuffers);
-        for (uint32_t j = 0; j < descriptorSetDesc.dynamicConstantBufferNum; j++)
-            dynamicConstantBuffers[j].registerIndex += bindingOffsets[(uint32_t)DescriptorType::CONSTANT_BUFFER];
-    }
-
-    // Copy root constant bindings
-    m_BindingInfo.pushConstantBindings.resize(pipelineLayoutDesc.rootConstantNum);
-    for (uint32_t i = 0, offset = 0; i < pipelineLayoutDesc.rootConstantNum; i++) {
-        m_BindingInfo.pushConstantBindings[i] = {GetShaderStageFlags(pipelineLayoutDesc.rootConstants[i].shaderStages), offset};
-        offset += pipelineLayoutDesc.rootConstants[i].size;
-    }
-
-    // Copy root descriptor bindings
-    for (uint32_t i = 0; i < pipelineLayoutDesc.rootDescriptorSetNum; i++) {
-        const RootDescriptorSetDesc& rootDescriptorDesc = pipelineLayoutDesc.rootDescriptorSets[i];
-        uint32_t registerIndex = rootDescriptorDesc.registerIndex + bindingOffsets[(uint32_t)rootDescriptorDesc.descriptorType];
-
-        m_BindingInfo.pushDescriptorBindings.push_back({rootDescriptorDesc.registerSpace, registerIndex});
-    }
 }
 
 NRI_INLINE void PipelineLayoutVK::SetDebugName(const char* name) {

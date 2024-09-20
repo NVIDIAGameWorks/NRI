@@ -270,7 +270,7 @@ NRI_INLINE void CommandBufferD3D12::SetViewports(const Viewport* viewports, uint
 }
 
 NRI_INLINE void CommandBufferD3D12::SetScissors(const Rect* rects, uint32_t rectNum) {
-    D3D12_RECT* rectsD3D12 = StackAlloc(D3D12_RECT, rectNum);
+    Scratch<D3D12_RECT> rectsD3D12 = AllocateScratch(m_Device, D3D12_RECT, rectNum);
     ConvertRects(rectsD3D12, rects, rectNum);
 
     m_GraphicsCommandList->RSSetScissorRects(rectNum, rectsD3D12);
@@ -324,7 +324,7 @@ NRI_INLINE void CommandBufferD3D12::ClearAttachments(const ClearDesc* clearDescs
     if (!clearDescNum)
         return;
 
-    D3D12_RECT* rectsD3D12 = StackAlloc(D3D12_RECT, rectNum);
+    Scratch<D3D12_RECT> rectsD3D12 = AllocateScratch(m_Device, D3D12_RECT, rectNum);
     ConvertRects(rectsD3D12, rects, rectNum);
 
     for (uint32_t i = 0; i < clearDescNum; i++) {
@@ -391,8 +391,7 @@ NRI_INLINE void CommandBufferD3D12::BeginRendering(const AttachmentsDesc& attach
 }
 
 NRI_INLINE void CommandBufferD3D12::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
-    D3D12_VERTEX_BUFFER_VIEW* vertexBufferViews = StackAlloc(D3D12_VERTEX_BUFFER_VIEW, bufferNum);
-
+    Scratch<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews = AllocateScratch(m_Device, D3D12_VERTEX_BUFFER_VIEW, bufferNum);
     for (uint32_t i = 0; i < bufferNum; i++) {
         if (buffers[i] != nullptr) {
             const BufferD3D12* buffer = (BufferD3D12*)buffers[i];
@@ -663,7 +662,7 @@ NRI_INLINE void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroup
 
         // Global
         uint16_t num = barrierGroupDesc.globalNum;
-        D3D12_GLOBAL_BARRIER* globalBarriers = StackAlloc(D3D12_GLOBAL_BARRIER, num);
+        Scratch<D3D12_GLOBAL_BARRIER> globalBarriers = AllocateScratch(m_Device, D3D12_GLOBAL_BARRIER, num);
         if (num) {
             D3D12_BARRIER_GROUP* barrierGroup = &barrierGroups[barriersGroupsNum++];
             barrierGroup->Type = D3D12_BARRIER_TYPE_GLOBAL;
@@ -683,7 +682,7 @@ NRI_INLINE void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroup
 
         // Buffer
         num = barrierGroupDesc.bufferNum;
-        D3D12_BUFFER_BARRIER* bufferBarriers = StackAlloc(D3D12_BUFFER_BARRIER, num);
+        Scratch<D3D12_BUFFER_BARRIER> bufferBarriers = AllocateScratch(m_Device, D3D12_BUFFER_BARRIER, num);
         if (barrierGroupDesc.bufferNum) {
             D3D12_BARRIER_GROUP* barrierGroup = &barrierGroups[barriersGroupsNum++];
             barrierGroup->Type = D3D12_BARRIER_TYPE_BUFFER;
@@ -707,7 +706,7 @@ NRI_INLINE void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroup
 
         // Texture
         num = barrierGroupDesc.textureNum;
-        D3D12_TEXTURE_BARRIER* textureBarriers = StackAlloc(D3D12_TEXTURE_BARRIER, num);
+        Scratch<D3D12_TEXTURE_BARRIER> textureBarriers = AllocateScratch(m_Device, D3D12_TEXTURE_BARRIER, num);
         if (barrierGroupDesc.textureNum) {
             D3D12_BARRIER_GROUP* barrierGroup = &barrierGroups[barriersGroupsNum++];
             barrierGroup->Type = D3D12_BARRIER_TYPE_TEXTURE;
@@ -775,7 +774,7 @@ NRI_INLINE void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroup
             return;
 
         // Gather
-        D3D12_RESOURCE_BARRIER* barriers = StackAlloc(D3D12_RESOURCE_BARRIER, barrierNum);
+        Scratch<D3D12_RESOURCE_BARRIER> barriers = AllocateScratch(m_Device, D3D12_RESOURCE_BARRIER, barrierNum);
         memset(barriers, 0, sizeof(D3D12_RESOURCE_BARRIER) * barrierNum);
 
         D3D12_RESOURCE_BARRIER* ptr = barriers;
@@ -841,7 +840,7 @@ NRI_INLINE void CommandBufferD3D12::CopyQueries(const QueryPool& queryPool, uint
 
 NRI_INLINE void CommandBufferD3D12::BeginAnnotation(const char* name) {
     size_t len = strlen(name) + 1;
-    wchar_t* s = StackAlloc(wchar_t, len);
+    Scratch<wchar_t> s = AllocateScratch(m_Device, wchar_t, len);
     ConvertCharToWchar(name, s, len);
 
     PIXBeginEvent(m_GraphicsCommandList, PIX_COLOR_DEFAULT, s);

@@ -122,9 +122,11 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
 
         VkSurfaceCapabilities2KHR sc = {VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR};
 
+        std::array<VkPresentModeKHR, 8> presentModes = {};
+
         VkLatencySurfaceCapabilitiesNV latencySurfaceCapabilities = {VK_STRUCTURE_TYPE_LATENCY_SURFACE_CAPABILITIES_NV};
-        latencySurfaceCapabilities.presentModeCount = 8;
-        latencySurfaceCapabilities.pPresentModes = StackAlloc(VkPresentModeKHR, latencySurfaceCapabilities.presentModeCount);
+        latencySurfaceCapabilities.presentModeCount = (uint32_t)presentModes.size();
+        latencySurfaceCapabilities.pPresentModes = presentModes.data();
 
         if (m_Device.m_IsSupported.lowLatency)
             sc.pNext = &latencySurfaceCapabilities;
@@ -152,7 +154,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         VkResult result = vk.GetPhysicalDeviceSurfaceFormatsKHR(m_Device, m_Surface, &formatNum, nullptr);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfaceFormatsKHR returned %d", (int32_t)result);
 
-        VkSurfaceFormatKHR* surfaceFormats = StackAlloc(VkSurfaceFormatKHR, formatNum);
+        Scratch<VkSurfaceFormatKHR> surfaceFormats = AllocateScratch(m_Device, VkSurfaceFormatKHR, formatNum);
         result = vk.GetPhysicalDeviceSurfaceFormatsKHR(m_Device, m_Surface, &formatNum, surfaceFormats);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfaceFormatsKHR returned %d", (int32_t)result);
 
@@ -177,7 +179,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
     VkPresentModeKHR presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
     {
         uint32_t presentModeNum = 8;
-        VkPresentModeKHR* presentModes = StackAlloc(VkPresentModeKHR, presentModeNum);
+        Scratch<VkPresentModeKHR> presentModes = AllocateScratch(m_Device, VkPresentModeKHR, presentModeNum);
         VkResult result = vk.GetPhysicalDeviceSurfacePresentModesKHR(m_Device, m_Surface, &presentModeNum, presentModes);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfacePresentModesKHR returned %d", (int32_t)result);
 
@@ -269,7 +271,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         uint32_t imageNum = 0;
         vk.GetSwapchainImagesKHR(m_Device, m_Handle, &imageNum, nullptr);
 
-        VkImage* imageHandles = StackAlloc(VkImage, imageNum);
+        Scratch<VkImage> imageHandles = AllocateScratch(m_Device, VkImage, imageNum);
         vk.GetSwapchainImagesKHR(m_Device, m_Handle, &imageNum, imageHandles);
 
         m_Textures.resize(imageNum);

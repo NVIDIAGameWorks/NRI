@@ -413,7 +413,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             uint32_t deviceGroupNum = 0;
             m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, nullptr);
 
-            VkPhysicalDeviceGroupProperties* deviceGroups = StackAlloc(VkPhysicalDeviceGroupProperties, deviceGroupNum);
+            Scratch<VkPhysicalDeviceGroupProperties> deviceGroups = AllocateScratch(*this, VkPhysicalDeviceGroupProperties, deviceGroupNum);
             VkResult result = m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, deviceGroups);
             RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkEnumeratePhysicalDevices returned %d", (int32_t)result);
 
@@ -740,7 +740,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.texture2DMaxDim = (Dim_t)limits.maxImageDimension2D;
         m_Desc.texture3DMaxDim = (Dim_t)limits.maxImageDimension3D;
         m_Desc.textureArrayLayerMaxNum = (Dim_t)limits.maxImageArrayLayers;
-        m_Desc.texelBufferMaxDim = limits.maxTexelBufferElements;
+        m_Desc.typedBufferMaxDim = limits.maxTexelBufferElements;
 
         const VkMemoryPropertyFlags neededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         for (uint32_t i = 0; i < m_MemoryProps.memoryTypeCount; i++) {
@@ -762,14 +762,15 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.bufferTextureGranularity = (uint32_t)limits.bufferImageGranularity;
 
         m_Desc.pipelineLayoutDescriptorSetMaxNum = limits.maxBoundDescriptorSets;
+        m_Desc.pipelineLayoutRootConstantMaxSize = limits.maxPushConstantsSize;
+        m_Desc.pipelineLayoutRootDescriptorMaxNum = pushDescriptorProps.maxPushDescriptors;
+
         m_Desc.perStageDescriptorSamplerMaxNum = limits.maxPerStageDescriptorSamplers;
         m_Desc.perStageDescriptorConstantBufferMaxNum = limits.maxPerStageDescriptorUniformBuffers;
         m_Desc.perStageDescriptorStorageBufferMaxNum = limits.maxPerStageDescriptorStorageBuffers;
         m_Desc.perStageDescriptorTextureMaxNum = limits.maxPerStageDescriptorSampledImages;
         m_Desc.perStageDescriptorStorageTextureMaxNum = limits.maxPerStageDescriptorStorageImages;
         m_Desc.perStageResourceMaxNum = limits.maxPerStageResources;
-        m_Desc.rootConstantMaxSize = limits.maxPushConstantsSize;
-        m_Desc.rootDescriptorMaxNum = pushDescriptorProps.maxPushDescriptors;
 
         m_Desc.descriptorSetSamplerMaxNum = limits.maxDescriptorSetSamplers;
         m_Desc.descriptorSetConstantBufferMaxNum = limits.maxDescriptorSetUniformBuffers;
@@ -952,10 +953,10 @@ void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo&
     info.format = ::GetVkFormat(textureDesc.format, true);
     info.extent.width = textureDesc.width;
     info.extent.height = textureDesc.height;
-    info.extent.depth = textureDesc.depth;
+    info.extent.depth = std::max(textureDesc.depth, (Dim_t)1);
     info.mipLevels = textureDesc.mipNum;
-    info.arrayLayers = textureDesc.layerNum;
-    info.samples = (VkSampleCountFlagBits)textureDesc.sampleNum;
+    info.arrayLayers = std::max(textureDesc.layerNum, (Dim_t)1);
+    info.samples = (VkSampleCountFlagBits)std::max(textureDesc.sampleNum, (Sample_t)1);
     info.tiling = VK_IMAGE_TILING_OPTIMAL;
     info.usage = GetImageUsageFlags(textureDesc.usageMask);
     info.sharingMode = m_NumActiveFamilyIndices > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE; // TODO: still no DCC on AMD with concurrent?

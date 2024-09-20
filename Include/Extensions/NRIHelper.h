@@ -83,96 +83,79 @@ NriStruct(HelperInterface) {
 // Format utilities
 NRI_API Nri(Format) NRI_CALL nriConvertDXGIFormatToNRI(uint32_t dxgiFormat);
 NRI_API Nri(Format) NRI_CALL nriConvertVKFormatToNRI(uint32_t vkFormat);
-NRI_API uint32_t NRI_CALL nriConvertNRIFormatToDXGI(Nri(Format) format);
+NRI_API uint32_t    NRI_CALL nriConvertNRIFormatToDXGI(Nri(Format) format);
 NRI_API uint32_t NRI_CALL nriConvertNRIFormatToVK(Nri(Format) format);
 NRI_API const NriRef(FormatProps) NRI_CALL nriGetFormatProps(Nri(Format) format);
 
 // Strings
 NRI_API const char* NRI_CALL nriGetGraphicsAPIString(Nri(GraphicsAPI) graphicsAPI);
 
-// "TextureDesc" constructors
-static inline Nri(TextureDesc) NriFunc(Texture1D)(Nri(Format) format,
-    uint16_t width,
-    Nri(Mip_t) mipNum NriDefault(1),
-    Nri(Dim_t) layerNum NriDefault(1),
-    Nri(TextureUsageBits) usageMask NriDefault(NriScopedMember(TextureUsageBits, SHADER_RESOURCE)))
-{
-    Nri(TextureDesc) textureDesc = NriZero;
-    textureDesc.type = NriScopedMember(TextureType, TEXTURE_1D);
-    textureDesc.format = format;
-    textureDesc.usageMask = usageMask;
-    textureDesc.width = width;
-    textureDesc.height = 1;
-    textureDesc.depth = 1;
-    textureDesc.mipNum = mipNum;
-    textureDesc.layerNum = layerNum;
-    textureDesc.sampleNum = 1;
+// A convinient way to fit pipeline layout settings into device limits, respecting D3D12 restrictions
+NriStruct(PipelineLayoutSettingsDesc) {
+    uint32_t descriptorRangeNum;
+    uint32_t rootConstantSize;
+    uint32_t rootDescriptorNum;
+    bool preferRootDescriptorsOverConstants;
+};
 
-    return textureDesc;
-}
+static inline Nri(PipelineLayoutSettingsDesc) NriFunc(FitPipelineLayoutSettingsIntoDeviceLimits)(const NriRef(DeviceDesc) deviceDesc, const NriRef(PipelineLayoutSettingsDesc) pipelineLayoutSettingsDesc) {
+    uint32_t descriptorRangeNum = NriDeref(pipelineLayoutSettingsDesc)->descriptorRangeNum;
+    uint32_t rootConstantSize = NriDeref(pipelineLayoutSettingsDesc)->rootConstantSize;
+    uint32_t rootDescriptorNum = NriDeref(pipelineLayoutSettingsDesc)->rootDescriptorNum;
 
-static inline Nri(TextureDesc) NriFunc(Texture2D)(Nri(Format) format,
-    Nri(Dim_t) width,
-    Nri(Dim_t) height,
-    Nri(Mip_t) mipNum NriDefault(1),
-    Nri(Dim_t) layerNum NriDefault(1),
-    Nri(TextureUsageBits) usageMask NriDefault(NriScopedMember(TextureUsageBits, SHADER_RESOURCE)),
-    Nri(Sample_t) sampleNum NriDefault(1))
-{
-    Nri(TextureDesc) textureDesc = NriZero;
-    textureDesc.type = NriScopedMember(TextureType, TEXTURE_2D);
-    textureDesc.format = format;
-    textureDesc.usageMask = usageMask;
-    textureDesc.width = width;
-    textureDesc.height = height;
-    textureDesc.depth = 1;
-    textureDesc.mipNum = mipNum;
-    textureDesc.layerNum = layerNum;
-    textureDesc.sampleNum = sampleNum;
+    // Apply global limits
+    if (rootConstantSize > NriDeref(deviceDesc)->pipelineLayoutRootConstantMaxSize)
+        rootConstantSize = NriDeref(deviceDesc)->pipelineLayoutRootConstantMaxSize;
 
-    return textureDesc;
-}
+    if (rootDescriptorNum > NriDeref(deviceDesc)->pipelineLayoutRootDescriptorMaxNum)
+        rootDescriptorNum = NriDeref(deviceDesc)->pipelineLayoutRootDescriptorMaxNum;
 
-static inline Nri(TextureDesc) NriFunc(Texture3D)(Nri(Format) format,
-    Nri(Dim_t) width,
-    Nri(Dim_t) height,
-    uint16_t depth,
-    Nri(Mip_t) mipNum NriDefault(1),
-    Nri(TextureUsageBits) usageMask NriDefault(NriScopedMember(TextureUsageBits, SHADER_RESOURCE)))
-{
-    Nri(TextureDesc) textureDesc = NriZero;
-    textureDesc.type = NriScopedMember(TextureType, TEXTURE_3D);
-    textureDesc.format = format;
-    textureDesc.usageMask = usageMask;
-    textureDesc.width = width;
-    textureDesc.height = height;
-    textureDesc.depth = depth;
-    textureDesc.mipNum = mipNum;
-    textureDesc.layerNum = 1;
-    textureDesc.sampleNum = 1;
+    // D3D12 has limited-size root signature
+    if (NriDeref(deviceDesc)->graphicsAPI == NriScopedMember(GraphicsAPI, D3D12)) {
+        const uint32_t descriptorTableCost = 4;
+        const uint32_t rootDescriptorCost = 8;
 
-    return textureDesc;
-}
+        uint32_t freeBytesInRootSignature = 256;
 
-// "TextureBarrierDesc" constructors
-static inline Nri(TextureBarrierDesc) NriFunc(TextureBarrier)(NriPtr(Texture) texture,
-    Nri(AccessLayoutStage) before,
-    Nri(AccessLayoutStage) after,
-    Nri(Mip_t) mipOffset NriDefault(0),
-    Nri(Mip_t) mipNum NriDefault(Nri(REMAINING_MIPS)),
-    Nri(Dim_t) layerOffset NriDefault(0),
-    Nri(Dim_t) layerNum NriDefault(Nri(REMAINING_LAYERS)))
-{
-    Nri(TextureBarrierDesc) textureBarrierDesc = NriZero;
-    textureBarrierDesc.texture = texture;
-    textureBarrierDesc.before = before;
-    textureBarrierDesc.after = after;
-    textureBarrierDesc.mipOffset = mipOffset;
-    textureBarrierDesc.mipNum = mipNum;
-    textureBarrierDesc.layerOffset = layerOffset;
-    textureBarrierDesc.layerNum = layerNum;
+        // 1 root descriptor can be reserved for "draw parameters" emulation
+        if (NriDeref(deviceDesc)->isDrawParametersEmulationEnabled)
+            freeBytesInRootSignature -= 8;
 
-    return textureBarrierDesc;
+        // Must fit
+        uint32_t availableDescriptorRangeNum = freeBytesInRootSignature / descriptorTableCost;
+        if (descriptorRangeNum > availableDescriptorRangeNum)
+            descriptorRangeNum = availableDescriptorRangeNum;
+
+        freeBytesInRootSignature -= descriptorRangeNum * descriptorTableCost;
+
+        // Desired fit
+        if (NriDeref(pipelineLayoutSettingsDesc)->preferRootDescriptorsOverConstants) {
+            uint32_t availableRootDescriptorNum = freeBytesInRootSignature / rootDescriptorCost;
+            if (rootDescriptorNum > availableRootDescriptorNum)
+                rootDescriptorNum = availableRootDescriptorNum;
+
+            freeBytesInRootSignature -= rootDescriptorNum * rootDescriptorCost;
+
+            if (rootConstantSize > freeBytesInRootSignature)
+                rootConstantSize = freeBytesInRootSignature;
+        } else {
+            if (rootConstantSize > freeBytesInRootSignature)
+                rootConstantSize = freeBytesInRootSignature;
+
+            freeBytesInRootSignature -= rootConstantSize;
+
+            uint32_t availableRootDescriptorNum = freeBytesInRootSignature / rootDescriptorCost;
+            if (rootDescriptorNum > availableRootDescriptorNum)
+                rootDescriptorNum = availableRootDescriptorNum;
+        }
+    }
+
+    Nri(PipelineLayoutSettingsDesc) modifiedPipelineLayoutLimitsDesc = *NriDeref(pipelineLayoutSettingsDesc);
+    modifiedPipelineLayoutLimitsDesc.descriptorRangeNum = descriptorRangeNum;
+    modifiedPipelineLayoutLimitsDesc.rootConstantSize = rootConstantSize;
+    modifiedPipelineLayoutLimitsDesc.rootDescriptorNum = rootDescriptorNum;
+
+    return modifiedPipelineLayoutLimitsDesc;
 }
 
 static inline Nri(TextureBarrierDesc) NriFunc(TextureBarrierFromUnknown)(NriPtr(Texture) texture,
@@ -208,5 +191,4 @@ static inline Nri(TextureBarrierDesc) NriFunc(TextureBarrierFromState)(NriRef(Te
 
     return *NriDeref(prevState);
 }
-
 NriNamespaceEnd

@@ -6,44 +6,38 @@ NRI_INLINE void DescriptorSetVal::SetDebugName(const char* name) {
 }
 
 NRI_INLINE void DescriptorSetVal::UpdateDescriptorRanges(uint32_t rangeOffset, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs) {
-    if (rangeNum == 0)
-        return;
+    RETURN_ON_FAILURE(&m_Device, rangeOffset < GetDesc().rangeNum, ReturnVoid(), "'rangeOffset=%u' is out of 'rangeNum=%u' in the set", rangeOffset, GetDesc().rangeNum);
+    RETURN_ON_FAILURE(&m_Device, rangeOffset + rangeNum <= GetDesc().rangeNum, ReturnVoid(), "'rangeOffset=%u' + 'rangeNum=%u' is greater than 'rangeNum=%u' in the set", rangeOffset, rangeNum, GetDesc().rangeNum);
 
-    RETURN_ON_FAILURE(&m_Device, rangeUpdateDescs != nullptr, ReturnVoid(), "'rangeUpdateDescs' is NULL");
-    RETURN_ON_FAILURE(&m_Device, rangeOffset < GetDesc().rangeNum, ReturnVoid(), "'rangeOffset' is out of bounds. (rangeOffset=%u, rangeNum=%u)", rangeOffset, GetDesc().rangeNum);
+    uint32_t descriptorNum = 0;
+    uint32_t descriptorOffset = 0;
+    for (uint32_t i = 0; i < rangeNum; i++)
+        descriptorNum += rangeUpdateDescs[i].descriptorNum;
 
-    RETURN_ON_FAILURE(&m_Device, rangeOffset + rangeNum <= GetDesc().rangeNum, ReturnVoid(),
-        "'rangeOffset' + 'rangeNum' is greater than the number of ranges. (rangeOffset=%u, rangeNum=%u, rangeNum=%u)", rangeOffset, rangeNum,
-        GetDesc().rangeNum);
-
-    DescriptorRangeUpdateDesc* rangeUpdateDescsImpl = StackAlloc(DescriptorRangeUpdateDesc, rangeNum);
+    Scratch<DescriptorRangeUpdateDesc> rangeUpdateDescsImpl = AllocateScratch(m_Device, DescriptorRangeUpdateDesc, rangeNum);
+    Scratch<Descriptor*> descriptorsImpl = AllocateScratch(m_Device, Descriptor*, descriptorNum);
     for (uint32_t i = 0; i < rangeNum; i++) {
         const DescriptorRangeUpdateDesc& updateDesc = rangeUpdateDescs[i];
         const DescriptorRangeDesc& rangeDesc = GetDesc().ranges[rangeOffset + i];
 
-        RETURN_ON_FAILURE(&m_Device, updateDesc.descriptorNum != 0, ReturnVoid(), "'rangeUpdateDescs[%u].descriptorNum' is 0", i);
-        RETURN_ON_FAILURE(&m_Device, updateDesc.descriptors != nullptr, ReturnVoid(), "'rangeUpdateDescs[%u].descriptors' is NULL", i);
-
-        RETURN_ON_FAILURE(&m_Device, updateDesc.baseDescriptor < rangeDesc.descriptorNum, ReturnVoid(),
-            "'rangeUpdateDescs[%u].baseDescriptor' is greater than the number of descriptors (offsetInRange=%u, rangeDescriptorNum=%u, descriptorType=%s)",
-            i, updateDesc.baseDescriptor, rangeDesc.descriptorNum, GetDescriptorTypeName(rangeDesc.descriptorType));
+        RETURN_ON_FAILURE(&m_Device, updateDesc.descriptorNum != 0, ReturnVoid(), "'[%u].descriptorNum' is 0", i);
+        RETURN_ON_FAILURE(&m_Device, updateDesc.descriptors != nullptr, ReturnVoid(), "'[%u].descriptors' is NULL", i);
 
         RETURN_ON_FAILURE(&m_Device, updateDesc.baseDescriptor + updateDesc.descriptorNum <= rangeDesc.descriptorNum, ReturnVoid(),
-            "'rangeUpdateDescs[%u].baseDescriptor' + 'rangeUpdateDescs[%u].descriptorNum' is greater than the number of descriptors (offsetInRange=%u, "
-            "descriptorNum=%u, rangeDescriptorNum=%u, descriptorType=%s)",
-            i, i, updateDesc.baseDescriptor, updateDesc.descriptorNum, rangeDesc.descriptorNum, GetDescriptorTypeName(rangeDesc.descriptorType));
+            "[%u]: 'baseDescriptor=%u' + 'descriptorNum=%u' is greater than 'descriptorNum=%u' in the range (descriptorType=%s)",
+            i, updateDesc.baseDescriptor, updateDesc.descriptorNum, rangeDesc.descriptorNum, GetDescriptorTypeName(rangeDesc.descriptorType));
 
-        DescriptorRangeUpdateDesc& dstDesc = rangeUpdateDescsImpl[i];
+        rangeUpdateDescsImpl[i] = updateDesc;
+        rangeUpdateDescsImpl[i].descriptors = descriptorsImpl + descriptorOffset;
 
-        dstDesc = updateDesc;
-        dstDesc.descriptors = StackAlloc(Descriptor*, updateDesc.descriptorNum);
-        Descriptor** descriptors = (Descriptor**)dstDesc.descriptors;
-
+        Descriptor** descriptors = (Descriptor**)rangeUpdateDescsImpl[i].descriptors;
         for (uint32_t j = 0; j < updateDesc.descriptorNum; j++) {
-            RETURN_ON_FAILURE(&m_Device, updateDesc.descriptors[j] != nullptr, ReturnVoid(), "'rangeUpdateDescs[%u].descriptors[%u]' is NULL", i, j);
+            RETURN_ON_FAILURE(&m_Device, updateDesc.descriptors[j] != nullptr, ReturnVoid(), "'[%u].descriptors[%u]' is NULL", i, j);
 
             descriptors[j] = NRI_GET_IMPL(Descriptor, updateDesc.descriptors[j]);
         }
+
+        descriptorOffset += updateDesc.descriptorNum;
     }
 
     GetCoreInterface().UpdateDescriptorRanges(*GetImpl(), rangeOffset, rangeNum, rangeUpdateDescsImpl);
@@ -53,16 +47,13 @@ NRI_INLINE void DescriptorSetVal::UpdateDynamicConstantBuffers(uint32_t baseDyna
     if (dynamicConstantBufferNum == 0)
         return;
 
-    RETURN_ON_FAILURE(&m_Device, baseDynamicConstantBuffer < GetDesc().dynamicConstantBufferNum, ReturnVoid(),
-        "'baseDynamicConstantBuffer' is invalid. (baseDynamicConstantBuffer=%u, dynamicConstantBufferNum=%u)", baseDynamicConstantBuffer, GetDesc().dynamicConstantBufferNum);
-
     RETURN_ON_FAILURE(&m_Device, baseDynamicConstantBuffer + dynamicConstantBufferNum <= GetDesc().dynamicConstantBufferNum, ReturnVoid(),
-        "'baseDynamicConstantBuffer' + 'dynamicConstantBufferNum' is greater than the number of buffers (baseDynamicConstantBuffer=%u, dynamicConstantBufferNum=%u, dynamicConstantBufferNum=%u)", baseDynamicConstantBuffer,
-        dynamicConstantBufferNum, GetDesc().dynamicConstantBufferNum);
+        "'baseDynamicConstantBuffer=%u' + 'dynamicConstantBufferNum=%u' is greater than 'dynamicConstantBufferNum=%u' in the set",
+        baseDynamicConstantBuffer, dynamicConstantBufferNum, GetDesc().dynamicConstantBufferNum);
 
     RETURN_ON_FAILURE(&m_Device, descriptors != nullptr, ReturnVoid(), "'descriptors' is NULL");
 
-    Descriptor** descriptorsImpl = StackAlloc(Descriptor*, dynamicConstantBufferNum);
+    Scratch<Descriptor*> descriptorsImpl = AllocateScratch(m_Device, Descriptor*, dynamicConstantBufferNum);
     for (uint32_t i = 0; i < dynamicConstantBufferNum; i++) {
         RETURN_ON_FAILURE(&m_Device, descriptors[i] != nullptr, ReturnVoid(), "'descriptors[%u]' is NULL", i);
 
@@ -73,12 +64,12 @@ NRI_INLINE void DescriptorSetVal::UpdateDynamicConstantBuffers(uint32_t baseDyna
 }
 
 NRI_INLINE void DescriptorSetVal::Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc) {
-    RETURN_ON_FAILURE(&m_Device, descriptorSetCopyDesc.srcDescriptorSet != nullptr, ReturnVoid(), "'descriptorSetCopyDesc.srcDescriptorSet' is NULL");
+    RETURN_ON_FAILURE(&m_Device, descriptorSetCopyDesc.srcDescriptorSet != nullptr, ReturnVoid(), "'srcDescriptorSet' is NULL");
 
     DescriptorSetVal& srcDescriptorSetVal = *(DescriptorSetVal*)descriptorSetCopyDesc.srcDescriptorSet;
     const DescriptorSetDesc& srcDesc = srcDescriptorSetVal.GetDesc();
 
-    RETURN_ON_FAILURE(&m_Device, descriptorSetCopyDesc.srcBaseRange < srcDesc.rangeNum, ReturnVoid(), "'descriptorSetCopyDesc.srcBaseRange' is invalid");
+    RETURN_ON_FAILURE(&m_Device, descriptorSetCopyDesc.srcBaseRange < srcDesc.rangeNum, ReturnVoid(), "'srcBaseRange' is invalid");
 
     bool srcRangeValid = descriptorSetCopyDesc.srcBaseRange + descriptorSetCopyDesc.rangeNum < srcDesc.rangeNum;
     bool dstRangeValid = descriptorSetCopyDesc.dstBaseRange + descriptorSetCopyDesc.rangeNum < GetDesc().rangeNum;
@@ -87,12 +78,12 @@ NRI_INLINE void DescriptorSetVal::Copy(const DescriptorSetCopyDesc& descriptorSe
     bool dstOffsetValid = descriptorSetCopyDesc.dstBaseDynamicConstantBuffer < GetDesc().dynamicConstantBufferNum;
     bool dstDynamicConstantBufferValid = descriptorSetCopyDesc.dstBaseDynamicConstantBuffer + descriptorSetCopyDesc.dynamicConstantBufferNum < GetDesc().dynamicConstantBufferNum;
 
-    RETURN_ON_FAILURE(&m_Device, srcRangeValid, ReturnVoid(), "'descriptorSetCopyDesc.rangeNum' is invalid");
-    RETURN_ON_FAILURE(&m_Device, descriptorSetCopyDesc.dstBaseRange < GetDesc().rangeNum, ReturnVoid(), "'descriptorSetCopyDesc.dstBaseRange' is invalid");
-    RETURN_ON_FAILURE(&m_Device, dstRangeValid, ReturnVoid(), "'descriptorSetCopyDesc.rangeNum' is invalid");
-    RETURN_ON_FAILURE(&m_Device, srcOffsetValid, ReturnVoid(), "'descriptorSetCopyDesc.srcBaseDynamicConstantBuffer' is invalid");
+    RETURN_ON_FAILURE(&m_Device, srcRangeValid, ReturnVoid(), "'rangeNum' is invalid");
+    RETURN_ON_FAILURE(&m_Device, descriptorSetCopyDesc.dstBaseRange < GetDesc().rangeNum, ReturnVoid(), "'dstBaseRange' is invalid");
+    RETURN_ON_FAILURE(&m_Device, dstRangeValid, ReturnVoid(), "'rangeNum' is invalid");
+    RETURN_ON_FAILURE(&m_Device, srcOffsetValid, ReturnVoid(), "'srcBaseDynamicConstantBuffer' is invalid");
     RETURN_ON_FAILURE(&m_Device, srcDynamicConstantBufferValid, ReturnVoid(), "source range of dynamic constant buffers is invalid");
-    RETURN_ON_FAILURE(&m_Device, dstOffsetValid, ReturnVoid(), "'descriptorSetCopyDesc.dstBaseDynamicConstantBuffer' is invalid");
+    RETURN_ON_FAILURE(&m_Device, dstOffsetValid, ReturnVoid(), "'dstBaseDynamicConstantBuffer' is invalid");
     RETURN_ON_FAILURE(&m_Device, dstDynamicConstantBufferValid, ReturnVoid(), "destination range of dynamic constant buffers is invalid");
 
     auto descriptorSetCopyDescImpl = descriptorSetCopyDesc;

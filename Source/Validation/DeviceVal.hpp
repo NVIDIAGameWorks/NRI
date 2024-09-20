@@ -98,11 +98,11 @@ const DeviceDesc& DeviceVal::GetDesc() const {
 }
 
 NRI_INLINE Result DeviceVal::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
-    RETURN_ON_FAILURE(this, swapChainDesc.commandQueue != nullptr, Result::INVALID_ARGUMENT, "'swapChainDesc.commandQueue' is NULL");
-    RETURN_ON_FAILURE(this, swapChainDesc.width != 0, Result::INVALID_ARGUMENT, "'swapChainDesc.width' is 0");
-    RETURN_ON_FAILURE(this, swapChainDesc.height != 0, Result::INVALID_ARGUMENT, "'swapChainDesc.height' is 0");
-    RETURN_ON_FAILURE(this, swapChainDesc.textureNum > 0, Result::INVALID_ARGUMENT, "'swapChainDesc.textureNum' is invalid");
-    RETURN_ON_FAILURE(this, swapChainDesc.format < SwapChainFormat::MAX_NUM, Result::INVALID_ARGUMENT, "'swapChainDesc.format' is invalid");
+    RETURN_ON_FAILURE(this, swapChainDesc.commandQueue != nullptr, Result::INVALID_ARGUMENT, "'commandQueue' is NULL");
+    RETURN_ON_FAILURE(this, swapChainDesc.width != 0, Result::INVALID_ARGUMENT, "'width' is 0");
+    RETURN_ON_FAILURE(this, swapChainDesc.height != 0, Result::INVALID_ARGUMENT, "'height' is 0");
+    RETURN_ON_FAILURE(this, swapChainDesc.textureNum > 0, Result::INVALID_ARGUMENT, "'textureNum' is invalid");
+    RETURN_ON_FAILURE(this, swapChainDesc.format < SwapChainFormat::MAX_NUM, Result::INVALID_ARGUMENT, "'format' is invalid");
 
     auto swapChainDescImpl = swapChainDesc;
     swapChainDescImpl.commandQueue = NRI_GET_IMPL(CommandQueue, swapChainDesc.commandQueue);
@@ -166,7 +166,7 @@ NRI_INLINE Result DeviceVal::CreateDescriptorPool(const DescriptorPoolDesc& desc
 }
 
 NRI_INLINE Result DeviceVal::CreateBuffer(const BufferDesc& bufferDesc, Buffer*& buffer) {
-    RETURN_ON_FAILURE(this, bufferDesc.size != 0, Result::INVALID_ARGUMENT, "'bufferDesc.size' is 0");
+    RETURN_ON_FAILURE(this, bufferDesc.size != 0, Result::INVALID_ARGUMENT, "'size' is 0");
 
     Buffer* bufferImpl = nullptr;
     Result result = m_CoreAPI.CreateBuffer(m_Device, bufferDesc, bufferImpl);
@@ -178,7 +178,7 @@ NRI_INLINE Result DeviceVal::CreateBuffer(const BufferDesc& bufferDesc, Buffer*&
 }
 
 NRI_INLINE Result DeviceVal::AllocateBuffer(const AllocateBufferDesc& bufferDesc, Buffer*& buffer) {
-    RETURN_ON_FAILURE(this, bufferDesc.desc.size != 0, Result::INVALID_ARGUMENT, "'bufferDesc.size' is 0");
+    RETURN_ON_FAILURE(this, bufferDesc.desc.size != 0, Result::INVALID_ARGUMENT, "'size' is 0");
 
     Buffer* bufferImpl = nullptr;
     Result result = m_ResourceAllocatorAPI.AllocateBuffer(m_Device, bufferDesc, bufferImpl);
@@ -192,14 +192,11 @@ NRI_INLINE Result DeviceVal::AllocateBuffer(const AllocateBufferDesc& bufferDesc
 NRI_INLINE Result DeviceVal::CreateTexture(const TextureDesc& textureDesc, Texture*& texture) {
     Mip_t maxMipNum = GetMaxMipNum(textureDesc.width, textureDesc.height, textureDesc.depth);
 
-    RETURN_ON_FAILURE(this, textureDesc.format > Format::UNKNOWN && textureDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "'textureDesc.format' is invalid");
-    RETURN_ON_FAILURE(this, textureDesc.width != 0, Result::INVALID_ARGUMENT, "'textureDesc.width' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.height != 0, Result::INVALID_ARGUMENT, "'textureDesc.height' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.depth != 0, Result::INVALID_ARGUMENT, "'textureDesc.depth' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.mipNum != 0, Result::INVALID_ARGUMENT, "'textureDesc.mipNum' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.mipNum <= maxMipNum, Result::INVALID_ARGUMENT, "'textureDesc.mipNum = %u' can't be > %u", textureDesc.mipNum, maxMipNum);
-    RETURN_ON_FAILURE(this, textureDesc.layerNum != 0, Result::INVALID_ARGUMENT, "'textureDesc.layerNum' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.sampleNum != 0, Result::INVALID_ARGUMENT, "'textureDesc.sampleNum' is 0");
+    RETURN_ON_FAILURE(this, textureDesc.format > Format::UNKNOWN && textureDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "'format' is invalid");
+    RETURN_ON_FAILURE(this, textureDesc.width != 0, Result::INVALID_ARGUMENT, "'width' is 0");
+    RETURN_ON_FAILURE(this, textureDesc.height != 0, Result::INVALID_ARGUMENT, "'height' is 0");
+    RETURN_ON_FAILURE(this, textureDesc.mipNum != 0, Result::INVALID_ARGUMENT, "'mipNum' is 0");
+    RETURN_ON_FAILURE(this, textureDesc.mipNum <= maxMipNum, Result::INVALID_ARGUMENT, "'mipNum=%u' can't be > %u", textureDesc.mipNum, maxMipNum);
 
     Texture* textureImpl = nullptr;
     Result result = m_CoreAPI.CreateTexture(m_Device, textureDesc, textureImpl);
@@ -213,14 +210,11 @@ NRI_INLINE Result DeviceVal::CreateTexture(const TextureDesc& textureDesc, Textu
 NRI_INLINE Result DeviceVal::AllocateTexture(const AllocateTextureDesc& textureDesc, Texture*& texture) {
     Mip_t maxMipNum = GetMaxMipNum(textureDesc.desc.width, textureDesc.desc.height, textureDesc.desc.depth);
 
-    RETURN_ON_FAILURE(this, textureDesc.desc.format > Format::UNKNOWN && textureDesc.desc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "'textureDesc.format' is invalid");
-    RETURN_ON_FAILURE(this, textureDesc.desc.width != 0, Result::INVALID_ARGUMENT, "'textureDesc.width' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.desc.height != 0, Result::INVALID_ARGUMENT, "'textureDesc.height' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.desc.depth != 0, Result::INVALID_ARGUMENT, "'textureDesc.depth' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.desc.mipNum != 0, Result::INVALID_ARGUMENT, "'textureDesc.mipNum' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.desc.mipNum <= maxMipNum, Result::INVALID_ARGUMENT, "'textureDesc.mipNum = %u' can't be > %u", textureDesc.desc.mipNum, maxMipNum);
-    RETURN_ON_FAILURE(this, textureDesc.desc.layerNum != 0, Result::INVALID_ARGUMENT, "'textureDesc.layerNum' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.desc.sampleNum != 0, Result::INVALID_ARGUMENT, "'textureDesc.sampleNum' is 0");
+    RETURN_ON_FAILURE(this, textureDesc.desc.format > Format::UNKNOWN && textureDesc.desc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "'desc.format' is invalid");
+    RETURN_ON_FAILURE(this, textureDesc.desc.width != 0, Result::INVALID_ARGUMENT, "'desc.width' is 0");
+    RETURN_ON_FAILURE(this, textureDesc.desc.height != 0, Result::INVALID_ARGUMENT, "'desc.height' is 0");
+    RETURN_ON_FAILURE(this, textureDesc.desc.mipNum != 0, Result::INVALID_ARGUMENT, "'desc.mipNum' is 0");
+    RETURN_ON_FAILURE(this, textureDesc.desc.mipNum <= maxMipNum, Result::INVALID_ARGUMENT, "'desc.mipNum=%u' can't be > %u", textureDesc.desc.mipNum, maxMipNum);
 
     Texture* textureImpl = nullptr;
     Result result = m_ResourceAllocatorAPI.AllocateTexture(m_Device, textureDesc, textureImpl);
@@ -232,18 +226,12 @@ NRI_INLINE Result DeviceVal::AllocateTexture(const AllocateTextureDesc& textureD
 }
 
 NRI_INLINE Result DeviceVal::CreateDescriptor(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
-    RETURN_ON_FAILURE(this, bufferViewDesc.buffer != nullptr, Result::INVALID_ARGUMENT, "'bufferViewDesc.buffer' is NULL");
-    RETURN_ON_FAILURE(this, bufferViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "'bufferViewDesc.format' is invalid");
-    RETURN_ON_FAILURE(this, bufferViewDesc.viewType < BufferViewType::MAX_NUM, Result::INVALID_ARGUMENT, "'bufferViewDesc.viewType' is invalid");
+    RETURN_ON_FAILURE(this, bufferViewDesc.buffer != nullptr, Result::INVALID_ARGUMENT, "'buffer' is NULL");
+    RETURN_ON_FAILURE(this, bufferViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "'format' is invalid");
+    RETURN_ON_FAILURE(this, bufferViewDesc.viewType < BufferViewType::MAX_NUM, Result::INVALID_ARGUMENT, "'viewType' is invalid");
 
     const BufferDesc& bufferDesc = ((BufferVal*)bufferViewDesc.buffer)->GetDesc();
-
-    RETURN_ON_FAILURE(this, bufferViewDesc.offset < bufferDesc.size, Result::INVALID_ARGUMENT,
-        "'bufferViewDesc.offset' is invalid. (bufferViewDesc.offset=%llu, bufferDesc.size=%llu)", bufferViewDesc.offset, bufferDesc.size);
-
-    RETURN_ON_FAILURE(this, bufferViewDesc.offset + bufferViewDesc.size <= bufferDesc.size, Result::INVALID_ARGUMENT,
-        "'bufferViewDesc.size' is invalid. (bufferViewDesc.offset=%llu, bufferViewDesc.size=%llu, bufferDesc.size=%llu)", bufferViewDesc.offset,
-        bufferViewDesc.size, bufferDesc.size);
+    RETURN_ON_FAILURE(this, bufferViewDesc.offset + bufferViewDesc.size <= bufferDesc.size, Result::INVALID_ARGUMENT, "'offset=%llu' + 'size=%llu' must be <= buffer 'size = %llu'", bufferViewDesc.offset, bufferViewDesc.size, bufferDesc.size);
 
     auto bufferViewDescImpl = bufferViewDesc;
     bufferViewDescImpl.buffer = NRI_GET_IMPL(Buffer, bufferViewDesc.buffer);
@@ -258,28 +246,17 @@ NRI_INLINE Result DeviceVal::CreateDescriptor(const BufferViewDesc& bufferViewDe
 }
 
 NRI_INLINE Result DeviceVal::CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    RETURN_ON_FAILURE(this, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT, "'textureViewDesc.texture' is NULL");
-    RETURN_ON_FAILURE(this, textureViewDesc.viewType < Texture1DViewType::MAX_NUM, Result::INVALID_ARGUMENT, "'textureViewDesc.viewType' is invalid");
-
-    RETURN_ON_FAILURE(this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.format' is invalid");
+    RETURN_ON_FAILURE(this, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT, "'texture' is NULL");
+    RETURN_ON_FAILURE(this, textureViewDesc.viewType < Texture1DViewType::MAX_NUM, Result::INVALID_ARGUMENT, "'viewType' is invalid");
+    RETURN_ON_FAILURE(this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "'format' is invalid");
 
     const TextureDesc& textureDesc = ((TextureVal*)textureViewDesc.texture)->GetDesc();
 
-    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.mipOffset' is invalid (textureViewDesc.mipOffset=%hu, textureDesc.mipNum=%hu)", textureViewDesc.mipOffset, textureDesc.mipNum);
-
     RETURN_ON_FAILURE(this, textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.mipNum' is invalid (textureViewDesc.mipOffset=%hu, textureViewDesc.mipNum=%hu, textureDesc.mipNum=%hu)", textureViewDesc.mipOffset,
-        textureViewDesc.mipNum, textureDesc.mipNum);
-
-    RETURN_ON_FAILURE(this, textureViewDesc.layerOffset < textureDesc.layerNum, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.layerOffset' is invalid (textureViewDesc.layerOffset=%hu, textureDesc.layerNum=%hu)", textureViewDesc.layerOffset,
-        textureDesc.layerNum);
+        "'mipOffset=%u' + 'mipNum=%u' must be <= texture 'mipNum=%u'", textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum);
 
     RETURN_ON_FAILURE(this, textureViewDesc.layerOffset + textureViewDesc.layerNum <= textureDesc.layerNum, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.layerNum' is invalid (textureViewDesc.layerOffset=%hu, textureViewDesc.layerNum=%hu, textureDesc.layerNum=%hu)",
-        textureViewDesc.layerOffset, textureViewDesc.layerNum, textureDesc.layerNum);
+        "'layerOffset=%u' + 'layerNum=%u' must be <= texture 'layerNum=%u'", textureViewDesc.layerOffset, textureViewDesc.layerNum, textureDesc.layerNum);
 
     auto textureViewDescImpl = textureViewDesc;
     textureViewDescImpl.texture = NRI_GET_IMPL(Texture, textureViewDesc.texture);
@@ -294,33 +271,17 @@ NRI_INLINE Result DeviceVal::CreateDescriptor(const Texture1DViewDesc& textureVi
 }
 
 NRI_INLINE Result DeviceVal::CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    RETURN_ON_FAILURE(this, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT, "'textureViewDesc.texture' is NULL");
-    RETURN_ON_FAILURE(this, textureViewDesc.viewType < Texture2DViewType::MAX_NUM, Result::INVALID_ARGUMENT, "'textureViewDesc.viewType' is invalid");
-
-    RETURN_ON_FAILURE(this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.format' is invalid");
+    RETURN_ON_FAILURE(this, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT, "'texture' is NULL");
+    RETURN_ON_FAILURE(this, textureViewDesc.viewType < Texture2DViewType::MAX_NUM, Result::INVALID_ARGUMENT, "'viewType' is invalid");
+    RETURN_ON_FAILURE(this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "'format' is invalid");
 
     const TextureDesc& textureDesc = ((TextureVal*)textureViewDesc.texture)->GetDesc();
 
-    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.mipOffset' is invalid. "
-        "(textureViewDesc.mipOffset=%hu, textureDesc.mipNum=%hu)",
-        textureViewDesc.mipOffset, textureDesc.mipNum);
-
     RETURN_ON_FAILURE(this, textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.mipNum' is invalid. "
-        "(textureViewDesc.mipOffset=%hu, textureViewDesc.mipNum=%hu, textureDesc.mipNum=%hu)",
-        textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum);
-
-    RETURN_ON_FAILURE(this, textureViewDesc.layerOffset < textureDesc.layerNum, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.layerOffset' is invalid. "
-        "(textureViewDesc.layerOffset=%hu, textureDesc.layerNum=%hu)",
-        textureViewDesc.layerOffset, textureDesc.layerNum);
+        "'mipOffset=%u' + 'mipNum=%u' must be <= texture 'mipNum=%u'", textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum);
 
     RETURN_ON_FAILURE(this, textureViewDesc.layerOffset + textureViewDesc.layerNum <= textureDesc.layerNum, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.layerNum' is invalid. "
-        "(textureViewDesc.layerOffset=%hu, textureViewDesc.layerNum=%hu, textureDesc.layerNum=%hu)",
-        textureViewDesc.layerOffset, textureViewDesc.layerNum, textureDesc.layerNum);
+        "'layerOffset=%u' + 'layerNum=%u' must be <= texture 'layerNum=%u'", textureViewDesc.layerOffset, textureViewDesc.layerNum, textureDesc.layerNum);
 
     auto textureViewDescImpl = textureViewDesc;
     textureViewDescImpl.texture = NRI_GET_IMPL(Texture, textureViewDesc.texture);
@@ -335,33 +296,17 @@ NRI_INLINE Result DeviceVal::CreateDescriptor(const Texture2DViewDesc& textureVi
 }
 
 NRI_INLINE Result DeviceVal::CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    RETURN_ON_FAILURE(this, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT, "'textureViewDesc.texture' is NULL");
-    RETURN_ON_FAILURE(this, textureViewDesc.viewType < Texture3DViewType::MAX_NUM, Result::INVALID_ARGUMENT, "'textureViewDesc.viewType' is invalid");
-
-    RETURN_ON_FAILURE(this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.format' is invalid");
+    RETURN_ON_FAILURE(this, textureViewDesc.texture != nullptr, Result::INVALID_ARGUMENT, "'texture' is NULL");
+    RETURN_ON_FAILURE(this, textureViewDesc.viewType < Texture3DViewType::MAX_NUM, Result::INVALID_ARGUMENT, "'viewType' is invalid");
+    RETURN_ON_FAILURE(this, textureViewDesc.format > Format::UNKNOWN && textureViewDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "'format' is invalid");
 
     const TextureDesc& textureDesc = ((TextureVal*)textureViewDesc.texture)->GetDesc();
 
-    RETURN_ON_FAILURE(this, textureViewDesc.mipOffset < textureDesc.mipNum, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.mipOffset' is invalid. "
-        "(textureViewDesc.mipOffset=%hu, textureViewDesc.mipOffset=%hu)",
-        textureViewDesc.mipOffset, textureDesc.mipNum);
-
     RETURN_ON_FAILURE(this, textureViewDesc.mipOffset + textureViewDesc.mipNum <= textureDesc.mipNum, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.mipNum' is invalid. "
-        "(textureViewDesc.mipOffset=%hu, textureViewDesc.mipNum=%hu, textureDesc.mipNum=%hu)",
-        textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum);
-
-    RETURN_ON_FAILURE(this, textureViewDesc.sliceOffset < textureDesc.depth, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.layerOffset' is invalid. "
-        "(textureViewDesc.sliceOffset=%hu, textureDesc.depth=%hu)",
-        textureViewDesc.sliceOffset, textureDesc.depth);
+        "'mipOffset=%u' + 'mipNum=%u' must be <= texture 'mipNum=%u'", textureViewDesc.mipOffset, textureViewDesc.mipNum, textureDesc.mipNum);
 
     RETURN_ON_FAILURE(this, textureViewDesc.sliceOffset + textureViewDesc.sliceNum <= textureDesc.depth, Result::INVALID_ARGUMENT,
-        "'textureViewDesc.layerNum' is invalid. "
-        "(textureViewDesc.sliceOffset=%hu, textureViewDesc.sliceNum=%hu, textureDesc.depth=%hu)",
-        textureViewDesc.sliceOffset, textureViewDesc.sliceNum, textureDesc.depth);
+        "'sliceOffset=%u' + 'sliceNum=%u' must be <= texture 'depth=%u'", textureViewDesc.sliceOffset, textureViewDesc.sliceNum, textureDesc.depth);
 
     auto textureViewDescImpl = textureViewDesc;
     textureViewDescImpl.texture = NRI_GET_IMPL(Texture, textureViewDesc.texture);
@@ -376,20 +321,20 @@ NRI_INLINE Result DeviceVal::CreateDescriptor(const Texture3DViewDesc& textureVi
 }
 
 NRI_INLINE Result DeviceVal::CreateDescriptor(const SamplerDesc& samplerDesc, Descriptor*& sampler) {
-    RETURN_ON_FAILURE(this, samplerDesc.filters.mag < Filter::MAX_NUM, Result::INVALID_ARGUMENT, "'samplerDesc.filters.mag' is invalid");
-    RETURN_ON_FAILURE(this, samplerDesc.filters.min < Filter::MAX_NUM, Result::INVALID_ARGUMENT, "'samplerDesc.filters.min' is invalid");
-    RETURN_ON_FAILURE(this, samplerDesc.filters.mip < Filter::MAX_NUM, Result::INVALID_ARGUMENT, "'samplerDesc.filters.mip' is invalid");
-    RETURN_ON_FAILURE(this, samplerDesc.filters.ext < FilterExt::MAX_NUM, Result::INVALID_ARGUMENT, "'samplerDesc.filters.ext' is invalid");
-    RETURN_ON_FAILURE(this, samplerDesc.addressModes.u < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT, "'samplerDesc.addressModes.u' is invalid");
-    RETURN_ON_FAILURE(this, samplerDesc.addressModes.v < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT, "'samplerDesc.addressModes.v' is invalid");
-    RETURN_ON_FAILURE(this, samplerDesc.addressModes.w < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT, "'samplerDesc.addressModes.w' is invalid");
-    RETURN_ON_FAILURE(this, samplerDesc.compareFunc < CompareFunc::MAX_NUM, Result::INVALID_ARGUMENT, "'samplerDesc.compareFunc' is invalid");
+    RETURN_ON_FAILURE(this, samplerDesc.filters.mag < Filter::MAX_NUM, Result::INVALID_ARGUMENT, "'filters.mag' is invalid");
+    RETURN_ON_FAILURE(this, samplerDesc.filters.min < Filter::MAX_NUM, Result::INVALID_ARGUMENT, "'filters.min' is invalid");
+    RETURN_ON_FAILURE(this, samplerDesc.filters.mip < Filter::MAX_NUM, Result::INVALID_ARGUMENT, "'filters.mip' is invalid");
+    RETURN_ON_FAILURE(this, samplerDesc.filters.ext < FilterExt::MAX_NUM, Result::INVALID_ARGUMENT, "'filters.ext' is invalid");
+    RETURN_ON_FAILURE(this, samplerDesc.addressModes.u < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT, "'addressModes.u' is invalid");
+    RETURN_ON_FAILURE(this, samplerDesc.addressModes.v < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT, "'addressModes.v' is invalid");
+    RETURN_ON_FAILURE(this, samplerDesc.addressModes.w < AddressMode::MAX_NUM, Result::INVALID_ARGUMENT, "'addressModes.w' is invalid");
+    RETURN_ON_FAILURE(this, samplerDesc.compareFunc < CompareFunc::MAX_NUM, Result::INVALID_ARGUMENT, "'compareFunc' is invalid");
 
     if (samplerDesc.filters.ext != FilterExt::NONE)
         RETURN_ON_FAILURE(this, GetDesc().isTextureFilterMinMaxSupported, Result::UNSUPPORTED, "'isTextureFilterMinMaxSupported' is false");
 
     if ((samplerDesc.addressModes.u != AddressMode::CLAMP_TO_BORDER && samplerDesc.addressModes.v != AddressMode::CLAMP_TO_BORDER && samplerDesc.addressModes.w != AddressMode::CLAMP_TO_BORDER) && (samplerDesc.borderColor.ui.x != 0 || samplerDesc.borderColor.ui.y != 0 || samplerDesc.borderColor.ui.z != 0 && samplerDesc.borderColor.ui.w != 0))
-        REPORT_WARNING(this, "'samplerDesc.borderColor' is provided, but 'CLAMP_TO_BORDER' is not requested");
+        REPORT_WARNING(this, "'borderColor' is provided, but 'CLAMP_TO_BORDER' is not requested");
 
     Descriptor* samplerImpl = nullptr;
     Result result = m_CoreAPI.CreateSampler(m_Device, samplerDesc, samplerImpl);
@@ -402,7 +347,7 @@ NRI_INLINE Result DeviceVal::CreateDescriptor(const SamplerDesc& samplerDesc, De
 
 NRI_INLINE Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout) {
     RETURN_ON_FAILURE(this, pipelineLayoutDesc.shaderStages != StageBits::NONE, Result::INVALID_ARGUMENT, "'shaderStages' can't be 'NONE'");
-    RETURN_ON_FAILURE(this, pipelineLayoutDesc.rootDescriptorSetNum <= GetDesc().rootDescriptorMaxNum, Result::UNSUPPORTED, "exceeded number of root descriptors");
+    RETURN_ON_FAILURE(this, pipelineLayoutDesc.rootDescriptorNum <= GetDesc().pipelineLayoutRootDescriptorMaxNum, Result::UNSUPPORTED, "exceeded number of root descriptors");
 
     bool isGraphics = pipelineLayoutDesc.shaderStages & StageBits::GRAPHICS_SHADERS;
     bool isCompute = pipelineLayoutDesc.shaderStages & StageBits::COMPUTE_SHADER;
@@ -411,12 +356,12 @@ NRI_INLINE Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipe
     RETURN_ON_FAILURE(this, supportedTypes > 0, Result::INVALID_ARGUMENT, "'shaderStages' doesn't include any shader stages");
     RETURN_ON_FAILURE(this, supportedTypes == 1, Result::INVALID_ARGUMENT, "'shaderStages' is invalid, it can't be compatible with more than one type of pipeline");
 
-    uint32_t totalDescriptorNum = pipelineLayoutDesc.descriptorSetNum + pipelineLayoutDesc.rootDescriptorSetNum;
+    uint32_t totalDescriptorNum = pipelineLayoutDesc.descriptorSetNum + (pipelineLayoutDesc.rootDescriptorNum ? 1 : 0);
     bool isTotalSetNumValid = totalDescriptorNum <= GetDesc().pipelineLayoutDescriptorSetMaxNum;
-    RETURN_ON_FAILURE(this, isTotalSetNumValid, Result::INVALID_ARGUMENT, "'descriptorSetNum + rootDescriptorSetNum' must be less or equal than 'pipelineLayoutDescriptorSetMaxNum'");
+    RETURN_ON_FAILURE(this, isTotalSetNumValid, Result::INVALID_ARGUMENT, "exceeded number of sets");
 
     Scratch<uint32_t> spaces = AllocateScratch(*this, uint32_t, totalDescriptorNum);
-    memset(spaces.mem, 0, sizeof(uint32_t) * totalDescriptorNum);
+    memset(spaces, 0, sizeof(uint32_t) * totalDescriptorNum);
     uint32_t spaceNum = 0;
 
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
@@ -443,20 +388,21 @@ NRI_INLINE Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipe
         spaces[spaceNum++] = descriptorSetDesc.registerSpace;
     }
 
-    for (uint32_t i = 0; i < pipelineLayoutDesc.rootDescriptorSetNum; i++) {
-        const RootDescriptorSetDesc& rootDescriptorDesc = pipelineLayoutDesc.rootDescriptorSets[i];
+    if (pipelineLayoutDesc.rootDescriptorNum) {
+        uint32_t n = 0;
+        for (; n < spaceNum && spaces[n] != pipelineLayoutDesc.rootRegisterSpace; n++)
+            ;
+
+        RETURN_ON_FAILURE(this, n == spaceNum, Result::INVALID_ARGUMENT, "'registerSpace = %u' is already in use", pipelineLayoutDesc.rootRegisterSpace);
+    }
+
+    for (uint32_t i = 0; i < pipelineLayoutDesc.rootDescriptorNum; i++) {
+        const RootDescriptorDesc& rootDescriptorDesc = pipelineLayoutDesc.rootDescriptors[i];
 
         bool isDescriptorTypeValid = rootDescriptorDesc.descriptorType == DescriptorType::CONSTANT_BUFFER
             || rootDescriptorDesc.descriptorType == DescriptorType::STRUCTURED_BUFFER
             || rootDescriptorDesc.descriptorType == DescriptorType::STORAGE_STRUCTURED_BUFFER;
-        RETURN_ON_FAILURE(this, isDescriptorTypeValid, Result::INVALID_ARGUMENT, "'rootDescriptorSets[%u].descriptorType' must be one of 'CONSTANT_BUFFER', 'STRUCTURED_BUFFER' or 'STORAGE_STRUCTURED_BUFFER'", i);
-
-        uint32_t n = 0;
-        for (; n < spaceNum && spaces[n] != rootDescriptorDesc.registerSpace; n++)
-            ;
-
-        RETURN_ON_FAILURE(this, n == spaceNum, Result::INVALID_ARGUMENT, "'rootDescriptorSets[%u].registerSpace = %u' is already in use", i, rootDescriptorDesc.registerSpace);
-        spaces[spaceNum++] = rootDescriptorDesc.registerSpace;
+        RETURN_ON_FAILURE(this, isDescriptorTypeValid, Result::INVALID_ARGUMENT, "'rootDescriptors[%u].descriptorType' must be one of 'CONSTANT_BUFFER', 'STRUCTURED_BUFFER' or 'STORAGE_STRUCTURED_BUFFER'", i);
     }
 
     PipelineLayout* pipelineLayoutImpl = nullptr;
@@ -469,9 +415,9 @@ NRI_INLINE Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipe
 }
 
 NRI_INLINE Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline) {
-    RETURN_ON_FAILURE(this, graphicsPipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT, "'graphicsPipelineDesc.pipelineLayout' is NULL");
-    RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaders != nullptr, Result::INVALID_ARGUMENT, "'graphicsPipelineDesc.shaders' is NULL");
-    RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaderNum > 0, Result::INVALID_ARGUMENT, "'graphicsPipelineDesc.shaderNum' is 0");
+    RETURN_ON_FAILURE(this, graphicsPipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT, "'pipelineLayout' is NULL");
+    RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaders != nullptr, Result::INVALID_ARGUMENT, "'shaders' is NULL");
+    RETURN_ON_FAILURE(this, graphicsPipelineDesc.shaderNum > 0, Result::INVALID_ARGUMENT, "'shaderNum' is 0");
 
     const PipelineLayoutVal& pipelineLayout = *(PipelineLayoutVal*)graphicsPipelineDesc.pipelineLayout;
     const StageBits shaderStages = pipelineLayout.GetPipelineLayoutDesc().shaderStages;
@@ -482,17 +428,16 @@ NRI_INLINE Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphics
         if (shaderDesc->stage == StageBits::VERTEX_SHADER || shaderDesc->stage == StageBits::MESH_CONTROL_SHADER)
             hasEntryPoint = true;
 
-        RETURN_ON_FAILURE(this, shaderDesc->stage & shaderStages, Result::INVALID_ARGUMENT, "'graphicsPipelineDesc.shaders[%u].stage' is not enabled in the pipeline layout", i);
-        RETURN_ON_FAILURE(this, shaderDesc->bytecode != nullptr, Result::INVALID_ARGUMENT, "'graphicsPipelineDesc.shaders[%u].bytecode' is invalid", i);
-        RETURN_ON_FAILURE(this, shaderDesc->size != 0, Result::INVALID_ARGUMENT, "'graphicsPipelineDesc.shaders[%u].size' is 0", i);
-        RETURN_ON_FAILURE(this, IsShaderStageValid(shaderDesc->stage, uniqueShaderStages, StageBits::GRAPHICS_SHADERS), Result::INVALID_ARGUMENT,
-            "'graphicsPipelineDesc.shaders[%u].stage' must include only 1 graphics shader stage, unique for the entire pipeline", i);
+        RETURN_ON_FAILURE(this, shaderDesc->stage & shaderStages, Result::INVALID_ARGUMENT, "'shaders[%u].stage' is not enabled in the pipeline layout", i);
+        RETURN_ON_FAILURE(this, shaderDesc->bytecode != nullptr, Result::INVALID_ARGUMENT, "'shaders[%u].bytecode' is invalid", i);
+        RETURN_ON_FAILURE(this, shaderDesc->size != 0, Result::INVALID_ARGUMENT, "'shaders[%u].size' is 0", i);
+        RETURN_ON_FAILURE(this, IsShaderStageValid(shaderDesc->stage, uniqueShaderStages, StageBits::GRAPHICS_SHADERS), Result::INVALID_ARGUMENT, "'shaders[%u].stage' must include only 1 graphics shader stage, unique for the entire pipeline", i);
     }
     RETURN_ON_FAILURE(this, hasEntryPoint, Result::INVALID_ARGUMENT, "a VERTEX or MESH_CONTROL shader is not provided");
 
     for (uint32_t i = 0; i < graphicsPipelineDesc.outputMerger.colorNum; i++) {
         const ColorAttachmentDesc* color = graphicsPipelineDesc.outputMerger.colors + i;
-        RETURN_ON_FAILURE(this, color->format > Format::UNKNOWN && color->format < Format::BC1_RGBA_UNORM, Result::INVALID_ARGUMENT, "'graphicsPipelineDesc.outputMerger->color[%u].format = %u' is invalid", i, color->format);
+        RETURN_ON_FAILURE(this, color->format > Format::UNKNOWN && color->format < Format::BC1_RGBA_UNORM, Result::INVALID_ARGUMENT, "'outputMerger->color[%u].format = %u' is invalid", i, color->format);
     }
 
     if (graphicsPipelineDesc.vertexInput) {
@@ -501,7 +446,7 @@ NRI_INLINE Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphics
             uint32_t size = GetFormatProps(attribute->format).stride;
             uint32_t stride = graphicsPipelineDesc.vertexInput->streams[attribute->streamIndex].stride;
             RETURN_ON_FAILURE(this, attribute->offset + size <= stride, Result::INVALID_ARGUMENT,
-                "'graphicsPipelineDesc.inputAssembly->attributes[%u]' is out of bounds of 'graphicsPipelineDesc.inputAssembly->streams[%u]' (stride = %u)", i, attribute->streamIndex, stride);
+                "'inputAssembly->attributes[%u]' is out of bounds of 'inputAssembly->streams[%u]' (stride = %u)", i, attribute->streamIndex, stride);
         }
     }
 
@@ -536,10 +481,10 @@ NRI_INLINE Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphics
 }
 
 NRI_INLINE Result DeviceVal::CreatePipeline(const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline) {
-    RETURN_ON_FAILURE(this, computePipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT, "'computePipelineDesc.pipelineLayout' is NULL");
-    RETURN_ON_FAILURE(this, computePipelineDesc.shader.size != 0, Result::INVALID_ARGUMENT, "'computePipelineDesc.shader.size' is 0");
-    RETURN_ON_FAILURE(this, computePipelineDesc.shader.bytecode != nullptr, Result::INVALID_ARGUMENT, "'computePipelineDesc.shader.bytecode' is NULL");
-    RETURN_ON_FAILURE(this, computePipelineDesc.shader.stage == StageBits::COMPUTE_SHADER, Result::INVALID_ARGUMENT, "'computePipelineDesc.shader.stage' must be 'StageBits::COMPUTE_SHADER'");
+    RETURN_ON_FAILURE(this, computePipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT, "'pipelineLayout' is NULL");
+    RETURN_ON_FAILURE(this, computePipelineDesc.shader.size != 0, Result::INVALID_ARGUMENT, "'shader.size' is 0");
+    RETURN_ON_FAILURE(this, computePipelineDesc.shader.bytecode != nullptr, Result::INVALID_ARGUMENT, "'shader.bytecode' is NULL");
+    RETURN_ON_FAILURE(this, computePipelineDesc.shader.stage == StageBits::COMPUTE_SHADER, Result::INVALID_ARGUMENT, "'shader.stage' must be 'StageBits::COMPUTE_SHADER'");
 
     auto computePipelineDescImpl = computePipelineDesc;
     computePipelineDescImpl.pipelineLayout = NRI_GET_IMPL(PipelineLayout, computePipelineDesc.pipelineLayout);
@@ -554,8 +499,8 @@ NRI_INLINE Result DeviceVal::CreatePipeline(const ComputePipelineDesc& computePi
 }
 
 NRI_INLINE Result DeviceVal::CreateQueryPool(const QueryPoolDesc& queryPoolDesc, QueryPool*& queryPool) {
-    RETURN_ON_FAILURE(this, queryPoolDesc.queryType < QueryType::MAX_NUM, Result::INVALID_ARGUMENT, "'queryPoolDesc.queryType' is invalid");
-    RETURN_ON_FAILURE(this, queryPoolDesc.capacity > 0, Result::INVALID_ARGUMENT, "'queryPoolDesc.capacity' is 0");
+    RETURN_ON_FAILURE(this, queryPoolDesc.queryType < QueryType::MAX_NUM, Result::INVALID_ARGUMENT, "'queryType' is invalid");
+    RETURN_ON_FAILURE(this, queryPoolDesc.capacity > 0, Result::INVALID_ARGUMENT, "'capacity' is 0");
 
     if (queryPoolDesc.queryType == QueryType::TIMESTAMP_COPY_QUEUE)
         RETURN_ON_FAILURE(this, GetDesc().isCopyQueueTimestampSupported, Result::UNSUPPORTED, "'isCopyQueueTimestampSupported' is false");
@@ -630,8 +575,8 @@ NRI_INLINE void DeviceVal::DestroyFence(Fence& fence) {
 }
 
 NRI_INLINE Result DeviceVal::AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
-    RETURN_ON_FAILURE(this, allocateMemoryDesc.size > 0, Result::INVALID_ARGUMENT, "'allocateMemoryDesc.size' is 0");
-    RETURN_ON_FAILURE(this, allocateMemoryDesc.priority >= -1.0f && allocateMemoryDesc.priority <= 1.0f, Result::INVALID_ARGUMENT, "'allocateMemoryDesc.priority' outside of [-1; 1] range");
+    RETURN_ON_FAILURE(this, allocateMemoryDesc.size > 0, Result::INVALID_ARGUMENT, "'size' is 0");
+    RETURN_ON_FAILURE(this, allocateMemoryDesc.priority >= -1.0f && allocateMemoryDesc.priority <= 1.0f, Result::INVALID_ARGUMENT, "'priority' outside of [-1; 1] range");
 
     std::unordered_map<MemoryType, MemoryLocation>::iterator it;
     std::unordered_map<MemoryType, MemoryLocation>::iterator end;
@@ -653,21 +598,18 @@ NRI_INLINE Result DeviceVal::AllocateMemory(const AllocateMemoryDesc& allocateMe
 }
 
 NRI_INLINE Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
-    RETURN_ON_FAILURE(this, memoryBindingDescs != nullptr, Result::INVALID_ARGUMENT, "'memoryBindingDescs' is NULL");
-
-    BufferMemoryBindingDesc* memoryBindingDescsImpl = StackAlloc(BufferMemoryBindingDesc, memoryBindingDescNum);
-
+    Scratch<BufferMemoryBindingDesc> memoryBindingDescsImpl = AllocateScratch(*this, BufferMemoryBindingDesc, memoryBindingDescNum);
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         BufferMemoryBindingDesc& destDesc = memoryBindingDescsImpl[i];
         const BufferMemoryBindingDesc& srcDesc = memoryBindingDescs[i];
 
-        RETURN_ON_FAILURE(this, srcDesc.buffer != nullptr, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].buffer' is NULL", i);
-        RETURN_ON_FAILURE(this, srcDesc.memory != nullptr, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].memory' is NULL", i);
+        RETURN_ON_FAILURE(this, srcDesc.buffer != nullptr, Result::INVALID_ARGUMENT, "'[%u].buffer' is NULL", i);
+        RETURN_ON_FAILURE(this, srcDesc.memory != nullptr, Result::INVALID_ARGUMENT, "'[%u].memory' is NULL", i);
 
         MemoryVal& memory = (MemoryVal&)*srcDesc.memory;
         BufferVal& buffer = (BufferVal&)*srcDesc.buffer;
 
-        RETURN_ON_FAILURE(this, !buffer.IsBoundToMemory(), Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].buffer' is already bound to memory", i);
+        RETURN_ON_FAILURE(this, !buffer.IsBoundToMemory(), Result::INVALID_ARGUMENT, "'[%u].buffer' is already bound to memory", i);
 
         destDesc = srcDesc;
         destDesc.memory = memory.GetImpl();
@@ -680,14 +622,14 @@ NRI_INLINE Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* mem
         MemoryDesc memoryDesc = {};
         GetCoreInterface().GetBufferMemoryDesc(GetImpl(), buffer.GetDesc(), memory.GetMemoryLocation(), memoryDesc);
 
-        RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].offset' must be zero for dedicated allocation", i);
-        RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].alignment' is 0", i);
-        RETURN_ON_FAILURE(this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].offset' is misaligned", i);
+        RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT, "'[%u].offset' must be zero for dedicated allocation", i);
+        RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT, "'[%u].alignment' is 0", i);
+        RETURN_ON_FAILURE(this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT, "'[%u].offset' is misaligned", i);
 
         const uint64_t rangeMax = srcDesc.offset + memoryDesc.size;
         const bool memorySizeIsUnknown = memory.GetSize() == 0;
 
-        RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].offset' is invalid", i);
+        RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "'[%u].offset' is invalid", i);
     }
 
     Result result = m_CoreAPI.BindBufferMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
@@ -703,21 +645,18 @@ NRI_INLINE Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* mem
 }
 
 NRI_INLINE Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
-    RETURN_ON_FAILURE(this, memoryBindingDescs != nullptr, Result::INVALID_ARGUMENT, "'memoryBindingDescs' is a NULL");
-
-    TextureMemoryBindingDesc* memoryBindingDescsImpl = StackAlloc(TextureMemoryBindingDesc, memoryBindingDescNum);
-
+    Scratch<TextureMemoryBindingDesc> memoryBindingDescsImpl = AllocateScratch(*this, TextureMemoryBindingDesc, memoryBindingDescNum);
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         TextureMemoryBindingDesc& destDesc = memoryBindingDescsImpl[i];
         const TextureMemoryBindingDesc& srcDesc = memoryBindingDescs[i];
 
-        RETURN_ON_FAILURE(this, srcDesc.texture != nullptr, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].texture' is NULL", i);
-        RETURN_ON_FAILURE(this, srcDesc.memory != nullptr, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].memory' is NULL", i);
+        RETURN_ON_FAILURE(this, srcDesc.texture != nullptr, Result::INVALID_ARGUMENT, "'[%u].texture' is NULL", i);
+        RETURN_ON_FAILURE(this, srcDesc.memory != nullptr, Result::INVALID_ARGUMENT, "'[%u].memory' is NULL", i);
 
         MemoryVal& memory = (MemoryVal&)*srcDesc.memory;
         TextureVal& texture = (TextureVal&)*srcDesc.texture;
 
-        RETURN_ON_FAILURE(this, !texture.IsBoundToMemory(), Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].texture' is already bound to memory", i);
+        RETURN_ON_FAILURE(this, !texture.IsBoundToMemory(), Result::INVALID_ARGUMENT, "'[%u].texture' is already bound to memory", i);
 
         destDesc = srcDesc;
         destDesc.memory = memory.GetImpl();
@@ -730,14 +669,14 @@ NRI_INLINE Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* m
         MemoryDesc memoryDesc = {};
         GetCoreInterface().GetTextureMemoryDesc(GetImpl(), texture.GetDesc(), memory.GetMemoryLocation(), memoryDesc);
 
-        RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].offset' must be zero for dedicated allocation", i);
-        RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].alignment' is 0", i);
-        RETURN_ON_FAILURE(this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].offset' is misaligned", i);
+        RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT, "'[%u].offset' must be zero for dedicated allocation", i);
+        RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT, "'[%u].alignment' is 0", i);
+        RETURN_ON_FAILURE(this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT, "'[%u].offset' is misaligned", i);
 
         const uint64_t rangeMax = srcDesc.offset + memoryDesc.size;
         const bool memorySizeIsUnknown = memory.GetSize() == 0;
 
-        RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].offset' is invalid", i);
+        RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "'[%u].offset' is invalid", i);
     }
 
     Result result = m_CoreAPI.BindTextureMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
@@ -772,8 +711,8 @@ NRI_INLINE FormatSupportBits DeviceVal::GetFormatSupport(Format format) const {
 #if NRI_USE_VK
 
 NRI_INLINE Result DeviceVal::CreateCommandQueue(const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue) {
-    RETURN_ON_FAILURE(this, commandQueueVKDesc.vkQueue != 0, Result::INVALID_ARGUMENT, "'commandQueueVKDesc.vkQueue' is NULL");
-    RETURN_ON_FAILURE(this, commandQueueVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandQueueVKDesc.commandQueueType' is invalid");
+    RETURN_ON_FAILURE(this, commandQueueVKDesc.vkQueue != 0, Result::INVALID_ARGUMENT, "'vkQueue' is NULL");
+    RETURN_ON_FAILURE(this, commandQueueVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandQueueType' is invalid");
 
     CommandQueue* commandQueueImpl = nullptr;
     Result result = m_WrapperVKAPI.CreateCommandQueueVK(m_Device, commandQueueVKDesc, commandQueueImpl);
@@ -785,8 +724,8 @@ NRI_INLINE Result DeviceVal::CreateCommandQueue(const CommandQueueVKDesc& comman
 }
 
 NRI_INLINE Result DeviceVal::CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorVKDesc, CommandAllocator*& commandAllocator) {
-    RETURN_ON_FAILURE(this, commandAllocatorVKDesc.vkCommandPool != 0, Result::INVALID_ARGUMENT, "'commandAllocatorVKDesc.vkCommandPool' is NULL");
-    RETURN_ON_FAILURE(this, commandAllocatorVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandAllocatorVKDesc.commandQueueType' is invalid");
+    RETURN_ON_FAILURE(this, commandAllocatorVKDesc.vkCommandPool != 0, Result::INVALID_ARGUMENT, "'vkCommandPool' is NULL");
+    RETURN_ON_FAILURE(this, commandAllocatorVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandQueueType' is invalid");
 
     CommandAllocator* commandAllocatorImpl = nullptr;
     Result result = m_WrapperVKAPI.CreateCommandAllocatorVK(m_Device, commandAllocatorVKDesc, commandAllocatorImpl);
@@ -798,8 +737,8 @@ NRI_INLINE Result DeviceVal::CreateCommandAllocator(const CommandAllocatorVKDesc
 }
 
 NRI_INLINE Result DeviceVal::CreateCommandBuffer(const CommandBufferVKDesc& commandBufferVKDesc, CommandBuffer*& commandBuffer) {
-    RETURN_ON_FAILURE(this, commandBufferVKDesc.vkCommandBuffer != 0, Result::INVALID_ARGUMENT, "'commandBufferVKDesc.vkCommandBuffer' is NULL");
-    RETURN_ON_FAILURE(this, commandBufferVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandBufferVKDesc.commandQueueType' is invalid");
+    RETURN_ON_FAILURE(this, commandBufferVKDesc.vkCommandBuffer != 0, Result::INVALID_ARGUMENT, "'vkCommandBuffer' is NULL");
+    RETURN_ON_FAILURE(this, commandBufferVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandQueueType' is invalid");
 
     CommandBuffer* commandBufferImpl = nullptr;
     Result result = m_WrapperVKAPI.CreateCommandBufferVK(m_Device, commandBufferVKDesc, commandBufferImpl);
@@ -824,8 +763,8 @@ NRI_INLINE Result DeviceVal::CreateDescriptorPool(const DescriptorPoolVKDesc& de
 }
 
 NRI_INLINE Result DeviceVal::CreateBuffer(const BufferVKDesc& bufferDesc, Buffer*& buffer) {
-    RETURN_ON_FAILURE(this, bufferDesc.vkBuffer != 0, Result::INVALID_ARGUMENT, "'bufferDesc.vkBuffer' is NULL");
-    RETURN_ON_FAILURE(this, bufferDesc.size > 0, Result::INVALID_ARGUMENT, "'bufferDesc.bufferSize' is 0");
+    RETURN_ON_FAILURE(this, bufferDesc.vkBuffer != 0, Result::INVALID_ARGUMENT, "'vkBuffer' is NULL");
+    RETURN_ON_FAILURE(this, bufferDesc.size > 0, Result::INVALID_ARGUMENT, "'bufferSize' is 0");
 
     Buffer* bufferImpl = nullptr;
     Result result = m_WrapperVKAPI.CreateBufferVK(m_Device, bufferDesc, bufferImpl);
@@ -837,11 +776,11 @@ NRI_INLINE Result DeviceVal::CreateBuffer(const BufferVKDesc& bufferDesc, Buffer
 }
 
 NRI_INLINE Result DeviceVal::CreateTexture(const TextureVKDesc& textureVKDesc, Texture*& texture) {
-    RETURN_ON_FAILURE(this, textureVKDesc.vkImage != 0, Result::INVALID_ARGUMENT, "'textureVKDesc.vkImage' is NULL");
-    RETURN_ON_FAILURE(this, nriConvertVKFormatToNRI(textureVKDesc.vkFormat) != Format::UNKNOWN, Result::INVALID_ARGUMENT, "'textureVKDesc.sampleNum' is 0");
-    RETURN_ON_FAILURE(this, textureVKDesc.sampleNum > 0, Result::INVALID_ARGUMENT, "'textureVKDesc.sampleNum' is 0");
-    RETURN_ON_FAILURE(this, textureVKDesc.layerNum > 0, Result::INVALID_ARGUMENT, "'textureVKDesc.layerNum' is 0");
-    RETURN_ON_FAILURE(this, textureVKDesc.mipNum > 0, Result::INVALID_ARGUMENT, "'textureVKDesc.mipNum' is 0");
+    RETURN_ON_FAILURE(this, textureVKDesc.vkImage != 0, Result::INVALID_ARGUMENT, "'vkImage' is NULL");
+    RETURN_ON_FAILURE(this, nriConvertVKFormatToNRI(textureVKDesc.vkFormat) != Format::UNKNOWN, Result::INVALID_ARGUMENT, "'sampleNum' is 0");
+    RETURN_ON_FAILURE(this, textureVKDesc.sampleNum > 0, Result::INVALID_ARGUMENT, "'sampleNum' is 0");
+    RETURN_ON_FAILURE(this, textureVKDesc.layerNum > 0, Result::INVALID_ARGUMENT, "'layerNum' is 0");
+    RETURN_ON_FAILURE(this, textureVKDesc.mipNum > 0, Result::INVALID_ARGUMENT, "'mipNum' is 0");
 
     Texture* textureImpl = nullptr;
     Result result = m_WrapperVKAPI.CreateTextureVK(m_Device, textureVKDesc, textureImpl);
@@ -853,8 +792,8 @@ NRI_INLINE Result DeviceVal::CreateTexture(const TextureVKDesc& textureVKDesc, T
 }
 
 NRI_INLINE Result DeviceVal::CreateMemory(const MemoryVKDesc& memoryVKDesc, Memory*& memory) {
-    RETURN_ON_FAILURE(this, memoryVKDesc.vkDeviceMemory != 0, Result::INVALID_ARGUMENT, "'memoryVKDesc.vkDeviceMemory' is NULL");
-    RETURN_ON_FAILURE(this, memoryVKDesc.size > 0, Result::INVALID_ARGUMENT, "'memoryVKDesc.size' is 0");
+    RETURN_ON_FAILURE(this, memoryVKDesc.vkDeviceMemory != 0, Result::INVALID_ARGUMENT, "'vkDeviceMemory' is NULL");
+    RETURN_ON_FAILURE(this, memoryVKDesc.size > 0, Result::INVALID_ARGUMENT, "'size' is 0");
 
     Memory* memoryImpl = nullptr;
     Result result = m_WrapperVKAPI.CreateMemoryVK(m_Device, memoryVKDesc, memoryImpl);
@@ -890,7 +829,7 @@ NRI_INLINE Result DeviceVal::CreateComputePipeline(VKNonDispatchableHandle vkPip
 }
 
 NRI_INLINE Result DeviceVal::CreateQueryPool(const QueryPoolVKDesc& queryPoolVKDesc, QueryPool*& queryPool) {
-    RETURN_ON_FAILURE(this, queryPoolVKDesc.vkQueryPool != 0, Result::INVALID_ARGUMENT, "'queryPoolVKDesc.vkQueryPool' is NULL");
+    RETURN_ON_FAILURE(this, queryPoolVKDesc.vkQueryPool != 0, Result::INVALID_ARGUMENT, "'vkQueryPool' is NULL");
 
     QueryPool* queryPoolImpl = nullptr;
     Result result = m_WrapperVKAPI.CreateQueryPoolVK(m_Device, queryPoolVKDesc, queryPoolImpl);
@@ -904,7 +843,7 @@ NRI_INLINE Result DeviceVal::CreateQueryPool(const QueryPoolVKDesc& queryPoolVKD
 }
 
 NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStructureVKDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
-    RETURN_ON_FAILURE(this, accelerationStructureDesc.vkAccelerationStructure != 0, Result::INVALID_ARGUMENT, "'accelerationStructureDesc.vkAccelerationStructure' is NULL");
+    RETURN_ON_FAILURE(this, accelerationStructureDesc.vkAccelerationStructure != 0, Result::INVALID_ARGUMENT, "'vkAccelerationStructure' is NULL");
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
     Result result = m_WrapperVKAPI.CreateAccelerationStructureVK(m_Device, accelerationStructureDesc, accelerationStructureImpl);
@@ -922,7 +861,7 @@ NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStruc
 #if NRI_USE_D3D11
 
 NRI_INLINE Result DeviceVal::CreateCommandBuffer(const CommandBufferD3D11Desc& commandBufferDesc, CommandBuffer*& commandBuffer) {
-    RETURN_ON_FAILURE(this, commandBufferDesc.d3d11DeviceContext != nullptr, Result::INVALID_ARGUMENT, "'commandBufferDesc.d3d11DeviceContext' is NULL");
+    RETURN_ON_FAILURE(this, commandBufferDesc.d3d11DeviceContext != nullptr, Result::INVALID_ARGUMENT, "'d3d11DeviceContext' is NULL");
 
     CommandBuffer* commandBufferImpl = nullptr;
     Result result = m_WrapperD3D11API.CreateCommandBufferD3D11(m_Device, commandBufferDesc, commandBufferImpl);
@@ -934,7 +873,7 @@ NRI_INLINE Result DeviceVal::CreateCommandBuffer(const CommandBufferD3D11Desc& c
 }
 
 NRI_INLINE Result DeviceVal::CreateBuffer(const BufferD3D11Desc& bufferDesc, Buffer*& buffer) {
-    RETURN_ON_FAILURE(this, bufferDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT, "'bufferDesc.d3d11Resource' is NULL");
+    RETURN_ON_FAILURE(this, bufferDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT, "'d3d11Resource' is NULL");
 
     Buffer* bufferImpl = nullptr;
     Result result = m_WrapperD3D11API.CreateBufferD3D11(m_Device, bufferDesc, bufferImpl);
@@ -946,7 +885,7 @@ NRI_INLINE Result DeviceVal::CreateBuffer(const BufferD3D11Desc& bufferDesc, Buf
 }
 
 NRI_INLINE Result DeviceVal::CreateTexture(const TextureD3D11Desc& textureDesc, Texture*& texture) {
-    RETURN_ON_FAILURE(this, textureDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT, "'textureDesc.d3d11Resource' is NULL");
+    RETURN_ON_FAILURE(this, textureDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT, "'d3d11Resource' is NULL");
 
     Texture* textureImpl = nullptr;
     Result result = m_WrapperD3D11API.CreateTextureD3D11(m_Device, textureDesc, textureImpl);
@@ -962,8 +901,8 @@ NRI_INLINE Result DeviceVal::CreateTexture(const TextureD3D11Desc& textureDesc, 
 #if NRI_USE_D3D12
 
 NRI_INLINE Result DeviceVal::CreateCommandBuffer(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer) {
-    RETURN_ON_FAILURE(this, commandBufferDesc.d3d12CommandAllocator != nullptr, Result::INVALID_ARGUMENT, "'commandBufferDesc.d3d12CommandAllocator' is NULL");
-    RETURN_ON_FAILURE(this, commandBufferDesc.d3d12CommandList != nullptr, Result::INVALID_ARGUMENT, "'commandBufferDesc.d3d12CommandList' is NULL");
+    RETURN_ON_FAILURE(this, commandBufferDesc.d3d12CommandAllocator != nullptr, Result::INVALID_ARGUMENT, "'d3d12CommandAllocator' is NULL");
+    RETURN_ON_FAILURE(this, commandBufferDesc.d3d12CommandList != nullptr, Result::INVALID_ARGUMENT, "'d3d12CommandList' is NULL");
 
     CommandBuffer* commandBufferImpl = nullptr;
     Result result = m_WrapperD3D12API.CreateCommandBufferD3D12(m_Device, commandBufferDesc, commandBufferImpl);
@@ -975,8 +914,7 @@ NRI_INLINE Result DeviceVal::CreateCommandBuffer(const CommandBufferD3D12Desc& c
 }
 
 NRI_INLINE Result DeviceVal::CreateDescriptorPool(const DescriptorPoolD3D12Desc& descriptorPoolD3D12Desc, DescriptorPool*& descriptorPool) {
-    RETURN_ON_FAILURE(this, descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap || descriptorPoolD3D12Desc.d3d12SamplerDescriptorHeap,
-        Result::INVALID_ARGUMENT, "'descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap' and 'descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap' are both NULL");
+    RETURN_ON_FAILURE(this, descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap || descriptorPoolD3D12Desc.d3d12SamplerDescriptorHeap, Result::INVALID_ARGUMENT, "'d3d12ResourceDescriptorHeap' and 'd3d12ResourceDescriptorHeap' are both NULL");
 
     DescriptorPool* descriptorPoolImpl = nullptr;
     Result result = m_WrapperD3D12API.CreateDescriptorPoolD3D12(m_Device, descriptorPoolD3D12Desc, descriptorPoolImpl);
@@ -988,7 +926,7 @@ NRI_INLINE Result DeviceVal::CreateDescriptorPool(const DescriptorPoolD3D12Desc&
 }
 
 NRI_INLINE Result DeviceVal::CreateBuffer(const BufferD3D12Desc& bufferDesc, Buffer*& buffer) {
-    RETURN_ON_FAILURE(this, bufferDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "'bufferDesc.d3d12Resource' is NULL");
+    RETURN_ON_FAILURE(this, bufferDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "'d3d12Resource' is NULL");
 
     Buffer* bufferImpl = nullptr;
     Result result = m_WrapperD3D12API.CreateBufferD3D12(m_Device, bufferDesc, bufferImpl);
@@ -1000,7 +938,7 @@ NRI_INLINE Result DeviceVal::CreateBuffer(const BufferD3D12Desc& bufferDesc, Buf
 }
 
 NRI_INLINE Result DeviceVal::CreateTexture(const TextureD3D12Desc& textureDesc, Texture*& texture) {
-    RETURN_ON_FAILURE(this, textureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "'textureDesc.d3d12Resource' is NULL");
+    RETURN_ON_FAILURE(this, textureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "'d3d12Resource' is NULL");
 
     Texture* textureImpl = nullptr;
     Result result = m_WrapperD3D12API.CreateTextureD3D12(m_Device, textureDesc, textureImpl);
@@ -1012,7 +950,7 @@ NRI_INLINE Result DeviceVal::CreateTexture(const TextureD3D12Desc& textureDesc, 
 }
 
 NRI_INLINE Result DeviceVal::CreateMemory(const MemoryD3D12Desc& memoryDesc, Memory*& memory) {
-    RETURN_ON_FAILURE(this, memoryDesc.d3d12Heap != nullptr, Result::INVALID_ARGUMENT, "'memoryDesc.d3d12Heap' is NULL");
+    RETURN_ON_FAILURE(this, memoryDesc.d3d12Heap != nullptr, Result::INVALID_ARGUMENT, "'d3d12Heap' is NULL");
 
     Memory* memoryImpl = nullptr;
     Result result = m_WrapperD3D12API.CreateMemoryD3D12(m_Device, memoryDesc, memoryImpl);
@@ -1026,7 +964,7 @@ NRI_INLINE Result DeviceVal::CreateMemory(const MemoryD3D12Desc& memoryDesc, Mem
 }
 
 NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
-    RETURN_ON_FAILURE(this, accelerationStructureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "'accelerationStructureDesc.d3d12Resource' is NULL");
+    RETURN_ON_FAILURE(this, accelerationStructureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "'d3d12Resource' is NULL");
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
     Result result = m_WrapperD3D12API.CreateAccelerationStructureD3D12(m_Device, accelerationStructureDesc, accelerationStructureImpl);
@@ -1041,24 +979,22 @@ NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStruc
 
 #endif
 
-NRI_INLINE uint32_t DeviceVal::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const {
-    RETURN_ON_FAILURE(this, resourceGroupDesc.memoryLocation < MemoryLocation::MAX_NUM, 0, "'resourceGroupDesc.memoryLocation' is invalid");
-    RETURN_ON_FAILURE(this, resourceGroupDesc.bufferNum == 0 || resourceGroupDesc.buffers != nullptr, 0, "'resourceGroupDesc.buffers' is NULL");
-    RETURN_ON_FAILURE(this, resourceGroupDesc.textureNum == 0 || resourceGroupDesc.textures != nullptr, 0, "'resourceGroupDesc.textures' is NULL");
+NRI_INLINE uint32_t DeviceVal::CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) {
+    RETURN_ON_FAILURE(this, resourceGroupDesc.memoryLocation < MemoryLocation::MAX_NUM, 0, "'memoryLocation' is invalid");
+    RETURN_ON_FAILURE(this, resourceGroupDesc.bufferNum == 0 || resourceGroupDesc.buffers != nullptr, 0, "'buffers' is NULL");
+    RETURN_ON_FAILURE(this, resourceGroupDesc.textureNum == 0 || resourceGroupDesc.textures != nullptr, 0, "'textures' is NULL");
 
-    Buffer** buffersImpl = StackAlloc(Buffer*, resourceGroupDesc.bufferNum);
-
+    Scratch<Buffer*> buffersImpl = AllocateScratch(*this, Buffer*, resourceGroupDesc.bufferNum);
     for (uint32_t i = 0; i < resourceGroupDesc.bufferNum; i++) {
-        RETURN_ON_FAILURE(this, resourceGroupDesc.buffers[i] != nullptr, 0, "'resourceGroupDesc.buffers[%u]' is NULL", i);
+        RETURN_ON_FAILURE(this, resourceGroupDesc.buffers[i] != nullptr, 0, "'buffers[%u]' is NULL", i);
 
         BufferVal& bufferVal = *(BufferVal*)resourceGroupDesc.buffers[i];
         buffersImpl[i] = bufferVal.GetImpl();
     }
 
-    Texture** texturesImpl = StackAlloc(Texture*, resourceGroupDesc.textureNum);
-
+    Scratch<Texture*> texturesImpl = AllocateScratch(*this, Texture*, resourceGroupDesc.textureNum);
     for (uint32_t i = 0; i < resourceGroupDesc.textureNum; i++) {
-        RETURN_ON_FAILURE(this, resourceGroupDesc.textures[i] != nullptr, 0, "'resourceGroupDesc.textures[%u]' is NULL", i);
+        RETURN_ON_FAILURE(this, resourceGroupDesc.textures[i] != nullptr, 0, "'textures[%u]' is NULL", i);
 
         TextureVal& textureVal = *(TextureVal*)resourceGroupDesc.textures[i];
         texturesImpl[i] = textureVal.GetImpl();
@@ -1073,23 +1009,21 @@ NRI_INLINE uint32_t DeviceVal::CalculateAllocationNumber(const ResourceGroupDesc
 
 NRI_INLINE Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
     RETURN_ON_FAILURE(this, allocations != nullptr, Result::INVALID_ARGUMENT, "'allocations' is NULL");
-    RETURN_ON_FAILURE(this, resourceGroupDesc.memoryLocation < MemoryLocation::MAX_NUM, Result::INVALID_ARGUMENT, "'resourceGroupDesc.memoryLocation' is invalid");
-    RETURN_ON_FAILURE(this, resourceGroupDesc.bufferNum == 0 || resourceGroupDesc.buffers != nullptr, Result::INVALID_ARGUMENT, "'resourceGroupDesc.buffers' is NULL");
-    RETURN_ON_FAILURE(this, resourceGroupDesc.textureNum == 0 || resourceGroupDesc.textures != nullptr, Result::INVALID_ARGUMENT, "'resourceGroupDesc.textures' is NULL");
+    RETURN_ON_FAILURE(this, resourceGroupDesc.memoryLocation < MemoryLocation::MAX_NUM, Result::INVALID_ARGUMENT, "'memoryLocation' is invalid");
+    RETURN_ON_FAILURE(this, resourceGroupDesc.bufferNum == 0 || resourceGroupDesc.buffers != nullptr, Result::INVALID_ARGUMENT, "'buffers' is NULL");
+    RETURN_ON_FAILURE(this, resourceGroupDesc.textureNum == 0 || resourceGroupDesc.textures != nullptr, Result::INVALID_ARGUMENT, "'textures' is NULL");
 
-    Buffer** buffersImpl = StackAlloc(Buffer*, resourceGroupDesc.bufferNum);
-
+    Scratch<Buffer*> buffersImpl = AllocateScratch(*this, Buffer*, resourceGroupDesc.bufferNum);
     for (uint32_t i = 0; i < resourceGroupDesc.bufferNum; i++) {
-        RETURN_ON_FAILURE(this, resourceGroupDesc.buffers[i] != nullptr, Result::INVALID_ARGUMENT, "'resourceGroupDesc.buffers[%u]' is NULL", i);
+        RETURN_ON_FAILURE(this, resourceGroupDesc.buffers[i] != nullptr, Result::INVALID_ARGUMENT, "'buffers[%u]' is NULL", i);
 
         BufferVal& bufferVal = *(BufferVal*)resourceGroupDesc.buffers[i];
         buffersImpl[i] = bufferVal.GetImpl();
     }
 
-    Texture** texturesImpl = StackAlloc(Texture*, resourceGroupDesc.textureNum);
-
+    Scratch<Texture*> texturesImpl = AllocateScratch(*this, Texture*, resourceGroupDesc.textureNum);
     for (uint32_t i = 0; i < resourceGroupDesc.textureNum; i++) {
-        RETURN_ON_FAILURE(this, resourceGroupDesc.textures[i] != nullptr, Result::INVALID_ARGUMENT, "'resourceGroupDesc.textures[%u]' is NULL", i);
+        RETURN_ON_FAILURE(this, resourceGroupDesc.textures[i] != nullptr, Result::INVALID_ARGUMENT, "'textures[%u]' is NULL", i);
 
         TextureVal& textureVal = *(TextureVal*)resourceGroupDesc.textures[i];
         texturesImpl[i] = textureVal.GetImpl();
@@ -1126,21 +1060,20 @@ NRI_INLINE Result DeviceVal::QueryVideoMemoryInfo(MemoryLocation memoryLocation,
 }
 
 NRI_INLINE Result DeviceVal::CreatePipeline(const RayTracingPipelineDesc& pipelineDesc, Pipeline*& pipeline) {
-    RETURN_ON_FAILURE(this, pipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT, "'pipelineDesc.pipelineLayout' is NULL");
-    RETURN_ON_FAILURE(this, pipelineDesc.shaderLibrary != nullptr, Result::INVALID_ARGUMENT, "'pipelineDesc.shaderLibrary' is NULL");
-    RETURN_ON_FAILURE(this, pipelineDesc.shaderGroupDescs != nullptr, Result::INVALID_ARGUMENT, "'pipelineDesc.shaderGroupDescs' is NULL");
-    RETURN_ON_FAILURE(this, pipelineDesc.shaderGroupDescNum != 0, Result::INVALID_ARGUMENT, "'pipelineDesc.shaderGroupDescNum' is 0");
-    RETURN_ON_FAILURE(this, pipelineDesc.recursionDepthMax != 0, Result::INVALID_ARGUMENT, "'pipelineDesc.recursionDepthMax' is 0");
+    RETURN_ON_FAILURE(this, pipelineDesc.pipelineLayout != nullptr, Result::INVALID_ARGUMENT, "'pipelineLayout' is NULL");
+    RETURN_ON_FAILURE(this, pipelineDesc.shaderLibrary != nullptr, Result::INVALID_ARGUMENT, "'shaderLibrary' is NULL");
+    RETURN_ON_FAILURE(this, pipelineDesc.shaderGroupDescs != nullptr, Result::INVALID_ARGUMENT, "'shaderGroupDescs' is NULL");
+    RETURN_ON_FAILURE(this, pipelineDesc.shaderGroupDescNum != 0, Result::INVALID_ARGUMENT, "'shaderGroupDescNum' is 0");
+    RETURN_ON_FAILURE(this, pipelineDesc.recursionDepthMax != 0, Result::INVALID_ARGUMENT, "'recursionDepthMax' is 0");
 
     uint32_t uniqueShaderStages = 0;
     for (uint32_t i = 0; i < pipelineDesc.shaderLibrary->shaderNum; i++) {
         const ShaderDesc& shaderDesc = pipelineDesc.shaderLibrary->shaders[i];
 
-        RETURN_ON_FAILURE(this, shaderDesc.bytecode != nullptr, Result::INVALID_ARGUMENT, "'pipelineDesc.shaderLibrary->shaders[%u].bytecode' is invalid", i);
-
-        RETURN_ON_FAILURE(this, shaderDesc.size != 0, Result::INVALID_ARGUMENT, "'pipelineDesc.shaderLibrary->shaders[%u].size' is 0", i);
+        RETURN_ON_FAILURE(this, shaderDesc.bytecode != nullptr, Result::INVALID_ARGUMENT, "'shaderLibrary->shaders[%u].bytecode' is invalid", i);
+        RETURN_ON_FAILURE(this, shaderDesc.size != 0, Result::INVALID_ARGUMENT, "'shaderLibrary->shaders[%u].size' is 0", i);
         RETURN_ON_FAILURE(this, IsShaderStageValid(shaderDesc.stage, uniqueShaderStages, StageBits::RAY_TRACING_SHADERS), Result::INVALID_ARGUMENT,
-            "'pipelineDesc.shaderLibrary->shaders[%u].stage' must include only 1 ray tracing shader stage, unique for the entire pipeline", i);
+            "'shaderLibrary->shaders[%u].stage' must include only 1 ray tracing shader stage, unique for the entire pipeline", i);
     }
 
     auto pipelineDescImpl = pipelineDesc;
@@ -1156,8 +1089,7 @@ NRI_INLINE Result DeviceVal::CreatePipeline(const RayTracingPipelineDesc& pipeli
 }
 
 NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
-    RETURN_ON_FAILURE(this, accelerationStructureDesc.instanceOrGeometryObjectNum != 0, Result::INVALID_ARGUMENT,
-        "'accelerationStructureDesc.instanceOrGeometryObjectNum' is 0");
+    RETURN_ON_FAILURE(this, accelerationStructureDesc.instanceOrGeometryObjectNum != 0, Result::INVALID_ARGUMENT, "'instanceOrGeometryObjectNum' is 0");
 
     AccelerationStructureDesc accelerationStructureDescImpl = accelerationStructureDesc;
 
@@ -1183,7 +1115,7 @@ NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStruc
 }
 
 NRI_INLINE Result DeviceVal::AllocateAccelerationStructure(const AllocateAccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
-    RETURN_ON_FAILURE(this, accelerationStructureDesc.desc.instanceOrGeometryObjectNum != 0, Result::INVALID_ARGUMENT, "'accelerationStructureDesc.instanceOrGeometryObjectNum' is 0");
+    RETURN_ON_FAILURE(this, accelerationStructureDesc.desc.instanceOrGeometryObjectNum != 0, Result::INVALID_ARGUMENT, "'instanceOrGeometryObjectNum' is 0");
 
     AllocateAccelerationStructureDesc accelerationStructureDescImpl = accelerationStructureDesc;
 
@@ -1209,9 +1141,9 @@ NRI_INLINE Result DeviceVal::AllocateAccelerationStructure(const AllocateAcceler
 }
 
 NRI_INLINE Result DeviceVal::BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
-    RETURN_ON_FAILURE(this, memoryBindingDescs != nullptr, Result::INVALID_ARGUMENT, "'memoryBindingDescs' is NULL");
+    RETURN_ON_FAILURE(this, memoryBindingDescs != nullptr, Result::INVALID_ARGUMENT, "'' is NULL");
 
-    AccelerationStructureMemoryBindingDesc* memoryBindingDescsImpl = StackAlloc(AccelerationStructureMemoryBindingDesc, memoryBindingDescNum);
+    Scratch<AccelerationStructureMemoryBindingDesc> memoryBindingDescsImpl = AllocateScratch(*this, AccelerationStructureMemoryBindingDesc, memoryBindingDescNum);
     for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
         AccelerationStructureMemoryBindingDesc& destDesc = memoryBindingDescsImpl[i];
         const AccelerationStructureMemoryBindingDesc& srcDesc = memoryBindingDescs[i];
@@ -1220,15 +1152,15 @@ NRI_INLINE Result DeviceVal::BindAccelerationStructureMemory(const AccelerationS
         AccelerationStructureVal& accelerationStructure = (AccelerationStructureVal&)*srcDesc.accelerationStructure;
         const MemoryDesc& memoryDesc = accelerationStructure.GetMemoryDesc();
 
-        RETURN_ON_FAILURE(this, !accelerationStructure.IsBoundToMemory(), Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].accelerationStructure' is already bound to memory", i);
-        RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].offset' must be 0 for dedicated allocation", i);
-        RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].alignment' is 0", i);
-        RETURN_ON_FAILURE(this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].offset' is misaligned", i);
+        RETURN_ON_FAILURE(this, !accelerationStructure.IsBoundToMemory(), Result::INVALID_ARGUMENT, "'[%u].accelerationStructure' is already bound to memory", i);
+        RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT, "'[%u].offset' must be 0 for dedicated allocation", i);
+        RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT, "'[%u].alignment' is 0", i);
+        RETURN_ON_FAILURE(this, srcDesc.offset % memoryDesc.alignment == 0, Result::INVALID_ARGUMENT, "'[%u].offset' is misaligned", i);
 
         const uint64_t rangeMax = srcDesc.offset + memoryDesc.size;
         const bool memorySizeIsUnknown = memory.GetSize() == 0;
 
-        RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "'memoryBindingDescs[%u].offset' is invalid", i);
+        RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "'[%u].offset' is invalid", i);
 
         destDesc = srcDesc;
         destDesc.memory = memory.GetImpl();

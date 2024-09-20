@@ -8,23 +8,23 @@ void nri::GetResourceDesc(D3D12_RESOURCE_DESC* desc, const TextureDesc& textureD
     desc->Alignment = textureDesc.sampleNum > 1 ? 0 : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
     desc->Width = Align(textureDesc.width, blockWidth);
     desc->Height = Align(textureDesc.height, blockWidth);
-    desc->DepthOrArraySize = textureDesc.type == TextureType::TEXTURE_3D ? textureDesc.depth : textureDesc.layerNum;
+    desc->DepthOrArraySize = std::max(textureDesc.type == TextureType::TEXTURE_3D ? textureDesc.depth : textureDesc.layerNum, (Dim_t)1);
     desc->MipLevels = textureDesc.mipNum;
     desc->Format = (textureDesc.usageMask & nri::TextureUsageBits::SHADING_RATE_ATTACHMENT) ? dxgiFormat.typed : dxgiFormat.typeless;
-    desc->SampleDesc.Count = textureDesc.sampleNum;
+    desc->SampleDesc.Count = std::max(textureDesc.sampleNum, (Sample_t)1);
     desc->Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     desc->Flags = GetTextureFlags(textureDesc.usageMask);
 }
 
 Result TextureD3D12::Create(const TextureDesc& textureDesc) {
-    m_Desc = textureDesc;
+    m_Desc = FixTextureDesc(textureDesc);
 
     return Result::SUCCESS;
 }
 
 Result TextureD3D12::Create(const TextureD3D12Desc& textureDesc) {
     if (textureDesc.desc)
-        m_Desc = *textureDesc.desc;
+        m_Desc = FixTextureDesc(*textureDesc.desc);
     else if (!GetTextureDesc(textureDesc, m_Desc))
         return Result::INVALID_ARGUMENT;
 

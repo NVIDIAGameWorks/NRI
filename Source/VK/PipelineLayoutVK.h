@@ -66,7 +66,6 @@ struct PipelineLayoutVK {
     void SetDebugName(const char* name);
 
 private:
-    void FillBindingInfo(const PipelineLayoutDesc& pipelineLayoutDesc);
     VkDescriptorSetLayout CreateSetLayout(const DescriptorSetDesc& descriptorSetDesc, bool ignoreGlobalSPIRVOffsets, bool isPush);
 
 private:

@@ -160,7 +160,7 @@ struct DeviceVal final : public DeviceBase {
     Result QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const;
     Result AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations);
     Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
-    uint32_t CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc) const;
+    uint32_t CalculateAllocationNumber(const ResourceGroupDesc& resourceGroupDesc);
     FormatSupportBits GetFormatSupport(Format format) const;
 
 private:

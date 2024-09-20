@@ -74,7 +74,7 @@ static bool WriteBuffers(const DescriptorRangeDesc& rangeDesc, const DescriptorR
 
     for (uint32_t i = 0; i < itemNumForWriting; i++) {
         const DescriptorVK& descriptor = *(DescriptorVK*)update.descriptors[descriptorOffset + i];
-        descriptor.GetBufferInfo(infoArray[i]);
+        infoArray[i] = descriptor.GetBufferInfo();
     }
 
     write.descriptorType = GetDescriptorType(rangeDesc.descriptorType);
@@ -166,15 +166,15 @@ NRI_INLINE void DescriptorSetVK::SetDebugName(const char* name) {
 }
 
 NRI_INLINE void DescriptorSetVK::UpdateDescriptorRanges(uint32_t rangeOffset, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs) {
-    constexpr uint32_t writesPerIteration = 1024;
+    constexpr uint32_t writesPerIteration = 256;
+    constexpr size_t slabSize = 32 * writesPerIteration; // max item size = 32
+    static_assert(slabSize <= MAX_STACK_ALLOC_SIZE, "prefer stack alloc");
+
     uint32_t writeMaxNum = std::min<uint32_t>(writesPerIteration, rangeNum);
+    Scratch<VkWriteDescriptorSet> writes = AllocateScratch(m_Device, VkWriteDescriptorSet, writeMaxNum);
 
-    VkWriteDescriptorSet* writes = StackAlloc(VkWriteDescriptorSet, writeMaxNum);
-
-    constexpr size_t slabSize = 32768;
-    SlabAllocator slab(StackAlloc(uint8_t, slabSize), slabSize);
-
-    const auto& vk = m_Device.GetDispatchTable();
+    Scratch<uint8_t> slabScratch = AllocateScratch(m_Device, uint8_t, slabSize); 
+    SlabAllocator slab(slabScratch, slabSize);
 
     uint32_t j = 0;
     uint32_t descriptorOffset = 0;
@@ -210,23 +210,23 @@ NRI_INLINE void DescriptorSetVK::UpdateDescriptorRanges(uint32_t rangeOffset, ui
             descriptorOffset = (descriptorOffset == update.descriptorNum) ? 0 : descriptorOffset;
         }
 
+        const auto& vk = m_Device.GetDispatchTable();
         vk.UpdateDescriptorSets(m_Device, writeNum, writes, 0, nullptr);
     } while (j < rangeNum);
 }
 
 NRI_INLINE void DescriptorSetVK::UpdateDynamicConstantBuffers(uint32_t bufferOffset, uint32_t descriptorNum, const Descriptor* const* descriptors) {
-    VkWriteDescriptorSet* writes = StackAlloc(VkWriteDescriptorSet, descriptorNum);
-    VkDescriptorBufferInfo* infos = StackAlloc(VkDescriptorBufferInfo, descriptorNum);
-    uint32_t writeNum = 0;
+    Scratch<VkWriteDescriptorSet> writes = AllocateScratch(m_Device, VkWriteDescriptorSet, descriptorNum);
+    Scratch<VkDescriptorBufferInfo> infos = AllocateScratch(m_Device, VkDescriptorBufferInfo, descriptorNum);
 
     for (uint32_t j = 0; j < descriptorNum; j++) {
         const DynamicConstantBufferDesc& bufferDesc = m_Desc->dynamicConstantBuffers[bufferOffset + j];
-
-        VkDescriptorBufferInfo& bufferInfo = infos[writeNum];
         const DescriptorVK& descriptorImpl = *(const DescriptorVK*)descriptors[j];
-        descriptorImpl.GetBufferInfo(bufferInfo);
 
-        VkWriteDescriptorSet& write = writes[writeNum++];
+        VkDescriptorBufferInfo& bufferInfo = infos[j];
+        bufferInfo = descriptorImpl.GetBufferInfo();
+
+        VkWriteDescriptorSet& write = writes[j];
         write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         write.dstSet = m_Handle;
         write.dstBinding = bufferDesc.registerIndex;
@@ -236,13 +236,13 @@ NRI_INLINE void DescriptorSetVK::UpdateDynamicConstantBuffers(uint32_t bufferOff
     }
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.UpdateDescriptorSets(m_Device, writeNum, writes, 0, nullptr);
+    vk.UpdateDescriptorSets(m_Device, descriptorNum, writes, 0, nullptr);
 }
 
 NRI_INLINE void DescriptorSetVK::Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc) {
     const uint32_t rangeNum = descriptorSetCopyDesc.rangeNum + descriptorSetCopyDesc.dynamicConstantBufferNum;
 
-    VkCopyDescriptorSet* copies = StackAlloc(VkCopyDescriptorSet, rangeNum);
+    Scratch<VkCopyDescriptorSet> copies = AllocateScratch(m_Device, VkCopyDescriptorSet, rangeNum);
     uint32_t copyNum = 0;
 
     const DescriptorSetVK& srcSetImpl = *(const DescriptorSetVK*)descriptorSetCopyDesc.srcDescriptorSet;

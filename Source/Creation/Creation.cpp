@@ -431,11 +431,11 @@ NRI_API Result NRI_CALL nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t
         if (result == VK_SUCCESS && deviceGroupNum) {
             if (adapterDescs) {
                 // Query device groups
-                VkPhysicalDeviceGroupProperties* deviceGroupProperties = StackAlloc(VkPhysicalDeviceGroupProperties, deviceGroupNum);
+                VkPhysicalDeviceGroupProperties* deviceGroupProperties = AllocateScratch(m_Device, VkPhysicalDeviceGroupProperties, deviceGroupNum);
                 vkEnumeratePhysicalDeviceGroups(instance, &deviceGroupNum, deviceGroupProperties);
 
                 // Query device groups properties
-                AdapterDesc* adapterDescsSorted = StackAlloc(AdapterDesc, deviceGroupNum);
+                AdapterDesc* adapterDescsSorted = AllocateScratch(m_Device, AdapterDesc, deviceGroupNum);
                 for (uint32_t i = 0; i < deviceGroupNum; i++) {
                     VkPhysicalDeviceIDProperties deviceIDProperties = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
                     VkPhysicalDeviceProperties2 properties2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};

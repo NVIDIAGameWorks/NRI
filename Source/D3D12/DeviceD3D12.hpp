@@ -410,7 +410,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.texture2DMaxDim = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
     m_Desc.texture3DMaxDim = D3D12_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
     m_Desc.textureArrayLayerMaxNum = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
-    m_Desc.texelBufferMaxDim = (1 << D3D12_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP) - 1;
+    m_Desc.typedBufferMaxDim = 1 << D3D12_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP;
 
     m_Desc.memoryAllocationMaxNum = 0xFFFFFFFF;
     m_Desc.samplerAllocationMaxNum = D3D12_REQ_SAMPLER_OBJECT_COUNT_PER_DEVICE;
@@ -418,21 +418,22 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.constantBufferOffsetAlignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
     m_Desc.constantBufferMaxRange = D3D12_REQ_IMMEDIATE_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
     m_Desc.storageBufferOffsetAlignment = D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT;
-    m_Desc.storageBufferMaxRange = (1 << D3D12_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP) - 1;
+    m_Desc.storageBufferMaxRange = 1 << D3D12_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP;
     m_Desc.bufferTextureGranularity = D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT;
     m_Desc.bufferMaxSize = D3D12_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_C_TERM * 1024ull * 1024ull;
 
+    m_Desc.pipelineLayoutDescriptorSetMaxNum = ROOT_SIGNATURE_DWORD_NUM / 1;
+    m_Desc.pipelineLayoutRootConstantMaxSize = sizeof(uint32_t) * ROOT_SIGNATURE_DWORD_NUM / 1;
+    m_Desc.pipelineLayoutRootDescriptorMaxNum = ROOT_SIGNATURE_DWORD_NUM / 2;
+
     // https://learn.microsoft.com/en-us/windows/win32/direct3d12/hardware-support
     const uint32_t FULL_HEAP = 1000000; // TODO: even on D3D12_RESOURCE_BINDING_TIER_3 devices the validation still claims that the limit is 1000000
-    m_Desc.pipelineLayoutDescriptorSetMaxNum = D3D_DESCRIPTOR_SET_MAX_NUM;
     m_Desc.perStageDescriptorSamplerMaxNum = options.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_2 ? 2048 : 16;
     m_Desc.perStageDescriptorConstantBufferMaxNum = options.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_3 ? FULL_HEAP : 14;
     m_Desc.perStageDescriptorTextureMaxNum = options.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_2 ? FULL_HEAP : 128;
     m_Desc.perStageResourceMaxNum = m_Desc.perStageDescriptorTextureMaxNum;
     m_Desc.perStageDescriptorStorageTextureMaxNum = options.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_3 ? FULL_HEAP : (levels.MaxSupportedFeatureLevel >= D3D_FEATURE_LEVEL_11_1 ? 64 : 8);
     m_Desc.perStageDescriptorStorageBufferMaxNum = m_Desc.perStageDescriptorStorageTextureMaxNum;
-    m_Desc.rootConstantMaxSize = D3D_ROOT_CONSTANT_MAX_SIZE;
-    m_Desc.rootDescriptorMaxNum = D3D_ROOT_DESCRIPTOR_MAX_NUM;
 
     m_Desc.descriptorSetSamplerMaxNum = m_Desc.perStageDescriptorSamplerMaxNum;
     m_Desc.descriptorSetConstantBufferMaxNum = m_Desc.perStageDescriptorConstantBufferMaxNum;

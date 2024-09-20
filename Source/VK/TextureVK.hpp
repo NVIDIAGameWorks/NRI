@@ -12,14 +12,14 @@ TextureVK::~TextureVK() {
 }
 
 Result TextureVK::Create(const TextureDesc& textureDesc) {
+    m_Desc = FixTextureDesc(textureDesc);
+
     VkImageCreateInfo info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-    m_Device.FillCreateInfo(textureDesc, info);
+    m_Device.FillCreateInfo(m_Desc, info);
 
     const auto& vk = m_Device.GetDispatchTable();
     VkResult result = vk.CreateImage(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateImage returned %d", (int32_t)result);
-
-    m_Desc = textureDesc;
 
     return Result::SUCCESS;
 }

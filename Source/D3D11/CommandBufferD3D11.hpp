@@ -96,7 +96,7 @@ NRI_INLINE void CommandBufferD3D11::SetViewports(const Viewport* viewports, uint
 }
 
 NRI_INLINE void CommandBufferD3D11::SetScissors(const Rect* rects, uint32_t rectNum) {
-    D3D11_RECT* rectsD3D = StackAlloc(D3D11_RECT, rectNum);
+    Scratch<D3D11_RECT> rectsD3D = AllocateScratch(m_Device, D3D11_RECT, rectNum);
 
     for (uint32_t i = 0; i < rectNum; i++) {
         const Rect& rect = rects[i];
@@ -161,7 +161,7 @@ NRI_INLINE void CommandBufferD3D11::ClearAttachments(const ClearDesc* clearDescs
             }
         }
     } else {
-        D3D11_RECT* rectsD3D = StackAlloc(D3D11_RECT, rectNum);
+        Scratch<D3D11_RECT> rectsD3D = AllocateScratch(m_Device, D3D11_RECT, rectNum);
         for (uint32_t i = 0; i < rectNum; i++) {
             const Rect& rect = rects[i];
             rectsD3D[i] = {rect.x, rect.y, (LONG)(rect.x + rect.width), (LONG)(rect.y + rect.height)};
@@ -268,15 +268,16 @@ NRI_INLINE void CommandBufferD3D11::SetVertexBuffers(uint32_t baseSlot, uint32_t
         offsets = s_nullOffsets;
 
     if (m_VertexBuffer != buffers[0] || m_VertexBufferOffset != offsets[0] || m_VertexBufferBaseSlot != baseSlot || bufferNum > 1) {
-        uint8_t* mem = StackAlloc(uint8_t, bufferNum * (sizeof(ID3D11Buffer*) + sizeof(uint32_t) * 2));
+        Scratch<uint8_t> scratch = AllocateScratch(m_Device, uint8_t, bufferNum * (sizeof(ID3D11Buffer*) + sizeof(uint32_t) * 2));
+        uint8_t* ptr = scratch;
 
-        ID3D11Buffer** buf = (ID3D11Buffer**)mem;
-        mem += bufferNum * sizeof(ID3D11Buffer*);
+        ID3D11Buffer** buf = (ID3D11Buffer**)ptr;
+        ptr += bufferNum * sizeof(ID3D11Buffer*);
 
-        uint32_t* offsetsUint = (uint32_t*)mem;
-        mem += bufferNum * sizeof(uint32_t);
+        uint32_t* offsetsUint = (uint32_t*)ptr;
+        ptr += bufferNum * sizeof(uint32_t);
 
-        uint32_t* strides = (uint32_t*)mem;
+        uint32_t* strides = (uint32_t*)ptr;
 
         for (uint32_t i = 0; i < bufferNum; i++) {
             const BufferD3D11& bufferD3D11 = *(BufferD3D11*)buffers[i];
@@ -331,7 +332,7 @@ NRI_INLINE void CommandBufferD3D11::SetDescriptorSet(uint32_t setIndex, const De
 }
 
 NRI_INLINE void CommandBufferD3D11::SetRootConstants(uint32_t rootConstantIndex, const void* data, uint32_t size) {
-    m_PipelineLayout->SetRootConstants(m_DeferredContext, rootConstantIndex, (const Vec4*)data, size);
+    m_PipelineLayout->SetRootConstants(m_DeferredContext, rootConstantIndex, data, size);
 }
 
 NRI_INLINE void CommandBufferD3D11::SetRootDescriptor(uint32_t rootDescriptorIndex, Descriptor& descriptor) {
@@ -530,7 +531,7 @@ NRI_INLINE void CommandBufferD3D11::CopyQueries(const QueryPool& queryPool, uint
 
 NRI_INLINE void CommandBufferD3D11::BeginAnnotation(const char* name) {
     size_t len = strlen(name) + 1;
-    wchar_t* s = StackAlloc(wchar_t, len);
+    Scratch<wchar_t> s = AllocateScratch(m_Device, wchar_t, len);
     ConvertCharToWchar(name, s, len);
 
     m_Annotation->BeginEvent(s);

@@ -238,7 +238,8 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
 
     // Vertex input
     uint32_t attributeNum = graphicsPipelineDesc.vertexInput ? graphicsPipelineDesc.vertexInput->attributeNum : 0;
-    stream.inputLayout.desc.pInputElementDescs = StackAlloc(D3D12_INPUT_ELEMENT_DESC, attributeNum);
+    Scratch<D3D12_INPUT_ELEMENT_DESC> scratch = AllocateScratch(m_Device, D3D12_INPUT_ELEMENT_DESC, attributeNum);
+    stream.inputLayout.desc.pInputElementDescs = scratch;
     if (graphicsPipelineDesc.vertexInput) {
         const VertexInputDesc& vi = *graphicsPipelineDesc.vertexInput;
 
@@ -330,7 +331,8 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
 
     // Vertex input
     uint32_t attributeNum = graphicsPipelineDesc.vertexInput ? graphicsPipelineDesc.vertexInput->attributeNum : 0;
-    graphicsPipleineStateDesc.InputLayout.pInputElementDescs = StackAlloc(D3D12_INPUT_ELEMENT_DESC, attributeNum);
+    Scratch<D3D12_INPUT_ELEMENT_DESC> scratch = AllocateScratch(m_Device, D3D12_INPUT_ELEMENT_DESC, attributeNum);
+    graphicsPipleineStateDesc.InputLayout.pInputElementDescs = scratch;
     if (graphicsPipelineDesc.vertexInput) {
         const VertexInputDesc& vi = *graphicsPipelineDesc.vertexInput;
 
@@ -408,9 +410,13 @@ Result PipelineD3D12::Create(const RayTracingPipelineDesc& rayTracingPipelineDes
 
     uint32_t stateSubobjectNum = 0;
     uint32_t shaderNum = rayTracingPipelineDesc.shaderLibrary ? rayTracingPipelineDesc.shaderLibrary->shaderNum : 0;
-    Vector<D3D12_STATE_SUBOBJECT> stateSubobjects(
-        1 /*pipeline config*/ + 1 /*shader config*/ + 1 /*node mask*/ + shaderNum /*DXIL libraries*/ + rayTracingPipelineDesc.shaderGroupDescNum + (rootSignature ? 1u : 0u),
-        m_Device.GetStdAllocator());
+    uint32_t stateObjectNum = 1 // pipeline config
+        + 1                     // shader config
+        + 1                     // node mask
+        + shaderNum             // DXIL libraries
+        + rayTracingPipelineDesc.shaderGroupDescNum
+        + (rootSignature ? 1 : 0);
+    Scratch<D3D12_STATE_SUBOBJECT> stateSubobjects = AllocateScratch(m_Device, D3D12_STATE_SUBOBJECT, stateObjectNum);
 
     D3D12_RAYTRACING_PIPELINE_CONFIG rayTracingPipelineConfig = {};
     {
@@ -449,7 +455,7 @@ Result PipelineD3D12::Create(const RayTracingPipelineDesc& rayTracingPipelineDes
         stateSubobjectNum++;
     }
 
-    Vector<D3D12_DXIL_LIBRARY_DESC> libraryDescs(rayTracingPipelineDesc.shaderLibrary->shaderNum, m_Device.GetStdAllocator());
+    Scratch<D3D12_DXIL_LIBRARY_DESC> libraryDescs = AllocateScratch(m_Device, D3D12_DXIL_LIBRARY_DESC, rayTracingPipelineDesc.shaderLibrary->shaderNum);
     for (uint32_t i = 0; i < rayTracingPipelineDesc.shaderLibrary->shaderNum; i++) {
         libraryDescs[i].DXILLibrary.pShaderBytecode = rayTracingPipelineDesc.shaderLibrary->shaders[i].bytecode;
         libraryDescs[i].DXILLibrary.BytecodeLength = (size_t)rayTracingPipelineDesc.shaderLibrary->shaders[i].size;
@@ -470,7 +476,7 @@ Result PipelineD3D12::Create(const RayTracingPipelineDesc& rayTracingPipelineDes
     }
 
     uint32_t hitGroupNum = 0;
-    Vector<D3D12_HIT_GROUP_DESC> hitGroups(rayTracingPipelineDesc.shaderGroupDescNum, m_Device.GetStdAllocator());
+    Scratch<D3D12_HIT_GROUP_DESC> hitGroups = AllocateScratch(m_Device, D3D12_HIT_GROUP_DESC, rayTracingPipelineDesc.shaderGroupDescNum);
     m_ShaderGroupNames.reserve(rayTracingPipelineDesc.shaderGroupDescNum);
     for (uint32_t i = 0; i < rayTracingPipelineDesc.shaderGroupDescNum; i++) {
         bool isHitGroup = true;

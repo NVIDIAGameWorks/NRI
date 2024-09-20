@@ -114,7 +114,7 @@ private:
     const PipelineLayoutD3D12* m_PipelineLayout = nullptr;
     PipelineD3D12* m_Pipeline = nullptr;
     D3D12_PRIMITIVE_TOPOLOGY m_PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    std::array<DescriptorSetD3D12*, D3D_DESCRIPTOR_SET_MAX_NUM> m_DescriptorSets = {};
+    std::array<DescriptorSetD3D12*, ROOT_SIGNATURE_DWORD_NUM> m_DescriptorSets = {};
     uint32_t m_RenderTargetNum = 0;
     uint8_t m_Version = 0;
     bool m_IsGraphicsPipelineLayout = false;

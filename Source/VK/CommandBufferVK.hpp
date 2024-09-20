@@ -52,7 +52,7 @@ NRI_INLINE Result CommandBufferVK::End() {
 }
 
 NRI_INLINE void CommandBufferVK::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
-    VkViewport* vkViewports = StackAlloc(VkViewport, viewportNum);
+    Scratch<VkViewport> vkViewports = AllocateScratch(m_Device, VkViewport, viewportNum);
     for (uint32_t i = 0; i < viewportNum; i++) {
         const Viewport& viewport = viewports[i];
         VkViewport& vkViewport = vkViewports[i];
@@ -73,7 +73,7 @@ NRI_INLINE void CommandBufferVK::SetViewports(const Viewport* viewports, uint32_
 }
 
 NRI_INLINE void CommandBufferVK::SetScissors(const Rect* rects, uint32_t rectNum) {
-    VkRect2D* vkRects = StackAlloc(VkRect2D, rectNum);
+    Scratch<VkRect2D> vkRects = AllocateScratch(m_Device, VkRect2D, rectNum);
     for (uint32_t i = 0; i < rectNum; i++) {
         const Rect& viewport = rects[i];
         VkRect2D& vkRect = vkRects[i];
@@ -104,7 +104,7 @@ NRI_INLINE void CommandBufferVK::SetStencilReference(uint8_t frontRef, uint8_t b
 }
 
 NRI_INLINE void CommandBufferVK::SetSampleLocations(const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
-    VkSampleLocationEXT* sampleLocations = StackAlloc(VkSampleLocationEXT, locationNum);
+    Scratch<VkSampleLocationEXT> sampleLocations = AllocateScratch(m_Device, VkSampleLocationEXT, locationNum);
     for (uint32_t i = 0; i < locationNum; i++)
         sampleLocations[i] = {(float)(locations[i].x + 8) / 16.0f, (float)(locations[i].y + 8) / 16.0f};
 
@@ -151,7 +151,7 @@ NRI_INLINE void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, u
 
     // Attachments
     uint32_t attachmentNum = 0;
-    VkClearAttachment* attachments = StackAlloc(VkClearAttachment, clearDescNum);
+    Scratch<VkClearAttachment> attachments = AllocateScratch(m_Device, VkClearAttachment, clearDescNum);
 
     for (uint32_t i = 0; i < clearDescNum; i++) {
         const ClearDesc& desc = clearDescs[i];
@@ -179,8 +179,7 @@ NRI_INLINE void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, u
     if (!hasRects)
         rectNum = 1;
 
-    VkClearRect* clearRects = StackAlloc(VkClearRect, rectNum);
-
+    Scratch<VkClearRect> clearRects = AllocateScratch(m_Device, VkClearRect, rectNum);
     for (uint32_t i = 0; i < rectNum; i++) {
         VkClearRect& clearRect = clearRects[i];
 
@@ -212,8 +211,7 @@ NRI_INLINE void CommandBufferVK::ClearStorageTexture(const ClearStorageTextureDe
     const DescriptorVK& descriptor = *(const DescriptorVK*)clearDesc.storageTexture;
     const VkClearColorValue* value = (const VkClearColorValue*)&clearDesc.value;
 
-    VkImageSubresourceRange range;
-    descriptor.GetImageSubresourceRange(range);
+    VkImageSubresourceRange range = descriptor.GetImageSubresourceRange();
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdClearColorImage(m_Handle, descriptor.GetImage(), VK_IMAGE_LAYOUT_GENERAL, value, 1, &range);
@@ -226,7 +224,7 @@ NRI_INLINE void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmen
     m_RenderHeight = deviceDesc.attachmentMaxDim;
 
     // Color
-    VkRenderingAttachmentInfo* colors = StackAlloc(VkRenderingAttachmentInfo, attachmentsDesc.colorNum);
+    Scratch<VkRenderingAttachmentInfo> colors = AllocateScratch(m_Device, VkRenderingAttachmentInfo, attachmentsDesc.colorNum);
     for (uint32_t i = 0; i < attachmentsDesc.colorNum; i++) {
         const DescriptorVK& descriptor = *(DescriptorVK*)attachmentsDesc.colors[i];
         const DescriptorTexDesc& desc = descriptor.GetTexDesc();
@@ -323,7 +321,7 @@ NRI_INLINE void CommandBufferVK::EndRendering() {
 }
 
 NRI_INLINE void CommandBufferVK::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
-    VkBuffer* bufferHandles = StackAlloc(VkBuffer, bufferNum);
+    Scratch<VkBuffer> bufferHandles = AllocateScratch(m_Device, VkBuffer, bufferNum);
     for (uint32_t i = 0; i < bufferNum; i++)
         bufferHandles[i] = ((BufferVK*)buffers[i])->GetHandle();
 
@@ -401,13 +399,12 @@ NRI_INLINE void CommandBufferVK::SetRootDescriptor(uint32_t rootDescriptorIndex,
     descriptorWrite.dstArrayElement = 0;
     descriptorWrite.descriptorCount = 1;
 
+    VkDescriptorBufferInfo bufferInfo = descriptorVK.GetBufferInfo();
+
     // Let's match D3D12 spec (no textures, no typed buffers)
     if (descriptorType == DescriptorTypeVK::BUFFER_VIEW) {
         const DescriptorBufDesc& bufDesc = descriptorVK.GetBufDesc();
         descriptorWrite.descriptorType = bufDesc.viewType == BufferViewType::CONSTANT ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-
-        VkDescriptorBufferInfo bufferInfo = {};
-        descriptorVK.GetBufferInfo(bufferInfo);
         descriptorWrite.pBufferInfo = &bufferInfo;
     }
 
@@ -625,7 +622,7 @@ static inline VkAccessFlags2 GetAccessFlags(AccessBits accessBits) {
 
 NRI_INLINE void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
     // Global
-    VkMemoryBarrier2* memoryBarriers = StackAlloc(VkMemoryBarrier2, barrierGroupDesc.globalNum);
+    Scratch<VkMemoryBarrier2> memoryBarriers = AllocateScratch(m_Device, VkMemoryBarrier2, barrierGroupDesc.globalNum);
     for (uint16_t i = 0; i < barrierGroupDesc.globalNum; i++) {
         const GlobalBarrierDesc& in = barrierGroupDesc.globals[i];
 
@@ -638,7 +635,7 @@ NRI_INLINE void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDes
     }
 
     // Buffer
-    VkBufferMemoryBarrier2* bufferBarriers = StackAlloc(VkBufferMemoryBarrier2, barrierGroupDesc.bufferNum);
+    Scratch<VkBufferMemoryBarrier2> bufferBarriers = AllocateScratch(m_Device, VkBufferMemoryBarrier2, barrierGroupDesc.bufferNum);
     for (uint16_t i = 0; i < barrierGroupDesc.bufferNum; i++) {
         const BufferBarrierDesc& in = barrierGroupDesc.buffers[i];
         const BufferVK& bufferImpl = *(const BufferVK*)in.buffer;
@@ -657,7 +654,7 @@ NRI_INLINE void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDes
     }
 
     // Texture
-    VkImageMemoryBarrier2* textureBarriers = StackAlloc(VkImageMemoryBarrier2, barrierGroupDesc.textureNum);
+    Scratch<VkImageMemoryBarrier2> textureBarriers = AllocateScratch(m_Device, VkImageMemoryBarrier2, barrierGroupDesc.textureNum);
     for (uint16_t i = 0; i < barrierGroupDesc.textureNum; i++) {
         const TextureBarrierDesc& in = barrierGroupDesc.textures[i];
         const TextureVK& textureImpl = *(const TextureVK*)in.texture;
@@ -760,7 +757,7 @@ NRI_INLINE void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, c
     const TextureDesc& dstTextureDesc = dstTexture.GetDesc();
     const TextureDesc& srcTextureDesc = srcTexture.GetDesc();
 
-    VkImageCopy* regions = StackAlloc(VkImageCopy, dstTextureDesc.mipNum);
+    Scratch<VkImageCopy> regions = AllocateScratch(m_Device, VkImageCopy, dstTextureDesc.mipNum);
     for (Mip_t i = 0; i < dstTextureDesc.mipNum; i++) {
         regions[i].srcSubresource = {srcTexture.GetImageAspectFlags(), i, 0, srcTextureDesc.layerNum};
         regions[i].dstSubresource = {dstTexture.GetImageAspectFlags(), i, 0, dstTextureDesc.layerNum};

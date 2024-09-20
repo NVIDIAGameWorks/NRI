@@ -49,7 +49,7 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
         }
         m_InputAssemplyStrides.resize(maxBindingSlot + 1);
 
-        D3D11_INPUT_ELEMENT_DESC* inputElements = StackAlloc(D3D11_INPUT_ELEMENT_DESC, vi.attributeNum);
+        Scratch<D3D11_INPUT_ELEMENT_DESC> inputElements = AllocateScratch(m_Device, D3D11_INPUT_ELEMENT_DESC, vi.attributeNum);
         for (uint32_t i = 0; i < vi.attributeNum; i++) {
             const VertexAttributeDesc& attrIn = vi.attributes[i];
             const VertexStreamDesc& stream = vi.streams[attrIn.streamIndex];

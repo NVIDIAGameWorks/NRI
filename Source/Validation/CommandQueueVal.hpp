@@ -57,19 +57,19 @@ NRI_INLINE void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc, 
 
     auto queueSubmitDescImpl = queueSubmitDesc;
 
-    FenceSubmitDesc* waitFences = StackAlloc(FenceSubmitDesc, queueSubmitDesc.waitFenceNum);
+    Scratch<FenceSubmitDesc> waitFences = AllocateScratch(m_Device, FenceSubmitDesc, queueSubmitDesc.waitFenceNum);
     for (uint32_t i = 0; i < queueSubmitDesc.waitFenceNum; i++) {
         waitFences[i] = queueSubmitDesc.waitFences[i];
         waitFences[i].fence = NRI_GET_IMPL(Fence, waitFences[i].fence);
     }
     queueSubmitDescImpl.waitFences = waitFences;
 
-    CommandBuffer** commandBuffers = StackAlloc(CommandBuffer*, queueSubmitDesc.commandBufferNum);
+    Scratch<CommandBuffer*> commandBuffers = AllocateScratch(m_Device, CommandBuffer*, queueSubmitDesc.commandBufferNum);
     for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++)
         commandBuffers[i] = NRI_GET_IMPL(CommandBuffer, queueSubmitDesc.commandBuffers[i]);
     queueSubmitDescImpl.commandBuffers = commandBuffers;
 
-    FenceSubmitDesc* signalFences = StackAlloc(FenceSubmitDesc, queueSubmitDesc.signalFenceNum);
+    Scratch<FenceSubmitDesc> signalFences = AllocateScratch(m_Device, FenceSubmitDesc, queueSubmitDesc.signalFenceNum);
     for (uint32_t i = 0; i < queueSubmitDesc.signalFenceNum; i++) {
         signalFences[i] = queueSubmitDesc.signalFences[i];
         signalFences[i].fence = NRI_GET_IMPL(Fence, signalFences[i].fence);
@@ -87,8 +87,7 @@ NRI_INLINE Result CommandQueueVal::UploadData(const TextureUploadDesc* textureUp
     RETURN_ON_FAILURE(&m_Device, textureUploadDescNum == 0 || textureUploadDescs != nullptr, Result::INVALID_ARGUMENT, "'textureUploadDescs' is NULL");
     RETURN_ON_FAILURE(&m_Device, bufferUploadDescNum == 0 || bufferUploadDescs != nullptr, Result::INVALID_ARGUMENT, "'bufferUploadDescs' is NULL");
 
-    TextureUploadDesc* textureUploadDescsImpl = StackAlloc(TextureUploadDesc, textureUploadDescNum);
-
+    Scratch<TextureUploadDesc> textureUploadDescsImpl = AllocateScratch(m_Device, TextureUploadDesc, textureUploadDescNum);
     for (uint32_t i = 0; i < textureUploadDescNum; i++) {
         if (!ValidateTextureUploadDesc(m_Device, i, textureUploadDescs[i]))
             return Result::INVALID_ARGUMENT;
@@ -99,8 +98,7 @@ NRI_INLINE Result CommandQueueVal::UploadData(const TextureUploadDesc* textureUp
         textureUploadDescsImpl[i].texture = textureVal->GetImpl();
     }
 
-    BufferUploadDesc* bufferUploadDescsImpl = StackAlloc(BufferUploadDesc, bufferUploadDescNum);
-
+    Scratch<BufferUploadDesc> bufferUploadDescsImpl = AllocateScratch(m_Device, BufferUploadDesc, bufferUploadDescNum);
     for (uint32_t i = 0; i < bufferUploadDescNum; i++) {
         if (!ValidateBufferUploadDesc(m_Device, i, bufferUploadDescs[i]))
             return Result::INVALID_ARGUMENT;
@@ -137,7 +135,7 @@ void CommandQueueVal::ProcessValidationCommandBeginQuery(const uint8_t*& begin, 
     const bool used = queryPool.SetQueryState(command->queryPoolOffset, true);
 
     if (used)
-        REPORT_ERROR(&m_Device, "it must be reset before use. (QueryPool='%s', offset=%u)", queryPool.GetDebugName(), command->queryPoolOffset);
+        REPORT_ERROR(&m_Device, "QueryPool='%s' (offset=%u) must be reset before use", queryPool.GetDebugName(), command->queryPoolOffset);
 }
 
 void CommandQueueVal::ProcessValidationCommandEndQuery(const uint8_t*& begin, const uint8_t* end) {
@@ -150,10 +148,10 @@ void CommandQueueVal::ProcessValidationCommandEndQuery(const uint8_t*& begin, co
 
     if (queryPool.GetQueryType() == QueryType::TIMESTAMP) {
         if (used)
-            REPORT_ERROR(&m_Device, "it must be reset before use. (QueryPool='%s', offset=%u)", queryPool.GetDebugName(), command->queryPoolOffset);
+            REPORT_ERROR(&m_Device, "QueryPool='%s' (offset=%u) must be reset before use", queryPool.GetDebugName(), command->queryPoolOffset);
     } else {
         if (!used)
-            REPORT_ERROR(&m_Device, "it's not in active state. (QueryPool='%s', offset=%u)", queryPool.GetDebugName(), command->queryPoolOffset);
+            REPORT_ERROR(&m_Device, "QueryPool='%s' (offset=%u) is not in active state", queryPool.GetDebugName(), command->queryPoolOffset);
     }
 }
 

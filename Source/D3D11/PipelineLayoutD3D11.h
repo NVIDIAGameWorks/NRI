@@ -28,17 +28,6 @@ struct ConstantBuffer {
     StageBits shaderStages;
 };
 
-union Vec4 {
-    uint32_t ui[4];
-    float f[4];
-};
-
-struct BindingData {
-    void** descriptors;
-    uint32_t* constantFirst;
-    uint32_t* rootConstantNum;
-};
-
 struct PipelineLayoutD3D11 {
     inline PipelineLayoutD3D11(DeviceD3D11& device)
         : m_Device(device)
@@ -64,7 +53,7 @@ struct PipelineLayoutD3D11 {
     }
 
     Result Create(const PipelineLayoutDesc& pipelineDesc);
-    void SetRootConstants(ID3D11DeviceContextBest* deferredContext, uint32_t rootConstantIndex, const Vec4* data, uint32_t size) const;
+    void SetRootConstants(ID3D11DeviceContextBest* deferredContext, uint32_t rootConstantIndex, const void* data, uint32_t size) const;
     void Bind(ID3D11DeviceContextBest* deferredContext);
     void BindDescriptorSet(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndex, const DescriptorSetD3D11* descriptorSet, const DescriptorD3D11* descriptor, const uint32_t* dynamicConstantBufferOffsets) const;
 

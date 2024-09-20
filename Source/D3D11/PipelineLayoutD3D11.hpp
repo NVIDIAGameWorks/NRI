@@ -105,8 +105,8 @@ Result PipelineLayoutD3D11::Create(const PipelineLayoutDesc& pipelineLayoutDesc)
     // Root descriptors
     m_RootBindingOffset = (uint32_t)m_BindingSets.size();
 
-    for (uint32_t i = 0; i < pipelineLayoutDesc.rootDescriptorSetNum; i++) {
-        const RootDescriptorSetDesc& rootDescriptorSetDesc = pipelineLayoutDesc.rootDescriptorSets[i];
+    for (uint32_t i = 0; i < pipelineLayoutDesc.rootDescriptorNum; i++) {
+        const RootDescriptorDesc& rootDescriptorSetDesc = pipelineLayoutDesc.rootDescriptors[i];
 
         BindingRange bindingRange = {};
         bindingRange.baseSlot = rootDescriptorSetDesc.registerIndex;
@@ -160,7 +160,7 @@ void PipelineLayoutD3D11::Bind(ID3D11DeviceContextBest* deferredContext) {
     }
 }
 
-void PipelineLayoutD3D11::SetRootConstants(ID3D11DeviceContextBest* deferredContext, uint32_t rootConstantIndex, const Vec4* data, uint32_t size) const {
+void PipelineLayoutD3D11::SetRootConstants(ID3D11DeviceContextBest* deferredContext, uint32_t rootConstantIndex, const void* data, uint32_t size) const {
     MaybeUnused(size);
 
     const ConstantBuffer& cb = m_ConstantBuffers[rootConstantIndex];
@@ -179,15 +179,16 @@ void PipelineLayoutD3D11::BindDescriptorSetImpl(BindingState& currentBindingStat
     const BindingSet& bindingSet = m_BindingSets[setIndex];
     bool isStorageRebindNeededInGraphics = false;
 
-    uint8_t* memory = StackAlloc(uint8_t, bindingSet.descriptorNum * (sizeof(void*) + sizeof(uint32_t) * 2));
+    Scratch<uint8_t> scratch = AllocateScratch(m_Device, uint8_t, bindingSet.descriptorNum * (sizeof(void*) + sizeof(uint32_t) * 2));
+    uint8_t* ptr = scratch;
 
-    void** descriptors = (void**)memory;
-    memory += bindingSet.descriptorNum * sizeof(void*);
+    void** descriptors = (void**)ptr;
+    ptr += bindingSet.descriptorNum * sizeof(void*);
 
-    uint32_t* constantFirst = (uint32_t*)memory;
-    memory += bindingSet.descriptorNum * sizeof(uint32_t);
+    uint32_t* constantFirst = (uint32_t*)ptr;
+    ptr += bindingSet.descriptorNum * sizeof(uint32_t);
 
-    uint32_t* rootConstantNum = (uint32_t*)memory;
+    uint32_t* rootConstantNum = (uint32_t*)ptr;
 
     for (uint32_t j = bindingSet.rangeStart; j < bindingSet.rangeEnd; j++) {
         const BindingRange& bindingRange = m_BindingRanges[j];

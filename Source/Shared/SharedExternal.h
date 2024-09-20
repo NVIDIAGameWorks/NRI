@@ -43,9 +43,7 @@ constexpr uint32_t TIMEOUT_FENCE = 5000;   // 5 sec
 constexpr uint64_t PRESENT_INDEX_BIT_NUM = 56ull;
 
 // https://learn.microsoft.com/en-us/windows/win32/direct3d12/root-signature-limits
-constexpr uint32_t D3D_DESCRIPTOR_SET_MAX_NUM = 64 / 1;
-constexpr uint32_t D3D_ROOT_CONSTANT_MAX_SIZE = sizeof(uint32_t) * 64 / 1;
-constexpr uint32_t D3D_ROOT_DESCRIPTOR_MAX_NUM = 64 / 2;
+constexpr uint32_t ROOT_SIGNATURE_DWORD_NUM = 64;
 
 // Helpers
 template <typename T>
@@ -199,6 +197,15 @@ inline nri::Dim_t GetDimension(nri::GraphicsAPI api, const nri::TextureDesc& tex
 
 inline bool IsDepthBiasEnabled(const nri::DepthBiasDesc& depthBiasDesc) {
     return depthBiasDesc.constant != 0.0f || depthBiasDesc.slope != 0.0f;
+}
+
+inline nri::TextureDesc FixTextureDesc(const nri::TextureDesc& textureDesc) {
+    nri::TextureDesc desc = textureDesc;
+    desc.depth = std::max(desc.depth, (nri::Dim_t)1);
+    desc.layerNum = std::max(desc.layerNum, (nri::Dim_t)1);
+    desc.sampleNum = std::max(desc.sampleNum, (nri::Sample_t)1);
+
+    return desc;
 }
 
 // Strings

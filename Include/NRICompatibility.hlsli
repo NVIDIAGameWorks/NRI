@@ -31,7 +31,7 @@ Push constants:
         uint32_t const2;
     };
 
-    NRI_ROOT_CONSTANTS(RootConstants, gRootConstants, 7); // a constant buffer in DXBC
+    NRI_ROOT_CONSTANTS(RootConstants, gRootConstants, 7, 0); // a constant buffer in DXBC
 
 Draw parameters:
     - Add to the global scope:
@@ -50,7 +50,8 @@ Draw parameters:
 */
 
 #ifndef __cplusplus
-    #define NRI_MERGE_TOKENS(a, b) a##b
+    #define _NRI_MERGE_TOKENS(a, b) a##b
+    #define NRI_MERGE_TOKENS(a, b) _NRI_MERGE_TOKENS(a, b)
 #endif
 
 // Container detection
@@ -123,7 +124,7 @@ Draw parameters:
     #define NRI_RESOURCE(resourceType, name, regName, bindingIndex, setIndex) \
         resourceType name : register(NRI_MERGE_TOKENS(regName, bindingIndex), NRI_MERGE_TOKENS(space, setIndex))
 
-    #define NRI_ROOT_CONSTANTS(structName, name, bindingIndex) \
+    #define NRI_ROOT_CONSTANTS(structName, name, bindingIndex, setIndex) \
         [[vk::push_constant]] structName name
 
     // Draw parameters (full support, requires SPV_KHR_shader_draw_parameters)
@@ -140,12 +141,13 @@ Draw parameters:
 #endif
 
 // DXIL
+#define NRI_BASE_ATTRIBUTES_EMULATION_SPACE 999
 #ifdef NRI_DXIL
     #define NRI_RESOURCE(resourceType, name, regName, bindingIndex, setIndex) \
         resourceType name : register(NRI_MERGE_TOKENS(regName, bindingIndex), NRI_MERGE_TOKENS(space, setIndex))
 
-    #define NRI_ROOT_CONSTANTS(structName, name, bindingIndex) \
-        ConstantBuffer<structName> name : register(NRI_MERGE_TOKENS(b, bindingIndex), space0)
+    #define NRI_ROOT_CONSTANTS(structName, name, bindingIndex, setIndex) \
+        ConstantBuffer<structName> name : register(NRI_MERGE_TOKENS(b, bindingIndex), NRI_MERGE_TOKENS(space, setIndex))
 
     // Draw parameters
     #if (NRI_SHADER_MODEL < 68)
@@ -156,7 +158,7 @@ Draw parameters:
                     int baseVertex; \
                     uint baseInstance; \
                 }; \
-                ConstantBuffer<_BaseAttributeConstants> _BaseAttributes : register(b0, space999) // see BASE_ATTRIBUTES_EMULATION_SPACE
+                ConstantBuffer<_BaseAttributeConstants> _BaseAttributes : register(b0, NRI_MERGE_TOKENS(space, NRI_BASE_ATTRIBUTES_EMULATION_SPACE))
 
             #define NRI_DECLARE_DRAW_PARAMETERS \
                 uint NRI_VERTEX_ID : SV_VertexID, \
@@ -202,7 +204,7 @@ Draw parameters:
     #define NRI_RESOURCE(resourceType, name, regName, bindingIndex, setIndex) \
         resourceType name : register(NRI_MERGE_TOKENS(regName, bindingIndex))
 
-    #define NRI_ROOT_CONSTANTS(structName, name, bindingIndex) \
+    #define NRI_ROOT_CONSTANTS(structName, name, bindingIndex, setIndex) \
         cbuffer structName##_##name : register(NRI_MERGE_TOKENS(b, bindingIndex)) { \
             structName name; \
         }

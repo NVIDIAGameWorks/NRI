@@ -3,7 +3,7 @@
 bool DescriptorPoolVal::CheckDescriptorRange(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum) {
     const uint32_t descriptorNum = (rangeDesc.flags & DescriptorRangeBits::VARIABLE_SIZED_ARRAY) ? variableDescriptorNum : rangeDesc.descriptorNum;
     if (descriptorNum > rangeDesc.descriptorNum) {
-        REPORT_ERROR(&m_Device, "variableDescriptorNum (%u) is greater than DescriptorRangeDesc::descriptorNum (%u)", variableDescriptorNum, rangeDesc.descriptorNum);
+        REPORT_ERROR(&m_Device, "'variableDescriptorNum=%u' is greater than 'descriptorNum=%u'", variableDescriptorNum, rangeDesc.descriptorNum);
         return false;
     }
 

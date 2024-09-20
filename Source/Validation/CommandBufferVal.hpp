@@ -139,18 +139,18 @@ NRI_INLINE void CommandBufferVal::ClearAttachments(const ClearDesc* clearDescs, 
 
     const DeviceDesc& deviceDesc = m_Device.GetDesc();
     for (uint32_t i = 0; i < clearDescNum; i++) {
-        RETURN_ON_FAILURE(&m_Device, (clearDescs[i].planes & (PlaneBits::COLOR | PlaneBits::DEPTH | PlaneBits::STENCIL)) != 0, ReturnVoid(), "'clearDesc[%u].planes' is not COLOR, DEPTH or STENCIL", i);
+        RETURN_ON_FAILURE(&m_Device, (clearDescs[i].planes & (PlaneBits::COLOR | PlaneBits::DEPTH | PlaneBits::STENCIL)) != 0, ReturnVoid(), "'[%u].planes' is not COLOR, DEPTH or STENCIL", i);
 
         if (clearDescs[i].planes & PlaneBits::COLOR) {
-            RETURN_ON_FAILURE(&m_Device, clearDescs[i].colorAttachmentIndex < deviceDesc.colorAttachmentMaxNum, ReturnVoid(), "'clearDesc[%u].colorAttachmentIndex = %u' is out of bounds", i, clearDescs[i].colorAttachmentIndex);
-            RETURN_ON_FAILURE(&m_Device, m_RenderTargets[clearDescs[i].colorAttachmentIndex], ReturnVoid(), "'clearDesc[%u].colorAttachmentIndex = %u' references a NULL COLOR attachment", i, clearDescs[i].colorAttachmentIndex);
+            RETURN_ON_FAILURE(&m_Device, clearDescs[i].colorAttachmentIndex < deviceDesc.colorAttachmentMaxNum, ReturnVoid(), "'[%u].colorAttachmentIndex = %u' is out of bounds", i, clearDescs[i].colorAttachmentIndex);
+            RETURN_ON_FAILURE(&m_Device, m_RenderTargets[clearDescs[i].colorAttachmentIndex], ReturnVoid(), "'[%u].colorAttachmentIndex = %u' references a NULL COLOR attachment", i, clearDescs[i].colorAttachmentIndex);
         }
 
         if (clearDescs[i].planes & (PlaneBits::DEPTH | PlaneBits::STENCIL))
             RETURN_ON_FAILURE(&m_Device, m_DepthStencil, ReturnVoid(), "DEPTH_STENCIL attachment is NULL", i);
 
         if (clearDescs[i].colorAttachmentIndex != 0)
-            RETURN_ON_FAILURE(&m_Device, (clearDescs[i].planes & PlaneBits::COLOR), ReturnVoid(), "'clearDesc[%u].planes' is not COLOR, but `colorAttachmentIndex != 0`", i);
+            RETURN_ON_FAILURE(&m_Device, (clearDescs[i].planes & PlaneBits::COLOR), ReturnVoid(), "'[%u].planes' is not COLOR, but `colorAttachmentIndex != 0`", i);
     }
 
     GetCoreInterface().CmdClearAttachments(*GetImpl(), clearDescs, clearDescNum, rects, rectNum);
@@ -159,7 +159,7 @@ NRI_INLINE void CommandBufferVal::ClearAttachments(const ClearDesc* clearDescs, 
 NRI_INLINE void CommandBufferVal::ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
-    RETURN_ON_FAILURE(&m_Device, clearDesc.storageBuffer, ReturnVoid(), "'clearDesc.storageBuffer' is NULL");
+    RETURN_ON_FAILURE(&m_Device, clearDesc.storageBuffer, ReturnVoid(), "'.storageBuffer' is NULL");
 
     auto clearDescImpl = clearDesc;
     clearDescImpl.storageBuffer = NRI_GET_IMPL(Descriptor, clearDesc.storageBuffer);
@@ -170,7 +170,7 @@ NRI_INLINE void CommandBufferVal::ClearStorageBuffer(const ClearStorageBufferDes
 NRI_INLINE void CommandBufferVal::ClearStorageTexture(const ClearStorageTextureDesc& clearDesc) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
-    RETURN_ON_FAILURE(&m_Device, clearDesc.storageTexture, ReturnVoid(), "'clearDesc.storageTexture' is NULL");
+    RETURN_ON_FAILURE(&m_Device, clearDesc.storageTexture, ReturnVoid(), "'.storageTexture' is NULL");
 
     auto clearDescImpl = clearDesc;
     clearDescImpl.storageTexture = NRI_GET_IMPL(Descriptor, clearDesc.storageTexture);
@@ -186,7 +186,7 @@ NRI_INLINE void CommandBufferVal::BeginRendering(const AttachmentsDesc& attachme
     if (attachmentsDesc.shadingRate)
         RETURN_ON_FAILURE(&m_Device, deviceDesc.shadingRateTier, ReturnVoid(), "'shadingRateTier >= 2' required");
 
-    Descriptor** colors = StackAlloc(Descriptor*, attachmentsDesc.colorNum);
+    Scratch<Descriptor*> colors = AllocateScratch(m_Device, Descriptor*, attachmentsDesc.colorNum);
     for (uint32_t i = 0; i < attachmentsDesc.colorNum; i++)
         colors[i] = NRI_GET_IMPL(Descriptor, attachmentsDesc.colors[i]);
 
@@ -229,7 +229,7 @@ NRI_INLINE void CommandBufferVal::EndRendering() {
 NRI_INLINE void CommandBufferVal::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
 
-    Buffer** buffersImpl = StackAlloc(Buffer*, bufferNum);
+    Scratch<Buffer*> buffersImpl = AllocateScratch(m_Device, Buffer*, bufferNum);
     for (uint32_t i = 0; i < bufferNum; i++)
         buffersImpl[i] = NRI_GET_IMPL(Buffer, buffers[i]);
 
@@ -414,12 +414,12 @@ NRI_INLINE void CommandBufferVal::Barrier(const BarrierGroupDesc& barrierGroupDe
             return;
     }
 
-    BufferBarrierDesc* buffers = StackAlloc(BufferBarrierDesc, barrierGroupDesc.bufferNum);
+    Scratch<BufferBarrierDesc> buffers = AllocateScratch(m_Device, BufferBarrierDesc, barrierGroupDesc.bufferNum);
     memcpy(buffers, barrierGroupDesc.buffers, sizeof(BufferBarrierDesc) * barrierGroupDesc.bufferNum);
     for (uint32_t i = 0; i < barrierGroupDesc.bufferNum; i++)
         buffers[i].buffer = NRI_GET_IMPL(Buffer, barrierGroupDesc.buffers[i].buffer);
 
-    TextureBarrierDesc* textures = StackAlloc(TextureBarrierDesc, barrierGroupDesc.textureNum);
+    Scratch<TextureBarrierDesc> textures = AllocateScratch(m_Device, TextureBarrierDesc, barrierGroupDesc.textureNum);
     memcpy(textures, barrierGroupDesc.textures, sizeof(TextureBarrierDesc) * barrierGroupDesc.textureNum);
     for (uint32_t i = 0; i < barrierGroupDesc.textureNum; i++)
         textures[i].texture = NRI_GET_IMPL(Texture, barrierGroupDesc.textures[i].texture);
@@ -607,7 +607,7 @@ NRI_INLINE void CommandBufferVal::WriteAccelerationStructureSize(const Accelerat
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
     RETURN_ON_FAILURE(&m_Device, accelerationStructures, ReturnVoid(), "'accelerationStructures' is NULL");
 
-    AccelerationStructure** accelerationStructureArray = StackAlloc(AccelerationStructure*, accelerationStructureNum);
+    Scratch<AccelerationStructure*> accelerationStructureArray = AllocateScratch(m_Device, AccelerationStructure*, accelerationStructureNum);
     for (uint32_t i = 0; i < accelerationStructureNum; i++) {
         RETURN_ON_FAILURE(&m_Device, accelerationStructures[i], ReturnVoid(), "'accelerationStructures[%u]' is NULL", i);
 
@@ -624,12 +624,12 @@ NRI_INLINE void CommandBufferVal::DispatchRays(const DispatchRaysDesc& dispatchR
     uint64_t align = deviceDesc.rayTracingShaderTableAlignment;
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
-    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.buffer, ReturnVoid(), "'dispatchRaysDesc.raygenShader.buffer' is NULL");
-    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.size != 0, ReturnVoid(), "'dispatchRaysDesc.raygenShader.size' is 0");
-    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.offset % align == 0, ReturnVoid(), "'dispatchRaysDesc.raygenShader.offset' is misaligned");
-    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.missShaders.offset % align == 0, ReturnVoid(), "'dispatchRaysDesc.missShaders.offset' is misaligned");
-    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.hitShaderGroups.offset % align == 0, ReturnVoid(), "'dispatchRaysDesc.hitShaderGroups.offset' is misaligned");
-    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.callableShaders.offset % align == 0, ReturnVoid(), "'dispatchRaysDesc.callableShaders.offset' is misaligned");
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.buffer, ReturnVoid(), "'raygenShader.buffer' is NULL");
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.size != 0, ReturnVoid(), "'raygenShader.size' is 0");
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.offset % align == 0, ReturnVoid(), "'raygenShader.offset' is misaligned");
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.missShaders.offset % align == 0, ReturnVoid(), "'missShaders.offset' is misaligned");
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.hitShaderGroups.offset % align == 0, ReturnVoid(), "'hitShaderGroups.offset' is misaligned");
+    RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.callableShaders.offset % align == 0, ReturnVoid(), "'callableShaders.offset' is misaligned");
 
     auto dispatchRaysDescImpl = dispatchRaysDesc;
     dispatchRaysDescImpl.raygenShader.buffer = NRI_GET_IMPL(Buffer, dispatchRaysDesc.raygenShader.buffer);

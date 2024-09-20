@@ -24,8 +24,8 @@ Non-goals:
 #pragma once
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 150
-#define NRI_VERSION_DATE "18 September 2024"
+#define NRI_VERSION_MINOR 151
+#define NRI_VERSION_DATE "20 September 2024"
 
 #include "NRIDescs.h"
 
@@ -102,8 +102,8 @@ NriStruct(CoreInterface) {
         // Setup
         void                (NRI_CALL *CmdSetPipelineLayout)        (NriRef(CommandBuffer) commandBuffer, const NriRef(PipelineLayout) pipelineLayout);
         void                (NRI_CALL *CmdSetDescriptorSet)         (NriRef(CommandBuffer) commandBuffer, uint32_t setIndex, const NriRef(DescriptorSet) descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
-        void                (NRI_CALL *CmdSetRootConstants)         (NriRef(CommandBuffer) commandBuffer, uint32_t rootConstantIndex, const void* data, uint32_t size); // requires "rootConstantMaxSize > 0"
-        void                (NRI_CALL *CmdSetRootDescriptor)        (NriRef(CommandBuffer) commandBuffer, uint32_t rootDescriptorIndex, NriRef(Descriptor) descriptor); // requires "rootDescriptorMaxNum > 0"
+        void                (NRI_CALL *CmdSetRootConstants)         (NriRef(CommandBuffer) commandBuffer, uint32_t rootConstantIndex, const void* data, uint32_t size); // requires "pipelineLayoutRootConstantMaxSize > 0"
+        void                (NRI_CALL *CmdSetRootDescriptor)        (NriRef(CommandBuffer) commandBuffer, uint32_t rootDescriptorIndex, NriRef(Descriptor) descriptor); // requires "pipelineLayoutRootDescriptorMaxNum > 0"
         void                (NRI_CALL *CmdSetPipeline)              (NriRef(CommandBuffer) commandBuffer, const NriRef(Pipeline) pipeline);
 
         // Barrier

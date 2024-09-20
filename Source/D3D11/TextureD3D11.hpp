@@ -86,14 +86,14 @@ Result TextureD3D11::Create(MemoryLocation memoryLocation, float priority) {
 }
 
 Result TextureD3D11::Create(const TextureDesc& textureDesc) {
-    m_Desc = textureDesc;
+    m_Desc = FixTextureDesc(textureDesc);
 
     return Result::SUCCESS;
 }
 
 Result TextureD3D11::Create(const TextureD3D11Desc& textureDesc) {
     if (textureDesc.desc)
-        m_Desc = *textureDesc.desc;
+        m_Desc = FixTextureDesc(*textureDesc.desc);
     else if (!GetTextureDesc(textureDesc, m_Desc))
         return Result::INVALID_ARGUMENT;
 

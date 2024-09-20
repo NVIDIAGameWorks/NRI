@@ -65,7 +65,7 @@ static const Nri(Dim_t) NriConstant(REMAINING_LAYERS) = 0;  // only for "layerNu
 
 // Readability
 #define NriOptional // i.e. can be 0 (keep an eye on comments)
-#define NriOut      // highlights output argument
+#define NriOut      // highlights an output argument
 
 //============================================================================================================================================================================================
 #pragma region [ Common ]
@@ -444,10 +444,10 @@ NriStruct(TextureDesc) {
     Nri(Format) format;
     Nri(Dim_t) width;
     Nri(Dim_t) height;
-    Nri(Dim_t) depth;
+    NriOptional Nri(Dim_t) depth;
     Nri(Mip_t) mipNum;
-    Nri(Dim_t) layerNum;
-    Nri(Sample_t) sampleNum;
+    NriOptional Nri(Dim_t) layerNum;
+    NriOptional Nri(Sample_t) sampleNum;
 };
 
 NriStruct(BufferDesc) {
@@ -549,8 +549,8 @@ Pipeline layout example:
 
     RootConstantDesc                #0          // "rootConstantIndex" - an index in "rootConstants" in the currently bound pipeline layout
 
-    RootDescriptorSetDesc           #0          // "rootDescriptorIndex" - an index in "rootDescriptorSets" in the currently bound pipeline layout
-    RootDescriptorSetDesc           #1
+    RootDescriptorDesc              #0          // "rootDescriptorIndex" - an index in "rootDescriptors" in the currently bound pipeline layout
+    RootDescriptorDesc              #1
 */
 
 // "DescriptorRange" consists of "Descriptor" entities
@@ -576,7 +576,7 @@ NriStruct(DynamicConstantBufferDesc) {
 };
 
 NriStruct(DescriptorSetDesc) {
-    uint32_t registerSpace;
+    uint32_t registerSpace; // must be unique, avoid big gaps
     const NriPtr(DescriptorRangeDesc) ranges;
     uint32_t rangeNum;
     const NriPtr(DynamicConstantBufferDesc) dynamicConstantBuffers; // a dynamic constant buffer allows to dynamically specify an offset in the buffer via "CmdSetDescriptorSet" call
@@ -584,26 +584,26 @@ NriStruct(DescriptorSetDesc) {
 };
 
 // "PipelineLayout" consists of "DescriptorSet" descriptions and root parameters
-NriStruct(RootConstantDesc) { // aka push constants
+NriStruct(RootConstantDesc) { // aka push constants block
     uint32_t registerIndex;
     uint32_t size;
     Nri(StageBits) shaderStages;
 };
 
-NriStruct(RootDescriptorSetDesc) { // aka push descriptor
-    uint32_t registerSpace;
+NriStruct(RootDescriptorDesc) { // aka push descriptor
     uint32_t registerIndex;
     Nri(DescriptorType) descriptorType; // CONSTANT_BUFFER, STRUCTURED_BUFFER or STORAGE_STRUCTURED_BUFFER
     Nri(StageBits) shaderStages;
 };
 
 NriStruct(PipelineLayoutDesc) {
-    const NriPtr(DescriptorSetDesc) descriptorSets;
-    uint32_t descriptorSetNum;
+    uint32_t rootRegisterSpace;
     const NriPtr(RootConstantDesc) rootConstants;
     uint32_t rootConstantNum;
-    const NriPtr(RootDescriptorSetDesc) rootDescriptorSets;
-    uint32_t rootDescriptorSetNum;
+    const NriPtr(RootDescriptorDesc) rootDescriptors;
+    uint32_t rootDescriptorNum;
+    const NriPtr(DescriptorSetDesc) descriptorSets;
+    uint32_t descriptorSetNum;
     Nri(StageBits) shaderStages;
     bool ignoreGlobalSPIRVOffsets;
     bool enableD3D12DrawParametersEmulation; // implicitly expects "enableD3D12DrawParametersEmulation" passed during device creation
@@ -1319,7 +1319,7 @@ NriStruct(DeviceDesc) {
     Nri(Dim_t) texture2DMaxDim;
     Nri(Dim_t) texture3DMaxDim;
     Nri(Dim_t) textureArrayLayerMaxNum;
-    uint32_t texelBufferMaxDim;
+    uint32_t typedBufferMaxDim;
 
     // Memory
     uint64_t deviceUploadHeapSize; // ReBAR
@@ -1340,15 +1340,10 @@ NriStruct(DeviceDesc) {
     uint32_t rayTracingScratchAlignment;
 
     // Pipeline layout
+    // D3D12 only: rootConstantSize + descriptorSetNum * 4 + rootDescriptorNum * 8 <= 256 (see "FitPipelineLayoutSettingsIntoDeviceLimits")
     uint32_t pipelineLayoutDescriptorSetMaxNum;
-    uint32_t perStageDescriptorSamplerMaxNum;
-    uint32_t perStageDescriptorConstantBufferMaxNum;
-    uint32_t perStageDescriptorStorageBufferMaxNum;
-    uint32_t perStageDescriptorTextureMaxNum;
-    uint32_t perStageDescriptorStorageTextureMaxNum;
-    uint32_t perStageResourceMaxNum;
-    uint32_t rootConstantMaxSize;
-    uint32_t rootDescriptorMaxNum;
+    uint32_t pipelineLayoutRootConstantMaxSize;
+    uint32_t pipelineLayoutRootDescriptorMaxNum;
 
     // Descriptor set
     uint32_t descriptorSetSamplerMaxNum;
@@ -1356,6 +1351,14 @@ NriStruct(DeviceDesc) {
     uint32_t descriptorSetStorageBufferMaxNum;
     uint32_t descriptorSetTextureMaxNum;
     uint32_t descriptorSetStorageTextureMaxNum;
+
+    // Shader resources
+    uint32_t perStageDescriptorSamplerMaxNum;
+    uint32_t perStageDescriptorConstantBufferMaxNum;
+    uint32_t perStageDescriptorStorageBufferMaxNum;
+    uint32_t perStageDescriptorTextureMaxNum;
+    uint32_t perStageDescriptorStorageTextureMaxNum;
+    uint32_t perStageResourceMaxNum;
 
     // Vertex shader
     uint32_t vertexShaderAttributeMaxNum;

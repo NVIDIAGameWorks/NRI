@@ -92,18 +92,24 @@ struct DescriptorVK {
         return m_TextureDesc.layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL && m_TextureDesc.layout != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     }
 
-    inline void GetBufferInfo(VkDescriptorBufferInfo& info) const {
+    inline VkDescriptorBufferInfo GetBufferInfo() const {
+        VkDescriptorBufferInfo info = {};
         info.buffer = m_BufferDesc.handle;
         info.offset = m_BufferDesc.offset;
         info.range = m_BufferDesc.size;
+
+        return info;
     }
 
-    inline void GetImageSubresourceRange(VkImageSubresourceRange& range) const {
+    inline VkImageSubresourceRange GetImageSubresourceRange() const {
+        VkImageSubresourceRange range = {};
         range.aspectMask = m_TextureDesc.aspectFlags;
         range.baseMipLevel = m_TextureDesc.mipOffset;
         range.levelCount = m_TextureDesc.mipNum;
         range.baseArrayLayer = m_TextureDesc.layerOffset;
         range.layerCount = m_TextureDesc.layerNum;
+
+        return range;
     }
 
     ~DescriptorVK();
