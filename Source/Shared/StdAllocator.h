@@ -174,9 +174,7 @@ public:
     Scratch(const AllocationCallbacks& allocator, T* mem, size_t num)
         : m_Allocator(allocator)
         , m_Mem(mem)
-#ifdef _DEBUG
         , m_Num(num) 
-#endif
     {
         m_IsHeap = (num * sizeof(T) + alignof(T)) > MAX_STACK_ALLOC_SIZE;
     }
@@ -198,9 +196,7 @@ public:
 private:
     const AllocationCallbacks& m_Allocator;
     T* m_Mem = nullptr;
-#ifdef _DEBUG
     size_t m_Num = 0;
-#endif
     bool m_IsHeap = false;
 };
 
