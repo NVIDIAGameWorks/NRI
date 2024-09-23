@@ -7,9 +7,9 @@ void nri::GetResourceDesc(D3D12_RESOURCE_DESC* desc, const TextureDesc& textureD
     desc->Dimension = GetResourceDimension(textureDesc.type);
     desc->Alignment = textureDesc.sampleNum > 1 ? 0 : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
     desc->Width = Align(textureDesc.width, blockWidth);
-    desc->Height = Align(textureDesc.height, blockWidth);
+    desc->Height = Align(std::max(textureDesc.height, (Dim_t)1), blockWidth);
     desc->DepthOrArraySize = std::max(textureDesc.type == TextureType::TEXTURE_3D ? textureDesc.depth : textureDesc.layerNum, (Dim_t)1);
-    desc->MipLevels = textureDesc.mipNum;
+    desc->MipLevels = std::max(textureDesc.mipNum, (Mip_t)1);
     desc->Format = (textureDesc.usageMask & nri::TextureUsageBits::SHADING_RATE_ATTACHMENT) ? dxgiFormat.typed : dxgiFormat.typeless;
     desc->SampleDesc.Count = std::max(textureDesc.sampleNum, (Sample_t)1);
     desc->Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;

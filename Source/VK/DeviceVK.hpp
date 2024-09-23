@@ -952,9 +952,9 @@ void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo&
     info.imageType = ::GetImageType(textureDesc.type);
     info.format = ::GetVkFormat(textureDesc.format, true);
     info.extent.width = textureDesc.width;
-    info.extent.height = textureDesc.height;
+    info.extent.height = std::max(textureDesc.height, (Dim_t)1);
     info.extent.depth = std::max(textureDesc.depth, (Dim_t)1);
-    info.mipLevels = textureDesc.mipNum;
+    info.mipLevels = std::max(textureDesc.mipNum, (Mip_t)1);
     info.arrayLayers = std::max(textureDesc.layerNum, (Dim_t)1);
     info.samples = (VkSampleCountFlagBits)std::max(textureDesc.sampleNum, (Sample_t)1);
     info.tiling = VK_IMAGE_TILING_OPTIMAL;

@@ -194,8 +194,6 @@ NRI_INLINE Result DeviceVal::CreateTexture(const TextureDesc& textureDesc, Textu
 
     RETURN_ON_FAILURE(this, textureDesc.format > Format::UNKNOWN && textureDesc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "'format' is invalid");
     RETURN_ON_FAILURE(this, textureDesc.width != 0, Result::INVALID_ARGUMENT, "'width' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.height != 0, Result::INVALID_ARGUMENT, "'height' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.mipNum != 0, Result::INVALID_ARGUMENT, "'mipNum' is 0");
     RETURN_ON_FAILURE(this, textureDesc.mipNum <= maxMipNum, Result::INVALID_ARGUMENT, "'mipNum=%u' can't be > %u", textureDesc.mipNum, maxMipNum);
 
     Texture* textureImpl = nullptr;
@@ -212,8 +210,6 @@ NRI_INLINE Result DeviceVal::AllocateTexture(const AllocateTextureDesc& textureD
 
     RETURN_ON_FAILURE(this, textureDesc.desc.format > Format::UNKNOWN && textureDesc.desc.format < Format::MAX_NUM, Result::INVALID_ARGUMENT, "'desc.format' is invalid");
     RETURN_ON_FAILURE(this, textureDesc.desc.width != 0, Result::INVALID_ARGUMENT, "'desc.width' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.desc.height != 0, Result::INVALID_ARGUMENT, "'desc.height' is 0");
-    RETURN_ON_FAILURE(this, textureDesc.desc.mipNum != 0, Result::INVALID_ARGUMENT, "'desc.mipNum' is 0");
     RETURN_ON_FAILURE(this, textureDesc.desc.mipNum <= maxMipNum, Result::INVALID_ARGUMENT, "'desc.mipNum=%u' can't be > %u", textureDesc.desc.mipNum, maxMipNum);
 
     Texture* textureImpl = nullptr;

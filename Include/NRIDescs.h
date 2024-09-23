@@ -443,16 +443,16 @@ NriStruct(TextureDesc) {
     Nri(TextureUsageBits) usageMask;
     Nri(Format) format;
     Nri(Dim_t) width;
-    Nri(Dim_t) height;
+    NriOptional Nri(Dim_t) height;
     NriOptional Nri(Dim_t) depth;
-    Nri(Mip_t) mipNum;
+    NriOptional Nri(Mip_t) mipNum;
     NriOptional Nri(Dim_t) layerNum;
     NriOptional Nri(Sample_t) sampleNum;
 };
 
 NriStruct(BufferDesc) {
     uint64_t size;
-    uint32_t structureStride; // use 4 to allow "byte address" (raw) views
+    NriOptional uint32_t structureStride; // use 4 to allow "byte address" (raw) views
     Nri(BufferUsageBits) usageMask;
 };
 

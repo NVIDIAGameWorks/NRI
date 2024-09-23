@@ -204,7 +204,9 @@ inline bool IsDepthBiasEnabled(const nri::DepthBiasDesc& depthBiasDesc) {
 
 inline nri::TextureDesc FixTextureDesc(const nri::TextureDesc& textureDesc) {
     nri::TextureDesc desc = textureDesc;
+    desc.height = std::max(desc.height, (nri::Dim_t)1);
     desc.depth = std::max(desc.depth, (nri::Dim_t)1);
+    desc.mipNum = std::max(desc.mipNum, (nri::Mip_t)1);
     desc.layerNum = std::max(desc.layerNum, (nri::Dim_t)1);
     desc.sampleNum = std::max(desc.sampleNum, (nri::Sample_t)1);
 
