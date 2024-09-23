@@ -276,6 +276,8 @@ NRI_API const FormatProps& NRI_CALL nriGetFormatProps(Format format) {
 
 NRI_API const char* NRI_CALL nriGetGraphicsAPIString(GraphicsAPI graphicsAPI) {
     switch (graphicsAPI) {
+        case GraphicsAPI::NONE:
+            return "NONE";
         case GraphicsAPI::D3D11:
             return "D3D11";
         case GraphicsAPI::D3D12:
