@@ -4,8 +4,6 @@
 
 using namespace nri;
 
-#include <d3d12.h>
-
 template <typename T>
 constexpr T* DummyObject() {
     return (T*)(size_t)(1);
