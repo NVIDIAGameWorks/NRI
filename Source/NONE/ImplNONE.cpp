@@ -182,10 +182,6 @@ struct DeviceNONE final : public DeviceBase {
     inline ~DeviceNONE() {
     }
 
-    inline const DeviceDesc& GetDesc() const {
-        return m_Desc;
-    }
-
     inline void Destruct() {
     }
 
@@ -197,9 +193,6 @@ struct DeviceNONE final : public DeviceBase {
     Result FillFunctionTable(StreamerInterface& table) const;
     Result FillFunctionTable(SwapChainInterface& table) const;
     Result FillFunctionTable(ResourceAllocatorInterface& table) const;
-
-private:
-    DeviceDesc m_Desc = {};
 };
 
 Result CreateDeviceNONE(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device) {

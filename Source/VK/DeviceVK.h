@@ -91,10 +91,6 @@ struct DeviceVK final : public DeviceBase {
     // DeviceBase
     //================================================================================================================
 
-    const DeviceDesc& GetDesc() const {
-        return m_Desc;
-    }
-
     void Destruct();
     Result FillFunctionTable(CoreInterface& table) const;
     Result FillFunctionTable(HelperInterface& table) const;
@@ -143,7 +139,6 @@ private:
     std::array<uint32_t, (uint32_t)CommandQueueType::MAX_NUM> m_QueueFamilyIndices = {};
     std::array<CommandQueueVK*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     DispatchTable m_VK = {};
-    DeviceDesc m_Desc = {};
     VkPhysicalDeviceMemoryProperties m_MemoryProps = {};
     VkAllocationCallbacks m_AllocationCallbacks = {};
     SPIRVBindingOffsets m_SPIRVBindingOffsets = {};

@@ -85,10 +85,6 @@ struct DeviceD3D11 final : public DeviceBase {
     // DeviceBase
     //================================================================================================================
 
-    const DeviceDesc& GetDesc() const {
-        return m_Desc;
-    }
-
     void Destruct();
     Result FillFunctionTable(CoreInterface& table) const;
     Result FillFunctionTable(HelperInterface& table) const;
@@ -123,7 +119,6 @@ private:
     ComPtr<ID3D11DeviceContextBest> m_ImmediateContext;
     ComPtr<ID3D11Multithread> m_Multithread;
     std::array<CommandQueueD3D11*, (size_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
-    DeviceDesc m_Desc = {};
     CRITICAL_SECTION m_CriticalSection = {}; // TODO: Lock?
     CoreInterface m_CoreInterface = {};
     uint8_t m_Version = 0;

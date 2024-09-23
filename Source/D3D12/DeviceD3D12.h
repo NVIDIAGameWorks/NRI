@@ -93,10 +93,6 @@ struct DeviceD3D12 final : public DeviceBase {
     // DeviceBase
     //================================================================================================================
 
-    inline const DeviceDesc& GetDesc() const {
-        return m_Desc;
-    }
-
     void Destruct();
     Result FillFunctionTable(CoreInterface& table) const;
     Result FillFunctionTable(HelperInterface& table) const;
@@ -135,7 +131,6 @@ private:
     std::array<CommandQueueD3D12*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     Vector<DescriptorHeapDesc> m_DescriptorHeaps;
     Vector<Vector<DescriptorHandle>> m_FreeDescriptors;
-    DeviceDesc m_Desc = {};
     UnorderedMap<uint64_t, ComPtr<ID3D12CommandSignature>> m_DrawCommandSignatures;
     UnorderedMap<uint64_t, ComPtr<ID3D12CommandSignature>> m_DrawIndexedCommandSignatures;
     UnorderedMap<uint32_t, ComPtr<ID3D12CommandSignature>> m_DrawMeshCommandSignatures;
