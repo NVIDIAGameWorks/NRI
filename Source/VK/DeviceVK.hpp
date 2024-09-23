@@ -800,7 +800,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.fragmentShaderInputComponentMaxNum = limits.maxFragmentInputComponents;
         m_Desc.fragmentShaderOutputAttachmentMaxNum = limits.maxFragmentOutputAttachments;
         m_Desc.fragmentShaderDualSourceAttachmentMaxNum = limits.maxFragmentDualSrcAttachments;
-        m_Desc.fragmentShaderCombinedOutputResourceMaxNum = limits.maxFragmentCombinedOutputResources;
 
         m_Desc.computeShaderSharedMemoryMaxSize = limits.maxComputeSharedMemorySize;
         m_Desc.computeShaderWorkGroupMaxNum[0] = limits.maxComputeWorkGroupCount[0];

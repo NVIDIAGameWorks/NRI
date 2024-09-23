@@ -1386,7 +1386,6 @@ NriStruct(DeviceDesc) {
     uint32_t fragmentShaderInputComponentMaxNum;
     uint32_t fragmentShaderOutputAttachmentMaxNum;
     uint32_t fragmentShaderDualSourceAttachmentMaxNum;
-    uint32_t fragmentShaderCombinedOutputResourceMaxNum;
 
     // Compute shader
     uint32_t computeShaderSharedMemoryMaxSize;
