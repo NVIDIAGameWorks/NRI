@@ -10,7 +10,9 @@
 
 #ifdef _WIN32
 #    include <dxgi1_6.h>
+#    define FILE_SEPARATOR '\\'
 #else
+#    define FILE_SEPARATOR '/'
 typedef uint32_t DXGI_FORMAT;
 #endif
 
@@ -41,6 +43,7 @@ constexpr uint32_t NRI_NODE_MASK = 0x1;    // mGPU is not planned
 constexpr uint32_t TIMEOUT_PRESENT = 1000; // 1 sec
 constexpr uint32_t TIMEOUT_FENCE = 5000;   // 5 sec
 constexpr uint64_t PRESENT_INDEX_BIT_NUM = 56ull;
+constexpr uint32_t MAX_MESSAGE_LENGTH = 2048;
 
 // https://learn.microsoft.com/en-us/windows/win32/direct3d12/root-signature-limits
 constexpr uint32_t ROOT_SIGNATURE_DWORD_NUM = 64;

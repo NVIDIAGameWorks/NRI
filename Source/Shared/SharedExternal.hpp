@@ -792,15 +792,23 @@ nri::Format VKFormatToNRIFormat(uint32_t format) {
     return nri::Format::UNKNOWN;
 }
 
+constexpr std::array<const char*, (size_t)nri::Message::MAX_NUM> MESSAGE_TYPE_NAME = {
+    "INFO",
+    "WARNING",
+    "ERROR",
+};
+
 static void MessageCallback(nri::Message messageType, const char* file, uint32_t line, const char* message, void* userArg) {
-    MaybeUnused(messageType);
-    MaybeUnused(file);
-    MaybeUnused(line);
     MaybeUnused(userArg);
 
-    fprintf(stderr, "%s", message);
+    const char* messageTypeName = MESSAGE_TYPE_NAME[(size_t)messageType];
+
+    char buf[MAX_MESSAGE_LENGTH];
+    snprintf(buf, sizeof(buf), "nri::%s (%s:%u) - %s\n", messageTypeName, file, line, message);
+
+    fprintf(stderr, "%s", buf);
 #ifdef _WIN32
-    OutputDebugStringA(message);
+    OutputDebugStringA(buf);
 #endif
 }
 
@@ -822,52 +830,23 @@ void CheckAndSetDefaultCallbacks(nri::CallbackInterface& callbackInterface) {
         callbackInterface.AbortExecution = AbortExecution;
 }
 
-constexpr std::array<const char*, (size_t)nri::Message::MAX_NUM> MESSAGE_TYPE_NAME = {
-    "INFO",
-    "WARNING",
-    "ERROR",
-};
-
-constexpr std::array<const char*, (size_t)nri::GraphicsAPI::MAX_NUM> GRAPHICS_API_NAME = {
-    "NONE",
-    "D3D11",
-    "D3D12",
-    "VK",
-};
-
 void nri::DeviceBase::ReportMessage(nri::Message messageType, const char* file, uint32_t line, const char* format, ...) const {
     const nri::DeviceDesc& desc = GetDesc();
-
-    const char* messageTypeName = MESSAGE_TYPE_NAME[(size_t)messageType];
-    const char* graphicsAPIName = GRAPHICS_API_NAME[(size_t)desc.graphicsAPI];
-
-#ifdef _WIN32
-#    define FILE_SEPARATOR '\\'
-#else
-#    define FILE_SEPARATOR '/'
-#endif
+    const char* graphicsAPIName = nriGetGraphicsAPIString(desc.graphicsAPI);
 
     const char* temp = strrchr(file, FILE_SEPARATOR);
     file = temp ? temp + 1 : file;
 
-    char message[4096];
-    int32_t written = 0;
-    if (desc.adapterDesc.name[0] == '\0')
-        written = snprintf(message, GetCountOf(message), "NRI::%s(%s:%u) - %s::Unknown - ", messageTypeName, file, line, graphicsAPIName);
-    else
-        written = snprintf(message, GetCountOf(message), "NRI::%s(%s:%u) - %s::%s - ", messageTypeName, file, line, graphicsAPIName, desc.adapterDesc.name);
+    char buf[MAX_MESSAGE_LENGTH];
+    int32_t written = written = snprintf(buf, sizeof(buf), "%s::%s - ", graphicsAPIName, *desc.adapterDesc.name == '\0' ? "Unknown" : desc.adapterDesc.name);
 
     va_list argptr;
     va_start(argptr, format);
-    written += vsnprintf(message + written, GetCountOf(message) - written, format, argptr);
+    written += vsnprintf(buf + written, sizeof(buf) - written, format, argptr);
     va_end(argptr);
 
-    const int end = std::min(written, (int)GetCountOf(message) - 2);
-    message[end] = '\n';
-    message[end + 1] = '\0';
-
     if (m_CallbackInterface.MessageCallback)
-        m_CallbackInterface.MessageCallback(messageType, file, line, message, m_CallbackInterface.userArg);
+        m_CallbackInterface.MessageCallback(messageType, file, line, buf, m_CallbackInterface.userArg);
 
     if (messageType == nri::Message::ERROR && m_CallbackInterface.AbortExecution != nullptr)
         m_CallbackInterface.AbortExecution(m_CallbackInterface.userArg);
