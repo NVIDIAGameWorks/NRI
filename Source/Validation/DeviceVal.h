@@ -72,6 +72,10 @@ struct DeviceVal final : public DeviceBase {
         return m_Lock;
     }
 
+    const DeviceDesc& GetDesc() const {
+        return ((DeviceBase&)m_Device).GetDesc();
+    }
+
     bool Create();
     void RegisterMemoryType(MemoryType memoryType, MemoryLocation memoryLocation);
 
@@ -79,7 +83,6 @@ struct DeviceVal final : public DeviceBase {
     // DeviceBase
     //================================================================================================================
 
-    const DeviceDesc& GetDesc() const;
     void Destruct();
     Result FillFunctionTable(CoreInterface& table) const;
     Result FillFunctionTable(HelperInterface& table) const;

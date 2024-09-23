@@ -13,15 +13,12 @@ struct DeviceBase {
         return m_StdAllocator;
     }
 
-    const DeviceDesc& GetDesc() const {
-        return m_Desc;
-    }
-
     void ReportMessage(Message messageType, const char* file, uint32_t line, const char* format, ...) const;
 
     virtual ~DeviceBase() {
     }
 
+    virtual const DeviceDesc& GetDesc() const = 0;
     virtual void Destruct() = 0;
 
     virtual Result FillFunctionTable(CoreInterface&) const {
@@ -71,6 +68,5 @@ struct DeviceBase {
 protected:
     CallbackInterface m_CallbackInterface = {};
     StdAllocator<uint8_t> m_StdAllocator;
-    DeviceDesc m_Desc = {};
 };
 } // namespace nri

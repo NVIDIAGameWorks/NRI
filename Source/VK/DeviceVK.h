@@ -91,6 +91,10 @@ struct DeviceVK final : public DeviceBase {
     // DeviceBase
     //================================================================================================================
 
+    inline const DeviceDesc& GetDesc() const {
+        return m_Desc;
+    }
+
     void Destruct();
     Result FillFunctionTable(CoreInterface& table) const;
     Result FillFunctionTable(HelperInterface& table) const;
@@ -143,6 +147,7 @@ private:
     VkAllocationCallbacks m_AllocationCallbacks = {};
     SPIRVBindingOffsets m_SPIRVBindingOffsets = {};
     CoreInterface m_CoreInterface = {};
+    DeviceDesc m_Desc = {};
     Library* m_Loader = nullptr;
     VkDevice m_Device = VK_NULL_HANDLE;
     VkInstance m_Instance = VK_NULL_HANDLE;

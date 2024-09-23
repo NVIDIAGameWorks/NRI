@@ -93,10 +93,6 @@ void DeviceVal::Destruct() {
     Destroy(GetStdAllocator(), this);
 }
 
-const DeviceDesc& DeviceVal::GetDesc() const {
-    return ((DeviceBase&)m_Device).GetDesc();
-}
-
 NRI_INLINE Result DeviceVal::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
     RETURN_ON_FAILURE(this, swapChainDesc.commandQueue != nullptr, Result::INVALID_ARGUMENT, "'commandQueue' is NULL");
     RETURN_ON_FAILURE(this, swapChainDesc.width != 0, Result::INVALID_ARGUMENT, "'width' is 0");
@@ -342,24 +338,18 @@ NRI_INLINE Result DeviceVal::CreateDescriptor(const SamplerDesc& samplerDesc, De
 }
 
 NRI_INLINE Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout) {
-    RETURN_ON_FAILURE(this, pipelineLayoutDesc.shaderStages != StageBits::NONE, Result::INVALID_ARGUMENT, "'shaderStages' can't be 'NONE'");
-    RETURN_ON_FAILURE(this, pipelineLayoutDesc.rootDescriptorNum <= GetDesc().pipelineLayoutRootDescriptorMaxNum, Result::UNSUPPORTED, "exceeded number of root descriptors");
-
     bool isGraphics = pipelineLayoutDesc.shaderStages & StageBits::GRAPHICS_SHADERS;
     bool isCompute = pipelineLayoutDesc.shaderStages & StageBits::COMPUTE_SHADER;
     bool isRayTracing = pipelineLayoutDesc.shaderStages & StageBits::RAY_TRACING_SHADERS;
     uint32_t supportedTypes = (uint32_t)isGraphics + (uint32_t)isCompute + (uint32_t)isRayTracing;
+
     RETURN_ON_FAILURE(this, supportedTypes > 0, Result::INVALID_ARGUMENT, "'shaderStages' doesn't include any shader stages");
     RETURN_ON_FAILURE(this, supportedTypes == 1, Result::INVALID_ARGUMENT, "'shaderStages' is invalid, it can't be compatible with more than one type of pipeline");
+    RETURN_ON_FAILURE(this, pipelineLayoutDesc.shaderStages != StageBits::NONE, Result::INVALID_ARGUMENT, "'shaderStages' can't be 'NONE'");
 
-    uint32_t totalDescriptorNum = pipelineLayoutDesc.descriptorSetNum + (pipelineLayoutDesc.rootDescriptorNum ? 1 : 0);
-    bool isTotalSetNumValid = totalDescriptorNum <= GetDesc().pipelineLayoutDescriptorSetMaxNum;
-    RETURN_ON_FAILURE(this, isTotalSetNumValid, Result::INVALID_ARGUMENT, "exceeded number of sets");
+    Scratch<uint32_t> spaces = AllocateScratch(*this, uint32_t, pipelineLayoutDesc.descriptorSetNum);
 
-    Scratch<uint32_t> spaces = AllocateScratch(*this, uint32_t, totalDescriptorNum);
-    memset(spaces, 0, sizeof(uint32_t) * totalDescriptorNum);
-    uint32_t spaceNum = 0;
-
+    uint32_t rangeNum = 0;
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
         const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[i];
 
@@ -377,19 +367,21 @@ NRI_INLINE Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipe
         }
 
         uint32_t n = 0;
-        for (; n < spaceNum && spaces[n] != descriptorSetDesc.registerSpace; n++)
+        for (; n < i && spaces[n] != descriptorSetDesc.registerSpace; n++)
             ;
 
-        RETURN_ON_FAILURE(this, n == spaceNum, Result::INVALID_ARGUMENT, "'descriptorSets[%u].registerSpace = %u' is already in use", i, descriptorSetDesc.registerSpace);
-        spaces[spaceNum++] = descriptorSetDesc.registerSpace;
+        RETURN_ON_FAILURE(this, n == i, Result::INVALID_ARGUMENT, "'descriptorSets[%u].registerSpace = %u' is already in use", i, descriptorSetDesc.registerSpace);
+        spaces[i] = descriptorSetDesc.registerSpace;
+
+        rangeNum += descriptorSetDesc.rangeNum;
     }
 
     if (pipelineLayoutDesc.rootDescriptorNum) {
         uint32_t n = 0;
-        for (; n < spaceNum && spaces[n] != pipelineLayoutDesc.rootRegisterSpace; n++)
+        for (; n < pipelineLayoutDesc.descriptorSetNum && spaces[n] != pipelineLayoutDesc.rootRegisterSpace; n++)
             ;
 
-        RETURN_ON_FAILURE(this, n == spaceNum, Result::INVALID_ARGUMENT, "'registerSpace = %u' is already in use", pipelineLayoutDesc.rootRegisterSpace);
+        RETURN_ON_FAILURE(this, n == pipelineLayoutDesc.descriptorSetNum, Result::INVALID_ARGUMENT, "'registerSpace = %u' is already in use", pipelineLayoutDesc.rootRegisterSpace);
     }
 
     for (uint32_t i = 0; i < pipelineLayoutDesc.rootDescriptorNum; i++) {
@@ -400,6 +392,22 @@ NRI_INLINE Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipe
             || rootDescriptorDesc.descriptorType == DescriptorType::STORAGE_STRUCTURED_BUFFER;
         RETURN_ON_FAILURE(this, isDescriptorTypeValid, Result::INVALID_ARGUMENT, "'rootDescriptors[%u].descriptorType' must be one of 'CONSTANT_BUFFER', 'STRUCTURED_BUFFER' or 'STORAGE_STRUCTURED_BUFFER'", i);
     }
+
+    uint32_t rootConstantSize = 0;
+    for (uint32_t i = 0; i < pipelineLayoutDesc.rootConstantNum; i++)
+        rootConstantSize += pipelineLayoutDesc.rootConstants[i].size;
+
+    PipelineLayoutSettingsDesc origSettings = {};
+    origSettings.descriptorSetNum = pipelineLayoutDesc.descriptorSetNum;
+    origSettings.descriptorRangeNum = rangeNum;
+    origSettings.rootConstantSize = rootConstantSize;
+    origSettings.rootDescriptorNum = pipelineLayoutDesc.rootDescriptorNum;
+
+    PipelineLayoutSettingsDesc fittedSettings = FitPipelineLayoutSettingsIntoDeviceLimits(GetDesc(), origSettings);
+    RETURN_ON_FAILURE(this, origSettings.descriptorSetNum == fittedSettings.descriptorSetNum, Result::UNSUPPORTED, "total number of descriptor sets (=%u) exceeds device limits", origSettings.descriptorSetNum);
+    RETURN_ON_FAILURE(this, origSettings.descriptorRangeNum == fittedSettings.descriptorRangeNum, Result::UNSUPPORTED, "total number of descriptor ranges (=%u) exceeds device limits", origSettings.descriptorRangeNum);
+    RETURN_ON_FAILURE(this, origSettings.rootConstantSize == fittedSettings.rootConstantSize, Result::UNSUPPORTED, "total size of root constants (=%u) exceeds device limits", origSettings.rootConstantSize);
+    RETURN_ON_FAILURE(this, origSettings.rootDescriptorNum == fittedSettings.rootDescriptorNum, Result::UNSUPPORTED, "total number of root descriptors (=%u) exceeds device limits", origSettings.rootDescriptorNum);
 
     PipelineLayout* pipelineLayoutImpl = nullptr;
     Result result = m_CoreAPI.CreatePipelineLayout(m_Device, pipelineLayoutDesc, pipelineLayoutImpl);

@@ -85,6 +85,10 @@ struct DeviceD3D11 final : public DeviceBase {
     // DeviceBase
     //================================================================================================================
 
+    inline const DeviceDesc& GetDesc() const {
+        return m_Desc;
+    }
+
     void Destruct();
     Result FillFunctionTable(CoreInterface& table) const;
     Result FillFunctionTable(HelperInterface& table) const;
@@ -121,6 +125,7 @@ private:
     std::array<CommandQueueD3D11*, (size_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     CRITICAL_SECTION m_CriticalSection = {}; // TODO: Lock?
     CoreInterface m_CoreInterface = {};
+    DeviceDesc m_Desc = {};
     uint8_t m_Version = 0;
     uint8_t m_ImmediateContextVersion = 0;
     bool m_IsWrapped = false;

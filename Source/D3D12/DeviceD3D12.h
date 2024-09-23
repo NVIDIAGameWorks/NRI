@@ -93,6 +93,10 @@ struct DeviceD3D12 final : public DeviceBase {
     // DeviceBase
     //================================================================================================================
 
+    inline const DeviceDesc& GetDesc() const {
+        return m_Desc;
+    }
+
     void Destruct();
     Result FillFunctionTable(CoreInterface& table) const;
     Result FillFunctionTable(HelperInterface& table) const;
@@ -121,8 +125,7 @@ struct DeviceD3D12 final : public DeviceBase {
 
 private:
     void FillDesc(const DeviceCreationDesc& deviceCreationDesc);
-    ComPtr<ID3D12CommandSignature> CreateCommandSignature(
-        D3D12_INDIRECT_ARGUMENT_TYPE type, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation = false);
+    ComPtr<ID3D12CommandSignature> CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE type, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation = false);
 
 private:
     d3d12::Ext m_Ext = {}; // don't sort: destructor must be called last!
@@ -140,6 +143,7 @@ private:
     D3D12MA::ALLOCATION_CALLBACKS m_AllocationCallbacks = {};
     D3D12MA::ALLOCATION_CALLBACKS* m_AllocationCallbackPtr = nullptr;
     CoreInterface m_CoreInterface = {};
+    DeviceDesc m_Desc = {};
     uint8_t m_Version = 0;
     bool m_IsWrapped = false;
     std::array<Lock, DESCRIPTOR_HEAP_TYPE_NUM> m_FreeDescriptorLocks;
