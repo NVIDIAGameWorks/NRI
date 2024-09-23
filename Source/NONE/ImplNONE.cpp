@@ -4,6 +4,8 @@
 
 using namespace nri;
 
+#include <d3d12.h>
+
 template <typename T>
 constexpr T* DummyObject() {
     return (T*)(size_t)(1);
@@ -12,6 +14,42 @@ constexpr T* DummyObject() {
 struct DeviceNONE final : public DeviceBase {
     inline DeviceNONE(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator)
         : DeviceBase(callbacks, stdAllocator) {
+        m_Desc.graphicsAPI = GraphicsAPI::NONE;
+        m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
+        m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
+
+        m_Desc.viewportMaxNum = 16;
+        m_Desc.viewportBoundsRange[0] = -32768;
+        m_Desc.viewportBoundsRange[1] = 32767;
+
+        m_Desc.attachmentMaxDim = 16384;
+        m_Desc.attachmentLayerMaxNum = 2048;
+        m_Desc.colorAttachmentMaxNum = 8;
+
+        m_Desc.colorSampleMaxNum = 32;
+        m_Desc.depthSampleMaxNum = 32;
+        m_Desc.stencilSampleMaxNum = 32;
+        m_Desc.zeroAttachmentsSampleMaxNum = 32;
+        m_Desc.textureColorSampleMaxNum = 32;
+        m_Desc.textureIntegerSampleMaxNum = 32;
+        m_Desc.textureDepthSampleMaxNum = 32;
+        m_Desc.textureStencilSampleMaxNum = 32;
+        m_Desc.storageTextureSampleMaxNum = 32;
+
+        m_Desc.texture1DMaxDim = 16384;
+        m_Desc.texture2DMaxDim = 16384;
+        m_Desc.texture3DMaxDim = 16384;
+        m_Desc.textureArrayLayerMaxNum = 16384;
+        m_Desc.typedBufferMaxDim = uint32_t(-1);
+
+        m_Desc.deviceUploadHeapSize = 256 * 1024 * 1024;
+        m_Desc.memoryAllocationMaxNum = uint32_t(-1);
+        m_Desc.samplerAllocationMaxNum = 4096;
+        m_Desc.constantBufferMaxRange = 64 * 1024;
+        m_Desc.storageBufferMaxRange = uint32_t(-1);
+        m_Desc.bufferTextureGranularity = 1;
+        m_Desc.bufferMaxSize = uint32_t(-1);
+
         m_Desc.uploadBufferTextureRowAlignment = 1;
         m_Desc.uploadBufferTextureSliceAlignment = 1;
         m_Desc.typedBufferOffsetAlignment = 1;
@@ -20,14 +58,127 @@ struct DeviceNONE final : public DeviceBase {
         m_Desc.rayTracingShaderTableAlignment = 1;
         m_Desc.rayTracingScratchAlignment = 1;
 
+        m_Desc.pipelineLayoutDescriptorSetMaxNum = 64;
+        m_Desc.pipelineLayoutRootConstantMaxSize = 256;
+        m_Desc.pipelineLayoutRootDescriptorMaxNum = 64;
+
+        m_Desc.perStageDescriptorSamplerMaxNum = 1000000;
+        m_Desc.perStageDescriptorConstantBufferMaxNum = 1000000;
+        m_Desc.perStageDescriptorStorageBufferMaxNum = 1000000;
+        m_Desc.perStageDescriptorTextureMaxNum = 1000000;
+        m_Desc.perStageDescriptorStorageTextureMaxNum = 1000000;
+        m_Desc.perStageResourceMaxNum = 1000000;
+
+        m_Desc.descriptorSetSamplerMaxNum = m_Desc.perStageDescriptorSamplerMaxNum;
+        m_Desc.descriptorSetConstantBufferMaxNum = m_Desc.perStageDescriptorConstantBufferMaxNum;
+        m_Desc.descriptorSetStorageBufferMaxNum = m_Desc.perStageDescriptorStorageBufferMaxNum;
+        m_Desc.descriptorSetTextureMaxNum = m_Desc.perStageDescriptorTextureMaxNum;
+        m_Desc.descriptorSetStorageTextureMaxNum = m_Desc.perStageDescriptorStorageTextureMaxNum;
+
+        m_Desc.vertexShaderAttributeMaxNum = 32;
+        m_Desc.vertexShaderStreamMaxNum = 32;
+        m_Desc.vertexShaderOutputComponentMaxNum = 128;
+
+        m_Desc.tessControlShaderGenerationMaxLevel = 64.0f;
+        m_Desc.tessControlShaderPatchPointMaxNum = 32;
+        m_Desc.tessControlShaderPerVertexInputComponentMaxNum = 128;
+        m_Desc.tessControlShaderPerVertexOutputComponentMaxNum = 128;
+        m_Desc.tessControlShaderPerPatchOutputComponentMaxNum = 128;
+        m_Desc.tessControlShaderTotalOutputComponentMaxNum = m_Desc.tessControlShaderPatchPointMaxNum * m_Desc.tessControlShaderPerVertexOutputComponentMaxNum + m_Desc.tessControlShaderPerPatchOutputComponentMaxNum;
+
+        m_Desc.tessEvaluationShaderInputComponentMaxNum = 128;
+        m_Desc.tessEvaluationShaderOutputComponentMaxNum = 128;
+
+        m_Desc.geometryShaderInvocationMaxNum = 32;
+        m_Desc.geometryShaderInputComponentMaxNum = 128;
+        m_Desc.geometryShaderOutputComponentMaxNum = 128;
+        m_Desc.geometryShaderOutputVertexMaxNum = 1024;
+        m_Desc.geometryShaderTotalOutputComponentMaxNum = 1024;
+
+        m_Desc.fragmentShaderInputComponentMaxNum = 128;
+        m_Desc.fragmentShaderOutputAttachmentMaxNum = 8;
+        m_Desc.fragmentShaderDualSourceAttachmentMaxNum = 1;
+
+        m_Desc.computeShaderSharedMemoryMaxSize = 64 * 1024;
+        m_Desc.computeShaderWorkGroupMaxNum[0] = 64 * 1024;
+        m_Desc.computeShaderWorkGroupMaxNum[1] = 64 * 1024;
+        m_Desc.computeShaderWorkGroupMaxNum[2] = 64 * 1024;
+        m_Desc.computeShaderWorkGroupInvocationMaxNum = 64 * 1024;
+        m_Desc.computeShaderWorkGroupMaxDim[0] = 64 * 1024;
+        m_Desc.computeShaderWorkGroupMaxDim[1] = 64 * 1024;
+        m_Desc.computeShaderWorkGroupMaxDim[2] = 64 * 1024;
+
+        m_Desc.rayTracingShaderGroupIdentifierSize = 32;
+        m_Desc.rayTracingShaderTableMaxStride = (uint32_t)(-1);
+        m_Desc.rayTracingShaderRecursionMaxDepth = 31;
+        m_Desc.rayTracingGeometryObjectMaxNum = (uint32_t)(-1);
+
+        m_Desc.meshControlSharedMemoryMaxSize = 64 * 1024;
+        m_Desc.meshControlWorkGroupInvocationMaxNum = 128;
+        m_Desc.meshControlPayloadMaxSize = 64 * 1024;
+        m_Desc.meshEvaluationOutputVerticesMaxNum = 256;
+        m_Desc.meshEvaluationOutputPrimitiveMaxNum = 256;
+        m_Desc.meshEvaluationOutputComponentMaxNum = 128;
+        m_Desc.meshEvaluationSharedMemoryMaxSize = 64 * 1024;
+        m_Desc.meshEvaluationWorkGroupInvocationMaxNum = 128;
+
+        m_Desc.viewportPrecisionBits = 8;
+        m_Desc.subPixelPrecisionBits = 8;
+        m_Desc.subTexelPrecisionBits = 8;
+        m_Desc.mipmapPrecisionBits = 8;
+
+        m_Desc.drawIndirectMaxNum = uint32_t(-1);
+        m_Desc.samplerLodBiasMin = -16.0f;
+        m_Desc.samplerLodBiasMax = 16.0f;
+        m_Desc.samplerAnisotropyMax = 16;
+        m_Desc.texelOffsetMin = -8;
+        m_Desc.texelOffsetMax = 7;
+        m_Desc.texelGatherOffsetMin = -8;
+        m_Desc.texelGatherOffsetMax = 7;
+        m_Desc.clipDistanceMaxNum = 8;
+        m_Desc.cullDistanceMaxNum = 8;
+        m_Desc.combinedClipAndCullDistanceMaxNum = 8;
+        m_Desc.shadingRateAttachmentTileSize = 16;
+        m_Desc.shaderModel = 69;
+
+        m_Desc.conservativeRasterTier = 3;
+        m_Desc.sampleLocationsTier = 2;
+        m_Desc.shadingRateTier = 2;
+        m_Desc.bindlessTier = 2;
+        m_Desc.bindlessTier = 2;
+
+        m_Desc.isComputeQueueSupported = true;
+        m_Desc.isCopyQueueSupported = true;
+        m_Desc.isTextureFilterMinMaxSupported = true;
+        m_Desc.isLogicFuncSupported = true;
+        m_Desc.isDepthBoundsTestSupported = true;
+        m_Desc.isDrawIndirectCountSupported = true;
+        m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = true;
+        m_Desc.isLineSmoothingSupported = true;
+        m_Desc.isCopyQueueTimestampSupported = true;
+        m_Desc.isMeshShaderPipelineStatsSupported = true;
+        m_Desc.isEnchancedBarrierSupported = true;
+        m_Desc.isMemoryTier2Supported = true;
+        m_Desc.isDynamicDepthBiasSupported = true;
+        m_Desc.isAdditionalShadingRatesSupported = true;
+
+        m_Desc.isShaderNativeI16Supported = true;
+        m_Desc.isShaderNativeF16Supported = true;
+        m_Desc.isShaderNativeI32Supported = true;
+        m_Desc.isShaderNativeF32Supported = true;
+        m_Desc.isShaderNativeI64Supported = true;
+        m_Desc.isShaderNativeF64Supported = true;
+        m_Desc.isShaderAtomicsI16Supported = true;
+        m_Desc.isShaderAtomicsF16Supported = true;
+        m_Desc.isShaderAtomicsI32Supported = true;
+        m_Desc.isShaderAtomicsF32Supported = true;
+        m_Desc.isShaderAtomicsI64Supported = true;
+        m_Desc.isShaderAtomicsF64Supported = true;
+
         m_Desc.isSwapChainSupported = true;
         m_Desc.isRayTracingSupported = true;
         m_Desc.isMeshShaderSupported = true;
         m_Desc.isLowLatencySupported = true;
-
-        m_Desc.graphicsAPI = GraphicsAPI::NONE;
-        m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
-        m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
     }
 
     inline ~DeviceNONE() {

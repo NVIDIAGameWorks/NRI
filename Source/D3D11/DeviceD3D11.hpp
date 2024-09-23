@@ -270,19 +270,19 @@ void DeviceD3D11::FillDesc() {
     m_Desc.textureArrayLayerMaxNum = D3D11_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
     m_Desc.typedBufferMaxDim = 1 << D3D11_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP;
 
-    m_Desc.memoryAllocationMaxNum = 0xFFFFFFFF;
+    m_Desc.memoryAllocationMaxNum = (uint32_t)(-1);
     m_Desc.samplerAllocationMaxNum = D3D11_REQ_SAMPLER_OBJECT_COUNT_PER_DEVICE;
-    m_Desc.uploadBufferTextureRowAlignment = 256;   // D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
-    m_Desc.uploadBufferTextureSliceAlignment = 512; // D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
-    m_Desc.typedBufferOffsetAlignment = D3D11_RAW_UAV_SRV_BYTE_ALIGNMENT;
-    m_Desc.constantBufferOffsetAlignment = 256; // D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
     m_Desc.constantBufferMaxRange = D3D11_REQ_IMMEDIATE_CONSTANT_BUFFER_ELEMENT_COUNT * 16;
-    m_Desc.storageBufferOffsetAlignment = D3D11_RAW_UAV_SRV_BYTE_ALIGNMENT;
     m_Desc.storageBufferMaxRange = 1 << D3D11_REQ_BUFFER_RESOURCE_TEXEL_COUNT_2_TO_EXP;
     m_Desc.bufferTextureGranularity = 1;
     m_Desc.bufferMaxSize = D3D11_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_C_TERM * 1024ull * 1024ull;
 
-    // Just use D3D12 restrictions to avoid divergence
+    m_Desc.uploadBufferTextureRowAlignment = 256;   // D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
+    m_Desc.uploadBufferTextureSliceAlignment = 512; // D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
+    m_Desc.typedBufferOffsetAlignment = D3D11_RAW_UAV_SRV_BYTE_ALIGNMENT;
+    m_Desc.constantBufferOffsetAlignment = 256; // D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+    m_Desc.storageBufferOffsetAlignment = D3D11_RAW_UAV_SRV_BYTE_ALIGNMENT;
+
     m_Desc.pipelineLayoutDescriptorSetMaxNum = ROOT_SIGNATURE_DWORD_NUM / 1;
     m_Desc.pipelineLayoutRootConstantMaxSize = sizeof(uint32_t) * ROOT_SIGNATURE_DWORD_NUM / 1;
     m_Desc.pipelineLayoutRootDescriptorMaxNum = ROOT_SIGNATURE_DWORD_NUM / 2;
@@ -310,7 +310,6 @@ void DeviceD3D11::FillDesc() {
     m_Desc.tessControlShaderPerVertexOutputComponentMaxNum = D3D11_HS_CONTROL_POINT_PHASE_OUTPUT_REGISTER_COUNT * D3D11_HS_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessControlShaderPerPatchOutputComponentMaxNum = D3D11_HS_OUTPUT_PATCH_CONSTANT_REGISTER_SCALAR_COMPONENTS;
     m_Desc.tessControlShaderTotalOutputComponentMaxNum = m_Desc.tessControlShaderPatchPointMaxNum * m_Desc.tessControlShaderPerVertexOutputComponentMaxNum + m_Desc.tessControlShaderPerPatchOutputComponentMaxNum;
-
     m_Desc.tessEvaluationShaderInputComponentMaxNum = D3D11_DS_INPUT_CONTROL_POINT_REGISTER_COUNT * D3D11_DS_INPUT_CONTROL_POINT_REGISTER_COMPONENTS;
     m_Desc.tessEvaluationShaderOutputComponentMaxNum = D3D11_DS_INPUT_CONTROL_POINT_REGISTER_COUNT * D3D11_DS_INPUT_CONTROL_POINT_REGISTER_COMPONENTS;
 
@@ -371,6 +370,7 @@ void DeviceD3D11::FillDesc() {
 
     m_Desc.shadingRateTier = caps.bVariablePixelRateShadingSupported ? 2 : 0;
     m_Desc.shadingRateAttachmentTileSize = NV_VARIABLE_PIXEL_SHADING_TILE_WIDTH;
+    m_Desc.isAdditionalShadingRatesSupported = caps.bVariablePixelRateShadingSupported ? 1 : 0;
 #endif
 
     m_Desc.isComputeQueueSupported = true; // TODO: report fake COMPUTE and COPY queues support since multi-queue supporting code is NOP. Can it hurt?
@@ -382,7 +382,6 @@ void DeviceD3D11::FillDesc() {
     m_Desc.isShaderNativeI32Supported = true;
     m_Desc.isShaderNativeF32Supported = true;
     m_Desc.isShaderNativeF64Supported = options.ExtendedDoublesShaderInstructions;
-
     m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;
     m_Desc.isShaderAtomicsI32Supported = true;
     m_Desc.isShaderAtomicsF32Supported = isShaderAtomicsF32Supported;

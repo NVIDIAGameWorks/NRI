@@ -751,15 +751,18 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
 
         m_Desc.memoryAllocationMaxNum = limits.maxMemoryAllocationCount;
         m_Desc.samplerAllocationMaxNum = limits.maxSamplerAllocationCount;
+        m_Desc.constantBufferMaxRange = limits.maxUniformBufferRange;
+        m_Desc.storageBufferMaxRange = limits.maxStorageBufferRange;
+        m_Desc.bufferTextureGranularity = (uint32_t)limits.bufferImageGranularity;
+        m_Desc.bufferMaxSize = props13.maxBufferSize;
+
         m_Desc.uploadBufferTextureRowAlignment = 1;
         m_Desc.uploadBufferTextureSliceAlignment = 1;
         m_Desc.typedBufferOffsetAlignment = (uint32_t)limits.minTexelBufferOffsetAlignment;
         m_Desc.constantBufferOffsetAlignment = (uint32_t)limits.minUniformBufferOffsetAlignment;
-        m_Desc.constantBufferMaxRange = limits.maxUniformBufferRange;
         m_Desc.storageBufferOffsetAlignment = (uint32_t)limits.minStorageBufferOffsetAlignment;
-        m_Desc.storageBufferMaxRange = limits.maxStorageBufferRange;
-        m_Desc.bufferMaxSize = props13.maxBufferSize;
-        m_Desc.bufferTextureGranularity = (uint32_t)limits.bufferImageGranularity;
+        m_Desc.rayTracingShaderTableAlignment = rayTracingProps.shaderGroupBaseAlignment;
+        m_Desc.rayTracingScratchAlignment = accelerationStructureProps.minAccelerationStructureScratchOffsetAlignment;
 
         m_Desc.pipelineLayoutDescriptorSetMaxNum = limits.maxBoundDescriptorSets;
         m_Desc.pipelineLayoutRootConstantMaxSize = limits.maxPushConstantsSize;
@@ -811,11 +814,9 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.computeShaderWorkGroupMaxDim[2] = limits.maxComputeWorkGroupSize[2];
 
         m_Desc.rayTracingShaderGroupIdentifierSize = rayTracingProps.shaderGroupHandleSize;
-        m_Desc.rayTracingShaderTableAlignment = rayTracingProps.shaderGroupBaseAlignment;
         m_Desc.rayTracingShaderTableMaxStride = rayTracingProps.maxShaderGroupStride;
         m_Desc.rayTracingShaderRecursionMaxDepth = rayTracingProps.maxRayRecursionDepth;
         m_Desc.rayTracingGeometryObjectMaxNum = (uint32_t)accelerationStructureProps.maxGeometryCount;
-        m_Desc.rayTracingScratchAlignment = accelerationStructureProps.minAccelerationStructureScratchOffsetAlignment;
 
         m_Desc.meshControlSharedMemoryMaxSize = meshShaderProps.maxTaskSharedMemorySize;
         m_Desc.meshControlWorkGroupInvocationMaxNum = meshShaderProps.maxTaskWorkGroupInvocations;
@@ -844,6 +845,25 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.cullDistanceMaxNum = limits.maxCullDistances;
         m_Desc.combinedClipAndCullDistanceMaxNum = limits.maxCombinedClipAndCullDistances;
         m_Desc.shadingRateAttachmentTileSize = (uint8_t)shadingRateProps.minFragmentShadingRateAttachmentTexelSize.width;
+
+        // Based on https://docs.vulkan.org/guide/latest/hlsl.html#_shader_model_coverage // TODO: code below needs to be improved
+        m_Desc.shaderModel = 51;
+        if (m_Desc.isShaderNativeI64Supported)
+            m_Desc.shaderModel = 60;
+        if (features11.multiview)
+            m_Desc.shaderModel = 61;
+        if (m_Desc.isShaderNativeF16Supported || m_Desc.isShaderNativeI16Supported)
+            m_Desc.shaderModel = 62;
+        if (m_Desc.isRayTracingSupported)
+            m_Desc.shaderModel = 63;
+        if (m_Desc.shadingRateTier >= 2)
+            m_Desc.shaderModel = 64;
+        if (m_Desc.isMeshShaderSupported || m_Desc.rayTracingTier >= 2)
+            m_Desc.shaderModel = 65;
+        if (m_Desc.isShaderAtomicsI64Supported)
+            m_Desc.shaderModel = 66;
+        if (features.features.shaderStorageImageMultisample)
+            m_Desc.shaderModel = 67;
 
         if (m_Desc.conservativeRasterTier) {
             if (conservativeRasterProps.primitiveOverestimationSize < 1.0f / 2.0f && conservativeRasterProps.degenerateTrianglesRasterized)
@@ -890,7 +910,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isShaderNativeF32Supported = true;
         m_Desc.isShaderNativeI64Supported = features.features.shaderInt64;
         m_Desc.isShaderNativeF64Supported = features.features.shaderFloat64;
-
         m_Desc.isShaderAtomicsF16Supported = (shaderAtomicFloat2Features.shaderBufferFloat16Atomics || shaderAtomicFloat2Features.shaderSharedFloat16Atomics) ? true : false;
         m_Desc.isShaderAtomicsI32Supported = true;
         m_Desc.isShaderAtomicsF32Supported = (shaderAtomicFloatFeatures.shaderBufferFloat32Atomics || shaderAtomicFloatFeatures.shaderSharedFloat32Atomics) ? true : false;
@@ -899,25 +918,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
 
         m_Desc.isSwapChainSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, desiredDeviceExts);
         m_Desc.isLowLatencySupported = IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
-
-        // Based on https://docs.vulkan.org/guide/latest/hlsl.html#_shader_model_coverage // TODO: code below needs to be improved
-        m_Desc.shaderModel = 51;
-        if (m_Desc.isShaderNativeI64Supported)
-            m_Desc.shaderModel = 60;
-        if (features11.multiview)
-            m_Desc.shaderModel = 61;
-        if (m_Desc.isShaderNativeF16Supported || m_Desc.isShaderNativeI16Supported)
-            m_Desc.shaderModel = 62;
-        if (m_Desc.isRayTracingSupported)
-            m_Desc.shaderModel = 63;
-        if (m_Desc.shadingRateTier >= 2)
-            m_Desc.shaderModel = 64;
-        if (m_Desc.isMeshShaderSupported || m_Desc.rayTracingTier >= 2)
-            m_Desc.shaderModel = 65;
-        if (m_Desc.isShaderAtomicsI64Supported)
-            m_Desc.shaderModel = 66;
-        if (features.features.shaderStorageImageMultisample)
-            m_Desc.shaderModel = 67;
     }
 
     ReportDeviceGroupInfo();
