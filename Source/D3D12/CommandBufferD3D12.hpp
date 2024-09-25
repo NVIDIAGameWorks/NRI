@@ -128,7 +128,7 @@ static inline D3D12_BARRIER_ACCESS GetBarrierAccessFlags(AccessBits accessBits) 
     return flags;
 }
 
-constexpr std::array<D3D12_BARRIER_LAYOUT, (uint32_t)Layout::MAX_NUM> LAYOUTS = {
+constexpr std::array<D3D12_BARRIER_LAYOUT, (size_t)Layout::MAX_NUM> LAYOUTS = {
     D3D12_BARRIER_LAYOUT_UNDEFINED,           // UNKNOWN
     D3D12_BARRIER_LAYOUT_RENDER_TARGET,       // COLOR_ATTACHMENT
     D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE, // DEPTH_STENCIL_ATTACHMENT

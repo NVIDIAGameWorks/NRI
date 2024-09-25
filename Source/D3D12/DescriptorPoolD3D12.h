@@ -41,8 +41,7 @@ struct DescriptorPoolD3D12 {
 
 private:
     DeviceD3D12& m_Device;
-    std::array<DescriptorHeapDesc, DescriptorHeapType::MAX_NUM> m_DescriptorHeapDescs;
-    std::array<uint32_t, DescriptorHeapType::MAX_NUM> m_DescriptorNum = {};
+    std::array<DescriptorHeapDesc, DescriptorHeapType::MAX_NUM> m_DescriptorHeapDescs = {};
     std::array<ID3D12DescriptorHeap*, DescriptorHeapType::MAX_NUM> m_DescriptorHeaps = {};
     Vector<DescriptorSetD3D12> m_DescriptorSets;
     uint32_t m_DescriptorHeapNum = 0;

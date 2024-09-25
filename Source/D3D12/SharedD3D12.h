@@ -40,10 +40,11 @@ struct DescriptorHandle {
 };
 
 struct DescriptorHeapDesc {
-    ComPtr<ID3D12DescriptorHeap> descriptorHeap;
-    DescriptorPointerCPU descriptorPointerCPU;
-    DescriptorPointerGPU descriptorPointerGPU;
-    uint32_t descriptorSize;
+    ComPtr<ID3D12DescriptorHeap> heap;
+    DescriptorPointerCPU basePointerCPU = 0;
+    DescriptorPointerGPU basePointerGPU = 0;
+    uint32_t descriptorSize = 0;
+    uint32_t num = 0;
 };
 
 void GetResourceDesc(D3D12_RESOURCE_DESC* desc, const BufferDesc& bufferDesc);

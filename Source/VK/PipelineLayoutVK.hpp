@@ -35,15 +35,15 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
         spirvBindingOffsets = m_Device.GetSPIRVBindingOffsets();
 
     std::array<uint32_t, (size_t)DescriptorType::MAX_NUM> bindingOffsets = {};
-    bindingOffsets[(uint32_t)DescriptorType::SAMPLER] = spirvBindingOffsets.samplerOffset;
-    bindingOffsets[(uint32_t)DescriptorType::CONSTANT_BUFFER] = spirvBindingOffsets.constantBufferOffset;
-    bindingOffsets[(uint32_t)DescriptorType::TEXTURE] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(uint32_t)DescriptorType::STORAGE_TEXTURE] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(uint32_t)DescriptorType::BUFFER] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(uint32_t)DescriptorType::STORAGE_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(uint32_t)DescriptorType::STRUCTURED_BUFFER] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(uint32_t)DescriptorType::STORAGE_STRUCTURED_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(uint32_t)DescriptorType::ACCELERATION_STRUCTURE] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::SAMPLER] = spirvBindingOffsets.samplerOffset;
+    bindingOffsets[(size_t)DescriptorType::CONSTANT_BUFFER] = spirvBindingOffsets.constantBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::TEXTURE] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::STORAGE_TEXTURE] = spirvBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::BUFFER] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::STORAGE_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::STRUCTURED_BUFFER] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::STORAGE_STRUCTURED_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::ACCELERATION_STRUCTURE] = spirvBindingOffsets.textureOffset;
 
     // Binding info
     size_t rangeNum = 0;
@@ -188,15 +188,15 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
         spirvBindingOffsets = m_Device.GetSPIRVBindingOffsets();
 
     std::array<uint32_t, (size_t)DescriptorType::MAX_NUM> bindingOffsets = {};
-    bindingOffsets[(uint32_t)DescriptorType::SAMPLER] = spirvBindingOffsets.samplerOffset;
-    bindingOffsets[(uint32_t)DescriptorType::CONSTANT_BUFFER] = spirvBindingOffsets.constantBufferOffset;
-    bindingOffsets[(uint32_t)DescriptorType::TEXTURE] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(uint32_t)DescriptorType::STORAGE_TEXTURE] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(uint32_t)DescriptorType::BUFFER] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(uint32_t)DescriptorType::STORAGE_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(uint32_t)DescriptorType::STRUCTURED_BUFFER] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(uint32_t)DescriptorType::STORAGE_STRUCTURED_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(uint32_t)DescriptorType::ACCELERATION_STRUCTURE] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::SAMPLER] = spirvBindingOffsets.samplerOffset;
+    bindingOffsets[(size_t)DescriptorType::CONSTANT_BUFFER] = spirvBindingOffsets.constantBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::TEXTURE] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::STORAGE_TEXTURE] = spirvBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::BUFFER] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::STORAGE_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::STRUCTURED_BUFFER] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::STORAGE_STRUCTURED_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::ACCELERATION_STRUCTURE] = spirvBindingOffsets.textureOffset;
 
     // Count
     uint32_t bindingMaxNum = descriptorSetDesc.dynamicConstantBufferNum;

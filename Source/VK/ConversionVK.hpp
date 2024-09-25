@@ -75,7 +75,7 @@ QueryType GetQueryTypeVK(uint32_t queryTypeVK) {
 }
 
 // Each depth/stencil format is only compatible with itself in VK
-constexpr std::array<VkFormat, (uint32_t)Format::MAX_NUM> VK_FORMAT = {
+constexpr std::array<VkFormat, (size_t)Format::MAX_NUM> VK_FORMAT = {
     VK_FORMAT_UNDEFINED,                // UNKNOWN
     VK_FORMAT_R8_UNORM,                 // R8_UNORM
     VK_FORMAT_R8_SNORM,                 // R8_SNORM

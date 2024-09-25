@@ -131,15 +131,15 @@ private:
     d3d12::Ext m_Ext = {}; // don't sort: destructor must be called last!
     ComPtr<ID3D12DeviceBest> m_Device;
     ComPtr<IDXGIAdapter> m_Adapter;
-    std::array<CommandQueueD3D12*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
+    ComPtr<ID3D12CommandSignature> m_DispatchCommandSignature;
+    ComPtr<ID3D12CommandSignature> m_DispatchRaysCommandSignature;
+    ComPtr<D3D12MA::Allocator> m_Vma;
     Vector<DescriptorHeapDesc> m_DescriptorHeaps;
     Vector<Vector<DescriptorHandle>> m_FreeDescriptors;
     UnorderedMap<uint64_t, ComPtr<ID3D12CommandSignature>> m_DrawCommandSignatures;
     UnorderedMap<uint64_t, ComPtr<ID3D12CommandSignature>> m_DrawIndexedCommandSignatures;
     UnorderedMap<uint32_t, ComPtr<ID3D12CommandSignature>> m_DrawMeshCommandSignatures;
-    ComPtr<ID3D12CommandSignature> m_DispatchCommandSignature;
-    ComPtr<ID3D12CommandSignature> m_DispatchRaysCommandSignature;
-    ComPtr<D3D12MA::Allocator> m_Vma;
+    std::array<CommandQueueD3D12*, (size_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     D3D12MA::ALLOCATION_CALLBACKS m_AllocationCallbacks = {};
     D3D12MA::ALLOCATION_CALLBACKS* m_AllocationCallbackPtr = nullptr;
     CoreInterface m_CoreInterface = {};

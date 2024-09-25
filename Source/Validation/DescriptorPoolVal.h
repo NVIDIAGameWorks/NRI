@@ -36,9 +36,6 @@ struct DescriptorPoolVal : public DeviceObjectVal<DescriptorPool> {
     Result AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
 
 private:
-    bool CheckDescriptorRange(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum);
-    void IncrementDescriptorNum(const DescriptorRangeDesc& rangeDesc, uint32_t variableDescriptorNum);
-
     Vector<DescriptorSetVal> m_DescriptorSets;
     DescriptorPoolDesc m_Desc = {};
     uint32_t m_DescriptorSetsNum = 0;

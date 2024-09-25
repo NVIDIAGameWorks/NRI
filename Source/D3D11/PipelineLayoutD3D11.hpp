@@ -25,7 +25,7 @@
     deferredContext->xy##SetSamplers(ss.slot, 1, (ID3D11SamplerState**)&ss.sampler)
 
 // see StageSlots
-constexpr std::array<DescriptorTypeDX11, (uint32_t)DescriptorType::MAX_NUM> g_RemapDescriptorTypeToIndex = {
+constexpr std::array<DescriptorTypeDX11, (size_t)DescriptorType::MAX_NUM> g_RemapDescriptorTypeToIndex = {
     DescriptorTypeDX11::SAMPLER,  // SAMPLER
     DescriptorTypeDX11::CONSTANT, // CONSTANT_BUFFER
     DescriptorTypeDX11::RESOURCE, // TEXTURE

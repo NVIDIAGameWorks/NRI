@@ -568,8 +568,8 @@ Result DeviceD3D12::CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYP
     RETURN_ON_BAD_HRESULT(this, hr, "ID3D12Device::CreateDescriptorHeap()");
 
     DescriptorHeapDesc descriptorHeapDesc = {};
-    descriptorHeapDesc.descriptorHeap = descriptorHeap;
-    descriptorHeapDesc.descriptorPointerCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr;
+    descriptorHeapDesc.heap = descriptorHeap;
+    descriptorHeapDesc.basePointerCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr;
     descriptorHeapDesc.descriptorSize = m_Device->GetDescriptorHandleIncrementSize(type);
     m_DescriptorHeaps.push_back(descriptorHeapDesc);
 
@@ -600,9 +600,9 @@ DescriptorPointerCPU DeviceD3D12::GetDescriptorPointerCPU(const DescriptorHandle
     ExclusiveScope lock(m_DescriptorHeapLock);
 
     const DescriptorHeapDesc& descriptorHeapDesc = m_DescriptorHeaps[descriptorHandle.heapIndex];
-    DescriptorPointerCPU descriptorPointer = descriptorHeapDesc.descriptorPointerCPU + descriptorHandle.heapOffset * descriptorHeapDesc.descriptorSize;
+    DescriptorPointerCPU descriptorPointerCPU = descriptorHeapDesc.basePointerCPU + descriptorHandle.heapOffset * descriptorHeapDesc.descriptorSize;
 
-    return descriptorPointer;
+    return descriptorPointerCPU;
 }
 
 void DeviceD3D12::GetMemoryDesc(MemoryLocation memoryLocation, const D3D12_RESOURCE_DESC& resourceDesc, MemoryDesc& memoryDesc) const {

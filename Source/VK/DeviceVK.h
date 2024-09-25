@@ -139,9 +139,9 @@ public:
 
 private:
     VkPhysicalDevice m_PhysicalDevice = nullptr;
-    std::array<uint32_t, (uint32_t)CommandQueueType::MAX_NUM> m_ActiveQueueFamilyIndices = {};
-    std::array<uint32_t, (uint32_t)CommandQueueType::MAX_NUM> m_QueueFamilyIndices = {};
-    std::array<CommandQueueVK*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
+    std::array<uint32_t, (size_t)CommandQueueType::MAX_NUM> m_ActiveQueueFamilyIndices = {};
+    std::array<uint32_t, (size_t)CommandQueueType::MAX_NUM> m_QueueFamilyIndices = {};
+    std::array<CommandQueueVK*, (size_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     DispatchTable m_VK = {};
     VkPhysicalDeviceMemoryProperties m_MemoryProps = {};
     VkAllocationCallbacks m_AllocationCallbacks = {};

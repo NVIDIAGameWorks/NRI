@@ -180,7 +180,7 @@ private:
     WrapperD3D11Interface m_WrapperD3D11API = {};
     WrapperD3D12Interface m_WrapperD3D12API = {};
     WrapperVKInterface m_WrapperVKAPI = {};
-    std::array<CommandQueueVal*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
+    std::array<CommandQueueVal*, (size_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     UnorderedMap<MemoryType, MemoryLocation> m_MemoryTypeMap;
 
     union {

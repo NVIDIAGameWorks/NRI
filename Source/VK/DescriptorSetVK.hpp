@@ -144,7 +144,7 @@ static bool WriteAccelerationStructures(const DescriptorRangeDesc& rangeDesc, co
 
 typedef bool (*WriteDescriptorsFunc)(const DescriptorRangeDesc& rangeDesc, const DescriptorRangeUpdateDesc& update, uint32_t& descriptorOffset, VkWriteDescriptorSet& write, SlabAllocator& slab);
 
-constexpr std::array<WriteDescriptorsFunc, (uint32_t)DescriptorType::MAX_NUM> WRITE_FUNCS = {
+constexpr std::array<WriteDescriptorsFunc, (size_t)DescriptorType::MAX_NUM> WRITE_FUNCS = {
     (WriteDescriptorsFunc)&WriteSamplers,               // SAMPLER
     (WriteDescriptorsFunc)&WriteBuffers,                // CONSTANT_BUFFER
     (WriteDescriptorsFunc)&WriteTextures,               // TEXTURE

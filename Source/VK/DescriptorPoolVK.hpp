@@ -62,13 +62,13 @@ NRI_INLINE void DescriptorPoolVK::SetDebugName(const char* name) {
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_DESCRIPTOR_POOL, (uint64_t)m_Handle, name);
 }
 
-NRI_INLINE Result DescriptorPoolVK::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t numberOfCopies, uint32_t variableDescriptorNum) {
+NRI_INLINE Result DescriptorPoolVK::AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
     const PipelineLayoutVK& pipelineLayoutVK = (const PipelineLayoutVK&)pipelineLayout;
     VkDescriptorSetLayout setLayout = pipelineLayoutVK.GetDescriptorSetLayout(setIndex);
 
     uint32_t freeSetNum = (uint32_t)m_AllocatedSets.size() - m_UsedSets;
-    if (freeSetNum < numberOfCopies) {
-        uint32_t newSetNum = numberOfCopies - freeSetNum;
+    if (freeSetNum < instanceNum) {
+        uint32_t newSetNum = instanceNum - freeSetNum;
         uint32_t prevSetNum = (uint32_t)m_AllocatedSets.size();
         m_AllocatedSets.resize(prevSetNum + newSetNum);
 
@@ -94,7 +94,7 @@ NRI_INLINE Result DescriptorPoolVK::AllocateDescriptorSets(const PipelineLayout&
     info.pSetLayouts = &setLayout;
 
     const auto& vk = m_Device.GetDispatchTable();
-    for (uint32_t i = 0; i < numberOfCopies; i++) {
+    for (uint32_t i = 0; i < instanceNum; i++) {
         VkDescriptorSet handle = VK_NULL_HANDLE;
         VkResult result = vk.AllocateDescriptorSets(m_Device, &info, &handle);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkAllocateDescriptorSets returned %d", (int32_t)result);

@@ -1312,7 +1312,7 @@ void DeviceVK::FillFamilyIndices(bool isWrapper, const DeviceCreationVKDesc& dev
     m_VK.GetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &familyNum, familyProps.data());
 
     memset(m_QueueFamilyIndices.data(), INVALID_FAMILY_INDEX, m_QueueFamilyIndices.size() * sizeof(m_QueueFamilyIndices[0]));
-    std::array<uint32_t, (uint32_t)CommandQueueType::MAX_NUM> scores = {};
+    std::array<uint32_t, (size_t)CommandQueueType::MAX_NUM> scores = {};
 
     for (uint32_t i = 0; i < familyProps.size(); i++) {
         if (isWrapper) {
