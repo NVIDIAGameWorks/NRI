@@ -37,7 +37,6 @@ inline void AlignedFree(void* userArg, void* memory) {
 #    include <alloca.h>
 #    include <cstddef>
 #    include <cstdlib>
-#    define _alloca alloca
 
 template <typename T>
 inline T Align(T x, size_t alignment);
@@ -204,5 +203,5 @@ private:
     { (device).GetStdAllocator().GetInterface(), \
         ((elementNum) * sizeof(T) + alignof(T)) > MAX_STACK_ALLOC_SIZE \
             ? (T*)(device).GetStdAllocator().GetInterface().Allocate((device).GetStdAllocator().GetInterface().userArg, (elementNum) * sizeof(T), alignof(T)) \
-            : (T*)Align((elementNum) ? (T*)_alloca(((elementNum) * sizeof(T) + alignof(T))) : nullptr, alignof(T)), \
+            : (T*)Align((elementNum) ? (T*)alloca(((elementNum) * sizeof(T) + alignof(T))) : nullptr, alignof(T)), \
         (elementNum) }
