@@ -32,24 +32,36 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     uint32_t attributeNum = vi ? vi->attributeNum : 0u;
     uint32_t streamNum = vi ? vi->streamNum : 0u;
 
-    Scratch<VkVertexInputAttributeDescription> inputAttribs = AllocateScratch(m_Device, VkVertexInputAttributeDescription, attributeNum);
-    Scratch<VkVertexInputBindingDescription> vertexBindings = AllocateScratch(m_Device, VkVertexInputBindingDescription, streamNum);
+    Scratch<VkVertexInputAttributeDescription> vertexAttributeDescs = AllocateScratch(m_Device, VkVertexInputAttributeDescription, attributeNum);
+    Scratch<VkVertexInputBindingDescription> vertexBindingDescs = AllocateScratch(m_Device, VkVertexInputBindingDescription, streamNum);
 
     VkPipelineVertexInputStateCreateInfo vertexInputState = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
-    vertexInputState.pVertexAttributeDescriptions = inputAttribs;
-    vertexInputState.pVertexBindingDescriptions = vertexBindings;
+    vertexInputState.pVertexAttributeDescriptions = vertexAttributeDescs;
+    vertexInputState.pVertexBindingDescriptions = vertexBindingDescs;
+
     if (vi) {
         vertexInputState.vertexAttributeDescriptionCount = vi->attributeNum;
         vertexInputState.vertexBindingDescriptionCount = vi->streamNum;
 
         for (uint32_t i = 0; i < vi->attributeNum; i++) {
-            const VertexAttributeDesc& attribute_desc = vi->attributes[i];
-            inputAttribs[i] = {(uint32_t)attribute_desc.vk.location , attribute_desc.streamIndex, GetVkFormat(attribute_desc.format), attribute_desc.offset};
+            const VertexAttributeDesc& attribute = vi->attributes[i];
+
+            VkVertexInputAttributeDescription& vertexAttributeDesc = vertexAttributeDescs[i];
+            vertexAttributeDesc = {};
+            vertexAttributeDesc.location = attribute.vk.location;
+            vertexAttributeDesc.binding = attribute.streamIndex;
+            vertexAttributeDesc.format = GetVkFormat(attribute.format);
+            vertexAttributeDesc.offset = attribute.offset;
         }
 
         for (uint32_t i = 0; i < vi->streamNum; i++) {
             const VertexStreamDesc& stream = vi->streams[i];
-            vertexBindings[i] = {stream.bindingSlot, stream.stride, (stream.stepRate == VertexStreamStepRate::PER_VERTEX) ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE};
+
+            VkVertexInputBindingDescription& vertexBindingDesc = vertexBindingDescs[i];
+            vertexBindingDesc = {};
+            vertexBindingDesc.binding = stream.bindingSlot;
+            vertexBindingDesc.stride = stream.stride;
+            vertexBindingDesc.inputRate = stream.stepRate == VertexStreamStepRate::PER_VERTEX ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
         }
     }
 
@@ -71,6 +83,7 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
 
     VkPipelineMultisampleStateCreateInfo multisampleState = {VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
     multisampleState.rasterizationSamples = ms ? (VkSampleCountFlagBits)ms->sampleNum : VK_SAMPLE_COUNT_1_BIT;
+
     if (graphicsPipelineDesc.multisample) {
         multisampleState.sampleShadingEnable = false;
         multisampleState.minSampleShading = 0.0f;
