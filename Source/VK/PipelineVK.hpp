@@ -44,7 +44,7 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
 
         for (uint32_t i = 0; i < vi->attributeNum; i++) {
             const VertexAttributeDesc& attribute_desc = vi->attributes[i];
-            inputAttribs[i] = {(uint32_t)i, attribute_desc.streamIndex, GetVkFormat(attribute_desc.format), attribute_desc.offset};
+            inputAttribs[i] = {(uint32_t)attribute_desc.vk.location , attribute_desc.streamIndex, GetVkFormat(attribute_desc.format), attribute_desc.offset};
         }
 
         for (uint32_t i = 0; i < vi->streamNum; i++) {
