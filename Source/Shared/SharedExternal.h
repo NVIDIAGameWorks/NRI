@@ -146,8 +146,8 @@ constexpr void MaybeUnused([[maybe_unused]] const Args&... args) {
     obj->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)std::strlen(name), name)
 
 #define REPORT_INFO(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define REPORT_WARNING(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::WARNING, __FILE__, __LINE__, "%s: " format, __FUNCTION__, ##__VA_ARGS__)
-#define REPORT_ERROR(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::ERROR, __FILE__, __LINE__, "%s: " format, __FUNCTION__, ##__VA_ARGS__)
+#define REPORT_WARNING(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::WARNING, __FILE__, __LINE__, "%s(): " format, __FUNCTION__, ##__VA_ARGS__)
+#define REPORT_ERROR(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::ERROR, __FILE__, __LINE__, "%s(): " format, __FUNCTION__, ##__VA_ARGS__)
 
 // Format conversion
 struct DxgiFormat {

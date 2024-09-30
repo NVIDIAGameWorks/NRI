@@ -838,7 +838,7 @@ void nri::DeviceBase::ReportMessage(nri::Message messageType, const char* file, 
     file = temp ? temp + 1 : file;
 
     char buf[MAX_MESSAGE_LENGTH];
-    int32_t written = written = snprintf(buf, sizeof(buf), "%s::%s - ", graphicsAPIName, *desc.adapterDesc.name == '\0' ? "Unknown" : desc.adapterDesc.name);
+    int32_t written = snprintf(buf, sizeof(buf), "%s::%s - ", graphicsAPIName, *desc.adapterDesc.name == '\0' ? "Unknown" : desc.adapterDesc.name);
 
     va_list argptr;
     va_start(argptr, format);
