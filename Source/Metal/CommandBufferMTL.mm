@@ -2,15 +2,12 @@
 
 #include "CommandBufferMTL.h"
 
-//#include "AccelerationStructureVK.h"
 #include "BufferMTL.h"
 #include "CommandBufferMTL.h"
 #include "CommandQueueMTL.h"
-//#include "DescriptorSetMTL.h"
 #include "DescriptorMTL.h"
 #include "PipelineLayoutMTL.h"
 #include "PipelineMTL.h"
-//#include "QueryPoolMTL.h"
 #include "TextureMTL.h"
 
 #include <math.h>
@@ -28,11 +25,13 @@ void CommandBufferMTL::SetDebugName(const char* name) {
 Result CommandBufferMTL::Begin(const DescriptorPool* descriptorPool) {
     [m_Handle computeCommandEncoderWithDescriptor: NULL];
 }
+
 Result CommandBufferMTL::End() {
     m_ComputeEncoder = nil;
     m_RendererEncoder = nil;
     
 }
+
 void CommandBufferMTL::SetPipeline(const Pipeline& pipeline) {
     if (m_CurrentPipeline == (PipelineMTL*)&pipeline)
         return;
@@ -93,6 +92,15 @@ void CommandBufferMTL::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
     
 }
 void CommandBufferMTL::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
+    MTLRenderPassDescriptor* renderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
+    for(uint32_t i = 0; i < attachmentsDesc.colorNum; i++) {
+        
+    }
+    
+    //renderPassDescriptor.colorAttachments[
+    
+    //renderPassDescriptor.colorAttachments
+    
     m_RendererEncoder = [m_Handle renderCommandEncoderWithDescriptor: NULL];
 }
 void CommandBufferMTL::EndRendering() {
@@ -182,10 +190,9 @@ void CommandBufferMTL::DrawIndirect(const Buffer& buffer, uint64_t offset, uint3
     // TODO: implement count Buffer
     NSCAssert(!countBuffer, @"count buffer not supported");
     [m_RendererEncoder
-       drawPrimitives: m_CurrentPipeline->m_primitiveType
-       indirectBuffer:((BufferMTL&)buffer).GetHandle()
+     drawPrimitives: m_CurrentPipeline->m_primitiveType
+     indirectBuffer:((BufferMTL&)buffer).GetHandle()
      indirectBufferOffset: offset];
-    
 }
 void CommandBufferMTL::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
     
