@@ -558,10 +558,20 @@ NRI_INLINE void CommandBufferD3D12::CopyTexture(Texture& dstTexture, const Textu
             srcTextureD3D12.GetSubresourceIndex(srcRegion->layerOffset, srcRegion->mipOffset),
         };
 
-        const uint16_t size[3] = {srcRegion->width == WHOLE_SIZE ? srcTextureD3D12.GetSize(0, srcRegion->mipOffset) : srcRegion->width,
+        const uint16_t size[3] = {
+            srcRegion->width == WHOLE_SIZE ? srcTextureD3D12.GetSize(0, srcRegion->mipOffset) : srcRegion->width,
             srcRegion->height == WHOLE_SIZE ? srcTextureD3D12.GetSize(1, srcRegion->mipOffset) : srcRegion->height,
-            srcRegion->depth == WHOLE_SIZE ? srcTextureD3D12.GetSize(2, srcRegion->mipOffset) : srcRegion->depth};
-        D3D12_BOX box = {srcRegion->x, srcRegion->y, srcRegion->z, uint16_t(srcRegion->x + size[0]), uint16_t(srcRegion->y + size[1]), uint16_t(srcRegion->z + size[2])};
+            srcRegion->depth == WHOLE_SIZE ? srcTextureD3D12.GetSize(2, srcRegion->mipOffset) : srcRegion->depth,
+        };
+        
+        D3D12_BOX box = {
+            srcRegion->x,
+            srcRegion->y,
+            srcRegion->z,
+            uint16_t(srcRegion->x + size[0]),
+            uint16_t(srcRegion->y + size[1]),
+            uint16_t(srcRegion->z + size[2]),
+        };
 
         m_GraphicsCommandList->CopyTextureRegion(&dstTextureCopyLocation, dstRegion->x, dstRegion->y, dstRegion->z, &srcTextureCopyLocation, &box);
     }
@@ -661,18 +671,18 @@ NRI_INLINE void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroup
         uint32_t barriersGroupsNum = 0;
 
         // Global
-        uint16_t num = barrierGroupDesc.globalNum;
-        Scratch<D3D12_GLOBAL_BARRIER> globalBarriers = AllocateScratch(m_Device, D3D12_GLOBAL_BARRIER, num);
-        if (num) {
+        Scratch<D3D12_GLOBAL_BARRIER> globalBarriers = AllocateScratch(m_Device, D3D12_GLOBAL_BARRIER, barrierGroupDesc.globalNum);
+        if (barrierGroupDesc.globalNum) {
             D3D12_BARRIER_GROUP* barrierGroup = &barrierGroups[barriersGroupsNum++];
             barrierGroup->Type = D3D12_BARRIER_TYPE_GLOBAL;
-            barrierGroup->NumBarriers = num;
+            barrierGroup->NumBarriers = barrierGroupDesc.globalNum;
             barrierGroup->pGlobalBarriers = globalBarriers;
 
-            for (uint16_t i = 0; i < num; i++) {
+            for (uint32_t i = 0; i < barrierGroupDesc.globalNum; i++) {
                 const GlobalBarrierDesc& in = barrierGroupDesc.globals[i];
 
                 D3D12_GLOBAL_BARRIER& out = globalBarriers[i];
+                out = {};
                 out.SyncBefore = GetBarrierSyncFlags(in.before.stages);
                 out.SyncAfter = GetBarrierSyncFlags(in.after.stages);
                 out.AccessBefore = GetBarrierAccessFlags(in.before.access);
@@ -681,19 +691,19 @@ NRI_INLINE void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroup
         }
 
         // Buffer
-        num = barrierGroupDesc.bufferNum;
-        Scratch<D3D12_BUFFER_BARRIER> bufferBarriers = AllocateScratch(m_Device, D3D12_BUFFER_BARRIER, num);
+        Scratch<D3D12_BUFFER_BARRIER> bufferBarriers = AllocateScratch(m_Device, D3D12_BUFFER_BARRIER, barrierGroupDesc.bufferNum);
         if (barrierGroupDesc.bufferNum) {
             D3D12_BARRIER_GROUP* barrierGroup = &barrierGroups[barriersGroupsNum++];
             barrierGroup->Type = D3D12_BARRIER_TYPE_BUFFER;
-            barrierGroup->NumBarriers = num;
+            barrierGroup->NumBarriers = barrierGroupDesc.bufferNum;
             barrierGroup->pBufferBarriers = bufferBarriers;
 
-            for (uint16_t i = 0; i < num; i++) {
+            for (uint32_t i = 0; i < barrierGroupDesc.bufferNum; i++) {
                 const BufferBarrierDesc& in = barrierGroupDesc.buffers[i];
                 const BufferD3D12& buffer = *(BufferD3D12*)in.buffer;
 
                 D3D12_BUFFER_BARRIER& out = bufferBarriers[i];
+                out = {};
                 out.SyncBefore = GetBarrierSyncFlags(in.before.stages);
                 out.SyncAfter = GetBarrierSyncFlags(in.after.stages);
                 out.AccessBefore = GetBarrierAccessFlags(in.before.access);
@@ -705,21 +715,20 @@ NRI_INLINE void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroup
         }
 
         // Texture
-        num = barrierGroupDesc.textureNum;
-        Scratch<D3D12_TEXTURE_BARRIER> textureBarriers = AllocateScratch(m_Device, D3D12_TEXTURE_BARRIER, num);
+        Scratch<D3D12_TEXTURE_BARRIER> textureBarriers = AllocateScratch(m_Device, D3D12_TEXTURE_BARRIER, barrierGroupDesc.textureNum);
         if (barrierGroupDesc.textureNum) {
             D3D12_BARRIER_GROUP* barrierGroup = &barrierGroups[barriersGroupsNum++];
             barrierGroup->Type = D3D12_BARRIER_TYPE_TEXTURE;
-            barrierGroup->NumBarriers = num;
+            barrierGroup->NumBarriers = barrierGroupDesc.textureNum;
             barrierGroup->pTextureBarriers = textureBarriers;
 
-            memset(textureBarriers, 0, sizeof(D3D12_TEXTURE_BARRIER) * num);
-            for (uint16_t i = 0; i < num; i++) {
+            for (uint32_t i = 0; i < barrierGroupDesc.textureNum; i++) {
                 const TextureBarrierDesc& in = barrierGroupDesc.textures[i];
                 const TextureD3D12& texture = *(TextureD3D12*)in.texture;
                 const TextureDesc& desc = texture.GetDesc();
 
                 D3D12_TEXTURE_BARRIER& out = textureBarriers[i];
+                out = {};
                 out.SyncBefore = GetBarrierSyncFlags(in.before.stages);
                 out.SyncAfter = GetBarrierSyncFlags(in.after.stages);
                 out.AccessBefore = in.before.layout == Layout::PRESENT ? D3D12_BARRIER_ACCESS_COMMON : GetBarrierAccessFlags(in.before.access);

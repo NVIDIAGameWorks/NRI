@@ -623,7 +623,7 @@ static inline VkAccessFlags2 GetAccessFlags(AccessBits accessBits) {
 NRI_INLINE void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
     // Global
     Scratch<VkMemoryBarrier2> memoryBarriers = AllocateScratch(m_Device, VkMemoryBarrier2, barrierGroupDesc.globalNum);
-    for (uint16_t i = 0; i < barrierGroupDesc.globalNum; i++) {
+    for (uint32_t i = 0; i < barrierGroupDesc.globalNum; i++) {
         const GlobalBarrierDesc& in = barrierGroupDesc.globals[i];
 
         VkMemoryBarrier2& out = memoryBarriers[i];
@@ -636,7 +636,7 @@ NRI_INLINE void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDes
 
     // Buffer
     Scratch<VkBufferMemoryBarrier2> bufferBarriers = AllocateScratch(m_Device, VkBufferMemoryBarrier2, barrierGroupDesc.bufferNum);
-    for (uint16_t i = 0; i < barrierGroupDesc.bufferNum; i++) {
+    for (uint32_t i = 0; i < barrierGroupDesc.bufferNum; i++) {
         const BufferBarrierDesc& in = barrierGroupDesc.buffers[i];
         const BufferVK& bufferImpl = *(const BufferVK*)in.buffer;
 
@@ -655,7 +655,7 @@ NRI_INLINE void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDes
 
     // Texture
     Scratch<VkImageMemoryBarrier2> textureBarriers = AllocateScratch(m_Device, VkImageMemoryBarrier2, barrierGroupDesc.textureNum);
-    for (uint16_t i = 0; i < barrierGroupDesc.textureNum; i++) {
+    for (uint32_t i = 0; i < barrierGroupDesc.textureNum; i++) {
         const TextureBarrierDesc& in = barrierGroupDesc.textures[i];
         const TextureVK& textureImpl = *(const TextureVK*)in.texture;
 

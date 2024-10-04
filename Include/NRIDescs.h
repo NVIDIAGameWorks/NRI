@@ -1022,35 +1022,35 @@ NriStruct(ComputePipelineDesc) {
 #pragma region [ Barrier ]
 //============================================================================================================================================================================================
 
-NriEnum(Layout, uint8_t,
-    UNKNOWN,
-    COLOR_ATTACHMENT,
-    DEPTH_STENCIL_ATTACHMENT,
-    DEPTH_STENCIL_READONLY, // attachment or shader resource
-    SHADER_RESOURCE,
-    SHADER_RESOURCE_STORAGE,
-    COPY_SOURCE,
-    COPY_DESTINATION,
-    PRESENT,
-    SHADING_RATE_ATTACHMENT
+NriBits(AccessBits, uint16_t,                       // Compatible "StageBits" (including ALL):
+    UNKNOWN                         = 0,
+    INDEX_BUFFER                    = NriBit(0),    // INDEX_INPUT
+    VERTEX_BUFFER                   = NriBit(1),    // VERTEX_SHADER
+    CONSTANT_BUFFER                 = NriBit(2),    // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS
+    SHADER_RESOURCE                 = NriBit(3),    // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS
+    SHADER_RESOURCE_STORAGE         = NriBit(4),    // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS, CLEAR_STORAGE
+    ARGUMENT_BUFFER                 = NriBit(5),    // INDIRECT
+    COLOR_ATTACHMENT                = NriBit(6),    // COLOR_ATTACHMENT
+    DEPTH_STENCIL_ATTACHMENT_WRITE  = NriBit(7),    // DEPTH_STENCIL_ATTACHMENT
+    DEPTH_STENCIL_ATTACHMENT_READ   = NriBit(8),    // DEPTH_STENCIL_ATTACHMENT
+    COPY_SOURCE                     = NriBit(9),    // COPY
+    COPY_DESTINATION                = NriBit(10),   // COPY
+    ACCELERATION_STRUCTURE_READ     = NriBit(11),   // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
+    ACCELERATION_STRUCTURE_WRITE    = NriBit(12),   // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
+    SHADING_RATE_ATTACHMENT         = NriBit(13)    // FRAGMENT_SHADER
 );
 
-NriBits(AccessBits, uint16_t,                     // Compatible "StageBits" (including ALL):
-    UNKNOWN                         = 0,
-    INDEX_BUFFER                    = NriBit(0),  // INDEX_INPUT
-    VERTEX_BUFFER                   = NriBit(1),  // VERTEX_SHADER
-    CONSTANT_BUFFER                 = NriBit(2),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS
-    SHADER_RESOURCE                 = NriBit(3),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS
-    SHADER_RESOURCE_STORAGE         = NriBit(4),  // GRAPHICS_SHADERS, COMPUTE_SHADER, RAY_TRACING_SHADERS, CLEAR_STORAGE
-    ARGUMENT_BUFFER                 = NriBit(5),  // INDIRECT
-    COLOR_ATTACHMENT                = NriBit(6),  // COLOR_ATTACHMENT
-    DEPTH_STENCIL_ATTACHMENT_WRITE  = NriBit(7),  // DEPTH_STENCIL_ATTACHMENT
-    DEPTH_STENCIL_ATTACHMENT_READ   = NriBit(8),  // DEPTH_STENCIL_ATTACHMENT
-    COPY_SOURCE                     = NriBit(9),  // COPY
-    COPY_DESTINATION                = NriBit(10), // COPY
-    ACCELERATION_STRUCTURE_READ     = NriBit(11), // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
-    ACCELERATION_STRUCTURE_WRITE    = NriBit(12), // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
-    SHADING_RATE_ATTACHMENT         = NriBit(13)  // FRAGMENT_SHADER
+NriEnum(Layout, uint8_t,        // Compatible "AccessBits":
+    UNKNOWN,
+    COLOR_ATTACHMENT,           // COLOR_ATTACHMENT
+    DEPTH_STENCIL_ATTACHMENT,   // DEPTH_STENCIL_ATTACHMENT_WRITE
+    DEPTH_STENCIL_READONLY,     // DEPTH_STENCIL_ATTACHMENT_READ, SHADER_RESOURCE
+    SHADER_RESOURCE,            // SHADER_RESOURCE
+    SHADER_RESOURCE_STORAGE,    // SHADER_RESOURCE_STORAGE
+    COPY_SOURCE,                // COPY_SOURCE
+    COPY_DESTINATION,           // COPY_DESTINATION
+    PRESENT,                    // UNKNOWN
+    SHADING_RATE_ATTACHMENT     // SHADING_RATE_ATTACHMENT
 );
 
 NriStruct(AccessStage) {
@@ -1088,11 +1088,11 @@ NriStruct(TextureBarrierDesc) {
 
 NriStruct(BarrierGroupDesc) {
     const NriPtr(GlobalBarrierDesc) globals;
+    uint32_t globalNum;
     const NriPtr(BufferBarrierDesc) buffers;
+    uint32_t bufferNum;
     const NriPtr(TextureBarrierDesc) textures;
-    uint16_t globalNum;
-    uint16_t bufferNum;
-    uint16_t textureNum;
+    uint32_t textureNum;
 };
 
 #pragma endregion

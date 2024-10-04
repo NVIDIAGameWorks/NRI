@@ -83,13 +83,6 @@ NRI_INLINE void Read(PushBuffer& pushBuffer, size_t& i, T*& data, uint32_t& num)
     i += GetElementNum(sizeof(T) * num);
 }
 
-template <typename T>
-NRI_INLINE void Read(PushBuffer& pushBuffer, size_t& i, T*& data, uint16_t& num) {
-    num = (uint16_t)pushBuffer[i++];
-    data = (T*)&pushBuffer[i];
-    i += GetElementNum(sizeof(T) * num);
-}
-
 //================================================================================================================
 // CommandBufferHelper
 //================================================================================================================
