@@ -1,4 +1,4 @@
-﻿// © 2021 NVIDIA Corporation
+// © 2021 NVIDIA Corporation
 
 #pragma once
 
@@ -29,6 +29,7 @@ typedef uint32_t DXGI_FORMAT;
 #include "Extensions/NRIWrapperD3D11.h"
 #include "Extensions/NRIWrapperD3D12.h"
 #include "Extensions/NRIWrapperVK.h"
+#include "Extensions/NRIWrapperMTL.h"
 
 #include "NRICompatibility.hlsli"
 
@@ -164,6 +165,7 @@ nri::Format VKFormatToNRIFormat(uint32_t vkFormat);
 
 uint32_t NRIFormatToDXGIFormat(nri::Format format);
 uint32_t NRIFormatToVKFormat(nri::Format format);
+uint32_t NRIFormatToMTLFormat(nri::Format format);
 
 // Misc
 inline nri::Vendor GetVendorFromID(uint32_t vendorID) {
