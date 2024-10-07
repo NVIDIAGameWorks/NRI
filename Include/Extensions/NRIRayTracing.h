@@ -21,7 +21,7 @@ NriEnum(CopyMode, uint8_t,
     COMPACT
 );
 
-NriBits(BottomLevelGeometryBits, uint32_t,
+NriBits(BottomLevelGeometryBits, uint8_t,
     NONE                                = 0,
     OPAQUE_GEOMETRY                     = NriBit(0),
     NO_DUPLICATE_ANY_HIT_INVOCATION     = NriBit(1)
@@ -35,7 +35,7 @@ NriBits(TopLevelInstanceBits, uint32_t,
     FORCE_NON_OPAQUE                    = NriBit(3)
 );
 
-NriBits(AccelerationStructureBuildBits, uint32_t,
+NriBits(AccelerationStructureBuildBits, uint8_t,
     NONE                                = 0,
     ALLOW_UPDATE                        = NriBit(0),
     ALLOW_COMPACTION                    = NriBit(1),

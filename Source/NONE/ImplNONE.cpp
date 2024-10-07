@@ -50,11 +50,10 @@ struct DeviceNONE final : public DeviceBase {
 
         m_Desc.uploadBufferTextureRowAlignment = 1;
         m_Desc.uploadBufferTextureSliceAlignment = 1;
-        m_Desc.typedBufferOffsetAlignment = 1;
+        m_Desc.bufferShaderResourceOffsetAlignment = 1;
         m_Desc.constantBufferOffsetAlignment = 1;
-        m_Desc.storageBufferOffsetAlignment = 1;
-        m_Desc.rayTracingShaderTableAlignment = 1;
-        m_Desc.rayTracingScratchAlignment = 1;
+        m_Desc.shaderBindingTableAlignment = 1;
+        m_Desc.scratchBufferOffsetAlignment = 1;
 
         m_Desc.pipelineLayoutDescriptorSetMaxNum = 64;
         m_Desc.pipelineLayoutRootConstantMaxSize = 256;

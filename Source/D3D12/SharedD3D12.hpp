@@ -251,10 +251,10 @@ D3D12_HEAP_FLAGS nri::GetHeapFlags(MemoryType memoryType) {
     return (D3D12_HEAP_FLAGS)(memoryType & 0xffff);
 }
 
-D3D12_RESOURCE_FLAGS nri::GetBufferFlags(BufferUsageBits bufferUsageMask) {
+D3D12_RESOURCE_FLAGS nri::GetBufferFlags(BufferUsageBits bufferUsage) {
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
-    if (bufferUsageMask & (BufferUsageBits::SHADER_RESOURCE_STORAGE | BufferUsageBits::RAY_TRACING_BUFFER))
+    if (bufferUsage & (BufferUsageBits::SHADER_RESOURCE_STORAGE | BufferUsageBits::ACCELERATION_STRUCTURE_STORAGE | BufferUsageBits::SCRATCH_BUFFER))
         flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
     return flags;
@@ -314,19 +314,19 @@ D3D12_SHADER_VISIBILITY nri::GetShaderVisibility(StageBits shaderStages) {
     return D3D12_SHADER_VISIBILITY_ALL;
 }
 
-D3D12_RESOURCE_FLAGS nri::GetTextureFlags(TextureUsageBits textureUsageMask) {
+D3D12_RESOURCE_FLAGS nri::GetTextureFlags(TextureUsageBits textureUsage) {
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
-    if (textureUsageMask & TextureUsageBits::SHADER_RESOURCE_STORAGE)
+    if (textureUsage & TextureUsageBits::SHADER_RESOURCE_STORAGE)
         flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-    if (textureUsageMask & TextureUsageBits::COLOR_ATTACHMENT)
+    if (textureUsage & TextureUsageBits::COLOR_ATTACHMENT)
         flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-    if (textureUsageMask & TextureUsageBits::DEPTH_STENCIL_ATTACHMENT) {
+    if (textureUsage & TextureUsageBits::DEPTH_STENCIL_ATTACHMENT) {
         flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
-        if (!(textureUsageMask & TextureUsageBits::SHADER_RESOURCE))
+        if (!(textureUsage & TextureUsageBits::SHADER_RESOURCE))
             flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
 
@@ -463,13 +463,13 @@ bool nri::GetTextureDesc(const TextureD3D12Desc& textureD3D12Desc, TextureDesc& 
     textureDesc.sampleNum = (uint8_t)desc.SampleDesc.Count;
 
     if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
-        textureDesc.usageMask |= TextureUsageBits::COLOR_ATTACHMENT;
+        textureDesc.usage |= TextureUsageBits::COLOR_ATTACHMENT;
     if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
-        textureDesc.usageMask |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
+        textureDesc.usage |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
     if (!(desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
-        textureDesc.usageMask |= TextureUsageBits::SHADER_RESOURCE;
+        textureDesc.usage |= TextureUsageBits::SHADER_RESOURCE;
     if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
-        textureDesc.usageMask |= TextureUsageBits::SHADER_RESOURCE_STORAGE;
+        textureDesc.usage |= TextureUsageBits::SHADER_RESOURCE_STORAGE;
 
     return true;
 }
@@ -489,12 +489,12 @@ bool nri::GetBufferDesc(const BufferD3D12Desc& bufferD3D12Desc, BufferDesc& buff
     bufferDesc.structureStride = bufferD3D12Desc.structureStride;
 
     // There are almost no restrictions on usages in D3D12
-    bufferDesc.usageMask = BufferUsageBits::VERTEX_BUFFER | BufferUsageBits::INDEX_BUFFER | BufferUsageBits::CONSTANT_BUFFER | BufferUsageBits::ARGUMENT_BUFFER | BufferUsageBits::RAY_TRACING_BUFFER | BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_READ;
+    bufferDesc.usage = BufferUsageBits::VERTEX_BUFFER | BufferUsageBits::INDEX_BUFFER | BufferUsageBits::CONSTANT_BUFFER | BufferUsageBits::ARGUMENT_BUFFER | BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_INPUT;
 
     if (!(desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
-        bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE;
+        bufferDesc.usage |= BufferUsageBits::SHADER_RESOURCE;
     if (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
-        bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE_STORAGE;
+        bufferDesc.usage |= BufferUsageBits::SHADER_RESOURCE_STORAGE;
 
     return true;
 }

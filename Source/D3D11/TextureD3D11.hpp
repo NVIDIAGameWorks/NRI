@@ -8,13 +8,13 @@ Result TextureD3D11::Create(MemoryLocation memoryLocation, float priority) {
     const DxgiFormat& dxgiFormat = GetDxgiFormat(m_Desc.format);
 
     uint32_t bindFlags = 0;
-    if (m_Desc.usageMask & TextureUsageBits::SHADER_RESOURCE)
+    if (m_Desc.usage & TextureUsageBits::SHADER_RESOURCE)
         bindFlags |= D3D11_BIND_SHADER_RESOURCE;
-    if (m_Desc.usageMask & TextureUsageBits::SHADER_RESOURCE_STORAGE)
+    if (m_Desc.usage & TextureUsageBits::SHADER_RESOURCE_STORAGE)
         bindFlags |= D3D11_BIND_UNORDERED_ACCESS;
-    if (m_Desc.usageMask & TextureUsageBits::COLOR_ATTACHMENT)
+    if (m_Desc.usage & TextureUsageBits::COLOR_ATTACHMENT)
         bindFlags |= D3D11_BIND_RENDER_TARGET;
-    if (m_Desc.usageMask & TextureUsageBits::DEPTH_STENCIL_ATTACHMENT)
+    if (m_Desc.usage & TextureUsageBits::DEPTH_STENCIL_ATTACHMENT)
         bindFlags |= D3D11_BIND_DEPTH_STENCIL;
 
     D3D11_USAGE usage = D3D11_USAGE_DEFAULT;

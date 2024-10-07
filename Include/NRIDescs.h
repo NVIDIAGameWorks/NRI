@@ -425,7 +425,7 @@ NriBits(TextureUsageBits, uint8_t,
     SHADING_RATE_ATTACHMENT             = NriBit(4)
 );
 
-NriBits(BufferUsageBits, uint8_t,
+NriBits(BufferUsageBits, uint16_t,
     NONE                                = 0,
     SHADER_RESOURCE                     = NriBit(0),
     SHADER_RESOURCE_STORAGE             = NriBit(1),
@@ -433,14 +433,18 @@ NriBits(BufferUsageBits, uint8_t,
     INDEX_BUFFER                        = NriBit(3),
     CONSTANT_BUFFER                     = NriBit(4),
     ARGUMENT_BUFFER                     = NriBit(5),
-    RAY_TRACING_BUFFER                  = NriBit(6),
-    ACCELERATION_STRUCTURE_BUILD_READ   = NriBit(7)
+
+    // Ray tracing
+    SCRATCH_BUFFER                      = NriBit(6),
+    SHADER_BINDING_TABLE                = NriBit(7),
+    ACCELERATION_STRUCTURE_BUILD_INPUT  = NriBit(8), // read-only input for an acceleration structure build or update
+    ACCELERATION_STRUCTURE_STORAGE      = NriBit(9)  // (INTERNAL) acceleration structure storage
 );
 
 // Resources
 NriStruct(TextureDesc) {
     Nri(TextureType) type;
-    Nri(TextureUsageBits) usageMask;
+    Nri(TextureUsageBits) usage;
     Nri(Format) format;
     Nri(Dim_t) width;
     NriOptional Nri(Dim_t) height;
@@ -453,7 +457,7 @@ NriStruct(TextureDesc) {
 NriStruct(BufferDesc) {
     uint64_t size;
     NriOptional uint32_t structureStride; // use 4 to allow "byte address" (raw) views
-    Nri(BufferUsageBits) usageMask;
+    Nri(BufferUsageBits) usage;
 };
 
 // Descriptors (Views)
@@ -1333,11 +1337,10 @@ NriStruct(DeviceDesc) {
     // Memory alignment
     uint32_t uploadBufferTextureRowAlignment;
     uint32_t uploadBufferTextureSliceAlignment;
-    uint32_t typedBufferOffsetAlignment;
+    uint32_t bufferShaderResourceOffsetAlignment;
     uint32_t constantBufferOffsetAlignment;
-    uint32_t storageBufferOffsetAlignment;
-    uint32_t rayTracingShaderTableAlignment;
-    uint32_t rayTracingScratchAlignment;
+    uint32_t scratchBufferOffsetAlignment;
+    uint32_t shaderBindingTableAlignment;
 
     // Pipeline layout
     // D3D12 only: rootConstantSize + descriptorSetNum * 4 + rootDescriptorNum * 8 <= 256 (see "FitPipelineLayoutSettingsIntoDeviceLimits")

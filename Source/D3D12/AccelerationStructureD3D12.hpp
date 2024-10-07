@@ -22,13 +22,13 @@ Result AccelerationStructureD3D12::Create(const AccelerationStructureDesc& accel
 
     BufferDesc bufferDesc = {};
     bufferDesc.size = m_PrebuildInfo.ResultDataMaxSizeInBytes;
-    bufferDesc.usageMask = BufferUsageBits::RAY_TRACING_BUFFER;
+    bufferDesc.usage = BufferUsageBits::ACCELERATION_STRUCTURE_STORAGE;
 
     return m_Device.CreateImplementation<BufferD3D12>((Buffer*&)m_Buffer, bufferDesc);
 }
 
 Result AccelerationStructureD3D12::BindMemory(Memory* memory, uint64_t offset) {
-    Result result = m_Buffer->BindMemory((MemoryD3D12*)memory, offset, ACCELERATION_STRUCTURE_BUFFER);
+    Result result = m_Buffer->BindMemory((MemoryD3D12*)memory, offset);
 
     return result;
 }

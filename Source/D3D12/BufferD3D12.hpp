@@ -1,6 +1,7 @@
 // © 2021 NVIDIA Corporation
 
 void nri::GetResourceDesc(D3D12_RESOURCE_DESC* desc, const BufferDesc& bufferDesc) {
+    *desc = {};
     desc->Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     desc->Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT; // 64KB
     desc->Width = bufferDesc.size;
@@ -9,7 +10,7 @@ void nri::GetResourceDesc(D3D12_RESOURCE_DESC* desc, const BufferDesc& bufferDes
     desc->MipLevels = 1;
     desc->SampleDesc.Count = 1;
     desc->Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-    desc->Flags = GetBufferFlags(bufferDesc.usageMask);
+    desc->Flags = GetBufferFlags(bufferDesc.usage);
 }
 
 Result BufferD3D12::Create(const BufferDesc& bufferDesc) {
@@ -29,7 +30,7 @@ Result BufferD3D12::Create(const BufferD3D12Desc& bufferDesc) {
     return Result::SUCCESS;
 }
 
-Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool isAccelerationStructureBuffer) {
+Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
     // Buffer was already created externally
     if (m_Buffer)
         return Result::SUCCESS;
@@ -40,8 +41,6 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool 
     D3D12_HEAP_FLAGS heapFlagsFixed = heapDesc.Flags & ~(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_BUFFERS);
 
 #ifdef NRI_USE_AGILITY_SDK
-    MaybeUnused(isAccelerationStructureBuffer);
-
     if (m_Device.GetVersion() >= 10) {
         D3D12_RESOURCE_DESC1 desc1 = {};
         GetResourceDesc((D3D12_RESOURCE_DESC*)&desc1, m_Desc);
@@ -70,7 +69,7 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset, bool 
         else if (heapDesc.Properties.Type == D3D12_HEAP_TYPE_READBACK)
             initialState |= D3D12_RESOURCE_STATE_COPY_DEST;
 
-        if (isAccelerationStructureBuffer)
+        if (m_Desc.usage & BufferUsageBits::ACCELERATION_STRUCTURE_STORAGE)
             initialState |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 
         if (memory->IsDummy()) {

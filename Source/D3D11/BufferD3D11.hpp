@@ -35,11 +35,11 @@ Result BufferD3D11::Create(MemoryLocation memoryLocation, float priority) {
     if (m_Desc.structureStride)
         desc.MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 
-    if (m_Desc.usageMask & BufferUsageBits::ARGUMENT_BUFFER)
+    if (m_Desc.usage & BufferUsageBits::ARGUMENT_BUFFER)
         desc.MiscFlags |= D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
 
     if (memoryLocation == MemoryLocation::HOST_UPLOAD || memoryLocation == MemoryLocation::DEVICE_UPLOAD) {
-        if (m_Desc.usageMask == BufferUsageBits::NONE) { // special case for "UploadBufferToTexture"
+        if (m_Desc.usage == BufferUsageBits::NONE) { // special case for "UploadBufferToTexture"
             desc.Usage = D3D11_USAGE_STAGING;
             desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE; // TODO: not the best solution, but currently needed for "UploadBufferToTexture"
         } else {
@@ -54,19 +54,19 @@ Result BufferD3D11::Create(MemoryLocation memoryLocation, float priority) {
         desc.CPUAccessFlags = 0;
     }
 
-    if (m_Desc.usageMask & BufferUsageBits::VERTEX_BUFFER)
+    if (m_Desc.usage & BufferUsageBits::VERTEX_BUFFER)
         desc.BindFlags |= D3D11_BIND_VERTEX_BUFFER;
 
-    if (m_Desc.usageMask & BufferUsageBits::INDEX_BUFFER)
+    if (m_Desc.usage & BufferUsageBits::INDEX_BUFFER)
         desc.BindFlags |= D3D11_BIND_INDEX_BUFFER;
 
-    if (m_Desc.usageMask & BufferUsageBits::CONSTANT_BUFFER)
+    if (m_Desc.usage & BufferUsageBits::CONSTANT_BUFFER)
         desc.BindFlags |= D3D11_BIND_CONSTANT_BUFFER;
 
-    if (m_Desc.usageMask & BufferUsageBits::SHADER_RESOURCE)
+    if (m_Desc.usage & BufferUsageBits::SHADER_RESOURCE)
         desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
 
-    if (m_Desc.usageMask & BufferUsageBits::SHADER_RESOURCE_STORAGE)
+    if (m_Desc.usage & BufferUsageBits::SHADER_RESOURCE_STORAGE)
         desc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
 
     HRESULT hr = m_Device->CreateBuffer(&desc, nullptr, &m_Buffer);

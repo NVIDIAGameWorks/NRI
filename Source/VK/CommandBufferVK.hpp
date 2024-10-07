@@ -771,6 +771,8 @@ NRI_INLINE void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, c
 }
 
 NRI_INLINE void CommandBufferVK::BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {
+    static_assert(sizeof(VkAccelerationStructureInstanceKHR) == sizeof(GeometryObjectInstance), "Mismatched sizeof");
+
     const VkAccelerationStructureKHR dstASHandle = ((const AccelerationStructureVK&)dst).GetHandle();
     const VkDeviceAddress scratchAddress = ((BufferVK&)scratch).GetDeviceAddress() + scratchOffset;
     const VkDeviceAddress bufferAddress = ((BufferVK&)buffer).GetDeviceAddress() + bufferOffset;

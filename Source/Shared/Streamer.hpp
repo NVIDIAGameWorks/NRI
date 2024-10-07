@@ -18,7 +18,7 @@ Result StreamerImpl::Create(const StreamerDesc& desc) {
         // Create constant buffer
         BufferDesc bufferDesc = {};
         bufferDesc.size = desc.constantBufferSize;
-        bufferDesc.usageMask = BufferUsageBits::CONSTANT_BUFFER;
+        bufferDesc.usage = BufferUsageBits::CONSTANT_BUFFER;
 
         Result result = m_NRI.CreateBuffer(m_Device, bufferDesc, m_ConstantBuffer);
         if (result != Result::SUCCESS)
@@ -132,7 +132,7 @@ Result StreamerImpl::CopyStreamerUpdateRequests() {
         { // Create new dynamic buffer & allocate memory
             BufferDesc bufferDesc = {};
             bufferDesc.size = m_DynamicBufferSize;
-            bufferDesc.usageMask = m_Desc.dynamicBufferUsageBits;
+            bufferDesc.usage = m_Desc.dynamicBufferUsageBits;
 
             Result result = m_NRI.CreateBuffer(m_Device, bufferDesc, m_DynamicBuffer);
             if (result != Result::SUCCESS)

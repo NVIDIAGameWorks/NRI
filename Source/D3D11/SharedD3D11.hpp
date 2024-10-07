@@ -186,13 +186,13 @@ bool nri::GetTextureDesc(const TextureD3D11Desc& textureD3D11Desc, TextureDesc& 
     }
 
     if (bindFlags & D3D11_BIND_RENDER_TARGET)
-        textureDesc.usageMask |= TextureUsageBits::COLOR_ATTACHMENT;
+        textureDesc.usage |= TextureUsageBits::COLOR_ATTACHMENT;
     if (bindFlags & D3D11_BIND_DEPTH_STENCIL)
-        textureDesc.usageMask |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
+        textureDesc.usage |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
     if (bindFlags & D3D11_BIND_SHADER_RESOURCE)
-        textureDesc.usageMask |= TextureUsageBits::SHADER_RESOURCE;
+        textureDesc.usage |= TextureUsageBits::SHADER_RESOURCE;
     if (bindFlags & D3D11_BIND_UNORDERED_ACCESS)
-        textureDesc.usageMask |= TextureUsageBits::SHADER_RESOURCE_STORAGE;
+        textureDesc.usage |= TextureUsageBits::SHADER_RESOURCE_STORAGE;
 
     return true;
 }
@@ -218,17 +218,17 @@ bool nri::GetBufferDesc(const BufferD3D11Desc& bufferD3D11Desc, BufferDesc& buff
     bufferDesc.structureStride = desc.StructureByteStride;
 
     if (desc.BindFlags & D3D11_BIND_VERTEX_BUFFER)
-        bufferDesc.usageMask |= BufferUsageBits::VERTEX_BUFFER;
+        bufferDesc.usage |= BufferUsageBits::VERTEX_BUFFER;
     if (desc.BindFlags & D3D11_BIND_INDEX_BUFFER)
-        bufferDesc.usageMask |= BufferUsageBits::INDEX_BUFFER;
+        bufferDesc.usage |= BufferUsageBits::INDEX_BUFFER;
     if (desc.BindFlags & D3D11_BIND_CONSTANT_BUFFER)
-        bufferDesc.usageMask |= BufferUsageBits::CONSTANT_BUFFER;
+        bufferDesc.usage |= BufferUsageBits::CONSTANT_BUFFER;
     if (desc.BindFlags & D3D11_BIND_SHADER_RESOURCE)
-        bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE;
+        bufferDesc.usage |= BufferUsageBits::SHADER_RESOURCE;
     if (desc.BindFlags & D3D11_BIND_UNORDERED_ACCESS)
-        bufferDesc.usageMask |= BufferUsageBits::SHADER_RESOURCE_STORAGE;
+        bufferDesc.usage |= BufferUsageBits::SHADER_RESOURCE_STORAGE;
     if (desc.MiscFlags & D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS)
-        bufferDesc.usageMask |= BufferUsageBits::ARGUMENT_BUFFER;
+        bufferDesc.usage |= BufferUsageBits::ARGUMENT_BUFFER;
 
     return true;
 }

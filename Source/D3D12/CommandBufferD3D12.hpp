@@ -860,6 +860,8 @@ NRI_INLINE void CommandBufferD3D12::EndAnnotation() {
 }
 
 NRI_INLINE void CommandBufferD3D12::BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {
+    static_assert(sizeof(D3D12_RAYTRACING_INSTANCE_DESC) == sizeof(GeometryObjectInstance), "Mismatched sizeof");
+
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC desc = {};
     desc.DestAccelerationStructureData = ((AccelerationStructureD3D12&)dst).GetHandle();
     desc.ScratchAccelerationStructureData = ((BufferD3D12&)scratch).GetPointerGPU() + scratchOffset;

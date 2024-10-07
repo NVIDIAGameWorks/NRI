@@ -83,43 +83,42 @@ inline DeviceVal& GetDeviceVal(T& object) {
 
 uint64_t GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc);
 
-constexpr const char* DESCRIPTOR_TYPE_NAME[] = {
-    "SAMPLER",
-    "CONSTANT_BUFFER",
-    "TEXTURE",
-    "STORAGE_TEXTURE",
-    "BUFFER",
-    "STORAGE_BUFFER",
-    "STRUCTURED_BUFFER",
-    "STORAGE_STRUCTURED_BUFFER",
-    "ACCELERATION_STRUCTURE",
+constexpr std::array<const char*, (size_t)nri::DescriptorType::MAX_NUM> DESCRIPTOR_TYPE_NAME = {
+    "SAMPLER",                      // SAMPLER,
+    "CONSTANT_BUFFER",              // CONSTANT_BUFFER,
+    "TEXTURE",                      // TEXTURE,
+    "STORAGE_TEXTURE",              // STORAGE_TEXTURE,
+    "BUFFER",                       // BUFFER,
+    "STORAGE_BUFFER",               // STORAGE_BUFFER,
+    "STRUCTURED_BUFFER",            // STRUCTURED_BUFFER,
+    "STORAGE_STRUCTURED_BUFFER",    // STORAGE_STRUCTURED_BUFFER,
+    "ACCELERATION_STRUCTURE",       // ACCELERATION_STRUCTURE
 };
-static_assert(GetCountOf(DESCRIPTOR_TYPE_NAME) == (uint32_t)nri::DescriptorType::MAX_NUM, "descriptor type name array is out of date");
 
 constexpr const char* GetDescriptorTypeName(nri::DescriptorType descriptorType) {
     return DESCRIPTOR_TYPE_NAME[(uint32_t)descriptorType];
 }
 
-constexpr bool IsAccessMaskSupported(BufferUsageBits usageMask, AccessBits accessMask) {
-    BufferUsageBits requiredUsageMask = BufferUsageBits::NONE;
+constexpr bool IsAccessMaskSupported(BufferUsageBits usage, AccessBits accessMask) {
+    BufferUsageBits requiredUsage = BufferUsageBits::NONE;
 
     if (accessMask & AccessBits::VERTEX_BUFFER)
-        requiredUsageMask |= BufferUsageBits::VERTEX_BUFFER;
+        requiredUsage |= BufferUsageBits::VERTEX_BUFFER;
 
     if (accessMask & AccessBits::INDEX_BUFFER)
-        requiredUsageMask |= BufferUsageBits::INDEX_BUFFER;
+        requiredUsage |= BufferUsageBits::INDEX_BUFFER;
 
     if (accessMask & AccessBits::CONSTANT_BUFFER)
-        requiredUsageMask |= BufferUsageBits::CONSTANT_BUFFER;
+        requiredUsage |= BufferUsageBits::CONSTANT_BUFFER;
 
     if (accessMask & AccessBits::ARGUMENT_BUFFER)
-        requiredUsageMask |= BufferUsageBits::ARGUMENT_BUFFER;
+        requiredUsage |= BufferUsageBits::ARGUMENT_BUFFER;
 
     if (accessMask & AccessBits::SHADER_RESOURCE)
-        requiredUsageMask |= BufferUsageBits::SHADER_RESOURCE;
+        requiredUsage |= BufferUsageBits::SHADER_RESOURCE;
 
     if (accessMask & AccessBits::SHADER_RESOURCE_STORAGE)
-        requiredUsageMask |= BufferUsageBits::SHADER_RESOURCE_STORAGE;
+        requiredUsage |= BufferUsageBits::SHADER_RESOURCE_STORAGE;
 
     if (accessMask & AccessBits::COLOR_ATTACHMENT)
         return false;
@@ -139,11 +138,11 @@ constexpr bool IsAccessMaskSupported(BufferUsageBits usageMask, AccessBits acces
     if (accessMask & AccessBits::SHADING_RATE_ATTACHMENT)
         return false;
 
-    return (uint32_t)(requiredUsageMask & usageMask) == (uint32_t)requiredUsageMask;
+    return (uint32_t)(requiredUsage & usage) == (uint32_t)requiredUsage;
 }
 
-constexpr bool IsAccessMaskSupported(TextureUsageBits usageMask, AccessBits accessMask) {
-    TextureUsageBits requiredUsageMask = TextureUsageBits::NONE;
+constexpr bool IsAccessMaskSupported(TextureUsageBits usage, AccessBits accessMask) {
+    TextureUsageBits requiredUsage = TextureUsageBits::NONE;
 
     if (accessMask & AccessBits::VERTEX_BUFFER)
         return false;
@@ -158,22 +157,22 @@ constexpr bool IsAccessMaskSupported(TextureUsageBits usageMask, AccessBits acce
         return false;
 
     if (accessMask & AccessBits::SHADER_RESOURCE)
-        requiredUsageMask |= TextureUsageBits::SHADER_RESOURCE;
+        requiredUsage |= TextureUsageBits::SHADER_RESOURCE;
 
     if (accessMask & AccessBits::SHADER_RESOURCE_STORAGE)
-        requiredUsageMask |= TextureUsageBits::SHADER_RESOURCE_STORAGE;
+        requiredUsage |= TextureUsageBits::SHADER_RESOURCE_STORAGE;
 
     if (accessMask & AccessBits::COLOR_ATTACHMENT)
-        requiredUsageMask |= TextureUsageBits::COLOR_ATTACHMENT;
+        requiredUsage |= TextureUsageBits::COLOR_ATTACHMENT;
 
     if (accessMask & AccessBits::DEPTH_STENCIL_ATTACHMENT_WRITE)
-        requiredUsageMask |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
+        requiredUsage |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
 
     if (accessMask & AccessBits::DEPTH_STENCIL_ATTACHMENT_READ)
-        requiredUsageMask |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
+        requiredUsage |= TextureUsageBits::DEPTH_STENCIL_ATTACHMENT;
 
     if (accessMask & AccessBits::SHADING_RATE_ATTACHMENT)
-        requiredUsageMask |= TextureUsageBits::SHADING_RATE_ATTACHMENT;
+        requiredUsage |= TextureUsageBits::SHADING_RATE_ATTACHMENT;
 
     if (accessMask & AccessBits::ACCELERATION_STRUCTURE_READ)
         return false;
@@ -181,7 +180,7 @@ constexpr bool IsAccessMaskSupported(TextureUsageBits usageMask, AccessBits acce
     if (accessMask & AccessBits::ACCELERATION_STRUCTURE_WRITE)
         return false;
 
-    return (uint32_t)(requiredUsageMask & usageMask) == (uint32_t)requiredUsageMask;
+    return (uint32_t)(requiredUsage & usage) == (uint32_t)requiredUsage;
 }
 
 constexpr std::array<TextureUsageBits, (size_t)Layout::MAX_NUM> TEXTURE_USAGE_FOR_TEXTURE_LAYOUT_TABLE = {
@@ -197,10 +196,10 @@ constexpr std::array<TextureUsageBits, (size_t)Layout::MAX_NUM> TEXTURE_USAGE_FO
     TextureUsageBits::SHADING_RATE_ATTACHMENT,  // SHADING_RATE_ATTACHMENT
 };
 
-constexpr bool IsTextureLayoutSupported(TextureUsageBits usageMask, Layout textureLayout) {
+constexpr bool IsTextureLayoutSupported(TextureUsageBits usage, Layout textureLayout) {
     const TextureUsageBits requiredMask = TEXTURE_USAGE_FOR_TEXTURE_LAYOUT_TABLE[(size_t)textureLayout];
 
-    return (uint32_t)(requiredMask & usageMask) == (uint32_t)requiredMask;
+    return (uint32_t)(requiredMask & usage) == (uint32_t)requiredMask;
 }
 
 } // namespace nri

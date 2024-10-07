@@ -62,9 +62,20 @@ Result BufferVK::Create(const AllocateBufferDesc& bufferDesc) {
             allocationCreateInfo.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
     }
 
+    const DeviceDesc& deviceDesc = m_Device.GetDesc();
+    uint32_t alignment = 1;
+    if (bufferDesc.desc.usage & (BufferUsageBits::SHADER_RESOURCE | BufferUsageBits::SHADER_RESOURCE_STORAGE))
+        alignment = std::max(alignment, deviceDesc.bufferShaderResourceOffsetAlignment);
+    if (bufferDesc.desc.usage & BufferUsageBits::CONSTANT_BUFFER)
+        alignment = std::max(alignment, deviceDesc.constantBufferOffsetAlignment);
+    if (bufferDesc.desc.usage & BufferUsageBits::SHADER_BINDING_TABLE)
+        alignment = std::max(alignment, deviceDesc.shaderBindingTableAlignment);
+    if (bufferDesc.desc.usage & BufferUsageBits::SCRATCH_BUFFER)
+        alignment = std::max(alignment, deviceDesc.scratchBufferOffsetAlignment);
+
     VmaAllocationInfo allocationInfo = {};
-    VkResult result = vmaCreateBuffer(m_Device.GetVma(), &bufferCreateInfo, &allocationCreateInfo, &m_Handle, &m_VmaAllocation, &allocationInfo);
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vmaCreateBuffer returned %d", (int32_t)result);
+    VkResult result = vmaCreateBufferWithAlignment(m_Device.GetVma(), &bufferCreateInfo, &allocationCreateInfo, alignment, &m_Handle, &m_VmaAllocation, &allocationInfo);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vmaCreateBufferWithAlignment returned %d", (int32_t)result);
 
     // Mapped memory
     if (IsHostVisibleMemory(bufferDesc.memoryLocation)) {
@@ -109,7 +120,7 @@ Result TextureVK::Create(const AllocateTextureDesc& textureDesc) {
     allocationCreateInfo.usage = IsHostMemory(textureDesc.memoryLocation) ? VMA_MEMORY_USAGE_AUTO_PREFER_HOST : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 
     VkResult result = vmaCreateImage(m_Device.GetVma(), &imageCreateInfo, &allocationCreateInfo, &m_Handle, &m_VmaAllocation, nullptr);
-    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vmaCreateBuffer returned %d", (int32_t)result);
+    RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vmaCreateImage returned %d", (int32_t)result);
 
     m_Desc = textureDesc.desc;
 
@@ -128,7 +139,7 @@ Result AccelerationStructureVK::Create(const AllocateAccelerationStructureDesc& 
     bufferDesc.memoryLocation = accelerationStructureDesc.memoryLocation;
     bufferDesc.memoryPriority = accelerationStructureDesc.memoryPriority;
     bufferDesc.desc.size = sizesInfo.accelerationStructureSize;
-    bufferDesc.desc.usageMask = BufferUsageBits::RAY_TRACING_BUFFER;
+    bufferDesc.desc.usage = BufferUsageBits::ACCELERATION_STRUCTURE_STORAGE;
 
     Buffer* buffer = nullptr;
     Result result = m_Device.CreateImplementation<BufferVK>(buffer, bufferDesc);

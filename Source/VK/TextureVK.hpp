@@ -29,7 +29,7 @@ Result TextureVK::Create(const TextureVKDesc& textureDesc) {
         return Result::INVALID_ARGUMENT;
 
     m_Desc.type = GetTextureType((VkImageType)textureDesc.vkImageType);
-    m_Desc.usageMask = (TextureUsageBits)(-1); // TODO: it's not right...
+    m_Desc.usage = (TextureUsageBits)(-1); // TODO: it's not right...
     m_Desc.format = VKFormatToNRIFormat((VkFormat)textureDesc.vkFormat);
     m_Desc.width = textureDesc.width;
     m_Desc.height = textureDesc.height;

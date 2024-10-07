@@ -15,7 +15,7 @@ Result AccelerationStructureVK::Create(const AccelerationStructureDesc& accelera
 
     BufferDesc bufferDesc = {};
     bufferDesc.size = sizesInfo.accelerationStructureSize;
-    bufferDesc.usageMask = BufferUsageBits::RAY_TRACING_BUFFER;
+    bufferDesc.usage = BufferUsageBits::ACCELERATION_STRUCTURE_STORAGE;
 
     Buffer* buffer = nullptr;
     Result result = m_Device.CreateImplementation<BufferVK>(buffer, bufferDesc);

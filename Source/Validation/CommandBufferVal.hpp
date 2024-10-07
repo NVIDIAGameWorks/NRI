@@ -6,9 +6,9 @@ static bool ValidateBufferBarrierDesc(const DeviceVal& device, uint32_t i, const
     const BufferVal& bufferVal = *(const BufferVal*)bufferBarrierDesc.buffer;
 
     RETURN_ON_FAILURE(&device, bufferBarrierDesc.buffer != nullptr, false, "'bufferBarrierDesc.buffers[%u].buffer' is NULL", i);
-    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(bufferVal.GetDesc().usageMask, bufferBarrierDesc.before.access), false,
+    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(bufferVal.GetDesc().usage, bufferBarrierDesc.before.access), false,
         "'bufferBarrierDesc.buffers[%u].before' is not supported by the usage mask of the buffer ('%s')", i, bufferVal.GetDebugName());
-    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(bufferVal.GetDesc().usageMask, bufferBarrierDesc.after.access), false,
+    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(bufferVal.GetDesc().usage, bufferBarrierDesc.after.access), false,
         "'bufferBarrierDesc.buffers[%u].after' is not supported by the usage mask of the buffer ('%s')", i, bufferVal.GetDebugName());
 
     return true;
@@ -18,13 +18,13 @@ static bool ValidateTextureBarrierDesc(const DeviceVal& device, uint32_t i, cons
     const TextureVal& textureVal = *(const TextureVal*)textureBarrierDesc.texture;
 
     RETURN_ON_FAILURE(&device, textureBarrierDesc.texture != nullptr, false, "'bufferBarrierDesc.textures[%u].texture' is NULL", i);
-    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureBarrierDesc.before.access), false,
+    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(textureVal.GetDesc().usage, textureBarrierDesc.before.access), false,
         "'bufferBarrierDesc.textures[%u].before' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName());
-    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(textureVal.GetDesc().usageMask, textureBarrierDesc.after.access), false,
+    RETURN_ON_FAILURE(&device, IsAccessMaskSupported(textureVal.GetDesc().usage, textureBarrierDesc.after.access), false,
         "'bufferBarrierDesc.textures[%u].after' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName());
-    RETURN_ON_FAILURE(&device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureBarrierDesc.before.layout), false,
+    RETURN_ON_FAILURE(&device, IsTextureLayoutSupported(textureVal.GetDesc().usage, textureBarrierDesc.before.layout), false,
         "'bufferBarrierDesc.textures[%u].prevLayout' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName());
-    RETURN_ON_FAILURE(&device, IsTextureLayoutSupported(textureVal.GetDesc().usageMask, textureBarrierDesc.after.layout), false,
+    RETURN_ON_FAILURE(&device, IsTextureLayoutSupported(textureVal.GetDesc().usage, textureBarrierDesc.after.layout), false,
         "'bufferBarrierDesc.textures[%u].nextLayout' is not supported by the usage mask of the texture ('%s')", i, textureVal.GetDebugName());
 
     return true;
@@ -621,7 +621,7 @@ NRI_INLINE void CommandBufferVal::WriteAccelerationStructureSize(const Accelerat
 
 NRI_INLINE void CommandBufferVal::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc) {
     const DeviceDesc& deviceDesc = m_Device.GetDesc();
-    uint64_t align = deviceDesc.rayTracingShaderTableAlignment;
+    uint64_t align = deviceDesc.shaderBindingTableAlignment;
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
     RETURN_ON_FAILURE(&m_Device, dispatchRaysDesc.raygenShader.buffer, ReturnVoid(), "'raygenShader.buffer' is NULL");

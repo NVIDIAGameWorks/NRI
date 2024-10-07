@@ -1,6 +1,6 @@
 // © 2021 NVIDIA Corporation
 
-static std::array<VkFormat, (size_t)SwapChainFormat::MAX_NUM> g_swapChainFormat = {
+constexpr std::array<VkFormat, (size_t)SwapChainFormat::MAX_NUM> g_swapChainFormat = {
     VK_FORMAT_R16G16B16A16_SFLOAT, // BT709_G10_16BIT
 #ifdef __APPLE__
     VK_FORMAT_B8G8R8A8_UNORM, // BT709_G22_8BIT
@@ -11,7 +11,7 @@ static std::array<VkFormat, (size_t)SwapChainFormat::MAX_NUM> g_swapChainFormat 
     VK_FORMAT_A2B10G10R10_UNORM_PACK32, // BT2020_G2084_10BIT
 };
 
-static std::array<VkColorSpaceKHR, (size_t)SwapChainFormat::MAX_NUM> g_colorSpace = {
+constexpr std::array<VkColorSpaceKHR, (size_t)SwapChainFormat::MAX_NUM> g_colorSpace = {
     VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT, // BT709_G10_16BIT
     VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,       // BT709_G22_8BIT
     VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,       // BT709_G22_10BIT

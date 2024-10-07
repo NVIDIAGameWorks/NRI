@@ -1,13 +1,13 @@
 // © 2021 NVIDIA Corporation
 
-static std::array<DXGI_FORMAT, (size_t)SwapChainFormat::MAX_NUM> g_swapChainFormat = {
+constexpr std::array<DXGI_FORMAT, (size_t)SwapChainFormat::MAX_NUM> g_swapChainFormat = {
     DXGI_FORMAT_R16G16B16A16_FLOAT, // BT709_G10_16BIT
     DXGI_FORMAT_R8G8B8A8_UNORM,     // BT709_G22_8BIT
     DXGI_FORMAT_R10G10B10A2_UNORM,  // BT709_G22_10BIT
     DXGI_FORMAT_R10G10B10A2_UNORM,  // BT2020_G2084_10BIT
 };
 
-static std::array<DXGI_COLOR_SPACE_TYPE, (size_t)SwapChainFormat::MAX_NUM> g_colorSpace = {
+constexpr std::array<DXGI_COLOR_SPACE_TYPE, (size_t)SwapChainFormat::MAX_NUM> g_colorSpace = {
     DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709,    // BT709_G10_16BIT
     DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709,    // BT709_G22_8BIT
     DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709,    // BT709_G22_10BIT

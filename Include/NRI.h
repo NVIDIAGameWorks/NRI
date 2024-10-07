@@ -24,8 +24,8 @@ Non-goals:
 #pragma once
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 151
-#define NRI_VERSION_DATE "20 September 2024"
+#define NRI_VERSION_MINOR 152
+#define NRI_VERSION_DATE "7 October 2024"
 
 #include "NRIDescs.h"
 

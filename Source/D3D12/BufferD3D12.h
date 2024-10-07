@@ -15,8 +15,6 @@ namespace nri {
 struct DeviceD3D12;
 struct MemoryD3D12;
 
-constexpr bool ACCELERATION_STRUCTURE_BUFFER = true;
-
 struct BufferD3D12 {
     inline BufferD3D12(DeviceD3D12& device)
         : m_Device(device) {
@@ -43,8 +41,8 @@ struct BufferD3D12 {
 
     Result Create(const BufferDesc& bufferDesc);
     Result Create(const BufferD3D12Desc& bufferDesc);
-    Result Create(const AllocateBufferDesc& bufferDesc, bool isAccelerationStructureBuffer = false);
-    Result BindMemory(const MemoryD3D12* memory, uint64_t offset, bool isAccelerationStructureBuffer = false);
+    Result Create(const AllocateBufferDesc& bufferDesc);
+    Result BindMemory(const MemoryD3D12* memory, uint64_t offset);
 
     //================================================================================================================
     // NRI

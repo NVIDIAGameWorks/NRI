@@ -18,25 +18,23 @@ constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits bufferUsageBits
     if (bufferUsageBits & BufferUsageBits::ARGUMENT_BUFFER)
         flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 
-    if (bufferUsageBits & BufferUsageBits::RAY_TRACING_BUFFER) // TODO: add more usage bits?
-        flags |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    if (bufferUsageBits & BufferUsageBits::SCRATCH_BUFFER)
+        flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
-    if (bufferUsageBits & BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_READ)
+    if (bufferUsageBits & BufferUsageBits::SHADER_BINDING_TABLE)
+        flags |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR;
+
+    if (bufferUsageBits & BufferUsageBits::ACCELERATION_STRUCTURE_STORAGE)
+        flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR;
+
+    if (bufferUsageBits & BufferUsageBits::ACCELERATION_STRUCTURE_BUILD_INPUT)
         flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 
-    if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE) {
-        if (structureStride == 0)
-            flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-        else
-            flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    }
-
-    if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE_STORAGE) {
-        if (structureStride == 0 && (bufferUsageBits & BufferUsageBits::RAY_TRACING_BUFFER) == 0)
-            flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-        else
-            flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    }
+    if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE)
+        flags |= structureStride ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+ 
+    if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE_STORAGE)
+        flags |= structureStride ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
 
     return flags;
 }
@@ -756,13 +754,12 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.bufferTextureGranularity = (uint32_t)limits.bufferImageGranularity;
         m_Desc.bufferMaxSize = props13.maxBufferSize;
 
-        m_Desc.uploadBufferTextureRowAlignment = 1;
-        m_Desc.uploadBufferTextureSliceAlignment = 1;
-        m_Desc.typedBufferOffsetAlignment = (uint32_t)limits.minTexelBufferOffsetAlignment;
+        m_Desc.uploadBufferTextureRowAlignment = (uint32_t)limits.optimalBufferCopyRowPitchAlignment;
+        m_Desc.uploadBufferTextureSliceAlignment = (uint32_t)limits.optimalBufferCopyOffsetAlignment; // TODO: ?
+        m_Desc.bufferShaderResourceOffsetAlignment = (uint32_t)std::max(limits.minTexelBufferOffsetAlignment, limits.minStorageBufferOffsetAlignment);
         m_Desc.constantBufferOffsetAlignment = (uint32_t)limits.minUniformBufferOffsetAlignment;
-        m_Desc.storageBufferOffsetAlignment = (uint32_t)limits.minStorageBufferOffsetAlignment;
-        m_Desc.rayTracingShaderTableAlignment = rayTracingProps.shaderGroupBaseAlignment;
-        m_Desc.rayTracingScratchAlignment = accelerationStructureProps.minAccelerationStructureScratchOffsetAlignment;
+        m_Desc.scratchBufferOffsetAlignment = accelerationStructureProps.minAccelerationStructureScratchOffsetAlignment;
+        m_Desc.shaderBindingTableAlignment = rayTracingProps.shaderGroupBaseAlignment;
 
         m_Desc.pipelineLayoutDescriptorSetMaxNum = limits.maxBoundDescriptorSets;
         m_Desc.pipelineLayoutRootConstantMaxSize = limits.maxPushConstantsSize;
@@ -928,7 +925,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
 void DeviceVK::FillCreateInfo(const BufferDesc& bufferDesc, VkBufferCreateInfo& info) const {
     info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO; // should be already set
     info.size = bufferDesc.size;
-    info.usage = GetBufferUsageFlags(bufferDesc.usageMask, bufferDesc.structureStride, m_IsSupported.deviceAddress);
+    info.usage = GetBufferUsageFlags(bufferDesc.usage, bufferDesc.structureStride, m_IsSupported.deviceAddress);
     info.sharingMode = m_NumActiveFamilyIndices > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE; // TODO: still no DCC on AMD with concurrent?
     info.queueFamilyIndexCount = m_NumActiveFamilyIndices;
     info.pQueueFamilyIndices = m_ActiveQueueFamilyIndices.data();
@@ -957,7 +954,7 @@ void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo&
     info.arrayLayers = std::max(textureDesc.layerNum, (Dim_t)1);
     info.samples = (VkSampleCountFlagBits)std::max(textureDesc.sampleNum, (Sample_t)1);
     info.tiling = VK_IMAGE_TILING_OPTIMAL;
-    info.usage = GetImageUsageFlags(textureDesc.usageMask);
+    info.usage = GetImageUsageFlags(textureDesc.usage);
     info.sharingMode = m_NumActiveFamilyIndices > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE; // TODO: still no DCC on AMD with concurrent?
     info.queueFamilyIndexCount = m_NumActiveFamilyIndices;
     info.pQueueFamilyIndices = m_ActiveQueueFamilyIndices.data();
@@ -1024,7 +1021,7 @@ void DeviceVK::GetMemoryDesc(const AccelerationStructureDesc& accelerationStruct
 
     BufferDesc bufferDesc = {};
     bufferDesc.size = sizesInfo.accelerationStructureSize;
-    bufferDesc.usageMask = BufferUsageBits::RAY_TRACING_BUFFER;
+    bufferDesc.usage = BufferUsageBits::ACCELERATION_STRUCTURE_STORAGE;
 
     GetMemoryDesc(bufferDesc, memoryLocation, memoryDesc);
 }

@@ -17,7 +17,7 @@ Result DeviceD3D12::CreateVma() {
     return Result::SUCCESS;
 }
 
-Result BufferD3D12::Create(const AllocateBufferDesc& bufferDesc, bool isAccelerationStructureBuffer) {
+Result BufferD3D12::Create(const AllocateBufferDesc& bufferDesc) {
     Result nriResult = m_Device.CreateVma();
     if (nriResult != Result::SUCCESS)
         return nriResult;
@@ -50,7 +50,7 @@ Result BufferD3D12::Create(const AllocateBufferDesc& bufferDesc, bool isAccelera
         else if (bufferDesc.memoryLocation == MemoryLocation::HOST_READBACK)
             initialState |= D3D12_RESOURCE_STATE_COPY_DEST;
 
-        if (isAccelerationStructureBuffer)
+        if (bufferDesc.desc.usage & BufferUsageBits::ACCELERATION_STRUCTURE_STORAGE)
             initialState |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 
         HRESULT hr = m_Device.GetVma()->CreateResource(&allocationDesc, &desc, initialState, nullptr, &m_VmaAllocation, IID_PPV_ARGS(&m_Buffer));
@@ -136,7 +136,7 @@ Result AccelerationStructureD3D12::Create(const AllocateAccelerationStructureDes
     bufferDesc.memoryLocation = accelerationStructureDesc.memoryLocation;
     bufferDesc.memoryPriority = accelerationStructureDesc.memoryPriority;
     bufferDesc.desc.size = m_PrebuildInfo.ResultDataMaxSizeInBytes;
-    bufferDesc.desc.usageMask = BufferUsageBits::RAY_TRACING_BUFFER;
+    bufferDesc.desc.usage = BufferUsageBits::ACCELERATION_STRUCTURE_STORAGE;
 
-    return m_Device.CreateImplementation<BufferD3D12>((Buffer*&)m_Buffer, bufferDesc, ACCELERATION_STRUCTURE_BUFFER);
+    return m_Device.CreateImplementation<BufferD3D12>((Buffer*&)m_Buffer, bufferDesc);
 }
