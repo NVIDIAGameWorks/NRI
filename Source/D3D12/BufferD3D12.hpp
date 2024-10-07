@@ -3,7 +3,6 @@
 void nri::GetResourceDesc(D3D12_RESOURCE_DESC* desc, const BufferDesc& bufferDesc) {
     *desc = {};
     desc->Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    desc->Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT; // 64KB
     desc->Width = bufferDesc.size;
     desc->Height = 1;
     desc->DepthOrArraySize = 1;

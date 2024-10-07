@@ -45,7 +45,6 @@ Result QueryPoolD3D12::Create(const QueryPoolDesc& queryPoolDesc) {
 Result QueryPoolD3D12::CreateReadbackBuffer(const QueryPoolDesc& queryPoolDesc) {
     D3D12_RESOURCE_DESC resourceDesc = {};
     resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    resourceDesc.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
     resourceDesc.Width = (uint64_t)queryPoolDesc.capacity * m_QuerySize;
     resourceDesc.Height = 1;
     resourceDesc.DepthOrArraySize = 1;

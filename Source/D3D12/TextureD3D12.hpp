@@ -4,8 +4,8 @@ void nri::GetResourceDesc(D3D12_RESOURCE_DESC* desc, const TextureDesc& textureD
     uint16_t blockWidth = (uint16_t)GetFormatProps(textureDesc.format).blockWidth;
     const DxgiFormat& dxgiFormat = GetDxgiFormat(textureDesc.format);
 
+    *desc = {};
     desc->Dimension = GetResourceDimension(textureDesc.type);
-    desc->Alignment = textureDesc.sampleNum > 1 ? 0 : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
     desc->Width = Align(textureDesc.width, blockWidth);
     desc->Height = Align(std::max(textureDesc.height, (Dim_t)1), blockWidth);
     desc->DepthOrArraySize = std::max(textureDesc.type == TextureType::TEXTURE_3D ? textureDesc.depth : textureDesc.layerNum, (Dim_t)1);

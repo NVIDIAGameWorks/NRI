@@ -8,8 +8,8 @@ Result DeviceD3D12::CreateVma() {
     allocatorDesc.pDevice = m_Device;
     allocatorDesc.pAdapter = m_Adapter;
     allocatorDesc.pAllocationCallbacks = m_AllocationCallbackPtr;
-    allocatorDesc.Flags = (D3D12MA::ALLOCATOR_FLAGS)(
-        D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED | D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED);
+    allocatorDesc.Flags = (D3D12MA::ALLOCATOR_FLAGS)(D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED | D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED);
+    allocatorDesc.PreferredBlockSize = VMA_PREFERRED_BLOCK_SIZE;
 
     HRESULT hr = D3D12MA::CreateAllocator(&allocatorDesc, &m_Vma);
     RETURN_ON_BAD_HRESULT(this, hr, "D3D12MA::CreateAllocator");
@@ -24,7 +24,7 @@ Result BufferD3D12::Create(const AllocateBufferDesc& bufferDesc) {
 
     D3D12MA::ALLOCATION_DESC allocationDesc = {};
     allocationDesc.HeapType = GetHeapType(bufferDesc.memoryLocation);
-    allocationDesc.Flags = D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
+    allocationDesc.Flags = (D3D12MA::ALLOCATION_FLAGS)(D3D12MA::ALLOCATION_FLAG_CAN_ALIAS | D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_MEMORY);
 
 #ifdef NRI_USE_AGILITY_SDK
     if (m_Device.GetVersion() >= 10) {
@@ -80,7 +80,7 @@ Result TextureD3D12::Create(const AllocateTextureDesc& textureDesc) {
 
     D3D12MA::ALLOCATION_DESC allocationDesc = {};
     allocationDesc.HeapType = GetHeapType(textureDesc.memoryLocation);
-    allocationDesc.Flags = D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
+    allocationDesc.Flags = (D3D12MA::ALLOCATION_FLAGS)(D3D12MA::ALLOCATION_FLAG_CAN_ALIAS | D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_MEMORY);
 
 #ifdef NRI_USE_AGILITY_SDK
     if (m_Device.GetVersion() >= 10) {

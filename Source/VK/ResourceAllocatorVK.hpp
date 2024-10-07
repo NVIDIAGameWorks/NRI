@@ -20,6 +20,7 @@ Result DeviceVK::CreateVma() {
     allocatorCreateInfo.instance = m_Instance;
     allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
     allocatorCreateInfo.pAllocationCallbacks = m_AllocationCallbackPtr;
+    allocatorCreateInfo.preferredLargeHeapBlockSize = VMA_PREFERRED_BLOCK_SIZE;
 
     if (m_IsSupported.memoryBudget)
         allocatorCreateInfo.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
@@ -49,7 +50,7 @@ Result BufferVK::Create(const AllocateBufferDesc& bufferDesc) {
 
     // Create
     VmaAllocationCreateInfo allocationCreateInfo = {};
-    allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_CAN_ALIAS_BIT;
+    allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_CAN_ALIAS_BIT | VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
     allocationCreateInfo.priority = bufferDesc.memoryPriority * 0.5f + 0.5f;
     allocationCreateInfo.usage = IsHostMemory(bufferDesc.memoryLocation) ? VMA_MEMORY_USAGE_AUTO_PREFER_HOST : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 
@@ -115,7 +116,7 @@ Result TextureVK::Create(const AllocateTextureDesc& textureDesc) {
 
     // Create
     VmaAllocationCreateInfo allocationCreateInfo = {};
-    allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_CAN_ALIAS_BIT;
+    allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_CAN_ALIAS_BIT | VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
     allocationCreateInfo.priority = textureDesc.memoryPriority * 0.5f + 0.5f;
     allocationCreateInfo.usage = IsHostMemory(textureDesc.memoryLocation) ? VMA_MEMORY_USAGE_AUTO_PREFER_HOST : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 
