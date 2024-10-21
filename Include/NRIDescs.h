@@ -4,10 +4,10 @@
 
 #include <stdint.h>
 
-#if defined(__clang__) || defined(__GNUC__)
-    #define NRI_CALL
-#else
+#if defined(_WIN32)
     #define NRI_CALL __stdcall
+#else
+    #define NRI_CALL
 #endif
 
 #ifndef NRI_API
@@ -291,20 +291,22 @@ NriBits(StageBits, uint32_t,
                                       NriMember(StageBits, COLOR_ATTACHMENT)
 );
 
-NriStruct(Rect) {
-    int16_t x;
-    int16_t y;
-    Nri(Dim_t) width;
-    Nri(Dim_t) height;
-};
-
+// The viewport origin is top-left (D3D native) by default, but can be changed to bottom-left (VK native)
 NriStruct(Viewport) {
     float x;
     float y;
     float width;
     float height;
-    float depthRangeMin;
-    float depthRangeMax;
+    float depthMin;
+    float depthMax;
+    bool originBottomLeft; // expects "isViewportOriginBottomLeftSupported"
+};
+
+NriStruct(Rect) {
+    int16_t x;
+    int16_t y;
+    Nri(Dim_t) width;
+    Nri(Dim_t) height;
 };
 
 NriStruct(Color32f) {
@@ -1471,6 +1473,7 @@ NriStruct(DeviceDesc) {
     uint32_t isMemoryTier2Supported : 1; // a memory object can support resources from all 3 categories (buffers, attachments, all other textures)
     uint32_t isDynamicDepthBiasSupported : 1;
     uint32_t isAdditionalShadingRatesSupported : 1;
+    uint32_t isViewportOriginBottomLeftSupported : 1;
 
     // Shader features
     uint32_t isShaderNativeI16Supported : 1;

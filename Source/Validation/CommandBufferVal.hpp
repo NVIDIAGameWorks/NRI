@@ -75,6 +75,13 @@ NRI_INLINE void CommandBufferVal::SetViewports(const Viewport* viewports, uint32
 
     RETURN_ON_FAILURE(&m_Device, viewports, ReturnVoid(), "'viewports' is NULL");
 
+    const DeviceDesc& deviceDesc = m_Device.GetDesc();
+    if (!deviceDesc.isViewportOriginBottomLeftSupported) {
+        for (uint32_t i = 0; i < viewportNum; i++) {
+            RETURN_ON_FAILURE(&m_Device, !viewports[i].originBottomLeft, ReturnVoid(), "'isViewportOriginBottomLeftSupported' is false");
+        }
+    }
+
     GetCoreInterface().CmdSetViewports(*GetImpl(), viewports, viewportNum);
 }
 

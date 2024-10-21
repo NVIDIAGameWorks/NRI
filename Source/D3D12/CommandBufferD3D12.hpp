@@ -210,6 +210,15 @@ static void AddResourceBarrier(D3D12_COMMAND_LIST_TYPE commandListType, ID3D12Re
     }
 }
 
+static inline void ConvertRects(const Rect* in, uint32_t rectNum, D3D12_RECT* out) {
+    for (uint32_t i = 0; i < rectNum; i++) {
+        out[i].left = in[i].x;
+        out[i].top = in[i].y;
+        out[i].right = in[i].x + in[i].width;
+        out[i].bottom = in[i].y + in[i].height;
+    }
+}
+
 Result CommandBufferD3D12::Create(D3D12_COMMAND_LIST_TYPE commandListType, ID3D12CommandAllocator* commandAllocator) {
     ComPtr<ID3D12GraphicsCommandListBest> graphicsCommandList;
     HRESULT hr = m_Device->CreateCommandList(NRI_NODE_MASK, commandListType, commandAllocator, nullptr, __uuidof(ID3D12GraphicsCommandList), (void**)&graphicsCommandList);
@@ -261,19 +270,32 @@ NRI_INLINE Result CommandBufferD3D12::End() {
 }
 
 NRI_INLINE void CommandBufferD3D12::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
-    static_assert(offsetof(Viewport, x) == 0, "Unsupported viewport data layout");
-    static_assert(offsetof(Viewport, width) == 8, "Unsupported viewport data layout");
-    static_assert(offsetof(Viewport, depthRangeMin) == 16, "Unsupported viewport data layout");
-    static_assert(offsetof(Viewport, depthRangeMax) == 20, "Unsupported viewport data layout");
+    Scratch<D3D12_VIEWPORT> d3dViewports = AllocateScratch(m_Device, D3D12_VIEWPORT, viewportNum);
+    for (uint32_t i = 0; i < viewportNum; i++) {
+        const Viewport& in = viewports[i];
+        D3D12_VIEWPORT& out = d3dViewports[i];
+        out.TopLeftX = in.x;
+        out.TopLeftY = in.y;
+        out.Width = in.width;
+        out.Height = in.height;
+        out.MinDepth = in.depthMin;
+        out.MaxDepth = in.depthMax;
 
-    m_GraphicsCommandList->RSSetViewports(viewportNum, (D3D12_VIEWPORT*)viewports);
+        // Origin bottom-left requires flipping
+        if (in.originBottomLeft) {
+            out.TopLeftY += in.height;
+            out.Height = -in.height;
+        }
+    }
+
+    m_GraphicsCommandList->RSSetViewports(viewportNum, d3dViewports);
 }
 
 NRI_INLINE void CommandBufferD3D12::SetScissors(const Rect* rects, uint32_t rectNum) {
-    Scratch<D3D12_RECT> rectsD3D12 = AllocateScratch(m_Device, D3D12_RECT, rectNum);
-    ConvertRects(rectsD3D12, rects, rectNum);
+    Scratch<D3D12_RECT> d3dRects = AllocateScratch(m_Device, D3D12_RECT, rectNum);
+    ConvertRects(rects, rectNum, d3dRects);
 
-    m_GraphicsCommandList->RSSetScissorRects(rectNum, rectsD3D12);
+    m_GraphicsCommandList->RSSetScissorRects(rectNum, d3dRects);
 }
 
 NRI_INLINE void CommandBufferD3D12::SetDepthBounds(float boundsMin, float boundsMax) {
@@ -324,12 +346,12 @@ NRI_INLINE void CommandBufferD3D12::ClearAttachments(const ClearDesc* clearDescs
     if (!clearDescNum)
         return;
 
-    Scratch<D3D12_RECT> rectsD3D12 = AllocateScratch(m_Device, D3D12_RECT, rectNum);
-    ConvertRects(rectsD3D12, rects, rectNum);
+    Scratch<D3D12_RECT> d3dRects = AllocateScratch(m_Device, D3D12_RECT, rectNum);
+    ConvertRects(rects, rectNum, d3dRects);
 
     for (uint32_t i = 0; i < clearDescNum; i++) {
         if (clearDescs[i].planes & PlaneBits::COLOR)
-            m_GraphicsCommandList->ClearRenderTargetView(m_RenderTargets[clearDescs[i].colorAttachmentIndex], &clearDescs[i].value.color.f.x, rectNum, rectsD3D12);
+            m_GraphicsCommandList->ClearRenderTargetView(m_RenderTargets[clearDescs[i].colorAttachmentIndex], &clearDescs[i].value.color.f.x, rectNum, d3dRects);
         else {
             D3D12_CLEAR_FLAGS clearFlags = (D3D12_CLEAR_FLAGS)0;
             if (clearDescs[i].planes & PlaneBits::DEPTH)
@@ -337,7 +359,7 @@ NRI_INLINE void CommandBufferD3D12::ClearAttachments(const ClearDesc* clearDescs
             if (clearDescs[i].planes & PlaneBits::STENCIL)
                 clearFlags |= D3D12_CLEAR_FLAG_STENCIL;
 
-            m_GraphicsCommandList->ClearDepthStencilView(m_DepthStencil, clearFlags, clearDescs[i].value.depthStencil.depth, clearDescs[i].value.depthStencil.stencil, rectNum, rectsD3D12);
+            m_GraphicsCommandList->ClearDepthStencilView(m_DepthStencil, clearFlags, clearDescs[i].value.depthStencil.depth, clearDescs[i].value.depthStencil.stencil, rectNum, d3dRects);
         }
     }
 }
@@ -563,7 +585,7 @@ NRI_INLINE void CommandBufferD3D12::CopyTexture(Texture& dstTexture, const Textu
             srcRegion->height == WHOLE_SIZE ? srcTextureD3D12.GetSize(1, srcRegion->mipOffset) : srcRegion->height,
             srcRegion->depth == WHOLE_SIZE ? srcTextureD3D12.GetSize(2, srcRegion->mipOffset) : srcRegion->depth,
         };
-        
+
         D3D12_BOX box = {
             srcRegion->x,
             srcRegion->y,

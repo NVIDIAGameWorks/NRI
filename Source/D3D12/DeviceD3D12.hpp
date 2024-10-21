@@ -302,6 +302,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options13) failed, result = 0x%08X!", hr);
     m_Desc.uploadBufferTextureRowAlignment = options13.UnrestrictedBufferTextureCopyPitchSupported ? 1 : D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
     m_Desc.uploadBufferTextureSliceAlignment = options13.UnrestrictedBufferTextureCopyPitchSupported ? 1 : D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
+    m_Desc.isViewportOriginBottomLeftSupported = options13.InvertedViewportHeightFlipsYSupported ? 1 : 0;
 
     // Minimum supported client: Agility SDK
     D3D12_FEATURE_DATA_D3D12_OPTIONS14 options14 = {};

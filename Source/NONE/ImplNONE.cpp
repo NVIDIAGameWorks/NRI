@@ -158,6 +158,7 @@ struct DeviceNONE final : public DeviceBase {
         m_Desc.isMemoryTier2Supported = true;
         m_Desc.isDynamicDepthBiasSupported = true;
         m_Desc.isAdditionalShadingRatesSupported = true;
+        m_Desc.isViewportOriginBottomLeftSupported = true;
 
         m_Desc.isShaderNativeI16Supported = true;
         m_Desc.isShaderNativeF16Supported = true;

@@ -92,7 +92,19 @@ NRI_INLINE Result CommandBufferD3D11::End() {
 }
 
 NRI_INLINE void CommandBufferD3D11::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
-    m_DeferredContext->RSSetViewports(viewportNum, (const D3D11_VIEWPORT*)viewports);
+    Scratch<D3D11_VIEWPORT> d3dViewports = AllocateScratch(m_Device, D3D11_VIEWPORT, viewportNum);
+    for (uint32_t i = 0; i < viewportNum; i++) {
+        const Viewport& in = viewports[i];
+        D3D11_VIEWPORT& out = d3dViewports[i];
+        out.TopLeftX = in.x;
+        out.TopLeftY = in.y;
+        out.Width = in.width;
+        out.Height = in.height;
+        out.MinDepth = in.depthMin;
+        out.MaxDepth = in.depthMax;
+    }
+
+    m_DeferredContext->RSSetViewports(viewportNum, d3dViewports);
 }
 
 NRI_INLINE void CommandBufferD3D11::SetScissors(const Rect* rects, uint32_t rectNum) {

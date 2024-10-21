@@ -244,7 +244,7 @@ Draw parameters:
         struct name
 #endif
 
-// Misc
+// Misc (assumes D3D-style viewport)
 #define NRI_UV_TO_CLIP(uv) (uv * float2(2, -2) + float2(-1, 1))
 #define NRI_CLIP_TO_UV(clip) (clip * float2(0.5, -0.5) + 0.5)
 

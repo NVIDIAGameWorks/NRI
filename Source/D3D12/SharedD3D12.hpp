@@ -395,15 +395,6 @@ void nri::ConvertGeometryDescs(D3D12_RAYTRACING_GEOMETRY_DESC* geometryDescs, co
     }
 }
 
-void nri::ConvertRects(D3D12_RECT* rectsD3D12, const Rect* rects, uint32_t rectNum) {
-    for (uint32_t i = 0; i < rectNum; i++) {
-        rectsD3D12[i].left = rects[i].x;
-        rectsD3D12[i].top = rects[i].y;
-        rectsD3D12[i].right = rects[i].x + rects[i].width;
-        rectsD3D12[i].bottom = rects[i].y + rects[i].height;
-    }
-}
-
 uint64_t nri::GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc) {
     return memoryD3D12Desc.d3d12Heap->GetDesc().SizeInBytes;
 }

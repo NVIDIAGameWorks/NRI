@@ -900,6 +900,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isEnchancedBarrierSupported = true;
         m_Desc.isMemoryTier2Supported = true; // TODO: seems to be the best match
         m_Desc.isDynamicDepthBiasSupported = true;
+        m_Desc.isViewportOriginBottomLeftSupported = true;
 
         m_Desc.isShaderNativeI16Supported = features.features.shaderInt16;
         m_Desc.isShaderNativeF16Supported = features12.shaderFloat16;

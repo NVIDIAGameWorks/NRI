@@ -25,6 +25,9 @@ NriStruct(DeviceCreationVKDesc) {
     uint32_t queueFamilyIndexNum;
     const char* libraryPath;
     uint8_t minorVersion; // >= 2
+
+    // Switches (disabled by default)
+    bool enableNRIValidation;
 };
 
 NriStruct(CommandQueueVKDesc) {

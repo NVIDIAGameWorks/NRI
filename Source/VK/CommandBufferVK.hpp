@@ -54,18 +54,20 @@ NRI_INLINE Result CommandBufferVK::End() {
 NRI_INLINE void CommandBufferVK::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
     Scratch<VkViewport> vkViewports = AllocateScratch(m_Device, VkViewport, viewportNum);
     for (uint32_t i = 0; i < viewportNum; i++) {
-        const Viewport& viewport = viewports[i];
-        VkViewport& vkViewport = vkViewports[i];
-        vkViewport.x = viewport.x;
-        vkViewport.y = viewport.y;
-        vkViewport.width = viewport.width;
-        vkViewport.height = viewport.height;
-        vkViewport.minDepth = viewport.depthRangeMin;
-        vkViewport.maxDepth = viewport.depthRangeMax;
+        const Viewport& in = viewports[i];
+        VkViewport& out = vkViewports[i];
+        out.x = in.x;
+        out.y = in.y;
+        out.width = in.width;
+        out.height = in.height;
+        out.minDepth = in.depthMin;
+        out.maxDepth = in.depthMax;
 
-        // Flip
-        vkViewport.y = viewport.height - viewport.y;
-        vkViewport.height = -viewport.height;
+        // Origin top-left requires flipping
+        if (!in.originBottomLeft) {
+            out.y += in.height;
+            out.height = -in.height;
+        }
     }
 
     const auto& vk = m_Device.GetDispatchTable();
@@ -75,12 +77,12 @@ NRI_INLINE void CommandBufferVK::SetViewports(const Viewport* viewports, uint32_
 NRI_INLINE void CommandBufferVK::SetScissors(const Rect* rects, uint32_t rectNum) {
     Scratch<VkRect2D> vkRects = AllocateScratch(m_Device, VkRect2D, rectNum);
     for (uint32_t i = 0; i < rectNum; i++) {
-        const Rect& viewport = rects[i];
-        VkRect2D& vkRect = vkRects[i];
-        vkRect.offset.x = viewport.x;
-        vkRect.offset.y = viewport.y;
-        vkRect.extent.width = viewport.width;
-        vkRect.extent.height = viewport.height;
+        const Rect& in = rects[i];
+        VkRect2D& out = vkRects[i];
+        out.offset.x = in.x;
+        out.offset.y = in.y;
+        out.extent.width = in.width;
+        out.extent.height = in.height;
     }
 
     const auto& vk = m_Device.GetDispatchTable();

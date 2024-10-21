@@ -16,9 +16,11 @@ NriStruct(DeviceCreationD3D11Desc) {
     NriOptional AGSContext* agsContext;
     Nri(CallbackInterface) callbackInterface;
     Nri(AllocationCallbacks) allocationCallbacks;
-    bool enableD3D11CommandBufferEmulation;
-    bool enableNRIValidation;
     bool isNVAPILoaded; // at least NVAPI requires calling "NvAPI_Initialize" in DLL/EXE where the device is created in addition to NRI
+
+    // Switches (disabled by default)
+    bool enableNRIValidation;
+    bool enableD3D11CommandBufferEmulation; // enable? but why? (auto-enabled if deferred contexts are not supported)
 };
 
 NriStruct(CommandBufferD3D11Desc) {

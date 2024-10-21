@@ -2,11 +2,12 @@
 
 [![Status](https://github.com/NVIDIAGameWorks/NRI/actions/workflows/build.yml/badge.svg)](https://github.com/NVIDIAGameWorks/NRI/actions/workflows/build.yml)
 
-*NRI* is a low-level abstract render interface which currently supports three backends: D3D11, D3D12 and Vulkan (VK). *NRI* has been designed to support all (at least major) low level features of D3D12 and VK APIs, but at the same time to simplify usage and reduce the amount of code needed (especially compared with VK). *NRI* is written in *C++*, but supports both *C++* and *C* interfaces.
+*NRI* is a low-level abstract render interface, which has been designed to support all low level features of D3D12 and Vulkan GAPIs, but at the same time to simplify usage and reduce the amount of code needed (especially compared with VK).
 
 Goals:
 - generalization of D3D12 ([spec](https://microsoft.github.io/DirectX-Specs/)) and VK ([spec](https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html)) GAPIs
 - providing access to low-level features of modern GAPIs
+- providing high-level "quality of life" improving utilities, organized as extensions
 - low overhead
 - explicitness
 - D3D11 ([spec](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm)) support (as much as possible)
@@ -16,6 +17,12 @@ Non-goals:
 - exposing entities not existing in GAPIs
 - D3D11-like abstraction level
 - hidden management of any kind
+
+Currently supported GAPIs:
+- Vulkan (VK)
+- D3D12
+- D3D11
+- None / dummy (everything is supported, but does nothing)
 
 Key features:
  - *C++* and *C* compatible interfaces
@@ -43,9 +50,9 @@ Key features:
 
  *(some interfaces can be missing in the listing)*
 
- *NRI* is used in:
+ *NRI* sample code:
  - [*NRI samples*](https://github.com/NVIDIAGameWorks/NRISamples)
- - [*NRD Sample*](https://github.com/NVIDIAGameWorks/NRDSample)
+ - [*NRD sample*](https://github.com/NVIDIAGameWorks/NRDSample)
 
 ## C/C++ INTERFACE DIFFERENCES
 
@@ -146,7 +153,7 @@ Samples:
 - AsyncCompute - demonstrates parallel execution of graphic and compute workloads
 - MultiThreading - shows advantages of multi-threaded command buffer recording
 - MultiGPU - multi GPU example
-- RayTracingTriangle - simple triangle rendeing through ray tracing
+- RayTracingTriangle - simple triangle rendering through ray tracing
 - RayTracingBoxes - a more advanced ray tracing example with many BLASes in TLAS
 - Wrapper - shows how to wrap native D3D11/D3D12/VK objects into NRI entities
 - Resize - demonstrates window resize

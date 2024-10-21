@@ -215,7 +215,7 @@ NRI_API Result NRI_CALL nriCreateDeviceFromVkDevice(const DeviceCreationVKDesc& 
     deviceCreationDesc.allocationCallbacks = deviceCreationVKDesc.allocationCallbacks;
     deviceCreationDesc.spirvBindingOffsets = deviceCreationVKDesc.spirvBindingOffsets;
     deviceCreationDesc.graphicsAPI = GraphicsAPI::VK;
-    deviceCreationDesc.enableNRIValidation = false;
+    deviceCreationDesc.enableNRIValidation = deviceCreationVKDesc.enableNRIValidation;
 
     CheckAndSetDefaultCallbacks(deviceCreationDesc.callbackInterface);
     CheckAndSetDefaultAllocator(deviceCreationDesc.allocationCallbacks);
