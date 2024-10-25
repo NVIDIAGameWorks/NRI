@@ -1,23 +1,5 @@
 // © 2021 NVIDIA Corporation
 
-constexpr std::array<VkFormat, (size_t)SwapChainFormat::MAX_NUM> g_swapChainFormat = {
-    VK_FORMAT_R16G16B16A16_SFLOAT, // BT709_G10_16BIT
-#ifdef __APPLE__
-    VK_FORMAT_B8G8R8A8_UNORM, // BT709_G22_8BIT
-#else
-    VK_FORMAT_R8G8B8A8_UNORM, // BT709_G22_8BIT
-#endif
-    VK_FORMAT_A2B10G10R10_UNORM_PACK32, // BT709_G22_10BIT
-    VK_FORMAT_A2B10G10R10_UNORM_PACK32, // BT2020_G2084_10BIT
-};
-
-constexpr std::array<VkColorSpaceKHR, (size_t)SwapChainFormat::MAX_NUM> g_colorSpace = {
-    VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT, // BT709_G10_16BIT
-    VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,       // BT709_G22_8BIT
-    VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,       // BT709_G22_10BIT
-    VK_COLOR_SPACE_HDR10_ST2084_EXT,         // BT2020_G2084_10BIT
-};
-
 SwapChainVK::SwapChainVK(DeviceVK& device)
     : m_Device(device)
     , m_Textures(device.GetStdAllocator()) {
@@ -157,21 +139,53 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         Scratch<VkSurfaceFormatKHR> surfaceFormats = AllocateScratch(m_Device, VkSurfaceFormatKHR, formatNum);
         result = vk.GetPhysicalDeviceSurfaceFormatsKHR(m_Device, m_Surface, &formatNum, surfaceFormats);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkGetPhysicalDeviceSurfaceFormatsKHR returned %d", (int32_t)result);
+        
+        auto priority_BT709_G22_16BIT = [](const VkSurfaceFormatKHR& surface) -> uint32_t {
+           return ((surface.format == VK_FORMAT_R16G16B16A16_SFLOAT) << 0) | 
+               ((surface.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT) << 1);
+        };
 
-        VkFormat format = g_swapChainFormat[(uint32_t)swapChainDesc.format];
-        VkColorSpaceKHR colorSpace = g_colorSpace[(uint32_t)swapChainDesc.format];
+        // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/vkGetPhysicalDeviceSurfaceFormatsKHR.html
+        // there is always a corespodning UNORM and SRGB just need to consider UNORM
+        auto priority_BT709_G22_8BIT = [](const VkSurfaceFormatKHR& surface) -> uint32_t {
+           return ((surface.format == VK_FORMAT_R8G8B8A8_UNORM || surface.format == VK_FORMAT_B8G8R8A8_UNORM) << 0) |
+               ((surface.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) << 1);
+        };
 
-        uint32_t i = 0;
-        for (; i < formatNum; i++) {
-            if (surfaceFormats[i].format == format && surfaceFormats[i].colorSpace == colorSpace) {
-                surfaceFormat = surfaceFormats[i];
+        
+        auto priority_BT709_G22_10BIT = [](const VkSurfaceFormatKHR& surface) -> uint32_t {
+           return ((surface.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32) << 0) | 
+               ((surface.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) << 1);
+        };
+        
+        auto priority_BT2020_G2084_10BIT = [](const VkSurfaceFormatKHR& surface) -> uint32_t {
+           return ((surface.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32) << 0) | 
+               ((surface.colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT) << 1);
+        };
+
+        switch(swapChainDesc.format) {
+            case nri::SwapChainFormat::BT709_G10_16BIT:
+                std::sort(surfaceFormats + 0, surfaceFormats + formatNum, [&](VkSurfaceFormatKHR& a1, VkSurfaceFormatKHR& b1) {
+                    return priority_BT709_G22_16BIT(a1) > priority_BT709_G22_16BIT(b1); 
+                });
                 break;
-            }
+            case nri::SwapChainFormat::BT709_G22_8BIT:
+                std::sort(surfaceFormats + 0, surfaceFormats + formatNum, [&](VkSurfaceFormatKHR& a1, VkSurfaceFormatKHR& b1) {
+                    return priority_BT709_G22_8BIT(a1) > priority_BT709_G22_8BIT(b1); 
+                });
+                break;
+            case nri::SwapChainFormat::BT709_G22_10BIT:
+                std::sort(surfaceFormats + 0, surfaceFormats + formatNum, [&](VkSurfaceFormatKHR& a1, VkSurfaceFormatKHR& b1) {
+                    return priority_BT709_G22_10BIT(a1) > priority_BT709_G22_10BIT(b1); 
+                });
+                break;
+            case nri::SwapChainFormat::BT2020_G2084_10BIT:
+                std::sort(surfaceFormats + 0, surfaceFormats + formatNum, [&](VkSurfaceFormatKHR& a1, VkSurfaceFormatKHR& b1) {
+                    return priority_BT2020_G2084_10BIT(a1) > priority_BT2020_G2084_10BIT(b1); 
+                });
+                break;
         }
-        if (i == formatNum) {
-            REPORT_WARNING(&m_Device, "The requested format is not supported. Using 1st surface format from the list");
-            surfaceFormat = surfaceFormats[0];
-        }
+        surfaceFormat = surfaceFormats[0];
     }
 
     // Present mode
