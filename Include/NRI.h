@@ -101,17 +101,17 @@ NriStruct(CoreInterface) {
 
         // Setup
         void                (NRI_CALL *CmdSetPipelineLayout)        (NriRef(CommandBuffer) commandBuffer, const NriRef(PipelineLayout) pipelineLayout);
-        void                (NRI_CALL *CmdSetDescriptorSet)         (NriRef(CommandBuffer) commandBuffer, uint32_t setIndex, const NriRef(DescriptorSet) descriptorSet, const uint32_t* dynamicConstantBufferOffsets);
-        void                (NRI_CALL *CmdSetRootConstants)         (NriRef(CommandBuffer) commandBuffer, uint32_t rootConstantIndex, const void* data, uint32_t size); // requires "pipelineLayoutRootConstantMaxSize > 0"
-        void                (NRI_CALL *CmdSetRootDescriptor)        (NriRef(CommandBuffer) commandBuffer, uint32_t rootDescriptorIndex, NriRef(Descriptor) descriptor); // requires "pipelineLayoutRootDescriptorMaxNum > 0"
+        void                (NRI_CALL *CmdSetDescriptorSet)         (NriRef(CommandBuffer) commandBuffer, uint32_t setIndex, const NriRef(DescriptorSet) descriptorSet, const uint32_t* dynamicConstantBufferOffsets); // expects "CmdSetPipelineLayout"
+        void                (NRI_CALL *CmdSetRootConstants)         (NriRef(CommandBuffer) commandBuffer, uint32_t rootConstantIndex, const void* data, uint32_t size); // expects "CmdSetPipelineLayout", requires "pipelineLayoutRootConstantMaxSize > 0"
+        void                (NRI_CALL *CmdSetRootDescriptor)        (NriRef(CommandBuffer) commandBuffer, uint32_t rootDescriptorIndex, NriRef(Descriptor) descriptor); // expects "CmdSetPipelineLayout", requires "pipelineLayoutRootDescriptorMaxNum > 0"
         void                (NRI_CALL *CmdSetPipeline)              (NriRef(CommandBuffer) commandBuffer, const NriRef(Pipeline) pipeline);
 
         // Barrier
         void                (NRI_CALL *CmdBarrier)                  (NriRef(CommandBuffer) commandBuffer, const NriRef(BarrierGroupDesc) barrierGroupDesc);
 
         // Input assembly
-        void                (NRI_CALL *CmdSetIndexBuffer)           (NriRef(CommandBuffer) commandBuffer, const NriRef(Buffer) buffer, uint64_t offset, Nri(IndexType) indexType); // expects "CmdSetPipeline"
-        void                (NRI_CALL *CmdSetVertexBuffers)         (NriRef(CommandBuffer) commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const NriPtr(Buffer) const* buffers, const uint64_t* offsets);
+        void                (NRI_CALL *CmdSetIndexBuffer)           (NriRef(CommandBuffer) commandBuffer, const NriRef(Buffer) buffer, uint64_t offset, Nri(IndexType) indexType);
+        void                (NRI_CALL *CmdSetVertexBuffers)         (NriRef(CommandBuffer) commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const NriPtr(Buffer) const* buffers, const uint64_t* offsets); // expects "CmdSetPipeline"
 
         // Initial state
         void                (NRI_CALL *CmdSetViewports)             (NriRef(CommandBuffer) commandBuffer, const NriPtr(Viewport) viewports, uint32_t viewportNum);
