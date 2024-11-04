@@ -6,6 +6,7 @@ namespace nri {
 
 struct DescriptorVal;
 struct PipelineVal;
+struct PipelineLayoutVal;
 
 struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     CommandBufferVal(DeviceVal& device, CommandBuffer* commandBuffer, bool isWrapped)
@@ -95,6 +96,7 @@ private:
     Vector<uint8_t> m_ValidationCommands;
     std::array<DescriptorVal*, 16> m_RenderTargets = {};
     DescriptorVal* m_DepthStencil = nullptr;
+    PipelineLayoutVal* m_PipelineLayout = nullptr;
     PipelineVal* m_Pipeline = nullptr;
     uint32_t m_RenderTargetNum = 0;
     int32_t m_AnnotationStack = 0;
