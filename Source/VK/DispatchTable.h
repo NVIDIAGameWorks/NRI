@@ -127,6 +127,7 @@ struct DispatchTable {
     VULKAN_FUNCTION(CmdDrawIndexedIndirectCount);
     VULKAN_FUNCTION(CmdCopyBuffer);
     VULKAN_FUNCTION(CmdCopyImage);
+    VULKAN_FUNCTION(CmdResolveImage);
     VULKAN_FUNCTION(CmdCopyBufferToImage);
     VULKAN_FUNCTION(CmdCopyImageToBuffer);
     VULKAN_FUNCTION(CmdPipelineBarrier2);

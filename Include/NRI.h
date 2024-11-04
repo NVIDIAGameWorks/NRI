@@ -154,12 +154,11 @@ NriStruct(CoreInterface) {
         // Copy
         void                (NRI_CALL *CmdCopyBuffer)               (NriRef(CommandBuffer) commandBuffer, NriRef(Buffer) dstBuffer, uint64_t dstOffset, const NriRef(Buffer) srcBuffer, uint64_t srcOffset, uint64_t size);
         void                (NRI_CALL *CmdCopyTexture)              (NriRef(CommandBuffer) commandBuffer, NriRef(Texture) dstTexture, const NriPtr(TextureRegionDesc) dstRegionDesc, const NriRef(Texture) srcTexture, const NriPtr(TextureRegionDesc) srcRegionDesc);
+        void                (NRI_CALL *CmdResolveTexture)           (NriRef(CommandBuffer) commandBuffer, NriRef(Texture) dstTexture, const NriPtr(TextureRegionDesc) dstRegionDesc, const NriRef(Texture) srcTexture, const NriPtr(TextureRegionDesc) srcRegionDesc); // "isRegionResolveSupported" is needed for region specification
         void                (NRI_CALL *CmdUploadBufferToTexture)    (NriRef(CommandBuffer) commandBuffer, NriRef(Texture) dstTexture, const NriRef(TextureRegionDesc) dstRegionDesc, const NriRef(Buffer) srcBuffer, const NriRef(TextureDataLayoutDesc) srcDataLayoutDesc);
         void                (NRI_CALL *CmdReadbackTextureToBuffer)  (NriRef(CommandBuffer) commandBuffer, NriRef(Buffer) dstBuffer, const NriRef(TextureDataLayoutDesc) dstDataLayoutDesc, const NriRef(Texture) srcTexture, const NriRef(TextureRegionDesc) srcRegionDesc);
-
-        // Clear storage (potentially slow clear)
-        void                (NRI_CALL *CmdClearStorageBuffer)       (NriRef(CommandBuffer) commandBuffer, const NriRef(ClearStorageBufferDesc) clearDesc);
-        void                (NRI_CALL *CmdClearStorageTexture)      (NriRef(CommandBuffer) commandBuffer, const NriRef(ClearStorageTextureDesc) clearDesc);
+        void                (NRI_CALL *CmdClearStorageBuffer)       (NriRef(CommandBuffer) commandBuffer, const NriRef(ClearStorageBufferDesc) clearDesc); // potentially slow clear
+        void                (NRI_CALL *CmdClearStorageTexture)      (NriRef(CommandBuffer) commandBuffer, const NriRef(ClearStorageTextureDesc) clearDesc); // potentially slow clear
 
         // Query
         void                (NRI_CALL *CmdResetQueries)             (NriRef(CommandBuffer) commandBuffer, const NriRef(QueryPool) queryPool, uint32_t offset, uint32_t num);

@@ -255,13 +255,15 @@ NriBits(StageBits, uint32_t,
     ANY_HIT_SHADER                  = NriBit(15), //    Any hit shader
     CALLABLE_SHADER                 = NriBit(16), //    Callable shader
 
-    // Other stages
-    COPY                            = NriBit(17), // Invoked by "CmdCopy*", "CmdUpload*" and "CmdReadback*"
-    CLEAR_STORAGE                   = NriBit(18), // Invoked by "CmdClearStorage*"
-    ACCELERATION_STRUCTURE          = NriBit(19), // Invoked by "Cmd*AccelerationStructure*"
+    ACCELERATION_STRUCTURE          = NriBit(17), // Invoked by "Cmd*AccelerationStructure*"
+
+    // Copy
+    COPY                            = NriBit(18), // Invoked by "CmdCopy*", "CmdUpload*" and "CmdReadback*"
+    CLEAR_STORAGE                   = NriBit(19), // Invoked by "CmdClearStorage*"
+    RESOLVE                         = NriBit(20), // Invoked by "CmdResolveTexture"
 
     // Modifiers
-    INDIRECT                        = NriBit(20), // Invoked by "Indirect" command (used in addition to other bits)
+    INDIRECT                        = NriBit(21), // Invoked by "Indirect" command (used in addition to other bits)
 
     // Umbrella stages
     TESSELLATION_SHADERS            = NriMember(StageBits, TESS_CONTROL_SHADER) |
@@ -1041,9 +1043,11 @@ NriBits(AccessBits, uint16_t,                       // Compatible "StageBits" (i
     DEPTH_STENCIL_ATTACHMENT_READ   = NriBit(8),    // DEPTH_STENCIL_ATTACHMENT
     COPY_SOURCE                     = NriBit(9),    // COPY
     COPY_DESTINATION                = NriBit(10),   // COPY
-    ACCELERATION_STRUCTURE_READ     = NriBit(11),   // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
-    ACCELERATION_STRUCTURE_WRITE    = NriBit(12),   // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
-    SHADING_RATE_ATTACHMENT         = NriBit(13)    // FRAGMENT_SHADER
+    RESOLVE_SOURCE                  = NriBit(11),   // RESOLVE
+    RESOLVE_DESTINATION             = NriBit(12),   // RESOLVE
+    ACCELERATION_STRUCTURE_READ     = NriBit(13),   // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
+    ACCELERATION_STRUCTURE_WRITE    = NriBit(14),   // COMPUTE_SHADER, RAY_TRACING_SHADERS, ACCELERATION_STRUCTURE
+    SHADING_RATE_ATTACHMENT         = NriBit(15)    // FRAGMENT_SHADER
 );
 
 NriEnum(Layout, uint8_t,        // Compatible "AccessBits":
@@ -1055,6 +1059,8 @@ NriEnum(Layout, uint8_t,        // Compatible "AccessBits":
     SHADER_RESOURCE_STORAGE,    // SHADER_RESOURCE_STORAGE
     COPY_SOURCE,                // COPY_SOURCE
     COPY_DESTINATION,           // COPY_DESTINATION
+    RESOLVE_SOURCE,             // RESOLVE_SOURCE
+    RESOLVE_DESTINATION,        // RESOLVE_DESTINATION
     PRESENT,                    // UNKNOWN
     SHADING_RATE_ATTACHMENT     // SHADING_RATE_ATTACHMENT
 );
@@ -1474,6 +1480,7 @@ NriStruct(DeviceDesc) {
     uint32_t isDynamicDepthBiasSupported : 1;
     uint32_t isAdditionalShadingRatesSupported : 1;
     uint32_t isViewportOriginBottomLeftSupported : 1;
+    uint32_t isRegionResolveSupported : 1;
 
     // Shader features
     uint32_t isShaderNativeI16Supported : 1;

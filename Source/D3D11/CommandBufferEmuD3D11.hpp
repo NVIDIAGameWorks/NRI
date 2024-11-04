@@ -27,6 +27,7 @@ enum OpCode : uint32_t {
     DRAW_INDEXED_INDIRECT,
     COPY_BUFFER,
     COPY_TEXTURE,
+    RESOLVE_TEXTURE,
     UPLOAD_BUFFER_TO_TEXTURE,
     READBACK_TEXTURE_TO_BUFFER,
     DISPATCH,
@@ -351,6 +352,21 @@ void CommandBufferEmuD3D11::Submit() {
 
                 commandBuffer.CopyTexture(*dstTexture, &dstRegion, *srcTexture, &srcRegion);
             } break;
+            case RESOLVE_TEXTURE: {
+                Texture* dstTexture;
+                Read(m_PushBuffer, i, dstTexture);
+
+                TextureRegionDesc dstRegion = {};
+                Read(m_PushBuffer, i, dstRegion);
+
+                Texture* srcTexture;
+                Read(m_PushBuffer, i, srcTexture);
+
+                TextureRegionDesc srcRegion = {};
+                Read(m_PushBuffer, i, srcRegion);
+
+                commandBuffer.ResolveTexture(*dstTexture, &dstRegion, *srcTexture, &srcRegion);
+            } break;
             case UPLOAD_BUFFER_TO_TEXTURE: {
                 Texture* dstTexture;
                 Read(m_PushBuffer, i, dstTexture);
@@ -613,15 +629,31 @@ NRI_INLINE void CommandBufferEmuD3D11::CopyBuffer(Buffer& dstBuffer, uint64_t ds
 }
 
 NRI_INLINE void CommandBufferEmuD3D11::CopyTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
-    TextureRegionDesc fullResource = {};
-    fullResource.mipOffset = NULL_TEXTURE_REGION_DESC;
+    TextureRegionDesc wholeResource = {};
+    wholeResource.mipOffset = NULL_TEXTURE_REGION_DESC;
 
     if (!dstRegionDesc)
-        dstRegionDesc = &fullResource;
+        dstRegionDesc = &wholeResource;
     if (!srcRegionDesc)
-        srcRegionDesc = &fullResource;
+        srcRegionDesc = &wholeResource;
 
     Push(m_PushBuffer, COPY_TEXTURE);
+    Push(m_PushBuffer, &dstTexture);
+    Push(m_PushBuffer, *dstRegionDesc);
+    Push(m_PushBuffer, &srcTexture);
+    Push(m_PushBuffer, *srcRegionDesc);
+}
+
+NRI_INLINE void CommandBufferEmuD3D11::ResolveTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
+    TextureRegionDesc wholeResource = {};
+    wholeResource.mipOffset = NULL_TEXTURE_REGION_DESC;
+
+    if (!dstRegionDesc)
+        dstRegionDesc = &wholeResource;
+    if (!srcRegionDesc)
+        srcRegionDesc = &wholeResource;
+
+    Push(m_PushBuffer, RESOLVE_TEXTURE);
     Push(m_PushBuffer, &dstTexture);
     Push(m_PushBuffer, *dstRegionDesc);
     Push(m_PushBuffer, &srcTexture);

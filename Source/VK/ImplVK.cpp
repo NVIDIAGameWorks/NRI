@@ -246,6 +246,10 @@ static void NRI_CALL CmdClearStorageTexture(CommandBuffer& commandBuffer, const 
     ((CommandBufferVK&)commandBuffer).ClearStorageTexture(clearDesc);
 }
 
+static void NRI_CALL CmdResolveTexture(CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
+    ((CommandBufferVK&)commandBuffer).ResolveTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
+}
+
 static void NRI_CALL CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
     ((CommandBufferVK&)commandBuffer).CopyBuffer(dstBuffer, dstOffset, srcBuffer, srcOffset, size);
 }
@@ -607,6 +611,7 @@ Result DeviceVK::FillFunctionTable(CoreInterface& table) const {
     table.CmdReadbackTextureToBuffer = ::CmdReadbackTextureToBuffer;
     table.CmdClearStorageBuffer = ::CmdClearStorageBuffer;
     table.CmdClearStorageTexture = ::CmdClearStorageTexture;
+    table.CmdResolveTexture = ::CmdResolveTexture;
     table.CmdResetQueries = ::CmdResetQueries;
     table.CmdBeginQuery = ::CmdBeginQuery;
     table.CmdEndQuery = ::CmdEndQuery;

@@ -450,56 +450,141 @@ NRI_INLINE void CommandBufferVK::DrawIndexedIndirect(const Buffer& buffer, uint6
 }
 
 NRI_INLINE void CommandBufferVK::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
-    const BufferVK& srcBufferImpl = (const BufferVK&)srcBuffer;
+    const BufferVK& src = (const BufferVK&)srcBuffer;
     const BufferVK& dstBufferImpl = (const BufferVK&)dstBuffer;
 
-    const VkBufferCopy region = {srcOffset, dstOffset, size == WHOLE_SIZE ? srcBufferImpl.GetDesc().size : size};
+    const VkBufferCopy region = {srcOffset, dstOffset, size == WHOLE_SIZE ? src.GetDesc().size : size};
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyBuffer(m_Handle, srcBufferImpl.GetHandle(), dstBufferImpl.GetHandle(), 1, &region);
+    vk.CmdCopyBuffer(m_Handle, src.GetHandle(), dstBufferImpl.GetHandle(), 1, &region);
 }
 
 NRI_INLINE void CommandBufferVK::CopyTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
-    const TextureVK& srcTextureImpl = (const TextureVK&)srcTexture;
-    const TextureVK& dstTextureImpl = (const TextureVK&)dstTexture;
+    const TextureVK& src = (const TextureVK&)srcTexture;
+    const TextureVK& dst = (const TextureVK&)dstTexture;
 
-    if (!srcRegionDesc && !dstRegionDesc) {
-        CopyWholeTexture(dstTextureImpl, srcTextureImpl);
-        return;
-    }
+    bool isWholeResource = !dstRegionDesc && !srcRegionDesc;
+    if (isWholeResource) {
+        const TextureDesc& dstDesc = dst.GetDesc();
+        const TextureDesc& srcDesc = src.GetDesc();
 
-    VkImageCopy region = {};
+        Scratch<VkImageCopy> regions = AllocateScratch(m_Device, VkImageCopy, dstDesc.mipNum);
+        for (Mip_t i = 0; i < dstDesc.mipNum; i++) {
+            regions[i].srcSubresource = {src.GetImageAspectFlags(), i, 0, srcDesc.layerNum};
+            regions[i].dstSubresource = {dst.GetImageAspectFlags(), i, 0, dstDesc.layerNum};
+            regions[i].dstOffset = {};
+            regions[i].srcOffset = {};
+            regions[i].extent = dst.GetExtent();
+        }
 
-    if (srcRegionDesc) {
-        region.srcSubresource = {srcTextureImpl.GetImageAspectFlags(), srcRegionDesc->mipOffset, srcRegionDesc->layerOffset, 1};
-        region.srcOffset = {(int32_t)srcRegionDesc->x, (int32_t)srcRegionDesc->y, (int32_t)srcRegionDesc->z};
-        region.extent = {
-            (srcRegionDesc->width == WHOLE_SIZE) ? srcTextureImpl.GetSize(0, srcRegionDesc->mipOffset) : srcRegionDesc->width,
-            (srcRegionDesc->height == WHOLE_SIZE) ? srcTextureImpl.GetSize(1, srcRegionDesc->mipOffset) : srcRegionDesc->height,
-            (srcRegionDesc->depth == WHOLE_SIZE) ? srcTextureImpl.GetSize(2, srcRegionDesc->mipOffset) : srcRegionDesc->depth,
+        const auto& vk = m_Device.GetDispatchTable();
+        vk.CmdCopyImage(m_Handle, src.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstDesc.mipNum, regions);
+    } else {
+        TextureRegionDesc wholeResource = {};
+        if (!srcRegionDesc)
+            srcRegionDesc = &wholeResource;
+        if (!dstRegionDesc)
+            dstRegionDesc = &wholeResource;
+
+        VkImageCopy region = {};
+        region.srcSubresource = {
+            src.GetImageAspectFlags(),
+            srcRegionDesc->mipOffset,
+            srcRegionDesc->layerOffset,
+            1,
         };
-    } else {
-        region.srcSubresource = {srcTextureImpl.GetImageAspectFlags(), 0, 0, 1};
-        region.srcOffset = {};
-        region.extent = srcTextureImpl.GetExtent();
-    }
+        region.srcOffset = {
+            (int32_t)srcRegionDesc->x,
+            (int32_t)srcRegionDesc->y,
+            (int32_t)srcRegionDesc->z,
+        };
+        region.dstSubresource = {
+            dst.GetImageAspectFlags(),
+            dstRegionDesc->mipOffset,
+            dstRegionDesc->layerOffset,
+            1,
+        };
+        region.dstOffset = {
+            (int32_t)dstRegionDesc->x,
+            (int32_t)dstRegionDesc->y,
+            (int32_t)dstRegionDesc->z,
+        };
+        region.extent = {
+            (srcRegionDesc->width == WHOLE_SIZE) ? src.GetSize(0, srcRegionDesc->mipOffset) : srcRegionDesc->width,
+            (srcRegionDesc->height == WHOLE_SIZE) ? src.GetSize(1, srcRegionDesc->mipOffset) : srcRegionDesc->height,
+            (srcRegionDesc->depth == WHOLE_SIZE) ? src.GetSize(2, srcRegionDesc->mipOffset) : srcRegionDesc->depth,
+        };
 
-    if (dstRegionDesc) {
-        region.dstSubresource = {dstTextureImpl.GetImageAspectFlags(), dstRegionDesc->mipOffset, dstRegionDesc->layerOffset, 1};
-        region.dstOffset = {(int32_t)dstRegionDesc->x, (int32_t)dstRegionDesc->y, (int32_t)dstRegionDesc->z};
-    } else {
-        region.dstSubresource = {dstTextureImpl.GetImageAspectFlags(), 0, 0, 1};
-        region.dstOffset = {};
+        const auto& vk = m_Device.GetDispatchTable();
+        vk.CmdCopyImage(m_Handle, src.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     }
+}
 
-    const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyImage(m_Handle, srcTextureImpl.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTextureImpl.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+NRI_INLINE void CommandBufferVK::ResolveTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
+    const TextureVK& src = (const TextureVK&)srcTexture;
+    const TextureVK& dst = (const TextureVK&)dstTexture;
+
+    bool isWholeResource = !dstRegionDesc && !srcRegionDesc;
+    if (isWholeResource) {
+        const TextureDesc& dstDesc = dst.GetDesc();
+        const TextureDesc& srcDesc = src.GetDesc();
+
+        Scratch<VkImageResolve> regions = AllocateScratch(m_Device, VkImageResolve, dstDesc.mipNum);
+        for (Mip_t i = 0; i < dstDesc.mipNum; i++) {
+            regions[i].srcSubresource = {src.GetImageAspectFlags(), i, 0, srcDesc.layerNum};
+            regions[i].dstSubresource = {dst.GetImageAspectFlags(), i, 0, dstDesc.layerNum};
+            regions[i].dstOffset = {};
+            regions[i].srcOffset = {};
+            regions[i].extent = dst.GetExtent();
+        }
+
+        const auto& vk = m_Device.GetDispatchTable();
+        vk.CmdResolveImage(m_Handle, src.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstDesc.mipNum, regions);
+    } else {
+        TextureRegionDesc wholeResource = {};
+        if (!srcRegionDesc)
+            srcRegionDesc = &wholeResource;
+        if (!dstRegionDesc)
+            dstRegionDesc = &wholeResource;
+
+        VkImageResolve region = {};
+        region.srcSubresource = {
+            src.GetImageAspectFlags(),
+            srcRegionDesc->mipOffset,
+            srcRegionDesc->layerOffset,
+            1,
+        };
+        region.srcOffset = {
+            (int32_t)srcRegionDesc->x,
+            (int32_t)srcRegionDesc->y,
+            (int32_t)srcRegionDesc->z,
+        };
+        region.dstSubresource = {
+            dst.GetImageAspectFlags(),
+            dstRegionDesc->mipOffset,
+            dstRegionDesc->layerOffset,
+            1,
+        };
+        region.dstOffset = {
+            (int32_t)dstRegionDesc->x,
+            (int32_t)dstRegionDesc->y,
+            (int32_t)dstRegionDesc->z,
+        };
+        region.extent = {
+            (srcRegionDesc->width == WHOLE_SIZE) ? src.GetSize(0, srcRegionDesc->mipOffset) : srcRegionDesc->width,
+            (srcRegionDesc->height == WHOLE_SIZE) ? src.GetSize(1, srcRegionDesc->mipOffset) : srcRegionDesc->height,
+            (srcRegionDesc->depth == WHOLE_SIZE) ? src.GetSize(2, srcRegionDesc->mipOffset) : srcRegionDesc->depth,
+        };
+
+        const auto& vk = m_Device.GetDispatchTable();
+        vk.CmdResolveImage(m_Handle, src.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    }
 }
 
 NRI_INLINE void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
-    const BufferVK& srcBufferImpl = (const BufferVK&)srcBuffer;
-    const TextureVK& dstTextureImpl = (const TextureVK&)dstTexture;
-    const FormatProps& formatProps = GetFormatProps(dstTextureImpl.GetDesc().format);
+    const BufferVK& src = (const BufferVK&)srcBuffer;
+    const TextureVK& dst = (const TextureVK&)dstTexture;
+    const FormatProps& formatProps = GetFormatProps(dst.GetDesc().format);
 
     uint32_t rowBlockNum = srcDataLayoutDesc.rowPitch / formatProps.stride;
     uint32_t bufferRowLength = rowBlockNum * formatProps.blockWidth;
@@ -512,7 +597,7 @@ NRI_INLINE void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, cons
     region.bufferRowLength = bufferRowLength;
     region.bufferImageHeight = bufferImageHeight;
     region.imageSubresource = VkImageSubresourceLayers{
-        dstTextureImpl.GetImageAspectFlags(),
+        dst.GetImageAspectFlags(),
         dstRegionDesc.mipOffset,
         dstRegionDesc.layerOffset,
         1,
@@ -523,19 +608,19 @@ NRI_INLINE void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, cons
         dstRegionDesc.z,
     };
     region.imageExtent = VkExtent3D{
-        (dstRegionDesc.width == WHOLE_SIZE) ? dstTextureImpl.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.width,
-        (dstRegionDesc.height == WHOLE_SIZE) ? dstTextureImpl.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.height,
-        (dstRegionDesc.depth == WHOLE_SIZE) ? dstTextureImpl.GetSize(2, dstRegionDesc.mipOffset) : dstRegionDesc.depth,
+        (dstRegionDesc.width == WHOLE_SIZE) ? dst.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.width,
+        (dstRegionDesc.height == WHOLE_SIZE) ? dst.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.height,
+        (dstRegionDesc.depth == WHOLE_SIZE) ? dst.GetSize(2, dstRegionDesc.mipOffset) : dstRegionDesc.depth,
     };
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyBufferToImage(m_Handle, srcBufferImpl.GetHandle(), dstTextureImpl.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vk.CmdCopyBufferToImage(m_Handle, src.GetHandle(), dst.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 NRI_INLINE void CommandBufferVK::ReadbackTextureToBuffer(Buffer& dstBuffer, const TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
-    const TextureVK& srcTextureImpl = (const TextureVK&)srcTexture;
+    const TextureVK& src = (const TextureVK&)srcTexture;
     const BufferVK& dstBufferImpl = (const BufferVK&)dstBuffer;
-    const FormatProps& formatProps = GetFormatProps(srcTextureImpl.GetDesc().format);
+    const FormatProps& formatProps = GetFormatProps(src.GetDesc().format);
 
     uint32_t rowBlockNum = dstDataLayoutDesc.rowPitch / formatProps.stride;
     uint32_t bufferRowLength = rowBlockNum * formatProps.blockWidth;
@@ -544,12 +629,11 @@ NRI_INLINE void CommandBufferVK::ReadbackTextureToBuffer(Buffer& dstBuffer, cons
     uint32_t bufferImageHeight = sliceRowNum * formatProps.blockWidth;
 
     VkBufferImageCopy region = {};
-
     region.bufferOffset = dstDataLayoutDesc.offset;
     region.bufferRowLength = bufferRowLength;
     region.bufferImageHeight = bufferImageHeight;
     region.imageSubresource = VkImageSubresourceLayers{
-        srcTextureImpl.GetImageAspectFlags(),
+        src.GetImageAspectFlags(),
         srcRegionDesc.mipOffset,
         srcRegionDesc.layerOffset,
         1,
@@ -560,13 +644,13 @@ NRI_INLINE void CommandBufferVK::ReadbackTextureToBuffer(Buffer& dstBuffer, cons
         srcRegionDesc.z,
     };
     region.imageExtent = VkExtent3D{
-        (srcRegionDesc.width == WHOLE_SIZE) ? srcTextureImpl.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width,
-        (srcRegionDesc.height == WHOLE_SIZE) ? srcTextureImpl.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.height,
-        (srcRegionDesc.depth == WHOLE_SIZE) ? srcTextureImpl.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.depth,
+        (srcRegionDesc.width == WHOLE_SIZE) ? src.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width,
+        (srcRegionDesc.height == WHOLE_SIZE) ? src.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.height,
+        (srcRegionDesc.depth == WHOLE_SIZE) ? src.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.depth,
     };
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyImageToBuffer(m_Handle, srcTextureImpl.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstBufferImpl.GetHandle(), 1, &region);
+    vk.CmdCopyImageToBuffer(m_Handle, src.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstBufferImpl.GetHandle(), 1, &region);
 }
 
 NRI_INLINE void CommandBufferVK::Dispatch(const DispatchDesc& dispatchDesc) {
@@ -612,10 +696,10 @@ static inline VkAccessFlags2 GetAccessFlags(AccessBits accessBits) {
     if (accessBits & AccessBits::DEPTH_STENCIL_ATTACHMENT_READ)
         flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 
-    if (accessBits & AccessBits::COPY_SOURCE)
+    if (accessBits & (AccessBits::COPY_SOURCE | AccessBits::RESOLVE_SOURCE))
         flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
 
-    if (accessBits & AccessBits::COPY_DESTINATION)
+    if (accessBits & (AccessBits::COPY_DESTINATION | AccessBits::RESOLVE_DESTINATION))
         flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
 
     if (accessBits & AccessBits::ACCELERATION_STRUCTURE_READ)
@@ -761,23 +845,6 @@ NRI_INLINE void CommandBufferVK::EndAnnotation() {
     const auto& vk = m_Device.GetDispatchTable();
     if (vk.CmdEndDebugUtilsLabelEXT)
         vk.CmdEndDebugUtilsLabelEXT(m_Handle);
-}
-
-NRI_INLINE void CommandBufferVK::CopyWholeTexture(const TextureVK& dstTexture, const TextureVK& srcTexture) {
-    const TextureDesc& dstTextureDesc = dstTexture.GetDesc();
-    const TextureDesc& srcTextureDesc = srcTexture.GetDesc();
-
-    Scratch<VkImageCopy> regions = AllocateScratch(m_Device, VkImageCopy, dstTextureDesc.mipNum);
-    for (Mip_t i = 0; i < dstTextureDesc.mipNum; i++) {
-        regions[i].srcSubresource = {srcTexture.GetImageAspectFlags(), i, 0, srcTextureDesc.layerNum};
-        regions[i].dstSubresource = {dstTexture.GetImageAspectFlags(), i, 0, dstTextureDesc.layerNum};
-        regions[i].dstOffset = {};
-        regions[i].srcOffset = {};
-        regions[i].extent = dstTexture.GetExtent();
-    }
-
-    const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdCopyImage(m_Handle, srcTexture.GetHandle(), IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTexture.GetHandle(), IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstTextureDesc.mipNum, regions);
 }
 
 NRI_INLINE void CommandBufferVK::BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {

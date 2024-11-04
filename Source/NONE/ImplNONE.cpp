@@ -159,6 +159,7 @@ struct DeviceNONE final : public DeviceBase {
         m_Desc.isDynamicDepthBiasSupported = true;
         m_Desc.isAdditionalShadingRatesSupported = true;
         m_Desc.isViewportOriginBottomLeftSupported = true;
+        m_Desc.isRegionResolveSupported = true;
 
         m_Desc.isShaderNativeI16Supported = true;
         m_Desc.isShaderNativeF16Supported = true;
@@ -496,6 +497,9 @@ static void NRI_CALL CmdClearStorageBuffer(CommandBuffer&, const ClearStorageBuf
 static void NRI_CALL CmdClearStorageTexture(CommandBuffer&, const ClearStorageTextureDesc&) {
 }
 
+static void NRI_CALL CmdResolveTexture(CommandBuffer&, Texture&, const TextureRegionDesc*, const Texture&, const TextureRegionDesc*) {
+}
+
 static void NRI_CALL CmdResetQueries(CommandBuffer&, const QueryPool&, uint32_t, uint32_t) {
 }
 
@@ -687,6 +691,7 @@ Result DeviceNONE::FillFunctionTable(CoreInterface& table) const {
     table.CmdReadbackTextureToBuffer = ::CmdReadbackTextureToBuffer;
     table.CmdClearStorageBuffer = ::CmdClearStorageBuffer;
     table.CmdClearStorageTexture = ::CmdClearStorageTexture;
+    table.CmdResolveTexture = ::CmdResolveTexture;
     table.CmdResetQueries = ::CmdResetQueries;
     table.CmdBeginQuery = ::CmdBeginQuery;
     table.CmdEndQuery = ::CmdEndQuery;

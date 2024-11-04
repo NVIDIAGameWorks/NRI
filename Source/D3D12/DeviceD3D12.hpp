@@ -524,6 +524,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.isDepthBoundsTestSupported = options2.DepthBoundsTestSupported != 0;
     m_Desc.isDrawIndirectCountSupported = true;
     m_Desc.isLineSmoothingSupported = true;
+    m_Desc.isRegionResolveSupported = true;
 
     m_Desc.isShaderNativeI16Supported = options4.Native16BitShaderOpsSupported;
     m_Desc.isShaderNativeF16Supported = options4.Native16BitShaderOpsSupported;

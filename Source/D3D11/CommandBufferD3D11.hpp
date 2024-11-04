@@ -375,17 +375,17 @@ NRI_INLINE void CommandBufferD3D11::DrawIndexedIndirect(const Buffer& buffer, ui
 }
 
 NRI_INLINE void CommandBufferD3D11::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
-    BufferD3D11& dst = (BufferD3D11&)dstBuffer;
-    BufferD3D11& src = (BufferD3D11&)srcBuffer;
+    const BufferD3D11& dst = (BufferD3D11&)dstBuffer;
+    const BufferD3D11& src = (BufferD3D11&)srcBuffer;
 
     if (size == WHOLE_SIZE)
         size = src.GetDesc().size;
 
-    bool isEntireResource = (srcOffset == 0 && dstOffset == 0);
-    isEntireResource &= src.GetDesc().size == size;
-    isEntireResource &= dst.GetDesc().size == size;
+    bool isWholeResource = (srcOffset == 0 && dstOffset == 0);
+    isWholeResource &= src.GetDesc().size == size;
+    isWholeResource &= dst.GetDesc().size == size;
 
-    if (isEntireResource)
+    if (isWholeResource)
         m_DeferredContext->CopyResource(dst, src);
     else {
         D3D11_BOX box = {};
@@ -399,12 +399,19 @@ NRI_INLINE void CommandBufferD3D11::CopyBuffer(Buffer& dstBuffer, uint64_t dstOf
 }
 
 NRI_INLINE void CommandBufferD3D11::CopyTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
-    TextureD3D11& dst = (TextureD3D11&)dstTexture;
-    TextureD3D11& src = (TextureD3D11&)srcTexture;
+    const TextureD3D11& dst = (TextureD3D11&)dstTexture;
+    const TextureD3D11& src = (TextureD3D11&)srcTexture;
 
-    if ((!dstRegionDesc || !srcRegionDesc) || (dstRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC && srcRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC))
+    bool isWholeResource = (!dstRegionDesc && !srcRegionDesc) || (dstRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC && srcRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC);
+    if (isWholeResource)
         m_DeferredContext->CopyResource(dst, src);
     else {
+        TextureRegionDesc wholeResource = {};
+        if (!srcRegionDesc || srcRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC)
+            srcRegionDesc = &wholeResource;
+        if (!dstRegionDesc || dstRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC)
+            dstRegionDesc = &wholeResource;
+
         D3D11_BOX srcBox = {};
         srcBox.left = srcRegionDesc->x;
         srcBox.top = srcRegionDesc->y;
@@ -416,16 +423,44 @@ NRI_INLINE void CommandBufferD3D11::CopyTexture(Texture& dstTexture, const Textu
         srcBox.bottom += srcBox.top;
         srcBox.back += srcBox.front;
 
-        uint32_t dstSubresource = dst.GetSubresourceIndex(*dstRegionDesc);
-        uint32_t srcSubresource = src.GetSubresourceIndex(*srcRegionDesc);
+        uint32_t dstSubresource = dst.GetSubresourceIndex(dstRegionDesc->layerOffset, dstRegionDesc->mipOffset);
+        uint32_t srcSubresource = src.GetSubresourceIndex(srcRegionDesc->layerOffset, srcRegionDesc->mipOffset);
 
         m_DeferredContext->CopySubresourceRegion(dst, dstSubresource, dstRegionDesc->x, dstRegionDesc->y, dstRegionDesc->z, src, srcSubresource, &srcBox);
     }
 }
 
+NRI_INLINE void CommandBufferD3D11::ResolveTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
+    const TextureD3D11& dst = (TextureD3D11&)dstTexture;
+    const TextureD3D11& src = (TextureD3D11&)srcTexture;
+    const TextureDesc& dstDesc = dst.GetDesc();
+    const DxgiFormat& dstFormat = GetDxgiFormat(dstDesc.format);
+
+    bool isWholeResource = (!dstRegionDesc && !srcRegionDesc) || (dstRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC && srcRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC);
+    if (isWholeResource) {
+        for (Dim_t layer = 0; layer < dstDesc.layerNum; layer++) {
+            for (Mip_t mip = 0; mip < dstDesc.mipNum; mip++) {
+                uint32_t subresource = dst.GetSubresourceIndex(layer, mip);
+                m_DeferredContext->ResolveSubresource(dst, subresource, src, subresource, dstFormat.typed);
+            }
+        }
+    } else {
+        TextureRegionDesc wholeResource = {};
+        if (!srcRegionDesc || srcRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC)
+            srcRegionDesc = &wholeResource;
+        if (!dstRegionDesc || dstRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC)
+            dstRegionDesc = &wholeResource;
+
+        uint32_t dstSubresource = dst.GetSubresourceIndex(dstRegionDesc->layerOffset, dstRegionDesc->mipOffset);
+        uint32_t srcSubresource = src.GetSubresourceIndex(srcRegionDesc->layerOffset, srcRegionDesc->mipOffset);
+
+        m_DeferredContext->ResolveSubresource(dst, dstSubresource, src, srcSubresource, dstFormat.typed);
+    }
+}
+
 NRI_INLINE void CommandBufferD3D11::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
     BufferD3D11& src = (BufferD3D11&)srcBuffer;
-    TextureD3D11& dst = (TextureD3D11&)dstTexture;
+    const TextureD3D11& dst = (TextureD3D11&)dstTexture;
 
     D3D11_BOX dstBox = {};
     dstBox.left = dstRegionDesc.x;
@@ -438,7 +473,7 @@ NRI_INLINE void CommandBufferD3D11::UploadBufferToTexture(Texture& dstTexture, c
     dstBox.bottom += dstBox.top;
     dstBox.back += dstBox.front;
 
-    uint32_t dstSubresource = dst.GetSubresourceIndex(dstRegionDesc);
+    uint32_t dstSubresource = dst.GetSubresourceIndex(dstRegionDesc.layerOffset, dstRegionDesc.mipOffset);
 
     uint8_t* data = (uint8_t*)src.Map(srcDataLayoutDesc.offset);
     m_DeferredContext->UpdateSubresource(dst, dstSubresource, &dstBox, data, srcDataLayoutDesc.rowPitch, srcDataLayoutDesc.slicePitch);
@@ -449,7 +484,7 @@ NRI_INLINE void CommandBufferD3D11::ReadbackTextureToBuffer(Buffer& dstBuffer, c
     CHECK(dstDataLayoutDesc.offset == 0, "D3D11 implementation currently supports copying a texture region to a buffer only with offset = 0!");
 
     BufferD3D11& dst = (BufferD3D11&)dstBuffer;
-    TextureD3D11& src = (TextureD3D11&)srcTexture;
+    const TextureD3D11& src = (TextureD3D11&)srcTexture;
 
     TextureD3D11& dstTemp = dst.RecreateReadbackTexture(src, srcRegionDesc, dstDataLayoutDesc);
 

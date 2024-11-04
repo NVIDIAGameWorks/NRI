@@ -39,9 +39,9 @@ struct TextureD3D11 {
         return (ID3D11Texture3D*)m_Texture.GetInterface();
     }
 
-    inline uint32_t GetSubresourceIndex(const TextureRegionDesc& regionDesc) const {
+    inline uint32_t GetSubresourceIndex(uint32_t layerOffset, uint32_t mipOffset) const {
         // https://learn.microsoft.com/en-us/windows/win32/direct3d12/subresources#plane-slice
-        return regionDesc.mipOffset + regionDesc.layerOffset * m_Desc.mipNum;
+        return mipOffset + layerOffset * m_Desc.mipNum;
     }
 
     inline Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const {

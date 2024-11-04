@@ -22,6 +22,8 @@ constexpr std::array<VkImageLayout, (size_t)Layout::MAX_NUM> LAYOUT_TABLE = {
     VK_IMAGE_LAYOUT_GENERAL,                                      // SHADER_RESOURCE_STORAGE
     IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,                            // COPY_SOURCE
     IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,                            // COPY_DESTINATION
+    IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,                            // RESOLVE_SOURCE
+    IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,                            // RESOLVE_DESTINATION
     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,                              // PRESENT
     VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, // SHADING_RATE_ATTACHMENT
 };
@@ -416,7 +418,7 @@ constexpr VkPipelineStageFlags2 GetPipelineStageFlags(StageBits stageBits) {
     if (stageBits & StageBits::INDIRECT)
         flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
 
-    if (stageBits & (StageBits::COPY | StageBits::CLEAR_STORAGE))
+    if (stageBits & (StageBits::COPY | StageBits::CLEAR_STORAGE | StageBits::RESOLVE))
         flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
 
     if (stageBits & StageBits::ACCELERATION_STRUCTURE)

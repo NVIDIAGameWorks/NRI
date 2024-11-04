@@ -439,6 +439,10 @@ static void NRI_CALL CmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTe
     ((CommandBufferD3D11&)commandBuffer).CopyTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
 }
 
+static void NRI_CALL CmdResolveTexture(CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
+    ((CommandBufferD3D11&)commandBuffer).ResolveTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
+}
+
 static void NRI_CALL CmdUploadBufferToTexture(CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
     ((CommandBufferD3D11&)commandBuffer).UploadBufferToTexture(dstTexture, dstRegionDesc, srcBuffer, srcDataLayoutDesc);
 }
@@ -605,9 +609,12 @@ static void NRI_CALL EmuCmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstB
     ((CommandBufferEmuD3D11&)commandBuffer).CopyBuffer(dstBuffer, dstOffset, srcBuffer, srcOffset, size);
 }
 
-static void NRI_CALL EmuCmdCopyTexture(
-    CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
+static void NRI_CALL EmuCmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
     ((CommandBufferEmuD3D11&)commandBuffer).CopyTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
+}
+
+static void NRI_CALL EmuCmdResolveTexture(CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
+    ((CommandBufferEmuD3D11&)commandBuffer).ResolveTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
 }
 
 static void NRI_CALL EmuCmdUploadBufferToTexture(CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
@@ -814,6 +821,7 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
         table.CmdReadbackTextureToBuffer = ::EmuCmdReadbackTextureToBuffer;
         table.CmdClearStorageBuffer = ::EmuCmdClearStorageBuffer;
         table.CmdClearStorageTexture = ::EmuCmdClearStorageTexture;
+        table.CmdResolveTexture = ::EmuCmdResolveTexture;
         table.CmdResetQueries = ::EmuCmdResetQueries;
         table.CmdBeginQuery = ::EmuCmdBeginQuery;
         table.CmdEndQuery = ::EmuCmdEndQuery;
@@ -857,6 +865,7 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
         table.CmdReadbackTextureToBuffer = ::CmdReadbackTextureToBuffer;
         table.CmdClearStorageBuffer = ::CmdClearStorageBuffer;
         table.CmdClearStorageTexture = ::CmdClearStorageTexture;
+        table.CmdResolveTexture = ::CmdResolveTexture;
         table.CmdResetQueries = ::CmdResetQueries;
         table.CmdBeginQuery = ::CmdBeginQuery;
         table.CmdEndQuery = ::CmdEndQuery;

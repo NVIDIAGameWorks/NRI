@@ -32,7 +32,7 @@ constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits bufferUsageBits
 
     if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE)
         flags |= structureStride ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
- 
+
     if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE_STORAGE)
         flags |= structureStride ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
 
@@ -901,6 +901,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isMemoryTier2Supported = true; // TODO: seems to be the best match
         m_Desc.isDynamicDepthBiasSupported = true;
         m_Desc.isViewportOriginBottomLeftSupported = true;
+        m_Desc.isRegionResolveSupported = true;
 
         m_Desc.isShaderNativeI16Supported = features.features.shaderInt16;
         m_Desc.isShaderNativeF16Supported = features12.shaderFloat16;
@@ -1599,6 +1600,7 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
     GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndexedIndirectCount);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyBuffer);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyImage);
+    GET_DEVICE_CORE_OR_KHR_PROC(CmdResolveImage);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyBufferToImage);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyImageToBuffer);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdPipelineBarrier2);
