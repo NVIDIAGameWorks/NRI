@@ -501,32 +501,31 @@ NRI_INLINE void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, cons
     const TextureVK& dstTextureImpl = (const TextureVK&)dstTexture;
     const FormatProps& formatProps = GetFormatProps(dstTextureImpl.GetDesc().format);
 
-    const uint32_t rowBlockNum = srcDataLayoutDesc.rowPitch / formatProps.stride;
-    const uint32_t bufferRowLength = rowBlockNum * formatProps.blockWidth;
+    uint32_t rowBlockNum = srcDataLayoutDesc.rowPitch / formatProps.stride;
+    uint32_t bufferRowLength = rowBlockNum * formatProps.blockWidth;
 
-    const uint32_t sliceRowNum = srcDataLayoutDesc.slicePitch / srcDataLayoutDesc.rowPitch;
-    const uint32_t bufferImageHeight = sliceRowNum * formatProps.blockWidth;
+    uint32_t sliceRowNum = srcDataLayoutDesc.slicePitch / srcDataLayoutDesc.rowPitch;
+    uint32_t bufferImageHeight = sliceRowNum * formatProps.blockWidth;
 
-    const VkBufferImageCopy region = {
-        srcDataLayoutDesc.offset,
-        bufferRowLength,
-        bufferImageHeight,
-        VkImageSubresourceLayers{
-            dstTextureImpl.GetImageAspectFlags(),
-            dstRegionDesc.mipOffset,
-            dstRegionDesc.layerOffset,
-            1,
-        },
-        VkOffset3D{
-            dstRegionDesc.x,
-            dstRegionDesc.y,
-            dstRegionDesc.z,
-        },
-        VkExtent3D{
-            (dstRegionDesc.width == WHOLE_SIZE) ? dstTextureImpl.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.width,
-            (dstRegionDesc.height == WHOLE_SIZE) ? dstTextureImpl.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.height,
-            (dstRegionDesc.depth == WHOLE_SIZE) ? dstTextureImpl.GetSize(2, dstRegionDesc.mipOffset) : dstRegionDesc.depth,
-        },
+    VkBufferImageCopy region = {};
+    region.bufferOffset = srcDataLayoutDesc.offset;
+    region.bufferRowLength = bufferRowLength;
+    region.bufferImageHeight = bufferImageHeight;
+    region.imageSubresource = VkImageSubresourceLayers{
+        dstTextureImpl.GetImageAspectFlags(),
+        dstRegionDesc.mipOffset,
+        dstRegionDesc.layerOffset,
+        1,
+    };
+    region.imageOffset = VkOffset3D{
+        dstRegionDesc.x,
+        dstRegionDesc.y,
+        dstRegionDesc.z,
+    };
+    region.imageExtent = VkExtent3D{
+        (dstRegionDesc.width == WHOLE_SIZE) ? dstTextureImpl.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.width,
+        (dstRegionDesc.height == WHOLE_SIZE) ? dstTextureImpl.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.height,
+        (dstRegionDesc.depth == WHOLE_SIZE) ? dstTextureImpl.GetSize(2, dstRegionDesc.mipOffset) : dstRegionDesc.depth,
     };
 
     const auto& vk = m_Device.GetDispatchTable();
@@ -536,25 +535,34 @@ NRI_INLINE void CommandBufferVK::UploadBufferToTexture(Texture& dstTexture, cons
 NRI_INLINE void CommandBufferVK::ReadbackTextureToBuffer(Buffer& dstBuffer, const TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
     const TextureVK& srcTextureImpl = (const TextureVK&)srcTexture;
     const BufferVK& dstBufferImpl = (const BufferVK&)dstBuffer;
-
     const FormatProps& formatProps = GetFormatProps(srcTextureImpl.GetDesc().format);
-    const uint32_t rowBlockNum = dstDataLayoutDesc.rowPitch / formatProps.stride;
-    const uint32_t bufferRowLength = rowBlockNum * formatProps.blockWidth;
 
-    const uint32_t sliceRowNum = dstDataLayoutDesc.slicePitch / dstDataLayoutDesc.rowPitch;
-    const uint32_t bufferImageHeight = sliceRowNum * formatProps.blockWidth;
+    uint32_t rowBlockNum = dstDataLayoutDesc.rowPitch / formatProps.stride;
+    uint32_t bufferRowLength = rowBlockNum * formatProps.blockWidth;
 
-    const VkBufferImageCopy region = {
-        dstDataLayoutDesc.offset,
-        bufferRowLength,
-        bufferImageHeight,
-        VkImageSubresourceLayers{srcTextureImpl.GetImageAspectFlags(), srcRegionDesc.mipOffset, srcRegionDesc.layerOffset, 1},
-        VkOffset3D{srcRegionDesc.x, srcRegionDesc.y, srcRegionDesc.z},
-        VkExtent3D{
-            (srcRegionDesc.width == WHOLE_SIZE) ? srcTextureImpl.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width,
-            (srcRegionDesc.height == WHOLE_SIZE) ? srcTextureImpl.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.height,
-            (srcRegionDesc.depth == WHOLE_SIZE) ? srcTextureImpl.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.depth,
-        },
+    uint32_t sliceRowNum = dstDataLayoutDesc.slicePitch / dstDataLayoutDesc.rowPitch;
+    uint32_t bufferImageHeight = sliceRowNum * formatProps.blockWidth;
+
+    VkBufferImageCopy region = {};
+
+    region.bufferOffset = dstDataLayoutDesc.offset;
+    region.bufferRowLength = bufferRowLength;
+    region.bufferImageHeight = bufferImageHeight;
+    region.imageSubresource = VkImageSubresourceLayers{
+        srcTextureImpl.GetImageAspectFlags(),
+        srcRegionDesc.mipOffset,
+        srcRegionDesc.layerOffset,
+        1,
+    };
+    region.imageOffset = VkOffset3D{
+        srcRegionDesc.x,
+        srcRegionDesc.y,
+        srcRegionDesc.z,
+    };
+    region.imageExtent = VkExtent3D{
+        (srcRegionDesc.width == WHOLE_SIZE) ? srcTextureImpl.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width,
+        (srcRegionDesc.height == WHOLE_SIZE) ? srcTextureImpl.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.height,
+        (srcRegionDesc.depth == WHOLE_SIZE) ? srcTextureImpl.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.depth,
     };
 
     const auto& vk = m_Device.GetDispatchTable();

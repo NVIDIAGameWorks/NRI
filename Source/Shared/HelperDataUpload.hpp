@@ -61,8 +61,7 @@ static void DoTransition(const CoreInterface& NRI, CommandBuffer* commandBuffer,
     }
 }
 
-Result HelperDataUpload::UploadData(
-    const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
+Result HelperDataUpload::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
     const DeviceDesc& deviceDesc = NRI.GetDeviceDesc(m_Device);
 
     for (uint32_t i = 0; i < textureUploadDescNum; i++) {
