@@ -415,7 +415,7 @@ NRI_INLINE void CommandBufferD3D12::BeginRendering(const AttachmentsDesc& attach
 NRI_INLINE void CommandBufferD3D12::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
     Scratch<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews = AllocateScratch(m_Device, D3D12_VERTEX_BUFFER_VIEW, bufferNum);
     for (uint32_t i = 0; i < bufferNum; i++) {
-        if (buffers[i] != nullptr) {
+        if (buffers[i]) {
             const BufferD3D12* buffer = (BufferD3D12*)buffers[i];
             uint64_t offset = offsets ? offsets[i] : 0;
             vertexBufferViews[i].BufferLocation = buffer->GetPointerGPU() + offset;
@@ -513,7 +513,7 @@ NRI_INLINE void CommandBufferD3D12::SetRootDescriptor(uint32_t rootDescriptorInd
 }
 
 NRI_INLINE void CommandBufferD3D12::Draw(const DrawDesc& drawDesc) {
-    if (m_PipelineLayout->IsDrawParametersEmulationEnabled()) {
+    if (m_PipelineLayout && m_PipelineLayout->IsDrawParametersEmulationEnabled()) {
         struct BaseVertexInstance {
             uint32_t baseVertex;
             uint32_t baseInstance;
@@ -526,7 +526,7 @@ NRI_INLINE void CommandBufferD3D12::Draw(const DrawDesc& drawDesc) {
 }
 
 NRI_INLINE void CommandBufferD3D12::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc) {
-    if (m_PipelineLayout->IsDrawParametersEmulationEnabled()) {
+    if (m_PipelineLayout && m_PipelineLayout->IsDrawParametersEmulationEnabled()) {
         struct BaseVertexInstance {
             int32_t baseVertex;
             uint32_t baseInstance;
