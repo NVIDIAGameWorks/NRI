@@ -95,13 +95,10 @@ private:
     PipelineLayoutD3D11* m_PipelineLayout = nullptr;
     PipelineD3D11* m_Pipeline = nullptr;
     const Buffer* m_IndexBuffer = nullptr;
-    const Buffer* m_VertexBuffer = nullptr;
     BindingState m_BindingState = {};
     SamplePositionsState m_SamplePositionsState = {};
     Color32f m_BlendFactor = {};
     uint64_t m_IndexBufferOffset = 0;
-    uint64_t m_VertexBufferOffset = 0;
-    uint32_t m_VertexBufferBaseSlot = 0;
     uint32_t m_RenderTargetNum = 0;
     IndexType m_IndexType = IndexType::UINT32;
     float m_DepthBounds[2] = {0.0f, 1.0f};

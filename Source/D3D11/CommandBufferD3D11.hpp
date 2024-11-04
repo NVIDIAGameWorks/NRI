@@ -66,8 +66,8 @@ void CommandBufferD3D11::Submit() {
 NRI_INLINE Result CommandBufferD3D11::Begin(const DescriptorPool* descriptorPool) {
     m_CommandList = nullptr;
     m_Pipeline = nullptr;
+    m_PipelineLayout = nullptr;
     m_IndexBuffer = nullptr;
-    m_VertexBuffer = nullptr;
 
     ResetAttachments();
 
@@ -279,32 +279,26 @@ NRI_INLINE void CommandBufferD3D11::SetVertexBuffers(uint32_t baseSlot, uint32_t
     if (!offsets)
         offsets = s_nullOffsets;
 
-    if (m_VertexBuffer != buffers[0] || m_VertexBufferOffset != offsets[0] || m_VertexBufferBaseSlot != baseSlot || bufferNum > 1) {
-        Scratch<uint8_t> scratch = AllocateScratch(m_Device, uint8_t, bufferNum * (sizeof(ID3D11Buffer*) + sizeof(uint32_t) * 2));
-        uint8_t* ptr = scratch;
+    Scratch<uint8_t> scratch = AllocateScratch(m_Device, uint8_t, bufferNum * (sizeof(ID3D11Buffer*) + sizeof(uint32_t) * 2));
+    uint8_t* ptr = scratch;
 
-        ID3D11Buffer** buf = (ID3D11Buffer**)ptr;
-        ptr += bufferNum * sizeof(ID3D11Buffer*);
+    ID3D11Buffer** buf = (ID3D11Buffer**)ptr;
+    ptr += bufferNum * sizeof(ID3D11Buffer*);
 
-        uint32_t* offsetsUint = (uint32_t*)ptr;
-        ptr += bufferNum * sizeof(uint32_t);
+    uint32_t* offsetsUint = (uint32_t*)ptr;
+    ptr += bufferNum * sizeof(uint32_t);
 
-        uint32_t* strides = (uint32_t*)ptr;
+    uint32_t* strides = (uint32_t*)ptr;
 
-        for (uint32_t i = 0; i < bufferNum; i++) {
-            const BufferD3D11& bufferD3D11 = *(BufferD3D11*)buffers[i];
-            buf[i] = bufferD3D11;
+    for (uint32_t i = 0; i < bufferNum; i++) {
+        const BufferD3D11& bufferD3D11 = *(BufferD3D11*)buffers[i];
 
-            strides[i] = m_Pipeline->GetInputAssemblyStride(baseSlot + i);
-            offsetsUint[i] = (uint32_t)offsets[i];
-        }
-
-        m_DeferredContext->IASetVertexBuffers(baseSlot, bufferNum, buf, strides, offsetsUint);
-
-        m_VertexBuffer = buffers[0];
-        m_VertexBufferOffset = offsets[0];
-        m_VertexBufferBaseSlot = baseSlot;
+        buf[i] = bufferD3D11;
+        strides[i] = m_Pipeline->GetInputAssemblyStride(baseSlot + i);
+        offsetsUint[i] = (uint32_t)offsets[i];
     }
+
+    m_DeferredContext->IASetVertexBuffers(baseSlot, bufferNum, buf, strides, offsetsUint);
 }
 
 NRI_INLINE void CommandBufferD3D11::SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType) {
