@@ -1,6 +1,6 @@
 // © 2021 NVIDIA Corporation
 
-Declare_PartiallyFillFunctionTable_Functions(MTL);
+//Declare_PartiallyFillFunctionTable_Functions(MTL);
 
 #pragma region[  Core  ]
 
@@ -200,18 +200,19 @@ static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
 
 Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table = {};
-    Core_Device_PartiallyFillFunctionTableMTL(table);
-    Core_Buffer_PartiallyFillFunctionTableMTL(table);
-    Core_CommandAllocator_PartiallyFillFunctionTableMTL(table);
-    Core_CommandBuffer_PartiallyFillFunctionTableMTL(table);
-    Core_CommandQueue_PartiallyFillFunctionTableMTL(table);
-    Core_Descriptor_PartiallyFillFunctionTableMTL(table);
-    Core_DescriptorPool_PartiallyFillFunctionTableMTL(table);
-    Core_DescriptorSet_PartiallyFillFunctionTableMTL(table);
-    Core_Fence_PartiallyFillFunctionTableMTL(table);
-    Core_QueryPool_PartiallyFillFunctionTableMTL(table);
-    Core_Texture_PartiallyFillFunctionTableMTL(table);
-    return ValidateFunctionTable(table);
+    //    Core_Device_PartiallyFillFunctionTableMTL(table);
+    //    Core_Buffer_PartiallyFillFunctionTableMTL(table);
+    //    Core_CommandAllocator_PartiallyFillFunctionTableMTL(table);
+    //    Core_CommandBuffer_PartiallyFillFunctionTableMTL(table);
+    //    Core_CommandQueue_PartiallyFillFunctionTableMTL(table);
+    //    Core_Descriptor_PartiallyFillFunctionTableMTL(table);
+    //    Core_DescriptorPool_PartiallyFillFunctionTableMTL(table);
+    //    Core_DescriptorSet_PartiallyFillFunctionTableMTL(table);
+    //    Core_Fence_PartiallyFillFunctionTableMTL(table);
+    //    Core_QueryPool_PartiallyFillFunctionTableMTL(table);
+    //    Core_Texture_PartiallyFillFunctionTableMTL(table);
+    //    return ValidateFunctionTable(table);
+    return Result::UNSUPPORTED;
 }
 
 #pragma endregion
@@ -251,7 +252,7 @@ Result DeviceMTL::FillFunctionTable(ResourceAllocatorInterface& table) const {
     return Result::UNSUPPORTED;
 }
 
-Define_Core_Device_PartiallyFillFunctionTable(MTL);
+//Dfine_Core_Device_PartiallyFillFunctionTable(MTL);
 //Define_Helper_Device_PartiallyFillFunctionTable(MTL);
 //Define_RayTracing_Device_PartiallyFillFunctionTable(MTL);
 //Define_Streamer_Device_PartiallyFillFunctionTable(MTL);

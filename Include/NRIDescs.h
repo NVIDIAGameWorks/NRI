@@ -686,9 +686,14 @@ NriStruct(VertexAttributeVK) {
     uint32_t location;
 };
 
+NriStruct(VertexAttributeMTL) {
+    uint32_t location;
+};
+
 NriStruct(VertexAttributeDesc) {
     Nri(VertexAttributeD3D) d3d;
     Nri(VertexAttributeVK) vk;
+    Nri(VertexAttributeMTL) mtl;
     uint32_t offset;
     Nri(Format) format;
     uint16_t streamIndex;

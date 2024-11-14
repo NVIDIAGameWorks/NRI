@@ -5,7 +5,7 @@
 using namespace nri;
 
 // Each depth/stencil format is only compatible with itself in VK
-constexpr std::array<MTLPixelFormat,(uint32_t)Format::MAX_NUM> MTL_FORMAT = {
+constexpr std::array<MTLPixelFormat,(uint32_t)Format::MAX_NUM> MTL_PIXEL_FORMAT = {
     MTLPixelFormatInvalid,             // UNKNOWN
     MTLPixelFormatR8Unorm,             // R8_UNORM
     MTLPixelFormatR8Snorm,             // R8_SNORM
@@ -80,7 +80,8 @@ constexpr std::array<MTLPixelFormat,(uint32_t)Format::MAX_NUM> MTL_FORMAT = {
     MTLPixelFormatDepth32Float_Stencil8, // X32_G8_UINT_X24
 };
 
+
 uint32_t NRIFormatToMTLFormat(Format format) {
-    return (uint32_t)MTL_FORMAT[(uint32_t)format];
+    return (uint32_t)MTL_PIXEL_FORMAT[(uint32_t)format];
 }
 

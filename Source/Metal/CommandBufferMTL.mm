@@ -109,7 +109,7 @@ void CommandBufferMTL::EndRendering() {
     m_ComputeEncoder = nil;
 }
 void CommandBufferMTL::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
-    MTLViewport* mtlViewports = StackAlloc(MTLViewport, viewportNum);
+    //MTLViewport* mtlViewports = StackAlloc(MTLViewport, viewportNum);
 
   //  [m_RendererEncoder setViewports:<#(const MTLViewport * _Nonnull)#> count:<#(NSUInteger)#>
 }
@@ -127,9 +127,8 @@ void CommandBufferMTL::SetDepthBounds(float boundsMin, float boundsMax) {
 void CommandBufferMTL::SetStencilReference(uint8_t frontRef, uint8_t backRef) {
     [m_RendererEncoder setStencilFrontReferenceValue: frontRef backReferenceValue:backRef];
 }
-void CommandBufferMTL::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
-    
-}
+//void CommandBufferMTL::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
+//}
 void CommandBufferMTL::SetBlendConstants(const Color32f& color) {
     [m_RendererEncoder
      setBlendColorRed:color.x
