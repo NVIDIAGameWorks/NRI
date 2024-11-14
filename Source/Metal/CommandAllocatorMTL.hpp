@@ -16,5 +16,4 @@ static void NRI_CALL ResetCommandAllocator(CommandAllocator& commandAllocator) {
 
 #pragma endregion
 
-Define_Core_CommandAllocator_PartiallyFillFunctionTable(VK);
 
