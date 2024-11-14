@@ -4,6 +4,81 @@
 
 namespace nri {
 
+constexpr std::array<MTLVertexFormat,(uint32_t)Format::MAX_NUM> MTL_NRI_FORMAT_TO_VERTEX_FORMAT = {
+    MTLVertexFormatInvalid,            // UNKNOWN
+    MTLVertexFormatUCharNormalized,    // R8_UNORM
+    MTLVertexFormatCharNormalized,     // R8_SNORM
+    MTLVertexFormatUChar,              // R8_UINT
+    MTLVertexFormatChar,               // R8_SINT
+    MTLVertexFormatUChar2Normalized,   // RG8_UNORM
+    MTLVertexFormatChar2Normalized,    // RG8_SNORM
+    MTLVertexFormatUChar2,             // RG8_UINT
+    MTLVertexFormatChar2,              // RG8_SINT
+    MTLVertexFormatUChar4Normalized,   // BGRA8_UNORM
+    MTLVertexFormatInvalid,            // BGRA8_SRGB
+    MTLVertexFormatUChar4Normalized,   // RGBA8_UNORM
+    MTLVertexFormatInvalid,            // RGBA8_SRGB
+    MTLVertexFormatChar4Normalized,    // RGBA8_SNORM
+    MTLVertexFormatUChar4,             // RGBA8_UINT
+    MTLVertexFormatChar4,              // RGBA8_SINT
+    MTLVertexFormatUShortNormalized,   // R16_UNORM
+    MTLVertexFormatShortNormalized,    // R16_SNORM
+    MTLVertexFormatUShort,             // R16_UINT
+    MTLVertexFormatShort,              // R16_SINT
+    MTLVertexFormatHalf,               // R16_SFLOAT
+    MTLVertexFormatUShort2Normalized,  // RG16_UNORM
+    MTLVertexFormatShort2Normalized,   // RG16_SNORM
+    MTLVertexFormatUShort2,            // RG16_UINT
+    MTLVertexFormatShort2,             // RG16_SINT
+    MTLVertexFormatHalf2,              // RG16_SFLOAT
+    MTLVertexFormatUShort4Normalized,  // RGBA16_UNORM
+    MTLVertexFormatShort4Normalized,   // RGBA16_SNORM
+    MTLVertexFormatUShort4,            // RGBA16_UINT
+    MTLVertexFormatShort4,             // RGBA16_SINT
+    MTLVertexFormatHalf4,              // RGBA16_SFLOAT
+    MTLVertexFormatUInt,               // R32_UINT
+    MTLVertexFormatInt,                // R32_SINT
+    MTLVertexFormatFloat,              // R32_SFLOAT
+    MTLVertexFormatUInt2,              // RG32_UINT
+    MTLVertexFormatInt2,               // RG32_SINT
+    MTLVertexFormatFloat2,             // RG32_SFLOAT
+    MTLVertexFormatInvalid,             // RGB32_UINT //TODO: lookup correct values
+    MTLVertexFormatInvalid,             // RGB32_SINT //TODO: lookup correct values
+    MTLVertexFormatInvalid,             // RGB32_SFLOAT //TODO: lookup correct values
+    MTLVertexFormatUInt4,              // RGBA32_UINT
+    MTLVertexFormatInt4,               // RGBA32_SINT
+    MTLVertexFormatFloat4,             // RGBA32_SFLOAT
+    MTLVertexFormatInvalid,             // B5_G6_R5_UNORM
+    MTLVertexFormatInvalid,             // B5_G5_R5_A1_UNORM
+    MTLVertexFormatInvalid,             // B4_G4_R4_A4_UNORM
+    MTLVertexFormatInvalid,             // R10_G10_B10_A2_UNORM
+    MTLVertexFormatInvalid,             // R10_G10_B10_A2_UINT
+    MTLVertexFormatInvalid,             // R11_G11_B10_UFLOAT
+    MTLVertexFormatInvalid,             // R9_G9_B9_E5_UFLOAT
+    MTLVertexFormatInvalid,             // BC1_RGBA_UNORM
+    MTLVertexFormatInvalid,             // BC1_RGBA_SRGB
+    MTLVertexFormatInvalid,             // BC2_RGBA_UNORM
+    MTLVertexFormatInvalid,             // BC2_RGBA_SRGB
+    MTLVertexFormatInvalid,             // BC3_RGBA_UNORM
+    MTLVertexFormatInvalid,             // BC3_RGBA_SRGB
+    MTLVertexFormatInvalid,             // BC4_R_UNORM
+    MTLVertexFormatInvalid,             // BC4_R_SNORM
+    MTLVertexFormatInvalid,             // BC5_RG_UNORM
+    MTLVertexFormatInvalid,             // BC5_RG_SNORM
+    MTLVertexFormatInvalid,             // BC6H_RGB_UFLOAT
+    MTLVertexFormatInvalid,             // BC6H_RGB_SFLOAT
+    MTLVertexFormatInvalid,             // BC7_RGBA_UNORM
+    MTLVertexFormatInvalid,             // BC7_RGBA_SRGB
+    MTLVertexFormatInvalid,             // D16_UNORM
+    MTLVertexFormatInvalid,             // D24_UNORM_S8_UINT
+    MTLVertexFormatInvalid,             // D32_SFLOAT
+    MTLVertexFormatInvalid,             // D32_SFLOAT_S8_UINT_X24
+    MTLVertexFormatInvalid,             // R24_UNORM_X8
+    MTLVertexFormatInvalid,             // X24_G8_UINT
+    MTLVertexFormatInvalid,             // R32_SFLOAT_X8_X24
+    MTLVertexFormatInvalid,             // X32_G8_UINT_X24
+};
+
 constexpr std::array<MTLBlendOperation, (size_t)BlendFunc::MAX_NUM> BLEND_OP = {
     MTLBlendOperationAdd,              // ADD
     MTLBlendOperationSubtract,         // SUBTRACT
@@ -152,6 +227,13 @@ constexpr std::array<MTLPrimitiveTopologyClass, (size_t)Topology::MAX_NUM> TOPOL
 constexpr MTLPrimitiveTopologyClass GetTopologyMTL(Topology topology) {
     return TOPOLOGIES_CLASSES [(size_t)topology];
 }
+
+
+inline MTLVertexFormat GetVertexFormatMTL(Format format) {
+    return (MTLVertexFormat)MTL_NRI_FORMAT_TO_VERTEX_FORMAT[(size_t)format];
+}
+
+
 
 inline MTLPixelFormat GetFormatMTL(Format format, bool demoteSrgb = false) {
     if (demoteSrgb) {

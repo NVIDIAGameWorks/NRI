@@ -23,7 +23,7 @@ Result CreateDeviceMTL(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*
 Result CreateDeviceMTL(const DeviceCreationMTLDesc& deviceCreationDesc, DeviceBase*& device);
 #endif
 
-#if NRI_USE_VULKAN
+#if NRI_USE_VK
 Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
 Result CreateDeviceVK(const DeviceCreationVKDesc& deviceDesc, DeviceBase*& device);
 #endif
@@ -351,7 +351,7 @@ NRI_API Format NRI_CALL nriConvertDXGIFormatToNRI(uint32_t dxgiFormat) {
 NRI_API uint32_t NRI_CALL nriConvertNRIFormatToMTL(Format format) {
     MaybeUnused(format);
 
-#if NRI_USE_VULKAN
+#if NRI_USE_VK
     return NRIFormatToMTLFormat(format);
 #else
     return 0;

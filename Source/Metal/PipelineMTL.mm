@@ -46,17 +46,24 @@ Result PipelineMTL::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
         const ShaderDesc& shader = graphicsPipelineDesc.shaders[i];
         m_usedBits |= shader.stage;
 
-        dispatch_data_t byteCode =
-            dispatch_data_create(shader.bytecode, shader.size, nil,
-                                 DISPATCH_DATA_DESTRUCTOR_DEFAULT);
-        id<MTLLibrary> lib = [m_Device newLibraryWithData:byteCode error:nil];
-
+        dispatch_data_t byteCode = dispatch_data_create(shader.bytecode, shader.size, nil, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+        NSError *error;
+        id<MTLLibrary> lib = [m_Device newLibraryWithData:byteCode error:&error];
+        NSCAssert(lib, @"Failed to load Metal shader library %@", error); // not sure how to correctly report this
+        RETURN_ON_FAILURE(&m_Device, lib, Result::FAILURE, "Failed to Load Metal shader library");
+        
         // Create a MTLFunction from the loaded MTLLibrary.
         NSString *entryPointNStr = [lib functionNames][0];
         if (shader.entryPointName) {
-          entryPointNStr =
-              [[NSString alloc] initWithUTF8String:shader.entryPointName];
+          entryPointNStr = [[NSString alloc] initWithUTF8String:shader.entryPointName];
         }
+        id <MTLFunction> entryPointFunc = [lib newFunctionWithName:entryPointNStr];
+        if(shader.stage & nri::StageBits::VERTEX_SHADER) {
+            renderPipelineDesc.vertexFunction = entryPointFunc;
+        } else if(shader.stage & nri::StageBits::FRAGMENT_SHADER) {
+            renderPipelineDesc.fragmentFunction = entryPointFunc;
+        }
+        
     }
     // Depth-stencil
     const DepthAttachmentDesc& da = graphicsPipelineDesc.outputMerger.depth;
@@ -65,13 +72,20 @@ Result PipelineMTL::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     const PipelineLayout *pl = graphicsPipelineDesc.pipelineLayout;
     const VertexInputDesc *vi = graphicsPipelineDesc.vertexInput;
     if (vi) {
+        MTLVertexDescriptor *vertexDescriptor = [MTLVertexDescriptor new];
+        for(size_t attIdx = 0; attIdx < vi->attributeNum; attIdx++) {
+            const nri::VertexAttributeDesc* attrib = &vi->attributes[attIdx];
+            vertexDescriptor.attributes[attrib->mtl.location].offset = attrib->offset;
+            vertexDescriptor.attributes[attrib->mtl.location].format = GetVertexFormatMTL(attrib->format);
+            vertexDescriptor.attributes[attrib->mtl.location].bufferIndex = attrib->streamIndex;
+        }
         
-      //  VkVertexInputBindingDescription* streams const_cast<VkVertexInputBindingDescription*>(vertexInputState.pVertexBindingDescriptions);
-        //for (uint32_t i = 0; i < vi->streamNum; i++) {
-        //    const VertexStreamDesc &stream = vi->streams[i];
-        //    renderPipelineDesc.vertexDescriptor.layouts[attribute_desc.streamIndex].stride = stream.stride;
-        //    renderPipelineDesc.vertexDescriptor.layouts[attribute_desc.streamIndex].stepRate = 1;
-       // }
+        for(size_t layoutIdx = 0; layoutIdx < vi->streamNum; layoutIdx++) {
+            const nri::VertexStreamDesc* stream = &vi->streams[layoutIdx];
+            vertexDescriptor.layouts[stream->bindingSlot].stride = stream->stride;
+            vertexDescriptor.layouts[stream->bindingSlot].stepRate = static_cast<NSUInteger>(stream->stepRate);
+        }
+        renderPipelineDesc.vertexDescriptor = vertexDescriptor;
     }
     
     renderPipelineDesc.inputPrimitiveTopology = GetTopologyMTL(ia.topology);
@@ -86,7 +100,7 @@ Result PipelineMTL::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     const OutputMergerDesc& om = graphicsPipelineDesc.outputMerger;
     for (uint32_t i = 0; i < om.colorNum; i++) {
         
-        const ColorAttachmentDesc& attachmentDesc = om.color[i];
+        const ColorAttachmentDesc& attachmentDesc = om.colors[i];
         renderPipelineDesc.colorAttachments[i].pixelFormat = GetFormatMTL(attachmentDesc.format, false);
         
         renderPipelineDesc.colorAttachments[i].blendingEnabled = attachmentDesc.blendEnabled;
