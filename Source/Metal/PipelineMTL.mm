@@ -63,7 +63,6 @@ Result PipelineMTL::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
         } else if(shader.stage & nri::StageBits::FRAGMENT_SHADER) {
             renderPipelineDesc.fragmentFunction = entryPointFunc;
         }
-        
     }
     // Depth-stencil
     const DepthAttachmentDesc& da = graphicsPipelineDesc.outputMerger.depth;
@@ -92,7 +91,11 @@ Result PipelineMTL::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     
     if (graphicsPipelineDesc.multisample) {
         // TODO: multisampling
+        //
     }
+    
+   // renderPipelineDesc.rasterSampleCount = pCreateInfo->pMultisampleState->pSampleMask[0];
+
 
     // Blending
 

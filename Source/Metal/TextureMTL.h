@@ -14,9 +14,9 @@ struct TextureMTL {
     }
     ~TextureMTL();
     
-    //inline id<MTLTexture> GetHandle() const {
-    //    return m_Handle;
-    //}
+    inline id<MTLTexture> GetHandle() const {
+         return m_Handle;
+    }
 
     inline DeviceMTL& GetDevice() const {
         return m_Device;
@@ -27,7 +27,6 @@ struct TextureMTL {
     }
 
     Result Create(const TextureDesc& textureDesc);
-    //Result Create(const TextureMTLDesc& textureDesc);
 
 private:
    // Result CreateFromTextureDesc(const TextureDesc& textureDesc);

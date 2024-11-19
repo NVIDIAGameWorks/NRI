@@ -25,11 +25,13 @@ struct CommandAllocatorMTL {
     // NRI
     //================================================================================================================
 
+    void SetDebugName(const char* name);
     Result CreateCommandBuffer(CommandBuffer*& commandBuffer);
+    void Reset();
 
 private:
-    struct CommandQueueMTL* m_CommandQueue;
     DeviceMTL& m_Device;
+    struct CommandQueueMTL* m_CommandQueue;
 };
 
 }
