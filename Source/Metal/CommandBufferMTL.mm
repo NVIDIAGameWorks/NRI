@@ -23,7 +23,7 @@ void CommandBufferMTL::SetDebugName(const char* name) {
 }
 
 Result CommandBufferMTL::Begin(const DescriptorPool* descriptorPool) {
-    [m_Handle computeCommandEncoderWithDescriptor: NULL];
+    m_ComputeEncoder = [m_Handle computeCommandEncoderWithDescriptor: NULL];
 }
 
 Result CommandBufferMTL::End() {
@@ -93,15 +93,32 @@ void CommandBufferMTL::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
 }
 void CommandBufferMTL::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
     MTLRenderPassDescriptor* renderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
+    
     for(uint32_t i = 0; i < attachmentsDesc.colorNum; i++) {
+        DescriptorMTL& descriptorMTL = *(DescriptorMTL*)attachmentsDesc.colors[i];
         
+        renderPassDescriptor.colorAttachments[i].texture = descriptorMTL.GetImageView() ;
+        renderPassDescriptor.colorAttachments[i].clearColor = MTLClearColorMake(0, 0, 0, 1);
+        renderPassDescriptor.colorAttachments[i].loadAction = MTLLoadActionClear;
+        renderPassDescriptor.colorAttachments[i].storeAction = MTLStoreActionStore;
+
+    }
+    
+    if(attachmentsDesc.depthStencil) {
+        
+        DescriptorMTL& descriptorMTL = *(DescriptorMTL*)attachmentsDesc.depthStencil;
+        renderPassDescriptor.depthAttachment.texture = descriptorMTL.GetImageView();
+       // renderPassDescriptor.depthAttachment.clearColor = MTLClearColorMake(0, 0, 0, 1);
+        renderPassDescriptor.depthAttachment.loadAction = MTLLoadActionClear;
+        renderPassDescriptor.depthAttachment.storeAction = MTLStoreActionStore;
+
     }
     
     //renderPassDescriptor.colorAttachments[
     
     //renderPassDescriptor.colorAttachments
     
-    m_RendererEncoder = [m_Handle renderCommandEncoderWithDescriptor: NULL];
+    m_RendererEncoder = [m_Handle renderCommandEncoderWithDescriptor: renderPassDescriptor];
 }
 void CommandBufferMTL::EndRendering() {
     [m_RendererEncoder endEncoding];
@@ -110,8 +127,11 @@ void CommandBufferMTL::EndRendering() {
 }
 void CommandBufferMTL::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
     //MTLViewport* mtlViewports = StackAlloc(MTLViewport, viewportNum);
+    
+    Scratch<MTLViewport> mtlViewports = AllocateScratch(m_Device, MTLViewport, viewportNum);
+    
 
-  //  [m_RendererEncoder setViewports:<#(const MTLViewport * _Nonnull)#> count:<#(NSUInteger)#>
+    [m_RendererEncoder setViewports:mtlViewports count:viewportNum];
 }
 void CommandBufferMTL::SetScissors(const Rect* rects, uint32_t rectNum) {
     NSCAssert(m_RendererEncoder, @"encoder set");
