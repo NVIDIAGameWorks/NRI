@@ -38,9 +38,11 @@ struct CommandQueueMTL {
         return m_Lock;
     }
     
-    Result WaitForIdle();
         
     void SetDebugName(const char* name);
+    void Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain);
+    Result WaitForIdle();
+   
     Result Create(CommandQueueType type);
     QueueBarrierBits m_BarrierBits = QueueBarrierBits::NONE;
 
