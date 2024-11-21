@@ -72,29 +72,29 @@ struct DeviceVal final : public DeviceBase {
         return m_Lock;
     }
 
-    const DeviceDesc& GetDesc() const {
-        return ((DeviceBase&)m_Device).GetDesc();
-    }
-
     bool Create();
     void RegisterMemoryType(MemoryType memoryType, MemoryLocation memoryLocation);
 
     //================================================================================================================
     // DeviceBase
     //================================================================================================================
+    
+    const DeviceDesc& GetDesc() const override{
+        return ((DeviceBase&)m_Device).GetDesc();
+    }
 
-    void Destruct();
-    Result FillFunctionTable(CoreInterface& table) const;
-    Result FillFunctionTable(HelperInterface& table) const;
-    Result FillFunctionTable(LowLatencyInterface& table) const;
-    Result FillFunctionTable(MeshShaderInterface& table) const;
-    Result FillFunctionTable(ResourceAllocatorInterface& table) const;
-    Result FillFunctionTable(RayTracingInterface& table) const;
-    Result FillFunctionTable(StreamerInterface& table) const;
-    Result FillFunctionTable(SwapChainInterface& table) const;
-    Result FillFunctionTable(WrapperD3D11Interface& table) const;
-    Result FillFunctionTable(WrapperD3D12Interface& table) const;
-    Result FillFunctionTable(WrapperVKInterface& table) const;
+    void Destruct() override;
+    Result FillFunctionTable(CoreInterface& table) const override;
+    Result FillFunctionTable(HelperInterface& table) const override;
+    Result FillFunctionTable(LowLatencyInterface& table) const override;
+    Result FillFunctionTable(MeshShaderInterface& table) const override;
+    Result FillFunctionTable(ResourceAllocatorInterface& table) const override;
+    Result FillFunctionTable(RayTracingInterface& table) const override;
+    Result FillFunctionTable(StreamerInterface& table) const override;
+    Result FillFunctionTable(SwapChainInterface& table) const override;
+    Result FillFunctionTable(WrapperD3D11Interface& table) const override;
+    Result FillFunctionTable(WrapperD3D12Interface& table) const override;
+    Result FillFunctionTable(WrapperVKInterface& table) const override;
 
     //================================================================================================================
     // NRI

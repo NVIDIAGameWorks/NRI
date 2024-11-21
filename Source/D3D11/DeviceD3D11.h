@@ -85,18 +85,18 @@ struct DeviceD3D11 final : public DeviceBase {
     // DeviceBase
     //================================================================================================================
 
-    inline const DeviceDesc& GetDesc() const {
+    inline const DeviceDesc& GetDesc() const  override{
         return m_Desc;
     }
 
-    void Destruct();
-    Result FillFunctionTable(CoreInterface& table) const;
-    Result FillFunctionTable(HelperInterface& table) const;
-    Result FillFunctionTable(LowLatencyInterface& table) const;
-    Result FillFunctionTable(StreamerInterface& table) const;
-    Result FillFunctionTable(SwapChainInterface& table) const;
-    Result FillFunctionTable(ResourceAllocatorInterface& table) const;
-    Result FillFunctionTable(WrapperD3D11Interface& table) const;
+    void Destruct() override;
+    Result FillFunctionTable(CoreInterface& table) const override;
+    Result FillFunctionTable(HelperInterface& table) const override;
+    Result FillFunctionTable(LowLatencyInterface& table) const override;
+    Result FillFunctionTable(StreamerInterface& table) const override;
+    Result FillFunctionTable(SwapChainInterface& table) const override;
+    Result FillFunctionTable(ResourceAllocatorInterface& table) const override;
+    Result FillFunctionTable(WrapperD3D11Interface& table) const override;
 
     //================================================================================================================
     // NRI
