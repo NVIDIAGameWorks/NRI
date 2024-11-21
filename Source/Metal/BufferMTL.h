@@ -18,7 +18,6 @@ struct BufferMTL {
         return pBuffer;
     }
     
-    
     inline DeviceMTL& GetDevice() const {
         return m_Device;
     }
@@ -26,6 +25,10 @@ struct BufferMTL {
     inline const BufferDesc& GetDesc() const {
         return m_Desc;
     }
+    
+    void* Map(uint64_t offset, uint64_t size);
+    void Unmap();
+    void SetDebugName(const char* name);
     
     ~BufferMTL();
     
