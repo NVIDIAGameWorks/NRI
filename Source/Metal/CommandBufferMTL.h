@@ -30,6 +30,11 @@ struct CommandBufferMTL {
         return m_Device;
     }
     
+    inline operator id<MTLCommandBuffer>() const {
+        return m_Handle;
+    }
+
+    
     void SetDebugName(const char* name);
     Result Begin(const DescriptorPool* descriptorPool);
     Result End();

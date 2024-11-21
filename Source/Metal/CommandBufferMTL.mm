@@ -121,15 +121,21 @@ void CommandBufferMTL::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
     m_RendererEncoder = [m_Handle renderCommandEncoderWithDescriptor: renderPassDescriptor];
 }
 void CommandBufferMTL::EndRendering() {
+    NSCAssert(m_RendererEncoder, @"Renderer Encoderer Not Set");
     [m_RendererEncoder endEncoding];
     m_RendererEncoder = nil;
     m_ComputeEncoder = nil;
 }
 void CommandBufferMTL::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
-    //MTLViewport* mtlViewports = StackAlloc(MTLViewport, viewportNum);
-    
     Scratch<MTLViewport> mtlViewports = AllocateScratch(m_Device, MTLViewport, viewportNum);
-    
+    for(size_t i = 0; i < viewportNum; i++) {
+        mtlViewports[i].originX = viewports[i].x;
+        mtlViewports[i].originY = viewports[i].y;
+        mtlViewports[i].width = viewports[i].width;
+        mtlViewports[i].height = viewports[i].height;
+        mtlViewports[i].znear = viewports[i].depthMin;
+        mtlViewports[i].zfar = viewports[i].depthMax;
+    }
 
     [m_RendererEncoder setViewports:mtlViewports count:viewportNum];
 }

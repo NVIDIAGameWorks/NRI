@@ -16,13 +16,7 @@ struct DeviceMTL final : public DeviceBase {
     inline operator id<MTLDevice>() const {
         return m_Device;
     }
-
-    inline const DeviceDesc& GetDesc() const {
-        return m_Desc;
-    }
     
-    void Destruct() override;
-
     template <typename Implementation, typename Interface, typename... Args>
     inline Result CreateImplementation(Interface*& entity, const Args&... args) {
         Implementation* impl = Allocate<Implementation>(GetStdAllocator(), *this);
@@ -41,14 +35,20 @@ struct DeviceMTL final : public DeviceBase {
     void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
     void GetMemoryDesc(const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
 
-    Result FillFunctionTable(CoreInterface& table) const;
-    Result FillFunctionTable(HelperInterface& table) const;
-    Result FillFunctionTable(LowLatencyInterface& table) const;
-    Result FillFnctionTable(MeshShaderInterface& table) const;
-    Result FillFunctionTable(RayTracingInterface& table) const;
-    Result FillFunctionTable(StreamerInterface& table) const;
-    Result FillFunctionTable(SwapChainInterface& table) const;
-    Result FillFunctionTable(ResourceAllocatorInterface& table) const;
+    
+    const DeviceDesc& GetDesc() const override {
+        return m_Desc;
+    }
+    void Destruct() override;
+ 
+    Result FillFunctionTable(CoreInterface& table) const override;
+    Result FillFunctionTable(HelperInterface& table) const override;
+    Result FillFunctionTable(LowLatencyInterface& table) const override;
+    Result FillFunctionTable(MeshShaderInterface& table) const override;
+    Result FillFunctionTable(RayTracingInterface& table) const override;
+    Result FillFunctionTable(StreamerInterface& table) const override;
+    Result FillFunctionTable(SwapChainInterface& table) const override;
+    Result FillFunctionTable(ResourceAllocatorInterface& table) const override;
 
     Result Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationMTLDesc& deviceCreationVKDesc, bool isWrapper);
 private:

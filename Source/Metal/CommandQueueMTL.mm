@@ -3,6 +3,7 @@
 #include "SharedMTL.h"
 
 #include "CommandQueueMTL.h"
+#include "CommandBufferMTL.h"
 
 using namespace nri;
 
@@ -24,7 +25,20 @@ Result CommandQueueMTL::Create(CommandQueueType type) {
     return Result::SUCCESS;
 }
 
-inline void CommandQueueMTL::SetDebugName(const char* name) {
+
+void CommandQueueMTL::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
+    
+    for(uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++) {
+        id<MTLCommandBuffer> cmd = *(struct CommandBufferMTL*)queueSubmitDesc.commandBuffers[i];
+        [cmd commit];
+        
+    }
+    
+    
+}
+
+
+void CommandQueueMTL::SetDebugName(const char* name) {
     [m_Handle setLabel:[NSString stringWithUTF8String:name]];
 }
 
