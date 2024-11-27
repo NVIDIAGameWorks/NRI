@@ -63,6 +63,7 @@ static bool FindMTLGpuFamily(id<MTLDevice> device,
 
 
 
+
 DeviceMTL::DeviceMTL(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator) : DeviceBase(callbacks, stdAllocator) {
     m_Desc.graphicsAPI = GraphicsAPI::VK;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
@@ -90,12 +91,24 @@ DeviceMTL::~DeviceMTL() {
 //  }
 //}
 
+
 void DeviceMTL::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     
 }
 
 void DeviceMTL::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    MTLTextureDescriptor* mtlTextureDesc = [[MTLTextureDescriptor alloc] init];
+   
+    MemoryTypeInfo memoryTypeInfo;
+    memoryTypeInfo.options = DEFAULT_MEMORY_RESOURCE_OPTION_MEMORY_LOCATION[(size_t)memoryLocation];
+    memoryTypeInfo.cacheMode = DEFAULT_CACHE_MODE_MEMORY_LOCATION[(size_t)memoryLocation];
+    memoryTypeInfo.storageMode = DEFAULT_STORAGE_MODE_MEMORY_LOCATION[(size_t)memoryLocation];
+    nri::fillMTLTextureDescriptor(textureDesc, mtlTextureDesc);
+    const MTLSizeAndAlign sizeAlign = [m_Device heapTextureSizeAndAlignWithDescriptor: mtlTextureDesc];
     
+    memoryDesc.size = sizeAlign.size;
+    memoryDesc.alignment = sizeAlign.align;
+    memoryDesc.type = memoryTypeInfo.value;
 }
 
 void DeviceMTL::GetMemoryDesc(const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc)  {
@@ -104,7 +117,7 @@ void DeviceMTL::GetMemoryDesc(const AccelerationStructureDesc& accelerationStruc
 
 
 Result DeviceMTL::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
-    ExclusiveScope lock(m_Lock);
+  //  ExclusiveScope lock(m_Lock);
 
     // Check if already created (or wrapped)
     uint32_t index = (uint32_t)commandQueueType;
@@ -112,18 +125,6 @@ Result DeviceMTL::GetCommandQueue(CommandQueueType commandQueueType, CommandQueu
         commandQueue = (CommandQueue*)m_CommandQueues[index];
         return Result::SUCCESS;
     }
-
-    // Check if supported
-    //uint32_t queueFamilyIndex = m_QueueFamilyIndices[index];
-    //if (queueFamilyIndex == INVALID_FAMILY_INDEX) {
-    //    commandQueue = nullptr;
-    //    return Result::UNSUPPORTED;
-    //}
-
-    // Create
-    //VkQueue handle = VK_NULL_HANDLE;
-    //m_VK.GetDeviceQueue(m_Device, queueFamilyIndex, 0, &handle);
-
     Result result = CreateImplementation<CommandQueueMTL>(commandQueue, commandQueueType);
     if (result == Result::SUCCESS)
         m_CommandQueues[index] = (CommandQueueMTL*)commandQueue;

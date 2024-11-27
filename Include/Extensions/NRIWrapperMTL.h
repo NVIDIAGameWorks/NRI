@@ -2,12 +2,17 @@
 
 #pragma once
 
+#include "NRIMacro.h"
 #include "NRIDeviceCreation.h"
+
 
 NriNamespaceBegin
 
-typedef void* MTLBufferHandle; 
-typedef void* MTLTextureHandle; 
+
+NonNriForwardStruct(MTLHeap);
+
+typedef void* MTLBufferHandle; // id<MTLHeap>
+typedef void* MTLTextureHandle;
 typedef void* MTLDeviceHandle; 
 
 NriStruct(DeviceCreationMTLDesc)
@@ -36,8 +41,9 @@ NriStruct(TextureMTLDesc)
 
 NriStruct(MemoryMTLDesc)
 {
-  MTLBufferHandle buffer;
-  void* mappedMemory;
+    uint64_t size;
+   // MTLStorageMode storage;
+  
   //MTLResourceOptions options; 
 };
 

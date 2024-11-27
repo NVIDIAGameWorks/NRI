@@ -1,5 +1,3 @@
-// © 2021 NVIDIA Corporation
-
 #pragma once
 
 namespace nri {
@@ -8,12 +6,17 @@ namespace nri {
 constexpr uint32_t MAX_NUMBER_OF_FRAMES_IN_FLIGHT = 8;
 
 struct SwapChainMTL: public DisplayDescHelper {
-    SwapChainVK(DeviceMTL& device);
-    ~SwapChainVK();
+    SwapChainMTL(DeviceMTL& device)
+    : m_Device(device) {
+        
+    }
+    ~SwapChainMTL();
 
     Result Create(const SwapChainDesc& swapChainDesc);
 
 private:
+    CAMetalLayer*  m_MetalLayer;
+
     DeviceMTL& m_Device;
     uint64_t m_PresentId = 0;
     uint32_t m_TextureIndex = 0;

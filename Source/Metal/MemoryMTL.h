@@ -16,8 +16,8 @@ struct MemoryMTL {
         : m_Device(device) {
     }
 
-    inline id<MTLBuffer> GetHandle() const {
-        return m_Buffer;
+    inline id<MTLHeap> GetHandle() const {
+        return m_Handle;
     }
 
     inline DeviceMTL& GetDevice() const {
@@ -33,7 +33,7 @@ struct MemoryMTL {
     }
 
     ~MemoryMTL();
-
+ 
     Result Create(const MemoryMTLDesc& memoryDesc);
     Result Create(const AllocateMemoryDesc& allocateMemoryDesc);
     //Result CreateDedicated(const BufferVK& buffer);
@@ -42,12 +42,11 @@ struct MemoryMTL {
     //================================================================================================================
     // NRI
     //================================================================================================================
-
     void SetDebugName(const char* name);
 
 private:
     DeviceMTL& m_Device;
-    id<MTLBuffer> m_Buffer;
+    id<MTLHeap> m_Handle;
     uint8_t* m_MappedMemory = nullptr;
     MemoryType m_Type = std::numeric_limits<MemoryType>::max();
     float m_Priority = 0.0f;

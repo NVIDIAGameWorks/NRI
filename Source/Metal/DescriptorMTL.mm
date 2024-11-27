@@ -6,6 +6,10 @@
 
 namespace nri {
 
+DescriptorMTL::~DescriptorMTL() {
+    
+}
+
 Result DescriptorMTL::Create(const BufferViewDesc& bufferViewDesc) {
     //  m_Type = DescriptorTypeVK::BUFFER_VIEW;
     const BufferMTL& buffer = *(const BufferMTL*)bufferViewDesc.buffer;

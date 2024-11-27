@@ -30,11 +30,12 @@ struct DeviceMTL final : public DeviceBase {
 
         return result;
     }
-
+    
+    //void GetMemoryTypeInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
     void GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
     void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
     void GetMemoryDesc(const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
-
+    //bool GetMemoryTypeInfo(MemoryLocation memoryLocation, MemoryTypeInfo& memoryTypeInfo) const;
     
     const DeviceDesc& GetDesc() const override {
         return m_Desc;
@@ -52,7 +53,7 @@ struct DeviceMTL final : public DeviceBase {
 
     Result Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationMTLDesc& deviceCreationVKDesc, bool isWrapper);
 private:
-    Lock m_Lock;
+    //Lock m_Lock;
     id<MTLDevice>     m_Device;
     std::array<CommandQueueMTL*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
     DeviceDesc m_Desc = {};

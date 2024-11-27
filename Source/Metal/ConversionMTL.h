@@ -4,6 +4,28 @@
 
 namespace nri {
 
+constexpr std::array<MTLResourceOptions,(uint32_t)nri::MemoryLocation::MAX_NUM> DEFAULT_MEMORY_RESOURCE_OPTION_MEMORY_LOCATION ={
+    MTLResourceStorageModePrivate,                                         // DEVICE
+    MTLResourceStorageModeShared | MTLResourceCPUCacheModeWriteCombined,   // DEVICE_UPLOAD
+    MTLResourceStorageModeShared | MTLResourceCPUCacheModeWriteCombined,   // HOST_UPLOAD
+    MTLResourceStorageModeShared | MTLResourceCPUCacheModeDefaultCache     // HOST_READBACK
+};
+
+constexpr std::array<MTLCPUCacheMode,(uint32_t)nri::MemoryLocation::MAX_NUM> DEFAULT_CACHE_MODE_MEMORY_LOCATION ={
+    MTLCPUCacheModeDefaultCache,                                         // DEVICE
+    MTLCPUCacheModeWriteCombined,                                        // DEVICE_UPLOAD
+    MTLCPUCacheModeWriteCombined,                                        // HOST_UPLOAD
+    MTLCPUCacheModeDefaultCache                                          // HOST_READBACK
+};
+
+constexpr std::array<MTLStorageMode,(uint32_t)nri::MemoryLocation::MAX_NUM> DEFAULT_STORAGE_MODE_MEMORY_LOCATION ={
+    MTLStorageModePrivate,                                       // DEVICE
+    MTLStorageModeShared,                                        // DEVICE_UPLOAD
+    MTLStorageModeShared,                                        // HOST_UPLOAD
+    MTLStorageModeShared                                         // HOST_READBACK
+};
+
+
 constexpr std::array<MTLVertexFormat,(uint32_t)Format::MAX_NUM> MTL_NRI_FORMAT_TO_VERTEX_FORMAT = {
     MTLVertexFormatInvalid,            // UNKNOWN
     MTLVertexFormatUCharNormalized,    // R8_UNORM
@@ -208,8 +230,6 @@ constexpr MTLSamplerAddressMode GetSamplerAddressMode(AddressMode addressMode) {
     return SAMPLER_ADDRESS_MODE[(size_t)addressMode];
 }
 
-
-
 constexpr std::array<MTLPrimitiveTopologyClass, (size_t)Topology::MAX_NUM> TOPOLOGIES_CLASSES = {
     MTLPrimitiveTopologyClassPoint,           // POINT_LIST
     MTLPrimitiveTopologyClassLine,            // LINE_LIST
@@ -232,8 +252,6 @@ constexpr MTLPrimitiveTopologyClass GetTopologyMTL(Topology topology) {
 inline MTLVertexFormat GetVertexFormatMTL(Format format) {
     return (MTLVertexFormat)MTL_NRI_FORMAT_TO_VERTEX_FORMAT[(size_t)format];
 }
-
-
 
 inline MTLPixelFormat GetFormatMTL(Format format, bool demoteSrgb = false) {
     if (demoteSrgb) {
