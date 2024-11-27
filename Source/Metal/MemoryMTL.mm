@@ -12,7 +12,18 @@ MemoryMTL::~MemoryMTL() {
     //}
 }
 
+Result MemoryMTL::Create(const AllocateMemoryDesc& allocateMemoryDesc) {
+    MTLHeapDescriptor* heapDescriptor = [[MTLHeapDescriptor alloc] init];
+    [heapDescriptor setSize:allocateMemoryDesc.size];
+
+}
+
 Result MemoryMTL::Create(const MemoryMTLDesc& memoryDesc) {
+    MTLHeapDescriptor* heapDescriptor = [[MTLHeapDescriptor alloc] init];
+    [heapDescriptor setSize:memoryDesc.size];
+    
+   // [heapDescriptor setStorageMode:memoryDesc.storage];
+
    // if (!memoryDesc.vkDeviceMemory)
    //     return Result::INVALID_ARGUMENT;
 
@@ -21,9 +32,9 @@ Result MemoryMTL::Create(const MemoryMTLDesc& memoryDesc) {
     //bool found = m_Device.GetMemoryTypeByIndex(memoryDesc.memoryTypeIndex, memoryTypeInfo);
     //RETURN_ON_FAILURE(&m_Device, found, Result::INVALID_ARGUMENT, "Can't find memory by index");
 
-    m_OwnsNativeObjects = false;
+//    m_OwnsNativeObjects = false;
    // m_Buffer = memoryDesc.buffer;
-    m_MappedMemory = (uint8_t*)memoryDesc.mappedMemory;
+//    m_MappedMemory = (uint8_t*)memoryDesc.mappedMemory;
    // m_Type = memoryDesc.options;
 
    // const auto& mtl = m_Device.GetDispatchTable();

@@ -17,6 +17,8 @@ public:
         : m_Device(device) {
     }
     
+    ~DescriptorMTL();
+    
     inline id<MTLTexture> GetImageView() {
         return m_texture;
     }

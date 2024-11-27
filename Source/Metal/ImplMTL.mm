@@ -8,12 +8,17 @@ using namespace nri;
 #include "CommandAllocatorMTL.h"
 #include "CommandBufferMTL.h"
 #include "DeviceMTL.h"
+#include "DescriptorMTL.h"
+#include "TextureMTL.h"
 
 Result CreateDeviceMTL(const DeviceCreationDesc& desc, DeviceBase*& device) {
     StdAllocator<uint8_t> allocator(desc.allocationCallbacks);
     DeviceMTL* impl = Allocate<DeviceMTL>(allocator, desc.callbackInterface, allocator);
     Result result = impl->Create(desc, {}, false);
 
+    
+    MTLPurgeableState a;
+    MTLStorageMode mode;
     if (result != Result::SUCCESS) {
         Destroy(allocator, impl);
         device = nullptr;
@@ -233,6 +238,27 @@ static void NRI_CALL CmdResetQueries(CommandBuffer& commandBuffer, const QueryPo
 static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device) {
     return ((DeviceMTL&)device).GetDesc();
 }
+
+//static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
+//    DeviceMTL& device = ((const BufferMTL*)bufferViewDesc.buffer)->GetDevice();
+//    return device.CreateImplementation<DescriptorMTL>(bufferView, bufferViewDesc);
+//}
+//
+//static Result NRI_CALL CreateTexture1DView(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
+//    DeviceMTL& device = ((const TextureMTL*)textureViewDesc.texture)->GetDevice();
+//    return device.CreateImplementation<DescriptorMTL>(textureView, textureViewDesc);
+//}
+//
+//static Result NRI_CALL CreateTexture2DView(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView) {
+//    DeviceMTL& device = ((const TextureMTL*)textureViewDesc.texture)->GetDevice();
+//    return device.CreateImplementation<DescriptorMTL>(textureView, textureViewDesc);
+//}
+//
+//static Result NRI_CALL CreateTexture3DView(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView) {
+//    DeviceMTL& device = ((const TextureMTL*)textureViewDesc.texture)->GetDevice();
+//    return device.CreateImplementation<DescriptorMTL>(textureView, textureViewDesc);
+//}
+
 
 //static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc) {
 //    ((CommandQueueMTL&)commandQueue).Submit(workSubmissionDesc, nullptr);

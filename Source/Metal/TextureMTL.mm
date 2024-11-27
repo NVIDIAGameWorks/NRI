@@ -8,6 +8,16 @@ TextureMTL::~TextureMTL() {
     m_Handle = nil;
 }
 
+void nri::fillMTLTextureDescriptor(const TextureDesc& textureDesc, MTLTextureDescriptor* info) {
+    info.textureType = ::GetImageTypeMTL(textureDesc.type);
+    info.pixelFormat = ::GetFormatMTL(textureDesc.format, true);
+    info.width = textureDesc.width;
+    info.height = textureDesc.height;
+    info.depth = textureDesc.depth;
+    info.mipmapLevelCount = textureDesc.mipNum;
+    info.sampleCount = textureDesc.sampleNum;
+    info.arrayLength = textureDesc.layerNum;
+}
 
 //Result TextureMTL::Create(const TextureMTLDesc& textureDesc) {
 //    m_Handle = texturedesc.texture;
@@ -17,15 +27,17 @@ TextureMTL::~TextureMTL() {
 
 Result TextureMTL::Create(const TextureDesc& textureDesc) {
     MTLTextureDescriptor* info = [[MTLTextureDescriptor alloc] init];
-    info.textureType = ::GetImageTypeMTL(textureDesc.type);
-    info.pixelFormat = ::GetFormatMTL(textureDesc.format, true);
-    info.width = textureDesc.width;
-    info.height = textureDesc.height;
-    info.depth = textureDesc.depth;
-    info.mipmapLevelCount = textureDesc.mipNum;
-    info.sampleCount = textureDesc.sampleNum;
-    info.arrayLength = textureDesc.layerNum;
+    fillMTLTextureDescriptor(textureDesc, info);
     
+//    info.textureType = ::GetImageTypeMTL(textureDesc.type);
+//    info.pixelFormat = ::GetFormatMTL(textureDesc.format, true);
+//    info.width = textureDesc.width;
+//    info.height = textureDesc.height;
+//    info.depth = textureDesc.depth;
+//    info.mipmapLevelCount = textureDesc.mipNum;
+//    info.sampleCount = textureDesc.sampleNum;
+//    info.arrayLength = textureDesc.layerNum;
+//    
     m_Handle = [m_Device newTextureWithDescriptor:info];
     m_Desc = textureDesc;
 

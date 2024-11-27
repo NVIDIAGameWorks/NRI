@@ -7,8 +7,10 @@ namespace nri {
 
 struct DeviceMTL;  
 
-struct TextureMTL {
+void fillMTLTextureDescriptor(const TextureDesc& textureDesc, MTLTextureDescriptor* mtlDescriptor);
 
+struct TextureMTL {
+public:
     inline TextureMTL(DeviceMTL& device)
         : m_Device(device) {
     }
