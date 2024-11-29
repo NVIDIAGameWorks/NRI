@@ -1,37 +1,44 @@
 #include "SharedMTL.h"
 
 #include "BufferMTL.h"
+#include "MemoryMTL.h"
 
 using namespace nri;
 
-
-Result BufferMTL::Create(const BufferDesc& bufferDesc) {
-    return Result::SUCCESS;
-}
-
-Result BufferMTL::Create(const BufferVKDesc& bufferDesc) {
-    return Result::SUCCESS;
-}
-
-
 void* BufferMTL::Map(uint64_t offset, uint64_t size) {
-    return (uint8_t*)[pBuffer contents] + offset;
+    return (uint8_t*)[m_Handle contents] + offset;
+}
+
+BufferMTL::~BufferMTL() {
+    [m_Label release];
 }
 
 void BufferMTL::Unmap() {
     
 }
 
+void BufferMTL::FinishMemoryBinding(MemoryMTL& memory, uint64_t memoryOffset) {
+    m_Handle =  [memory.GetHandle()
+                 newBufferWithLength: m_Desc.size
+                 options: MTLResourceCPUCacheModeDefaultCache
+                 offset: memoryOffset];
+    UpdateLabel();
+}
 
-Result BufferMTL::Create(const AllocateBufferDesc& bufferDesc) {
-    return Result::SUCCESS;
+void BufferMTL::UpdateLabel() {
+    if(m_Handle && m_Label) {
+        [m_Handle setLabel: m_Label];
+    }
+}
+
+
+
+Result BufferMTL::Create(const BufferDesc& bufferDesc) {
+    m_Desc = bufferDesc;
 }
 
 void BufferMTL::SetDebugName(const char* name) {
-    
-    NSString* str = [NSString stringWithUTF8String:name];
-
-
-    //[pBuffer addDebugMarker:name range:]
-    
+    m_Label  = [NSString stringWithUTF8String:name];
+    [m_Label retain];
+    UpdateLabel();
 }
