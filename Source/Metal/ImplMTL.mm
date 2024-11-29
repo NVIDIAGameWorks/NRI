@@ -10,6 +10,10 @@ using namespace nri;
 #include "DeviceMTL.h"
 #include "DescriptorMTL.h"
 #include "TextureMTL.h"
+#include "PipelineLayoutMTL.h"
+#include "PipelineMTL.h"
+#include "DescriptorMTL.h"
+#include "MemoryMTL.h"
 
 Result CreateDeviceMTL(const DeviceCreationDesc& desc, DeviceBase*& device) {
     StdAllocator<uint8_t> allocator(desc.allocationCallbacks);
@@ -67,7 +71,7 @@ static void NRI_CALL ResetCommandAllocator(CommandAllocator& commandAllocator) {
 }
 
 static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
-   // ((CommandBufferVK&)commandBuffer).SetDebugName(name);
+    ((CommandBufferMTL&)commandBuffer).SetDebugName(name);
 }
 
 static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool) {
@@ -264,14 +268,87 @@ static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device) {
 //    ((CommandQueueMTL&)commandQueue).Submit(workSubmissionDesc, nullptr);
 //}
 
+
+static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer) {
+    Destroy((CommandBufferMTL*)&commandBuffer);
+}
+
+static void NRI_CALL DestroyCommandAllocator(CommandAllocator& commandAllocator) {
+    Destroy((CommandAllocatorMTL*)&commandAllocator);
+}
+
+static void NRI_CALL DestroyDescriptorPool(DescriptorPool& descriptorPool) {
+    //Destroy((DescriptorPoolM*)&descriptorPool);
+}
+
+static void NRI_CALL DestroyBuffer(Buffer& buffer) {
+    Destroy((BufferMTL*)&buffer);
+}
+
+static void NRI_CALL DestroyTexture(Texture& texture) {
+    Destroy((TextureMTL*)&texture);
+}
+
+static void NRI_CALL DestroyDescriptor(Descriptor& descriptor) {
+   // Destroy((DescriptorMTL*)&descriptor);
+}
+
+static void NRI_CALL DestroyPipelineLayout(PipelineLayout& pipelineLayout) {
+ //   Destroy((PipelineLayoutMTL*)&pipelineLayout);
+}
+
+static void NRI_CALL DestroyPipeline(Pipeline& pipeline) {
+    //Destroy((PipelineMTL*)&pipeline);
+}
+
+static void NRI_CALL DestroyQueryPool(QueryPool& queryPool) {
+    //Destroy((QueryPoolVK*)&queryPool);
+}
+
+static void NRI_CALL DestroyFence(Fence& fence) {
+   // Destroy((Fenc*)&fence);
+}
+
+static void NRI_CALL FreeMemory(Memory& memory) {
+    Destroy((MemoryMTL*)&memory);
+}
+
+static const BufferDesc& NRI_CALL GetBufferDesc(const Buffer& buffer) {
+    return ((const BufferMTL&)buffer).GetDesc();
+}
+
+static const TextureDesc& NRI_CALL GetTextureDesc(const Texture& texture) {
+    return ((const TextureMTL&)texture).GetDesc();
+}
+
+
+static void NRI_CALL GetBufferMemoryDesc(const Device& device, const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    ((const DeviceMTL&)device).GetMemoryDesc(bufferDesc, memoryLocation, memoryDesc);
+}
+
+static void NRI_CALL GetTextureMemoryDesc(const Device& device, const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    ((const DeviceMTL&)device).GetMemoryDesc(textureDesc, memoryLocation, memoryDesc);
+}
+
+static Result NRI_CALL CreateGraphicsPipeline(Device& device, const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline) {
+    return ((DeviceMTL&)device).CreateImplementation<PipelineMTL>(pipeline, graphicsPipelineDesc);
+}
+
+static Result NRI_CALL AllocateDescriptorSets(DescriptorPool& descriptorPool, const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
+    return Result::SUCCESS;
+    //return ((DescriptorPoolMTL&)descriptorPool).AllocateDescriptorSets(pipelineLayout, setIndex, descriptorSets, instanceNum, variableDescriptorNum);
+}
+
+
+
 Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table.GetDeviceDesc = ::GetDeviceDesc;
-    //table.GetBufferDesc = ::GetBufferDesc;
-    //table.GetTextureDesc = ::GetTextureDesc;
+    table.GetBufferDesc = ::GetBufferDesc;
+    table.GetTextureDesc = ::GetTextureDesc;
     //table.GetFormatSupport = ::GetFormatSupport;
     //table.GetQuerySize = ::GetQuerySize;
-    //table.GetBufferMemoryDesc = ::GetBufferMemoryDesc;
-    //table.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
+    table.GetBufferMemoryDesc = ::GetBufferMemoryDesc;
+    table.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
     //table.GetCommandQueue = ::GetCommandQueue;
     //table.CreateCommandAllocator = ::CreateCommandAllocator;
     //table.CreateCommandBuffer = ::CreateCommandBuffer;
@@ -284,24 +361,24 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     //table.CreateTexture3DView = ::CreateTexture3DView;
     //table.CreateSampler = ::CreateSampler;
     //table.CreatePipelineLayout = ::CreatePipelineLayout;
-    //table.CreateGraphicsPipeline = ::CreateGraphicsPipeline;
+    table.CreateGraphicsPipeline = ::CreateGraphicsPipeline;
 //    table.CreateComputePipeline = ::CreateComputePipeline;
 //    table.CreateQueryPool = ::CreateQueryPool;
 //    table.CreateFence = ::CreateFence;
-//    table.DestroyCommandAllocator = ::DestroyCommandAllocator;
-//    table.DestroyCommandBuffer = ::DestroyCommandBuffer;
-//    table.DestroyDescriptorPool = ::DestroyDescriptorPool;
-//    table.DestroyBuffer = ::DestroyBuffer;
-//    table.DestroyTexture = ::DestroyTexture;
-//    table.DestroyDescriptor = ::DestroyDescriptor;
-//    table.DestroyPipelineLayout = ::DestroyPipelineLayout;
-//    table.DestroyPipeline = ::DestroyPipeline;
-//    table.DestroyQueryPool = ::DestroyQueryPool;
-//    table.DestroyFence = ::DestroyFence;
+    table.DestroyCommandAllocator = ::DestroyCommandAllocator;
+    table.DestroyCommandBuffer = ::DestroyCommandBuffer;
+    table.DestroyDescriptorPool = ::DestroyDescriptorPool;
+    table.DestroyBuffer = ::DestroyBuffer;
+    table.DestroyTexture = ::DestroyTexture;
+    table.DestroyDescriptor = ::DestroyDescriptor;
+    table.DestroyPipelineLayout = ::DestroyPipelineLayout;
+    table.DestroyPipeline = ::DestroyPipeline;
+    table.DestroyQueryPool = ::DestroyQueryPool;
+    table.DestroyFence = ::DestroyFence;
 //    table.AllocateMemory = ::AllocateMemory;
 //    table.BindBufferMemory = ::BindBufferMemory;
 //    table.BindTextureMemory = ::BindTextureMemory;
-//    table.FreeMemory = ::FreeMemory;
+    table.FreeMemory = ::FreeMemory;
     table.BeginCommandBuffer = ::BeginCommandBuffer;
     table.CmdSetDescriptorPool = ::CmdSetDescriptorPool;
     table.CmdSetDescriptorSet = ::CmdSetDescriptorSet;
@@ -349,7 +426,7 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
 //    table.UpdateDescriptorRanges = ::UpdateDescriptorRanges;
 //    table.UpdateDynamicConstantBuffers = ::UpdateDynamicConstantBuffers;
 //    table.CopyDescriptorSet = ::CopyDescriptorSet;
-//    table.AllocateDescriptorSets = ::AllocateDescriptorSets;
+    table.AllocateDescriptorSets = ::AllocateDescriptorSets;
 //    table.ResetDescriptorPool = ::ResetDescriptorPool;
     table.ResetCommandAllocator = ::ResetCommandAllocator;
     table.MapBuffer = ::MapBuffer;

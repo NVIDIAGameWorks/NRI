@@ -5,7 +5,9 @@
 
 namespace nri {
 
-struct DeviceMTL;  
+struct DeviceMTL;
+
+class MemoryMTL;
 
 void fillMTLTextureDescriptor(const TextureDesc& textureDesc, MTLTextureDescriptor* mtlDescriptor);
 
@@ -29,13 +31,22 @@ public:
     }
 
     Result Create(const TextureDesc& textureDesc);
-
-private:
-   // Result CreateFromTextureDesc(const TextureDesc& textureDesc);
+    void FinishMemoryBinding(MemoryMTL& memory, uint64_t memoryOffset);
     
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
+
+    void SetDebugName(const char* name);
+    
+private:
+    
+    void UpdateLabel();
+    NSString* m_Label = nullptr;
     DeviceMTL& m_Device;
     TextureDesc m_Desc = {};
     id<MTLTexture> m_Handle;
+    NSString* m_label;
 };
 
 } // namespace nri
