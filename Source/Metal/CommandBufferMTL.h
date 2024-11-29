@@ -106,6 +106,8 @@ private:
     id<MTLRenderCommandEncoder> m_RendererEncoder = nil;
     id<MTLComputeCommandEncoder> m_ComputeEncoder = nil;
     
+    //id<MTLArgumentEncoder>
+    
     CommandBufferDirtyBits m_DirtyBits = CommandBufferDirtyBits::NONE;
 };
 };

@@ -9,11 +9,10 @@
 NriNamespaceBegin
 
 
-NonNriForwardStruct(MTLHeap);
-
+typedef void* MTLHeap;
+typedef void* MTLDeviceHandle; // id<MTLDevice>
 typedef void* MTLBufferHandle; // id<MTLHeap>
 typedef void* MTLTextureHandle;
-typedef void* MTLDeviceHandle; 
 
 NriStruct(DeviceCreationMTLDesc)
 {

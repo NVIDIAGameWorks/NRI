@@ -7,6 +7,7 @@ namespace nri {
 struct CommandQueueMTL;
 
 struct DeviceMTL final : public DeviceBase {
+public:
     DeviceMTL(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator);
     ~DeviceMTL();
 
@@ -14,6 +15,10 @@ struct DeviceMTL final : public DeviceBase {
     Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
 
     inline operator id<MTLDevice>() const {
+        return m_Device;
+    }
+    
+    inline id<MTLDevice> GetHandle() const {
         return m_Device;
     }
     
@@ -32,16 +37,17 @@ struct DeviceMTL final : public DeviceBase {
     }
     
     //void GetMemoryTypeInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
-    void GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
-    void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
-    void GetMemoryDesc(const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc);
+    void GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
+    void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
+    void GetMemoryDesc(const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
     //bool GetMemoryTypeInfo(MemoryLocation memoryLocation, MemoryTypeInfo& memoryTypeInfo) const;
     
     const DeviceDesc& GetDesc() const override {
         return m_Desc;
     }
+    
+    
     void Destruct() override;
- 
     Result FillFunctionTable(CoreInterface& table) const override;
     Result FillFunctionTable(HelperInterface& table) const override;
     Result FillFunctionTable(LowLatencyInterface& table) const override;
@@ -59,5 +65,6 @@ private:
     DeviceDesc m_Desc = {};
     MTLGPUFamily m_Family;
     bool m_OwnsNativeObjects = true;
+    Lock m_Lock;
 };
 }; // namespace nri

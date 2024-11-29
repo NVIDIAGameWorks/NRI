@@ -14,8 +14,10 @@ struct BufferMTL {
     : m_Device(device) {
     }
     
+    ~BufferMTL();
+    
     inline id<MTLBuffer> GetHandle() const {
-        return pBuffer;
+        return m_Handle;
     }
     
     inline DeviceMTL& GetDevice() const {
@@ -28,17 +30,22 @@ struct BufferMTL {
     
     void* Map(uint64_t offset, uint64_t size);
     void Unmap();
-    void SetDebugName(const char* name);
     
-    ~BufferMTL();
-    
+    void FinishMemoryBinding(MemoryMTL& memory, uint64_t memoryOffset);
     Result Create(const BufferDesc& bufferDesc);
-    Result Create(const BufferVKDesc& bufferDesc);
-    Result Create(const AllocateBufferDesc& bufferDesc);
     
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
+
+    void SetDebugName(const char* name);
+
 private:
+    void UpdateLabel();
+    
+    NSString* m_Label = nullptr;
     DeviceMTL& m_Device;
-    id<MTLBuffer> pBuffer;
+    id<MTLBuffer> m_Handle;
     uint8_t* m_MappedMemory = nullptr;
     uint64_t m_MappedMemoryOffset = 0;
     uint64_t m_MappedMemoryRangeSize = 0;

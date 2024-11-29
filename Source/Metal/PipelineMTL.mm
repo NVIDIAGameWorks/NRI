@@ -1,14 +1,54 @@
 #include "SharedMTL.h"
 
 #include "PipelineMTL.h" 
+#include "PipelineLayoutMTL.h"
 
 using namespace nri;
 
 PipelineMTL::~PipelineMTL() {
+    switch(m_PipelineType) {
+        case PipelineType::Graphics:
+            m_GraphicsPipeline = nil;
+            break;
+        case PipelineType::Compute:
+            m_ComputePipeline = nil;
+            break;
+        case PipelineType::Raytracing:
+            break;
+        default:
+            break;
+    }
 
 }
 
 Result PipelineMTL::Create(const ComputePipelineDesc& computePipelineDesc) {
+    MTLComputePipelineDescriptor* pipelineDesc = [[MTLComputePipelineDescriptor alloc] init];
+    NSError* error = nil;
+    
+    dispatch_data_t byteCode = dispatch_data_create(
+                                                    computePipelineDesc.shader.bytecode,
+                                                    computePipelineDesc.shader.size, nil, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+    
+    id<MTLLibrary> lib = [m_Device newLibraryWithData: byteCode error:&error];
+    NSCAssert(lib, @"Failed to load Metal shader library %@", error); // not sure how to correctly report this
+    RETURN_ON_FAILURE(&m_Device, lib, Result::FAILURE, "Failed to Load Metal shader library");
+    // Create a MTLFunction from the loaded MTLLibrary.
+    NSString *entryPointNStr = [lib functionNames][0];
+    if (computePipelineDesc.shader.entryPointName) {
+        entryPointNStr = [[NSString alloc] initWithUTF8String:computePipelineDesc.shader.entryPointName];
+    }
+    id <MTLFunction> entryPointFunc = [lib newFunctionWithName:entryPointNStr];
+    
+    m_PipelineType = PipelineType::Compute;
+    pipelineDesc.computeFunction = entryPointFunc;
+    NSCAssert(pipelineDesc.computeFunction, @"Failed to create Metal kernel function %@: %@", entryPointNStr, error);
+    
+    
+    m_ComputePipeline = [m_Device newComputePipelineStateWithDescriptor: pipelineDesc
+                                                                options: MTLPipelineOptionNone
+                                                             reflection: nil
+                                                                  error:&error];
+    NSCAssert(m_ComputePipeline, @"Failed to create pipeline state: %@", error);
     return Result::SUCCESS;
 }
 
@@ -118,6 +158,11 @@ Result PipelineMTL::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
         renderPipelineDesc.colorAttachments[i].writeMask = GetColorComponent(attachmentDesc.colorWriteMask);
         
     }
+    NSError* error = nil;
+    m_GraphicsPipeline = [m_Device newRenderPipelineStateWithDescriptor:renderPipelineDesc error: &error];
+    NSCAssert(m_GraphicsPipeline, @"Failed to create pipeline state: %@", error);
+
+    
     return Result::SUCCESS;
 
 }

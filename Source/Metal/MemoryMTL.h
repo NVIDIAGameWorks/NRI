@@ -28,16 +28,16 @@ struct MemoryMTL {
         return m_Type;
     }
 
-    inline uint8_t* GetMappedMemory() const {
-        return m_MappedMemory;
-    }
+//    inline uint8_t* GetMappedMemory() const {
+//        return m_MappedMemory;
+//    }
 
     ~MemoryMTL();
  
-    Result Create(const MemoryMTLDesc& memoryDesc);
+    // Result Create(const MemoryMTLDesc& memoryDesc);
     Result Create(const AllocateMemoryDesc& allocateMemoryDesc);
-    //Result CreateDedicated(const BufferVK& buffer);
-    //Result CreateDedicated(const TextureVK& texture);
+    // Result CreateDedicated(const BufferVK& buffer);
+    // Result CreateDedicated(const TextureVK& texture);
 
     //================================================================================================================
     // NRI
@@ -47,8 +47,7 @@ struct MemoryMTL {
 private:
     DeviceMTL& m_Device;
     id<MTLHeap> m_Handle;
-    uint8_t* m_MappedMemory = nullptr;
-    MemoryType m_Type = std::numeric_limits<MemoryType>::max();
+    MemoryType m_Type;
     float m_Priority = 0.0f;
     bool m_OwnsNativeObjects = true;
 };

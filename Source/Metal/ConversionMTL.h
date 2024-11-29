@@ -220,11 +220,21 @@ constexpr MTLTriangleFillMode GetPolygonMode(FillMode fillMode) {
 }
 
 constexpr std::array<MTLSamplerAddressMode, (size_t)AddressMode::MAX_NUM> SAMPLER_ADDRESS_MODE = {
-    MTLSamplerAddressModeRepeat,          // REPEAT
-    MTLSamplerAddressModeMirrorRepeat,    // MIRRORED_REPEAT
-    MTLSamplerAddressModeClampToEdge,     // CLAMP_TO_EDGE
-    MTLSamplerAddressModeClampToZero      // CLAMP_TO_BORDER
+    MTLSamplerAddressModeRepeat,             // REPEAT,
+    MTLSamplerAddressModeMirrorRepeat,       // MIRRORED_REPEAT,
+    MTLSamplerAddressModeClampToEdge,        // CLAMP_TO_EDGE,
+    MTLSamplerAddressModeClampToBorderColor, // CLAMP_TO_BORDER,
+    MTLSamplerAddressModeClampToEdge         // MIRROR_CLAMP_TO_EDGE
 };
+
+constexpr std::array<MTLSamplerMinMagFilter, (size_t)Filter::MAX_NUM> MIN_MAG_FILTER = {
+    MTLSamplerMinMagFilterNearest,   // NEAREST
+    MTLSamplerMinMagFilterLinear     // LINEAR
+};
+
+constexpr MTLSamplerMinMagFilter GetFilter(Filter filter) {
+    return MIN_MAG_FILTER[(size_t)filter];
+}
 
 constexpr MTLSamplerAddressMode GetSamplerAddressMode(AddressMode addressMode) {
     return SAMPLER_ADDRESS_MODE[(size_t)addressMode];
