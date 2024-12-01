@@ -50,7 +50,6 @@ public:
     Result Create(const Texture3DViewDesc& textureViewDesc);
     Result Create(const SamplerDesc& samplerDesc);
 
-
 private:
     
     DeviceMTL& m_Device;
