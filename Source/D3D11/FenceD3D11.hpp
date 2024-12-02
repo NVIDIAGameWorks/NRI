@@ -49,7 +49,7 @@ NRI_INLINE void FenceD3D11::Wait(uint64_t value) {
                 ;
         } else if (m_Fence->GetCompletedValue() < value) {
             HRESULT hr = m_Fence->SetEventOnCompletion(value, m_Event);
-            RETURN_ON_FAILURE(&m_Device, hr == S_OK, ReturnVoid(), "ID3D12Fence::SetEventOnCompletion()  failed!");
+            RETURN_ON_FAILURE(&m_Device, hr == S_OK, ReturnVoid(), "ID3D11Fence::SetEventOnCompletion()  failed!");
 
             uint32_t result = WaitForSingleObjectEx(m_Event, TIMEOUT_FENCE, TRUE);
             RETURN_ON_FAILURE(&m_Device, result == WAIT_OBJECT_0, ReturnVoid(), "WaitForSingleObjectEx()  failed!");
