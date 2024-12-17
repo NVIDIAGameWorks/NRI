@@ -434,6 +434,10 @@ NRI_API Result NRI_CALL nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t
             if (adapterDescs) {
                 // Query device groups
                 VkPhysicalDeviceGroupProperties* deviceGroupProperties = (VkPhysicalDeviceGroupProperties*)alloca(sizeof(VkPhysicalDeviceGroupProperties) * deviceGroupNum);
+                for (uint32_t i = 0; i < deviceGroupNum; i++) {
+                    deviceGroupProperties[i].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES;
+                    deviceGroupProperties[i].pNext = nullptr;
+                }
                 vkEnumeratePhysicalDeviceGroups(instance, &deviceGroupNum, deviceGroupProperties);
 
                 // Query device groups properties

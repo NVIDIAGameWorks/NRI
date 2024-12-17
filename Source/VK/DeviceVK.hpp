@@ -405,25 +405,29 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     { // Group
         if (isWrapper) {
             m_PhysicalDevice = (VkPhysicalDevice)deviceCreationVKDesc.vkPhysicalDevice;
-
             m_MinorVersion = deviceCreationVKDesc.minorVersion;
         } else {
             uint32_t deviceGroupNum = 0;
-            m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, nullptr);
+            VkResult result = m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, nullptr);
+            RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkEnumeratePhysicalDeviceGroups returned %d", (int32_t)result);
 
             Scratch<VkPhysicalDeviceGroupProperties> deviceGroups = AllocateScratch(*this, VkPhysicalDeviceGroupProperties, deviceGroupNum);
-            VkResult result = m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, deviceGroups);
-            RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkEnumeratePhysicalDevices returned %d", (int32_t)result);
+            for (uint32_t j = 0; j < deviceGroupNum; j++) {
+                deviceGroups[j].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES;
+                deviceGroups[j].pNext = nullptr;
+            }
 
-            VkPhysicalDeviceProperties2 props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
-
-            VkPhysicalDeviceIDProperties idProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
-            props.pNext = &idProps;
+            result = m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, deviceGroups);
+            RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkEnumeratePhysicalDeviceGroups returned %d", (int32_t)result);
 
             uint32_t i = 0;
-            for (; i < deviceGroupNum; i++) {
-                const VkPhysicalDeviceGroupProperties& group = deviceGroups[i];
-                m_VK.GetPhysicalDeviceProperties2(group.physicalDevices[0], &props);
+            for (i = 0; i < deviceGroupNum; i++) {
+                VkPhysicalDeviceProperties2 props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+
+                VkPhysicalDeviceIDProperties idProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
+                props.pNext = &idProps;
+
+                m_VK.GetPhysicalDeviceProperties2(deviceGroups[i].physicalDevices[0], &props);
 
                 uint32_t majorVersion = VK_VERSION_MAJOR(props.properties.apiVersion);
                 m_MinorVersion = VK_VERSION_MINOR(props.properties.apiVersion);
@@ -441,13 +445,10 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
 
             RETURN_ON_FAILURE(this, i != deviceGroupNum, Result::INVALID_ARGUMENT, "Can't create a device: physical device not found");
 
-            const VkPhysicalDeviceGroupProperties& group = deviceGroups[i];
-            if (group.physicalDeviceCount > 1) {
-                if (group.subsetAllocation == VK_FALSE)
-                    REPORT_WARNING(this, "The device group does not support memory allocation on a subset of the physical devices");
-            }
+            if (deviceGroups[i].physicalDeviceCount > 1 && deviceGroups[i].subsetAllocation == VK_FALSE)
+                REPORT_WARNING(this, "The device group does not support memory allocation on a subset of the physical devices");
 
-            m_PhysicalDevice = group.physicalDevices[0];
+            m_PhysicalDevice = deviceGroups[i].physicalDevices[0];
         }
 
         m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &m_MemoryProps);
