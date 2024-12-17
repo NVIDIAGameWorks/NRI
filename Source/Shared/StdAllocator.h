@@ -173,8 +173,7 @@ public:
     Scratch(const AllocationCallbacks& allocator, T* mem, size_t num)
         : m_Allocator(allocator)
         , m_Mem(mem)
-        , m_Num(num) 
-    {
+        , m_Num(num) {
         m_IsHeap = (num * sizeof(T) + alignof(T)) > MAX_STACK_ALLOC_SIZE;
     }
 
@@ -187,7 +186,7 @@ public:
         return m_Mem;
     }
 
-    inline T& operator [] (size_t i) const {
+    inline T& operator[](size_t i) const {
         assert(i < m_Num);
         return m_Mem[i];
     }
@@ -200,8 +199,8 @@ private:
 };
 
 #define AllocateScratch(device, T, elementNum) \
-    { (device).GetStdAllocator().GetInterface(), \
+    {(device).GetStdAllocator().GetInterface(), \
         ((elementNum) * sizeof(T) + alignof(T)) > MAX_STACK_ALLOC_SIZE \
             ? (T*)(device).GetStdAllocator().GetInterface().Allocate((device).GetStdAllocator().GetInterface().userArg, (elementNum) * sizeof(T), alignof(T)) \
             : (T*)Align((elementNum) ? (T*)alloca(((elementNum) * sizeof(T) + alignof(T))) : nullptr, alignof(T)), \
-        (elementNum) }
+        (elementNum)}
