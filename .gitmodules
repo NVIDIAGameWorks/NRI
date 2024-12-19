@@ -13,3 +13,8 @@
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/AGS_SDK.git
 	branch = master
 	update = merge
+[submodule "External/NVTX"]
+	path = External/NVTX
+	url = https://github.com/NVIDIA/NVTX.git
+	branch = dev
+	update = merge
