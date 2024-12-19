@@ -456,8 +456,8 @@ NRI_INLINE void CommandBufferVal::Barrier(const BarrierGroupDesc& barrierGroupDe
     GetCoreInterface().CmdBarrier(*GetImpl(), barrierGroupDescImpl);
 }
 
-NRI_INLINE void CommandBufferVal::BeginQuery(const QueryPool& queryPool, uint32_t offset) {
-    const QueryPoolVal& queryPoolVal = (const QueryPoolVal&)queryPool;
+NRI_INLINE void CommandBufferVal::BeginQuery(QueryPool& queryPool, uint32_t offset) {
+    QueryPoolVal& queryPoolVal = (QueryPoolVal&)queryPool;
 
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, queryPoolVal.GetQueryType() != QueryType::TIMESTAMP, ReturnVoid(), "'BeginQuery' is not supported for timestamp queries");
@@ -476,8 +476,8 @@ NRI_INLINE void CommandBufferVal::BeginQuery(const QueryPool& queryPool, uint32_
     GetCoreInterface().CmdBeginQuery(*GetImpl(), *queryPoolImpl, offset);
 }
 
-NRI_INLINE void CommandBufferVal::EndQuery(const QueryPool& queryPool, uint32_t offset) {
-    const QueryPoolVal& queryPoolVal = (const QueryPoolVal&)queryPool;
+NRI_INLINE void CommandBufferVal::EndQuery(QueryPool& queryPool, uint32_t offset) {
+    QueryPoolVal& queryPoolVal = (QueryPoolVal&)queryPool;
 
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
 
@@ -509,11 +509,11 @@ NRI_INLINE void CommandBufferVal::CopyQueries(const QueryPool& queryPool, uint32
     GetCoreInterface().CmdCopyQueries(*GetImpl(), *queryPoolImpl, offset, num, *dstBufferImpl, dstOffset);
 }
 
-NRI_INLINE void CommandBufferVal::ResetQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num) {
+NRI_INLINE void CommandBufferVal::ResetQueries(QueryPool& queryPool, uint32_t offset, uint32_t num) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
 
-    const QueryPoolVal& queryPoolVal = (const QueryPoolVal&)queryPool;
+    QueryPoolVal& queryPoolVal = (QueryPoolVal&)queryPool;
     if (!queryPoolVal.IsImported()) {
         RETURN_ON_FAILURE(&m_Device, offset + num <= queryPoolVal.GetQueryNum(), ReturnVoid(), "'offset + num = %u' is out of range", offset + num);
 

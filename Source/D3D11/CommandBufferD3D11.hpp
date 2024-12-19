@@ -558,11 +558,11 @@ NRI_INLINE void CommandBufferD3D11::Barrier(const BarrierGroupDesc& barrierGroup
 #endif
 }
 
-NRI_INLINE void CommandBufferD3D11::BeginQuery(const QueryPool& queryPool, uint32_t offset) {
+NRI_INLINE void CommandBufferD3D11::BeginQuery(QueryPool& queryPool, uint32_t offset) {
     ((QueryPoolD3D11&)queryPool).BeginQuery(m_DeferredContext, offset);
 }
 
-NRI_INLINE void CommandBufferD3D11::EndQuery(const QueryPool& queryPool, uint32_t offset) {
+NRI_INLINE void CommandBufferD3D11::EndQuery(QueryPool& queryPool, uint32_t offset) {
     ((QueryPoolD3D11&)queryPool).EndQuery(m_DeferredContext, offset);
 }
 

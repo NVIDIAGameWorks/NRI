@@ -407,11 +407,11 @@ static void NRI_CALL CmdDispatchIndirect(CommandBuffer& commandBuffer, const Buf
     ((CommandBufferD3D11&)commandBuffer).DispatchIndirect(buffer, offset);
 }
 
-static void NRI_CALL CmdBeginQuery(CommandBuffer& commandBuffer, const QueryPool& queryPool, uint32_t offset) {
+static void NRI_CALL CmdBeginQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
     ((CommandBufferD3D11&)commandBuffer).BeginQuery(queryPool, offset);
 }
 
-static void NRI_CALL CmdEndQuery(CommandBuffer& commandBuffer, const QueryPool& queryPool, uint32_t offset) {
+static void NRI_CALL CmdEndQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
     ((CommandBufferD3D11&)commandBuffer).EndQuery(queryPool, offset);
 }
 
@@ -455,7 +455,7 @@ static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPoo
     ((CommandBufferD3D11&)commandBuffer).CopyQueries(queryPool, offset, num, dstBuffer, dstOffset);
 }
 
-static void NRI_CALL CmdResetQueries(CommandBuffer&, const QueryPool&, uint32_t, uint32_t) {
+static void NRI_CALL CmdResetQueries(CommandBuffer&, QueryPool&, uint32_t, uint32_t) {
 }
 
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
@@ -581,11 +581,11 @@ static void NRI_CALL EmuCmdDispatchIndirect(CommandBuffer& commandBuffer, const 
     ((CommandBufferEmuD3D11&)commandBuffer).DispatchIndirect(buffer, offset);
 }
 
-static void NRI_CALL EmuCmdBeginQuery(CommandBuffer& commandBuffer, const QueryPool& queryPool, uint32_t offset) {
+static void NRI_CALL EmuCmdBeginQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
     ((CommandBufferEmuD3D11&)commandBuffer).BeginQuery(queryPool, offset);
 }
 
-static void NRI_CALL EmuCmdEndQuery(CommandBuffer& commandBuffer, const QueryPool& queryPool, uint32_t offset) {
+static void NRI_CALL EmuCmdEndQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
     ((CommandBufferEmuD3D11&)commandBuffer).EndQuery(queryPool, offset);
 }
 
@@ -629,7 +629,7 @@ static void NRI_CALL EmuCmdCopyQueries(CommandBuffer& commandBuffer, const Query
     ((CommandBufferEmuD3D11&)commandBuffer).CopyQueries(queryPool, offset, num, dstBuffer, dstOffset);
 }
 
-static void NRI_CALL EmuCmdResetQueries(CommandBuffer&, const QueryPool&, uint32_t, uint32_t) {
+static void NRI_CALL EmuCmdResetQueries(CommandBuffer&, QueryPool&, uint32_t, uint32_t) {
 }
 
 static void* NRI_CALL EmuGetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {

@@ -80,8 +80,8 @@ struct CommandBufferD3D11 final : public CommandBufferHelper {
     void Dispatch(const DispatchDesc& dispatchDesc);
     void DispatchIndirect(const Buffer& buffer, uint64_t offset);
     void Barrier(const BarrierGroupDesc& barrierGroupDesc);
-    void BeginQuery(const QueryPool& queryPool, uint32_t offset);
-    void EndQuery(const QueryPool& queryPool, uint32_t offset);
+    void BeginQuery(QueryPool& queryPool, uint32_t offset);
+    void EndQuery(QueryPool& queryPool, uint32_t offset);
     void CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset);
     void BeginAnnotation(const char* name);
     void EndAnnotation();

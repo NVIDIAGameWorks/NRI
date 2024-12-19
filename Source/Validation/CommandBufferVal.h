@@ -72,10 +72,10 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     void Dispatch(const DispatchDesc& dispatchDesc);
     void DispatchIndirect(const Buffer& buffer, uint64_t offset);
     void Barrier(const BarrierGroupDesc& barrierGroupDesc);
-    void BeginQuery(const QueryPool& queryPool, uint32_t offset);
-    void EndQuery(const QueryPool& queryPool, uint32_t offset);
+    void BeginQuery(QueryPool& queryPool, uint32_t offset);
+    void EndQuery(QueryPool& queryPool, uint32_t offset);
     void CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset);
-    void ResetQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num);
+    void ResetQueries(QueryPool& queryPool, uint32_t offset, uint32_t num);
     void BeginAnnotation(const char* name);
     void EndAnnotation();
     void BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset);

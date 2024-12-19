@@ -696,13 +696,13 @@ NRI_INLINE void CommandBufferEmuD3D11::Barrier(const BarrierGroupDesc& barrierGr
     Push(m_PushBuffer, barrierGroupDesc.textures, barrierGroupDesc.textureNum);
 }
 
-NRI_INLINE void CommandBufferEmuD3D11::BeginQuery(const QueryPool& queryPool, uint32_t offset) {
+NRI_INLINE void CommandBufferEmuD3D11::BeginQuery(QueryPool& queryPool, uint32_t offset) {
     Push(m_PushBuffer, BEGIN_QUERY);
     Push(m_PushBuffer, &queryPool);
     Push(m_PushBuffer, offset);
 }
 
-NRI_INLINE void CommandBufferEmuD3D11::EndQuery(const QueryPool& queryPool, uint32_t offset) {
+NRI_INLINE void CommandBufferEmuD3D11::EndQuery(QueryPool& queryPool, uint32_t offset) {
     Push(m_PushBuffer, END_QUERY);
     Push(m_PushBuffer, &queryPool);
     Push(m_PushBuffer, offset);

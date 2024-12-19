@@ -908,13 +908,13 @@ NRI_INLINE void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroup
     }
 }
 
-NRI_INLINE void CommandBufferD3D12::BeginQuery(const QueryPool& queryPool, uint32_t offset) {
-    const QueryPoolD3D12& queryPoolD3D12 = (QueryPoolD3D12&)queryPool;
+NRI_INLINE void CommandBufferD3D12::BeginQuery(QueryPool& queryPool, uint32_t offset) {
+    QueryPoolD3D12& queryPoolD3D12 = (QueryPoolD3D12&)queryPool;
     m_GraphicsCommandList->BeginQuery(queryPoolD3D12, queryPoolD3D12.GetType(), offset);
 }
 
-NRI_INLINE void CommandBufferD3D12::EndQuery(const QueryPool& queryPool, uint32_t offset) {
-    const QueryPoolD3D12& queryPoolD3D12 = (QueryPoolD3D12&)queryPool;
+NRI_INLINE void CommandBufferD3D12::EndQuery(QueryPool& queryPool, uint32_t offset) {
+    QueryPoolD3D12& queryPoolD3D12 = (QueryPoolD3D12&)queryPool;
     m_GraphicsCommandList->EndQuery(queryPoolD3D12, queryPoolD3D12.GetType(), offset);
 }
 

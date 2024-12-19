@@ -500,13 +500,13 @@ static void NRI_CALL CmdClearStorageTexture(CommandBuffer&, const ClearStorageTe
 static void NRI_CALL CmdResolveTexture(CommandBuffer&, Texture&, const TextureRegionDesc*, const Texture&, const TextureRegionDesc*) {
 }
 
-static void NRI_CALL CmdResetQueries(CommandBuffer&, const QueryPool&, uint32_t, uint32_t) {
+static void NRI_CALL CmdResetQueries(CommandBuffer&, QueryPool&, uint32_t, uint32_t) {
 }
 
-static void NRI_CALL CmdBeginQuery(CommandBuffer&, const QueryPool&, uint32_t) {
+static void NRI_CALL CmdBeginQuery(CommandBuffer&, QueryPool&, uint32_t) {
 }
 
-static void NRI_CALL CmdEndQuery(CommandBuffer&, const QueryPool&, uint32_t) {
+static void NRI_CALL CmdEndQuery(CommandBuffer&, QueryPool&, uint32_t) {
 }
 
 static void NRI_CALL CmdCopyQueries(CommandBuffer&, const QueryPool&, uint32_t, uint32_t, Buffer&, uint64_t) {

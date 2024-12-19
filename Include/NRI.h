@@ -24,8 +24,8 @@ Non-goals:
 #pragma once
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 154
-#define NRI_VERSION_DATE "5 November 2024"
+#define NRI_VERSION_MINOR 155
+#define NRI_VERSION_DATE "19 December 2024"
 
 #include "NRIDescs.h"
 
@@ -161,9 +161,9 @@ NriStruct(CoreInterface) {
         void                (NRI_CALL *CmdClearStorageTexture)      (NriRef(CommandBuffer) commandBuffer, const NriRef(ClearStorageTextureDesc) clearDesc); // potentially slow clear
 
         // Query
-        void                (NRI_CALL *CmdResetQueries)             (NriRef(CommandBuffer) commandBuffer, const NriRef(QueryPool) queryPool, uint32_t offset, uint32_t num);
-        void                (NRI_CALL *CmdBeginQuery)               (NriRef(CommandBuffer) commandBuffer, const NriRef(QueryPool) queryPool, uint32_t offset);
-        void                (NRI_CALL *CmdEndQuery)                 (NriRef(CommandBuffer) commandBuffer, const NriRef(QueryPool) queryPool, uint32_t offset);
+        void                (NRI_CALL *CmdResetQueries)             (NriRef(CommandBuffer) commandBuffer, NriRef(QueryPool) queryPool, uint32_t offset, uint32_t num);
+        void                (NRI_CALL *CmdBeginQuery)               (NriRef(CommandBuffer) commandBuffer, NriRef(QueryPool) queryPool, uint32_t offset);
+        void                (NRI_CALL *CmdEndQuery)                 (NriRef(CommandBuffer) commandBuffer, NriRef(QueryPool) queryPool, uint32_t offset);
         void                (NRI_CALL *CmdCopyQueries)              (NriRef(CommandBuffer) commandBuffer, const NriRef(QueryPool) queryPool, uint32_t offset, uint32_t num, NriRef(Buffer) dstBuffer, uint64_t dstOffset);
 
         // Annotation

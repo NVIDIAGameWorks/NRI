@@ -798,14 +798,14 @@ NRI_INLINE void CommandBufferVK::Barrier(const BarrierGroupDesc& barrierGroupDes
     vk.CmdPipelineBarrier2(m_Handle, &dependencyInfo);
 }
 
-NRI_INLINE void CommandBufferVK::BeginQuery(const QueryPool& queryPool, uint32_t offset) {
-    const QueryPoolVK& queryPoolImpl = (const QueryPoolVK&)queryPool;
+NRI_INLINE void CommandBufferVK::BeginQuery(QueryPool& queryPool, uint32_t offset) {
+    QueryPoolVK& queryPoolImpl = (QueryPoolVK&)queryPool;
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBeginQuery(m_Handle, queryPoolImpl.GetHandle(), offset, (VkQueryControlFlagBits)0);
 }
 
-NRI_INLINE void CommandBufferVK::EndQuery(const QueryPool& queryPool, uint32_t offset) {
-    const QueryPoolVK& queryPoolImpl = (const QueryPoolVK&)queryPool;
+NRI_INLINE void CommandBufferVK::EndQuery(QueryPool& queryPool, uint32_t offset) {
+    QueryPoolVK& queryPoolImpl = (QueryPoolVK&)queryPool;
     const auto& vk = m_Device.GetDispatchTable();
 
     if (queryPoolImpl.GetType() == VK_QUERY_TYPE_TIMESTAMP)
@@ -825,8 +825,8 @@ NRI_INLINE void CommandBufferVK::CopyQueries(const QueryPool& queryPool, uint32_
     vk.CmdCopyQueryPoolResults(m_Handle, queryPoolImpl.GetHandle(), offset, num, bufferImpl.GetHandle(), dstOffset, queryPoolImpl.GetQuerySize(), flags);
 }
 
-NRI_INLINE void CommandBufferVK::ResetQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num) {
-    const QueryPoolVK& queryPoolImpl = (const QueryPoolVK&)queryPool;
+NRI_INLINE void CommandBufferVK::ResetQueries(QueryPool& queryPool, uint32_t offset, uint32_t num) {
+    QueryPoolVK& queryPoolImpl = (QueryPoolVK&)queryPool;
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdResetQueryPool(m_Handle, queryPoolImpl.GetHandle(), offset, num);
