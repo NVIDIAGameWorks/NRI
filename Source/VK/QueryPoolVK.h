@@ -33,6 +33,7 @@ struct QueryPoolVK {
     //================================================================================================================
 
     void SetDebugName(const char* name);
+    void Reset(uint32_t offset, uint32_t num);
 
     inline uint32_t GetQuerySize() const {
         return m_QuerySize;

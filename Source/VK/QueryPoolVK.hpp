@@ -50,3 +50,8 @@ Result QueryPoolVK::Create(const QueryPoolVKDesc& queryPoolDesc) {
 NRI_INLINE void QueryPoolVK::SetDebugName(const char* name) {
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_QUERY_POOL, (uint64_t)m_Handle, name);
 }
+
+NRI_INLINE void QueryPoolVK::Reset(uint32_t offset, uint32_t num) {
+    const auto& vk = m_Device.GetDispatchTable();
+    vk.ResetQueryPool(m_Device, m_Handle, offset, num);
+}

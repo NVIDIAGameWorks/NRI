@@ -103,6 +103,76 @@ NRI_API Result NRI_CALL nriGetInterface(const Device& device, const char* interf
     return result;
 }
 
+NRI_API void NRI_CALL nriBeginAnnotation(const char* name, uint32_t bgra) {
+    MaybeUnused(name, bgra);
+
+#if NRI_USE_NVTX
+    nvtxEventAttributes_t eventAttrib = {};
+    eventAttrib.version = NVTX_VERSION;
+    eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
+    eventAttrib.colorType = bgra == BGRA_UNUSED ? NVTX_COLOR_UNKNOWN : NVTX_COLOR_ARGB;
+    eventAttrib.color = bgra;
+    eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII;
+    eventAttrib.message.ascii = name;
+
+    nvtxRangePushEx(&eventAttrib);
+#endif
+}
+
+NRI_API void NRI_CALL nriEndAnnotation() {
+#if NRI_USE_NVTX
+    nvtxRangePop();
+#endif
+}
+
+NRI_API void NRI_CALL nriEvent(const char* name, uint32_t bgra) {
+    MaybeUnused(name, bgra);
+
+#if NRI_USE_NVTX
+    nvtxEventAttributes_t eventAttrib = {};
+    eventAttrib.version = NVTX_VERSION;
+    eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
+    eventAttrib.colorType = bgra == BGRA_UNUSED ? NVTX_COLOR_UNKNOWN : NVTX_COLOR_ARGB;
+    eventAttrib.color = bgra;
+    eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII;
+    eventAttrib.message.ascii = name;
+
+    nvtxMarkEx(&eventAttrib);
+#endif
+}
+
+#if NRI_USE_NVTX
+
+#    if (defined __linux__)
+#        include <sys/syscall.h>
+#    elif (defined __APPLE__)
+#        include <sys/syscall.h>
+#    elif (defined __ANDROID__)
+#        include <unistd.h>
+#    elif (defined _WIN64)
+#        include <windows.h>
+#    endif
+
+NRI_API void NRI_CALL nriSetThreadName(const char* name) {
+#    if (defined __linux__)
+    nvtxNameOsThreadA(syscall(SYS_gettid), name);
+#    elif (defined __APPLE__)
+    nvtxNameOsThreadA(syscall(SYS_thread_selfid), name);
+#    elif (defined __ANDROID__)
+    nvtxNameOsThreadA(gettid(), name);
+#    elif (defined _WIN64)
+    nvtxNameOsThreadA(GetCurrentThreadId(), name);
+#    endif
+}
+
+#else
+
+NRI_API void NRI_CALL nriSetThreadName(const char* name) {
+    MaybeUnused(name);
+}
+
+#endif
+
 template <typename T>
 Result FinalizeDeviceCreation(const T& deviceCreationDesc, DeviceBase& deviceImpl, Device*& device) {
     if (deviceCreationDesc.enableNRIValidation && deviceCreationDesc.graphicsAPI != GraphicsAPI::NONE) {
@@ -113,8 +183,13 @@ Result FinalizeDeviceCreation(const T& deviceCreationDesc, DeviceBase& deviceImp
         }
 
         device = deviceVal;
-    } else
+    } else {
         device = (Device*)&deviceImpl;
+
+#if NRI_USE_NVTX
+        nvtxInitialize(nullptr); // needed only to avoid stalls on the first use
+#endif
+    }
 
     return Result::SUCCESS;
 }

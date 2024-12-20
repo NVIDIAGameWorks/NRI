@@ -25,7 +25,7 @@ Non-goals:
 
 #define NRI_VERSION_MAJOR 1
 #define NRI_VERSION_MINOR 155
-#define NRI_VERSION_DATE "19 December 2024"
+#define NRI_VERSION_DATE "20 December 2024"
 
 #include "NRIDescs.h"
 
@@ -33,6 +33,13 @@ NriNamespaceBegin
 
 // Example: Result result = nriGetInterface(device, NRI_INTERFACE(CoreInterface), &coreInterface)
 NRI_API Nri(Result) NRI_CALL nriGetInterface(const NriRef(Device) device, const char* interfaceName, size_t interfaceSize, void* interfacePtr);
+
+// Annotations for profiling tools: host (via NVTX)
+// BGRA color can be constructed via "NriBgra" macro or "BGRA_UNUSED" constant
+NRI_API void NRI_CALL nriBeginAnnotation(const char* name, uint32_t bgra);  // start a named range
+NRI_API void NRI_CALL nriEndAnnotation();                                   // end the last opened range
+NRI_API void NRI_CALL nriEvent(const char* name, uint32_t bgra);            // emit a simulateneous event
+NRI_API void NRI_CALL nriSetThreadName(const char* name);                   // assign a name to the current thread
 
 NriStruct(CoreInterface) {
     // Get
@@ -166,14 +173,17 @@ NriStruct(CoreInterface) {
         void                (NRI_CALL *CmdEndQuery)                 (NriRef(CommandBuffer) commandBuffer, NriRef(QueryPool) queryPool, uint32_t offset);
         void                (NRI_CALL *CmdCopyQueries)              (NriRef(CommandBuffer) commandBuffer, const NriRef(QueryPool) queryPool, uint32_t offset, uint32_t num, NriRef(Buffer) dstBuffer, uint64_t dstOffset);
 
-        // Annotation
-        void                (NRI_CALL *CmdBeginAnnotation)          (NriRef(CommandBuffer) commandBuffer, const char* name);
+        // Annotations for profiling tools: device
+        void                (NRI_CALL *CmdBeginAnnotation)          (NriRef(CommandBuffer) commandBuffer, const char* name, uint32_t bgra);
         void                (NRI_CALL *CmdEndAnnotation)            (NriRef(CommandBuffer) commandBuffer);
     // }                }
     Nri(Result)         (NRI_CALL *EndCommandBuffer)                (NriRef(CommandBuffer) commandBuffer);
 
+    // Query
+    void                (NRI_CALL *ResetQueries)                    (NriRef(QueryPool) queryPool, uint32_t offset, uint32_t num); // on host
+
     // Work submission and synchronization
-    void                (NRI_CALL *QueueSubmit)                     (NriRef(CommandQueue) commandQueue, const NriRef(QueueSubmitDesc) queueSubmitDesc); // on device
+    void                (NRI_CALL *QueueSubmit)                     (NriRef(CommandQueue) commandQueue, const NriRef(QueueSubmitDesc) queueSubmitDesc); // to device
     void                (NRI_CALL *Wait)                            (NriRef(Fence) fence, uint64_t value); // on host
     uint64_t            (NRI_CALL *GetFenceValue)                   (NriRef(Fence) fence);
 

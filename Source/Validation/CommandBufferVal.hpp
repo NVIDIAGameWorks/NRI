@@ -44,8 +44,6 @@ NRI_INLINE Result CommandBufferVal::Begin(const DescriptorPool* descriptorPool) 
     if (result == Result::SUCCESS)
         m_IsRecordingStarted = true;
 
-    m_ValidationCommands.clear();
-
     m_Pipeline = nullptr;
     m_PipelineLayout = nullptr;
 
@@ -462,17 +460,10 @@ NRI_INLINE void CommandBufferVal::BeginQuery(QueryPool& queryPool, uint32_t offs
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, queryPoolVal.GetQueryType() != QueryType::TIMESTAMP, ReturnVoid(), "'BeginQuery' is not supported for timestamp queries");
 
-    if (!queryPoolVal.IsImported()) {
+    if (!queryPoolVal.IsImported())
         RETURN_ON_FAILURE(&m_Device, offset < queryPoolVal.GetQueryNum(), ReturnVoid(), "'offset = %u' is out of range", offset);
 
-        ValidationCommandUseQuery& validationCommand = AllocateValidationCommand<ValidationCommandUseQuery>();
-        validationCommand.type = ValidationCommandType::BEGIN_QUERY;
-        validationCommand.queryPool = const_cast<QueryPool*>(&queryPool);
-        validationCommand.queryPoolOffset = offset;
-    }
-
     QueryPool* queryPoolImpl = NRI_GET_IMPL(QueryPool, &queryPool);
-
     GetCoreInterface().CmdBeginQuery(*GetImpl(), *queryPoolImpl, offset);
 }
 
@@ -481,17 +472,10 @@ NRI_INLINE void CommandBufferVal::EndQuery(QueryPool& queryPool, uint32_t offset
 
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
 
-    if (!queryPoolVal.IsImported()) {
+    if (!queryPoolVal.IsImported())
         RETURN_ON_FAILURE(&m_Device, offset < queryPoolVal.GetQueryNum(), ReturnVoid(), "'offset = %u' is out of range", offset);
 
-        ValidationCommandUseQuery& validationCommand = AllocateValidationCommand<ValidationCommandUseQuery>();
-        validationCommand.type = ValidationCommandType::END_QUERY;
-        validationCommand.queryPool = const_cast<QueryPool*>(&queryPool);
-        validationCommand.queryPoolOffset = offset;
-    }
-
     QueryPool* queryPoolImpl = NRI_GET_IMPL(QueryPool, &queryPool);
-
     GetCoreInterface().CmdEndQuery(*GetImpl(), *queryPoolImpl, offset);
 }
 
@@ -514,26 +498,18 @@ NRI_INLINE void CommandBufferVal::ResetQueries(QueryPool& queryPool, uint32_t of
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");
 
     QueryPoolVal& queryPoolVal = (QueryPoolVal&)queryPool;
-    if (!queryPoolVal.IsImported()) {
+    if (!queryPoolVal.IsImported())
         RETURN_ON_FAILURE(&m_Device, offset + num <= queryPoolVal.GetQueryNum(), ReturnVoid(), "'offset + num = %u' is out of range", offset + num);
 
-        ValidationCommandResetQuery& validationCommand = AllocateValidationCommand<ValidationCommandResetQuery>();
-        validationCommand.type = ValidationCommandType::RESET_QUERY;
-        validationCommand.queryPool = const_cast<QueryPool*>(&queryPool);
-        validationCommand.queryPoolOffset = offset;
-        validationCommand.queryNum = num;
-    }
-
     QueryPool* queryPoolImpl = NRI_GET_IMPL(QueryPool, &queryPool);
-
     GetCoreInterface().CmdResetQueries(*GetImpl(), *queryPoolImpl, offset, num);
 }
 
-NRI_INLINE void CommandBufferVal::BeginAnnotation(const char* name) {
+NRI_INLINE void CommandBufferVal::BeginAnnotation(const char* name, uint32_t bgra) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
 
     m_AnnotationStack++;
-    GetCoreInterface().CmdBeginAnnotation(*GetImpl(), name);
+    GetCoreInterface().CmdBeginAnnotation(*GetImpl(), name, bgra);
 }
 
 NRI_INLINE void CommandBufferVal::EndAnnotation() {
@@ -708,19 +684,4 @@ NRI_INLINE void CommandBufferVal::ValidateReadonlyDepthStencil() {
         if (m_DepthStencil->IsStencilReadonly() && m_Pipeline->WritesToStencil())
             REPORT_WARNING(&m_Device, "Stencil is read-only, but the pipeline writes to stencil. Writing happens only in VK!");
     }
-}
-
-template <typename Command>
-Command& CommandBufferVal::AllocateValidationCommand() {
-    const size_t commandSize = sizeof(Command);
-    const size_t newSize = m_ValidationCommands.size() + commandSize;
-    const size_t capacity = m_ValidationCommands.capacity();
-
-    if (newSize > capacity)
-        m_ValidationCommands.reserve(std::max(capacity + (capacity >> 1), newSize));
-
-    const size_t offset = m_ValidationCommands.size();
-    m_ValidationCommands.resize(newSize);
-
-    return *(Command*)(m_ValidationCommands.data() + offset);
 }

@@ -53,8 +53,6 @@ NRI_INLINE void CommandQueueVal::SetDebugName(const char* name) {
 }
 
 NRI_INLINE void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
-    ProcessValidationCommands((const CommandBufferVal* const*)queueSubmitDesc.commandBuffers, queueSubmitDesc.commandBufferNum);
-
     auto queueSubmitDescImpl = queueSubmitDesc;
 
     Scratch<FenceSubmitDesc> waitFences = AllocateScratch(m_Device, FenceSubmitDesc, queueSubmitDesc.waitFenceNum);
@@ -114,82 +112,4 @@ NRI_INLINE Result CommandQueueVal::UploadData(const TextureUploadDesc* textureUp
 
 NRI_INLINE Result CommandQueueVal::WaitForIdle() {
     return GetHelperInterface().WaitForIdle(*GetImpl());
-}
-
-template <typename Command>
-const Command* ReadCommand(const uint8_t*& begin, const uint8_t* end) {
-    if (begin + sizeof(Command) <= end) {
-        const Command* command = (const Command*)begin;
-        begin += sizeof(Command);
-        return command;
-    }
-    return nullptr;
-}
-
-void CommandQueueVal::ProcessValidationCommandBeginQuery(const uint8_t*& begin, const uint8_t* end) {
-    const ValidationCommandUseQuery* command = ReadCommand<ValidationCommandUseQuery>(begin, end);
-    CHECK(command != nullptr, "can't parse command");
-    CHECK(command->queryPool != nullptr, "query pool is invalid");
-
-    QueryPoolVal& queryPool = *(QueryPoolVal*)command->queryPool;
-    const bool used = queryPool.SetQueryState(command->queryPoolOffset, true);
-
-    if (used)
-        REPORT_ERROR(&m_Device, "QueryPool='%s' (offset=%u) must be reset before use", queryPool.GetDebugName(), command->queryPoolOffset);
-}
-
-void CommandQueueVal::ProcessValidationCommandEndQuery(const uint8_t*& begin, const uint8_t* end) {
-    const ValidationCommandUseQuery* command = ReadCommand<ValidationCommandUseQuery>(begin, end);
-    CHECK(command != nullptr, "can't parse command");
-    CHECK(command->queryPool != nullptr, "query pool is invalid");
-
-    QueryPoolVal& queryPool = *(QueryPoolVal*)command->queryPool;
-    const bool used = queryPool.SetQueryState(command->queryPoolOffset, true);
-
-    if (queryPool.GetQueryType() == QueryType::TIMESTAMP) {
-        if (used)
-            REPORT_ERROR(&m_Device, "QueryPool='%s' (offset=%u) must be reset before use", queryPool.GetDebugName(), command->queryPoolOffset);
-    } else {
-        if (!used)
-            REPORT_ERROR(&m_Device, "QueryPool='%s' (offset=%u) is not in active state", queryPool.GetDebugName(), command->queryPoolOffset);
-    }
-}
-
-void CommandQueueVal::ProcessValidationCommandResetQuery(const uint8_t*& begin, const uint8_t* end) {
-    const ValidationCommandResetQuery* command = ReadCommand<ValidationCommandResetQuery>(begin, end);
-    CHECK(command != nullptr, "can't parse command");
-    CHECK(command->queryPool != nullptr, "query pool is invalid");
-
-    QueryPoolVal& queryPool = *(QueryPoolVal*)command->queryPool;
-    queryPool.ResetQueries(command->queryPoolOffset, command->queryNum);
-}
-
-void CommandQueueVal::ProcessValidationCommands(const CommandBufferVal* const* commandBuffers, uint32_t commandBufferNum) {
-    ExclusiveScope lockScope(m_Device.GetLock());
-
-    using ProcessValidationCommandMethod = void (CommandQueueVal::*)(const uint8_t*& begin, const uint8_t* end);
-
-    constexpr ProcessValidationCommandMethod table[] = {
-        &CommandQueueVal::ProcessValidationCommandBeginQuery, // ValidationCommandType::BEGIN_QUERY
-        &CommandQueueVal::ProcessValidationCommandEndQuery,   // ValidationCommandType::END_QUERY
-        &CommandQueueVal::ProcessValidationCommandResetQuery  // ValidationCommandType::RESET_QUERY
-    };
-
-    for (size_t i = 0; i < commandBufferNum; i++) {
-        const Vector<uint8_t>& buffer = commandBuffers[i]->GetValidationCommands();
-        const uint8_t* begin = buffer.data();
-        const uint8_t* end = buffer.data() + buffer.size();
-
-        while (begin != end) {
-            const ValidationCommandType type = *(const ValidationCommandType*)begin;
-
-            if (type == ValidationCommandType::NONE || type >= ValidationCommandType::MAX_NUM) {
-                REPORT_ERROR(&m_Device, "Invalid validation command: %u", (uint32_t)type);
-                break;
-            }
-
-            const ProcessValidationCommandMethod method = table[(size_t)type - 1];
-            (this->*method)(begin, end);
-        }
-    }
 }

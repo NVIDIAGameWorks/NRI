@@ -74,7 +74,7 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
     void BeginQuery(QueryPool& queryPool, uint32_t offset);
     void EndQuery(QueryPool& queryPool, uint32_t offset);
     void CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset);
-    void BeginAnnotation(const char* name);
+    void BeginAnnotation(const char* name, uint32_t bgra);
     void EndAnnotation();
 
 private:

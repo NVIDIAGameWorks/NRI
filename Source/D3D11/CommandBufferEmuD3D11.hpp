@@ -461,7 +461,10 @@ void CommandBufferEmuD3D11::Submit() {
                 const char* name;
                 Read(m_PushBuffer, i, name, len);
 
-                commandBuffer.BeginAnnotation(name);
+                uint32_t bgra;
+                Read(m_PushBuffer, i, bgra);
+
+                commandBuffer.BeginAnnotation(name, bgra);
             } break;
             case END_ANNOTATION: {
                 commandBuffer.EndAnnotation();
@@ -717,11 +720,12 @@ NRI_INLINE void CommandBufferEmuD3D11::CopyQueries(const QueryPool& queryPool, u
     Push(m_PushBuffer, dstOffset);
 }
 
-NRI_INLINE void CommandBufferEmuD3D11::BeginAnnotation(const char* name) {
+NRI_INLINE void CommandBufferEmuD3D11::BeginAnnotation(const char* name, uint32_t bgra) {
     uint32_t len = (uint32_t)std::strlen(name) + 1;
 
     Push(m_PushBuffer, BEGIN_ANNOTATION);
     Push(m_PushBuffer, name, len);
+    Push(m_PushBuffer, name, bgra);
 }
 
 NRI_INLINE void CommandBufferEmuD3D11::EndAnnotation() {

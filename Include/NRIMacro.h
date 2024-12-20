@@ -5,6 +5,7 @@
 #undef ERROR
 
 #define NriBit(bit) (1 << (bit))
+#define NriBgra(r, g, b) (0xFF000000 | ((r) << 16) | ((g) << 8) | (b))
 
 #define NRI_NAME_C(name) Nri##name
 #define NRI_FUNC_NAME_C(name) nri##name

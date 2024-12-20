@@ -932,12 +932,8 @@ NRI_INLINE void CommandBufferD3D12::CopyQueries(const QueryPool& queryPool, uint
     m_GraphicsCommandList->ResolveQueryData(queryPoolD3D12, queryPoolD3D12.GetType(), offset, num, bufferD3D12, alignedBufferOffset);
 }
 
-NRI_INLINE void CommandBufferD3D12::BeginAnnotation(const char* name) {
-    size_t len = strlen(name) + 1;
-    Scratch<wchar_t> s = AllocateScratch(m_Device, wchar_t, len);
-    ConvertCharToWchar(name, s, len);
-
-    PIXBeginEvent(m_GraphicsCommandList, PIX_COLOR_DEFAULT, s);
+NRI_INLINE void CommandBufferD3D12::BeginAnnotation(const char* name, uint32_t bgra) {
+    PIXBeginEvent(m_GraphicsCommandList, bgra, name);
 }
 
 NRI_INLINE void CommandBufferD3D12::EndAnnotation() {

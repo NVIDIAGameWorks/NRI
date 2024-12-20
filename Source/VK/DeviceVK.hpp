@@ -1577,6 +1577,7 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
     GET_DEVICE_CORE_OR_KHR_PROC(BindImageMemory2);
     GET_DEVICE_CORE_OR_KHR_PROC(GetDeviceBufferMemoryRequirements);
     GET_DEVICE_CORE_OR_KHR_PROC(GetDeviceImageMemoryRequirements);
+    GET_DEVICE_CORE_OR_KHR_PROC(ResetQueryPool);
     GET_DEVICE_CORE_OR_KHR_PROC(BeginCommandBuffer);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdSetViewport);
     GET_DEVICE_CORE_OR_KHR_PROC(CmdSetScissor);

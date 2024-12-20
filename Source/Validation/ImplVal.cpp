@@ -210,8 +210,8 @@ static void NRI_CALL CmdEndQuery(CommandBuffer& commandBuffer, QueryPool& queryP
     ((CommandBufferVal&)commandBuffer).EndQuery(queryPool, offset);
 }
 
-static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name) {
-    ((CommandBufferVal&)commandBuffer).BeginAnnotation(name);
+static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferVal&)commandBuffer).BeginAnnotation(name, bgra);
 }
 
 static void NRI_CALL CmdEndAnnotation(CommandBuffer& commandBuffer) {
@@ -263,6 +263,10 @@ static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandB
 
 static void NRI_CALL SetCommandQueueDebugName(CommandQueue& commandQueue, const char* name) {
     ((CommandQueueVal&)commandQueue).SetDebugName(name);
+}
+
+static void NRI_CALL ResetQueries(QueryPool& queryPool, uint32_t offset, uint32_t num) {
+    ((QueryPoolVal&)queryPool).ResetQueries(offset, num);
 }
 
 static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& queueSubmitDesc) {
@@ -626,6 +630,7 @@ Result DeviceVal::FillFunctionTable(CoreInterface& table) const {
     table.CmdBeginAnnotation = ::CmdBeginAnnotation;
     table.CmdEndAnnotation = ::CmdEndAnnotation;
     table.EndCommandBuffer = ::EndCommandBuffer;
+    table.ResetQueries = ::ResetQueries;
     table.QueueSubmit = ::QueueSubmit;
     table.Wait = ::Wait;
     table.GetFenceValue = ::GetFenceValue;

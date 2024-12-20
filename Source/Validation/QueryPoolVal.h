@@ -7,8 +7,7 @@ namespace nri {
 struct QueryPoolVal : public DeviceObjectVal<QueryPool> {
     QueryPoolVal(DeviceVal& device, QueryPool* queryPool, QueryType queryType, uint32_t queryNum);
 
-    bool SetQueryState(uint32_t offset, bool state);
-    void ResetQueries(uint32_t offset, uint32_t number);
+    void ResetQueries(uint32_t offset, uint32_t num);
 
     inline uint32_t GetQueryNum() const {
         return m_QueryNum;
@@ -30,7 +29,6 @@ struct QueryPoolVal : public DeviceObjectVal<QueryPool> {
     uint32_t GetQuerySize() const;
 
 private:
-    Vector<uint64_t> m_DeviceState;
     uint32_t m_QueryNum;
     QueryType m_QueryType;
 };

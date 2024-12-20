@@ -200,4 +200,5 @@ static inline Nri(TextureBarrierDesc) NriFunc(TextureBarrierFromState)(NriRef(Te
 
     return *NriDeref(prevState);
 }
+
 NriNamespaceEnd

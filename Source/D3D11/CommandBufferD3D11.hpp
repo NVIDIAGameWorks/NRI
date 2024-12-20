@@ -1,5 +1,7 @@
 // © 2021 NVIDIA Corporation
 
+#include <pix.h>
+
 static constexpr uint64_t s_nullOffsets[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {0};
 
 uint8_t QueryLatestDeviceContext(ComPtr<ID3D11DeviceContextBest>& in, ComPtr<ID3D11DeviceContextBest>& out) {
@@ -570,14 +572,22 @@ NRI_INLINE void CommandBufferD3D11::CopyQueries(const QueryPool& queryPool, uint
     ((BufferD3D11&)dstBuffer).AssignQueryPoolRange((QueryPoolD3D11*)&queryPool, offset, num, dstOffset);
 }
 
-NRI_INLINE void CommandBufferD3D11::BeginAnnotation(const char* name) {
-    size_t len = strlen(name) + 1;
-    Scratch<wchar_t> s = AllocateScratch(m_Device, wchar_t, len);
-    ConvertCharToWchar(name, s, len);
-
-    m_Annotation->BeginEvent(s);
+NRI_INLINE void CommandBufferD3D11::BeginAnnotation(const char* name, uint32_t bgra) {
+    /*
+    // TODO: unfortunately, just a few tools support "BeginEventInt"
+    if (m_Version >= 2)
+        PIXBeginEvent(m_DeferredContext, bgra, name);
+    else
+    */
+    PIXBeginEvent(m_Annotation, bgra, name);
 }
 
 NRI_INLINE void CommandBufferD3D11::EndAnnotation() {
-    m_Annotation->EndEvent();
+    /*
+    // TODO: unfortunately, just a few tools support "BeginEventInt"
+    if (m_Version >= 2)
+        PIXEndEvent(m_DeferredContext);
+    else
+    */
+    PIXEndEvent(m_Annotation);
 }

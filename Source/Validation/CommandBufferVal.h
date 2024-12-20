@@ -11,13 +11,8 @@ struct PipelineLayoutVal;
 struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     CommandBufferVal(DeviceVal& device, CommandBuffer* commandBuffer, bool isWrapped)
         : DeviceObjectVal(device, commandBuffer)
-        , m_ValidationCommands(device.GetStdAllocator())
         , m_IsRecordingStarted(isWrapped)
         , m_IsWrapped(isWrapped) {
-    }
-
-    inline const Vector<uint8_t>& GetValidationCommands() const {
-        return m_ValidationCommands;
     }
 
     inline void* GetNativeObject() const {
@@ -76,7 +71,7 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     void EndQuery(QueryPool& queryPool, uint32_t offset);
     void CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset);
     void ResetQueries(QueryPool& queryPool, uint32_t offset, uint32_t num);
-    void BeginAnnotation(const char* name);
+    void BeginAnnotation(const char* name, uint32_t bgra);
     void EndAnnotation();
     void BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset);
     void BuildBottomLevelAccelerationStructure(uint32_t geometryObjectNum, const GeometryObject* geometryObjects, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset);
@@ -90,11 +85,8 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     void DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset);
 
 private:
-    template <typename Command>
-    Command& AllocateValidationCommand();
     void ValidateReadonlyDepthStencil();
 
-    Vector<uint8_t> m_ValidationCommands;
     std::array<DescriptorVal*, 16> m_RenderTargets = {};
     DescriptorVal* m_DepthStencil = nullptr;
     PipelineLayoutVal* m_PipelineLayout = nullptr;
@@ -104,27 +96,6 @@ private:
     bool m_IsRecordingStarted = false;
     bool m_IsWrapped = false;
     bool m_IsRenderPass = false;
-};
-
-enum class ValidationCommandType : uint32_t {
-    NONE,
-    BEGIN_QUERY,
-    END_QUERY,
-    RESET_QUERY,
-    MAX_NUM
-};
-
-struct ValidationCommandUseQuery {
-    ValidationCommandType type;
-    QueryPool* queryPool;
-    uint32_t queryPoolOffset;
-};
-
-struct ValidationCommandResetQuery {
-    ValidationCommandType type;
-    QueryPool* queryPool;
-    uint32_t queryPoolOffset;
-    uint32_t queryNum;
 };
 
 } // namespace nri

@@ -512,7 +512,7 @@ static void NRI_CALL CmdEndQuery(CommandBuffer&, QueryPool&, uint32_t) {
 static void NRI_CALL CmdCopyQueries(CommandBuffer&, const QueryPool&, uint32_t, uint32_t, Buffer&, uint64_t) {
 }
 
-static void NRI_CALL CmdBeginAnnotation(CommandBuffer&, const char*) {
+static void NRI_CALL CmdBeginAnnotation(CommandBuffer&, const char*, uint32_t) {
 }
 
 static void NRI_CALL CmdEndAnnotation(CommandBuffer&) {
@@ -520,6 +520,9 @@ static void NRI_CALL CmdEndAnnotation(CommandBuffer&) {
 
 static Result NRI_CALL EndCommandBuffer(CommandBuffer&) {
     return Result::SUCCESS;
+}
+
+static void NRI_CALL ResetQueries(QueryPool&, uint32_t, uint32_t) {
 }
 
 static void NRI_CALL QueueSubmit(CommandQueue&, const QueueSubmitDesc&) {
@@ -699,6 +702,7 @@ Result DeviceNONE::FillFunctionTable(CoreInterface& table) const {
     table.CmdBeginAnnotation = ::CmdBeginAnnotation;
     table.CmdEndAnnotation = ::CmdEndAnnotation;
     table.EndCommandBuffer = ::EndCommandBuffer;
+    table.ResetQueries = ::ResetQueries;
     table.QueueSubmit = ::QueueSubmit;
     table.Wait = ::Wait;
     table.GetFenceValue = ::GetFenceValue;

@@ -118,6 +118,10 @@ static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
     return ((CommandBufferVK&)commandBuffer).End();
 }
 
+static void NRI_CALL ResetQueries(QueryPool& queryPool, uint32_t offset, uint32_t num) {
+    ((QueryPoolVK&)queryPool).Reset(offset, num);
+}
+
 static void NRI_CALL CmdSetPipelineLayout(CommandBuffer& commandBuffer, const PipelineLayout& pipelineLayout) {
     ((CommandBufferVK&)commandBuffer).SetPipelineLayout(pipelineLayout);
 }
@@ -230,8 +234,8 @@ static void NRI_CALL CmdEndQuery(CommandBuffer& commandBuffer, QueryPool& queryP
     ((CommandBufferVK&)commandBuffer).EndQuery(queryPool, offset);
 }
 
-static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name) {
-    ((CommandBufferVK&)commandBuffer).BeginAnnotation(name);
+static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferVK&)commandBuffer).BeginAnnotation(name, bgra);
 }
 
 static void NRI_CALL CmdEndAnnotation(CommandBuffer& commandBuffer) {
@@ -619,6 +623,7 @@ Result DeviceVK::FillFunctionTable(CoreInterface& table) const {
     table.CmdBeginAnnotation = ::CmdBeginAnnotation;
     table.CmdEndAnnotation = ::CmdEndAnnotation;
     table.EndCommandBuffer = ::EndCommandBuffer;
+    table.ResetQueries = ::ResetQueries;
     table.QueueSubmit = ::QueueSubmit;
     table.Wait = ::Wait;
     table.GetFenceValue = ::GetFenceValue;

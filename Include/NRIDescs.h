@@ -57,6 +57,7 @@ typedef uint16_t Nri(Dim_t);
 typedef uint32_t Nri(MemoryType);
 
 // Aliases
+static const uint32_t NriConstant(BGRA_UNUSED) = 0;         // only for "bgra" color for profiling
 static const uint32_t NriConstant(ALL_SAMPLES) = 0;         // only for "sampleMask"
 static const uint32_t NriConstant(ONE_VIEWPORT) = 0;        // only for "viewportNum"
 static const Nri(Dim_t) NriConstant(WHOLE_SIZE) = 0;        // only for "Dim_t" and "size"

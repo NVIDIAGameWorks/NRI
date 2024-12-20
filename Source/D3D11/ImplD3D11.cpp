@@ -415,8 +415,8 @@ static void NRI_CALL CmdEndQuery(CommandBuffer& commandBuffer, QueryPool& queryP
     ((CommandBufferD3D11&)commandBuffer).EndQuery(queryPool, offset);
 }
 
-static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name) {
-    ((CommandBufferD3D11&)commandBuffer).BeginAnnotation(name);
+static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferD3D11&)commandBuffer).BeginAnnotation(name, bgra);
 }
 
 static void NRI_CALL CmdEndAnnotation(CommandBuffer& commandBuffer) {
@@ -456,6 +456,9 @@ static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPoo
 }
 
 static void NRI_CALL CmdResetQueries(CommandBuffer&, QueryPool&, uint32_t, uint32_t) {
+}
+
+static void NRI_CALL ResetQueries(QueryPool&, uint32_t, uint32_t) {
 }
 
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
@@ -589,8 +592,8 @@ static void NRI_CALL EmuCmdEndQuery(CommandBuffer& commandBuffer, QueryPool& que
     ((CommandBufferEmuD3D11&)commandBuffer).EndQuery(queryPool, offset);
 }
 
-static void NRI_CALL EmuCmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name) {
-    ((CommandBufferEmuD3D11&)commandBuffer).BeginAnnotation(name);
+static void NRI_CALL EmuCmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferEmuD3D11&)commandBuffer).BeginAnnotation(name, bgra);
 }
 
 static void NRI_CALL EmuCmdEndAnnotation(CommandBuffer& commandBuffer) {
@@ -756,6 +759,7 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
     table.BindBufferMemory = ::BindBufferMemory;
     table.BindTextureMemory = ::BindTextureMemory;
     table.FreeMemory = ::FreeMemory;
+    table.ResetQueries = ::ResetQueries;
     table.QueueSubmit = ::QueueSubmit;
     table.Wait = ::Wait;
     table.GetFenceValue = ::GetFenceValue;

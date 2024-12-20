@@ -102,6 +102,7 @@ struct DispatchTable {
     VULKAN_FUNCTION(BindImageMemory2);
     VULKAN_FUNCTION(GetDeviceBufferMemoryRequirements);
     VULKAN_FUNCTION(GetDeviceImageMemoryRequirements);
+    VULKAN_FUNCTION(ResetQueryPool);
     VULKAN_FUNCTION(GetBufferDeviceAddress);
     VULKAN_FUNCTION(BeginCommandBuffer);
     VULKAN_FUNCTION(CmdSetViewport);

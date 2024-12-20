@@ -251,8 +251,8 @@ static void NRI_CALL CmdEndQuery(CommandBuffer& commandBuffer, QueryPool& queryP
     ((CommandBufferD3D12&)commandBuffer).EndQuery(queryPool, offset);
 }
 
-static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name) {
-    ((CommandBufferD3D12&)commandBuffer).BeginAnnotation(name);
+static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferD3D12&)commandBuffer).BeginAnnotation(name, bgra);
 }
 
 static void NRI_CALL CmdEndAnnotation(CommandBuffer& commandBuffer) {
@@ -292,6 +292,9 @@ static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPoo
 }
 
 static void NRI_CALL CmdResetQueries(CommandBuffer&, QueryPool&, uint32_t, uint32_t) {
+}
+
+static void NRI_CALL ResetQueries(QueryPool&, uint32_t, uint32_t) {
 }
 
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
@@ -632,6 +635,7 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& table) const {
     table.CmdBeginAnnotation = ::CmdBeginAnnotation;
     table.CmdEndAnnotation = ::CmdEndAnnotation;
     table.EndCommandBuffer = ::EndCommandBuffer;
+    table.ResetQueries = ::ResetQueries;
     table.QueueSubmit = ::QueueSubmit;
     table.Wait = ::Wait;
     table.GetFenceValue = ::GetFenceValue;
