@@ -38,7 +38,7 @@ NRI_API Nri(Result) NRI_CALL nriGetInterface(const NriRef(Device) device, const 
 // BGRA color can be constructed via "NriBgra" macro or "BGRA_UNUSED" constant
 NRI_API void NRI_CALL nriBeginAnnotation(const char* name, uint32_t bgra);  // start a named range
 NRI_API void NRI_CALL nriEndAnnotation();                                   // end the last opened range
-NRI_API void NRI_CALL nriEvent(const char* name, uint32_t bgra);            // emit a simulateneous event
+NRI_API void NRI_CALL nriEvent(const char* name, uint32_t bgra);            // emit a simultaneous event
 NRI_API void NRI_CALL nriSetThreadName(const char* name);                   // assign a name to the current thread
 
 NriStruct(CoreInterface) {
