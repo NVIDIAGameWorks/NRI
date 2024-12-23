@@ -519,6 +519,12 @@ NRI_INLINE void CommandBufferVal::EndAnnotation() {
     m_AnnotationStack--;
 }
 
+NRI_INLINE void CommandBufferVal::Annotation(const char* name, uint32_t bgra) {
+    RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
+
+    GetCoreInterface().CmdAnnotation(*GetImpl(), name, bgra);
+}
+
 NRI_INLINE void CommandBufferVal::BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {
     RETURN_ON_FAILURE(&m_Device, m_IsRecordingStarted, ReturnVoid(), "the command buffer must be in the recording state");
     RETURN_ON_FAILURE(&m_Device, !m_IsRenderPass, ReturnVoid(), "must be called outside of 'CmdBeginRendering/CmdEndRendering'");

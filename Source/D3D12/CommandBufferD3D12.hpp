@@ -933,11 +933,24 @@ NRI_INLINE void CommandBufferD3D12::CopyQueries(const QueryPool& queryPool, uint
 }
 
 NRI_INLINE void CommandBufferD3D12::BeginAnnotation(const char* name, uint32_t bgra) {
-    PIXBeginEvent(m_GraphicsCommandList, bgra, name);
+    if (m_Device.GetExt()->m_Pix.BeginEventOnCommandList)
+        m_Device.GetExt()->m_Pix.BeginEventOnCommandList(m_GraphicsCommandList, bgra, name);
+    else
+        PIXBeginEvent(m_GraphicsCommandList, bgra, name);
 }
 
 NRI_INLINE void CommandBufferD3D12::EndAnnotation() {
-    PIXEndEvent(m_GraphicsCommandList);
+    if (m_Device.GetExt()->m_Pix.EndEventOnCommandList)
+        m_Device.GetExt()->m_Pix.EndEventOnCommandList(m_GraphicsCommandList);
+    else
+        PIXEndEvent(m_GraphicsCommandList);
+}
+
+NRI_INLINE void CommandBufferD3D12::Annotation(const char* name, uint32_t bgra) {
+    if (m_Device.GetExt()->m_Pix.SetMarkerOnCommandList)
+        m_Device.GetExt()->m_Pix.SetMarkerOnCommandList(m_GraphicsCommandList, bgra, name);
+    else
+        PIXSetMarker(m_GraphicsCommandList, bgra, name);
 }
 
 NRI_INLINE void CommandBufferD3D12::BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {

@@ -518,6 +518,9 @@ static void NRI_CALL CmdBeginAnnotation(CommandBuffer&, const char*, uint32_t) {
 static void NRI_CALL CmdEndAnnotation(CommandBuffer&) {
 }
 
+static void NRI_CALL CmdAnnotation(CommandBuffer&, const char*, uint32_t) {
+}
+
 static Result NRI_CALL EndCommandBuffer(CommandBuffer&) {
     return Result::SUCCESS;
 }
@@ -701,6 +704,7 @@ Result DeviceNONE::FillFunctionTable(CoreInterface& table) const {
     table.CmdCopyQueries = ::CmdCopyQueries;
     table.CmdBeginAnnotation = ::CmdBeginAnnotation;
     table.CmdEndAnnotation = ::CmdEndAnnotation;
+    table.CmdAnnotation = ::CmdAnnotation;
     table.EndCommandBuffer = ::EndCommandBuffer;
     table.ResetQueries = ::ResetQueries;
     table.QueueSubmit = ::QueueSubmit;

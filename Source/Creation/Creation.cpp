@@ -125,7 +125,7 @@ NRI_API void NRI_CALL nriEndAnnotation() {
 #endif
 }
 
-NRI_API void NRI_CALL nriEvent(const char* name, uint32_t bgra) {
+NRI_API void NRI_CALL nriAnnotation(const char* name, uint32_t bgra) {
     MaybeUnused(name, bgra);
 
 #if NRI_USE_NVTX

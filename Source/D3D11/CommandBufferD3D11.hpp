@@ -573,21 +573,28 @@ NRI_INLINE void CommandBufferD3D11::CopyQueries(const QueryPool& queryPool, uint
 }
 
 NRI_INLINE void CommandBufferD3D11::BeginAnnotation(const char* name, uint32_t bgra) {
-    /*
-    // TODO: unfortunately, just a few tools support "BeginEventInt"
+#if USE_ANNOTATION_INT
     if (m_Version >= 2)
         PIXBeginEvent(m_DeferredContext, bgra, name);
     else
-    */
-    PIXBeginEvent(m_Annotation, bgra, name);
+#endif
+        PIXBeginEvent(m_Annotation, bgra, name);
 }
 
 NRI_INLINE void CommandBufferD3D11::EndAnnotation() {
-    /*
-    // TODO: unfortunately, just a few tools support "BeginEventInt"
+#if USE_ANNOTATION_INT
     if (m_Version >= 2)
         PIXEndEvent(m_DeferredContext);
     else
-    */
-    PIXEndEvent(m_Annotation);
+#endif
+        PIXEndEvent(m_Annotation);
+}
+
+NRI_INLINE void CommandBufferD3D11::Annotation(const char* name, uint32_t bgra) {
+#if USE_ANNOTATION_INT
+    if (m_Version >= 2)
+        PIXSetMarker(m_DeferredContext, bgra, name);
+    else
+#endif
+        PIXSetMarker(m_Annotation, bgra, name);
 }

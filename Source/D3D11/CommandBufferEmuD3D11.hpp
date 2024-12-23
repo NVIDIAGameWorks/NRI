@@ -38,6 +38,7 @@ enum OpCode : uint32_t {
     COPY_QUERIES,
     BEGIN_ANNOTATION,
     END_ANNOTATION,
+    ANNOTATION,
 
     UNKNOWN
 };
@@ -469,6 +470,16 @@ void CommandBufferEmuD3D11::Submit() {
             case END_ANNOTATION: {
                 commandBuffer.EndAnnotation();
             } break;
+            case ANNOTATION: {
+                uint32_t len;
+                const char* name;
+                Read(m_PushBuffer, i, name, len);
+
+                uint32_t bgra;
+                Read(m_PushBuffer, i, bgra);
+
+                commandBuffer.Annotation(name, bgra);
+            } break;
         }
     }
 }
@@ -731,3 +742,12 @@ NRI_INLINE void CommandBufferEmuD3D11::BeginAnnotation(const char* name, uint32_
 NRI_INLINE void CommandBufferEmuD3D11::EndAnnotation() {
     Push(m_PushBuffer, END_ANNOTATION);
 }
+
+NRI_INLINE void CommandBufferEmuD3D11::Annotation(const char* name, uint32_t bgra) {
+    uint32_t len = (uint32_t)std::strlen(name) + 1;
+
+    Push(m_PushBuffer, ANNOTATION);
+    Push(m_PushBuffer, name, len);
+    Push(m_PushBuffer, name, bgra);
+}
+

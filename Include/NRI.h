@@ -24,8 +24,8 @@ Non-goals:
 #pragma once
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 155
-#define NRI_VERSION_DATE "20 December 2024"
+#define NRI_VERSION_MINOR 156
+#define NRI_VERSION_DATE "23 December 2024"
 
 #include "NRIDescs.h"
 
@@ -35,10 +35,9 @@ NriNamespaceBegin
 NRI_API Nri(Result) NRI_CALL nriGetInterface(const NriRef(Device) device, const char* interfaceName, size_t interfaceSize, void* interfacePtr);
 
 // Annotations for profiling tools: host (via NVTX)
-// BGRA color can be constructed via "NriBgra" macro or "BGRA_UNUSED" constant
 NRI_API void NRI_CALL nriBeginAnnotation(const char* name, uint32_t bgra);  // start a named range
 NRI_API void NRI_CALL nriEndAnnotation();                                   // end the last opened range
-NRI_API void NRI_CALL nriEvent(const char* name, uint32_t bgra);            // emit a simultaneous event
+NRI_API void NRI_CALL nriAnnotation(const char* name, uint32_t bgra);       // emit a named simultaneous event
 NRI_API void NRI_CALL nriSetThreadName(const char* name);                   // assign a name to the current thread
 
 NriStruct(CoreInterface) {
@@ -173,9 +172,12 @@ NriStruct(CoreInterface) {
         void                (NRI_CALL *CmdEndQuery)                 (NriRef(CommandBuffer) commandBuffer, NriRef(QueryPool) queryPool, uint32_t offset);
         void                (NRI_CALL *CmdCopyQueries)              (NriRef(CommandBuffer) commandBuffer, const NriRef(QueryPool) queryPool, uint32_t offset, uint32_t num, NriRef(Buffer) dstBuffer, uint64_t dstOffset);
 
-        // Annotations for profiling tools: device
-        void                (NRI_CALL *CmdBeginAnnotation)          (NriRef(CommandBuffer) commandBuffer, const char* name, uint32_t bgra);
-        void                (NRI_CALL *CmdEndAnnotation)            (NriRef(CommandBuffer) commandBuffer);
+        // Annotations for profiling tools: device (most of tools show them on the CPU timeline too)
+        // D3D11: no colors
+        // D3D12: no colors if "WinPixEventRuntime.dll" is not nearby
+        void                (NRI_CALL *CmdBeginAnnotation)          (NriRef(CommandBuffer) commandBuffer, const char* name, uint32_t bgra); // start a named range
+        void                (NRI_CALL *CmdEndAnnotation)            (NriRef(CommandBuffer) commandBuffer);                                  // end the last opened range
+        void                (NRI_CALL *CmdAnnotation)               (NriRef(CommandBuffer) commandBuffer, const char* name, uint32_t bgra); // emit a named simultaneous event
     // }                }
     Nri(Result)         (NRI_CALL *EndCommandBuffer)                (NriRef(CommandBuffer) commandBuffer);
 

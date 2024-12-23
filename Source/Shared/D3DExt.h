@@ -20,6 +20,20 @@ struct AGSFunctionTable {
     AGS_DRIVEREXTENSIONSDX12_DESTROYDEVICE DestroyDeviceD3D12;
 };
 
+#    if defined(__d3d11_h__)
+typedef void ID3D12GraphicsCommandList;
+#    endif
+
+typedef HRESULT(WINAPI* PIX_BEGINEVENTONCOMMANDLIST)(ID3D12GraphicsCommandList* commandList, UINT64 color, _In_ PCSTR formatString);
+typedef HRESULT(WINAPI* PIX_ENDEVENTONCOMMANDLIST)(ID3D12GraphicsCommandList* commandList);
+typedef HRESULT(WINAPI* PIX_SETMARKERONCOMMANDLIST)(ID3D12GraphicsCommandList* commandList, UINT64 color, _In_ PCSTR formatString);
+
+struct PixFunctionTable {
+    PIX_BEGINEVENTONCOMMANDLIST BeginEventOnCommandList;
+    PIX_ENDEVENTONCOMMANDLIST EndEventOnCommandList;
+    PIX_SETMARKERONCOMMANDLIST SetMarkerOnCommandList;
+};
+
 struct Ext {
     ~Ext();
 
@@ -33,6 +47,7 @@ struct Ext {
 
     void InitializeNVExt(const nri::DeviceBase* deviceBase, bool isNVAPILoadedInApp, bool isImported);
     void InitializeAMDExt(const nri::DeviceBase* deviceBase, AGSContext* agsContext, bool isImported);
+    void InitializePixExt();
 
     // D3D11
 #    if defined(__d3d11_h__)
@@ -40,16 +55,16 @@ struct Ext {
     void EndUAVOverlap(ID3D11DeviceContext* deviceContext) const;
     void WaitForDrain(ID3D11DeviceContext* deviceContext, uint32_t flags) const;
     void SetDepthBounds(ID3D11DeviceContext* deviceContext, float minBound, float maxBound) const;
-    void DrawIndirect(
-        ID3D11DeviceContext* deviceContext, ID3D11Buffer* buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, ID3D11Buffer* countBuffer, uint32_t countBufferOffset) const;
-    void DrawIndexedIndirect(
-        ID3D11DeviceContext* deviceContext, ID3D11Buffer* buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, ID3D11Buffer* countBuffer, uint32_t countBufferOffset) const;
+    void DrawIndirect(ID3D11DeviceContext* deviceContext, ID3D11Buffer* buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, ID3D11Buffer* countBuffer, uint32_t countBufferOffset) const;
+    void DrawIndexedIndirect(ID3D11DeviceContext* deviceContext, ID3D11Buffer* buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, ID3D11Buffer* countBuffer, uint32_t countBufferOffset) const;
 #    endif
 
     const nri::DeviceBase* m_DeviceBase = nullptr;
     AGSContext* m_AGSContext = nullptr;
     AGSFunctionTable m_AGS = {};
     Library* m_AGSLibrary = nullptr;
+    PixFunctionTable m_Pix = {};
+    Library* m_PixLibrary = nullptr;
     bool m_IsNvAPIAvailable = false;
     bool m_IsImported = false;
 };

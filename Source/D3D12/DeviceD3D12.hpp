@@ -58,7 +58,7 @@ DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_
     , m_DrawCommandSignatures(GetStdAllocator())
     , m_DrawIndexedCommandSignatures(GetStdAllocator())
     , m_DrawMeshCommandSignatures(GetStdAllocator()) {
-    m_FreeDescriptors.resize(DESCRIPTOR_HEAP_TYPE_NUM, Vector<DescriptorHandle>(GetStdAllocator()));
+    m_FreeDescriptors.resize(D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES, Vector<DescriptorHandle>(GetStdAllocator()));
     m_AllocationCallbacks.pPrivateData = &GetStdAllocator();
     m_AllocationCallbacks.pAllocate = vmaAllocate;
     m_AllocationCallbacks.pFree = vmaFree;
@@ -118,6 +118,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
     m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
 
     // Extensions
+    m_Ext.InitializePixExt();
     if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA)
         m_Ext.InitializeNVExt(this, deviceCreationD3D12Desc.isNVAPILoaded, deviceCreationD3D12Desc.d3d12Device != nullptr);
     else if (m_Desc.adapterDesc.vendor == Vendor::AMD)

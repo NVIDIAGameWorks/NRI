@@ -14,6 +14,11 @@ Ext::~Ext() {
         UnloadSharedLibrary(*m_AGSLibrary);
         m_AGSLibrary = nullptr;
     }
+
+    if (m_PixLibrary) {
+        UnloadSharedLibrary(*m_PixLibrary);
+        m_PixLibrary = nullptr;
+    }
 }
 
 void Ext::InitializeNVExt(const nri::DeviceBase* deviceBase, bool isNVAPILoadedInApp, bool isImported) {
@@ -90,6 +95,15 @@ void Ext::InitializeAMDExt(const nri::DeviceBase* deviceBase, AGSContext* agsCon
     }
 
     m_AGSContext = agsContext;
+}
+
+void Ext::InitializePixExt() {
+    m_PixLibrary = LoadSharedLibrary("WinPixEventRuntime.dll");
+    if (m_PixLibrary) {
+        m_Pix.BeginEventOnCommandList = (PIX_BEGINEVENTONCOMMANDLIST)GetSharedLibraryFunction(*m_PixLibrary, "PIXBeginEventOnCommandList");
+        m_Pix.EndEventOnCommandList = (PIX_ENDEVENTONCOMMANDLIST)GetSharedLibraryFunction(*m_PixLibrary, "PIXEndEventOnCommandList");
+        m_Pix.SetMarkerOnCommandList = (PIX_SETMARKERONCOMMANDLIST)GetSharedLibraryFunction(*m_PixLibrary, "PIXSetMarkerOnCommandList");
+    }
 }
 
 // D3D11

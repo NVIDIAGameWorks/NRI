@@ -242,6 +242,10 @@ static void NRI_CALL CmdEndAnnotation(CommandBuffer& commandBuffer) {
     ((CommandBufferVK&)commandBuffer).EndAnnotation();
 }
 
+static void NRI_CALL CmdAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferVK&)commandBuffer).Annotation(name, bgra);
+}
+
 static void NRI_CALL CmdClearStorageBuffer(CommandBuffer& commandBuffer, const ClearStorageBufferDesc& clearDesc) {
     ((CommandBufferVK&)commandBuffer).ClearStorageBuffer(clearDesc);
 }
@@ -622,6 +626,7 @@ Result DeviceVK::FillFunctionTable(CoreInterface& table) const {
     table.CmdCopyQueries = ::CmdCopyQueries;
     table.CmdBeginAnnotation = ::CmdBeginAnnotation;
     table.CmdEndAnnotation = ::CmdEndAnnotation;
+    table.CmdAnnotation = ::CmdAnnotation;
     table.EndCommandBuffer = ::EndCommandBuffer;
     table.ResetQueries = ::ResetQueries;
     table.QueueSubmit = ::QueueSubmit;

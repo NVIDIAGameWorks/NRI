@@ -423,6 +423,10 @@ static void NRI_CALL CmdEndAnnotation(CommandBuffer& commandBuffer) {
     ((CommandBufferD3D11&)commandBuffer).EndAnnotation();
 }
 
+static void NRI_CALL CmdAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferD3D11&)commandBuffer).Annotation(name, bgra);
+}
+
 static void NRI_CALL CmdClearStorageBuffer(CommandBuffer& commandBuffer, const ClearStorageBufferDesc& clearDesc) {
     ((CommandBufferD3D11&)commandBuffer).ClearStorageBuffer(clearDesc);
 }
@@ -598,6 +602,10 @@ static void NRI_CALL EmuCmdBeginAnnotation(CommandBuffer& commandBuffer, const c
 
 static void NRI_CALL EmuCmdEndAnnotation(CommandBuffer& commandBuffer) {
     ((CommandBufferEmuD3D11&)commandBuffer).EndAnnotation();
+}
+
+static void NRI_CALL EmuCmdAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferEmuD3D11&)commandBuffer).Annotation(name, bgra);
 }
 
 static void NRI_CALL EmuCmdClearStorageBuffer(CommandBuffer& commandBuffer, const ClearStorageBufferDesc& clearDesc) {
@@ -832,6 +840,7 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
         table.CmdCopyQueries = ::EmuCmdCopyQueries;
         table.CmdBeginAnnotation = ::EmuCmdBeginAnnotation;
         table.CmdEndAnnotation = ::EmuCmdEndAnnotation;
+        table.CmdAnnotation = ::EmuCmdAnnotation;
         table.EndCommandBuffer = ::EmuEndCommandBuffer;
     } else {
         table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
@@ -876,6 +885,7 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
         table.CmdCopyQueries = ::CmdCopyQueries;
         table.CmdBeginAnnotation = ::CmdBeginAnnotation;
         table.CmdEndAnnotation = ::CmdEndAnnotation;
+        table.CmdAnnotation = ::CmdAnnotation;
         table.EndCommandBuffer = ::EndCommandBuffer;
     }
 

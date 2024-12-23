@@ -838,7 +838,7 @@ NRI_INLINE void CommandBufferVK::BeginAnnotation(const char* name, uint32_t bgra
     info.color[0] = ((bgra >> 16) & 0xFF) / 255.0f;
     info.color[1] = ((bgra >> 8) & 0xFF) / 255.0f;
     info.color[2] = ((bgra >> 0) & 0xFF) / 255.0f;
-    info.color[3] = ((bgra >> 24) & 0xFF) / 255.0f;
+    info.color[3] = 1.0f; // PIX sets alpha to 1
 
     const auto& vk = m_Device.GetDispatchTable();
     if (vk.CmdBeginDebugUtilsLabelEXT)
@@ -849,6 +849,19 @@ NRI_INLINE void CommandBufferVK::EndAnnotation() {
     const auto& vk = m_Device.GetDispatchTable();
     if (vk.CmdEndDebugUtilsLabelEXT)
         vk.CmdEndDebugUtilsLabelEXT(m_Handle);
+}
+
+NRI_INLINE void CommandBufferVK::Annotation(const char* name, uint32_t bgra) {
+    VkDebugUtilsLabelEXT info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
+    info.pLabelName = name;
+    info.color[0] = ((bgra >> 16) & 0xFF) / 255.0f;
+    info.color[1] = ((bgra >> 8) & 0xFF) / 255.0f;
+    info.color[2] = ((bgra >> 0) & 0xFF) / 255.0f;
+    info.color[3] = 1.0f; // PIX sets alpha to 1
+
+    const auto& vk = m_Device.GetDispatchTable();
+    if (vk.CmdInsertDebugUtilsLabelEXT)
+        vk.CmdInsertDebugUtilsLabelEXT(m_Handle, &info);
 }
 
 NRI_INLINE void CommandBufferVK::BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {

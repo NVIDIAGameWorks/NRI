@@ -19,7 +19,6 @@ namespace nri {
 
 struct CommandQueueD3D12;
 
-constexpr size_t DESCRIPTOR_HEAP_TYPE_NUM = D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
 constexpr uint32_t DESCRIPTORS_BATCH_SIZE = 1024;
 
 struct DeviceD3D12 final : public DeviceBase {
@@ -146,7 +145,7 @@ private:
     DeviceDesc m_Desc = {};
     uint8_t m_Version = 0;
     bool m_IsWrapped = false;
-    std::array<Lock, DESCRIPTOR_HEAP_TYPE_NUM> m_FreeDescriptorLocks;
+    std::array<Lock, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> m_FreeDescriptorLocks;
     Lock m_DescriptorHeapLock;
     Lock m_QueueLock;
 };

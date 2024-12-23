@@ -76,6 +76,7 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
     void CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset);
     void BeginAnnotation(const char* name, uint32_t bgra);
     void EndAnnotation();
+    void Annotation(const char* name, uint32_t bgra);
 
 private:
     DeviceD3D11& m_Device;

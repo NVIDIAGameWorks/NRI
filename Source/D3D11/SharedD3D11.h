@@ -6,6 +6,8 @@
 
 #include "SharedExternal.h"
 
+#define USE_ANNOTATION_INT 0 // unfortunately, just a few tools support "BeginEventInt" and "SetMarkerInt"
+
 struct AGSContext;
 
 struct ID3D11DeviceContext4;

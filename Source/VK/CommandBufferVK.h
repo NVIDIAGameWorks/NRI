@@ -65,6 +65,7 @@ struct CommandBufferVK {
     void EndQuery(QueryPool& queryPool, uint32_t offset);
     void BeginAnnotation(const char* name, uint32_t bgra);
     void EndAnnotation();
+    void Annotation(const char* name, uint32_t bgra);
     void ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc);
     void ClearStorageTexture(const ClearStorageTextureDesc& clearDesc);
     void CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size);
