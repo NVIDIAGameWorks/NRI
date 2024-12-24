@@ -1501,6 +1501,9 @@ Result DeviceVK::ResolveInstanceDispatchTable(const Vector<const char*>& desired
         GET_INSTANCE_PROC(CmdBeginDebugUtilsLabelEXT);
         GET_INSTANCE_PROC(CmdEndDebugUtilsLabelEXT);
         GET_INSTANCE_PROC(CmdInsertDebugUtilsLabelEXT);
+        GET_INSTANCE_PROC(QueueBeginDebugUtilsLabelEXT);
+        GET_INSTANCE_PROC(QueueEndDebugUtilsLabelEXT);
+        GET_INSTANCE_PROC(QueueInsertDebugUtilsLabelEXT);
     }
 
     if (IsExtensionSupported(VK_KHR_SURFACE_EXTENSION_NAME, desiredInstanceExts)) {

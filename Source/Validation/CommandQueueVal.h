@@ -16,6 +16,9 @@ struct CommandQueueVal : public DeviceObjectVal<CommandQueue> {
     //================================================================================================================
 
     void SetDebugName(const char* name);
+    void BeginAnnotation(const char* name, uint32_t bgra);
+    void EndAnnotation();
+    void Annotation(const char* name, uint32_t bgra);
     void Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain);
 
     Result WaitForIdle();

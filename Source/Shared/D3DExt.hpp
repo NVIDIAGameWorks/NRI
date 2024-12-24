@@ -12,6 +12,9 @@ void Ext::InitializePixExt() {
     m_Pix.BeginEventOnCommandList = (PIX_BEGINEVENTONCOMMANDLIST)GetSharedLibraryFunction(*m_PixLibrary, "PIXBeginEventOnCommandList");
     m_Pix.EndEventOnCommandList = (PIX_ENDEVENTONCOMMANDLIST)GetSharedLibraryFunction(*m_PixLibrary, "PIXEndEventOnCommandList");
     m_Pix.SetMarkerOnCommandList = (PIX_SETMARKERONCOMMANDLIST)GetSharedLibraryFunction(*m_PixLibrary, "PIXSetMarkerOnCommandList");
+    m_Pix.BeginEventOnCommandQueue = (PIX_BEGINEVENTONCOMMANDQUEUE)GetSharedLibraryFunction(*m_PixLibrary, "PIXBeginEventOnCommandQueue");
+    m_Pix.EndEventOnCommandQueue = (PIX_ENDEVENTONCOMMANDQUEUE)GetSharedLibraryFunction(*m_PixLibrary, "PIXEndEventOnCommandQueue");
+    m_Pix.SetMarkerOnCommandQueue = (PIX_SETMARKERONCOMMANDQUEUE)GetSharedLibraryFunction(*m_PixLibrary, "PIXSetMarkerOnCommandQueue");
 
     // Verify
     const void** functionArray = (const void**)&m_Pix;

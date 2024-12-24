@@ -298,6 +298,18 @@ static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPoo
 static void NRI_CALL CmdResetQueries(CommandBuffer&, QueryPool&, uint32_t, uint32_t) {
 }
 
+static void NRI_CALL QueueBeginAnnotation(CommandQueue& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandQueueD3D12&)commandBuffer).BeginAnnotation(name, bgra);
+}
+
+static void NRI_CALL QueueEndAnnotation(CommandQueue& commandBuffer) {
+    ((CommandQueueD3D12&)commandBuffer).EndAnnotation();
+}
+
+static void NRI_CALL QueueAnnotation(CommandQueue& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandQueueD3D12&)commandBuffer).Annotation(name, bgra);
+}
+
 static void NRI_CALL ResetQueries(QueryPool&, uint32_t, uint32_t) {
 }
 
@@ -640,6 +652,9 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& table) const {
     table.CmdEndAnnotation = ::CmdEndAnnotation;
     table.CmdAnnotation = ::CmdAnnotation;
     table.EndCommandBuffer = ::EndCommandBuffer;
+    table.QueueBeginAnnotation = ::QueueBeginAnnotation;
+    table.QueueEndAnnotation = ::QueueEndAnnotation;
+    table.QueueAnnotation = ::QueueAnnotation;
     table.ResetQueries = ::ResetQueries;
     table.QueueSubmit = ::QueueSubmit;
     table.Wait = ::Wait;

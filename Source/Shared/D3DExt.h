@@ -8,11 +8,17 @@
 typedef HRESULT(WINAPI* PIX_BEGINEVENTONCOMMANDLIST)(ID3D12GraphicsCommandList* commandList, UINT64 color, _In_ PCSTR formatString);
 typedef HRESULT(WINAPI* PIX_ENDEVENTONCOMMANDLIST)(ID3D12GraphicsCommandList* commandList);
 typedef HRESULT(WINAPI* PIX_SETMARKERONCOMMANDLIST)(ID3D12GraphicsCommandList* commandList, UINT64 color, _In_ PCSTR formatString);
+typedef HRESULT(WINAPI* PIX_BEGINEVENTONCOMMANDQUEUE)(ID3D12CommandQueue* commandQueue, UINT64 color, _In_ PCSTR formatString);
+typedef HRESULT(WINAPI* PIX_ENDEVENTONCOMMANDQUEUE)(ID3D12CommandQueue* commandQueue);
+typedef HRESULT(WINAPI* PIX_SETMARKERONCOMMANDQUEUE)(ID3D12CommandQueue* commandQueue, UINT64 color, _In_ PCSTR formatString);
 
 struct PixFuncTable {
     PIX_BEGINEVENTONCOMMANDLIST BeginEventOnCommandList;
     PIX_ENDEVENTONCOMMANDLIST EndEventOnCommandList;
     PIX_SETMARKERONCOMMANDLIST SetMarkerOnCommandList;
+    PIX_BEGINEVENTONCOMMANDQUEUE BeginEventOnCommandQueue;
+    PIX_ENDEVENTONCOMMANDQUEUE EndEventOnCommandQueue;
+    PIX_SETMARKERONCOMMANDQUEUE SetMarkerOnCommandQueue;
 };
 
 #endif

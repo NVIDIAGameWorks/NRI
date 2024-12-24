@@ -24,6 +24,27 @@ Result CommandQueueD3D12::Create(ID3D12CommandQueue* commandQueue) {
     return Result::SUCCESS;
 }
 
+NRI_INLINE void CommandQueueD3D12::BeginAnnotation(const char* name, uint32_t bgra) {
+    if (m_Device.GetExt()->HasPix())
+        m_Device.GetExt()->m_Pix.BeginEventOnCommandQueue(m_CommandQueue, bgra, name);
+    else
+        PIXBeginEvent(m_CommandQueue, bgra, name);
+}
+
+NRI_INLINE void CommandQueueD3D12::EndAnnotation() {
+    if (m_Device.GetExt()->HasPix())
+        m_Device.GetExt()->m_Pix.EndEventOnCommandQueue(m_CommandQueue);
+    else
+        PIXEndEvent(m_CommandQueue);
+}
+
+NRI_INLINE void CommandQueueD3D12::Annotation(const char* name, uint32_t bgra) {
+    if (m_Device.GetExt()->HasPix())
+        m_Device.GetExt()->m_Pix.SetMarkerOnCommandQueue(m_CommandQueue, bgra, name);
+    else
+        PIXSetMarker(m_CommandQueue, bgra, name);
+}
+
 NRI_INLINE void CommandQueueD3D12::Submit(const QueueSubmitDesc& queueSubmitDesc) {
     for (uint32_t i = 0; i < queueSubmitDesc.waitFenceNum; i++) {
         const FenceSubmitDesc& fenceSubmitDesc = queueSubmitDesc.waitFences[i];

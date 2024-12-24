@@ -118,6 +118,18 @@ static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
     return ((CommandBufferVK&)commandBuffer).End();
 }
 
+static void NRI_CALL QueueBeginAnnotation(CommandQueue& commandQueue, const char* name, uint32_t bgra) {
+    ((CommandQueueVK&)commandQueue).BeginAnnotation(name, bgra);
+}
+
+static void NRI_CALL QueueEndAnnotation(CommandQueue& commandQueue) {
+    ((CommandQueueVK&)commandQueue).EndAnnotation();
+}
+
+static void NRI_CALL QueueAnnotation(CommandQueue& commandQueue, const char* name, uint32_t bgra) {
+    ((CommandQueueVK&)commandQueue).Annotation(name, bgra);
+}
+
 static void NRI_CALL ResetQueries(QueryPool& queryPool, uint32_t offset, uint32_t num) {
     ((QueryPoolVK&)queryPool).Reset(offset, num);
 }
@@ -628,6 +640,9 @@ Result DeviceVK::FillFunctionTable(CoreInterface& table) const {
     table.CmdEndAnnotation = ::CmdEndAnnotation;
     table.CmdAnnotation = ::CmdAnnotation;
     table.EndCommandBuffer = ::EndCommandBuffer;
+    table.QueueBeginAnnotation = ::QueueBeginAnnotation;
+    table.QueueEndAnnotation = ::QueueEndAnnotation;
+    table.QueueAnnotation = ::QueueAnnotation;
     table.ResetQueries = ::ResetQueries;
     table.QueueSubmit = ::QueueSubmit;
     table.Wait = ::Wait;

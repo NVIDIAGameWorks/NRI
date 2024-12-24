@@ -38,6 +38,9 @@ struct CommandQueueVK {
     //================================================================================================================
 
     void SetDebugName(const char* name);
+    void BeginAnnotation(const char* name, uint32_t bgra);
+    void EndAnnotation();
+    void Annotation(const char* name, uint32_t bgra);
     void Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain);
     Result UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum);
     Result WaitForIdle();

@@ -52,6 +52,9 @@ struct DispatchTable {
     VULKAN_FUNCTION(CmdBeginDebugUtilsLabelEXT);
     VULKAN_FUNCTION(CmdEndDebugUtilsLabelEXT);
     VULKAN_FUNCTION(CmdInsertDebugUtilsLabelEXT);
+    VULKAN_FUNCTION(QueueBeginDebugUtilsLabelEXT);
+    VULKAN_FUNCTION(QueueEndDebugUtilsLabelEXT);
+    VULKAN_FUNCTION(QueueInsertDebugUtilsLabelEXT);
 
     // Device
     VULKAN_FUNCTION(CreateBuffer);

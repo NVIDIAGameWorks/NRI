@@ -41,6 +41,9 @@ struct CommandQueueD3D12 {
         SET_D3D_DEBUG_OBJECT_NAME(m_CommandQueue, name);
     }
 
+    void BeginAnnotation(const char* name, uint32_t bgra);
+    void EndAnnotation();
+    void Annotation(const char* name, uint32_t bgra);
     void Submit(const QueueSubmitDesc& queueSubmitDesc);
     Result UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum);
     Result WaitForIdle();

@@ -52,6 +52,18 @@ NRI_INLINE void CommandQueueVal::SetDebugName(const char* name) {
     GetCoreInterface().SetCommandQueueDebugName(*GetImpl(), name);
 }
 
+NRI_INLINE void CommandQueueVal::BeginAnnotation(const char* name, uint32_t bgra) {
+    GetCoreInterface().QueueBeginAnnotation(*GetImpl(), name, bgra);
+}
+
+NRI_INLINE void CommandQueueVal::EndAnnotation() {
+    GetCoreInterface().QueueEndAnnotation(*GetImpl());
+}
+
+NRI_INLINE void CommandQueueVal::Annotation(const char* name, uint32_t bgra) {
+    GetCoreInterface().QueueAnnotation(*GetImpl(), name, bgra);
+}
+
 NRI_INLINE void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
     auto queueSubmitDescImpl = queueSubmitDesc;
 

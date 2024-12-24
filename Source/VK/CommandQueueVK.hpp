@@ -12,6 +12,38 @@ NRI_INLINE void CommandQueueVK::SetDebugName(const char* name) {
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_QUEUE, (uint64_t)m_Handle, name);
 }
 
+NRI_INLINE void CommandQueueVK::BeginAnnotation(const char* name, uint32_t bgra) {
+    VkDebugUtilsLabelEXT info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
+    info.pLabelName = name;
+    info.color[0] = ((bgra >> 16) & 0xFF) / 255.0f;
+    info.color[1] = ((bgra >> 8) & 0xFF) / 255.0f;
+    info.color[2] = ((bgra >> 0) & 0xFF) / 255.0f;
+    info.color[3] = 1.0f; // PIX sets alpha to 1
+
+    const auto& vk = m_Device.GetDispatchTable();
+    if (vk.QueueBeginDebugUtilsLabelEXT)
+        vk.QueueBeginDebugUtilsLabelEXT(m_Handle, &info);
+}
+
+NRI_INLINE void CommandQueueVK::EndAnnotation() {
+    const auto& vk = m_Device.GetDispatchTable();
+    if (vk.QueueEndDebugUtilsLabelEXT)
+        vk.QueueEndDebugUtilsLabelEXT(m_Handle);
+}
+
+NRI_INLINE void CommandQueueVK::Annotation(const char* name, uint32_t bgra) {
+    VkDebugUtilsLabelEXT info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
+    info.pLabelName = name;
+    info.color[0] = ((bgra >> 16) & 0xFF) / 255.0f;
+    info.color[1] = ((bgra >> 8) & 0xFF) / 255.0f;
+    info.color[2] = ((bgra >> 0) & 0xFF) / 255.0f;
+    info.color[3] = 1.0f; // PIX sets alpha to 1
+
+    const auto& vk = m_Device.GetDispatchTable();
+    if (vk.QueueInsertDebugUtilsLabelEXT)
+        vk.QueueInsertDebugUtilsLabelEXT(m_Handle, &info);
+}
+
 NRI_INLINE void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
     ExclusiveScope lock(m_Lock);
 

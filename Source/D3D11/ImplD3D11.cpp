@@ -462,6 +462,15 @@ static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPoo
 static void NRI_CALL CmdResetQueries(CommandBuffer&, QueryPool&, uint32_t, uint32_t) {
 }
 
+static void NRI_CALL QueueBeginAnnotation(CommandQueue&, const char*, uint32_t) {
+}
+
+static void NRI_CALL QueueEndAnnotation(CommandQueue&) {
+}
+
+static void NRI_CALL QueueAnnotation(CommandQueue&, const char*, uint32_t) {
+}
+
 static void NRI_CALL ResetQueries(QueryPool&, uint32_t, uint32_t) {
 }
 
@@ -767,6 +776,9 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
     table.BindBufferMemory = ::BindBufferMemory;
     table.BindTextureMemory = ::BindTextureMemory;
     table.FreeMemory = ::FreeMemory;
+    table.QueueBeginAnnotation = ::QueueBeginAnnotation;
+    table.QueueEndAnnotation = ::QueueEndAnnotation;
+    table.QueueAnnotation = ::QueueAnnotation;
     table.ResetQueries = ::ResetQueries;
     table.QueueSubmit = ::QueueSubmit;
     table.Wait = ::Wait;

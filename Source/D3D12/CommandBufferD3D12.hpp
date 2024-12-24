@@ -1,7 +1,5 @@
 ﻿// © 2021 NVIDIA Corporation
 
-#include <pix.h>
-
 static uint8_t QueryLatestGraphicsCommandList(ComPtr<ID3D12GraphicsCommandListBest>& in, ComPtr<ID3D12GraphicsCommandListBest>& out) {
     static const IID versions[] = {
 #ifdef NRI_USE_AGILITY_SDK
