@@ -622,8 +622,7 @@ NRI_INLINE void CommandBufferEmuD3D11::DrawIndirect(const Buffer& buffer, uint64
     Push(m_PushBuffer, countBufferOffset);
 }
 
-NRI_INLINE void CommandBufferEmuD3D11::DrawIndexedIndirect(
-    const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+NRI_INLINE void CommandBufferEmuD3D11::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
     Push(m_PushBuffer, DRAW_INDEXED_INDIRECT);
     Push(m_PushBuffer, &buffer);
     Push(m_PushBuffer, offset);
@@ -674,8 +673,7 @@ NRI_INLINE void CommandBufferEmuD3D11::ResolveTexture(Texture& dstTexture, const
     Push(m_PushBuffer, *srcRegionDesc);
 }
 
-NRI_INLINE void CommandBufferEmuD3D11::UploadBufferToTexture(
-    Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
+NRI_INLINE void CommandBufferEmuD3D11::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
     Push(m_PushBuffer, UPLOAD_BUFFER_TO_TEXTURE);
     Push(m_PushBuffer, &dstTexture);
     Push(m_PushBuffer, dstRegionDesc);
@@ -683,8 +681,7 @@ NRI_INLINE void CommandBufferEmuD3D11::UploadBufferToTexture(
     Push(m_PushBuffer, srcDataLayoutDesc);
 }
 
-NRI_INLINE void CommandBufferEmuD3D11::ReadbackTextureToBuffer(
-    Buffer& dstBuffer, const TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
+NRI_INLINE void CommandBufferEmuD3D11::ReadbackTextureToBuffer(Buffer& dstBuffer, const TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
     Push(m_PushBuffer, READBACK_TEXTURE_TO_BUFFER);
     Push(m_PushBuffer, &dstBuffer);
     Push(m_PushBuffer, dstDataLayoutDesc);

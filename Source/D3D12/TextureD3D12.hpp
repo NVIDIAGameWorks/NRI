@@ -59,8 +59,7 @@ Result TextureD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
                 castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Texture));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device10::CreateCommittedResource3()");
         } else {
-            HRESULT hr = m_Device->CreatePlacedResource2(
-                *memory, offset, &desc1, initialLayout, isRenderableSurface ? &clearValue : nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Texture));
+            HRESULT hr = m_Device->CreatePlacedResource2(*memory, offset, &desc1, initialLayout, isRenderableSurface ? &clearValue : nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Texture));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device10::CreatePlacedResource2()");
         }
     } else

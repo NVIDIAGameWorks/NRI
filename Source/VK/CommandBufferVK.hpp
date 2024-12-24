@@ -1002,8 +1002,7 @@ NRI_INLINE void CommandBufferVK::WriteAccelerationStructureSize(const Accelerati
     const VkQueryPool queryPoolHandle = ((const QueryPoolVK&)queryPool).GetHandle();
 
     const auto& vk = m_Device.GetDispatchTable();
-    vk.CmdWriteAccelerationStructuresPropertiesKHR(
-        m_Handle, accelerationStructureNum, ASes, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, queryPoolHandle, queryPoolOffset);
+    vk.CmdWriteAccelerationStructuresPropertiesKHR(m_Handle, accelerationStructureNum, ASes, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, queryPoolHandle, queryPoolOffset);
 }
 
 NRI_INLINE void CommandBufferVK::DispatchRays(const DispatchRaysDesc& dispatchRaysDesc) {

@@ -56,8 +56,7 @@ NRI_INLINE void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc, c
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(), "vkQueueSubmit returned %d", (int32_t)result);
 }
 
-NRI_INLINE Result CommandQueueVK::UploadData(
-    const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
+NRI_INLINE Result CommandQueueVK::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
     HelperDataUpload helperDataUpload(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
 
     return helperDataUpload.UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);

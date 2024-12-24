@@ -34,8 +34,7 @@ Result BufferD3D12::Create(const AllocateBufferDesc& bufferDesc) {
         uint32_t castableFormatNum = 0;
         DXGI_FORMAT* castableFormats = nullptr; // TODO: add castable formats, see options12.RelaxedFormatCastingSupported
 
-        HRESULT hr = m_Device.GetVma()->CreateResource3(
-            &allocationDesc, &desc1, D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, castableFormatNum, castableFormats, &m_VmaAllocation, IID_PPV_ARGS(&m_Buffer));
+        HRESULT hr = m_Device.GetVma()->CreateResource3(&allocationDesc, &desc1, D3D12_BARRIER_LAYOUT_UNDEFINED, nullptr, castableFormatNum, castableFormats, &m_VmaAllocation, IID_PPV_ARGS(&m_Buffer));
 
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "D3D12MA::CreateResource3()");
     } else
@@ -103,8 +102,7 @@ Result TextureD3D12::Create(const AllocateTextureDesc& textureDesc) {
 
         bool isRenderableSurface = desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
-        HRESULT hr = m_Device.GetVma()->CreateResource(
-            &allocationDesc, &desc, D3D12_RESOURCE_STATE_COMMON, isRenderableSurface ? &clearValue : nullptr, &m_VmaAllocation, IID_PPV_ARGS(&m_Texture));
+        HRESULT hr = m_Device.GetVma()->CreateResource(&allocationDesc, &desc, D3D12_RESOURCE_STATE_COMMON, isRenderableSurface ? &clearValue : nullptr, &m_VmaAllocation, IID_PPV_ARGS(&m_Texture));
 
         RETURN_ON_BAD_HRESULT(&m_Device, hr, "D3D12MA::CreateResource3()");
     }

@@ -23,8 +23,7 @@ void nri::ConvertGeometryObjectSizesVK(VkAccelerationStructureGeometryKHR* destO
     }
 }
 
-void nri::ConvertGeometryObjectsVK(
-    VkAccelerationStructureGeometryKHR* destObjects, VkAccelerationStructureBuildRangeInfoKHR* ranges, const GeometryObject* sourceObjects, uint32_t objectNum) {
+void nri::ConvertGeometryObjectsVK(VkAccelerationStructureGeometryKHR* destObjects, VkAccelerationStructureBuildRangeInfoKHR* ranges, const GeometryObject* sourceObjects, uint32_t objectNum) {
     for (uint32_t i = 0; i < objectNum; i++) {
         const GeometryObject& src = sourceObjects[i];
 

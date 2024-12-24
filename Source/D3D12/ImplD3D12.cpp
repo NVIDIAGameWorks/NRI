@@ -1063,8 +1063,7 @@ static Result NRI_CALL CreateMemoryD3D12(Device& device, const MemoryD3D12Desc& 
     return ((DeviceD3D12&)device).CreateImplementation<MemoryD3D12>(memory, memoryDesc);
 }
 
-static Result NRI_CALL CreateAccelerationStructureD3D12(
-    Device& device, const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
+static Result NRI_CALL CreateAccelerationStructureD3D12(Device& device, const AccelerationStructureD3D12Desc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
     return ((DeviceD3D12&)device).CreateImplementation<AccelerationStructureD3D12>(accelerationStructure, accelerationStructureDesc);
 }
 

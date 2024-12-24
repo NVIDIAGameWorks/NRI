@@ -656,8 +656,7 @@ void DeviceD3D12::GetAccelerationStructureMemoryDesc(const AccelerationStructure
     memoryDesc.type = Pack(memoryTypeInfo);
 }
 
-void DeviceD3D12::GetAccelerationStructurePrebuildInfo(
-    const AccelerationStructureDesc& accelerationStructureDesc, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO& prebuildInfo) {
+void DeviceD3D12::GetAccelerationStructurePrebuildInfo(const AccelerationStructureDesc& accelerationStructureDesc, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO& prebuildInfo) {
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS accelerationStructureInputs = {};
     accelerationStructureInputs.Type = GetAccelerationStructureType(accelerationStructureDesc.type);
     accelerationStructureInputs.Flags = GetAccelerationStructureBuildFlags(accelerationStructureDesc.flags);
@@ -675,8 +674,7 @@ void DeviceD3D12::GetAccelerationStructurePrebuildInfo(
     m_Device->GetRaytracingAccelerationStructurePrebuildInfo(&accelerationStructureInputs, &prebuildInfo);
 }
 
-ComPtr<ID3D12CommandSignature> DeviceD3D12::CreateCommandSignature(
-    D3D12_INDIRECT_ARGUMENT_TYPE type, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation) {
+ComPtr<ID3D12CommandSignature> DeviceD3D12::CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE type, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation) {
     const bool isDrawArgument = enableDrawParametersEmulation && (type == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW || type == D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED);
 
     D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDescs[2] = {};

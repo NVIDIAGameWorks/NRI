@@ -49,8 +49,7 @@ Result BufferD3D12::BindMemory(const MemoryD3D12* memory, uint64_t offset) {
         DXGI_FORMAT* castableFormats = nullptr; // TODO: add castable formats, see options12.RelaxedFormatCastingSupported
 
         if (memory->IsDummy()) {
-            HRESULT hr = m_Device->CreateCommittedResource3(
-                &heapDesc.Properties, heapFlagsFixed, &desc1, initialLayout, nullptr, nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Buffer));
+            HRESULT hr = m_Device->CreateCommittedResource3(&heapDesc.Properties, heapFlagsFixed, &desc1, initialLayout, nullptr, nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Buffer));
             RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device10::CreateCommittedResource3()");
         } else {
             HRESULT hr = m_Device->CreatePlacedResource2(*memory, offset, &desc1, initialLayout, nullptr, castableFormatNum, castableFormats, IID_PPV_ARGS(&m_Buffer));
