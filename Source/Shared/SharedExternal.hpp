@@ -793,9 +793,9 @@ nri::Format VKFormatToNRIFormat(uint32_t format) {
 }
 
 constexpr std::array<const char*, (size_t)nri::Message::MAX_NUM> MESSAGE_TYPE_NAME = {
-    "INFO",     // INFO,
-    "WARNING",  // WARNING,
-    "ERROR",    // ERROR
+    "INFO",    // INFO,
+    "WARNING", // WARNING,
+    "ERROR",   // ERROR
 };
 
 static void MessageCallback(nri::Message messageType, const char* file, uint32_t line, const char* message, void* userArg) {

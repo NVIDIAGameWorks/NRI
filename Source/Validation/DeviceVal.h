@@ -78,8 +78,8 @@ struct DeviceVal final : public DeviceBase {
     //================================================================================================================
     // DeviceBase
     //================================================================================================================
-    
-    const DeviceDesc& GetDesc() const override{
+
+    const DeviceDesc& GetDesc() const override {
         return ((DeviceBase&)m_Device).GetDesc();
     }
 

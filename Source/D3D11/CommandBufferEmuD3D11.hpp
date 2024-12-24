@@ -747,4 +747,3 @@ NRI_INLINE void CommandBufferEmuD3D11::Annotation(const char* name, uint32_t bgr
     Push(m_PushBuffer, name, len);
     Push(m_PushBuffer, name, bgra);
 }
-

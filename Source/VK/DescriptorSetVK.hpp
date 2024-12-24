@@ -173,7 +173,7 @@ NRI_INLINE void DescriptorSetVK::UpdateDescriptorRanges(uint32_t rangeOffset, ui
     uint32_t writeMaxNum = std::min<uint32_t>(writesPerIteration, rangeNum);
     Scratch<VkWriteDescriptorSet> writes = AllocateScratch(m_Device, VkWriteDescriptorSet, writeMaxNum);
 
-    Scratch<uint8_t> slabScratch = AllocateScratch(m_Device, uint8_t, slabSize); 
+    Scratch<uint8_t> slabScratch = AllocateScratch(m_Device, uint8_t, slabSize);
     SlabAllocator slab(slabScratch, slabSize);
 
     uint32_t j = 0;

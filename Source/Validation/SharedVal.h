@@ -84,15 +84,15 @@ inline DeviceVal& GetDeviceVal(T& object) {
 uint64_t GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc);
 
 constexpr std::array<const char*, (size_t)nri::DescriptorType::MAX_NUM> DESCRIPTOR_TYPE_NAME = {
-    "SAMPLER",                      // SAMPLER,
-    "CONSTANT_BUFFER",              // CONSTANT_BUFFER,
-    "TEXTURE",                      // TEXTURE,
-    "STORAGE_TEXTURE",              // STORAGE_TEXTURE,
-    "BUFFER",                       // BUFFER,
-    "STORAGE_BUFFER",               // STORAGE_BUFFER,
-    "STRUCTURED_BUFFER",            // STRUCTURED_BUFFER,
-    "STORAGE_STRUCTURED_BUFFER",    // STORAGE_STRUCTURED_BUFFER,
-    "ACCELERATION_STRUCTURE",       // ACCELERATION_STRUCTURE
+    "SAMPLER",                   // SAMPLER,
+    "CONSTANT_BUFFER",           // CONSTANT_BUFFER,
+    "TEXTURE",                   // TEXTURE,
+    "STORAGE_TEXTURE",           // STORAGE_TEXTURE,
+    "BUFFER",                    // BUFFER,
+    "STORAGE_BUFFER",            // STORAGE_BUFFER,
+    "STRUCTURED_BUFFER",         // STRUCTURED_BUFFER,
+    "STORAGE_STRUCTURED_BUFFER", // STORAGE_STRUCTURED_BUFFER,
+    "ACCELERATION_STRUCTURE",    // ACCELERATION_STRUCTURE
 };
 
 constexpr const char* GetDescriptorTypeName(nri::DescriptorType descriptorType) {

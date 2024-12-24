@@ -85,7 +85,7 @@ struct DeviceD3D11 final : public DeviceBase {
     // DeviceBase
     //================================================================================================================
 
-    inline const DeviceDesc& GetDesc() const  override{
+    inline const DeviceDesc& GetDesc() const override {
         return m_Desc;
     }
 

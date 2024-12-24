@@ -40,7 +40,7 @@ typedef nri::AllocationCallbacks AllocationCallbacks;
 
 // Annotations for NVIDIA Nsight Systems
 #if NRI_USE_NVTX
-    #include "NVTX/c/include/nvtx3/nvToolsExt.h"
+#    include "NVTX/c/include/nvtx3/nvToolsExt.h"
 #endif
 
 // Consts
