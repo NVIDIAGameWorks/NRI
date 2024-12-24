@@ -182,7 +182,7 @@ NriStruct(CoreInterface) {
     // }                }
     Nri(Result)         (NRI_CALL *EndCommandBuffer)                (NriRef(CommandBuffer) commandBuffer);
 
-    // Annotations for profiling tools: command queue
+    // Annotations for profiling tools: command queue - D3D11: NOP
     void                (NRI_CALL *QueueBeginAnnotation)            (NriRef(CommandQueue) commandQueue, const char* name, uint32_t bgra);
     void                (NRI_CALL *QueueEndAnnotation)              (NriRef(CommandQueue) commandQueue);
     void                (NRI_CALL *QueueAnnotation)                 (NriRef(CommandQueue) commandQueue, const char* name, uint32_t bgra);
