@@ -348,7 +348,7 @@ set_property (TARGET ${PROJECT_NAME} PROPERTY FOLDER ${PROJECT_FOLDER})
 set_target_properties (${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 message ("NRI output path: '${CMAKE_RUNTIME_OUTPUT_DIRECTORY}'")
 
-if (WIN32)
+if (WIN32 AND NRI_ENABLE_EXTERNAL_LIBRARIES)
     if (NRI_ENABLE_D3D11_SUPPORT OR NRI_ENABLE_D3D12_SUPPORT)
         # Function - copy a library to the output folder of a project
         function (copy_library PROJECT LIBRARY_NAME)
