@@ -12,7 +12,7 @@ Goals:
 - explicitness
 - D3D11 ([spec](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm)) support (as much as possible)
 
-Non-goals:
+Non-goals (exceptions apply to helper interfaces, where high-level abstraction and hidden management are desired):
 - high level RHI
 - exposing entities not existing in GAPIs
 - D3D11-like abstraction level

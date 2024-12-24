@@ -14,7 +14,7 @@ Goals:
 - low overhead
 - D3D11 support (as much as possible)
 
-Non-goals:
+Non-goals (exceptions apply to helper interfaces, where high-level abstraction and hidden management are desired):
 - high level RHI
 - exposing entities not existing in gAPIs
 - D3D11-like abstraction level
