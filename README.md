@@ -23,11 +23,13 @@ Currently supported GAPIs:
 - D3D12
 - D3D11
 - None / dummy (everything is supported, but does nothing)
+- Metal (through *MoltenVK*)
 
 Key features:
  - *C++* and *C* compatible interfaces
  - generalized common denominator for D3D12, VK and D3D11 GAPIs
  - low overhead
+ - descriptor indexing support
  - ray tracing support
  - mesh shaders support
  - D3D12 Ultimate features support, including enhanced barriers
