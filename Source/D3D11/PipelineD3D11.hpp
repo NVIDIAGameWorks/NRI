@@ -233,7 +233,7 @@ void PipelineD3D11::ChangeSamplePositions(ID3D11DeviceContextBest* deferredConte
             m_RasterizerDesc.SamplePositionsY[j] = samplePositionState.positions[j].y + 8;
         }
 
-        if (m_Device.GetExt()->HasNVAPI())
+        if (m_Device.GetExt()->HasNvapi())
             REPORT_ERROR_ON_BAD_STATUS(&m_Device, NvAPI_D3D11_CreateRasterizerState(m_Device.GetNativeObject(), &m_RasterizerDesc, (ID3D11RasterizerState**)&newState.ptr));
 
         if (newState.ptr)

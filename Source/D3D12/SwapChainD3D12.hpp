@@ -139,7 +139,7 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc) {
     m_PresentId = GetSwapChainId();
     m_Flags = desc.Flags;
     m_Desc = swapChainDesc;
-    m_Desc.allowLowLatency = swapChainDesc.allowLowLatency && m_Device.GetExt()->HasNVAPI();
+    m_Desc.allowLowLatency = swapChainDesc.allowLowLatency && m_Device.GetExt()->HasNvapi();
 
     m_Textures.reserve(m_Desc.textureNum);
     for (uint32_t i = 0; i < m_Desc.textureNum; i++) {

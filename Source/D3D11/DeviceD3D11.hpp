@@ -37,8 +37,8 @@ DeviceD3D11::~DeviceD3D11() {
     DeleteCriticalSection(&m_CriticalSection);
 
 #if NRI_USE_EXT_LIBS
-    if (m_Ext.HasAGS() && !m_IsWrapped)
-        m_Ext.m_AGS.DestroyDeviceD3D11(m_Ext.m_AGSContext, m_Device, nullptr, m_ImmediateContext, nullptr);
+    if (m_Ext.HasAgs() && !m_IsWrapped)
+        m_Ext.m_Ags.DestroyDeviceD3D11(m_Ext.m_AgsContext, m_Device, nullptr, m_ImmediateContext, nullptr);
 #endif
 
     for (CommandQueueD3D11* commandQueue : m_CommandQueues) {
@@ -85,9 +85,9 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
 
     // Extensions
     if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA)
-        m_Ext.InitializeNVExt(this, isNVAPILoadedInApp, device != nullptr);
+        m_Ext.InitializeNvExt(this, isNVAPILoadedInApp, device != nullptr);
     else if (m_Desc.adapterDesc.vendor == Vendor::AMD)
-        m_Ext.InitializeAMDExt(this, agsContext, device != nullptr);
+        m_Ext.InitializeAmdExt(this, agsContext, device != nullptr);
 
     // Device
     ComPtr<ID3D11DeviceBest> deviceTemp = (ID3D11DeviceBest*)device;
@@ -101,7 +101,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
 
 #if NRI_USE_EXT_LIBS
         uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : 63;
-        if (m_Ext.HasAGS()) {
+        if (m_Ext.HasAgs()) {
             AGSDX11DeviceCreationParams deviceCreationParams = {};
             deviceCreationParams.pAdapter = m_Adapter;
             deviceCreationParams.DriverType = D3D_DRIVER_TYPE_UNKNOWN;
@@ -114,11 +114,11 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
             extensionsParams.uavSlot = shaderExtRegister;
 
             AGSDX11ReturnedParams agsParams = {};
-            AGSReturnCode result = m_Ext.m_AGS.CreateDeviceD3D11(m_Ext.m_AGSContext, &deviceCreationParams, &extensionsParams, &agsParams);
+            AGSReturnCode result = m_Ext.m_Ags.CreateDeviceD3D11(m_Ext.m_AgsContext, &deviceCreationParams, &extensionsParams, &agsParams);
             if (flags != 0 && result != AGS_SUCCESS) {
                 // If Debug Layer is not available, try without D3D11_CREATE_DEVICE_DEBUG
                 deviceCreationParams.Flags = 0;
-                result = m_Ext.m_AGS.CreateDeviceD3D11(m_Ext.m_AGSContext, &deviceCreationParams, &extensionsParams, &agsParams);
+                result = m_Ext.m_Ags.CreateDeviceD3D11(m_Ext.m_AgsContext, &deviceCreationParams, &extensionsParams, &agsParams);
             }
 
             RETURN_ON_FAILURE(this, result == AGS_SUCCESS, Result::FAILURE, "agsDriverExtensionsDX11_CreateDevice() returned %d", (int32_t)result);
@@ -138,7 +138,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
             RETURN_ON_BAD_HRESULT(this, hr, "D3D11CreateDevice()");
 
 #if NRI_USE_EXT_LIBS
-            if (m_Ext.HasNVAPI()) {
+            if (m_Ext.HasNvapi()) {
                 REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D_RegisterDevice(deviceTemp));
                 REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_SetNvShaderExtnSlot(deviceTemp, shaderExtRegister));
                 REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(deviceTemp, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported));
@@ -173,7 +173,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     if (FAILED(hr) || !threadingCaps.DriverConcurrentCreates)
         REPORT_WARNING(this, "Concurrent resource creation is not supported by the driver!");
 
-    m_IsDeferredContextEmulated = !m_Ext.HasNVAPI() || deviceCreationDesc.enableD3D11CommandBufferEmulation;
+    m_IsDeferredContextEmulated = !m_Ext.HasNvapi() || deviceCreationDesc.enableD3D11CommandBufferEmulation;
     if (!threadingCaps.DriverCommandLists) {
         REPORT_WARNING(this, "Deferred Contexts are not supported by the driver and will be emulated!");
         m_IsDeferredContextEmulated = true;
@@ -358,7 +358,7 @@ void DeviceD3D11::FillDesc() {
     NV_D3D11_FEATURE_DATA_RASTERIZER_SUPPORT rasterizerFeatures = {};
     NV_D3D1x_GRAPHICS_CAPS caps = {};
 
-    if (m_Ext.HasNVAPI()) {
+    if (m_Ext.HasNvapi()) {
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported));
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported));
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_CheckFeatureSupport(m_Device, NV_D3D11_FEATURE_RASTERIZER, &rasterizerFeatures, sizeof(rasterizerFeatures)));
@@ -386,7 +386,7 @@ void DeviceD3D11::FillDesc() {
     m_Desc.isShaderAtomicsF32Supported = isShaderAtomicsF32Supported;
 
     m_Desc.isSwapChainSupported = HasOutput();
-    m_Desc.isLowLatencySupported = m_Ext.HasNVAPI();
+    m_Desc.isLowLatencySupported = m_Ext.HasNvapi();
 }
 
 void DeviceD3D11::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {

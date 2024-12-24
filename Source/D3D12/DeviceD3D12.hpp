@@ -75,8 +75,8 @@ DeviceD3D12::~DeviceD3D12() {
     }
 
 #if NRI_USE_EXT_LIBS
-    if (m_Ext.HasAGS() && !m_IsWrapped)
-        m_Ext.m_AGS.DestroyDeviceD3D12(m_Ext.m_AGSContext, m_Device, nullptr);
+    if (m_Ext.HasAgs() && !m_IsWrapped)
+        m_Ext.m_Ags.DestroyDeviceD3D12(m_Ext.m_AgsContext, m_Device, nullptr);
 #endif
 }
 
@@ -120,9 +120,9 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
     // Extensions
     m_Ext.InitializePixExt();
     if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA)
-        m_Ext.InitializeNVExt(this, deviceCreationD3D12Desc.isNVAPILoaded, deviceCreationD3D12Desc.d3d12Device != nullptr);
+        m_Ext.InitializeNvExt(this, deviceCreationD3D12Desc.isNVAPILoaded, deviceCreationD3D12Desc.d3d12Device != nullptr);
     else if (m_Desc.adapterDesc.vendor == Vendor::AMD)
-        m_Ext.InitializeAMDExt(this, deviceCreationD3D12Desc.agsContext, deviceCreationD3D12Desc.d3d12Device != nullptr);
+        m_Ext.InitializeAmdExt(this, deviceCreationD3D12Desc.agsContext, deviceCreationD3D12Desc.d3d12Device != nullptr);
 
     // Device
     ComPtr<ID3D12DeviceBest> deviceTemp = (ID3D12DeviceBest*)deviceCreationD3D12Desc.d3d12Device;
@@ -130,7 +130,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
 #if NRI_USE_EXT_LIBS
         bool isShaderAtomicsI64Supported = false;
         uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : 63;
-        if (m_Ext.HasAGS()) {
+        if (m_Ext.HasAgs()) {
             AGSDX12DeviceCreationParams deviceCreationParams = {};
             deviceCreationParams.pAdapter = m_Adapter;
             deviceCreationParams.iid = __uuidof(ID3D12DeviceBest);
@@ -140,7 +140,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
             extensionsParams.uavSlot = shaderExtRegister;
 
             AGSDX12ReturnedParams agsParams = {};
-            AGSReturnCode result = m_Ext.m_AGS.CreateDeviceD3D12(m_Ext.m_AGSContext, &deviceCreationParams, &extensionsParams, &agsParams);
+            AGSReturnCode result = m_Ext.m_Ags.CreateDeviceD3D12(m_Ext.m_AgsContext, &deviceCreationParams, &extensionsParams, &agsParams);
             RETURN_ON_FAILURE(this, result == AGS_SUCCESS, Result::FAILURE, "agsDriverExtensionsDX11_CreateDevice() failed: %d", (int32_t)result);
 
             deviceTemp = (ID3D12DeviceBest*)agsParams.pDevice;
@@ -151,7 +151,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
             RETURN_ON_BAD_HRESULT(this, hr, "D3D12CreateDevice()");
 
 #if NRI_USE_EXT_LIBS
-            if (m_Ext.HasNVAPI()) {
+            if (m_Ext.HasNvapi()) {
                 REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_SetNvShaderExtnSlotSpace(deviceTemp, shaderExtRegister, deviceCreationDesc.shaderExtSpace));
                 REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(deviceTemp, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported));
             }
@@ -537,7 +537,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     bool isShaderAtomicsF16Supported = false;
     bool isShaderAtomicsF32Supported = false;
 #if NRI_USE_EXT_LIBS
-    if (m_Ext.HasNVAPI()) {
+    if (m_Ext.HasNvapi()) {
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported));
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported));
     }
@@ -553,7 +553,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.isDrawParametersEmulationEnabled = deviceCreationDesc.enableD3D12DrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
 
     m_Desc.isSwapChainSupported = HasOutput();
-    m_Desc.isLowLatencySupported = m_Ext.HasNVAPI();
+    m_Desc.isLowLatencySupported = m_Ext.HasNvapi();
 }
 
 Result DeviceD3D12::CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type) {

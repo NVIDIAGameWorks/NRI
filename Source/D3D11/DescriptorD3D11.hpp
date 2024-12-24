@@ -298,7 +298,7 @@ Result DescriptorD3D11::Create(const Texture2DViewDesc& textureViewDesc) {
         }
         case Texture2DViewType::SHADING_RATE_ATTACHMENT: {
 #if NRI_USE_EXT_LIBS
-            if (m_Device.GetExt()->HasNVAPI()) {
+            if (m_Device.GetExt()->HasNvapi()) {
                 NV_D3D11_SHADING_RATE_RESOURCE_VIEW_DESC desc = {NV_D3D11_SHADING_RATE_RESOURCE_VIEW_DESC_VER};
                 desc.Format = format;
                 desc.ViewDimension = NV_SRRV_DIMENSION_TEXTURE2D;

@@ -20,7 +20,7 @@ set (NRI_AGILITY_SDK_PATH "C:/AgilitySDK" CACHE STRING "Path to a directory cont
 set (NRI_AGILITY_SDK_VERSION "614" CACHE STRING "Agility SDK version")
 set (NRI_AGILITY_SDK_DIR "AgilitySDK" CACHE STRING "Directory where Agility SDK binaries will be copied to relative to 'CMAKE_RUNTIME_OUTPUT_DIRECTORY'")
 
-# Options: D3D11/D3D12 specific
+# Options: D3D11/D3D12 specific (PIX events are always enabled if "WinPixEventRuntime.dll" is nearby)
 option (NRI_ENABLE_EXTERNAL_LIBRARIES "Enable vendor specific extension libraries (NVAPI and AMD AGS)" ON)
 
 # Is submodule?
@@ -98,7 +98,7 @@ if (WIN32)
     find_library (INPUT_LIB_D3D11 NAMES d3d11 HINTS ${WINDOWS_SDK_LIB_PATH} REQUIRED)
     find_library (INPUT_LIB_D3D12 NAMES d3d12 HINTS ${WINDOWS_SDK_LIB_PATH} REQUIRED)
     find_library (INPUT_LIB_DXGI NAMES dxgi HINTS ${WINDOWS_SDK_LIB_PATH} REQUIRED)
-    find_library (INPUT_LIB_DXGUID NAMES dxguid HINTS ${WINDOWS_SDK_LIB_PATH} REQUIRED)
+    find_library (INPUT_LIB_DXGUID NAMES dxguid HINTS ${WINDOWS_SDK_LIB_PATH} REQUIRED) # for nriReportLiveObjects
 endif ()
 
 # Globals?
@@ -325,7 +325,7 @@ target_compile_options (${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS})
 
 target_link_libraries (${PROJECT_NAME} PRIVATE NRI_Shared NRI_Validation)
 if (WIN32)
-    target_link_libraries (${PROJECT_NAME} PRIVATE ${INPUT_LIB_DXGI} ${INPUT_LIB_DXGUID}) # for nriReportLiveObjects
+    target_link_libraries (${PROJECT_NAME} PRIVATE ${INPUT_LIB_DXGI} ${INPUT_LIB_DXGUID})
 else ()
     target_link_libraries (${PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
 endif ()
