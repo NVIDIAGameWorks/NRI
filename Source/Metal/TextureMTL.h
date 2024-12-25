@@ -33,6 +33,11 @@ public:
     Result Create(const TextureDesc& textureDesc);
     void FinishMemoryBinding(MemoryMTL& memory, uint64_t memoryOffset);
     
+    inline Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const {
+        return GetDimension(GraphicsAPI::MTL, m_Desc, dimensionIndex, mip);
+    }
+
+    
     //================================================================================================================
     // NRI
     //================================================================================================================

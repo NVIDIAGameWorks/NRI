@@ -6,8 +6,10 @@
 #include "CommandBufferMTL.h"
 #include "CommandQueueMTL.h"
 #include "DescriptorMTL.h"
+#include "DescriptorSetMTL.h"
 #include "PipelineLayoutMTL.h"
 #include "PipelineMTL.h"
+#include "PipelineLayoutMTL.h"
 #include "TextureMTL.h"
 
 #include <math.h>
@@ -37,17 +39,49 @@ void CommandBufferMTL::SetPipeline(const Pipeline& pipeline) {
         return;
     PipelineMTL& pipelineImpl = (PipelineMTL&)pipeline;
     m_CurrentPipeline = &pipelineImpl;
-
-//    if(m_CurrentPipeline->m_pipelineType == nri::PipelineMTL::Compute) {
- //       m_ComputeEncoder = [m_Handle computeCommandEncoderWithDescriptor: NULL];
-  //  }
-
 }
+
 void CommandBufferMTL::SetPipelineLayout(const PipelineLayout& pipelineLayout) {
-
+    PipelineLayoutMTL& pipelineLayoutMTL = (PipelineLayoutMTL&)pipelineLayout;
+    m_CurrentPipelineLayout = &pipelineLayoutMTL;
 }
+
 void CommandBufferMTL::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
+    const DescriptorSetMTL& descriptorSetImpl = (DescriptorSetMTL&)descriptorSet;
+    auto* layout = m_CurrentPipelineLayout->GetDescriptorSetLayout(setIndexInPipelineLayout);
+    const uint32_t space = layout->m_DescriptorSetDesc.registerSpace;
     
+    bool setFragmentBuffer = false;
+    bool setVertexBuffer = false;
+    
+    for(size_t i = 0; i < layout->m_DescriptorSetDesc.rangeNum; i++) {
+        if(layout->m_DescriptorSetDesc.ranges[i].shaderStages == StageBits::ALL) {
+            setFragmentBuffer = true;
+            setVertexBuffer = true;
+            break;
+        }
+        if(layout->m_DescriptorSetDesc.ranges[i].shaderStages & StageBits::VERTEX_SHADER) {
+            setVertexBuffer = true;
+            break;
+        }
+        if(layout->m_DescriptorSetDesc.ranges[i].shaderStages & StageBits::GRAPHICS_SHADERS) {
+            setFragmentBuffer = true;
+            break;
+        }
+    }
+    if(setFragmentBuffer) {
+        [m_RendererEncoder setFragmentBuffer: descriptorSetImpl.GetArgumentBuffer()
+                                      offset: descriptorSetImpl.GetArugmentBufferOffset()
+                                     atIndex: space];
+    }
+    if(setVertexBuffer) {
+        [m_RendererEncoder setVertexBuffer: descriptorSetImpl.GetArgumentBuffer()
+                                    offset: descriptorSetImpl.GetArugmentBufferOffset()
+                                   atIndex: space];
+        
+    }
+    
+
 }
 void CommandBufferMTL::SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size) {
     //if (pDesc->mUsedStages & SHADER_STAGE_VERT)
@@ -66,8 +100,13 @@ void CommandBufferMTL::SetConstants(uint32_t pushConstantIndex, const void* data
     //}
 
 }
-void CommandBufferMTL::SetDescriptorPool(const DescriptorPool& descriptorPool) {}
+
+void CommandBufferMTL::SetDescriptorPool(const DescriptorPool& descriptorPool) {
+    
+}
+
 void CommandBufferMTL::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
+    
     //if (pCmd->pQueue->mBarrierFlags & BARRIER_FLAG_BUFFERS)
     {
         [m_RendererEncoder memoryBarrierWithScope:MTLBarrierScopeBuffers
@@ -101,7 +140,6 @@ void CommandBufferMTL::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
         renderPassDescriptor.colorAttachments[i].clearColor = MTLClearColorMake(0, 0, 0, 1);
         renderPassDescriptor.colorAttachments[i].loadAction = MTLLoadActionClear;
         renderPassDescriptor.colorAttachments[i].storeAction = MTLStoreActionStore;
-
     }
     
     if(attachmentsDesc.depthStencil) {
@@ -144,13 +182,12 @@ void CommandBufferMTL::SetScissors(const Rect* rects, uint32_t rectNum) {
     [m_RendererEncoder setScissorRect: rect];
 }
 void CommandBufferMTL::SetDepthBounds(float boundsMin, float boundsMax) {
-    
+    //[m_RendererEncoder set]
 }
 void CommandBufferMTL::SetStencilReference(uint8_t frontRef, uint8_t backRef) {
     [m_RendererEncoder setStencilFrontReferenceValue: frontRef backReferenceValue:backRef];
 }
-//void CommandBufferMTL::SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum) {
-//}
+
 void CommandBufferMTL::SetBlendConstants(const Color32f& color) {
     [m_RendererEncoder
      setBlendColorRed:color.x
@@ -160,10 +197,12 @@ void CommandBufferMTL::SetBlendConstants(const Color32f& color) {
     ];
 }
 void CommandBufferMTL::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
-    
+    //[m_RendererEncoder sha]
 }
 
 void CommandBufferMTL::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
+    
+    
 }
 
 void CommandBufferMTL::SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType) {
@@ -195,7 +234,7 @@ void CommandBufferMTL::Draw(const DrawDesc& drawDesc) {
             vertexStart:drawDesc.baseVertex
             vertexCount:drawDesc.vertexNum
             instanceCount:drawDesc.instanceNum
-            baseInstance:0];
+            baseInstance: 0];
 }
 
 void CommandBufferMTL::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc) {
@@ -237,12 +276,99 @@ void CommandBufferMTL::BeginQuery(const QueryPool& queryPool, uint32_t offset) {
 void CommandBufferMTL::EndQuery(const QueryPool& queryPool, uint32_t offset) {}
 void CommandBufferMTL::BeginAnnotation(const char* name) {}
 void CommandBufferMTL::EndAnnotation() {}
-void CommandBufferMTL::ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc) {}
-void CommandBufferMTL::ClearStorageTexture(const ClearStorageTextureDesc& clearDesc) {}
-void CommandBufferMTL::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {}
-void CommandBufferMTL::CopyTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {}
-void CommandBufferMTL::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {}
-void CommandBufferMTL::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {}
+void CommandBufferMTL::ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc) {
+    
+}
+void CommandBufferMTL::ClearStorageTexture(const ClearStorageTextureDesc& clearDesc) {
+    
+}
+
+void CommandBufferMTL::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
+    const BufferMTL& src = (const BufferMTL&)srcBuffer;
+    const BufferMTL& dst = (const BufferMTL&)dstBuffer;
+    [m_BlitEncoder
+     copyFromBuffer:src.GetHandle()
+     sourceOffset:srcOffset
+     toBuffer: dst.GetHandle()
+     destinationOffset:dstOffset
+     size:size];
+}
+
+void CommandBufferMTL::CopyTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
+    const TextureMTL& src = (const TextureMTL&)srcTexture;
+    const TextureMTL& dst = (const TextureMTL&)dstTexture;
+    bool isWholeResource = !dstRegionDesc && !srcRegionDesc;
+    if (isWholeResource) {
+        [m_BlitEncoder
+         copyFromTexture: src.GetHandle()
+         toTexture: dst.GetHandle()];
+    } else {
+        TextureRegionDesc wholeResource = {};
+        if (!srcRegionDesc)
+            srcRegionDesc = &wholeResource;
+        if (!dstRegionDesc)
+            dstRegionDesc = &wholeResource;
+        const MTLSize sourceSize = MTLSizeMake(
+                                               (srcRegionDesc->width == WHOLE_SIZE) ? src.GetSize(0, srcRegionDesc->mipOffset) : srcRegionDesc->width,
+                                               (srcRegionDesc->height == WHOLE_SIZE) ? src.GetSize(1, srcRegionDesc->mipOffset) : srcRegionDesc->height,
+                                               (srcRegionDesc->depth == WHOLE_SIZE) ? src.GetSize(2, srcRegionDesc->mipOffset) : srcRegionDesc->depth
+                                               );
+        
+        // Copy to the texture's final subresource.
+        [m_BlitEncoder copyFromTexture: src.GetHandle()
+                           sourceSlice: srcRegionDesc->layerOffset
+                           sourceLevel: srcRegionDesc->mipOffset
+                          sourceOrigin: MTLOriginMake(srcRegionDesc->x, srcRegionDesc->y, srcRegionDesc->z)
+                            sourceSize: sourceSize
+                             toTexture: dst.GetHandle()
+                      destinationSlice: dstRegionDesc->layerOffset
+                      destinationLevel: dstRegionDesc->mipOffset
+                     destinationOrigin: MTLOriginMake(dstRegionDesc->x, dstRegionDesc->y, dstRegionDesc->z)
+        ];
+    }
+}
+void CommandBufferMTL::UploadBufferToTexture(Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
+    const BufferMTL& src = (const BufferMTL&)srcBuffer;
+    const TextureMTL& dst = (const TextureMTL&)dstTexture;
+    
+    const MTLSize sourceSize = MTLSizeMake(
+                                       (dstRegionDesc.width == WHOLE_SIZE) ? dst.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.width,
+                                       (dstRegionDesc.height == WHOLE_SIZE) ? dst.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.height,
+                                       (dstRegionDesc.depth == WHOLE_SIZE) ? dst.GetSize(2, dstRegionDesc.mipOffset) : dstRegionDesc.depth
+                                       );
+    [m_BlitEncoder
+     copyFromBuffer: src.GetHandle()
+     sourceOffset: srcDataLayoutDesc.offset
+     sourceBytesPerRow: srcDataLayoutDesc.rowPitch
+     sourceBytesPerImage: srcDataLayoutDesc.slicePitch
+     sourceSize: sourceSize
+     toTexture: dst.GetHandle()
+     destinationSlice: dstRegionDesc.layerOffset
+     destinationLevel: dstRegionDesc.mipOffset
+     destinationOrigin: MTLOriginMake(dstRegionDesc.x, dstRegionDesc.y, dstRegionDesc.z)
+     options: MTLBlitOptionNone];
+}
+void CommandBufferMTL::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
+    const TextureMTL& src = (const TextureMTL&)srcTexture;
+    const BufferMTL& dst = (const BufferMTL&)dstBuffer;
+    
+    
+    const MTLSize sourceSize = MTLSizeMake(
+                                       (srcRegionDesc.width == WHOLE_SIZE) ? src.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width,
+                                       (srcRegionDesc.height == WHOLE_SIZE) ? src.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.height,
+                                       (srcRegionDesc.depth == WHOLE_SIZE) ? src.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.depth
+                                       );
+    [m_BlitEncoder copyFromTexture: src.GetHandle()
+                       sourceSlice: srcRegionDesc.layerOffset
+                       sourceLevel: srcRegionDesc.mipOffset
+                      sourceOrigin: MTLOriginMake(srcRegionDesc.x, srcRegionDesc.y, srcRegionDesc.z)
+                        sourceSize: sourceSize
+                          toBuffer: dst.GetHandle()
+                 destinationOffset: dstDataLayoutDesc.offset
+            destinationBytesPerRow: dstDataLayoutDesc.rowPitch
+          destinationBytesPerImage: dstDataLayoutDesc.slicePitch
+                           options: MTLBlitOptionNone];
+}
 void CommandBufferMTL::CopyQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset) {}
 void CommandBufferMTL::ResetQueries(const QueryPool& queryPool, uint32_t offset, uint32_t num) {}
 void CommandBufferMTL::BuildTopLevelAccelerationStructure(uint32_t instanceNum, const Buffer& buffer, uint64_t bufferOffset, AccelerationStructureBuildBits flags, AccelerationStructure& dst, Buffer& scratch, uint64_t scratchOffset) {}

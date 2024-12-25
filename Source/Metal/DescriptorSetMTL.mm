@@ -13,7 +13,7 @@ void DescriptorSetMTL::Create(size_t argumentBufferOffset, id<MTLBuffer> argumen
     m_ArgumentBufferOffset = argumentBufferOffset;
     m_Desc = desc;
     m_ArgumentEncoder = [m_Device newArgumentEncoderWithArguments: argDesc];
-    [m_ArgumentEncoder setArgumentBuffer:m_ArgumentBuffer offset:argumentBufferOffset];
+    [m_ArgumentEncoder setArgumentBuffer: m_ArgumentBuffer offset:argumentBufferOffset];
 }
 
 size_t DescriptorSetMTL::getDescriptorLength() {

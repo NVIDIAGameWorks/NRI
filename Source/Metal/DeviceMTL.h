@@ -30,8 +30,9 @@ public:
         if (result != Result::SUCCESS) {
             Destroy(GetStdAllocator(), impl);
             entity = nullptr;
-        } else
+        } else {
             entity = (Interface*)impl;
+        }
 
         return result;
     }

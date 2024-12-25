@@ -16,16 +16,16 @@ struct DescriptorMTL;
 
 
 NriBits(CommandBufferDirtyBits, uint8_t,
-    NONE                            = 0,
-    CMD_DIRTY_STENCIL          = NriBit(0)
-);
+        NONE                            = 0,
+        CMD_DIRTY_STENCIL          = NriBit(0)
+        );
 
 struct CommandBufferMTL {
-   
+    
     inline CommandBufferMTL(DeviceMTL& device)
     : m_Device(device) {
     }
-  
+    
     inline DeviceMTL& GetDevice() const {
         return m_Device;
     }
@@ -33,7 +33,7 @@ struct CommandBufferMTL {
     inline operator id<MTLCommandBuffer>() const {
         return m_Handle;
     }
-
+    
     
     void SetDebugName(const char* name);
     Result Begin(const DescriptorPool* descriptorPool);
@@ -50,7 +50,7 @@ struct CommandBufferMTL {
     void SetScissors(const Rect* rects, uint32_t rectNum);
     void SetDepthBounds(float boundsMin, float boundsMax);
     void SetStencilReference(uint8_t frontRef, uint8_t backRef);
-   // void SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum);
+    // void SetSamplePositions(const SamplePosition* positions, Sample_t positionNum, Sample_t sampleNum);
     void SetBlendConstants(const Color32f& color);
     void SetShadingRate(const ShadingRateDesc& shadingRateDesc);
     void ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum);
@@ -86,15 +86,15 @@ struct CommandBufferMTL {
     void DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride);
     
     ~CommandBufferMTL();
-   
+    
     void Create(id<MTLCommandBuffer> cmd);
-
+    
     struct CmdIndexBuffer {
         size_t m_Offset;
         MTLIndexType m_Type;
         struct BufferMTL* m_Buffer;
     };
- 
+    
 private:
     
     void updateCommandBufferState();
@@ -102,11 +102,11 @@ private:
     DeviceMTL& m_Device;
     struct PipelineMTL* m_CurrentPipeline = nullptr;
     struct CmdIndexBuffer m_CurrentIndexCmd;
+    PipelineLayoutMTL* m_CurrentPipelineLayout = nullptr;
     id<MTLCommandBuffer> m_Handle;
     id<MTLRenderCommandEncoder> m_RendererEncoder = nil;
     id<MTLComputeCommandEncoder> m_ComputeEncoder = nil;
-    
-    //id<MTLArgumentEncoder>
+    id<MTLBlitCommandEncoder> m_BlitEncoder = nil;
     
     CommandBufferDirtyBits m_DirtyBits = CommandBufferDirtyBits::NONE;
 };

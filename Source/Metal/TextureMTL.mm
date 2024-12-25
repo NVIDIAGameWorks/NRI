@@ -23,7 +23,6 @@ void nri::fillMTLTextureDescriptor(const TextureDesc& textureDesc, MTLTextureDes
 
 Result TextureMTL::Create(const TextureDesc& textureDesc) {
     m_Desc = textureDesc;
-  
     return Result::SUCCESS;
 }
 

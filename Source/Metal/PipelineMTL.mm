@@ -26,9 +26,9 @@ Result PipelineMTL::Create(const ComputePipelineDesc& computePipelineDesc) {
     NSError* error = nil;
     
     dispatch_data_t byteCode = dispatch_data_create(
-                                                    computePipelineDesc.shader.bytecode,
-                                                    computePipelineDesc.shader.size, nil, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
-    
+        computePipelineDesc.shader.bytecode,
+        computePipelineDesc.shader.size, nil, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+
     id<MTLLibrary> lib = [m_Device newLibraryWithData: byteCode error:&error];
     NSCAssert(lib, @"Failed to load Metal shader library %@", error); // not sure how to correctly report this
     RETURN_ON_FAILURE(&m_Device, lib, Result::FAILURE, "Failed to Load Metal shader library");
@@ -42,7 +42,6 @@ Result PipelineMTL::Create(const ComputePipelineDesc& computePipelineDesc) {
     m_PipelineType = PipelineType::Compute;
     pipelineDesc.computeFunction = entryPointFunc;
     NSCAssert(pipelineDesc.computeFunction, @"Failed to create Metal kernel function %@: %@", entryPointNStr, error);
-    
     
     m_ComputePipeline = [m_Device newComputePipelineStateWithDescriptor: pipelineDesc
                                                                 options: MTLPipelineOptionNone

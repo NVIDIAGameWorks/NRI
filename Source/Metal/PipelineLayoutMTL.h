@@ -6,14 +6,6 @@ namespace nri {
 
 struct DeviceMTL;
 
-
-//
-//struct BindingInfo {
-//    BindingInfo(StdAllocator<uint8_t>& allocator);
-////    Vector<PushConstantBindingDesc> pushConstantBindings;
-////    Vector<PushDescriptorBindingDesc> pushDescriptorBindings;
-//};
-
 struct DescriptorSetLayout {
     DescriptorSetDesc m_DescriptorSetDesc;
     NSMutableArray<MTLArgumentDescriptor*>* m_ArgumentDescriptors;
@@ -26,7 +18,7 @@ struct PipelineLayoutMTL {
         , m_HasVariableDescriptorNum(device.GetStdAllocator())
         , m_DescriptorSetRangeDescs(device.GetStdAllocator())
         , m_DynamicConstantBufferDescs(device.GetStdAllocator())
-        , m_DescriptorSets(device.GetStdAllocator())
+        , m_DescriptorSetLayouts(device.GetStdAllocator())
     {
     }
 
@@ -36,14 +28,10 @@ struct PipelineLayoutMTL {
         return m_Device;
     }
     
-    inline struct DescriptorSetLayout* GetDescriptorSetLayout(uint32_t setIndex) {
-        return &m_DescriptorSets[setIndex];
+    const inline struct DescriptorSetLayout* GetDescriptorSetLayout(uint32_t setIndex) const {
+        return &m_DescriptorSetLayouts[setIndex];
     }
-    
-//    inline struct DescriptorSetDesc* GetDescriptorSetDesc(uint32_t setIndex) {
-//        return &m_DescriptorSetDesc[setIndex];
-//    }
-    
+
     Result Create(const PipelineLayoutDesc& pipelineLayoutDesc);
    
 
@@ -53,10 +41,8 @@ private:
     Vector<bool> m_HasVariableDescriptorNum;
     Vector<DescriptorRangeDesc> m_DescriptorSetRangeDescs;
     Vector<DynamicConstantBufferDesc> m_DynamicConstantBufferDescs;
-//    Vector<DescriptorSetDesc> m_DescriptorSetDesc;
-    Vector<DescriptorSetLayout> m_DescriptorSets;
-    
-//    BindingInfo m_BindingInfo;
+    Vector<DescriptorSetLayout> m_DescriptorSetLayouts;
+
 };
 
 }

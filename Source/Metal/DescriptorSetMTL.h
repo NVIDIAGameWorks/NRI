@@ -18,6 +18,14 @@ public:
     }
     size_t getDescriptorLength();
     
+    inline id<MTLBuffer> GetArgumentBuffer() const {
+        return m_ArgumentBuffer;
+    }
+    
+    inline size_t GetArugmentBufferOffset() const {
+        return m_ArgumentBufferOffset;
+    }
+    
 private:
     DeviceMTL& m_Device;
     id<MTLArgumentEncoder>    m_ArgumentEncoder;

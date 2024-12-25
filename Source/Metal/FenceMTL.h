@@ -22,7 +22,7 @@ struct FenceMTL {
 
     //void SetDebugName(const char* name);
     //uint64_t GetFenceValue() const;
-    //void Wait(uint64_t value);
+    void Wait(uint64_t value);
 private:
     dispatch_semaphore_t m_Handle;
     DeviceMTL& m_Device;

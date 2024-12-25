@@ -4,23 +4,12 @@
 
 using namespace nri;
 
-//
-//BindingInfo::BindingInfo(StdAllocator<uint8_t>& allocator)
-//    : hasVariableDescriptorNum(allocator)
-//    , descriptorSetRangeDescs(allocator)
-//    , dynamicConstantBufferDescs(allocator)
-//    , descriptorSetDescs(allocator) {
-//
-//}
-//
-
 PipelineLayoutMTL::~PipelineLayoutMTL() {
 
 }
 
 Result PipelineLayoutMTL::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
    
-    
     size_t rangeNum = 0;
     size_t dynamicConstantBufferNum = 0;
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
@@ -28,8 +17,9 @@ Result PipelineLayoutMTL::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
         dynamicConstantBufferNum += pipelineLayoutDesc.descriptorSets[i].dynamicConstantBufferNum;
     }
     
-    m_DescriptorSets.resize(pipelineLayoutDesc.descriptorSetNum);
-    m_HasVariableDescriptorNum.resize(pipelineLayoutDesc.descriptorSetNum);
+    //m_DescriptorSetDesc.insert(m_DescriptorSetDesc.begin(), pipelineLayoutDesc.descriptorSets, pipelineLayoutDesc.descriptorSets + pipelineLayoutDesc.descriptorSetNum);
+    m_DescriptorSetLayouts.reserve(pipelineLayoutDesc.descriptorSetNum);
+    m_HasVariableDescriptorNum.reserve(pipelineLayoutDesc.descriptorSetNum);
     m_DescriptorSetRangeDescs.reserve(rangeNum);
     m_DynamicConstantBufferDescs.reserve(dynamicConstantBufferNum);
     
@@ -38,9 +28,9 @@ Result PipelineLayoutMTL::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
         
         // Binding info
         m_HasVariableDescriptorNum[i] = false;
-        m_DescriptorSets[i].m_DescriptorSetDesc = descriptorSetDesc;
-        m_DescriptorSets[i].m_DescriptorSetDesc.ranges = m_DescriptorSetRangeDescs.data() +m_DescriptorSetRangeDescs.size();
-        m_DescriptorSets[i].m_DescriptorSetDesc.dynamicConstantBuffers = m_DynamicConstantBufferDescs.data() + m_DynamicConstantBufferDescs.size();
+        m_DescriptorSetLayouts[i].m_DescriptorSetDesc = descriptorSetDesc;
+        m_DescriptorSetLayouts[i].m_DescriptorSetDesc.ranges = m_DescriptorSetRangeDescs.data() + m_DescriptorSetRangeDescs.size();
+        m_DescriptorSetLayouts[i].m_DescriptorSetDesc.dynamicConstantBuffers = m_DynamicConstantBufferDescs.data() + m_DynamicConstantBufferDescs.size();
         m_DescriptorSetRangeDescs.insert(m_DescriptorSetRangeDescs.end(), descriptorSetDesc.ranges, descriptorSetDesc.ranges + descriptorSetDesc.rangeNum);
         m_DynamicConstantBufferDescs.insert(m_DynamicConstantBufferDescs.end(), descriptorSetDesc.dynamicConstantBuffers, descriptorSetDesc.dynamicConstantBuffers + descriptorSetDesc.dynamicConstantBufferNum);
         
@@ -73,8 +63,12 @@ Result PipelineLayoutMTL::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
                 default:
                     break;
             }
+            if(range->flags & DescriptorRangeBits::VARIABLE_SIZED_ARRAY)
+                m_HasVariableDescriptorNum[r] = true;
+            [argumentDescriptors addObject: argDescriptor];
         }
-        m_DescriptorSets[i].m_ArgumentDescriptors = argumentDescriptors;
+        
+        m_DescriptorSetLayouts[i].m_ArgumentDescriptors = argumentDescriptors;
 
     }
     return Result::SUCCESS;

@@ -57,13 +57,10 @@ private:
     id<MTLTexture> m_Texture;
     id<MTLBuffer> m_Buffer;
     id<MTLSamplerState> m_SamplerState;
-    
     union {
         BufferViewDesc m_BufferViewDesc;
         SamplerDesc m_SamplerViewDesc;
     };
-    
-
 };
 
 } // namespace nri

@@ -243,6 +243,11 @@ static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device) {
     return ((DeviceMTL&)device).GetDesc();
 }
 
+static Result NRI_CALL CreateTexture(Device& device, const TextureDesc& textureDesc, Texture*& texture) {
+    return ((DeviceMTL&)device).CreateImplementation<TextureMTL>(texture, textureDesc);
+}
+
+
 //static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
 //    DeviceMTL& device = ((const BufferMTL*)bufferViewDesc.buffer)->GetDevice();
 //    return device.CreateImplementation<DescriptorMTL>(bufferView, bufferViewDesc);
@@ -321,7 +326,6 @@ static const TextureDesc& NRI_CALL GetTextureDesc(const Texture& texture) {
     return ((const TextureMTL&)texture).GetDesc();
 }
 
-
 static void NRI_CALL GetBufferMemoryDesc(const Device& device, const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     ((const DeviceMTL&)device).GetMemoryDesc(bufferDesc, memoryLocation, memoryDesc);
 }
@@ -334,12 +338,15 @@ static Result NRI_CALL CreateGraphicsPipeline(Device& device, const GraphicsPipe
     return ((DeviceMTL&)device).CreateImplementation<PipelineMTL>(pipeline, graphicsPipelineDesc);
 }
 
+static Result NRI_CALL CreateComputePipeline(Device& device, const ComputePipelineDesc& computePipelineDesc, Pipeline*& pipeline) {
+    return ((DeviceMTL&)device).CreateImplementation<PipelineMTL>(pipeline, computePipelineDesc);
+}
+
+
 static Result NRI_CALL AllocateDescriptorSets(DescriptorPool& descriptorPool, const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
     return Result::SUCCESS;
     //return ((DescriptorPoolMTL&)descriptorPool).AllocateDescriptorSets(pipelineLayout, setIndex, descriptorSets, instanceNum, variableDescriptorNum);
 }
-
-
 
 Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table.GetDeviceDesc = ::GetDeviceDesc;
@@ -354,7 +361,7 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     //table.CreateCommandBuffer = ::CreateCommandBuffer;
     //table.CreateDescriptorPool = ::CreateDescriptorPool;
     //table.CreateBuffer = ::CreateBuffer;
-    //table.CreateTexture = ::CreateTexture;
+    table.CreateTexture = ::CreateTexture;
     //table.CreateBufferView = ::CreateBufferView;
     //table.CreateTexture1DView = ::CreateTexture1DView;
     //table.CreateTexture2DView = ::CreateTexture2DView;
@@ -362,7 +369,8 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     //table.CreateSampler = ::CreateSampler;
     //table.CreatePipelineLayout = ::CreatePipelineLayout;
     table.CreateGraphicsPipeline = ::CreateGraphicsPipeline;
-//    table.CreateComputePipeline = ::CreateComputePipeline;
+    table.CreateComputePipeline = ::CreateComputePipeline;
+    
 //    table.CreateQueryPool = ::CreateQueryPool;
 //    table.CreateFence = ::CreateFence;
     table.DestroyCommandAllocator = ::DestroyCommandAllocator;
@@ -413,11 +421,11 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table.CmdClearStorageBuffer = ::CmdClearStorageBuffer;
     table.CmdClearStorageTexture = ::CmdClearStorageTexture;
     table.CmdResolveTexture = ::CmdResolveTexture;
-    table.CmdResetQueries = ::CmdResetQueries;
-    table.CmdBeginQuery = ::CmdBeginQuery;
-    table.CmdEndQuery = ::CmdEndQuery;
+    //table.CmdResetQueries = ::CmdResetQueries;
+    //table.CmdBeginQuery = ::CmdBeginQuery;
+    //table.CmdEndQuery = ::CmdEndQuery;
     table.CmdCopyQueries = ::CmdCopyQueries;
-    table.CmdBeginAnnotation = ::CmdBeginAnnotation;
+    //table.CmdBeginAnnotation = ::CmdBeginAnnotation;
     table.CmdEndAnnotation = ::CmdEndAnnotation;
     table.EndCommandBuffer = ::EndCommandBuffer;
 //    table.QueueSubmit = ::QueueSubmit;

@@ -55,7 +55,7 @@ Result DescriptorPoolMTL::AllocateDescriptorSets(const PipelineLayout& pipelineL
         }
     }
     
-    struct DescriptorSetLayout* setLayoutMTL = pipelineLayoutMTL->GetDescriptorSetLayout(setIndex);
+    const struct DescriptorSetLayout* setLayoutMTL = pipelineLayoutMTL->GetDescriptorSetLayout(setIndex);
     for(uint32_t i = 0; i < instanceNum; i++) {
         descriptorSets[i] = (DescriptorSet*)m_AllocatedSets[m_UsedSets++];
         ((DescriptorSetMTL*)descriptorSets[i])->Create(

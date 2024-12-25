@@ -13,15 +13,12 @@ DescriptorMTL::~DescriptorMTL() {
     
 }
 
-
 Result DescriptorMTL::Create(const BufferViewDesc& bufferViewDesc) {
     m_Type = DescriptorTypeMTL::BUFFER_VIEW;
     const BufferMTL& buffer = *(const BufferMTL*)bufferViewDesc.buffer;
-    
+    m_Buffer = buffer.GetHandle();
     return Result::SUCCESS;
-    
 }
-
 
 Result DescriptorMTL::Create(const Texture1DViewDesc& textureViewDesc) {
     TextureMTL& texture = *(TextureMTL*)textureViewDesc.texture;
@@ -39,6 +36,7 @@ Result DescriptorMTL::Create(const Texture1DViewDesc& textureViewDesc) {
                  textureType: MTLTextureType1D
                  levels:level
                  slices:slices];
+    m_Type = DescriptorTypeMTL::IMAGE_VIEW_1D;
     
     return Result::SUCCESS;
     
@@ -59,6 +57,7 @@ Result DescriptorMTL::Create(const Texture2DViewDesc& textureViewDesc) {
                  textureType: MTLTextureType2D
                  levels:level
                  slices:slices];
+    m_Type = DescriptorTypeMTL::IMAGE_VIEW_2D;
     
     return Result::SUCCESS;
 }
@@ -78,6 +77,7 @@ Result DescriptorMTL::Create(const Texture3DViewDesc& textureViewDesc){
                  textureType: MTLTextureType3D
                  levels:level
                  slices:slices];
+    m_Type = DescriptorTypeMTL::IMAGE_VIEW_3D;
     
     return Result::SUCCESS;
 }
@@ -94,7 +94,7 @@ Result DescriptorMTL::Create(const SamplerDesc& samplerDesc){
     [mtlDesc setLodMinClamp: samplerDesc.mipMin];
     [mtlDesc setLodMaxClamp: samplerDesc.mipMax];
     m_SamplerState = [m_Device newSamplerStateWithDescriptor: mtlDesc];
-    
+    m_Type = DescriptorTypeMTL::SAMPLER;
     return Result::SUCCESS;
 }
 
