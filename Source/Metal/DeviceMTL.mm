@@ -82,6 +82,11 @@ DeviceMTL::~DeviceMTL() {
 //}
 
 
+id<MTLRenderPipelineState> DeviceMTL::GetClearPipeline() {
+    
+}
+
+
 void DeviceMTL::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
     MemoryTypeInfo memoryTypeInfo;
     memoryTypeInfo.options = DEFAULT_MEMORY_RESOURCE_OPTION_MEMORY_LOCATION[(size_t)memoryLocation];

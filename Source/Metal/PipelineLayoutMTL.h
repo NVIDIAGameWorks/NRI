@@ -19,6 +19,7 @@ struct PipelineLayoutMTL {
         , m_DescriptorSetRangeDescs(device.GetStdAllocator())
         , m_DynamicConstantBufferDescs(device.GetStdAllocator())
         , m_DescriptorSetLayouts(device.GetStdAllocator())
+        , m_PushBindingConstants(device.GetStdAllocator())
     {
     }
 
@@ -32,6 +33,10 @@ struct PipelineLayoutMTL {
         return &m_DescriptorSetLayouts[setIndex];
     }
 
+    const inline struct RootConstantDesc* GetPushBinding(uint32_t index) {
+        return &m_PushBindingConstants[index];
+    }
+    
     Result Create(const PipelineLayoutDesc& pipelineLayoutDesc);
    
 
@@ -42,6 +47,7 @@ private:
     Vector<DescriptorRangeDesc> m_DescriptorSetRangeDescs;
     Vector<DynamicConstantBufferDesc> m_DynamicConstantBufferDescs;
     Vector<DescriptorSetLayout> m_DescriptorSetLayouts;
+    Vector<RootConstantDesc> m_PushBindingConstants;
 
 };
 

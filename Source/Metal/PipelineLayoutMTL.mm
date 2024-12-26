@@ -22,6 +22,7 @@ Result PipelineLayoutMTL::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
     m_HasVariableDescriptorNum.reserve(pipelineLayoutDesc.descriptorSetNum);
     m_DescriptorSetRangeDescs.reserve(rangeNum);
     m_DynamicConstantBufferDescs.reserve(dynamicConstantBufferNum);
+    m_PushBindingConstants.resize(pipelineLayoutDesc.rootConstantNum);
     
     for (uint32_t i = 0; i < pipelineLayoutDesc.descriptorSetNum; i++) {
         const DescriptorSetDesc& descriptorSetDesc = pipelineLayoutDesc.descriptorSets[i];
@@ -71,6 +72,13 @@ Result PipelineLayoutMTL::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
         m_DescriptorSetLayouts[i].m_ArgumentDescriptors = argumentDescriptors;
 
     }
+    
+    
+    for (uint32_t i = 0; i < pipelineLayoutDesc.rootConstantNum; i++) {
+        const RootConstantDesc& pushConstantDesc = pipelineLayoutDesc.rootConstants[i];
+        m_PushBindingConstants[i] = pushConstantDesc;
+    }
+
     return Result::SUCCESS;
 }
 

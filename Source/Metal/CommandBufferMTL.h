@@ -14,6 +14,13 @@ struct PipelineLayoutMTL;
 struct TextureMTL;
 struct DescriptorMTL;
 
+NriBits(BarrierBits, uint8_t,
+    NONE = 0,
+    BARRIER_FLAG_BUFFERS = NriBit(0),
+    BARRIER_FLAG_TEXTURES = NriBit(1),
+    BARRIER_FLAG_RENDERTARGETS = NriBit(2),
+    BARRIER_FLAG_FENCE = NriBit(3));
+
 
 NriBits(CommandBufferDirtyBits, uint8_t,
         NONE                            = 0,
@@ -29,11 +36,10 @@ struct CommandBufferMTL {
     inline DeviceMTL& GetDevice() const {
         return m_Device;
     }
-    
-    inline operator id<MTLCommandBuffer>() const {
+ 
+    inline id<MTLCommandBuffer> GetHandle() const {
         return m_Handle;
     }
-    
     
     void SetDebugName(const char* name);
     Result Begin(const DescriptorPool* descriptorPool);
@@ -87,7 +93,7 @@ struct CommandBufferMTL {
     
     ~CommandBufferMTL();
     
-    void Create(id<MTLCommandBuffer> cmd);
+    void Create(const struct CommandQueueMTL* queue);
     
     struct CmdIndexBuffer {
         size_t m_Offset;
@@ -95,18 +101,31 @@ struct CommandBufferMTL {
         struct BufferMTL* m_Buffer;
     };
     
+    struct CmdVertexBuffer {
+        size_t m_Offset;
+        struct BufferMTL* m_Buffer;
+    };
+    
 private:
     
+    void Restore();
     void updateCommandBufferState();
+    void EndCurrentEncoders();
     
     DeviceMTL& m_Device;
     struct PipelineMTL* m_CurrentPipeline = nullptr;
-    struct CmdIndexBuffer m_CurrentIndexCmd;
     PipelineLayoutMTL* m_CurrentPipelineLayout = nullptr;
     id<MTLCommandBuffer> m_Handle;
     id<MTLRenderCommandEncoder> m_RendererEncoder = nil;
     id<MTLComputeCommandEncoder> m_ComputeEncoder = nil;
     id<MTLBlitCommandEncoder> m_BlitEncoder = nil;
+    const struct CommandQueueMTL* m_CommandQueue = nullptr;
+    
+    struct CmdIndexBuffer m_CurrentIndexCmd;
+    uint32_t m_dirtyVertexBufferBits = 0;
+    struct CmdVertexBuffer m_CurrentVertexCmd[32];
+    id<MTLRenderPipelineState> m_GraphicsPipelineState;
+    
     
     CommandBufferDirtyBits m_DirtyBits = CommandBufferDirtyBits::NONE;
 };

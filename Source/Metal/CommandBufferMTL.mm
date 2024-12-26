@@ -25,13 +25,10 @@ void CommandBufferMTL::SetDebugName(const char* name) {
 }
 
 Result CommandBufferMTL::Begin(const DescriptorPool* descriptorPool) {
-    m_ComputeEncoder = [m_Handle computeCommandEncoderWithDescriptor: NULL];
 }
 
 Result CommandBufferMTL::End() {
-    m_ComputeEncoder = nil;
-    m_RendererEncoder = nil;
-    
+    EndCurrentEncoders();
 }
 
 void CommandBufferMTL::SetPipeline(const Pipeline& pipeline) {
@@ -39,6 +36,25 @@ void CommandBufferMTL::SetPipeline(const Pipeline& pipeline) {
         return;
     PipelineMTL& pipelineImpl = (PipelineMTL&)pipeline;
     m_CurrentPipeline = &pipelineImpl;
+    
+    switch(m_CurrentPipeline->GetPipelineType()) {
+        case PipelineType::Compute: {
+            if(!m_ComputeEncoder) {
+                MTLComputePassDescriptor* computePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
+                m_ComputeEncoder = [m_Handle computeCommandEncoderWithDescriptor:computePassDescriptor];
+            }
+            [m_ComputeEncoder setComputePipelineState: m_CurrentPipeline->GetComputePipeline()];
+            break;
+        }
+        case PipelineType::Graphics: {
+            [m_RendererEncoder setRenderPipelineState: m_CurrentPipeline->GetGraphicsPipeline()];
+            m_GraphicsPipelineState = m_CurrentPipeline->GetGraphicsPipeline();
+            break;
+        }
+        case PipelineType::Raytracing: {
+            break;
+        }
+    }
 }
 
 void CommandBufferMTL::SetPipelineLayout(const PipelineLayout& pipelineLayout) {
@@ -51,54 +67,57 @@ void CommandBufferMTL::SetDescriptorSet(uint32_t setIndexInPipelineLayout, const
     auto* layout = m_CurrentPipelineLayout->GetDescriptorSetLayout(setIndexInPipelineLayout);
     const uint32_t space = layout->m_DescriptorSetDesc.registerSpace;
     
-    bool setFragmentBuffer = false;
-    bool setVertexBuffer = false;
-    
+    StageBits stageBits = (StageBits)0;
     for(size_t i = 0; i < layout->m_DescriptorSetDesc.rangeNum; i++) {
-        if(layout->m_DescriptorSetDesc.ranges[i].shaderStages == StageBits::ALL) {
-            setFragmentBuffer = true;
-            setVertexBuffer = true;
-            break;
-        }
-        if(layout->m_DescriptorSetDesc.ranges[i].shaderStages & StageBits::VERTEX_SHADER) {
-            setVertexBuffer = true;
-            break;
-        }
-        if(layout->m_DescriptorSetDesc.ranges[i].shaderStages & StageBits::GRAPHICS_SHADERS) {
-            setFragmentBuffer = true;
-            break;
-        }
+        if(layout->m_DescriptorSetDesc.ranges[i].shaderStages == StageBits::NONE)
+            continue;
+        stageBits |= layout->m_DescriptorSetDesc.ranges[i].shaderStages ;
     }
-    if(setFragmentBuffer) {
+    if(stageBits == StageBits::ALL ||
+       stageBits & StageBits::FRAGMENT_SHADER) {
         [m_RendererEncoder setFragmentBuffer: descriptorSetImpl.GetArgumentBuffer()
                                       offset: descriptorSetImpl.GetArugmentBufferOffset()
                                      atIndex: space];
     }
-    if(setVertexBuffer) {
+    if(stageBits == StageBits::ALL ||
+       stageBits & StageBits::VERTEX_SHADER) {
         [m_RendererEncoder setVertexBuffer: descriptorSetImpl.GetArgumentBuffer()
                                     offset: descriptorSetImpl.GetArugmentBufferOffset()
                                    atIndex: space];
         
     }
     
-
+    if(stageBits == StageBits::ALL ||
+       stageBits & StageBits::COMPUTE_SHADER) {
+        [m_ComputeEncoder setBuffer: descriptorSetImpl.GetArgumentBuffer()
+                                    offset: descriptorSetImpl.GetArugmentBufferOffset()
+                                   atIndex: space];
+        
+    }
+    
 }
+
 void CommandBufferMTL::SetConstants(uint32_t pushConstantIndex, const void* data, uint32_t size) {
-    //if (pDesc->mUsedStages & SHADER_STAGE_VERT)
-    //{
-    //    [m_RendererEncoder setVertexBytes:data length:size atIndex:pushConstantIndex];
-    //}
-
-    //if (pDesc->mUsedStages & SHADER_STAGE_FRAG)
-    //{
-    //    [m_RendererEncoder  setFragmentBytes:data length:size atIndex:pushConstantIndex];
-    //}
-
-    //if (pDesc->mUsedStages & SHADER_STAGE_COMP)
-    //{
-    //    [m_RendererEncoder setBytes:data length:size atIndex:pushConstantIndex];
-    //}
-
+    const struct RootConstantDesc* pDesc = m_CurrentPipelineLayout->GetPushBinding(pushConstantIndex);
+    
+    
+    if (pDesc->shaderStages == StageBits::ALL ||
+        pDesc->shaderStages & StageBits::VERTEX_SHADER)
+    {
+        [m_RendererEncoder setVertexBytes:data length:size atIndex:pDesc->registerIndex];
+    }
+    
+    if (pDesc->shaderStages == StageBits::ALL ||
+        pDesc->shaderStages & StageBits::FRAGMENT_SHADER )
+    {
+        [m_RendererEncoder setFragmentBytes:data length:size atIndex:pDesc->registerIndex];
+    }
+    
+    if (pDesc->shaderStages == StageBits::ALL ||
+        pDesc->shaderStages & StageBits::COMPUTE_SHADER )
+    {
+        [m_ComputeEncoder setBytes:data length:size atIndex:pDesc->registerIndex];
+    }
 }
 
 void CommandBufferMTL::SetDescriptorPool(const DescriptorPool& descriptorPool) {
@@ -107,59 +126,54 @@ void CommandBufferMTL::SetDescriptorPool(const DescriptorPool& descriptorPool) {
 
 void CommandBufferMTL::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
     
-    //if (pCmd->pQueue->mBarrierFlags & BARRIER_FLAG_BUFFERS)
-    {
-        [m_RendererEncoder memoryBarrierWithScope:MTLBarrierScopeBuffers
-                                         afterStages:MTLRenderStageFragment
-                                        beforeStages:MTLRenderStageVertex];
-    }
-
-    //if (pCmd->pQueue->mBarrierFlags & BARRIER_FLAG_TEXTURES)
-    {
-        [m_RendererEncoder memoryBarrierWithScope:MTLBarrierScopeTextures
-                                         afterStages:MTLRenderStageFragment
-                                        beforeStages:MTLRenderStageVertex];
-    }
-
-    //if (pCmd->pQueue->mBarrierFlags & BARRIER_FLAG_RENDERTARGETS)
-    {
-        [m_RendererEncoder memoryBarrierWithScope:MTLBarrierScopeRenderTargets
-                                         afterStages:MTLRenderStageFragment
-                                        beforeStages:MTLRenderStageVertex];
-    }
-
+    const size_t totalResources = barrierGroupDesc.bufferNum + barrierGroupDesc.textureNum;
     
+    Scratch<id<MTLResource>> resourceBarrier = AllocateScratch(m_Device, id<MTLResource>, totalResources);
+    size_t barrierCount = 0;
+    for(size_t i = 0; i < barrierGroupDesc.bufferNum; i++) {
+        const BufferBarrierDesc& in = barrierGroupDesc.buffers[i];
+        const BufferMTL& bufferImpl = *(const BufferMTL*)in.buffer;
+        resourceBarrier[barrierCount++] = bufferImpl.GetHandle();
+    }
+    
+    for(size_t i = 0; i < barrierGroupDesc.textureNum; i++) {
+        const TextureBarrierDesc& in = barrierGroupDesc.textures[i];
+        const TextureMTL& textureImpl = *(const TextureMTL*)in.texture;
+        resourceBarrier[barrierCount++] = textureImpl.GetHandle();
+    }
+    
+    [m_RendererEncoder memoryBarrierWithResources: resourceBarrier
+                                            count: barrierCount
+                                      afterStages: MTLRenderStageFragment
+                                     beforeStages: MTLRenderStageVertex];
 }
 void CommandBufferMTL::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
-    MTLRenderPassDescriptor* renderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
+    MTLRenderPassDescriptor* renderPassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
     
     for(uint32_t i = 0; i < attachmentsDesc.colorNum; i++) {
         DescriptorMTL& descriptorMTL = *(DescriptorMTL*)attachmentsDesc.colors[i];
         
-        renderPassDescriptor.colorAttachments[i].texture = descriptorMTL.GetTextureHandle();
-        renderPassDescriptor.colorAttachments[i].clearColor = MTLClearColorMake(0, 0, 0, 1);
-        renderPassDescriptor.colorAttachments[i].loadAction = MTLLoadActionClear;
-        renderPassDescriptor.colorAttachments[i].storeAction = MTLStoreActionStore;
+        renderPassDesc.colorAttachments[i].texture = descriptorMTL.GetTextureHandle();
+        renderPassDesc.colorAttachments[i].clearColor = MTLClearColorMake(0, 0, 0, 1);
+        renderPassDesc.colorAttachments[i].loadAction = MTLLoadActionLoad;
+        renderPassDesc.colorAttachments[i].storeAction = MTLStoreActionStore;
     }
     
     if(attachmentsDesc.depthStencil) {
-        
         DescriptorMTL& descriptorMTL = *(DescriptorMTL*)attachmentsDesc.depthStencil;
-        renderPassDescriptor.depthAttachment.texture = descriptorMTL.GetTextureHandle();
-       // renderPassDescriptor.depthAttachment.clearColor = MTLClearColorMake(0, 0, 0, 1);
-        renderPassDescriptor.depthAttachment.loadAction = MTLLoadActionClear;
-        renderPassDescriptor.depthAttachment.storeAction = MTLStoreActionStore;
+        renderPassDesc.depthAttachment.texture = descriptorMTL.GetTextureHandle();
+        renderPassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
+        renderPassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 
     }
- 
-    m_RendererEncoder = [m_Handle renderCommandEncoderWithDescriptor: renderPassDescriptor];
+    //m_RenderPassDescriptor = [renderPassDescriptor copy];
+    m_RendererEncoder = [m_Handle renderCommandEncoderWithDescriptor: renderPassDesc];
 }
+
 void CommandBufferMTL::EndRendering() {
-    NSCAssert(m_RendererEncoder, @"Renderer Encoderer Not Set");
-    [m_RendererEncoder endEncoding];
-    m_RendererEncoder = nil;
-    m_ComputeEncoder = nil;
+    EndCurrentEncoders();
 }
+
 void CommandBufferMTL::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
     Scratch<MTLViewport> mtlViewports = AllocateScratch(m_Device, MTLViewport, viewportNum);
     for(size_t i = 0; i < viewportNum; i++) {
@@ -172,6 +186,8 @@ void CommandBufferMTL::SetViewports(const Viewport* viewports, uint32_t viewport
     }
     [m_RendererEncoder setViewports: mtlViewports count: viewportNum];
 }
+
+
 void CommandBufferMTL::SetScissors(const Rect* rects, uint32_t rectNum) {
     NSCAssert(m_RendererEncoder, @"encoder set");
     MTLScissorRect rect;
@@ -197,12 +213,32 @@ void CommandBufferMTL::SetBlendConstants(const Color32f& color) {
     ];
 }
 void CommandBufferMTL::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
+
     //[m_RendererEncoder sha]
 }
 
 void CommandBufferMTL::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
+  
+
+    Restore();
+}
+
+void CommandBufferMTL::EndCurrentEncoders() {
     
+    if(m_RendererEncoder) {
+        [m_RendererEncoder endEncoding];
+        m_RendererEncoder = nil;
+    }
     
+    if(m_ComputeEncoder) {
+        [m_ComputeEncoder endEncoding];
+        m_ComputeEncoder = nil;
+    }
+    
+    if(m_BlitEncoder) {
+        [m_BlitEncoder endEncoding];
+        m_BlitEncoder = nil;
+    }
 }
 
 void CommandBufferMTL::SetIndexBuffer(const Buffer& buffer, uint64_t offset, IndexType indexType) {
@@ -219,9 +255,26 @@ void CommandBufferMTL::SetIndexBuffer(const Buffer& buffer, uint64_t offset, Ind
     m_CurrentIndexCmd.m_Offset = offset;
 }
 
+
+void CommandBufferMTL::Restore() {
+    [m_RendererEncoder setRenderPipelineState: m_GraphicsPipelineState];
+    uint32_t vertexSlot = 0;
+    for( uint32_t attr = m_dirtyVertexBufferBits; attr > 0; attr = ( attr >> 1 ), vertexSlot++ ) {
+        [m_RendererEncoder setVertexBuffer: m_CurrentVertexCmd[vertexSlot].m_Buffer->GetHandle()
+                                    offset: m_CurrentVertexCmd[vertexSlot].m_Offset
+                                   atIndex: vertexSlot];
+    }
+}
+
 void CommandBufferMTL::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
     for(size_t i = 0; i < bufferNum; i++) {
         BufferMTL* mtlBuffer = (BufferMTL*)buffers[i];
+        
+        const size_t slotIndex = i + baseSlot;
+        m_CurrentVertexCmd[slotIndex].m_Offset = offsets[i];
+        m_CurrentVertexCmd[slotIndex].m_Buffer = mtlBuffer;
+        m_dirtyVertexBufferBits |= (1 << slotIndex);
+        
         [m_RendererEncoder setVertexBuffer: mtlBuffer->GetHandle()
                                 offset: offsets[i]
                                atIndex: i + baseSlot];
@@ -230,16 +283,20 @@ void CommandBufferMTL::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, c
 }
 
 void CommandBufferMTL::Draw(const DrawDesc& drawDesc) {
-    [m_RendererEncoder drawPrimitives: m_CurrentPipeline->m_primitiveType
+    //m_RendererEncoder = [m_Handle renderCommandEncoderWithDescriptor: m_renderPassDescriptor];
+     
+    [m_RendererEncoder drawPrimitives: m_CurrentPipeline->GetPrimitiveType()
             vertexStart:drawDesc.baseVertex
             vertexCount:drawDesc.vertexNum
             instanceCount:drawDesc.instanceNum
             baseInstance: 0];
+    
+    [m_RendererEncoder endEncoding];
 }
 
 void CommandBufferMTL::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc) {
     id<MTLBuffer> indexBuffer = m_CurrentIndexCmd.m_Buffer->GetHandle();
-    [m_RendererEncoder drawIndexedPrimitives: m_CurrentPipeline->m_primitiveType
+    [m_RendererEncoder drawIndexedPrimitives: m_CurrentPipeline->GetPrimitiveType()
                               indexCount: drawIndexedDesc.indexNum
                                indexType: m_CurrentIndexCmd.m_Type
                              indexBuffer: indexBuffer
@@ -251,7 +308,7 @@ void CommandBufferMTL::DrawIndirect(const Buffer& buffer, uint64_t offset, uint3
     NSCAssert(!countBuffer, @"count buffer not supported");
     
     [m_RendererEncoder
-         drawPrimitives: m_CurrentPipeline->m_primitiveType
+         drawPrimitives: m_CurrentPipeline->GetPrimitiveType()
          indirectBuffer:((BufferMTL&)buffer).GetHandle()
          indirectBufferOffset: offset];
 }
@@ -272,10 +329,16 @@ void CommandBufferMTL::Dispatch(const DispatchDesc& dispatchDesc) {
     
 }
 void CommandBufferMTL::DispatchIndirect(const Buffer& buffer, uint64_t offset) {}
-void CommandBufferMTL::BeginQuery(const QueryPool& queryPool, uint32_t offset) {}
+void CommandBufferMTL::BeginQuery(const QueryPool& queryPool, uint32_t offset) {
+    
+}
 void CommandBufferMTL::EndQuery(const QueryPool& queryPool, uint32_t offset) {}
-void CommandBufferMTL::BeginAnnotation(const char* name) {}
-void CommandBufferMTL::EndAnnotation() {}
+void CommandBufferMTL::BeginAnnotation(const char* name) {
+    
+}
+void CommandBufferMTL::EndAnnotation() {
+    
+}
 void CommandBufferMTL::ClearStorageBuffer(const ClearStorageBufferDesc& clearDesc) {
     
 }
@@ -286,6 +349,12 @@ void CommandBufferMTL::ClearStorageTexture(const ClearStorageTextureDesc& clearD
 void CommandBufferMTL::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
     const BufferMTL& src = (const BufferMTL&)srcBuffer;
     const BufferMTL& dst = (const BufferMTL&)dstBuffer;
+    
+    if(!m_BlitEncoder) {
+        EndCurrentEncoders();
+        m_BlitEncoder = [m_Handle blitCommandEncoder];
+    }
+    
     [m_BlitEncoder
      copyFromBuffer:src.GetHandle()
      sourceOffset:srcOffset
@@ -297,6 +366,11 @@ void CommandBufferMTL::CopyBuffer(Buffer& dstBuffer, uint64_t dstOffset, const B
 void CommandBufferMTL::CopyTexture(Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
     const TextureMTL& src = (const TextureMTL&)srcTexture;
     const TextureMTL& dst = (const TextureMTL&)dstTexture;
+    if(!m_BlitEncoder) {
+        EndCurrentEncoders();
+        m_BlitEncoder = [m_Handle blitCommandEncoder];
+    }
+    
     bool isWholeResource = !dstRegionDesc && !srcRegionDesc;
     if (isWholeResource) {
         [m_BlitEncoder
@@ -331,6 +405,11 @@ void CommandBufferMTL::UploadBufferToTexture(Texture& dstTexture, const TextureR
     const BufferMTL& src = (const BufferMTL&)srcBuffer;
     const TextureMTL& dst = (const TextureMTL&)dstTexture;
     
+    if(!m_BlitEncoder) {
+        EndCurrentEncoders();
+        m_BlitEncoder = [m_Handle blitCommandEncoder];
+    }
+    
     const MTLSize sourceSize = MTLSizeMake(
                                        (dstRegionDesc.width == WHOLE_SIZE) ? dst.GetSize(0, dstRegionDesc.mipOffset) : dstRegionDesc.width,
                                        (dstRegionDesc.height == WHOLE_SIZE) ? dst.GetSize(1, dstRegionDesc.mipOffset) : dstRegionDesc.height,
@@ -352,6 +431,10 @@ void CommandBufferMTL::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLay
     const TextureMTL& src = (const TextureMTL&)srcTexture;
     const BufferMTL& dst = (const BufferMTL&)dstBuffer;
     
+    if(!m_BlitEncoder) {
+        EndCurrentEncoders();
+        m_BlitEncoder = [m_Handle blitCommandEncoder];
+    }
     
     const MTLSize sourceSize = MTLSizeMake(
                                        (srcRegionDesc.width == WHOLE_SIZE) ? src.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width,
@@ -384,8 +467,14 @@ void CommandBufferMTL::DrawMeshTasksIndirect(const Buffer& buffer, uint64_t offs
     
 }
 
-void Create(id<MTLCommandBuffer> cmd);
 
+void CommandBufferMTL::Create(const struct CommandQueueMTL* queue) {
+    m_CommandQueue = queue;
+    MTLCommandBufferDescriptor* pDesc = [[MTLCommandBufferDescriptor alloc] init];
+    pDesc.errorOptions = MTLCommandBufferErrorOptionEncoderExecutionStatus;
+    m_Handle = [m_CommandQueue->GetHandle() commandBufferWithDescriptor: pDesc];
+
+}
 
 
 #include "CommandBufferMTL.hpp"

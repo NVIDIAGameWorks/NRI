@@ -31,7 +31,7 @@ struct CommandAllocatorMTL {
 
 private:
     DeviceMTL& m_Device;
-    struct CommandQueueMTL* m_CommandQueue;
+    const struct CommandQueueMTL* m_CommandQueue;
 };
 
 }

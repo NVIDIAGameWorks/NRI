@@ -29,12 +29,9 @@ Result CommandQueueMTL::Create(CommandQueueType type) {
 void CommandQueueMTL::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
     
     for(uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++) {
-        id<MTLCommandBuffer> cmd = *(struct CommandBufferMTL*)queueSubmitDesc.commandBuffers[i];
-        [cmd commit];
-        
+        const struct CommandBufferMTL& cmd = (const CommandBufferMTL&)queueSubmitDesc.commandBuffers[i];
+        [cmd.GetHandle() commit];
     }
-    
-    
 }
 
 

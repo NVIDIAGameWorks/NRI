@@ -11,7 +11,8 @@ CommandAllocatorMTL::~CommandAllocatorMTL() {
 }
 
 Result CommandAllocatorMTL::Create(const CommandQueue& commandQueue) {
-    m_CommandQueue = &(CommandQueueMTL&)commandQueue;
+    const CommandQueueMTL& commandQueueImpl = (CommandQueueMTL&)commandQueue;
+    m_CommandQueue = &commandQueueImpl;
     return Result::SUCCESS;
 }
 
@@ -22,6 +23,7 @@ Result CommandAllocatorMTL::Create(const CommandQueue& commandQueue) {
 Result CommandAllocatorMTL::CreateCommandBuffer(CommandBuffer*& commandBuffer) {
 
     CommandBufferMTL* commandBufferImpl = Allocate<CommandBufferMTL>(m_Device.GetStdAllocator(), m_Device);
+    commandBufferImpl->Create(m_CommandQueue);
     commandBuffer = (CommandBuffer*)commandBufferImpl;
     return Result::SUCCESS;
 }

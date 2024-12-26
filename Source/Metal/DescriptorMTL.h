@@ -19,7 +19,6 @@ enum class DescriptorTypeMTL {
   BUFFER_VIEW
 };
 
-
 struct DescriptorMTL {
 public:
     inline DescriptorMTL (DeviceMTL& device)
@@ -51,6 +50,8 @@ public:
     Result Create(const SamplerDesc& samplerDesc);
 
 private:
+    
+    void EndCurrentEncoders(bool forceBarrier);
     
     DeviceMTL& m_Device;
     DescriptorTypeMTL m_Type = DescriptorTypeMTL::NONE;

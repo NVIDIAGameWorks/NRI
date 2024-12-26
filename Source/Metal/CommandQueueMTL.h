@@ -7,12 +7,6 @@ namespace nri {
 
 struct DeviceMTL;
 
-NriBits(QueueBarrierBits, uint8_t,
-    NONE = 0,
-    BARRIER_FLAG_BUFFERS = NriBit(0),
-    BARRIER_FLAG_TEXTURES = NriBit(1),
-    BARRIER_FLAG_RENDERTARGETS = NriBit(2),
-    BARRIER_FLAG_FENCE = NriBit(3));
 
 struct CommandQueueMTL {
 
@@ -21,10 +15,6 @@ struct CommandQueueMTL {
     }
 
     ~CommandQueueMTL();
-    
-    inline operator id<MTLCommandQueue>() const {
-        return m_Handle;
-    }
 
     inline DeviceMTL& GetDevice() const {
         return m_Device;
@@ -38,14 +28,17 @@ struct CommandQueueMTL {
         return m_Lock;
     }
     
+    inline id<MTLCommandQueue> GetHandle() const {
+        return m_Handle;
+    }
+    
         
     void SetDebugName(const char* name);
     void Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain);
     Result WaitForIdle();
    
     Result Create(CommandQueueType type);
-    QueueBarrierBits m_BarrierBits = QueueBarrierBits::NONE;
-
+    
 private:
     DeviceMTL& m_Device;
     CommandQueueType m_Type = CommandQueueType(-1);

@@ -20,20 +20,34 @@ public:
     }
     ~PipelineMTL();
     
-    inline PipelineType GetPipelineType() {
-        return m_PipelineType;
-    }
-
     Result Create(const GraphicsPipelineDesc& graphicsPipelineDesc);
     Result Create(const ComputePipelineDesc& computePipelineDesc);
     Result Create(const RayTracingPipelineDesc& rayTracingPipelineDesc);
 
+    inline MTLPrimitiveType GetPrimitiveType() const {
+        return m_primitiveType;
+    }
+    
+    inline PipelineType GetPipelineType() const {
+        return m_PipelineType;
+    }
+
+    inline id<MTLComputePipelineState> GetComputePipeline() const {
+        return m_ComputePipeline;
+    }
+    
+    
+    inline id<MTLRenderPipelineState> GetGraphicsPipeline() const {
+        return m_GraphicsPipeline;
+    }
+    
+    
+private:
+    PipelineType m_PipelineType;
     MTLPrimitiveTopologyClass m_topologyClass;
     MTLPrimitiveType m_primitiveType;
     StageBits m_usedBits;
     
-private:
-    PipelineType m_PipelineType;
     union{
         id<MTLComputePipelineState> m_ComputePipeline = nil;
         id<MTLRenderPipelineState> m_GraphicsPipeline;

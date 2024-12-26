@@ -68,6 +68,7 @@ static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, C
 
 static void NRI_CALL ResetCommandAllocator(CommandAllocator& commandAllocator) {
    // ((CommandAllocatorVK&)commandAllocator).Reset();
+    
 }
 
 static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
@@ -358,7 +359,7 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
     //table.GetCommandQueue = ::GetCommandQueue;
     //table.CreateCommandAllocator = ::CreateCommandAllocator;
-    //table.CreateCommandBuffer = ::CreateCommandBuffer;
+    table.CreateCommandBuffer = ::CreateCommandBuffer;
     //table.CreateDescriptorPool = ::CreateDescriptorPool;
     //table.CreateBuffer = ::CreateBuffer;
     table.CreateTexture = ::CreateTexture;

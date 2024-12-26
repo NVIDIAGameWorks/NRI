@@ -48,6 +48,9 @@ public:
     }
     
     
+    id<MTLRenderPipelineState> GetClearPipeline();
+    
+    
     void Destruct() override;
     Result FillFunctionTable(CoreInterface& table) const override;
     Result FillFunctionTable(HelperInterface& table) const override;

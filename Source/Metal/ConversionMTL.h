@@ -168,6 +168,8 @@ constexpr MTLDataType GetDescriptorType(DescriptorType type) {
     return DESCRIPTOR_TYPES[(size_t)type];
 }
 
+
+
 constexpr std::array<MTLCompareFunction, (size_t)CompareFunc::MAX_NUM> COMPARE_OP = {
     MTLCompareFunctionNever,            // NONE
     MTLCompareFunctionAlways,           // ALWAYS
