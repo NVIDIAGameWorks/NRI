@@ -9,6 +9,8 @@ Goals:
 - providing access to low-level features of modern GAPIs
 - providing high-level "quality of life" improving utilities, organized as extensions
 - low overhead
+- no memory allocations at runtime
+- cross platformity and platform independence (AMD/INTEL friendly)
 - explicitness
 - D3D11 ([spec](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm)) support (as much as possible)
 
