@@ -75,292 +75,6 @@ Result CreateDeviceVK(const DeviceCreationVKDesc& desc, DeviceBase*& device) {
 //============================================================================================================================================================================================
 #pragma region[  Core  ]
 
-static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name) {
-    ((BufferVK&)buffer).SetDebugName(name);
-}
-
-static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer) {
-    if (!(&buffer))
-        return 0;
-
-    return uint64_t(((BufferVK&)buffer).GetHandle());
-}
-
-static void* NRI_CALL MapBuffer(Buffer& buffer, uint64_t offset, uint64_t size) {
-    return ((BufferVK&)buffer).Map(offset, size);
-}
-
-static void NRI_CALL UnmapBuffer(Buffer& buffer) {
-    ((BufferVK&)buffer).Unmap();
-}
-
-static void NRI_CALL SetCommandAllocatorDebugName(CommandAllocator& commandAllocator, const char* name) {
-    ((CommandAllocatorVK&)commandAllocator).SetDebugName(name);
-}
-
-static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, CommandBuffer*& commandBuffer) {
-    return ((CommandAllocatorVK&)commandAllocator).CreateCommandBuffer(commandBuffer);
-}
-
-static void NRI_CALL ResetCommandAllocator(CommandAllocator& commandAllocator) {
-    ((CommandAllocatorVK&)commandAllocator).Reset();
-}
-
-static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
-    ((CommandBufferVK&)commandBuffer).SetDebugName(name);
-}
-
-static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool) {
-    return ((CommandBufferVK&)commandBuffer).Begin(descriptorPool);
-}
-
-static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
-    return ((CommandBufferVK&)commandBuffer).End();
-}
-
-static void NRI_CALL QueueBeginAnnotation(CommandQueue& commandQueue, const char* name, uint32_t bgra) {
-    ((CommandQueueVK&)commandQueue).BeginAnnotation(name, bgra);
-}
-
-static void NRI_CALL QueueEndAnnotation(CommandQueue& commandQueue) {
-    ((CommandQueueVK&)commandQueue).EndAnnotation();
-}
-
-static void NRI_CALL QueueAnnotation(CommandQueue& commandQueue, const char* name, uint32_t bgra) {
-    ((CommandQueueVK&)commandQueue).Annotation(name, bgra);
-}
-
-static void NRI_CALL ResetQueries(QueryPool& queryPool, uint32_t offset, uint32_t num) {
-    ((QueryPoolVK&)queryPool).Reset(offset, num);
-}
-
-static void NRI_CALL CmdSetPipelineLayout(CommandBuffer& commandBuffer, const PipelineLayout& pipelineLayout) {
-    ((CommandBufferVK&)commandBuffer).SetPipelineLayout(pipelineLayout);
-}
-
-static void NRI_CALL CmdSetPipeline(CommandBuffer& commandBuffer, const Pipeline& pipeline) {
-    ((CommandBufferVK&)commandBuffer).SetPipeline(pipeline);
-}
-
-static void NRI_CALL CmdBarrier(CommandBuffer& commandBuffer, const BarrierGroupDesc& barrierGroupDesc) {
-    ((CommandBufferVK&)commandBuffer).Barrier(barrierGroupDesc);
-}
-
-static void NRI_CALL CmdSetDescriptorPool(CommandBuffer& commandBuffer, const DescriptorPool& descriptorPool) {
-    ((CommandBufferVK&)commandBuffer).SetDescriptorPool(descriptorPool);
-}
-
-static void NRI_CALL CmdSetDescriptorSet(CommandBuffer& commandBuffer, uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
-    ((CommandBufferVK&)commandBuffer).SetDescriptorSet(setIndex, descriptorSet, dynamicConstantBufferOffsets);
-}
-
-static void NRI_CALL CmdSetRootConstants(CommandBuffer& commandBuffer, uint32_t rootConstantIndex, const void* data, uint32_t size) {
-    ((CommandBufferVK&)commandBuffer).SetRootConstants(rootConstantIndex, data, size);
-}
-
-static void NRI_CALL CmdSetRootDescriptor(CommandBuffer& commandBuffer, uint32_t rootDescriptorIndex, Descriptor& descriptor) {
-    ((CommandBufferVK&)commandBuffer).SetRootDescriptor(rootDescriptorIndex, descriptor);
-}
-
-static void NRI_CALL CmdBeginRendering(CommandBuffer& commandBuffer, const AttachmentsDesc& attachmentsDesc) {
-    ((CommandBufferVK&)commandBuffer).BeginRendering(attachmentsDesc);
-}
-
-static void NRI_CALL CmdEndRendering(CommandBuffer& commandBuffer) {
-    ((CommandBufferVK&)commandBuffer).EndRendering();
-}
-
-static void NRI_CALL CmdSetViewports(CommandBuffer& commandBuffer, const Viewport* viewports, uint32_t viewportNum) {
-    ((CommandBufferVK&)commandBuffer).SetViewports(viewports, viewportNum);
-}
-
-static void NRI_CALL CmdSetScissors(CommandBuffer& commandBuffer, const Rect* rects, uint32_t rectNum) {
-    ((CommandBufferVK&)commandBuffer).SetScissors(rects, rectNum);
-}
-
-static void NRI_CALL CmdSetDepthBounds(CommandBuffer& commandBuffer, float boundsMin, float boundsMax) {
-    ((CommandBufferVK&)commandBuffer).SetDepthBounds(boundsMin, boundsMax);
-}
-
-static void NRI_CALL CmdSetStencilReference(CommandBuffer& commandBuffer, uint8_t frontRef, uint8_t backRef) {
-    ((CommandBufferVK&)commandBuffer).SetStencilReference(frontRef, backRef);
-}
-
-static void NRI_CALL CmdSetSampleLocations(CommandBuffer& commandBuffer, const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
-    ((CommandBufferVK&)commandBuffer).SetSampleLocations(locations, locationNum, sampleNum);
-}
-
-static void NRI_CALL CmdSetBlendConstants(CommandBuffer& commandBuffer, const Color32f& color) {
-    ((CommandBufferVK&)commandBuffer).SetBlendConstants(color);
-}
-
-static void NRI_CALL CmdSetShadingRate(CommandBuffer& commandBuffer, const ShadingRateDesc& shadingRateDesc) {
-    ((CommandBufferVK&)commandBuffer).SetShadingRate(shadingRateDesc);
-}
-
-static void NRI_CALL CmdSetDepthBias(CommandBuffer& commandBuffer, const DepthBiasDesc& depthBiasDesc) {
-    ((CommandBufferVK&)commandBuffer).SetDepthBias(depthBiasDesc);
-}
-
-static void NRI_CALL CmdClearAttachments(CommandBuffer& commandBuffer, const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
-    ((CommandBufferVK&)commandBuffer).ClearAttachments(clearDescs, clearDescNum, rects, rectNum);
-}
-
-static void NRI_CALL CmdSetIndexBuffer(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, IndexType indexType) {
-    ((CommandBufferVK&)commandBuffer).SetIndexBuffer(buffer, offset, indexType);
-}
-
-static void NRI_CALL CmdSetVertexBuffers(CommandBuffer& commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
-    ((CommandBufferVK&)commandBuffer).SetVertexBuffers(baseSlot, bufferNum, buffers, offsets);
-}
-
-static void NRI_CALL CmdDraw(CommandBuffer& commandBuffer, const DrawDesc& drawDesc) {
-    ((CommandBufferVK&)commandBuffer).Draw(drawDesc);
-}
-
-static void NRI_CALL CmdDrawIndexed(CommandBuffer& commandBuffer, const DrawIndexedDesc& drawIndexedDesc) {
-    ((CommandBufferVK&)commandBuffer).DrawIndexed(drawIndexedDesc);
-}
-
-static void NRI_CALL CmdDrawIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
-    ((CommandBufferVK&)commandBuffer).DrawIndirect(buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
-}
-
-static void NRI_CALL CmdDrawIndexedIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
-    ((CommandBufferVK&)commandBuffer).DrawIndexedIndirect(buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
-}
-
-static void NRI_CALL CmdDispatch(CommandBuffer& commandBuffer, const DispatchDesc& dispatchDesc) {
-    ((CommandBufferVK&)commandBuffer).Dispatch(dispatchDesc);
-}
-
-static void NRI_CALL CmdDispatchIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset) {
-    ((CommandBufferVK&)commandBuffer).DispatchIndirect(buffer, offset);
-}
-
-static void NRI_CALL CmdBeginQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
-    ((CommandBufferVK&)commandBuffer).BeginQuery(queryPool, offset);
-}
-
-static void NRI_CALL CmdEndQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
-    ((CommandBufferVK&)commandBuffer).EndQuery(queryPool, offset);
-}
-
-static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
-    ((CommandBufferVK&)commandBuffer).BeginAnnotation(name, bgra);
-}
-
-static void NRI_CALL CmdEndAnnotation(CommandBuffer& commandBuffer) {
-    ((CommandBufferVK&)commandBuffer).EndAnnotation();
-}
-
-static void NRI_CALL CmdAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
-    ((CommandBufferVK&)commandBuffer).Annotation(name, bgra);
-}
-
-static void NRI_CALL CmdClearStorageBuffer(CommandBuffer& commandBuffer, const ClearStorageBufferDesc& clearDesc) {
-    ((CommandBufferVK&)commandBuffer).ClearStorageBuffer(clearDesc);
-}
-
-static void NRI_CALL CmdClearStorageTexture(CommandBuffer& commandBuffer, const ClearStorageTextureDesc& clearDesc) {
-    ((CommandBufferVK&)commandBuffer).ClearStorageTexture(clearDesc);
-}
-
-static void NRI_CALL CmdResolveTexture(CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
-    ((CommandBufferVK&)commandBuffer).ResolveTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
-}
-
-static void NRI_CALL CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
-    ((CommandBufferVK&)commandBuffer).CopyBuffer(dstBuffer, dstOffset, srcBuffer, srcOffset, size);
-}
-
-static void NRI_CALL CmdCopyTexture(
-    CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
-    ((CommandBufferVK&)commandBuffer).CopyTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
-}
-
-static void NRI_CALL CmdUploadBufferToTexture(CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
-    ((CommandBufferVK&)commandBuffer).UploadBufferToTexture(dstTexture, dstRegionDesc, srcBuffer, srcDataLayoutDesc);
-}
-
-static void NRI_CALL CmdReadbackTextureToBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, const TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
-    ((CommandBufferVK&)commandBuffer).ReadbackTextureToBuffer(dstBuffer, dstDataLayoutDesc, srcTexture, srcRegionDesc);
-}
-
-static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset) {
-    ((CommandBufferVK&)commandBuffer).CopyQueries(queryPool, offset, num, dstBuffer, dstOffset);
-}
-
-static void NRI_CALL CmdResetQueries(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset, uint32_t num) {
-    ((CommandBufferVK&)commandBuffer).ResetQueries(queryPool, offset, num);
-}
-
-static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
-    if (!(&commandBuffer))
-        return nullptr;
-
-    return (VkCommandBuffer)((CommandBufferVK&)commandBuffer);
-}
-
-static void NRI_CALL SetCommandQueueDebugName(CommandQueue& commandQueue, const char* name) {
-    ((CommandQueueVK&)commandQueue).SetDebugName(name);
-}
-
-static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc) {
-    ((CommandQueueVK&)commandQueue).Submit(workSubmissionDesc, nullptr);
-}
-
-static void NRI_CALL SetDescriptorPoolDebugName(DescriptorPool& descriptorPool, const char* name) {
-    ((DescriptorPoolVK&)descriptorPool).SetDebugName(name);
-}
-
-static Result NRI_CALL AllocateDescriptorSets(DescriptorPool& descriptorPool, const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
-    return ((DescriptorPoolVK&)descriptorPool).AllocateDescriptorSets(pipelineLayout, setIndex, descriptorSets, instanceNum, variableDescriptorNum);
-}
-
-static void NRI_CALL ResetDescriptorPool(DescriptorPool& descriptorPool) {
-    ((DescriptorPoolVK&)descriptorPool).Reset();
-}
-
-static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet& descriptorSet, const char* name) {
-    ((DescriptorSetVK&)descriptorSet).SetDebugName(name);
-}
-
-static void NRI_CALL UpdateDescriptorRanges(DescriptorSet& descriptorSet, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs) {
-    ((DescriptorSetVK&)descriptorSet).UpdateDescriptorRanges(baseRange, rangeNum, rangeUpdateDescs);
-}
-
-static void NRI_CALL UpdateDynamicConstantBuffers(DescriptorSet& descriptorSet, uint32_t baseDynamicConstantBuffer, uint32_t dynamicConstantBufferNum, const Descriptor* const* descriptors) {
-    ((DescriptorSetVK&)descriptorSet).UpdateDynamicConstantBuffers(baseDynamicConstantBuffer, dynamicConstantBufferNum, descriptors);
-}
-
-static void NRI_CALL CopyDescriptorSet(DescriptorSet& descriptorSet, const DescriptorSetCopyDesc& descriptorSetCopyDesc) {
-    ((DescriptorSetVK&)descriptorSet).Copy(descriptorSetCopyDesc);
-}
-
-static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* name) {
-    ((DescriptorVK&)descriptor).SetDebugName(name);
-}
-
-static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor) {
-    if (!(&descriptor))
-        return 0;
-
-    const DescriptorVK& d = ((DescriptorVK&)descriptor);
-
-    uint64_t handle = 0;
-    if (d.GetType() == DescriptorTypeVK::BUFFER_VIEW)
-        handle = (uint64_t)d.GetBufferView();
-    else if (d.GetType() == DescriptorTypeVK::IMAGE_VIEW)
-        handle = (uint64_t)d.GetImageView();
-    else if (d.GetType() == DescriptorTypeVK::SAMPLER)
-        handle = (uint64_t)d.GetSampler();
-    else if (d.GetType() == DescriptorTypeVK::ACCELERATION_STRUCTURE)
-        handle = (uint64_t)d.GetAccelerationStructure();
-
-    return handle;
-}
-
 static const DeviceDesc& NRI_CALL GetDeviceDesc(const Device& device) {
     return ((DeviceVK&)device).GetDesc();
 }
@@ -375,6 +89,10 @@ static const TextureDesc& NRI_CALL GetTextureDesc(const Texture& texture) {
 
 static FormatSupportBits NRI_CALL GetFormatSupport(const Device& device, Format format) {
     return ((const DeviceVK&)device).GetFormatSupport(format);
+}
+
+static uint32_t NRI_CALL GetQuerySize(const QueryPool& queryPool) {
+    return ((QueryPoolVK&)queryPool).GetQuerySize();
 }
 
 static void NRI_CALL GetBufferMemoryDesc(const Device& device, const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
@@ -392,6 +110,10 @@ static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQ
 static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
     DeviceVK& device = ((CommandQueueVK&)commandQueue).GetDevice();
     return device.CreateImplementation<CommandAllocatorVK>(commandAllocator, commandQueue);
+}
+
+static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, CommandBuffer*& commandBuffer) {
+    return ((CommandAllocatorVK&)commandAllocator).CreateCommandBuffer(commandBuffer);
 }
 
 static Result NRI_CALL CreateDescriptorPool(Device& device, const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
@@ -450,12 +172,12 @@ static Result NRI_CALL CreateFence(Device& device, uint64_t initialValue, Fence*
     return ((DeviceVK&)device).CreateImplementation<FenceVK>(fence, initialValue);
 }
 
-static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer) {
-    Destroy((CommandBufferVK*)&commandBuffer);
-}
-
 static void NRI_CALL DestroyCommandAllocator(CommandAllocator& commandAllocator) {
     Destroy((CommandAllocatorVK*)&commandAllocator);
+}
+
+static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer) {
+    Destroy((CommandBufferVK*)&commandBuffer);
 }
 
 static void NRI_CALL DestroyDescriptorPool(DescriptorPool& descriptorPool) {
@@ -506,16 +228,284 @@ static void NRI_CALL FreeMemory(Memory& memory) {
     Destroy((MemoryVK*)&memory);
 }
 
+static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool) {
+    return ((CommandBufferVK&)commandBuffer).Begin(descriptorPool);
+}
+
+static void NRI_CALL CmdSetDescriptorPool(CommandBuffer& commandBuffer, const DescriptorPool& descriptorPool) {
+    ((CommandBufferVK&)commandBuffer).SetDescriptorPool(descriptorPool);
+}
+
+static void NRI_CALL CmdSetPipelineLayout(CommandBuffer& commandBuffer, const PipelineLayout& pipelineLayout) {
+    ((CommandBufferVK&)commandBuffer).SetPipelineLayout(pipelineLayout);
+}
+
+static void NRI_CALL CmdSetDescriptorSet(CommandBuffer& commandBuffer, uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
+    ((CommandBufferVK&)commandBuffer).SetDescriptorSet(setIndex, descriptorSet, dynamicConstantBufferOffsets);
+}
+
+static void NRI_CALL CmdSetRootConstants(CommandBuffer& commandBuffer, uint32_t rootConstantIndex, const void* data, uint32_t size) {
+    ((CommandBufferVK&)commandBuffer).SetRootConstants(rootConstantIndex, data, size);
+}
+
+static void NRI_CALL CmdSetRootDescriptor(CommandBuffer& commandBuffer, uint32_t rootDescriptorIndex, Descriptor& descriptor) {
+    ((CommandBufferVK&)commandBuffer).SetRootDescriptor(rootDescriptorIndex, descriptor);
+}
+
+static void NRI_CALL CmdSetPipeline(CommandBuffer& commandBuffer, const Pipeline& pipeline) {
+    ((CommandBufferVK&)commandBuffer).SetPipeline(pipeline);
+}
+
+static void NRI_CALL CmdBarrier(CommandBuffer& commandBuffer, const BarrierGroupDesc& barrierGroupDesc) {
+    ((CommandBufferVK&)commandBuffer).Barrier(barrierGroupDesc);
+}
+
+static void NRI_CALL CmdSetIndexBuffer(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, IndexType indexType) {
+    ((CommandBufferVK&)commandBuffer).SetIndexBuffer(buffer, offset, indexType);
+}
+
+static void NRI_CALL CmdSetVertexBuffers(CommandBuffer& commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
+    ((CommandBufferVK&)commandBuffer).SetVertexBuffers(baseSlot, bufferNum, buffers, offsets);
+}
+
+static void NRI_CALL CmdSetViewports(CommandBuffer& commandBuffer, const Viewport* viewports, uint32_t viewportNum) {
+    ((CommandBufferVK&)commandBuffer).SetViewports(viewports, viewportNum);
+}
+
+static void NRI_CALL CmdSetScissors(CommandBuffer& commandBuffer, const Rect* rects, uint32_t rectNum) {
+    ((CommandBufferVK&)commandBuffer).SetScissors(rects, rectNum);
+}
+
+static void NRI_CALL CmdSetStencilReference(CommandBuffer& commandBuffer, uint8_t frontRef, uint8_t backRef) {
+    ((CommandBufferVK&)commandBuffer).SetStencilReference(frontRef, backRef);
+}
+
+static void NRI_CALL CmdSetDepthBounds(CommandBuffer& commandBuffer, float boundsMin, float boundsMax) {
+    ((CommandBufferVK&)commandBuffer).SetDepthBounds(boundsMin, boundsMax);
+}
+
+static void NRI_CALL CmdSetBlendConstants(CommandBuffer& commandBuffer, const Color32f& color) {
+    ((CommandBufferVK&)commandBuffer).SetBlendConstants(color);
+}
+
+static void NRI_CALL CmdSetSampleLocations(CommandBuffer& commandBuffer, const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
+    ((CommandBufferVK&)commandBuffer).SetSampleLocations(locations, locationNum, sampleNum);
+}
+
+static void NRI_CALL CmdSetShadingRate(CommandBuffer& commandBuffer, const ShadingRateDesc& shadingRateDesc) {
+    ((CommandBufferVK&)commandBuffer).SetShadingRate(shadingRateDesc);
+}
+
+static void NRI_CALL CmdSetDepthBias(CommandBuffer& commandBuffer, const DepthBiasDesc& depthBiasDesc) {
+    ((CommandBufferVK&)commandBuffer).SetDepthBias(depthBiasDesc);
+}
+
+static void NRI_CALL CmdBeginRendering(CommandBuffer& commandBuffer, const AttachmentsDesc& attachmentsDesc) {
+    ((CommandBufferVK&)commandBuffer).BeginRendering(attachmentsDesc);
+}
+
+static void NRI_CALL CmdClearAttachments(CommandBuffer& commandBuffer, const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
+    ((CommandBufferVK&)commandBuffer).ClearAttachments(clearDescs, clearDescNum, rects, rectNum);
+}
+
+static void NRI_CALL CmdDraw(CommandBuffer& commandBuffer, const DrawDesc& drawDesc) {
+    ((CommandBufferVK&)commandBuffer).Draw(drawDesc);
+}
+
+static void NRI_CALL CmdDrawIndexed(CommandBuffer& commandBuffer, const DrawIndexedDesc& drawIndexedDesc) {
+    ((CommandBufferVK&)commandBuffer).DrawIndexed(drawIndexedDesc);
+}
+
+static void NRI_CALL CmdDrawIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+    ((CommandBufferVK&)commandBuffer).DrawIndirect(buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
+}
+
+static void NRI_CALL CmdDrawIndexedIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
+    ((CommandBufferVK&)commandBuffer).DrawIndexedIndirect(buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
+}
+
+static void NRI_CALL CmdEndRendering(CommandBuffer& commandBuffer) {
+    ((CommandBufferVK&)commandBuffer).EndRendering();
+}
+
+static void NRI_CALL CmdDispatch(CommandBuffer& commandBuffer, const DispatchDesc& dispatchDesc) {
+    ((CommandBufferVK&)commandBuffer).Dispatch(dispatchDesc);
+}
+
+static void NRI_CALL CmdDispatchIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset) {
+    ((CommandBufferVK&)commandBuffer).DispatchIndirect(buffer, offset);
+}
+
+static void NRI_CALL CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
+    ((CommandBufferVK&)commandBuffer).CopyBuffer(dstBuffer, dstOffset, srcBuffer, srcOffset, size);
+}
+
+static void NRI_CALL CmdCopyTexture(CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
+    ((CommandBufferVK&)commandBuffer).CopyTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
+}
+
+static void NRI_CALL CmdResolveTexture(CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc* dstRegionDesc, const Texture& srcTexture, const TextureRegionDesc* srcRegionDesc) {
+    ((CommandBufferVK&)commandBuffer).ResolveTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
+}
+
+static void NRI_CALL CmdUploadBufferToTexture(CommandBuffer& commandBuffer, Texture& dstTexture, const TextureRegionDesc& dstRegionDesc, const Buffer& srcBuffer, const TextureDataLayoutDesc& srcDataLayoutDesc) {
+    ((CommandBufferVK&)commandBuffer).UploadBufferToTexture(dstTexture, dstRegionDesc, srcBuffer, srcDataLayoutDesc);
+}
+
+static void NRI_CALL CmdReadbackTextureToBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, const TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
+    ((CommandBufferVK&)commandBuffer).ReadbackTextureToBuffer(dstBuffer, dstDataLayoutDesc, srcTexture, srcRegionDesc);
+}
+
+static void NRI_CALL CmdClearStorageBuffer(CommandBuffer& commandBuffer, const ClearStorageBufferDesc& clearDesc) {
+    ((CommandBufferVK&)commandBuffer).ClearStorageBuffer(clearDesc);
+}
+
+static void NRI_CALL CmdClearStorageTexture(CommandBuffer& commandBuffer, const ClearStorageTextureDesc& clearDesc) {
+    ((CommandBufferVK&)commandBuffer).ClearStorageTexture(clearDesc);
+}
+
+static void NRI_CALL CmdResetQueries(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset, uint32_t num) {
+    ((CommandBufferVK&)commandBuffer).ResetQueries(queryPool, offset, num);
+}
+
+static void NRI_CALL CmdBeginQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
+    ((CommandBufferVK&)commandBuffer).BeginQuery(queryPool, offset);
+}
+
+static void NRI_CALL CmdEndQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
+    ((CommandBufferVK&)commandBuffer).EndQuery(queryPool, offset);
+}
+
+static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset) {
+    ((CommandBufferVK&)commandBuffer).CopyQueries(queryPool, offset, num, dstBuffer, dstOffset);
+}
+
+static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferVK&)commandBuffer).BeginAnnotation(name, bgra);
+}
+
+static void NRI_CALL CmdEndAnnotation(CommandBuffer& commandBuffer) {
+    ((CommandBufferVK&)commandBuffer).EndAnnotation();
+}
+
+static void NRI_CALL CmdAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferVK&)commandBuffer).Annotation(name, bgra);
+}
+
+static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
+    return ((CommandBufferVK&)commandBuffer).End();
+}
+
+static void NRI_CALL QueueBeginAnnotation(CommandQueue& commandQueue, const char* name, uint32_t bgra) {
+    ((CommandQueueVK&)commandQueue).BeginAnnotation(name, bgra);
+}
+
+static void NRI_CALL QueueEndAnnotation(CommandQueue& commandQueue) {
+    ((CommandQueueVK&)commandQueue).EndAnnotation();
+}
+
+static void NRI_CALL QueueAnnotation(CommandQueue& commandQueue, const char* name, uint32_t bgra) {
+    ((CommandQueueVK&)commandQueue).Annotation(name, bgra);
+}
+
+static void NRI_CALL ResetQueries(QueryPool& queryPool, uint32_t offset, uint32_t num) {
+    ((QueryPoolVK&)queryPool).Reset(offset, num);
+}
+
+static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc) {
+    ((CommandQueueVK&)commandQueue).Submit(workSubmissionDesc, nullptr);
+}
+
+static void NRI_CALL Wait(Fence& fence, uint64_t value) {
+    ((FenceVK&)fence).Wait(value);
+}
+
+static uint64_t NRI_CALL GetFenceValue(Fence& fence) {
+    return ((FenceVK&)fence).GetFenceValue();
+}
+
+static void NRI_CALL UpdateDescriptorRanges(DescriptorSet& descriptorSet, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs) {
+    ((DescriptorSetVK&)descriptorSet).UpdateDescriptorRanges(baseRange, rangeNum, rangeUpdateDescs);
+}
+
+static void NRI_CALL UpdateDynamicConstantBuffers(DescriptorSet& descriptorSet, uint32_t baseDynamicConstantBuffer, uint32_t dynamicConstantBufferNum, const Descriptor* const* descriptors) {
+    ((DescriptorSetVK&)descriptorSet).UpdateDynamicConstantBuffers(baseDynamicConstantBuffer, dynamicConstantBufferNum, descriptors);
+}
+
+static void NRI_CALL CopyDescriptorSet(DescriptorSet& descriptorSet, const DescriptorSetCopyDesc& descriptorSetCopyDesc) {
+    ((DescriptorSetVK&)descriptorSet).Copy(descriptorSetCopyDesc);
+}
+
+static Result NRI_CALL AllocateDescriptorSets(DescriptorPool& descriptorPool, const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
+    return ((DescriptorPoolVK&)descriptorPool).AllocateDescriptorSets(pipelineLayout, setIndex, descriptorSets, instanceNum, variableDescriptorNum);
+}
+
+static void NRI_CALL ResetDescriptorPool(DescriptorPool& descriptorPool) {
+    ((DescriptorPoolVK&)descriptorPool).Reset();
+}
+
+static void NRI_CALL ResetCommandAllocator(CommandAllocator& commandAllocator) {
+    ((CommandAllocatorVK&)commandAllocator).Reset();
+}
+
+static void* NRI_CALL MapBuffer(Buffer& buffer, uint64_t offset, uint64_t size) {
+    return ((BufferVK&)buffer).Map(offset, size);
+}
+
+static void NRI_CALL UnmapBuffer(Buffer& buffer) {
+    ((BufferVK&)buffer).Unmap();
+}
+
 static void NRI_CALL SetDeviceDebugName(Device& device, const char* name) {
     ((DeviceVK&)device).SetDebugName(name);
+}
+
+static void NRI_CALL SetFenceDebugName(Fence& fence, const char* name) {
+    ((FenceVK&)fence).SetDebugName(name);
+}
+
+static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* name) {
+    ((DescriptorVK&)descriptor).SetDebugName(name);
 }
 
 static void NRI_CALL SetPipelineDebugName(Pipeline& pipeline, const char* name) {
     ((PipelineVK&)pipeline).SetDebugName(name);
 }
 
+static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
+    ((CommandBufferVK&)commandBuffer).SetDebugName(name);
+}
+
+static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name) {
+    ((BufferVK&)buffer).SetDebugName(name);
+}
+
+static void NRI_CALL SetTextureDebugName(Texture& texture, const char* name) {
+    ((TextureVK&)texture).SetDebugName(name);
+}
+
+static void NRI_CALL SetCommandQueueDebugName(CommandQueue& commandQueue, const char* name) {
+    ((CommandQueueVK&)commandQueue).SetDebugName(name);
+}
+
+static void NRI_CALL SetCommandAllocatorDebugName(CommandAllocator& commandAllocator, const char* name) {
+    ((CommandAllocatorVK&)commandAllocator).SetDebugName(name);
+}
+
+static void NRI_CALL SetDescriptorPoolDebugName(DescriptorPool& descriptorPool, const char* name) {
+    ((DescriptorPoolVK&)descriptorPool).SetDebugName(name);
+}
+
 static void NRI_CALL SetPipelineLayoutDebugName(PipelineLayout& pipelineLayout, const char* name) {
     ((PipelineLayoutVK&)pipelineLayout).SetDebugName(name);
+}
+
+static void NRI_CALL SetQueryPoolDebugName(QueryPool& queryPool, const char* name) {
+    ((QueryPoolVK&)queryPool).SetDebugName(name);
+}
+
+static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet& descriptorSet, const char* name) {
+    ((DescriptorSetVK&)descriptorSet).SetDebugName(name);
 }
 
 static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name) {
@@ -529,28 +519,18 @@ static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
     return (VkDevice)((DeviceVK&)device);
 }
 
-static uint64_t NRI_CALL GetFenceValue(Fence& fence) {
-    return ((FenceVK&)fence).GetFenceValue();
+static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
+    if (!(&commandBuffer))
+        return nullptr;
+
+    return (VkCommandBuffer)((CommandBufferVK&)commandBuffer);
 }
 
-static void NRI_CALL Wait(Fence& fence, uint64_t value) {
-    ((FenceVK&)fence).Wait(value);
-}
+static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer) {
+    if (!(&buffer))
+        return 0;
 
-static void NRI_CALL SetFenceDebugName(Fence& fence, const char* name) {
-    ((FenceVK&)fence).SetDebugName(name);
-}
-
-static void NRI_CALL SetQueryPoolDebugName(QueryPool& queryPool, const char* name) {
-    ((QueryPoolVK&)queryPool).SetDebugName(name);
-}
-
-static uint32_t NRI_CALL GetQuerySize(const QueryPool& queryPool) {
-    return ((QueryPoolVK&)queryPool).GetQuerySize();
-}
-
-static void NRI_CALL SetTextureDebugName(Texture& texture, const char* name) {
-    ((TextureVK&)texture).SetDebugName(name);
+    return uint64_t(((BufferVK&)buffer).GetHandle());
 }
 
 static uint64_t NRI_CALL GetTextureNativeObject(const Texture& texture) {
@@ -558,6 +538,25 @@ static uint64_t NRI_CALL GetTextureNativeObject(const Texture& texture) {
         return 0;
 
     return uint64_t(((TextureVK&)texture).GetHandle());
+}
+
+static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor) {
+    if (!(&descriptor))
+        return 0;
+
+    const DescriptorVK& d = ((DescriptorVK&)descriptor);
+
+    uint64_t handle = 0;
+    if (d.GetType() == DescriptorTypeVK::BUFFER_VIEW)
+        handle = (uint64_t)d.GetBufferView();
+    else if (d.GetType() == DescriptorTypeVK::IMAGE_VIEW)
+        handle = (uint64_t)d.GetImageView();
+    else if (d.GetType() == DescriptorTypeVK::SAMPLER)
+        handle = (uint64_t)d.GetSampler();
+    else if (d.GetType() == DescriptorTypeVK::ACCELERATION_STRUCTURE)
+        handle = (uint64_t)d.GetAccelerationStructure();
+
+    return handle;
 }
 
 Result DeviceVK::FillFunctionTable(CoreInterface& table) const {

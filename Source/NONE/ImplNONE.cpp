@@ -338,22 +338,22 @@ static Result NRI_CALL CreateComputePipeline(Device&, const ComputePipelineDesc&
     return Result::SUCCESS;
 }
 
-static Result NRI_CALL CreateFence(Device&, uint64_t, Fence*& fence) {
-    fence = DummyObject<Fence>();
-
-    return Result::SUCCESS;
-}
-
 static Result NRI_CALL CreateQueryPool(Device&, const QueryPoolDesc&, QueryPool*& queryPool) {
     queryPool = DummyObject<QueryPool>();
 
     return Result::SUCCESS;
 }
 
-static void NRI_CALL DestroyCommandBuffer(CommandBuffer&) {
+static Result NRI_CALL CreateFence(Device&, uint64_t, Fence*& fence) {
+    fence = DummyObject<Fence>();
+
+    return Result::SUCCESS;
 }
 
 static void NRI_CALL DestroyCommandAllocator(CommandAllocator&) {
+}
+
+static void NRI_CALL DestroyCommandBuffer(CommandBuffer&) {
 }
 
 static void NRI_CALL DestroyDescriptorPool(DescriptorPool&) {
@@ -404,19 +404,19 @@ static Result NRI_CALL BeginCommandBuffer(CommandBuffer&, const DescriptorPool*)
 static void NRI_CALL CmdSetDescriptorPool(CommandBuffer&, const DescriptorPool&) {
 }
 
-static void NRI_CALL CmdSetDescriptorSet(CommandBuffer&, uint32_t, const DescriptorSet&, const uint32_t*) {
-}
-
 static void NRI_CALL CmdSetPipelineLayout(CommandBuffer&, const PipelineLayout&) {
 }
 
-static void NRI_CALL CmdSetPipeline(CommandBuffer&, const Pipeline&) {
+static void NRI_CALL CmdSetDescriptorSet(CommandBuffer&, uint32_t, const DescriptorSet&, const uint32_t*) {
 }
 
 static void NRI_CALL CmdSetRootConstants(CommandBuffer&, uint32_t, const void*, uint32_t) {
 }
 
 static void NRI_CALL CmdSetRootDescriptor(CommandBuffer&, uint32_t, Descriptor&) {
+}
+
+static void NRI_CALL CmdSetPipeline(CommandBuffer&, const Pipeline&) {
 }
 
 static void NRI_CALL CmdBarrier(CommandBuffer&, const BarrierGroupDesc&) {
@@ -485,6 +485,9 @@ static void NRI_CALL CmdCopyBuffer(CommandBuffer&, Buffer&, uint64_t, const Buff
 static void NRI_CALL CmdCopyTexture(CommandBuffer&, Texture&, const TextureRegionDesc*, const Texture&, const TextureRegionDesc*) {
 }
 
+static void NRI_CALL CmdResolveTexture(CommandBuffer&, Texture&, const TextureRegionDesc*, const Texture&, const TextureRegionDesc*) {
+}
+
 static void NRI_CALL CmdUploadBufferToTexture(CommandBuffer&, Texture&, const TextureRegionDesc&, const Buffer&, const TextureDataLayoutDesc&) {
 }
 
@@ -495,9 +498,6 @@ static void NRI_CALL CmdClearStorageBuffer(CommandBuffer&, const ClearStorageBuf
 }
 
 static void NRI_CALL CmdClearStorageTexture(CommandBuffer&, const ClearStorageTextureDesc&) {
-}
-
-static void NRI_CALL CmdResolveTexture(CommandBuffer&, Texture&, const TextureRegionDesc*, const Texture&, const TextureRegionDesc*) {
 }
 
 static void NRI_CALL CmdResetQueries(CommandBuffer&, QueryPool&, uint32_t, uint32_t) {
@@ -609,10 +609,10 @@ static void NRI_CALL SetPipelineLayoutDebugName(PipelineLayout&, const char*) {
 static void NRI_CALL SetQueryPoolDebugName(QueryPool&, const char*) {
 }
 
-static void NRI_CALL SetMemoryDebugName(Memory&, const char*) {
+static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet&, const char*) {
 }
 
-static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet&, const char*) {
+static void NRI_CALL SetMemoryDebugName(Memory&, const char*) {
 }
 
 static void* NRI_CALL GetDeviceNativeObject(const Device&) {
@@ -627,11 +627,11 @@ static uint64_t NRI_CALL GetBufferNativeObject(const Buffer&) {
     return 0;
 }
 
-static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor&) {
+static uint64_t NRI_CALL GetTextureNativeObject(const Texture&) {
     return 0;
 }
 
-static uint64_t NRI_CALL GetTextureNativeObject(const Texture&) {
+static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor&) {
     return 0;
 }
 

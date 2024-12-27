@@ -103,6 +103,10 @@ static FormatSupportBits NRI_CALL GetFormatSupport(const Device& device, Format 
     return ((const DeviceD3D11&)device).GetFormatSupport(format);
 }
 
+static uint32_t NRI_CALL GetQuerySize(const QueryPool& queryPool) {
+    return ((QueryPoolD3D11&)queryPool).GetQuerySize();
+}
+
 static void NRI_CALL GetBufferMemoryDesc(const Device& device, const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     ((const DeviceD3D11&)device).GetMemoryDesc(bufferDesc, memoryLocation, memoryDesc);
 }
@@ -118,6 +122,10 @@ static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQ
 static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
     DeviceD3D11& device = ((CommandQueueD3D11&)commandQueue).GetDevice();
     return device.CreateCommandAllocator(commandQueue, commandAllocator);
+}
+
+static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, CommandBuffer*& commandBuffer) {
+    return ((CommandAllocatorD3D11&)commandAllocator).CreateCommandBuffer(commandBuffer);
 }
 
 static Result NRI_CALL CreateDescriptorPool(Device& device, const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
@@ -236,87 +244,16 @@ static void NRI_CALL FreeMemory(Memory& memory) {
     Destroy((MemoryD3D11*)&memory);
 }
 
-static void NRI_CALL SetDeviceDebugName(Device& device, const char* name) {
-    ((DeviceD3D11&)device).SetDebugName(name);
-}
-
-static void NRI_CALL SetPipelineDebugName(Pipeline& pipeline, const char* name) {
-    ((PipelineD3D11&)pipeline).SetDebugName(name);
-}
-
-static void NRI_CALL SetPipelineLayoutDebugName(PipelineLayout& pipelineLayout, const char* name) {
-    ((PipelineLayoutD3D11&)pipelineLayout).SetDebugName(name);
-}
-
-static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name) {
-    ((MemoryD3D11&)memory).SetDebugName(name);
-}
-
-static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
-    if (!(&device))
-        return nullptr;
-
-    return ((DeviceD3D11&)device).GetNativeObject();
-}
-
-static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name) {
-    ((BufferD3D11&)buffer).SetDebugName(name);
-}
-
-static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer) {
-    if (!(&buffer))
-        return 0;
-
-    return uint64_t((ID3D11Buffer*)((BufferD3D11&)buffer));
-}
-
-static void* NRI_CALL MapBuffer(Buffer& buffer, uint64_t offset, uint64_t size) {
-    MaybeUnused(size);
-    return ((BufferD3D11&)buffer).Map(offset);
-}
-
-static void NRI_CALL UnmapBuffer(Buffer& buffer) {
-    ((BufferD3D11&)buffer).Unmap();
-}
-
-static void NRI_CALL SetCommandAllocatorDebugName(CommandAllocator& commandAllocator, const char* name) {
-    ((CommandAllocatorD3D11&)commandAllocator).SetDebugName(name);
-}
-
-static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, CommandBuffer*& commandBuffer) {
-    return ((CommandAllocatorD3D11&)commandAllocator).CreateCommandBuffer(commandBuffer);
-}
-
-static void NRI_CALL ResetCommandAllocator(CommandAllocator& commandAllocator) {
-    ((CommandAllocatorD3D11&)commandAllocator).Reset();
-}
-
-static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
-    ((CommandBufferD3D11&)commandBuffer).SetDebugName(name);
-}
-
 static Result NRI_CALL BeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool) {
     return ((CommandBufferD3D11&)commandBuffer).Begin(descriptorPool);
 }
 
-static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
-    return ((CommandBufferD3D11&)commandBuffer).End();
+static void NRI_CALL CmdSetDescriptorPool(CommandBuffer& commandBuffer, const DescriptorPool& descriptorPool) {
+    ((CommandBufferD3D11&)commandBuffer).SetDescriptorPool(descriptorPool);
 }
 
 static void NRI_CALL CmdSetPipelineLayout(CommandBuffer& commandBuffer, const PipelineLayout& pipelineLayout) {
     ((CommandBufferD3D11&)commandBuffer).SetPipelineLayout(pipelineLayout);
-}
-
-static void NRI_CALL CmdSetPipeline(CommandBuffer& commandBuffer, const Pipeline& pipeline) {
-    ((CommandBufferD3D11&)commandBuffer).SetPipeline(pipeline);
-}
-
-static void NRI_CALL CmdBarrier(CommandBuffer& commandBuffer, const BarrierGroupDesc& barrierGroupDesc) {
-    ((CommandBufferD3D11&)commandBuffer).Barrier(barrierGroupDesc);
-}
-
-static void NRI_CALL CmdSetDescriptorPool(CommandBuffer& commandBuffer, const DescriptorPool& descriptorPool) {
-    ((CommandBufferD3D11&)commandBuffer).SetDescriptorPool(descriptorPool);
 }
 
 static void NRI_CALL CmdSetDescriptorSet(CommandBuffer& commandBuffer, uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
@@ -331,12 +268,20 @@ static void NRI_CALL CmdSetRootDescriptor(CommandBuffer& commandBuffer, uint32_t
     ((CommandBufferD3D11&)commandBuffer).SetRootDescriptor(rootDescriptorIndex, descriptor);
 }
 
-static void NRI_CALL CmdBeginRendering(CommandBuffer& commandBuffer, const AttachmentsDesc& attachmentsDesc) {
-    ((CommandBufferD3D11&)commandBuffer).BeginRendering(attachmentsDesc);
+static void NRI_CALL CmdSetPipeline(CommandBuffer& commandBuffer, const Pipeline& pipeline) {
+    ((CommandBufferD3D11&)commandBuffer).SetPipeline(pipeline);
 }
 
-static void NRI_CALL CmdEndRendering(CommandBuffer& commandBuffer) {
-    ((CommandBufferD3D11&)commandBuffer).ResetAttachments();
+static void NRI_CALL CmdBarrier(CommandBuffer& commandBuffer, const BarrierGroupDesc& barrierGroupDesc) {
+    ((CommandBufferD3D11&)commandBuffer).Barrier(barrierGroupDesc);
+}
+
+static void NRI_CALL CmdSetIndexBuffer(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, IndexType indexType) {
+    ((CommandBufferD3D11&)commandBuffer).SetIndexBuffer(buffer, offset, indexType);
+}
+
+static void NRI_CALL CmdSetVertexBuffers(CommandBuffer& commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
+    ((CommandBufferD3D11&)commandBuffer).SetVertexBuffers(baseSlot, bufferNum, buffers, offsets);
 }
 
 static void NRI_CALL CmdSetViewports(CommandBuffer& commandBuffer, const Viewport* viewports, uint32_t viewportNum) {
@@ -347,20 +292,20 @@ static void NRI_CALL CmdSetScissors(CommandBuffer& commandBuffer, const Rect* re
     ((CommandBufferD3D11&)commandBuffer).SetScissors(rects, rectNum);
 }
 
-static void NRI_CALL CmdSetDepthBounds(CommandBuffer& commandBuffer, float boundsMin, float boundsMax) {
-    ((CommandBufferD3D11&)commandBuffer).SetDepthBounds(boundsMin, boundsMax);
-}
-
 static void NRI_CALL CmdSetStencilReference(CommandBuffer& commandBuffer, uint8_t frontRef, uint8_t backRef) {
     ((CommandBufferD3D11&)commandBuffer).SetStencilReference(frontRef, backRef);
 }
 
-static void NRI_CALL CmdSetSampleLocations(CommandBuffer& commandBuffer, const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
-    ((CommandBufferD3D11&)commandBuffer).SetSampleLocations(locations, locationNum, sampleNum);
+static void NRI_CALL CmdSetDepthBounds(CommandBuffer& commandBuffer, float boundsMin, float boundsMax) {
+    ((CommandBufferD3D11&)commandBuffer).SetDepthBounds(boundsMin, boundsMax);
 }
 
 static void NRI_CALL CmdSetBlendConstants(CommandBuffer& commandBuffer, const Color32f& color) {
     ((CommandBufferD3D11&)commandBuffer).SetBlendConstants(color);
+}
+
+static void NRI_CALL CmdSetSampleLocations(CommandBuffer& commandBuffer, const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
+    ((CommandBufferD3D11&)commandBuffer).SetSampleLocations(locations, locationNum, sampleNum);
 }
 
 static void NRI_CALL CmdSetShadingRate(CommandBuffer& commandBuffer, const ShadingRateDesc& shadingRateDesc) {
@@ -371,16 +316,12 @@ static void NRI_CALL CmdSetDepthBias(CommandBuffer& commandBuffer, const DepthBi
     MaybeUnused(commandBuffer, depthBiasDesc);
 }
 
+static void NRI_CALL CmdBeginRendering(CommandBuffer& commandBuffer, const AttachmentsDesc& attachmentsDesc) {
+    ((CommandBufferD3D11&)commandBuffer).BeginRendering(attachmentsDesc);
+}
+
 static void NRI_CALL CmdClearAttachments(CommandBuffer& commandBuffer, const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     ((CommandBufferD3D11&)commandBuffer).ClearAttachments(clearDescs, clearDescNum, rects, rectNum);
-}
-
-static void NRI_CALL CmdSetIndexBuffer(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, IndexType indexType) {
-    ((CommandBufferD3D11&)commandBuffer).SetIndexBuffer(buffer, offset, indexType);
-}
-
-static void NRI_CALL CmdSetVertexBuffers(CommandBuffer& commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
-    ((CommandBufferD3D11&)commandBuffer).SetVertexBuffers(baseSlot, bufferNum, buffers, offsets);
 }
 
 static void NRI_CALL CmdDraw(CommandBuffer& commandBuffer, const DrawDesc& drawDesc) {
@@ -399,40 +340,16 @@ static void NRI_CALL CmdDrawIndexedIndirect(CommandBuffer& commandBuffer, const 
     ((CommandBufferD3D11&)commandBuffer).DrawIndexedIndirect(buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
 }
 
+static void NRI_CALL CmdEndRendering(CommandBuffer& commandBuffer) {
+    ((CommandBufferD3D11&)commandBuffer).ResetAttachments();
+}
+
 static void NRI_CALL CmdDispatch(CommandBuffer& commandBuffer, const DispatchDesc& dispatchDesc) {
     ((CommandBufferD3D11&)commandBuffer).Dispatch(dispatchDesc);
 }
 
 static void NRI_CALL CmdDispatchIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset) {
     ((CommandBufferD3D11&)commandBuffer).DispatchIndirect(buffer, offset);
-}
-
-static void NRI_CALL CmdBeginQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
-    ((CommandBufferD3D11&)commandBuffer).BeginQuery(queryPool, offset);
-}
-
-static void NRI_CALL CmdEndQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
-    ((CommandBufferD3D11&)commandBuffer).EndQuery(queryPool, offset);
-}
-
-static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
-    ((CommandBufferD3D11&)commandBuffer).BeginAnnotation(name, bgra);
-}
-
-static void NRI_CALL CmdEndAnnotation(CommandBuffer& commandBuffer) {
-    ((CommandBufferD3D11&)commandBuffer).EndAnnotation();
-}
-
-static void NRI_CALL CmdAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
-    ((CommandBufferD3D11&)commandBuffer).Annotation(name, bgra);
-}
-
-static void NRI_CALL CmdClearStorageBuffer(CommandBuffer& commandBuffer, const ClearStorageBufferDesc& clearDesc) {
-    ((CommandBufferD3D11&)commandBuffer).ClearStorageBuffer(clearDesc);
-}
-
-static void NRI_CALL CmdClearStorageTexture(CommandBuffer& commandBuffer, const ClearStorageTextureDesc& clearDesc) {
-    ((CommandBufferD3D11&)commandBuffer).ClearStorageTexture(clearDesc);
 }
 
 static void NRI_CALL CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
@@ -455,11 +372,43 @@ static void NRI_CALL CmdReadbackTextureToBuffer(CommandBuffer& commandBuffer, Bu
     ((CommandBufferD3D11&)commandBuffer).ReadbackTextureToBuffer(dstBuffer, dstDataLayoutDesc, srcTexture, srcRegionDesc);
 }
 
+static void NRI_CALL CmdClearStorageBuffer(CommandBuffer& commandBuffer, const ClearStorageBufferDesc& clearDesc) {
+    ((CommandBufferD3D11&)commandBuffer).ClearStorageBuffer(clearDesc);
+}
+
+static void NRI_CALL CmdClearStorageTexture(CommandBuffer& commandBuffer, const ClearStorageTextureDesc& clearDesc) {
+    ((CommandBufferD3D11&)commandBuffer).ClearStorageTexture(clearDesc);
+}
+
+static void NRI_CALL CmdResetQueries(CommandBuffer&, QueryPool&, uint32_t, uint32_t) {
+}
+
+static void NRI_CALL CmdBeginQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
+    ((CommandBufferD3D11&)commandBuffer).BeginQuery(queryPool, offset);
+}
+
+static void NRI_CALL CmdEndQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
+    ((CommandBufferD3D11&)commandBuffer).EndQuery(queryPool, offset);
+}
+
 static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset) {
     ((CommandBufferD3D11&)commandBuffer).CopyQueries(queryPool, offset, num, dstBuffer, dstOffset);
 }
 
-static void NRI_CALL CmdResetQueries(CommandBuffer&, QueryPool&, uint32_t, uint32_t) {
+static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferD3D11&)commandBuffer).BeginAnnotation(name, bgra);
+}
+
+static void NRI_CALL CmdEndAnnotation(CommandBuffer& commandBuffer) {
+    ((CommandBufferD3D11&)commandBuffer).EndAnnotation();
+}
+
+static void NRI_CALL CmdAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferD3D11&)commandBuffer).Annotation(name, bgra);
+}
+
+static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
+    return ((CommandBufferD3D11&)commandBuffer).End();
 }
 
 static void NRI_CALL QueueBeginAnnotation(CommandQueue&, const char*, uint32_t) {
@@ -474,6 +423,114 @@ static void NRI_CALL QueueAnnotation(CommandQueue&, const char*, uint32_t) {
 static void NRI_CALL ResetQueries(QueryPool&, uint32_t, uint32_t) {
 }
 
+static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& queueSubmitDesc) {
+    ((CommandQueueD3D11&)commandQueue).Submit(queueSubmitDesc);
+}
+
+static void NRI_CALL Wait(Fence& fence, uint64_t value) {
+    ((FenceD3D11&)fence).Wait(value);
+}
+
+static uint64_t NRI_CALL GetFenceValue(Fence& fence) {
+    return ((FenceD3D11&)fence).GetFenceValue();
+}
+
+static void NRI_CALL UpdateDescriptorRanges(DescriptorSet& descriptorSet, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs) {
+    ((DescriptorSetD3D11&)descriptorSet).UpdateDescriptorRanges(baseRange, rangeNum, rangeUpdateDescs);
+}
+
+static void NRI_CALL UpdateDynamicConstantBuffers(DescriptorSet& descriptorSet, uint32_t baseDynamicConstantBuffer, uint32_t dynamicConstantBufferNum, const Descriptor* const* descriptors) {
+    ((DescriptorSetD3D11&)descriptorSet).UpdateDynamicConstantBuffers(baseDynamicConstantBuffer, dynamicConstantBufferNum, descriptors);
+}
+
+static void NRI_CALL CopyDescriptorSet(DescriptorSet& descriptorSet, const DescriptorSetCopyDesc& descriptorSetCopyDesc) {
+    ((DescriptorSetD3D11&)descriptorSet).Copy(descriptorSetCopyDesc);
+}
+
+static Result NRI_CALL AllocateDescriptorSets(DescriptorPool& descriptorPool, const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
+    return ((DescriptorPoolD3D11&)descriptorPool).AllocateDescriptorSets(pipelineLayout, setIndex, descriptorSets, instanceNum, variableDescriptorNum);
+}
+
+static void NRI_CALL ResetDescriptorPool(DescriptorPool& descriptorPool) {
+    ((DescriptorPoolD3D11&)descriptorPool).Reset();
+}
+
+static void NRI_CALL ResetCommandAllocator(CommandAllocator& commandAllocator) {
+    ((CommandAllocatorD3D11&)commandAllocator).Reset();
+}
+
+static void* NRI_CALL MapBuffer(Buffer& buffer, uint64_t offset, uint64_t size) {
+    MaybeUnused(size);
+    return ((BufferD3D11&)buffer).Map(offset);
+}
+
+static void NRI_CALL UnmapBuffer(Buffer& buffer) {
+    ((BufferD3D11&)buffer).Unmap();
+}
+
+static void NRI_CALL SetDeviceDebugName(Device& device, const char* name) {
+    ((DeviceD3D11&)device).SetDebugName(name);
+}
+
+static void NRI_CALL SetFenceDebugName(Fence& fence, const char* name) {
+    ((FenceD3D11&)fence).SetDebugName(name);
+}
+
+static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* name) {
+    ((DescriptorD3D11&)descriptor).SetDebugName(name);
+}
+
+static void NRI_CALL SetPipelineDebugName(Pipeline& pipeline, const char* name) {
+    ((PipelineD3D11&)pipeline).SetDebugName(name);
+}
+
+static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
+    ((CommandBufferD3D11&)commandBuffer).SetDebugName(name);
+}
+
+static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name) {
+    ((BufferD3D11&)buffer).SetDebugName(name);
+}
+
+static void NRI_CALL SetTextureDebugName(Texture& texture, const char* name) {
+    ((TextureD3D11&)texture).SetDebugName(name);
+}
+
+static void NRI_CALL SetCommandQueueDebugName(CommandQueue& commandQueue, const char* name) {
+    ((CommandQueueD3D11&)commandQueue).SetDebugName(name);
+}
+
+static void NRI_CALL SetCommandAllocatorDebugName(CommandAllocator& commandAllocator, const char* name) {
+    ((CommandAllocatorD3D11&)commandAllocator).SetDebugName(name);
+}
+
+static void NRI_CALL SetDescriptorPoolDebugName(DescriptorPool& descriptorPool, const char* name) {
+    ((DescriptorPoolD3D11&)descriptorPool).SetDebugName(name);
+}
+
+static void NRI_CALL SetPipelineLayoutDebugName(PipelineLayout& pipelineLayout, const char* name) {
+    ((PipelineLayoutD3D11&)pipelineLayout).SetDebugName(name);
+}
+
+static void NRI_CALL SetQueryPoolDebugName(QueryPool& queryPool, const char* name) {
+    ((QueryPoolD3D11&)queryPool).SetDebugName(name);
+}
+
+static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet& descriptorSet, const char* name) {
+    ((DescriptorSetD3D11&)descriptorSet).SetDebugName(name);
+}
+
+static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name) {
+    ((MemoryD3D11&)memory).SetDebugName(name);
+}
+
+static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
+    if (!(&device))
+        return nullptr;
+
+    return ((DeviceD3D11&)device).GetNativeObject();
+}
+
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
     if (!(&commandBuffer))
         return nullptr;
@@ -481,32 +538,39 @@ static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandB
     return ((CommandBufferD3D11&)commandBuffer).GetNativeObject();
 }
 
-static void NRI_CALL EmuSetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
-    MaybeUnused(commandBuffer, name);
+static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer) {
+    if (!(&buffer))
+        return 0;
+
+    return uint64_t((ID3D11Buffer*)((BufferD3D11&)buffer));
 }
+
+static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor) {
+    if (!(&descriptor))
+        return 0;
+
+    return uint64_t((ID3D11View*)((DescriptorD3D11&)descriptor));
+}
+
+static uint64_t NRI_CALL GetTextureNativeObject(const Texture& texture) {
+    if (!(&texture))
+        return 0;
+
+    return uint64_t((ID3D11Resource*)((TextureD3D11&)texture));
+}
+
+// Command buffer emulation
 
 static Result NRI_CALL EmuBeginCommandBuffer(CommandBuffer& commandBuffer, const DescriptorPool* descriptorPool) {
     return ((CommandBufferEmuD3D11&)commandBuffer).Begin(descriptorPool);
 }
 
-static Result NRI_CALL EmuEndCommandBuffer(CommandBuffer& commandBuffer) {
-    return ((CommandBufferEmuD3D11&)commandBuffer).End();
+static void NRI_CALL EmuCmdSetDescriptorPool(CommandBuffer& commandBuffer, const DescriptorPool& descriptorPool) {
+    MaybeUnused(commandBuffer, descriptorPool);
 }
 
 static void NRI_CALL EmuCmdSetPipelineLayout(CommandBuffer& commandBuffer, const PipelineLayout& pipelineLayout) {
     ((CommandBufferEmuD3D11&)commandBuffer).SetPipelineLayout(pipelineLayout);
-}
-
-static void NRI_CALL EmuCmdSetPipeline(CommandBuffer& commandBuffer, const Pipeline& pipeline) {
-    ((CommandBufferEmuD3D11&)commandBuffer).SetPipeline(pipeline);
-}
-
-static void NRI_CALL EmuCmdBarrier(CommandBuffer& commandBuffer, const BarrierGroupDesc& barrierGroupDesc) {
-    ((CommandBufferEmuD3D11&)commandBuffer).Barrier(barrierGroupDesc);
-}
-
-static void NRI_CALL EmuCmdSetDescriptorPool(CommandBuffer& commandBuffer, const DescriptorPool& descriptorPool) {
-    MaybeUnused(commandBuffer, descriptorPool);
 }
 
 static void NRI_CALL EmuCmdSetDescriptorSet(CommandBuffer& commandBuffer, uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
@@ -521,12 +585,20 @@ static void NRI_CALL EmuCmdSetRootDescriptor(CommandBuffer& commandBuffer, uint3
     ((CommandBufferEmuD3D11&)commandBuffer).SetRootDescriptor(rootDescriptorIndex, descriptor);
 }
 
-static void NRI_CALL EmuCmdBeginRendering(CommandBuffer& commandBuffer, const AttachmentsDesc& attachmentsDesc) {
-    ((CommandBufferEmuD3D11&)commandBuffer).BeginRendering(attachmentsDesc);
+static void NRI_CALL EmuCmdSetPipeline(CommandBuffer& commandBuffer, const Pipeline& pipeline) {
+    ((CommandBufferEmuD3D11&)commandBuffer).SetPipeline(pipeline);
 }
 
-static void NRI_CALL EmuCmdEndRendering(CommandBuffer& commandBuffer) {
-    ((CommandBufferEmuD3D11&)commandBuffer).EndRendering();
+static void NRI_CALL EmuCmdBarrier(CommandBuffer& commandBuffer, const BarrierGroupDesc& barrierGroupDesc) {
+    ((CommandBufferEmuD3D11&)commandBuffer).Barrier(barrierGroupDesc);
+}
+
+static void NRI_CALL EmuCmdSetIndexBuffer(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, IndexType indexType) {
+    ((CommandBufferEmuD3D11&)commandBuffer).SetIndexBuffer(buffer, offset, indexType);
+}
+
+static void NRI_CALL EmuCmdSetVertexBuffers(CommandBuffer& commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
+    ((CommandBufferEmuD3D11&)commandBuffer).SetVertexBuffers(baseSlot, bufferNum, buffers, offsets);
 }
 
 static void NRI_CALL EmuCmdSetViewports(CommandBuffer& commandBuffer, const Viewport* viewports, uint32_t viewportNum) {
@@ -537,20 +609,20 @@ static void NRI_CALL EmuCmdSetScissors(CommandBuffer& commandBuffer, const Rect*
     ((CommandBufferEmuD3D11&)commandBuffer).SetScissors(rects, rectNum);
 }
 
-static void NRI_CALL EmuCmdSetDepthBounds(CommandBuffer& commandBuffer, float boundsMin, float boundsMax) {
-    ((CommandBufferEmuD3D11&)commandBuffer).SetDepthBounds(boundsMin, boundsMax);
-}
-
 static void NRI_CALL EmuCmdSetStencilReference(CommandBuffer& commandBuffer, uint8_t frontRef, uint8_t backRef) {
     ((CommandBufferEmuD3D11&)commandBuffer).SetStencilReference(frontRef, backRef);
 }
 
-static void NRI_CALL EmuCmdSetSampleLocations(CommandBuffer& commandBuffer, const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
-    ((CommandBufferEmuD3D11&)commandBuffer).SetSampleLocations(locations, locationNum, sampleNum);
+static void NRI_CALL EmuCmdSetDepthBounds(CommandBuffer& commandBuffer, float boundsMin, float boundsMax) {
+    ((CommandBufferEmuD3D11&)commandBuffer).SetDepthBounds(boundsMin, boundsMax);
 }
 
 static void NRI_CALL EmuCmdSetBlendConstants(CommandBuffer& commandBuffer, const Color32f& color) {
     ((CommandBufferEmuD3D11&)commandBuffer).SetBlendConstants(color);
+}
+
+static void NRI_CALL EmuCmdSetSampleLocations(CommandBuffer& commandBuffer, const SampleLocation* locations, Sample_t locationNum, Sample_t sampleNum) {
+    ((CommandBufferEmuD3D11&)commandBuffer).SetSampleLocations(locations, locationNum, sampleNum);
 }
 
 static void NRI_CALL EmuCmdSetShadingRate(CommandBuffer& commandBuffer, const ShadingRateDesc& shadingRateDesc) {
@@ -561,16 +633,12 @@ static void NRI_CALL EmuCmdSetDepthBias(CommandBuffer& commandBuffer, const Dept
     MaybeUnused(commandBuffer, depthBiasDesc);
 }
 
+static void NRI_CALL EmuCmdBeginRendering(CommandBuffer& commandBuffer, const AttachmentsDesc& attachmentsDesc) {
+    ((CommandBufferEmuD3D11&)commandBuffer).BeginRendering(attachmentsDesc);
+}
+
 static void NRI_CALL EmuCmdClearAttachments(CommandBuffer& commandBuffer, const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     ((CommandBufferEmuD3D11&)commandBuffer).ClearAttachments(clearDescs, clearDescNum, rects, rectNum);
-}
-
-static void NRI_CALL EmuCmdSetIndexBuffer(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset, IndexType indexType) {
-    ((CommandBufferEmuD3D11&)commandBuffer).SetIndexBuffer(buffer, offset, indexType);
-}
-
-static void NRI_CALL EmuCmdSetVertexBuffers(CommandBuffer& commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {
-    ((CommandBufferEmuD3D11&)commandBuffer).SetVertexBuffers(baseSlot, bufferNum, buffers, offsets);
 }
 
 static void NRI_CALL EmuCmdDraw(CommandBuffer& commandBuffer, const DrawDesc& drawDesc) {
@@ -589,40 +657,16 @@ static void NRI_CALL EmuCmdDrawIndexedIndirect(CommandBuffer& commandBuffer, con
     ((CommandBufferEmuD3D11&)commandBuffer).DrawIndexedIndirect(buffer, offset, drawNum, stride, countBuffer, countBufferOffset);
 }
 
+static void NRI_CALL EmuCmdEndRendering(CommandBuffer& commandBuffer) {
+    ((CommandBufferEmuD3D11&)commandBuffer).EndRendering();
+}
+
 static void NRI_CALL EmuCmdDispatch(CommandBuffer& commandBuffer, const DispatchDesc& dispatchDesc) {
     ((CommandBufferEmuD3D11&)commandBuffer).Dispatch(dispatchDesc);
 }
 
 static void NRI_CALL EmuCmdDispatchIndirect(CommandBuffer& commandBuffer, const Buffer& buffer, uint64_t offset) {
     ((CommandBufferEmuD3D11&)commandBuffer).DispatchIndirect(buffer, offset);
-}
-
-static void NRI_CALL EmuCmdBeginQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
-    ((CommandBufferEmuD3D11&)commandBuffer).BeginQuery(queryPool, offset);
-}
-
-static void NRI_CALL EmuCmdEndQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
-    ((CommandBufferEmuD3D11&)commandBuffer).EndQuery(queryPool, offset);
-}
-
-static void NRI_CALL EmuCmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
-    ((CommandBufferEmuD3D11&)commandBuffer).BeginAnnotation(name, bgra);
-}
-
-static void NRI_CALL EmuCmdEndAnnotation(CommandBuffer& commandBuffer) {
-    ((CommandBufferEmuD3D11&)commandBuffer).EndAnnotation();
-}
-
-static void NRI_CALL EmuCmdAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
-    ((CommandBufferEmuD3D11&)commandBuffer).Annotation(name, bgra);
-}
-
-static void NRI_CALL EmuCmdClearStorageBuffer(CommandBuffer& commandBuffer, const ClearStorageBufferDesc& clearDesc) {
-    ((CommandBufferEmuD3D11&)commandBuffer).ClearStorageBuffer(clearDesc);
-}
-
-static void NRI_CALL EmuCmdClearStorageTexture(CommandBuffer& commandBuffer, const ClearStorageTextureDesc& clearDesc) {
-    ((CommandBufferEmuD3D11&)commandBuffer).ClearStorageTexture(clearDesc);
 }
 
 static void NRI_CALL EmuCmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
@@ -645,11 +689,47 @@ static void NRI_CALL EmuCmdReadbackTextureToBuffer(CommandBuffer& commandBuffer,
     ((CommandBufferEmuD3D11&)commandBuffer).ReadbackTextureToBuffer(dstBuffer, dstDataLayoutDesc, srcTexture, srcRegionDesc);
 }
 
+static void NRI_CALL EmuCmdClearStorageBuffer(CommandBuffer& commandBuffer, const ClearStorageBufferDesc& clearDesc) {
+    ((CommandBufferEmuD3D11&)commandBuffer).ClearStorageBuffer(clearDesc);
+}
+
+static void NRI_CALL EmuCmdClearStorageTexture(CommandBuffer& commandBuffer, const ClearStorageTextureDesc& clearDesc) {
+    ((CommandBufferEmuD3D11&)commandBuffer).ClearStorageTexture(clearDesc);
+}
+
+static void NRI_CALL EmuCmdResetQueries(CommandBuffer&, QueryPool&, uint32_t, uint32_t) {
+}
+
+static void NRI_CALL EmuCmdBeginQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
+    ((CommandBufferEmuD3D11&)commandBuffer).BeginQuery(queryPool, offset);
+}
+
+static void NRI_CALL EmuCmdEndQuery(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset) {
+    ((CommandBufferEmuD3D11&)commandBuffer).EndQuery(queryPool, offset);
+}
+
 static void NRI_CALL EmuCmdCopyQueries(CommandBuffer& commandBuffer, const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset) {
     ((CommandBufferEmuD3D11&)commandBuffer).CopyQueries(queryPool, offset, num, dstBuffer, dstOffset);
 }
 
-static void NRI_CALL EmuCmdResetQueries(CommandBuffer&, QueryPool&, uint32_t, uint32_t) {
+static void NRI_CALL EmuCmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferEmuD3D11&)commandBuffer).BeginAnnotation(name, bgra);
+}
+
+static void NRI_CALL EmuCmdEndAnnotation(CommandBuffer& commandBuffer) {
+    ((CommandBufferEmuD3D11&)commandBuffer).EndAnnotation();
+}
+
+static void NRI_CALL EmuCmdAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    ((CommandBufferEmuD3D11&)commandBuffer).Annotation(name, bgra);
+}
+
+static Result NRI_CALL EmuEndCommandBuffer(CommandBuffer& commandBuffer) {
+    return ((CommandBufferEmuD3D11&)commandBuffer).End();
+}
+
+static void NRI_CALL EmuSetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
+    MaybeUnused(commandBuffer, name);
 }
 
 static void* NRI_CALL EmuGetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
@@ -658,84 +738,6 @@ static void* NRI_CALL EmuGetCommandBufferNativeObject(const CommandBuffer& comma
 
     CommandBufferHelper& commandBufferHelper = (CommandBufferHelper&)commandBuffer;
     return commandBufferHelper.GetNativeObject();
-}
-
-static void NRI_CALL SetCommandQueueDebugName(CommandQueue& commandQueue, const char* name) {
-    ((CommandQueueD3D11&)commandQueue).SetDebugName(name);
-}
-
-static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& queueSubmitDesc) {
-    ((CommandQueueD3D11&)commandQueue).Submit(queueSubmitDesc);
-}
-
-static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* name) {
-    ((DescriptorD3D11&)descriptor).SetDebugName(name);
-}
-
-static uint64_t NRI_CALL GetDescriptorNativeObject(const Descriptor& descriptor) {
-    if (!(&descriptor))
-        return 0;
-
-    return uint64_t((ID3D11View*)((DescriptorD3D11&)descriptor));
-}
-
-static void NRI_CALL SetDescriptorPoolDebugName(DescriptorPool& descriptorPool, const char* name) {
-    ((DescriptorPoolD3D11&)descriptorPool).SetDebugName(name);
-}
-
-static Result NRI_CALL AllocateDescriptorSets(DescriptorPool& descriptorPool, const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
-    return ((DescriptorPoolD3D11&)descriptorPool).AllocateDescriptorSets(pipelineLayout, setIndex, descriptorSets, instanceNum, variableDescriptorNum);
-}
-
-static void NRI_CALL ResetDescriptorPool(DescriptorPool& descriptorPool) {
-    ((DescriptorPoolD3D11&)descriptorPool).Reset();
-}
-
-static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet& descriptorSet, const char* name) {
-    ((DescriptorSetD3D11&)descriptorSet).SetDebugName(name);
-}
-
-static void NRI_CALL UpdateDescriptorRanges(DescriptorSet& descriptorSet, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs) {
-    ((DescriptorSetD3D11&)descriptorSet).UpdateDescriptorRanges(baseRange, rangeNum, rangeUpdateDescs);
-}
-
-static void NRI_CALL UpdateDynamicConstantBuffers(DescriptorSet& descriptorSet, uint32_t baseDynamicConstantBuffer, uint32_t dynamicConstantBufferNum, const Descriptor* const* descriptors) {
-    ((DescriptorSetD3D11&)descriptorSet).UpdateDynamicConstantBuffers(baseDynamicConstantBuffer, dynamicConstantBufferNum, descriptors);
-}
-
-static void NRI_CALL CopyDescriptorSet(DescriptorSet& descriptorSet, const DescriptorSetCopyDesc& descriptorSetCopyDesc) {
-    ((DescriptorSetD3D11&)descriptorSet).Copy(descriptorSetCopyDesc);
-}
-
-static void NRI_CALL SetQueryPoolDebugName(QueryPool& queryPool, const char* name) {
-    ((QueryPoolD3D11&)queryPool).SetDebugName(name);
-}
-
-static uint32_t NRI_CALL GetQuerySize(const QueryPool& queryPool) {
-    return ((QueryPoolD3D11&)queryPool).GetQuerySize();
-}
-
-static void NRI_CALL SetTextureDebugName(Texture& texture, const char* name) {
-    ((TextureD3D11&)texture).SetDebugName(name);
-}
-
-static uint64_t NRI_CALL GetTextureNativeObject(const Texture& texture) {
-    if (!(&texture))
-        return 0;
-
-    return uint64_t((ID3D11Resource*)((TextureD3D11&)texture));
-}
-
-static uint64_t NRI_CALL GetFenceValue(Fence& fence) {
-    return ((FenceD3D11&)fence).GetFenceValue();
-}
-
-static void NRI_CALL Wait(Fence& fence, uint64_t value) {
-    ((FenceD3D11&)fence).Wait(value);
-}
-
-static void NRI_CALL SetFenceDebugName(Fence& fence, const char* name) {
-    ((FenceD3D11&)fence).SetDebugName(name);
 }
 
 Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
@@ -810,8 +812,6 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
     table.GetDescriptorNativeObject = ::GetDescriptorNativeObject;
 
     if (m_IsDeferredContextEmulated) {
-        table.SetCommandBufferDebugName = ::EmuSetCommandBufferDebugName;
-        table.GetCommandBufferNativeObject = ::EmuGetCommandBufferNativeObject;
         table.BeginCommandBuffer = ::EmuBeginCommandBuffer;
         table.CmdSetDescriptorPool = ::EmuCmdSetDescriptorPool;
         table.CmdSetDescriptorSet = ::EmuCmdSetDescriptorSet;
@@ -854,9 +854,9 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
         table.CmdEndAnnotation = ::EmuCmdEndAnnotation;
         table.CmdAnnotation = ::EmuCmdAnnotation;
         table.EndCommandBuffer = ::EmuEndCommandBuffer;
+        table.SetCommandBufferDebugName = ::EmuSetCommandBufferDebugName;
+        table.GetCommandBufferNativeObject = ::EmuGetCommandBufferNativeObject;
     } else {
-        table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
-        table.SetCommandBufferDebugName = ::SetCommandBufferDebugName;
         table.BeginCommandBuffer = ::BeginCommandBuffer;
         table.CmdSetDescriptorPool = ::CmdSetDescriptorPool;
         table.CmdSetDescriptorSet = ::CmdSetDescriptorSet;
@@ -899,6 +899,8 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
         table.CmdEndAnnotation = ::CmdEndAnnotation;
         table.CmdAnnotation = ::CmdAnnotation;
         table.EndCommandBuffer = ::EndCommandBuffer;
+        table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
+        table.SetCommandBufferDebugName = ::SetCommandBufferDebugName;
     }
 
     return Result::SUCCESS;
