@@ -7,7 +7,6 @@ namespace nri {
 
 struct DeviceMTL;
 
-
 struct CommandQueueMTL {
 
     inline CommandQueueMTL(DeviceMTL& device)

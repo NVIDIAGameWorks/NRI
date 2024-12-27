@@ -2,16 +2,12 @@
 
 #import <MetalKit/MetalKit.h>
 
+#include "SharedMTL.h"
+
 namespace nri {
 
 struct DeviceMTL;
 struct PipelineLayoutMTL;
-
-NriEnum(PipelineType, uint8_t,
-    Compute,
-    Graphics,
-    Raytracing
-);
 
 struct PipelineMTL {
 public:
@@ -47,7 +43,6 @@ private:
     MTLPrimitiveTopologyClass m_topologyClass;
     MTLPrimitiveType m_primitiveType;
     StageBits m_usedBits;
-    
     union{
         id<MTLComputePipelineState> m_ComputePipeline = nil;
         id<MTLRenderPipelineState> m_GraphicsPipeline;

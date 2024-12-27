@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <MacTypes.h>
 #import <MetalKit/MetalKit.h>
+
+#include "SharedMTL.h"
 
 namespace nri {
 
@@ -14,29 +15,13 @@ struct PipelineLayoutMTL;
 struct TextureMTL;
 struct DescriptorMTL;
 
-NriBits(BarrierBits, uint8_t,
-    NONE = 0,
-    BARRIER_FLAG_BUFFERS = NriBit(0),
-    BARRIER_FLAG_TEXTURES = NriBit(1),
-    BARRIER_FLAG_RENDERTARGETS = NriBit(2),
-    BARRIER_FLAG_FENCE = NriBit(3));
-
-
-NriBits(CommandBufferDirtyBits, uint8_t,
-        NONE                            = 0,
-        CMD_DIRTY_STENCIL          = NriBit(0)
-        );
-
 struct CommandBufferMTL {
     
-    inline CommandBufferMTL(DeviceMTL& device)
-    : m_Device(device) {
-    }
-    
+    CommandBufferMTL(DeviceMTL& device);
     inline DeviceMTL& GetDevice() const {
         return m_Device;
     }
- 
+    
     inline id<MTLCommandBuffer> GetHandle() const {
         return m_Handle;
     }
@@ -100,7 +85,6 @@ struct CommandBufferMTL {
         MTLIndexType m_Type;
         struct BufferMTL* m_Buffer;
     };
-    
     struct CmdVertexBuffer {
         size_t m_Offset;
         struct BufferMTL* m_Buffer;
@@ -108,9 +92,9 @@ struct CommandBufferMTL {
     
 private:
     
-    void Restore();
     void updateCommandBufferState();
     void EndCurrentEncoders();
+    void InsertBarriers();
     
     DeviceMTL& m_Device;
     struct PipelineMTL* m_CurrentPipeline = nullptr;
@@ -120,14 +104,25 @@ private:
     id<MTLComputeCommandEncoder> m_ComputeEncoder = nil;
     id<MTLBlitCommandEncoder> m_BlitEncoder = nil;
     const struct CommandQueueMTL* m_CommandQueue = nullptr;
+   
+    BarrierBits m_barrierFlags = BarrierBits::NONE;
     
-    struct CmdIndexBuffer m_CurrentIndexCmd;
-    uint32_t m_dirtyVertexBufferBits = 0;
-    struct CmdVertexBuffer m_CurrentVertexCmd[32];
-    id<MTLRenderPipelineState> m_GraphicsPipelineState;
-    
-    
+    MTLRenderPassDescriptor* m_renderPassDescriptor = nil;
     CommandBufferDirtyBits m_DirtyBits = CommandBufferDirtyBits::NONE;
+    struct CmdIndexBuffer m_indexBuffer;
+    uint32_t m_dirtyVertexBufferBits = 0;
+    struct CmdVertexBuffer m_vertexBuffers[32];
+    struct ShadingRateDesc m_shadingRateDesc;
+    uint16_t m_numViewports = 0;
+    uint16_t m_numScissors = 0;
+    MTLViewport m_viewports[16];
+    MTLScissorRect m_Scissors[16];
+    Color32f m_BlendColor;
+    uint8_t m_StencilFront;
+    uint8_t m_StencilBack;
+    
+    NSMutableArray* m_Annotations;
+
 };
 };
 

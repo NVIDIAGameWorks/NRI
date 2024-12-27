@@ -18,7 +18,7 @@ Result CommandQueueMTL::Create(CommandQueueType type) {
         "TRANSFER_QUEUE", // TRANSFER
         "COMPUTE_QUEUE" // COMPUTE
     };
-
+    
     m_Handle = [m_Device newCommandQueueWithMaxCommandBufferCount:512];
     SetDebugName(queueNames[(uint32_t)type]);
     

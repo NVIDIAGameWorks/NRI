@@ -202,6 +202,7 @@
         constexpr name operator | (name val0, name val1) { return (name)((type)val0 | (type)val1); } \
         constexpr name& operator &= (name& val0, name val1) { val0 = (name)(val0 & val1); return val0; } \
         constexpr name& operator |= (name& val0, name val1) { val0 = (name)(val0 | val1); return val0; } \
+        constexpr name operator ~(name val0) { return (name)(~(type)val0); } \
         enum class name : type { \
             _NRI_ENUM_EXPAND(__VA_ARGS__), \
         }
