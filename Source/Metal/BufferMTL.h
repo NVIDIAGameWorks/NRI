@@ -33,7 +33,8 @@ struct BufferMTL {
     
     void FinishMemoryBinding(MemoryMTL& memory, uint64_t memoryOffset);
     Result Create(const BufferDesc& bufferDesc);
-    
+    Result Create(const AllocateBufferDesc& bufferDesc);
+   
     //================================================================================================================
     // NRI
     //================================================================================================================

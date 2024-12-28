@@ -36,6 +36,17 @@ Result TextureMTL::Create(MTLTextureHandle texture) {
     m_Desc.sampleNum = m_Handle.sampleCount;
     m_Desc.type = GetTextureType(m_Handle.textureType);
     m_Desc.format = MTLFormatToNRIFormat((uint32_t)m_Handle.pixelFormat);
+    return Result::SUCCESS;
+}
+
+
+Result TextureMTL::Create(const AllocateTextureDesc& textureDesc) {
+    m_Desc = textureDesc.desc;
+    MTLTextureDescriptor* info = [[MTLTextureDescriptor alloc] init];
+    fillMTLTextureDescriptor(m_Desc, info);
+    m_Handle = [m_Device.GetHandle() newTextureWithDescriptor: info];
+    UpdateLabel();
+    return Result::SUCCESS;
 }
 
 

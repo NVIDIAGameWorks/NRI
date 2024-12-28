@@ -25,6 +25,12 @@ void BufferMTL::FinishMemoryBinding(MemoryMTL& memory, uint64_t memoryOffset) {
     UpdateLabel();
 }
 
+Result BufferMTL::Create(const AllocateBufferDesc& bufferDesc) {
+    m_Desc = bufferDesc.desc;
+    m_Handle = [m_Device.GetHandle() newBufferWithLength: m_Desc.size options: MTLResourceCPUCacheModeDefaultCache];
+    UpdateLabel();
+}
+
 void BufferMTL::UpdateLabel() {
     if(m_Handle && m_Label) {
         [m_Handle setLabel: m_Label];

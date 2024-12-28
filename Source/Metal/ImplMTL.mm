@@ -374,7 +374,6 @@ static void NRI_CALL GetTextureMemoryDesc(const Device& device, const TextureDes
     ((const DeviceMTL&)device).GetMemoryDesc(textureDesc, memoryLocation, memoryDesc);
 }
 
-
 static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
     return ((DeviceMTL&)device).GetCommandQueue(commandQueueType, commandQueue);
 }
@@ -614,21 +613,21 @@ Result DeviceMTL::FillFunctionTable(SwapChainInterface& table) const {
 }
 
 
-//static Result AllocateBuffer(Device& device, const AllocateBufferDesc& bufferDesc, Buffer*& buffer) {
-//    return ((DeviceMTL&)device).CreateImplementation<BufferMTL>(buffer, bufferDesc);
-//}
-//
-//static Result AllocateTexture(Device& device, const AllocateTextureDesc& textureDesc, Texture*& texture) {
-//    return ((DeviceMTL&)device).CreateImplementation<TextureMTL>(texture, textureDesc);
-//}
+static Result AllocateBuffer(Device& device, const AllocateBufferDesc& bufferDesc, Buffer*& buffer) {
+    return ((DeviceMTL&)device).CreateImplementation<BufferMTL>(buffer, bufferDesc);
+}
+
+static Result AllocateTexture(Device& device, const AllocateTextureDesc& textureDesc, Texture*& texture) {
+    return ((DeviceMTL&)device).CreateImplementation<TextureMTL>(texture, textureDesc);
+}
 
 //static Result AllocateAccelerationStructure(Device& device, const AllocateAccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
 //    return ((DeviceMTL&)device).CreateImplementation<AccelerationStructureVK>(accelerationStructure, accelerationStructureDesc);
 //}
 
 Result DeviceMTL::FillFunctionTable(ResourceAllocatorInterface& table) const {
-//    table.AllocateBuffer = ::AllocateBuffer;
-//    table.AllocateTexture = ::AllocateTexture;
+    table.AllocateBuffer = ::AllocateBuffer;
+    table.AllocateTexture = ::AllocateTexture;
 //    table.AllocateAccelerationStructure = ::AllocateAccelerationStructure;
 
     return Result::SUCCESS;

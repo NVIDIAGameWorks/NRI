@@ -14,6 +14,8 @@ typedef void* MTLDeviceHandle; // id<MTLDevice>
 typedef void* MTLBufferHandle; // id<MTLHeap>
 typedef void* MTLTextureHandle;
 
+typedef uint32_t MTLEnum;
+
 NriStruct(DeviceCreationMTLDesc)
 {
     bool enableNRIValidation;
@@ -34,8 +36,16 @@ NriStruct(BufferMTLDesc)
  
 NriStruct(TextureMTLDesc)
 {
-  //MTLTextureHandle mtlTexture;
-  //MTLTextureDescriptor* descriptor; 
+    MTLTextureHandle mtlTexture;
+    MTLEnum textureType;
+    MTLEnum pixelFormat;
+    Nri(Dim_t) width;
+    Nri(Dim_t) height;
+    Nri(Dim_t) depth;
+    Nri(Mip_t) mipNum;
+    Nri(Dim_t) layerNum;
+    Nri(Sample_t) sampleNum;
+  //MTLTextureDescriptor* descriptor;
 };
 
 NriStruct(MemoryMTLDesc)
