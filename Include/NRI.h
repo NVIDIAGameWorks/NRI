@@ -11,7 +11,11 @@ Overview:
 Goals:
 - generalization of VK and D3D12
 - providing access to low-level features of modern gAPIs
+- providing high-level "quality of life" improving utilities, organized as extensions
 - low overhead
+- no memory allocations at runtime
+- cross platform and platform independence (AMD/INTEL friendly)
+- explicitness
 - D3D11 support (as much as possible)
 
 Non-goals (exceptions apply to helper interfaces, where high-level abstraction and hidden management are desired):
