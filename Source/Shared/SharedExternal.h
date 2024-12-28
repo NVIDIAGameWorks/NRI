@@ -167,6 +167,7 @@ const nri::FormatProps& GetFormatProps(nri::Format format);
 
 nri::Format DXGIFormatToNRIFormat(uint32_t dxgiFormat);
 nri::Format VKFormatToNRIFormat(uint32_t vkFormat);
+nri::Format MTLFormatToNRIFormat(uint32_t mtlFormat);
 
 uint32_t NRIFormatToDXGIFormat(nri::Format format);
 uint32_t NRIFormatToVKFormat(nri::Format format);

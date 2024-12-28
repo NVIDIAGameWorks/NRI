@@ -14,7 +14,6 @@
 
 using namespace nri;
 
-
 static bool FindMTLGpuFamily(id<MTLDevice> device,
                              const MTLGPUFamily *families, size_t len,
                              MTLGPUFamily* current) {
@@ -47,22 +46,41 @@ static uint32_t GetEntryProperty(io_registry_entry_t entry, CFStringRef property
     return value;
 }
 
-
-
-
 DeviceMTL::DeviceMTL(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator)
-    : DeviceBase(callbacks, stdAllocator) {
+: DeviceBase(callbacks, stdAllocator) {
     
-    for (uint32_t i = 0; i < m_CommandQueues.size(); i++)
-        Destroy(GetStdAllocator(), m_CommandQueues[i]);
-
+    
     m_Desc.graphicsAPI = GraphicsAPI::MTL;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
+    
+//    NSString* clearVert = [NSString stringWithCString: " \
+//              #include <metal_stdlib> \
+//              using namespace metal; \
+//              typedef struct { \
+//                  float4 a_position [[attribute(0)]]; \
+//              } AttributesPos; \
+//              typedef struct { \
+//                  float4 colors[9]; \
+//              } ClearColorsIn; \
+//              typedef struct { \
+//                  float4 v_position [[position]]; \
+//                  uint layer [[render_target_array_index]]; \
+//              } VaryingsPos; \
+//              vertex VaryingsPos vertClear(AttributesPos attributes [[stage_in]], constant ClearColorsIn& ccIn [[buffer(0)]]) { \
+//                   VaryingsPos varyings; \
+//                   varyings.v_position = float4(attributes.a_position.x, -attributes.a_position.y, ccIn.colors[4].r, 1.0); \
+//                   varyings.layer = uint(attributes.a_position.w); \
+//                   return varyings; \
+//               } \
+//           " encoding: NSASCIIStringEncoding];
+    
 }
 
 
 void DeviceMTL::Destruct() {
+    for (uint32_t i = 0; i < m_CommandQueues.size(); i++)
+        Destroy(GetStdAllocator(), m_CommandQueues[i]);
     Destroy(GetStdAllocator(), this);
 }
 
@@ -89,14 +107,14 @@ id<MTLRenderPipelineState> DeviceMTL::GetClearPipeline() {
 
 void DeviceMTL::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
     MemoryTypeInfo memoryTypeInfo;
-    memoryTypeInfo.options = DEFAULT_MEMORY_RESOURCE_OPTION_MEMORY_LOCATION[(size_t)memoryLocation];
-    memoryTypeInfo.cacheMode = DEFAULT_CACHE_MODE_MEMORY_LOCATION[(size_t)memoryLocation];
-    memoryTypeInfo.storageMode = DEFAULT_STORAGE_MODE_MEMORY_LOCATION[(size_t)memoryLocation];
+    memoryTypeInfo.options = (uint32_t)DEFAULT_MEMORY_RESOURCE_OPTION_MEMORY_LOCATION[(size_t)memoryLocation];
+    memoryTypeInfo.cacheMode = (uint32_t)DEFAULT_CACHE_MODE_MEMORY_LOCATION[(size_t)memoryLocation];
+    memoryTypeInfo.storageMode = (uint32_t)DEFAULT_STORAGE_MODE_MEMORY_LOCATION[(size_t)memoryLocation];
     MTLTextureDescriptor* mtlTextureDesc = [[MTLTextureDescriptor alloc] init];
     MTLSizeAndAlign sizeAlign =  [m_Device heapBufferSizeAndAlignWithLength: bufferDesc.size options: (MTLResourceOptions)memoryTypeInfo.options];
     
     memoryDesc.size = sizeAlign.size;
-    memoryDesc.alignment = sizeAlign.align;
+    memoryDesc.alignment = (uint32_t)sizeAlign.align;
     memoryDesc.type = memoryTypeInfo.value;
     
 }
@@ -105,14 +123,14 @@ void DeviceMTL::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation mem
     MTLTextureDescriptor* mtlTextureDesc = [[MTLTextureDescriptor alloc] init];
    
     MemoryTypeInfo memoryTypeInfo;
-    memoryTypeInfo.options = DEFAULT_MEMORY_RESOURCE_OPTION_MEMORY_LOCATION[(size_t)memoryLocation];
-    memoryTypeInfo.cacheMode = DEFAULT_CACHE_MODE_MEMORY_LOCATION[(size_t)memoryLocation];
-    memoryTypeInfo.storageMode = DEFAULT_STORAGE_MODE_MEMORY_LOCATION[(size_t)memoryLocation];
+    memoryTypeInfo.options = (uint32_t)DEFAULT_MEMORY_RESOURCE_OPTION_MEMORY_LOCATION[(size_t)memoryLocation];
+    memoryTypeInfo.cacheMode = (uint32_t)DEFAULT_CACHE_MODE_MEMORY_LOCATION[(size_t)memoryLocation];
+    memoryTypeInfo.storageMode = (uint32_t)DEFAULT_STORAGE_MODE_MEMORY_LOCATION[(size_t)memoryLocation];
     nri::fillMTLTextureDescriptor(textureDesc, mtlTextureDesc);
     const MTLSizeAndAlign sizeAlign = [m_Device heapTextureSizeAndAlignWithDescriptor: mtlTextureDesc];
     
     memoryDesc.size = sizeAlign.size;
-    memoryDesc.alignment = sizeAlign.align;
+    memoryDesc.alignment = (uint32_t)sizeAlign.align;
     memoryDesc.type = memoryTypeInfo.value;
 }
 
@@ -139,6 +157,38 @@ Result DeviceMTL::GetCommandQueue(CommandQueueType commandQueueType, CommandQueu
         m_CommandQueues[index] = (CommandQueueMTL*)commandQueue;
 
     return result;
+}
+
+Result DeviceMTL::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
+    if (!memoryBindingDescNum)
+        return Result::SUCCESS;
+
+    for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
+        const BufferMemoryBindingDesc& memoryBindingDesc = memoryBindingDescs[i];
+
+        BufferMTL& bufferImpl = *(BufferMTL*)memoryBindingDesc.buffer;
+        MemoryMTL& memoryImpl = *(MemoryMTL*)memoryBindingDesc.memory;
+
+        bufferImpl.FinishMemoryBinding(memoryImpl, memoryBindingDesc.offset);
+    }
+    
+    return Result::SUCCESS;
+}
+
+Result DeviceMTL::BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
+    if (!memoryBindingDescNum)
+        return Result::SUCCESS;
+
+    for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
+        const TextureMemoryBindingDesc& memoryBindingDesc = memoryBindingDescs[i];
+
+        TextureMTL& textureImpl = *(TextureMTL*)memoryBindingDesc.texture;
+        MemoryMTL& memoryImpl = *(MemoryMTL*)memoryBindingDesc.memory;
+
+        textureImpl.FinishMemoryBinding(memoryImpl, memoryBindingDesc.offset);
+    }
+    
+    return Result::SUCCESS;
 }
 
 

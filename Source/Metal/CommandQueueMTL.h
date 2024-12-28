@@ -30,11 +30,11 @@ struct CommandQueueMTL {
     inline id<MTLCommandQueue> GetHandle() const {
         return m_Handle;
     }
-    
         
     void SetDebugName(const char* name);
     void Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain);
-    Result WaitForIdle();
+    Result UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum);
+   Result WaitForIdle();
    
     Result Create(CommandQueueType type);
     

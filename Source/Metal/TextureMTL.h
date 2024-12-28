@@ -31,12 +31,12 @@ public:
     }
 
     Result Create(const TextureDesc& textureDesc);
+    Result Create(MTLTextureHandle textureDesc);
     void FinishMemoryBinding(MemoryMTL& memory, uint64_t memoryOffset);
     
     inline Dim_t GetSize(Dim_t dimensionIndex, Mip_t mip = 0) const {
         return GetDimension(GraphicsAPI::MTL, m_Desc, dimensionIndex, mip);
     }
-
     
     //================================================================================================================
     // NRI
@@ -51,7 +51,7 @@ private:
     DeviceMTL& m_Device;
     TextureDesc m_Desc = {};
     id<MTLTexture> m_Handle;
-    NSString* m_label;
+    NSString* m_label = nil;
 };
 
 } // namespace nri

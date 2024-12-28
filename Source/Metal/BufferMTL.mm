@@ -31,8 +31,6 @@ void BufferMTL::UpdateLabel() {
     }
 }
 
-
-
 Result BufferMTL::Create(const BufferDesc& bufferDesc) {
     m_Desc = bufferDesc;
 }

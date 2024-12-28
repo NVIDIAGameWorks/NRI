@@ -14,6 +14,10 @@ using namespace nri;
 #include "PipelineMTL.h"
 #include "DescriptorMTL.h"
 #include "MemoryMTL.h"
+#include "HelperDeviceMemoryAllocator.h"
+#include "CommandQueueMTL.h"
+#include "SwapChainMTL.h"
+
 
 Result CreateDeviceMTL(const DeviceCreationDesc& desc, DeviceBase*& device) {
     StdAllocator<uint8_t> allocator(desc.allocationCallbacks);
@@ -195,7 +199,7 @@ static void NRI_CALL CmdEndQuery(CommandBuffer& commandBuffer, const QueryPool& 
     ((CommandBufferMTL&)commandBuffer).EndQuery(queryPool, offset);
 }
 
-static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name) {
+static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
     ((CommandBufferMTL&)commandBuffer).BeginAnnotation(name);
 }
 
@@ -236,7 +240,20 @@ static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPoo
     ((CommandBufferMTL&)commandBuffer).CopyQueries(queryPool, offset, num, dstBuffer, dstOffset);
 }
 
-static void NRI_CALL CmdResetQueries(CommandBuffer& commandBuffer, const QueryPool& queryPool, uint32_t offset, uint32_t num) {
+static Result NRI_CALL AllocateMemory(Device& device, const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory) {
+    return ((DeviceMTL&)device).CreateImplementation<MemoryMTL>(memory, allocateMemoryDesc);
+}
+
+static Result NRI_CALL BindBufferMemory(Device& device, const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
+    return ((DeviceMTL&)device).BindBufferMemory(memoryBindingDescs, memoryBindingDescNum);
+}
+
+static Result NRI_CALL BindTextureMemory(Device& device, const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {
+    return ((DeviceMTL&)device).BindTextureMemory(memoryBindingDescs, memoryBindingDescNum);
+}
+
+
+static void NRI_CALL CmdResetQueries(CommandBuffer& commandBuffer, QueryPool& queryPool, uint32_t offset, uint32_t num) {
     ((CommandBufferMTL&)commandBuffer).ResetQueries(queryPool, offset, num);
 }
 
@@ -319,6 +336,28 @@ static void NRI_CALL FreeMemory(Memory& memory) {
     Destroy((MemoryMTL*)&memory);
 }
 
+static void NRI_CALL SetFenceDebugName(Fence& fence, const char* name) {
+//    ((FenceMTL&)fence).SetDebugName(name);
+}
+
+
+static void NRI_CALL SetDeviceDebugName(Device& device, const char* name) {
+//    ((DeviceMTL&)device).SetDebugName(name);
+}
+
+static void NRI_CALL SetPipelineDebugName(Pipeline& pipeline, const char* name) {
+//    ((PipelineMTL&)pipeline).SetDebugName(name);
+}
+
+static void NRI_CALL SetPipelineLayoutDebugName(PipelineLayout& pipelineLayout, const char* name) {
+//    ((PipelineLayoutMTL&)pipelineLayout).SetDebugName(name);
+}
+
+static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name) {
+    ((MemoryMTL&)memory).SetDebugName(name);
+}
+
+
 static const BufferDesc& NRI_CALL GetBufferDesc(const Buffer& buffer) {
     return ((const BufferMTL&)buffer).GetDesc();
 }
@@ -335,6 +374,12 @@ static void NRI_CALL GetTextureMemoryDesc(const Device& device, const TextureDes
     ((const DeviceMTL&)device).GetMemoryDesc(textureDesc, memoryLocation, memoryDesc);
 }
 
+
+static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
+    return ((DeviceMTL&)device).GetCommandQueue(commandQueueType, commandQueue);
+}
+
+
 static Result NRI_CALL CreateGraphicsPipeline(Device& device, const GraphicsPipelineDesc& graphicsPipelineDesc, Pipeline*& pipeline) {
     return ((DeviceMTL&)device).CreateImplementation<PipelineMTL>(pipeline, graphicsPipelineDesc);
 }
@@ -349,6 +394,12 @@ static Result NRI_CALL AllocateDescriptorSets(DescriptorPool& descriptorPool, co
     //return ((DescriptorPoolMTL&)descriptorPool).AllocateDescriptorSets(pipelineLayout, setIndex, descriptorSets, instanceNum, variableDescriptorNum);
 }
 
+
+static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* name) {
+//    ((DescriptorMTL&)descriptor).SetDebugName(name);
+}
+
+
 Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table.GetDeviceDesc = ::GetDeviceDesc;
     table.GetBufferDesc = ::GetBufferDesc;
@@ -357,7 +408,7 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     //table.GetQuerySize = ::GetQuerySize;
     table.GetBufferMemoryDesc = ::GetBufferMemoryDesc;
     table.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
-    //table.GetCommandQueue = ::GetCommandQueue;
+    table.GetCommandQueue = ::GetCommandQueue;
     //table.CreateCommandAllocator = ::CreateCommandAllocator;
     table.CreateCommandBuffer = ::CreateCommandBuffer;
     //table.CreateDescriptorPool = ::CreateDescriptorPool;
@@ -384,9 +435,9 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table.DestroyPipeline = ::DestroyPipeline;
     table.DestroyQueryPool = ::DestroyQueryPool;
     table.DestroyFence = ::DestroyFence;
-//    table.AllocateMemory = ::AllocateMemory;
-//    table.BindBufferMemory = ::BindBufferMemory;
-//    table.BindTextureMemory = ::BindTextureMemory;
+    table.AllocateMemory = ::AllocateMemory;
+    table.BindBufferMemory = ::BindBufferMemory;
+    table.BindTextureMemory = ::BindTextureMemory;
     table.FreeMemory = ::FreeMemory;
     table.BeginCommandBuffer = ::BeginCommandBuffer;
     table.CmdSetDescriptorPool = ::CmdSetDescriptorPool;
@@ -422,11 +473,11 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table.CmdClearStorageBuffer = ::CmdClearStorageBuffer;
     table.CmdClearStorageTexture = ::CmdClearStorageTexture;
     table.CmdResolveTexture = ::CmdResolveTexture;
-    //table.CmdResetQueries = ::CmdResetQueries;
-    //table.CmdBeginQuery = ::CmdBeginQuery;
-    //table.CmdEndQuery = ::CmdEndQuery;
+    table.CmdResetQueries = ::CmdResetQueries;
+//    table.CmdBeginQuery = ::CmdBeginQuery;
+//    table.CmdEndQuery = ::CmdEndQuery;
     table.CmdCopyQueries = ::CmdCopyQueries;
-    //table.CmdBeginAnnotation = ::CmdBeginAnnotation;
+    table.CmdBeginAnnotation = ::CmdBeginAnnotation;
     table.CmdEndAnnotation = ::CmdEndAnnotation;
     table.EndCommandBuffer = ::EndCommandBuffer;
 //    table.QueueSubmit = ::QueueSubmit;
@@ -440,10 +491,10 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table.ResetCommandAllocator = ::ResetCommandAllocator;
     table.MapBuffer = ::MapBuffer;
     table.UnmapBuffer = ::UnmapBuffer;
-//    table.SetDeviceDebugName = ::SetDeviceDebugName;
-//    table.SetFenceDebugName = ::SetFenceDebugName;
-//    table.SetDescriptorDebugName = ::SetDescriptorDebugName;
-//    table.SetPipelineDebugName = ::SetPipelineDebugName;
+    table.SetDeviceDebugName = ::SetDeviceDebugName;
+    table.SetFenceDebugName = ::SetFenceDebugName;
+    table.SetDescriptorDebugName = ::SetDescriptorDebugName;
+    table.SetPipelineDebugName = ::SetPipelineDebugName;
     table.SetCommandBufferDebugName = ::SetCommandBufferDebugName;
     table.SetBufferDebugName = ::SetBufferDebugName;
 //    table.SetTextureDebugName = ::SetTextureDebugName;
@@ -463,10 +514,39 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     return Result::SUCCESS;
 }
 
+static uint32_t NRI_CALL CalculateAllocationNumber(const Device& device, const ResourceGroupDesc& resourceGroupDesc) {
+    DeviceMTL& deviceMTL = (DeviceMTL&)device;
+    HelperDeviceMemoryAllocator allocator(deviceMTL.GetCoreInterface(), (Device&)device);
+
+    return allocator.CalculateAllocationNumber(resourceGroupDesc);
+}
+
+static Result NRI_CALL UploadData(CommandQueue& commandQueue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
+    return ((CommandQueueMTL&)commandQueue).UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
+}
+
+static Result NRI_CALL AllocateAndBindMemory(Device& device, const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
+    DeviceMTL& deviceMTL = (DeviceMTL&)device;
+    HelperDeviceMemoryAllocator allocator(deviceMTL.GetCoreInterface(), device);
+
+    return allocator.AllocateAndBindMemory(resourceGroupDesc, allocations);
+}
+
+static Result NRI_CALL WaitForIdle(CommandQueue& commandQueue) {
+    if (!(&commandQueue))
+        return Result::SUCCESS;
+
+    return ((CommandQueueMTL&)commandQueue).WaitForIdle();
+}
 
 #pragma endregion
 
 Result DeviceMTL::FillFunctionTable(HelperInterface& table) const {
+    table.CalculateAllocationNumber = ::CalculateAllocationNumber;
+    table.AllocateAndBindMemory = ::AllocateAndBindMemory;
+    table.UploadData = ::UploadData;
+    table.WaitForIdle = ::WaitForIdle;
+//    table.QueryVideoMemoryInfo = ::QueryVideoMemoryInfo;
     return Result::SUCCESS;
 }
 Result DeviceMTL::FillFunctionTable(LowLatencyInterface& table) const {
@@ -483,10 +563,73 @@ Result DeviceMTL::FillFunctionTable(RayTracingInterface& table) const {
 Result DeviceMTL::FillFunctionTable(StreamerInterface& table) const {
     return Result::SUCCESS;
 }
+
+static void NRI_CALL SetSwapChainDebugName(SwapChain& swapChain, const char* name) {
+    ((SwapChainMTL&)swapChain).SetDebugName(name);
+}
+
+//static Result NRI_CALL GetDisplayDesc(SwapChain& swapChain, DisplayDesc& displayDesc) {
+//    return ((SwapChainMTL&)swapChain).GetDisplayDesc(displayDesc);
+//}
+
+static Result NRI_CALL QueuePresent(SwapChain& swapChain) {
+    return ((SwapChainMTL&)swapChain).Present();
+}
+
+static Result NRI_CALL CreateSwapChain(Device& device, const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
+    return ((DeviceMTL&)device).CreateImplementation<SwapChainMTL>(swapChain, swapChainDesc);
+}
+
+static Result NRI_CALL WaitForPresent(SwapChain& swapChain) {
+    return ((SwapChainMTL&)swapChain).WaitForPresent();
+}
+
+static Texture* const* NRI_CALL GetSwapChainTextures(const SwapChain& swapChain, uint32_t& textureNum) {
+    return ((SwapChainMTL&)swapChain).GetTextures(textureNum);
+}
+
+static uint32_t NRI_CALL AcquireNextSwapChainTexture(SwapChain& swapChain) {
+    return ((SwapChainMTL&)swapChain).AcquireNextTexture();
+}
+
+
+static void NRI_CALL DestroySwapChain(SwapChain& swapChain) {
+    Destroy((SwapChainMTL*)&swapChain);
+}
+
 Result DeviceMTL::FillFunctionTable(SwapChainInterface& table) const {
+    
+    if (!m_Desc.isSwapChainSupported)
+        return Result::UNSUPPORTED;
+
+    table.CreateSwapChain = ::CreateSwapChain;
+    table.DestroySwapChain = ::DestroySwapChain;
+    table.SetSwapChainDebugName = ::SetSwapChainDebugName;
+    table.GetSwapChainTextures = ::GetSwapChainTextures;
+    table.AcquireNextSwapChainTexture = ::AcquireNextSwapChainTexture;
+    table.WaitForPresent = ::WaitForPresent;
+    table.QueuePresent = ::QueuePresent;
+//    table.GetDisplayDesc = ::GetDisplayDesc;
     return Result::SUCCESS;
 }
+
+
+//static Result AllocateBuffer(Device& device, const AllocateBufferDesc& bufferDesc, Buffer*& buffer) {
+//    return ((DeviceMTL&)device).CreateImplementation<BufferMTL>(buffer, bufferDesc);
+//}
+//
+//static Result AllocateTexture(Device& device, const AllocateTextureDesc& textureDesc, Texture*& texture) {
+//    return ((DeviceMTL&)device).CreateImplementation<TextureMTL>(texture, textureDesc);
+//}
+
+//static Result AllocateAccelerationStructure(Device& device, const AllocateAccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
+//    return ((DeviceMTL&)device).CreateImplementation<AccelerationStructureVK>(accelerationStructure, accelerationStructureDesc);
+//}
+
 Result DeviceMTL::FillFunctionTable(ResourceAllocatorInterface& table) const {
-    
+//    table.AllocateBuffer = ::AllocateBuffer;
+//    table.AllocateTexture = ::AllocateTexture;
+//    table.AllocateAccelerationStructure = ::AllocateAccelerationStructure;
+
     return Result::SUCCESS;
 }

@@ -20,7 +20,7 @@ struct FenceMTL {
 
     Result Create(uint64_t initialValue);
 
-    //void SetDebugName(const char* name);
+    void SetDebugName(const char* name);
     //uint64_t GetFenceValue() const;
     void Wait(uint64_t value);
 private:

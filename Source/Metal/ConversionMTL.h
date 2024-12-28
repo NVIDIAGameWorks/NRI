@@ -275,5 +275,28 @@ inline MTLPixelFormat GetFormatMTL(Format format, bool demoteSrgb = false) {
     return (MTLPixelFormat)NRIFormatToMTLFormat(format);
 }
 
+
+constexpr TextureType GetTextureType(MTLTextureType type) {
+    switch(type) {
+        case MTLTextureType1D:
+        case MTLTextureType1DArray:
+            return TextureType::TEXTURE_1D;
+        case MTLTextureType2D:
+        case MTLTextureType2DArray:
+        case MTLTextureType2DMultisample:
+        case MTLTextureType2DMultisampleArray:
+        case MTLTextureTypeCube:
+        case MTLTextureTypeCubeArray:
+            return TextureType::TEXTURE_2D;
+        case MTLTextureType3D:
+            return TextureType::TEXTURE_3D;
+        default:
+            break;
+    }
+
+    return TextureType::MAX_NUM;
+}
+
+
 };
 

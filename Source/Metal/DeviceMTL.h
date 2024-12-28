@@ -37,6 +37,11 @@ public:
         return result;
     }
     
+    
+    inline const CoreInterface& GetCoreInterface() const {
+        return m_CoreInterface;
+    }
+    
     //void GetMemoryTypeInfo(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
     void GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
     void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
@@ -50,7 +55,6 @@ public:
     
     id<MTLRenderPipelineState> GetClearPipeline();
     
-    
     void Destruct() override;
     Result FillFunctionTable(CoreInterface& table) const override;
     Result FillFunctionTable(HelperInterface& table) const override;
@@ -61,11 +65,16 @@ public:
     Result FillFunctionTable(SwapChainInterface& table) const override;
     Result FillFunctionTable(ResourceAllocatorInterface& table) const override;
 
+    Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
+    Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
+
+    
     Result Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationMTLDesc& deviceCreationVKDesc, bool isWrapper);
 private:
     //Lock m_Lock;
     id<MTLDevice>     m_Device;
     std::array<CommandQueueMTL*, (uint32_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
+    CoreInterface m_CoreInterface = {};
     DeviceDesc m_Desc = {};
     MTLGPUFamily m_Family;
     bool m_OwnsNativeObjects = true;

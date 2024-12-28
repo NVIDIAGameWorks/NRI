@@ -326,7 +326,6 @@ void CommandBufferMTL::ClearAttachments(const ClearDesc* clearDescs, uint32_t cl
 }
 
 void CommandBufferMTL::EndCurrentEncoders() {
-    
     if(m_RendererEncoder) {
         [m_RendererEncoder endEncoding];
         m_RendererEncoder = nil;
@@ -394,9 +393,7 @@ void CommandBufferMTL::DrawIndexed(const DrawIndexedDesc& drawIndexedDesc) {
 }
 
 void CommandBufferMTL::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
-    // TODO: implement count Buffer
-    NSCAssert(!countBuffer, @"count buffer not supported");
-    
+    InsertBarriers();
     [m_RendererEncoder
          drawPrimitives: m_CurrentPipeline->GetPrimitiveType()
          indirectBuffer:((BufferMTL&)buffer).GetHandle()
@@ -444,17 +441,17 @@ void CommandBufferMTL::EndQuery(const QueryPool& queryPool, uint32_t offset) {
 
 void CommandBufferMTL::BeginAnnotation(const char* name) {
     if(m_RendererEncoder) {
-        [m_RendererEncoder insertDebugSignpost:  [NSString stringWithUTF8String:name]];
+        [m_RendererEncoder pushDebugGroup:  [NSString stringWithUTF8String:name]];
         return;
     }
     
     if(m_ComputeEncoder) {
-        [m_ComputeEncoder insertDebugSignpost:  [NSString stringWithUTF8String:name]];
+        [m_ComputeEncoder pushDebugGroup:  [NSString stringWithUTF8String:name]];
         return;
     }
     
     if(m_BlitEncoder) {
-        [m_BlitEncoder insertDebugSignpost:  [NSString stringWithUTF8String:name]];
+        [m_BlitEncoder pushDebugGroup:  [NSString stringWithUTF8String:name]];
         return;
     }
 

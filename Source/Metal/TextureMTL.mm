@@ -7,7 +7,6 @@ using namespace nri;
 
 TextureMTL::~TextureMTL() {
     m_Handle = nil;
-    [m_label release];
 }
 
 void nri::fillMTLTextureDescriptor(const TextureDesc& textureDesc, MTLTextureDescriptor* info) {
@@ -27,6 +26,19 @@ Result TextureMTL::Create(const TextureDesc& textureDesc) {
 }
 
 
+Result TextureMTL::Create(MTLTextureHandle texture) {
+    m_Handle = (id<MTLTexture>)texture;
+    m_Desc.width = m_Handle.width;
+    m_Desc.height = m_Handle.height;
+    m_Desc.depth = m_Handle.depth;
+    m_Desc.mipNum = m_Handle.mipmapLevelCount;
+    m_Desc.layerNum = m_Handle.arrayLength;
+    m_Desc.sampleNum = m_Handle.sampleCount;
+    m_Desc.type = GetTextureType(m_Handle.textureType);
+    m_Desc.format = MTLFormatToNRIFormat((uint32_t)m_Handle.pixelFormat);
+}
+
+
 void TextureMTL::FinishMemoryBinding(MemoryMTL& memory, uint64_t memoryOffset) {
     MTLTextureDescriptor* info = [[MTLTextureDescriptor alloc] init];
     fillMTLTextureDescriptor(m_Desc, info);
@@ -42,6 +54,5 @@ void TextureMTL::UpdateLabel() {
 
 void TextureMTL::SetDebugName(const char* name) {
     m_label = [NSString stringWithUTF8String:name];
-    [m_label retain];
     UpdateLabel();
 }

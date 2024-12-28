@@ -107,14 +107,16 @@ private:
    
     BarrierBits m_barrierFlags = BarrierBits::NONE;
     
-    MTLRenderPassDescriptor* m_renderPassDescriptor = nil;
+    
+    uint16_t m_numViewports = 0;
+    uint16_t m_numScissors = 0;
     CommandBufferDirtyBits m_DirtyBits = CommandBufferDirtyBits::NONE;
+    
+    MTLRenderPassDescriptor* m_renderPassDescriptor = nil;
     struct CmdIndexBuffer m_indexBuffer;
     uint32_t m_dirtyVertexBufferBits = 0;
     struct CmdVertexBuffer m_vertexBuffers[32];
     struct ShadingRateDesc m_shadingRateDesc;
-    uint16_t m_numViewports = 0;
-    uint16_t m_numScissors = 0;
     MTLViewport m_viewports[16];
     MTLScissorRect m_Scissors[16];
     Color32f m_BlendColor;
