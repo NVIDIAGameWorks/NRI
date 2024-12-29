@@ -6,9 +6,8 @@ namespace nri {
 
 struct DeviceMTL;
 
-
-struct DescriptorView {
-};
+//struct DescriptorView {
+//};
 
 enum class DescriptorTypeMTL {
   NONE,
@@ -41,6 +40,10 @@ public:
     
     inline struct BufferViewDesc& BufferView() {
         return m_BufferViewDesc;
+    }
+        
+    inline DeviceMTL& GetDevice() const {
+        return m_Device;
     }
     
     Result Create(const BufferViewDesc& bufferViewDesc);

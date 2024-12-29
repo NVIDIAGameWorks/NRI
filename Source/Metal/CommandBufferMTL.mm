@@ -572,7 +572,7 @@ void CommandBufferMTL::UploadBufferToTexture(Texture& dstTexture, const TextureR
      destinationOrigin: MTLOriginMake(dstRegionDesc.x, dstRegionDesc.y, dstRegionDesc.z)
      options: MTLBlitOptionNone];
 }
-void CommandBufferMTL::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
+void CommandBufferMTL::ReadbackTextureToBuffer(Buffer& dstBuffer, const TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
     const TextureMTL& src = (const TextureMTL&)srcTexture;
     const BufferMTL& dst = (const BufferMTL&)dstBuffer;
     
@@ -582,10 +582,10 @@ void CommandBufferMTL::ReadbackTextureToBuffer(Buffer& dstBuffer, TextureDataLay
     }
     
     const MTLSize sourceSize = MTLSizeMake(
-                                       (srcRegionDesc.width == WHOLE_SIZE) ? src.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width,
-                                       (srcRegionDesc.height == WHOLE_SIZE) ? src.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.height,
-                                       (srcRegionDesc.depth == WHOLE_SIZE) ? src.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.depth
-                                       );
+                                           (srcRegionDesc.width == WHOLE_SIZE) ? src.GetSize(0, srcRegionDesc.mipOffset) : srcRegionDesc.width,
+                                           (srcRegionDesc.height == WHOLE_SIZE) ? src.GetSize(1, srcRegionDesc.mipOffset) : srcRegionDesc.height,
+                                           (srcRegionDesc.depth == WHOLE_SIZE) ? src.GetSize(2, srcRegionDesc.mipOffset) : srcRegionDesc.depth
+                                           );
     [m_BlitEncoder copyFromTexture: src.GetHandle()
                        sourceSlice: srcRegionDesc.layerOffset
                        sourceLevel: srcRegionDesc.mipOffset

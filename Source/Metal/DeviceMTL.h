@@ -52,7 +52,6 @@ public:
         return m_Desc;
     }
     
-    
     id<MTLRenderPipelineState> GetClearPipeline(ClearDesc* desc, size_t numFormat);
     
     void Destruct() override;
@@ -68,7 +67,6 @@ public:
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
 
-    
     Result Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationMTLDesc& deviceCreationVKDesc, bool isWrapper);
 private:
     //Lock m_Lock;

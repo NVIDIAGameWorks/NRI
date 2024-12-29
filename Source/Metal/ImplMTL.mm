@@ -19,7 +19,7 @@ using namespace nri;
 #include "SwapChainMTL.h"
 #include "FenceMTL.h"
 #include "DescriptorPoolMTL.h"
-
+#include "DescriptorSetMTL.h"
 
 Result CreateDeviceMTL(const DeviceCreationDesc& desc, DeviceBase*& device) {
     StdAllocator<uint8_t> allocator(desc.allocationCallbacks);
@@ -65,13 +65,12 @@ static void NRI_CALL UnmapBuffer(Buffer& buffer) {
 }
 
 static void NRI_CALL SetCommandAllocatorDebugName(CommandAllocator& commandAllocator, const char* name) {
-  //  ((CommandAllocatorVK&)commandAllocator).SetDebugName(name);
+    ((CommandAllocatorMTL&)commandAllocator).SetDebugName(name);
 }
 
 static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, CommandBuffer*& commandBuffer) {
     return ((CommandAllocatorMTL&)commandAllocator).CreateCommandBuffer(commandBuffer);
 }
-
 
 static Result NRI_CALL CreateDescriptorPool(Device& device, const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
     return ((DeviceMTL&)device).CreateImplementation<DescriptorPoolMTL>(descriptorPool, descriptorPoolDesc);
@@ -244,7 +243,7 @@ static void NRI_CALL CmdUploadBufferToTexture(CommandBuffer& commandBuffer, Text
 }
 
 static void NRI_CALL CmdReadbackTextureToBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, const TextureDataLayoutDesc& dstDataLayoutDesc, const Texture& srcTexture, const TextureRegionDesc& srcRegionDesc) {
-    //((CommandBufferMTL&)commandBuffer).ReadbackTextureToBuffer(dstBuffer, dstDataLayoutDesc, srcTexture, srcRegionDesc);
+    ((CommandBufferMTL&)commandBuffer).ReadbackTextureToBuffer(dstBuffer, dstDataLayoutDesc, srcTexture, srcRegionDesc);
 }
 
 static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPool& queryPool, uint32_t offset, uint32_t num, Buffer& dstBuffer, uint64_t dstOffset) {
@@ -305,6 +304,21 @@ static Result NRI_CALL CreateTexture3DView(const Texture3DViewDesc& textureViewD
     return device.CreateImplementation<DescriptorMTL>(textureView, textureViewDesc);
 }
 
+
+static void NRI_CALL UpdateDynamicConstantBuffers(DescriptorSet& descriptorSet, uint32_t baseDynamicConstantBuffer, uint32_t dynamicConstantBufferNum, const Descriptor* const* descriptors) {
+//    ((DescriptorSetMTL&)descriptorSet).UpdateDynamicConstantBuffers(baseDynamicConstantBuffer, dynamicConstantBufferNum, descriptors);
+}
+
+static void NRI_CALL CopyDescriptorSet(DescriptorSet& descriptorSet, const DescriptorSetCopyDesc& descriptorSetCopyDesc) {
+//    ((DescriptorSetMTL&)descriptorSet).Copy(descriptorSetCopyDesc);
+}
+
+
+static void NRI_CALL UpdateDescriptorRanges(DescriptorSet& descriptorSet, uint32_t baseRange, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs) {
+    ((DescriptorSetMTL&)descriptorSet).UpdateDescriptorRanges(baseRange, rangeNum, rangeUpdateDescs);
+}
+
+
 static Result NRI_CALL CreateSampler(Device& device, const SamplerDesc& samplerDesc, Descriptor*& sampler) {
     return ((DeviceMTL&)device).CreateImplementation<DescriptorMTL>(sampler, samplerDesc);
 }
@@ -322,12 +336,17 @@ static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer) {
     Destroy((CommandBufferMTL*)&commandBuffer);
 }
 
+static Result NRI_CALL CreateFence(Device& device, uint64_t initialValue, Fence*& fence) {
+    return ((DeviceMTL&)device).CreateImplementation<FenceMTL>(fence, initialValue);
+}
+
+
 static void NRI_CALL DestroyCommandAllocator(CommandAllocator& commandAllocator) {
     Destroy((CommandAllocatorMTL*)&commandAllocator);
 }
 
 static void NRI_CALL DestroyDescriptorPool(DescriptorPool& descriptorPool) {
-    //Destroy((DescriptorPoolM*)&descriptorPool);
+    Destroy((DescriptorPoolMTL*)&descriptorPool);
 }
 
 static void NRI_CALL DestroyBuffer(Buffer& buffer) {
@@ -339,15 +358,15 @@ static void NRI_CALL DestroyTexture(Texture& texture) {
 }
 
 static void NRI_CALL DestroyDescriptor(Descriptor& descriptor) {
-   // Destroy((DescriptorMTL*)&descriptor);
+    Destroy((DescriptorMTL*)&descriptor);
 }
 
 static void NRI_CALL DestroyPipelineLayout(PipelineLayout& pipelineLayout) {
- //   Destroy((PipelineLayoutMTL*)&pipelineLayout);
+    Destroy((PipelineLayoutMTL*)&pipelineLayout);
 }
 
 static void NRI_CALL DestroyPipeline(Pipeline& pipeline) {
-    //Destroy((PipelineMTL*)&pipeline);
+    Destroy((PipelineMTL*)&pipeline);
 }
 
 static void NRI_CALL DestroyQueryPool(QueryPool& queryPool) {
@@ -355,7 +374,7 @@ static void NRI_CALL DestroyQueryPool(QueryPool& queryPool) {
 }
 
 static void NRI_CALL DestroyFence(Fence& fence) {
-   // Destroy((Fenc*)&fence);
+    Destroy((FenceMTL*)&fence);
 }
 
 static void NRI_CALL FreeMemory(Memory& memory) {
@@ -363,9 +382,8 @@ static void NRI_CALL FreeMemory(Memory& memory) {
 }
 
 static void NRI_CALL SetFenceDebugName(Fence& fence, const char* name) {
-//    ((FenceMTL&)fence).SetDebugName(name);
+    ((FenceMTL&)fence).SetDebugName(name);
 }
-
 
 static void NRI_CALL SetDeviceDebugName(Device& device, const char* name) {
 //    ((DeviceMTL&)device).SetDebugName(name);
@@ -383,6 +401,13 @@ static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name) {
     ((MemoryMTL&)memory).SetDebugName(name);
 }
 
+
+static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
+    if (!(&device))
+        return nullptr;
+
+    return (id<MTLDevice>)((DeviceMTL&)device);
+}
 
 static const BufferDesc& NRI_CALL GetBufferDesc(const Buffer& buffer) {
     return ((const BufferMTL&)buffer).GetDesc();
@@ -451,7 +476,7 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table.CreateGraphicsPipeline = ::CreateGraphicsPipeline;
     table.CreateComputePipeline = ::CreateComputePipeline;
 //    table.CreateQueryPool = ::CreateQueryPool;
-//    table.CreateFence = ::CreateFence;
+    table.CreateFence = ::CreateFence;
     table.DestroyCommandAllocator = ::DestroyCommandAllocator;
     table.DestroyCommandBuffer = ::DestroyCommandBuffer;
     table.DestroyDescriptorPool = ::DestroyDescriptorPool;
@@ -510,8 +535,8 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table.QueueSubmit = ::QueueSubmit;
     table.Wait = ::Wait;
 //    table.GetFenceValue = ::GetFenceValue;
-//    table.UpdateDescriptorRanges = ::UpdateDescriptorRanges;
-//    table.UpdateDynamicConstantBuffers = ::UpdateDynamicConstantBuffers;
+    table.UpdateDescriptorRanges = ::UpdateDescriptorRanges;
+    table.UpdateDynamicConstantBuffers = ::UpdateDynamicConstantBuffers;
 //    table.CopyDescriptorSet = ::CopyDescriptorSet;
     table.AllocateDescriptorSets = ::AllocateDescriptorSets;
     table.ResetDescriptorPool = ::ResetDescriptorPool;
@@ -532,7 +557,7 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
 //    table.SetQueryPoolDebugName = ::SetQueryPoolDebugName;
 //    table.SetDescriptorSetDebugName = ::SetDescriptorSetDebugName;
 //    table.SetMemoryDebugName = ::SetMemoryDebugName;
-//    table.GetDeviceNativeObject = ::GetDeviceNativeObject;
+    table.GetDeviceNativeObject = ::GetDeviceNativeObject;
 //    table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
 //    table.GetTextureNativeObject = ::GetTextureNativeObject;
