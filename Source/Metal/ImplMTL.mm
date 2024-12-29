@@ -17,6 +17,8 @@ using namespace nri;
 #include "HelperDeviceMemoryAllocator.h"
 #include "CommandQueueMTL.h"
 #include "SwapChainMTL.h"
+#include "FenceMTL.h"
+#include "DescriptorPoolMTL.h"
 
 
 Result CreateDeviceMTL(const DeviceCreationDesc& desc, DeviceBase*& device) {
@@ -70,9 +72,13 @@ static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, C
     return ((CommandAllocatorMTL&)commandAllocator).CreateCommandBuffer(commandBuffer);
 }
 
+
+static Result NRI_CALL CreateDescriptorPool(Device& device, const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
+    return ((DeviceMTL&)device).CreateImplementation<DescriptorPoolMTL>(descriptorPool, descriptorPoolDesc);
+}
+
 static void NRI_CALL ResetCommandAllocator(CommandAllocator& commandAllocator) {
-   // ((CommandAllocatorVK&)commandAllocator).Reset();
-    
+    ((CommandAllocatorMTL&)commandAllocator).Reset();
 }
 
 static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
@@ -219,6 +225,11 @@ static void NRI_CALL CmdResolveTexture(CommandBuffer& commandBuffer, Texture& ds
     //((CommandBufferMTL&)commandBuffer).ResolveTexture(dstTexture, dstRegionDesc, srcTexture, srcRegionDesc);
 }
 
+
+static void NRI_CALL Wait(Fence& fence, uint64_t value) {
+    ((FenceMTL&)fence).Wait(value);
+}
+
 static void NRI_CALL CmdCopyBuffer(CommandBuffer& commandBuffer, Buffer& dstBuffer, uint64_t dstOffset, const Buffer& srcBuffer, uint64_t srcOffset, uint64_t size) {
     ((CommandBufferMTL&)commandBuffer).CopyBuffer(dstBuffer, dstOffset, srcBuffer, srcOffset, size);
 }
@@ -265,31 +276,46 @@ static Result NRI_CALL CreateTexture(Device& device, const TextureDesc& textureD
     return ((DeviceMTL&)device).CreateImplementation<TextureMTL>(texture, textureDesc);
 }
 
+static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
+    DeviceMTL& device = ((CommandQueueMTL&)commandQueue).GetDevice();
+    return device.CreateImplementation<CommandAllocatorMTL>(commandAllocator, commandQueue);
+}
 
-//static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
-//    DeviceMTL& device = ((const BufferMTL*)bufferViewDesc.buffer)->GetDevice();
-//    return device.CreateImplementation<DescriptorMTL>(bufferView, bufferViewDesc);
-//}
-//
-//static Result NRI_CALL CreateTexture1DView(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
-//    DeviceMTL& device = ((const TextureMTL*)textureViewDesc.texture)->GetDevice();
-//    return device.CreateImplementation<DescriptorMTL>(textureView, textureViewDesc);
-//}
-//
-//static Result NRI_CALL CreateTexture2DView(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView) {
-//    DeviceMTL& device = ((const TextureMTL*)textureViewDesc.texture)->GetDevice();
-//    return device.CreateImplementation<DescriptorMTL>(textureView, textureViewDesc);
-//}
-//
-//static Result NRI_CALL CreateTexture3DView(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView) {
-//    DeviceMTL& device = ((const TextureMTL*)textureViewDesc.texture)->GetDevice();
-//    return device.CreateImplementation<DescriptorMTL>(textureView, textureViewDesc);
-//}
+static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
+    DeviceMTL& device = ((const BufferMTL*)bufferViewDesc.buffer)->GetDevice();
+    return device.CreateImplementation<DescriptorMTL>(bufferView, bufferViewDesc);
+}
 
+static Result NRI_CALL CreateBuffer(Device& device, const BufferDesc& bufferDesc, Buffer*& buffer) {
+    return ((DeviceMTL&)device).CreateImplementation<BufferMTL>(buffer, bufferDesc);
+}
 
-//static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc) {
-//    ((CommandQueueMTL&)commandQueue).Submit(workSubmissionDesc, nullptr);
-//}
+static Result NRI_CALL CreateTexture1DView(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
+    DeviceMTL& device = ((const TextureMTL*)textureViewDesc.texture)->GetDevice();
+    return device.CreateImplementation<DescriptorMTL>(textureView, textureViewDesc);
+}
+
+static Result NRI_CALL CreateTexture2DView(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView) {
+    DeviceMTL& device = ((const TextureMTL*)textureViewDesc.texture)->GetDevice();
+    return device.CreateImplementation<DescriptorMTL>(textureView, textureViewDesc);
+}
+
+static Result NRI_CALL CreateTexture3DView(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView) {
+    DeviceMTL& device = ((const TextureMTL*)textureViewDesc.texture)->GetDevice();
+    return device.CreateImplementation<DescriptorMTL>(textureView, textureViewDesc);
+}
+
+static Result NRI_CALL CreateSampler(Device& device, const SamplerDesc& samplerDesc, Descriptor*& sampler) {
+    return ((DeviceMTL&)device).CreateImplementation<DescriptorMTL>(sampler, samplerDesc);
+}
+
+static Result NRI_CALL CreatePipelineLayout(Device& device, const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout) {
+    return ((DeviceMTL&)device).CreateImplementation<PipelineLayoutMTL>(pipelineLayout, pipelineLayoutDesc);
+}
+
+static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc) {
+    ((CommandQueueMTL&)commandQueue).Submit(workSubmissionDesc, nullptr);
+}
 
 
 static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer) {
@@ -389,8 +415,11 @@ static Result NRI_CALL CreateComputePipeline(Device& device, const ComputePipeli
 
 
 static Result NRI_CALL AllocateDescriptorSets(DescriptorPool& descriptorPool, const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum) {
-    return Result::SUCCESS;
-    //return ((DescriptorPoolMTL&)descriptorPool).AllocateDescriptorSets(pipelineLayout, setIndex, descriptorSets, instanceNum, variableDescriptorNum);
+    return ((DescriptorPoolMTL&)descriptorPool).AllocateDescriptorSets(pipelineLayout, setIndex, descriptorSets, instanceNum, variableDescriptorNum);
+}
+
+static void NRI_CALL ResetDescriptorPool(DescriptorPool& descriptorPool) {
+    ((DescriptorPoolMTL&)descriptorPool).Reset();
 }
 
 
@@ -408,20 +437,19 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table.GetBufferMemoryDesc = ::GetBufferMemoryDesc;
     table.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
     table.GetCommandQueue = ::GetCommandQueue;
-    //table.CreateCommandAllocator = ::CreateCommandAllocator;
+    table.CreateCommandAllocator = ::CreateCommandAllocator;
     table.CreateCommandBuffer = ::CreateCommandBuffer;
-    //table.CreateDescriptorPool = ::CreateDescriptorPool;
-    //table.CreateBuffer = ::CreateBuffer;
+    table.CreateDescriptorPool = ::CreateDescriptorPool;
+    table.CreateBuffer = ::CreateBuffer;
     table.CreateTexture = ::CreateTexture;
-    //table.CreateBufferView = ::CreateBufferView;
-    //table.CreateTexture1DView = ::CreateTexture1DView;
-    //table.CreateTexture2DView = ::CreateTexture2DView;
-    //table.CreateTexture3DView = ::CreateTexture3DView;
-    //table.CreateSampler = ::CreateSampler;
-    //table.CreatePipelineLayout = ::CreatePipelineLayout;
+    table.CreateBufferView = ::CreateBufferView;
+    table.CreateTexture1DView = ::CreateTexture1DView;
+    table.CreateTexture2DView = ::CreateTexture2DView;
+    table.CreateTexture3DView = ::CreateTexture3DView;
+    table.CreateSampler = ::CreateSampler;
+    table.CreatePipelineLayout = ::CreatePipelineLayout;
     table.CreateGraphicsPipeline = ::CreateGraphicsPipeline;
     table.CreateComputePipeline = ::CreateComputePipeline;
-    
 //    table.CreateQueryPool = ::CreateQueryPool;
 //    table.CreateFence = ::CreateFence;
     table.DestroyCommandAllocator = ::DestroyCommandAllocator;
@@ -479,14 +507,14 @@ Result DeviceMTL::FillFunctionTable(CoreInterface& table) const {
     table.CmdBeginAnnotation = ::CmdBeginAnnotation;
     table.CmdEndAnnotation = ::CmdEndAnnotation;
     table.EndCommandBuffer = ::EndCommandBuffer;
-//    table.QueueSubmit = ::QueueSubmit;
-//    table.Wait = ::Wait;
+    table.QueueSubmit = ::QueueSubmit;
+    table.Wait = ::Wait;
 //    table.GetFenceValue = ::GetFenceValue;
 //    table.UpdateDescriptorRanges = ::UpdateDescriptorRanges;
 //    table.UpdateDynamicConstantBuffers = ::UpdateDynamicConstantBuffers;
 //    table.CopyDescriptorSet = ::CopyDescriptorSet;
     table.AllocateDescriptorSets = ::AllocateDescriptorSets;
-//    table.ResetDescriptorPool = ::ResetDescriptorPool;
+    table.ResetDescriptorPool = ::ResetDescriptorPool;
     table.ResetCommandAllocator = ::ResetCommandAllocator;
     table.MapBuffer = ::MapBuffer;
     table.UnmapBuffer = ::UnmapBuffer;

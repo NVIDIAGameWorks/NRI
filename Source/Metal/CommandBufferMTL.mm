@@ -323,6 +323,14 @@ void CommandBufferMTL::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
 }
 
 void CommandBufferMTL::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
+    MTLRenderPassDescriptor* renderPassDesc = [MTLRenderPassDescriptor alloc];
+    id<MTLRenderCommandEncoder> rendererEncoder = [m_Handle renderCommandEncoderWithDescriptor: renderPassDesc];
+  
+    
+    [rendererEncoder setCullMode: MTLCullModeNone];
+    [rendererEncoder setTriangleFillMode: MTLTriangleFillModeFill];
+    [rendererEncoder setDepthBias: 0 slopeScale: 0 clamp: 0];
+   
 }
 
 void CommandBufferMTL::EndCurrentEncoders() {
@@ -525,7 +533,7 @@ void CommandBufferMTL::CopyTexture(Texture& dstTexture, const TextureRegionDesc*
                                                (srcRegionDesc->depth == WHOLE_SIZE) ? src.GetSize(2, srcRegionDesc->mipOffset) : srcRegionDesc->depth
                                                );
         
-        // Copy to the texture's final subresource.
+        // Copy to the texture's final subresourc e.
         [m_BlitEncoder copyFromTexture: src.GetHandle()
                            sourceSlice: srcRegionDesc->layerOffset
                            sourceLevel: srcRegionDesc->mipOffset

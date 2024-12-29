@@ -48,33 +48,9 @@ static uint32_t GetEntryProperty(io_registry_entry_t entry, CFStringRef property
 
 DeviceMTL::DeviceMTL(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator)
 : DeviceBase(callbacks, stdAllocator) {
-    
-    
     m_Desc.graphicsAPI = GraphicsAPI::MTL;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
-    
-//    NSString* clearVert = [NSString stringWithCString: " \
-//              #include <metal_stdlib> \
-//              using namespace metal; \
-//              typedef struct { \
-//                  float4 a_position [[attribute(0)]]; \
-//              } AttributesPos; \
-//              typedef struct { \
-//                  float4 colors[9]; \
-//              } ClearColorsIn; \
-//              typedef struct { \
-//                  float4 v_position [[position]]; \
-//                  uint layer [[render_target_array_index]]; \
-//              } VaryingsPos; \
-//              vertex VaryingsPos vertClear(AttributesPos attributes [[stage_in]], constant ClearColorsIn& ccIn [[buffer(0)]]) { \
-//                   VaryingsPos varyings; \
-//                   varyings.v_position = float4(attributes.a_position.x, -attributes.a_position.y, ccIn.colors[4].r, 1.0); \
-//                   varyings.layer = uint(attributes.a_position.w); \
-//                   return varyings; \
-//               } \
-//           " encoding: NSASCIIStringEncoding];
-    
 }
 
 
@@ -100,8 +76,106 @@ DeviceMTL::~DeviceMTL() {
 //}
 
 
-id<MTLRenderPipelineState> DeviceMTL::GetClearPipeline() {
+static id<MTLFunction> initShaderFromSource(id<MTLDevice> dev, NSString* src, NSString* method) {
+    id<MTLFunction> mtlFunc = nil;
+    NSError* err = nil;
     
+    MTLCompileOptions* options = [MTLCompileOptions alloc];
+    id<MTLLibrary> mtlLib = [dev newLibraryWithSource: src
+                                                   options: options
+                                                     error: &err];    // temp retain
+    NSCAssert(err,  @"Failed to load Metal shader library %@", err );
+    
+    return [mtlLib newFunctionWithName: method];
+}
+
+
+id<MTLRenderPipelineState> DeviceMTL::GetClearPipeline(ClearDesc* desc, size_t numFormats) {
+    
+    NSString* clearVert = [NSString stringWithCString: "\
+#include <metal_stdlib> \n\
+using namespace metal; \n\
+typedef struct { \n\
+  float4 a_position [[attribute(0)]]; \n\
+} AttributesPos; \n\
+typedef struct { \n\
+  float4 colors[16]; \n\
+} ClearColorsIn; \n\
+typedef struct { \n\
+  float4 v_position [[position]]; \n\
+  uint layer [[render_target_array_index]]; \n\
+} VaryingsPos; \n\
+vertex VaryingsPos vertClear(AttributesPos attributes [[stage_in]], constant ClearColorsIn& ccIn [[buffer(0)]]) { \n\
+   VaryingsPos varyings; \n \
+   varyings.v_position = float4(attributes.a_position.x, -attributes.a_position.y, ccIn.colors[4].r, 1.0); \n\
+   varyings.layer = uint(attributes.a_position.w); \n\
+   return varyings; \n\
+}" encoding: NSASCIIStringEncoding];
+    
+    NSMutableString* clearFrag = [NSMutableString alloc];
+    [clearFrag appendString: @"\
+     #include <metal_stdlib> \n\
+     using namespace metal; \n\
+     typedef struct { \n\
+     float4 v_position [[position]]; \n\
+     } VaryingsPos; \n\
+     typedef struct { \n\
+     float4 colors[16]; \n\
+     } ClearColorsIn; \n\
+     typedef struct { \n\
+     "];
+    for(uint32_t i = 0; i < numFormats; i++) {
+        [clearFrag appendFormat: @"float4 color%u [[color(%u)]];", i, desc[i].colorAttachmentIndex];
+    }
+    [clearFrag appendString: @"\
+    } ClearColorsOut; \n\
+    fragment ClearColorsOut fragClear(VaryingsPos varyings [[stage_in]], constant ClearColorsIn& ccIn [[buffer(0)]]) { \n\
+    ClearColorsOut ccOut; \n"];
+    for(uint32_t i = 0; i < numFormats; i++) {
+        [clearFrag appendFormat: @"ccOut.color%u = float4(ccIn.colors[%u]);", i, i];
+    }
+    [clearFrag appendString: @"\
+return ccOut;\n\
+}"];
+    
+    id<MTLFunction> vtxFunc = initShaderFromSource(m_Device, clearVert, @"vertClear");
+    id<MTLFunction> fragFunc = initShaderFromSource(m_Device, clearFrag, @"fragClear");
+    MTLRenderPipelineDescriptor* renderPipelineDesc = [MTLRenderPipelineDescriptor new];    // temp retain
+    //    owner->setMetalObjectLabel(plDesc, @"ClearRenderAttachments");
+    renderPipelineDesc.vertexFunction = vtxFunc;
+    renderPipelineDesc.fragmentFunction = fragFunc;
+    //    plDesc.sampleCount = 1;
+    renderPipelineDesc.inputPrimitiveTopology = MTLPrimitiveTopologyClassTriangle;
+    
+    MTLVertexDescriptor* vtxDesc = renderPipelineDesc.vertexDescriptor;
+    
+    MTLVertexAttributeDescriptorArray* vaDescArray = vtxDesc.attributes;
+    MTLVertexAttributeDescriptor* vaDesc;
+    NSUInteger vtxBuffIdx = 0;
+    NSUInteger vtxStride = 0;
+    
+    // Vertex location
+    vaDesc = vaDescArray[0];
+    vaDesc.format = MTLVertexFormatFloat4;
+    vaDesc.bufferIndex = vtxBuffIdx;
+    vaDesc.offset = vtxStride;
+    vtxStride += sizeof(simd::float4);
+    
+    // Vertex attribute buffer.
+    MTLVertexBufferLayoutDescriptorArray* vbDescArray = vtxDesc.layouts;
+    MTLVertexBufferLayoutDescriptor* vbDesc = vbDescArray[vtxBuffIdx];
+    vbDesc.stepFunction = MTLVertexStepFunctionPerVertex;
+    vbDesc.stepRate = 1;
+    vbDesc.stride = vtxStride;
+    
+    NSError* error = nil;
+    id <MTLRenderPipelineState> rps = [m_Device newRenderPipelineStateWithDescriptor:renderPipelineDesc error: &error];
+    
+    [vtxFunc release];                                                            // temp release
+    [fragFunc release];                                                            // temp release
+    [renderPipelineDesc release];                                                            // temp release
+    
+    return rps;
 }
 
 

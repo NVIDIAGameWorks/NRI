@@ -39,6 +39,8 @@ void DescriptorPoolMTL::SetDebugName(const char* name) {
     
 }
 void DescriptorPoolMTL::Reset() {
+    m_ArgumentOffset = 0;
+    m_AllocatedSets.clear();
     
 }
 
