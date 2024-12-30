@@ -25,7 +25,6 @@ Result CreateDeviceMTL(const DeviceCreationDesc& desc, DeviceBase*& device) {
     StdAllocator<uint8_t> allocator(desc.allocationCallbacks);
     DeviceMTL* impl = Allocate<DeviceMTL>(allocator, desc.callbackInterface, allocator);
     Result result = impl->Create(desc, {}, false);
-
     
     MTLPurgeableState a;
     MTLStorageMode mode;

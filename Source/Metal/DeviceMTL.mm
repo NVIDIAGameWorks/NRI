@@ -90,8 +90,7 @@ static id<MTLFunction> initShaderFromSource(id<MTLDevice> dev, NSString* src, NS
 }
 
 
-id<MTLRenderPipelineState> DeviceMTL::GetClearPipeline(ClearDesc* desc, size_t numFormats) {
-    
+static id<MTLRenderPipelineState> CreateClearPipeline(id<MTLDevice> device, const ClearDesc* desc, size_t numFormats) {
     NSString* clearVert = [NSString stringWithCString: "\
 #include <metal_stdlib> \n\
 using namespace metal; \n\
@@ -114,15 +113,15 @@ vertex VaryingsPos vertClear(AttributesPos attributes [[stage_in]], constant Cle
     
     NSMutableString* clearFrag = [NSMutableString alloc];
     [clearFrag appendString: @"\
-     #include <metal_stdlib> \n\
-     using namespace metal; \n\
-     typedef struct { \n\
-     float4 v_position [[position]]; \n\
-     } VaryingsPos; \n\
+ #include <metal_stdlib> \n\
+ using namespace metal; \n\
+ typedef struct { \n\
+    loat4 v_position [[position]]; \n\
+ } VaryingsPos; \n\
      typedef struct { \n\
      float4 colors[16]; \n\
-     } ClearColorsIn; \n\
-     typedef struct { \n\
+ } ClearColorsIn; \n\
+ typedef struct { \n\
      "];
     for(uint32_t i = 0; i < numFormats; i++) {
         [clearFrag appendFormat: @"float4 color%u [[color(%u)]];", i, desc[i].colorAttachmentIndex];
@@ -138,8 +137,8 @@ vertex VaryingsPos vertClear(AttributesPos attributes [[stage_in]], constant Cle
 return ccOut;\n\
 }"];
     
-    id<MTLFunction> vtxFunc = initShaderFromSource(m_Device, clearVert, @"vertClear");
-    id<MTLFunction> fragFunc = initShaderFromSource(m_Device, clearFrag, @"fragClear");
+    id<MTLFunction> vtxFunc = initShaderFromSource(device, clearVert, @"vertClear");
+    id<MTLFunction> fragFunc = initShaderFromSource(device, clearFrag, @"fragClear");
     MTLRenderPipelineDescriptor* renderPipelineDesc = [MTLRenderPipelineDescriptor new];    // temp retain
     //    owner->setMetalObjectLabel(plDesc, @"ClearRenderAttachments");
     renderPipelineDesc.vertexFunction = vtxFunc;
@@ -169,12 +168,23 @@ return ccOut;\n\
     vbDesc.stride = vtxStride;
     
     NSError* error = nil;
-    id <MTLRenderPipelineState> rps = [m_Device newRenderPipelineStateWithDescriptor:renderPipelineDesc error: &error];
+    id <MTLRenderPipelineState> rps = [device newRenderPipelineStateWithDescriptor:renderPipelineDesc error: &error];
     
     [vtxFunc release];                                                            // temp release
     [fragFunc release];                                                            // temp release
     [renderPipelineDesc release];                                                            // temp release
     
+    return rps;
+}
+
+//TODO: implement this differently
+id<MTLRenderPipelineState> DeviceMTL::GetClearPipeline(const ClearDesc* desc, size_t numFormats) {
+    uint32_t key = 0;
+    for(uint32_t i = 0; i < numFormats; i++) {
+        key |= (1 << desc[i].colorAttachmentIndex);
+    }
+    id<MTLRenderPipelineState> rps = CreateClearPipeline(m_Device, desc, numFormats);
+    m_clearPipelineState[key] = rps;
     return rps;
 }
 
@@ -270,6 +280,21 @@ Result DeviceMTL::Create(const DeviceCreationDesc& deviceCreationDesc, const Dev
     m_OwnsNativeObjects = !isWrapper;
     if(isWrapper) {
         m_Device = *(id<MTLDevice>*)&deviceCreationMTLDesc.MtlDevice;
+    } else {
+        NSArray<id<MTLDevice>>* devices = MTLCopyAllDevices();
+        uint32_t i = 0;
+        for(i = 0; i < devices.count; i++) {
+            if(deviceCreationDesc.adapterDesc) {
+                const uint64_t luid = [devices[i] registryID];
+                if(deviceCreationDesc.adapterDesc->luid == luid) {
+                    m_Device = devices[i];
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        RETURN_ON_FAILURE(this, i != devices.count, Result::INVALID_ARGUMENT, "Can't create a device: physical device not found");
     }
     
     strncpy(m_Desc.adapterDesc.name, [m_Device.name UTF8String], sizeof(m_Desc.adapterDesc.name));

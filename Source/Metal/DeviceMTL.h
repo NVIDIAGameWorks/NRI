@@ -52,7 +52,7 @@ public:
         return m_Desc;
     }
     
-    id<MTLRenderPipelineState> GetClearPipeline(ClearDesc* desc, size_t numFormat);
+    id<MTLRenderPipelineState> GetClearPipeline(const ClearDesc* desc, size_t numFormat);
     
     void Destruct() override;
     Result FillFunctionTable(CoreInterface& table) const override;
@@ -68,6 +68,11 @@ public:
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
 
     Result Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationMTLDesc& deviceCreationVKDesc, bool isWrapper);
+    
+    struct ClearPipelineKey {
+        
+
+    };
 private:
     //Lock m_Lock;
     id<MTLDevice>     m_Device;
@@ -77,5 +82,8 @@ private:
     MTLGPUFamily m_Family;
     bool m_OwnsNativeObjects = true;
     Lock m_Lock;
+    
+    std::unordered_map<uint32_t,id<MTLRenderPipelineState>> m_clearPipelineState;
+    
 };
 }; // namespace nri

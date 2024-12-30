@@ -81,7 +81,7 @@ void CommandBufferMTL::SetPipeline(const Pipeline& pipeline) {
                     [m_Annotations removeLastObject];
                 }
                 if(m_numViewports > 0)
-                    [m_RendererEncoder setViewports: m_viewports count: m_numViewports];
+                    [m_RendererEncoder setViewports: m_Viewports count: m_numViewports];
                 if(m_numScissors > 0)
                     [m_RendererEncoder setScissorRects: m_Scissors count: m_numScissors];
                 if(m_DirtyBits & CommandBufferDirtyBits::CMD_DIRTY_BLEND_CONSTANT)
@@ -245,6 +245,7 @@ void CommandBufferMTL::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
         m_renderPassDescriptor.colorAttachments[i].clearColor = MTLClearColorMake(0, 0, 0, 1);
         m_renderPassDescriptor.colorAttachments[i].loadAction = MTLLoadActionLoad;
         m_renderPassDescriptor.colorAttachments[i].storeAction = MTLStoreActionStore;
+        
     }
     
     if(attachmentsDesc.depthStencil) {
@@ -264,17 +265,17 @@ void CommandBufferMTL::EndRendering() {
 
 void CommandBufferMTL::SetViewports(const Viewport* viewports, uint32_t viewportNum) {
     for(size_t i = 0; i < viewportNum; i++) {
-        m_viewports[i].originX = viewports[i].x;
-        m_viewports[i].originY = viewports[i].y;
-        m_viewports[i].width = viewports[i].width;
-        m_viewports[i].height = viewports[i].height;
-        m_viewports[i].znear = viewports[i].depthMin;
-        m_viewports[i].zfar = viewports[i].depthMax;
+        m_Viewports[i].originX = viewports[i].x;
+        m_Viewports[i].originY = viewports[i].y;
+        m_Viewports[i].width = viewports[i].width;
+        m_Viewports[i].height = viewports[i].height;
+        m_Viewports[i].znear = viewports[i].depthMin;
+        m_Viewports[i].zfar = viewports[i].depthMax;
     }
     m_numViewports = viewportNum;
     if(m_RendererEncoder && m_numViewports > 0)
         [m_RendererEncoder
-         setViewports: m_viewports
+         setViewports: m_Viewports
          count: m_numViewports];
 }
 
@@ -325,11 +326,35 @@ void CommandBufferMTL::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
 void CommandBufferMTL::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     MTLRenderPassDescriptor* renderPassDesc = [MTLRenderPassDescriptor alloc];
     id<MTLRenderCommandEncoder> rendererEncoder = [m_Handle renderCommandEncoderWithDescriptor: renderPassDesc];
-  
+
+    simd::float4 vertices[6 * 16];
+//    simd::float4 clearColors[kMVKClearAttachmentCount];
+
+    for(size_t i = 0; i < clearDescNum; i++) {
+        
+        simd::float2 srcBL = simd_make_float2(rects[i].x / m_Viewports[i].width,
+                                              (m_Viewports[i].height - rects[i].y) / m_Viewports[i].height);
+        simd::float2 srcTR = simd_make_float2(rects[i].x / m_Viewports[i].width,
+                                              (m_Viewports[i].height - rects[i].y) / m_Viewports[i].height);
+//        simd::float2 dstBL = simd_make_float2((CGFloat)(do0.x) / (CGFloat)dstExtent.width,
+//                                    (CGFloat)(dstExtent.height - do1.y) / (CGFloat)dstExtent.height);
+//        simd::float2 dstTR = simd_make_float2((CGFloat)(do1.x) / (CGFloat)dstExtent.width,
+//                                    (CGFloat)(dstExtent.height - do0.y) / (CGFloat)dstExtent.height);
+
+        
+    }
     
+    if(m_numViewports > 0)
+        [rendererEncoder
+         setViewports: m_Viewports
+         count: m_numViewports];
     [rendererEncoder setCullMode: MTLCullModeNone];
     [rendererEncoder setTriangleFillMode: MTLTriangleFillModeFill];
     [rendererEncoder setDepthBias: 0 slopeScale: 0 clamp: 0];
+    [rendererEncoder setRenderPipelineState: m_Device.GetClearPipeline(clearDescs, clearDescNum)];
+
+    
+    [rendererEncoder endEncoding];
    
 }
 

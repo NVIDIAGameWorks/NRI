@@ -117,7 +117,7 @@ private:
     uint32_t m_dirtyVertexBufferBits = 0;
     struct CmdVertexBuffer m_vertexBuffers[32];
     struct ShadingRateDesc m_shadingRateDesc;
-    MTLViewport m_viewports[16];
+    MTLViewport m_Viewports[16];
     MTLScissorRect m_Scissors[16];
     Color32f m_BlendColor;
     uint8_t m_StencilFront;
