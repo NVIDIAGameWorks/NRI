@@ -105,6 +105,7 @@ void Ext::InitializeAmdExt(const nri::DeviceBase* deviceBase, AGSContext* agsCon
     m_Ags.DrawIndexedIndirect = (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECT)GetSharedLibraryFunction(*m_AgsLibrary, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirect");
     m_Ags.DrawIndirectCount = (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINSTANCEDINDIRECTCOUNTINDIRECT)GetSharedLibraryFunction(*m_AgsLibrary, "agsDriverExtensionsDX11_MultiDrawInstancedIndirectCountIndirect");
     m_Ags.DrawIndexedIndirectCount = (AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECTCOUNTINDIRECT)GetSharedLibraryFunction(*m_AgsLibrary, "agsDriverExtensionsDX11_MultiDrawIndexedInstancedIndirectCountIndirect");
+    m_Ags.SetViewBroadcastMasks = (AGS_DRIVEREXTENSIONSDX11_SETVIEWBROADCASTMASKS)GetSharedLibraryFunction(*m_AgsLibrary, "agsDriverExtensionsDX11_SetViewBroadcastMasks");
 
 #    else
 

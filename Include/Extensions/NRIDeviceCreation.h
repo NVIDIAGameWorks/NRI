@@ -40,13 +40,14 @@ NriStruct(VKExtensions) {
 
 NriStruct(DeviceCreationDesc) {
     NriOptional const NriPtr(AdapterDesc) adapterDesc;
-    Nri(CallbackInterface) callbackInterface;
-    Nri(AllocationCallbacks) allocationCallbacks;
+    NriOptional Nri(CallbackInterface) callbackInterface;
+    NriOptional Nri(AllocationCallbacks) allocationCallbacks;
     Nri(SPIRVBindingOffsets) spirvBindingOffsets;
-    Nri(VKExtensions) vkExtensions;
+    NriOptional Nri(VKExtensions) vkExtensions;
     Nri(GraphicsAPI) graphicsAPI;
-    uint32_t shaderExtRegister;                 // D3D12/D3D11 only
-    uint32_t shaderExtSpace;                    // D3D12 only
+    NriOptional Nri(Robustness) robustness;
+    NriOptional uint32_t shaderExtRegister;                 // D3D12/D3D11 only
+    NriOptional uint32_t shaderExtSpace;                    // D3D12 only
 
     // Switches (disabled by default)
     bool enableNRIValidation;

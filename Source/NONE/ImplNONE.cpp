@@ -135,6 +135,7 @@ struct DeviceNONE final : public DeviceBase {
         m_Desc.clipDistanceMaxNum = 8;
         m_Desc.cullDistanceMaxNum = 8;
         m_Desc.combinedClipAndCullDistanceMaxNum = 8;
+        m_Desc.viewMaxNum = 4;
         m_Desc.shadingRateAttachmentTileSize = 16;
         m_Desc.shaderModel = 69;
 
@@ -160,6 +161,9 @@ struct DeviceNONE final : public DeviceBase {
         m_Desc.isAdditionalShadingRatesSupported = true;
         m_Desc.isViewportOriginBottomLeftSupported = true;
         m_Desc.isRegionResolveSupported = true;
+        m_Desc.isFlexibleMultiviewSupported = true;
+        m_Desc.isLayerBasedMultiviewSupported = true;
+        m_Desc.isViewportBasedMultiviewSupported = true;
 
         m_Desc.isShaderNativeI16Supported = true;
         m_Desc.isShaderNativeF16Supported = true;
@@ -173,6 +177,10 @@ struct DeviceNONE final : public DeviceBase {
         m_Desc.isShaderAtomicsF32Supported = true;
         m_Desc.isShaderAtomicsI64Supported = true;
         m_Desc.isShaderAtomicsF64Supported = true;
+        m_Desc.isRasterizedOrderedViewSupported = true;
+        m_Desc.isBarycentricSupported = true;
+        m_Desc.isShaderViewportIndexSupported = true;
+        m_Desc.isShaderLayerSupported = true;
 
         m_Desc.isSwapChainSupported = true;
         m_Desc.isRayTracingSupported = true;

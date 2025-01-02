@@ -350,6 +350,13 @@ NriStruct(SampleLocation) {
 #pragma region [ Creation ]
 //============================================================================================================================================================================================
 
+NriEnum(Robustness, uint8_t,
+    DEFAULT,    // don't care, follow device settings (VK level when used on a device)
+    OFF,        // no overhead, no robust access (out-of-bounds access is not allowed)
+    VK,         // minimal overhead, partial robust access
+    D3D12       // moderate overhead, D3D12-level robust access (requires "VK_EXT_robustness2", soft fallback to VK mode)
+);
+
 NriEnum(CommandQueueType, uint8_t,
     GRAPHICS,
     COMPUTE,
@@ -792,6 +799,12 @@ NriStruct(ShadingRateDesc) {
 #pragma region [ Output merger ]
 //============================================================================================================================================================================================
 
+NriEnum(Multiview, uint8_t,
+    FLEXIBLE,                   // destination "viewport" and/or "layer" must be set in shaders explicitly, "viewMask" for rendering can be < than the one used for pipeline creation (D3D12 style)
+    LAYER_BASED,                // view instances go to statically assigned corresponding attachment layers, "viewMask" for rendering must match the one used for pipeline creation (VK style)
+    VIEWPORT_BASED              // view instances go to statically assigned corresponding viewports, "viewMask" for pipeline creation is unused (D3D11 style)
+);
+
 // S - source color 0
 // D - destination color
 NriEnum(LogicFunc, uint8_t,
@@ -940,6 +953,8 @@ NriStruct(OutputMergerDesc) {
     Nri(StencilAttachmentDesc) stencil;
     Nri(Format) depthStencilFormat;
     Nri(LogicFunc) logicFunc; // requires "isLogicFuncSupported"
+    NriOptional uint32_t viewMask; // if non-0, requires "viewMaxNum > 1"
+    NriOptional Nri(Multiview) multiview; // if viewMask != 0, requires "is(multiview)MultiviewSupported"
 };
 
 NriStruct(AttachmentsDesc) {
@@ -947,6 +962,7 @@ NriStruct(AttachmentsDesc) {
     NriOptional const NriPtr(Descriptor) shadingRate; // requires "shadingRateTier >= 2"
     const NriPtr(Descriptor) const* colors;
     uint32_t colorNum;
+    NriOptional uint32_t viewMask;
 };
 
 #pragma endregion
@@ -1018,11 +1034,13 @@ NriStruct(GraphicsPipelineDesc) {
     Nri(OutputMergerDesc) outputMerger;
     const NriPtr(ShaderDesc) shaders;
     uint32_t shaderNum;
+    NriOptional Nri(Robustness) robustness;
 };
 
 NriStruct(ComputePipelineDesc) {
     const NriPtr(PipelineLayout) pipelineLayout;
     Nri(ShaderDesc) shader;
+    NriOptional Nri(Robustness) robustness;
 };
 
 #pragma endregion
@@ -1440,10 +1458,12 @@ NriStruct(DeviceDesc) {
     uint32_t clipDistanceMaxNum;
     uint32_t cullDistanceMaxNum;
     uint32_t combinedClipAndCullDistanceMaxNum;
-    uint8_t shadingRateAttachmentTileSize;
-    uint8_t shaderModel; // major * 10 + minor
+    uint32_t viewMaxNum;                            // aka multiview
+    uint8_t shadingRateAttachmentTileSize;          // square size
+    uint8_t shaderModel;                            // major * 10 + minor
 
     // Tiers (0 - unsupported)
+
     // 1 - 1/2 pixel uncertainty region and does not support post-snap degenerates
     // 2 - reduces the maximum uncertainty region to 1/256 and requires post-snap degenerates not be culled
     // 3 - maintains a maximum 1/256 uncertainty region and adds support for inner input coverage, aka "SV_InnerCoverage"
@@ -1476,12 +1496,15 @@ NriStruct(DeviceDesc) {
     uint32_t isLineSmoothingSupported : 1;
     uint32_t isCopyQueueTimestampSupported : 1;
     uint32_t isMeshShaderPipelineStatsSupported : 1;
-    uint32_t isEnchancedBarrierSupported : 1; // aka - can "Layout" be ignored?
-    uint32_t isMemoryTier2Supported : 1; // a memory object can support resources from all 3 categories (buffers, attachments, all other textures)
-    uint32_t isDynamicDepthBiasSupported : 1;
+    uint32_t isEnchancedBarrierSupported : 1;           // aka can "Layout" be ignored?
+    uint32_t isMemoryTier2Supported : 1;                // a memory object can support resources from all 3 categories (buffers, attachments, all other textures)
+    uint32_t isDynamicDepthBiasSupported : 1;           // see "CmdSetDepthBias"
     uint32_t isAdditionalShadingRatesSupported : 1;
     uint32_t isViewportOriginBottomLeftSupported : 1;
-    uint32_t isRegionResolveSupported : 1;
+    uint32_t isRegionResolveSupported : 1;              // see "CmdResolveTexture"
+    uint32_t isFlexibleMultiviewSupported : 1;          // see FLEXIBLE multiview
+    uint32_t isLayerBasedMultiviewSupported : 1;        // see LAYRED_BASED multiview
+    uint32_t isViewportBasedMultiviewSupported : 1;     // see VIEWPORT_BASED multiview
 
     // Shader features
     uint32_t isShaderNativeI16Supported : 1;
@@ -1496,15 +1519,19 @@ NriStruct(DeviceDesc) {
     uint32_t isShaderAtomicsF32Supported : 1;
     uint32_t isShaderAtomicsI64Supported : 1;
     uint32_t isShaderAtomicsF64Supported : 1;
+    uint32_t isRasterizedOrderedViewSupported : 1;      // ROV, aka fragment shader interlock
+    uint32_t isBarycentricSupported : 1;
+    uint32_t isShaderViewportIndexSupported : 1;        // always can be used from geometry shaders
+    uint32_t isShaderLayerSupported : 1;                // always can be used from geometry shaders
 
     // Emulated features
     uint32_t isDrawParametersEmulationEnabled : 1;
 
     // Extensions (unexposed are always supported)
-    uint32_t isSwapChainSupported : 1; // NRISwapChain
-    uint32_t isRayTracingSupported : 1; // NRIRayTracing
-    uint32_t isMeshShaderSupported : 1; // NRIMeshShader
-    uint32_t isLowLatencySupported : 1; // NRILowLatency
+    uint32_t isSwapChainSupported : 1;                  // NRISwapChain
+    uint32_t isRayTracingSupported : 1;                 // NRIRayTracing
+    uint32_t isMeshShaderSupported : 1;                 // NRIMeshShader
+    uint32_t isLowLatencySupported : 1;                 // NRILowLatency
 };
 
 #pragma endregion

@@ -18,7 +18,11 @@ struct IsSupported {
     uint32_t maintenance5 : 1;
     uint32_t imageSlicedView : 1;
     uint32_t customBorderColor : 1;
+    uint32_t robustness : 1;
+    uint32_t robustness2 : 1;
+    uint32_t pipelineRobustness : 1;
 };
+static_assert(sizeof(IsSupported) == sizeof(uint32_t), "4 bytes expected");
 
 struct DeviceVK final : public DeviceBase {
     inline operator VkDevice() const {

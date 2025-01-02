@@ -17,6 +17,10 @@ Texture and buffer arrays:
     NRI_RESOURCE(Texture2D<float3>, gInputs[], t, 0, 1); // DXIL/SPIRV only
     NRI_RESOURCE(Texture2D<float>, gInputs[8], t, 0, 0); // DXBC compatible
 
+Dual source blending:
+    NRI_BLEND_SOURCE(0) out float4 color : SV_Target0,
+    NRI_BLEND_SOURCE(1) out float4 blend : SV_Target1
+
 Constants:
     NRI_RESOURCE(cbuffer, Constants, b, 0, 3) {
         uint32_t gConst1;
@@ -41,9 +45,9 @@ Draw parameters:
             ...
         }
     - Use the following macros:
-        NRI_VERTEX_ID, NRI_INSTANCE_ID - start from 0
-        NRI_BASE_VERTEX, NRI_BASE_INSTANCE - base vertex / instance from a "Draw" call
-        NRI_VERTEX_ID_OFFSET, NRI_INSTANCE_ID_OFFSET - start from "base" vertex / instance
+        NRI_VERTEX_ID and NRI_INSTANCE_ID - start from 0
+        NRI_BASE_VERTEX and NRI_BASE_INSTANCE - base vertex / instance from a "Draw" call
+        NRI_VERTEX_ID_OFFSET and NRI_INSTANCE_ID_OFFSET - start from "base" vertex / instance
     - To fill commands for indirect drawing in a shader use one of "NRI_FILL_X_DESC" macros
     - "NRI_ENABLE_DRAW_PARAMETERS_EMULATION" must be defined prior inclusion of "NRICompatibility.hlsli"
       for pipelines expecting emulation
@@ -127,6 +131,9 @@ Draw parameters:
     #define NRI_ROOT_CONSTANTS(structName, name, bindingIndex, setIndex) \
         [[vk::push_constant]] structName name
 
+    #define NRI_BLEND_SOURCE(source) \
+        [[vk::location(0)]] [[vk::index(source)]]
+
     // Draw parameters (full support, requires SPV_KHR_shader_draw_parameters)
     #define NRI_ENABLE_DRAW_PARAMETERS
 
@@ -148,6 +155,8 @@ Draw parameters:
 
     #define NRI_ROOT_CONSTANTS(structName, name, bindingIndex, setIndex) \
         ConstantBuffer<structName> name : register(NRI_MERGE_TOKENS(b, bindingIndex), NRI_MERGE_TOKENS(space, setIndex))
+
+    #define NRI_BLEND_SOURCE(source)
 
     // Draw parameters
     #if (NRI_SHADER_MODEL < 68)
@@ -208,6 +217,8 @@ Draw parameters:
         cbuffer structName##_##name : register(NRI_MERGE_TOKENS(b, bindingIndex)) { \
             structName name; \
         }
+
+    #define NRI_BLEND_SOURCE(source)
 
     // Draw parameters (partial support)
     #define NRI_ENABLE_DRAW_PARAMETERS

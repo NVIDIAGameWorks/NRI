@@ -4,6 +4,35 @@ static inline bool IsConstantColorReferenced(BlendFactor factor) {
     return factor == BlendFactor::CONSTANT_COLOR || factor == BlendFactor::CONSTANT_ALPHA || factor == BlendFactor::ONE_MINUS_CONSTANT_COLOR || factor == BlendFactor::ONE_MINUS_CONSTANT_ALPHA;
 }
 
+static bool FillPipelineRobustness(const DeviceVK& device, Robustness robustness, VkPipelineRobustnessCreateInfoEXT& robustnessInfo) {
+    if (!device.m_IsSupported.pipelineRobustness || robustness == Robustness::DEFAULT)
+        return false;
+
+    if (!device.m_IsSupported.robustness2)
+        robustness = robustness == Robustness::D3D12 ? Robustness::VK : robustness;
+    if (!device.m_IsSupported.robustness)
+        robustness = robustness == Robustness::VK ? Robustness::OFF : robustness;
+
+    if (robustness == Robustness::VK) {
+        robustnessInfo.images = VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_EXT;
+        robustnessInfo.storageBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+        robustnessInfo.uniformBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+        robustnessInfo.vertexInputs = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
+    } else if (robustness == Robustness::D3D12) {
+        robustnessInfo.images = VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2_EXT;
+        robustnessInfo.storageBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT;
+        robustnessInfo.uniformBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT;
+        robustnessInfo.vertexInputs = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT;
+    } else if (robustness == Robustness::OFF) {
+        robustnessInfo.images = VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED_EXT;
+        robustnessInfo.storageBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED_EXT;
+        robustnessInfo.uniformBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED_EXT;
+        robustnessInfo.vertexInputs = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED_EXT;
+    }
+
+    return true;
+}
+
 PipelineVK::~PipelineVK() {
     if (m_OwnsNativeObjects) {
         const auto& vk = m_Device.GetDispatchTable();
@@ -198,7 +227,7 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
         colorFormats[i] = GetVkFormat(om.colors[i].format);
 
     VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
-    // pipelineRenderingCreateInfo.viewMask; // TODO: add multi-view support
+    pipelineRenderingCreateInfo.viewMask = om.viewMask;
     pipelineRenderingCreateInfo.colorAttachmentCount = om.colorNum;
     pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats;
     pipelineRenderingCreateInfo.depthAttachmentFormat = GetVkFormat(om.depthStencilFormat);
@@ -255,6 +284,10 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
         -1,
     };
 
+    VkPipelineRobustnessCreateInfoEXT robustnessInfo = {VK_STRUCTURE_TYPE_PIPELINE_ROBUSTNESS_CREATE_INFO_EXT};
+    if (FillPipelineRobustness(m_Device, graphicsPipelineDesc.robustness, robustnessInfo))
+        pipelineRenderingCreateInfo.pNext = &robustnessInfo;
+
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult vkResult = vk.CreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, vkResult == VK_SUCCESS, GetReturnCode(vkResult), "vkCreateGraphicsPipelines returned %d", (int32_t)vkResult);
@@ -293,7 +326,7 @@ Result PipelineVK::Create(const ComputePipelineDesc& computePipelineDesc) {
         nullptr,
     };
 
-    const VkComputePipelineCreateInfo info = {
+    VkComputePipelineCreateInfo info = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
         nullptr,
         (VkPipelineCreateFlags)0,
@@ -302,6 +335,10 @@ Result PipelineVK::Create(const ComputePipelineDesc& computePipelineDesc) {
         VK_NULL_HANDLE,
         -1,
     };
+
+    VkPipelineRobustnessCreateInfoEXT robustnessInfo = {VK_STRUCTURE_TYPE_PIPELINE_ROBUSTNESS_CREATE_INFO_EXT};
+    if (FillPipelineRobustness(m_Device, computePipelineDesc.robustness, robustnessInfo))
+        info.pNext = &robustnessInfo;
 
     result = vk.CreateComputePipelines(m_Device, VK_NULL_HANDLE, 1, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateComputePipelines returned %d", (int32_t)result);
@@ -387,6 +424,10 @@ Result PipelineVK::Create(const RayTracingPipelineDesc& rayTracingPipelineDesc) 
     createInfo.maxPipelineRayRecursionDepth = rayTracingPipelineDesc.recursionDepthMax;
     createInfo.layout = pipelineLayoutVK;
     createInfo.basePipelineIndex = -1;
+
+    VkPipelineRobustnessCreateInfoEXT robustnessInfo = {VK_STRUCTURE_TYPE_PIPELINE_ROBUSTNESS_CREATE_INFO_EXT};
+    if (FillPipelineRobustness(m_Device, rayTracingPipelineDesc.robustness, robustnessInfo))
+        createInfo.pNext = &robustnessInfo;
 
     const auto& vk = m_Device.GetDispatchTable();
     const VkResult vkResult = vk.CreateRayTracingPipelinesKHR(m_Device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &createInfo, m_Device.GetAllocationCallbacks(), &m_Handle);

@@ -65,6 +65,7 @@ NriStruct(RayTracingPipelineDesc) {
     uint32_t recursionDepthMax;
     uint32_t payloadAttributeSizeMax;
     uint32_t intersectionAttributeSizeMax;
+    NriOptional Nri(Robustness) robustness;
 };
 
 NriStruct(Triangles) {

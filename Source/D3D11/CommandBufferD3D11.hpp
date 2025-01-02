@@ -234,8 +234,8 @@ NRI_INLINE void CommandBufferD3D11::BeginRendering(const AttachmentsDesc& attach
 
     m_DeferredContext->OMSetRenderTargets(m_RenderTargetNum, m_RenderTargets.data(), m_DepthStencil);
 
-    // Shading rate
 #if NRI_USE_EXT_LIBS
+    // Shading rate
     if (m_Device.GetExt()->HasNvapi() && m_Device.GetDesc().shadingRateTier >= 2) {
         ID3D11NvShadingRateResourceView* shadingRateImage = nullptr;
         if (attachmentsDesc.shadingRate) {
@@ -272,6 +272,10 @@ NRI_INLINE void CommandBufferD3D11::BeginRendering(const AttachmentsDesc& attach
 
         REPORT_ERROR_ON_BAD_STATUS(&m_Device, NvAPI_D3D11_RSSetShadingRateResourceView(m_DeferredContext, shadingRateImage));
     }
+
+    // Multiview
+    if (m_Device.GetExt()->HasAgs() && m_Device.GetDesc().viewMaxNum > 1)
+        m_Device.GetExt()->m_Ags.SetViewBroadcastMasks(m_Device.GetExt()->m_AgsContext, attachmentsDesc.viewMask, attachmentsDesc.viewMask ? 0x1 : 0x0, 0);
 #endif
 }
 
@@ -402,7 +406,7 @@ NRI_INLINE void CommandBufferD3D11::CopyTexture(Texture& dstTexture, const Textu
     const TextureD3D11& dst = (TextureD3D11&)dstTexture;
     const TextureD3D11& src = (TextureD3D11&)srcTexture;
 
-    bool isWholeResource = (!dstRegionDesc && !srcRegionDesc) || (dstRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC && srcRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC);
+    bool isWholeResource = (!dstRegionDesc || dstRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC) && (!srcRegionDesc || srcRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC);
     if (isWholeResource)
         m_DeferredContext->CopyResource(dst, src);
     else {
@@ -436,7 +440,7 @@ NRI_INLINE void CommandBufferD3D11::ResolveTexture(Texture& dstTexture, const Te
     const TextureDesc& dstDesc = dst.GetDesc();
     const DxgiFormat& dstFormat = GetDxgiFormat(dstDesc.format);
 
-    bool isWholeResource = (!dstRegionDesc && !srcRegionDesc) || (dstRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC && srcRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC);
+    bool isWholeResource = (!dstRegionDesc || dstRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC) && (!srcRegionDesc || srcRegionDesc->mipOffset == NULL_TEXTURE_REGION_DESC);
     if (isWholeResource) {
         for (Dim_t layer = 0; layer < dstDesc.layerNum; layer++) {
             for (Mip_t mip = 0; mip < dstDesc.mipNum; mip++) {

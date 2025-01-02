@@ -127,6 +127,10 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
             isDepthBoundsTestSupported = agsParams.extensionsSupported.depthBoundsDeferredContexts;
             isDrawIndirectCountSupported = agsParams.extensionsSupported.multiDrawIndirectCountIndirect;
             isShaderAtomicsI64Supported = agsParams.extensionsSupported.intrinsics19;
+
+            m_Desc.isBarycentricSupported = agsParams.extensionsSupported.intrinsics16;
+            m_Desc.viewMaxNum = agsParams.extensionsSupported.multiView ? 4 : 1;
+            m_Desc.isViewportBasedMultiviewSupported = agsParams.extensionsSupported.multiView;
         } else {
 #endif
             hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels, levelNum, D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
@@ -384,6 +388,9 @@ void DeviceD3D11::FillDesc() {
     m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;
     m_Desc.isShaderAtomicsI32Supported = true;
     m_Desc.isShaderAtomicsF32Supported = isShaderAtomicsF32Supported;
+    m_Desc.isRasterizedOrderedViewSupported = options2.ROVsSupported != 0;
+    m_Desc.isShaderViewportIndexSupported = options3.VPAndRTArrayIndexFromAnyShaderFeedingRasterizer;
+    m_Desc.isShaderLayerSupported = options3.VPAndRTArrayIndexFromAnyShaderFeedingRasterizer;
 
     m_Desc.isSwapChainSupported = HasOutput();
     m_Desc.isLowLatencySupported = m_Ext.HasNvapi();

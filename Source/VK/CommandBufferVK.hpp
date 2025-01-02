@@ -186,15 +186,16 @@ NRI_INLINE void CommandBufferVK::ClearAttachments(const ClearDesc* clearDescs, u
         VkClearRect& clearRect = clearRects[i];
 
         clearRect = {};
+
+        // TODO: allow layer specification for clears?
         clearRect.baseArrayLayer = 0;
+        clearRect.layerCount = m_ViewMask ? 1 : m_RenderLayerNum; // per VK spec...
+
         if (hasRects) {
             const Rect& rect = rects[i];
-            clearRect.layerCount = 1;
             clearRect.rect = {{rect.x, rect.y}, {rect.width, rect.height}};
-        } else {
-            clearRect.layerCount = m_RenderLayerNum;
+        } else
             clearRect.rect = {{0, 0}, {m_RenderWidth, m_RenderHeight}};
-        }
     }
 
     if (attachmentNum) {
@@ -302,7 +303,7 @@ NRI_INLINE void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmen
     renderingInfo.flags = 0;
     renderingInfo.renderArea = {{0, 0}, {m_RenderWidth, m_RenderHeight}};
     renderingInfo.layerCount = m_RenderLayerNum;
-    renderingInfo.viewMask = 0;
+    renderingInfo.viewMask = attachmentsDesc.viewMask;
     renderingInfo.colorAttachmentCount = attachmentsDesc.colorNum;
     renderingInfo.pColorAttachments = colors;
     renderingInfo.pDepthAttachment = attachmentsDesc.depthStencil ? &depthStencil : nullptr;
@@ -313,6 +314,8 @@ NRI_INLINE void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmen
 
     const auto& vk = m_Device.GetDispatchTable();
     vk.CmdBeginRendering(m_Handle, &renderingInfo);
+
+    m_ViewMask = attachmentsDesc.viewMask;
 }
 
 NRI_INLINE void CommandBufferVK::EndRendering() {

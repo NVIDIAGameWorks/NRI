@@ -208,49 +208,27 @@ constexpr VkSamplerAddressMode GetSamplerAddressMode(AddressMode addressMode) {
     return (VkSamplerAddressMode)(VK_SAMPLER_ADDRESS_MODE_REPEAT + (uint32_t)addressMode);
 }
 
-constexpr std::array<VkImageViewType, (size_t)Texture1DViewType::MAX_NUM> IMAGE_VIEW_TYPE_1D = {
-    VK_IMAGE_VIEW_TYPE_1D,       // SHADER_RESOURCE_1D,
-    VK_IMAGE_VIEW_TYPE_1D_ARRAY, // SHADER_RESOURCE_1D_ARRAY,
-    VK_IMAGE_VIEW_TYPE_1D,       // SHADER_RESOURCE_STORAGE_1D,
-    VK_IMAGE_VIEW_TYPE_1D_ARRAY, // SHADER_RESOURCE_STORAGE_1D_ARRAY,
-    VK_IMAGE_VIEW_TYPE_1D,       // COLOR_ATTACHMENT,
-    VK_IMAGE_VIEW_TYPE_1D,       // DEPTH_STENCIL_ATTACHMENT
-    VK_IMAGE_VIEW_TYPE_1D,       // DEPTH_READONLY_STENCIL_ATTACHMENT,
-    VK_IMAGE_VIEW_TYPE_1D,       // DEPTH_ATTACHMENT_STENCIL_READONLY,
-    VK_IMAGE_VIEW_TYPE_1D,       // DEPTH_STENCIL_READONLY,
-};
+constexpr VkImageViewType GetImageViewType(Texture1DViewType type, uint32_t layerNum) {
+    if (type == Texture1DViewType::SHADER_RESOURCE_1D_ARRAY || type == Texture1DViewType::SHADER_RESOURCE_STORAGE_1D_ARRAY)
+        return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
 
-constexpr VkImageViewType GetImageViewType(Texture1DViewType type) {
-    return IMAGE_VIEW_TYPE_1D[(size_t)type];
+    return layerNum > 1 ? VK_IMAGE_VIEW_TYPE_1D_ARRAY : VK_IMAGE_VIEW_TYPE_1D;
 }
 
-constexpr std::array<VkImageViewType, (size_t)Texture2DViewType::MAX_NUM> IMAGE_VIEW_TYPE_2D = {
-    VK_IMAGE_VIEW_TYPE_2D,         // SHADER_RESOURCE_2D,
-    VK_IMAGE_VIEW_TYPE_2D_ARRAY,   // SHADER_RESOURCE_2D_ARRAY,
-    VK_IMAGE_VIEW_TYPE_CUBE,       // SHADER_RESOURCE_CUBE,
-    VK_IMAGE_VIEW_TYPE_CUBE_ARRAY, // SHADER_RESOURCE_CUBE_ARRAY,
-    VK_IMAGE_VIEW_TYPE_2D,         // SHADER_RESOURCE_STORAGE_2D,
-    VK_IMAGE_VIEW_TYPE_2D_ARRAY,   // SHADER_RESOURCE_STORAGE_2D_ARRAY,
-    VK_IMAGE_VIEW_TYPE_2D,         // COLOR_ATTACHMENT,
-    VK_IMAGE_VIEW_TYPE_2D,         // DEPTH_STENCIL_ATTACHMENT
-    VK_IMAGE_VIEW_TYPE_2D,         // DEPTH_READONLY_STENCIL_ATTACHMENT,
-    VK_IMAGE_VIEW_TYPE_2D,         // DEPTH_ATTACHMENT_STENCIL_READONLY,
-    VK_IMAGE_VIEW_TYPE_2D,         // DEPTH_STENCIL_READONLY,
-    VK_IMAGE_VIEW_TYPE_2D,         // SHADING_RATE_ATTACHMENT
-};
+constexpr VkImageViewType GetImageViewType(Texture2DViewType type, uint32_t layerNum) {
+    if (type == Texture2DViewType::SHADER_RESOURCE_2D_ARRAY || type == Texture2DViewType::SHADER_RESOURCE_STORAGE_2D_ARRAY)
+        return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
 
-constexpr VkImageViewType GetImageViewType(Texture2DViewType type) {
-    return IMAGE_VIEW_TYPE_2D[(size_t)type];
+    if (type == Texture2DViewType::SHADER_RESOURCE_CUBE_ARRAY)
+        return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+
+    return layerNum > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
 }
 
-constexpr std::array<VkImageViewType, (size_t)Texture3DViewType::MAX_NUM> IMAGE_VIEW_TYPE_3D = {
-    VK_IMAGE_VIEW_TYPE_3D, // SHADER_RESOURCE_3D,
-    VK_IMAGE_VIEW_TYPE_3D, // SHADER_RESOURCE_STORAGE_3D,
-    VK_IMAGE_VIEW_TYPE_3D, // COLOR_ATTACHMENT
-};
+constexpr VkImageViewType GetImageViewType(Texture3DViewType type, uint32_t layerNum) {
+    MaybeUnused(type, layerNum);
 
-constexpr VkImageViewType GetImageViewType(Texture3DViewType type) {
-    return IMAGE_VIEW_TYPE_3D[(size_t)type];
+    return VK_IMAGE_VIEW_TYPE_3D;
 }
 
 constexpr std::array<VkImageUsageFlags, (size_t)Texture1DViewType::MAX_NUM> IMAGE_VIEW_USAGE_1D = {

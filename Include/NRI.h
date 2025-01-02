@@ -10,26 +10,23 @@ Overview:
 
 Goals:
 - generalization of VK and D3D12
-- providing access to low-level features of modern gAPIs
-- providing high-level "quality of life" improving utilities, organized as extensions
+- explicitness (providing access to low-level features of modern GAPIs)
+- "quality of life" features (providing high-level improving utilities, organized as extensions)
 - low overhead
-- no memory allocations at runtime
 - cross platform and platform independence (AMD/INTEL friendly)
-- explicitness
 - D3D11 support (as much as possible)
 
 Non-goals (exceptions apply to helper interfaces, where high-level abstraction and hidden management are desired):
-- high level RHI
+- high level (D3D11-like) abstraction
 - exposing entities not existing in gAPIs
-- D3D11-like abstraction level
 - hidden management of any kind
 */
 
 #pragma once
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 157
-#define NRI_VERSION_DATE "24 December 2024"
+#define NRI_VERSION_MINOR 158
+#define NRI_VERSION_DATE "2 January 2024"
 
 #include "NRIDescs.h"
 
@@ -166,8 +163,8 @@ NriStruct(CoreInterface) {
 
         // Copy
         void                (NRI_CALL *CmdCopyBuffer)               (NriRef(CommandBuffer) commandBuffer, NriRef(Buffer) dstBuffer, uint64_t dstOffset, const NriRef(Buffer) srcBuffer, uint64_t srcOffset, uint64_t size);
-        void                (NRI_CALL *CmdCopyTexture)              (NriRef(CommandBuffer) commandBuffer, NriRef(Texture) dstTexture, const NriPtr(TextureRegionDesc) dstRegionDesc, const NriRef(Texture) srcTexture, const NriPtr(TextureRegionDesc) srcRegionDesc);
-        void                (NRI_CALL *CmdResolveTexture)           (NriRef(CommandBuffer) commandBuffer, NriRef(Texture) dstTexture, const NriPtr(TextureRegionDesc) dstRegionDesc, const NriRef(Texture) srcTexture, const NriPtr(TextureRegionDesc) srcRegionDesc); // "isRegionResolveSupported" is needed for region specification
+        void                (NRI_CALL *CmdCopyTexture)              (NriRef(CommandBuffer) commandBuffer, NriRef(Texture) dstTexture, NriOptional const NriPtr(TextureRegionDesc) dstRegionDesc, const NriRef(Texture) srcTexture, NriOptional const NriPtr(TextureRegionDesc) srcRegionDesc);
+        void                (NRI_CALL *CmdResolveTexture)           (NriRef(CommandBuffer) commandBuffer, NriRef(Texture) dstTexture, NriOptional const NriPtr(TextureRegionDesc) dstRegionDesc, const NriRef(Texture) srcTexture, NriOptional const NriPtr(TextureRegionDesc) srcRegionDesc); // "isRegionResolveSupported" is needed for region specification
         void                (NRI_CALL *CmdUploadBufferToTexture)    (NriRef(CommandBuffer) commandBuffer, NriRef(Texture) dstTexture, const NriRef(TextureRegionDesc) dstRegionDesc, const NriRef(Buffer) srcBuffer, const NriRef(TextureDataLayoutDesc) srcDataLayoutDesc);
         void                (NRI_CALL *CmdReadbackTextureToBuffer)  (NriRef(CommandBuffer) commandBuffer, NriRef(Buffer) dstBuffer, const NriRef(TextureDataLayoutDesc) dstDataLayoutDesc, const NriRef(Texture) srcTexture, const NriRef(TextureRegionDesc) srcRegionDesc);
         void                (NRI_CALL *CmdClearStorageBuffer)       (NriRef(CommandBuffer) commandBuffer, const NriRef(ClearStorageBufferDesc) clearDesc); // potentially slow clear

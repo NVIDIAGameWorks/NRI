@@ -6,31 +6,29 @@
 
 Goals:
 - generalization of D3D12 ([spec](https://microsoft.github.io/DirectX-Specs/)) and VK ([spec](https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html)) GAPIs
-- providing access to low-level features of modern GAPIs
-- providing high-level "quality of life" improving utilities, organized as extensions
+- explicitness (providing access to low-level features of modern GAPIs)
+- "quality of life" features (providing high-level improving utilities, organized as extensions)
 - low overhead
-- no memory allocations at runtime
 - cross platform and platform independence (AMD/INTEL friendly)
-- explicitness
 - D3D11 ([spec](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm)) support (as much as possible)
 
 Non-goals (exceptions apply to helper interfaces, where high-level abstraction and hidden management are desired):
-- high level RHI
+- high level (D3D11-like) abstraction
 - exposing entities not existing in GAPIs
-- D3D11-like abstraction level
 - hidden management of any kind
 
 Currently supported GAPIs:
-- Vulkan (VK)
+- VK (Vulkan 1.2+ with extensions, preferring core 1.3)
 - D3D12
 - D3D11
+- Metal (through [MoltenVK](https://github.com/KhronosGroup/MoltenVK))
 - None / dummy (everything is supported, but does nothing)
-- Metal (through *MoltenVK*)
 
 Key features:
  - *C++* and *C* compatible interfaces
  - generalized common denominator for D3D12, VK and D3D11 GAPIs
  - low overhead
+ - no memory allocations at runtime
  - descriptor indexing support
  - ray tracing support
  - mesh shaders support
@@ -52,7 +50,45 @@ Key features:
  - `NRIStreamer.h` - a convenient way to stream data into resources
  - `NRISwapChain.h` - swap chain and related functionality
 
- *(some interfaces can be missing in the listing)*
+ Hooked up Vulkan extensions:
+
+ Required:
+ - _VK_KHR_synchronization2_ (for Vulkan 1.2)
+ - _VK_KHR_dynamic_rendering_ (for Vulkan 1.2)
+ - _VK_KHR_maintenance4_ (for Vulkan 1.2)
+ - _VK_KHR_portability_subset_ (for APPLE)
+
+ Optional:
+ - _VK_KHR_swapchain_
+ - _VK_KHR_present_id_
+ - _VK_KHR_present_wait_
+ - _VK_KHR_swapchain_mutable_format_
+ - _VK_KHR_maintenance5_
+ - _VK_KHR_fragment_shading_rate_
+ - _VK_KHR_push_descriptor_
+ - _VK_KHR_pipeline_library_
+ - _VK_KHR_ray_tracing_pipeline_
+ - _VK_KHR_acceleration_structure_ (depends on _VK_KHR_deferred_host_operations_)
+ - _VK_KHR_ray_query_
+ - _VK_KHR_ray_tracing_maintenance1_
+ - _VK_KHR_line_rasterization_
+ - _VK_KHR_fragment_shader_barycentric_
+ - _VK_EXT_opacity_micromap_
+ - _VK_EXT_sample_locations_
+ - _VK_EXT_conservative_rasterization_
+ - _VK_EXT_mesh_shader_
+ - _VK_EXT_shader_atomic_float_
+ - _VK_EXT_shader_atomic_float2_
+ - _VK_EXT_memory_budget_
+ - _VK_EXT_memory_priority_
+ - _VK_EXT_image_sliced_view_of_3d_
+ - _VK_EXT_custom_border_color_
+ - _VK_EXT_robustness2_
+ - _VK_EXT_pipeline_robustness_
+ - _VK_EXT_fragment_shader_interlock_
+
+ Vendor specific:
+ - _VK_NV_low_latency2_
 
  *NRI* sample code:
  - [*NRI samples*](https://github.com/NVIDIAGameWorks/NRISamples)
@@ -109,6 +145,8 @@ Notes:
 ## CMAKE OPTIONS
 
 - `NRI_STATIC_LIBRARY` - build NRI as a static library (`off` by default)
+- `NRI_ENABLE_NVTX_SUPPORT` - annotations for NVIDIA Nsight Systems (`off` by default)
+- `NRI_ENABLE_NONE_SUPPORT` - enable NONE backend (`on` by default)
 - `NRI_ENABLE_VK_SUPPORT` - enable VULKAN backend (`on` by default)
 - `NRI_ENABLE_D3D11_SUPPORT` - enable D3D11 backend (`on` by default on Windows)
 - `NRI_ENABLE_D3D12_SUPPORT` - enable D3D12 backend (`on` by default on Windows)
@@ -150,12 +188,13 @@ Samples:
 - DeviceInfo - queries and prints out information about device groups in the system
 - Clear - minimal example of rendering using framebuffer clears only
 - CTest - very simple example of C interface usage
-- Triangle - simple textured triangle rendering
-- SceneViewer - loading & rendering of meshes with materials
+- Triangle - simple textured triangle rendering (also multiview demonstration in _FLEXIBLE_ mode)
+- SceneViewer - loading & rendering of meshes with materials (also tests programmable sample locations, shading rate and pipeline statistics)
 - BindlessSceneViewer - bindless GPU-driven rendering test
 - Readback - getting data from the GPU back to the CPU
 - AsyncCompute - demonstrates parallel execution of graphic and compute workloads
 - MultiThreading - shows advantages of multi-threaded command buffer recording
+- Multiview - multiview demonstration in _LAYER_BASED_ mode (VK and D3D12 compatible)
 - MultiGPU - multi GPU example
 - RayTracingTriangle - simple triangle rendering through ray tracing
 - RayTracingBoxes - a more advanced ray tracing example with many BLASes in TLAS

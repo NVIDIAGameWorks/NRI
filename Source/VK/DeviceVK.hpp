@@ -181,14 +181,15 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
         REPORT_INFO(this, "    %s (v%u)", props.extensionName, props.specVersion);
 
     // Mandatory
-    desiredDeviceExts.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+    if (m_MinorVersion < 3) {
+        desiredDeviceExts.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+        desiredDeviceExts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+        desiredDeviceExts.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+    }
 
 #ifdef __APPLE__
     if (IsExtensionSupported(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
-
-    if (IsExtensionSupported(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, supportedExts))
-        desiredDeviceExts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
 #endif
 
     // Optional (KHR)
@@ -203,9 +204,6 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
 
     if (IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME);
-
-    if (IsExtensionSupported(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME, supportedExts))
-        desiredDeviceExts.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 
     if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
@@ -233,6 +231,9 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
 
     if (IsExtensionSupported(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
 
     // Optional (EXT)
     if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts) && !disableRayTracing)
@@ -265,9 +266,22 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
 
+    if (IsExtensionSupported(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_EXT_PIPELINE_ROBUSTNESS_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_PIPELINE_ROBUSTNESS_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME);
+
     // Optional
     if (IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
+
+    // Dependencies
+    if (IsExtensionSupported(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 }
 
 DeviceVK::DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator)
@@ -494,17 +508,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     }
 #endif
 
-    VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR};
-    if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, desiredDeviceExts)) {
-        APPEND_EXT(maintenance5Features);
-        m_IsSupported.maintenance5 = true;
-    }
-
-    VkPhysicalDeviceFragmentShadingRateFeaturesKHR shadingRateFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR};
-    if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, desiredDeviceExts)) {
-        APPEND_EXT(shadingRateFeatures);
-    }
-
     VkPhysicalDevicePresentIdFeaturesKHR presentIdFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR};
     if (IsExtensionSupported(VK_KHR_PRESENT_ID_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(presentIdFeatures);
@@ -515,24 +518,24 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(presentWaitFeatures);
     }
 
-    VkPhysicalDeviceLineRasterizationFeaturesKHR lineRasterizationFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR};
-    if (IsExtensionSupported(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
-        APPEND_EXT(lineRasterizationFeatures);
+    VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(maintenance5Features);
     }
 
-    VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT};
-    if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, desiredDeviceExts)) {
-        APPEND_EXT(meshShaderFeatures);
-    }
-
-    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
-    if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, desiredDeviceExts)) {
-        APPEND_EXT(accelerationStructureFeatures);
+    VkPhysicalDeviceFragmentShadingRateFeaturesKHR shadingRateFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(shadingRateFeatures);
     }
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
     if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(rayTracingPipelineFeatures);
+    }
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(accelerationStructureFeatures);
     }
 
     VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR};
@@ -545,9 +548,24 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(rayTracingMaintenanceFeatures);
     }
 
+    VkPhysicalDeviceLineRasterizationFeaturesKHR lineRasterizationFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(lineRasterizationFeatures);
+    }
+
+    VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR fragmentShaderBarycentricFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(fragmentShaderBarycentricFeatures);
+    }
+
     VkPhysicalDeviceOpacityMicromapFeaturesEXT micromapFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_EXT};
     if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(micromapFeatures);
+    }
+
+    VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(meshShaderFeatures);
     }
 
     VkPhysicalDeviceShaderAtomicFloatFeaturesEXT shaderAtomicFloatFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT};
@@ -575,17 +593,54 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(borderColorFeatures);
     }
 
+    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(robustness2Features);
+    }
+
+    VkPhysicalDevicePipelineRobustnessFeaturesEXT pipelineRobustnessFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_PIPELINE_ROBUSTNESS_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(pipelineRobustnessFeatures);
+    }
+
+    VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT fragmentShaderInterlockFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_INTERLOCK_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(fragmentShaderInterlockFeatures);
+    }
+
     if (IsExtensionSupported(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, desiredDeviceExts))
         m_IsSupported.memoryBudget = true;
 
     m_VK.GetPhysicalDeviceFeatures2(m_PhysicalDevice, &features);
 
+    m_IsSupported.descriptorIndexing = features12.descriptorIndexing;
+    m_IsSupported.deviceAddress = features12.bufferDeviceAddress;
+    m_IsSupported.swapChainMutableFormat = IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, desiredDeviceExts);
+    m_IsSupported.presentId = presentIdFeatures.presentId;
+    m_IsSupported.presentWait = presentIdFeatures.presentId != 0 && presentWaitFeatures.presentWait != 0;
+    m_IsSupported.lowLatency = presentIdFeatures.presentId != 0 && IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
+    m_IsSupported.memoryPriority = memoryPriorityFeatures.memoryPriority;
+    m_IsSupported.maintenance5 = maintenance5Features.maintenance5;
+    m_IsSupported.imageSlicedView = slicedViewFeatures.imageSlicedViewOf3D != 0;
+    m_IsSupported.customBorderColor = borderColorFeatures.customBorderColors != 0 && borderColorFeatures.customBorderColorWithoutFormat != 0;
+    m_IsSupported.robustness = features.features.robustBufferAccess != 0 && features13.robustImageAccess != 0;
+    m_IsSupported.robustness2 = robustness2Features.robustBufferAccess2 != 0 && robustness2Features.robustImageAccess2 != 0;
+    m_IsSupported.pipelineRobustness = pipelineRobustnessFeatures.pipelineRobustness;
+
     { // Create device
         if (isWrapper)
             m_Device = (VkDevice)deviceCreationVKDesc.vkDevice;
         else {
-            // Disable features here
-            // ...
+            // Disable undesired features
+            if (deviceCreationDesc.robustness == Robustness::DEFAULT || deviceCreationDesc.robustness == Robustness::VK) {
+                robustness2Features.robustBufferAccess2 = 0;
+                robustness2Features.robustImageAccess2 = 0;
+            } else if (deviceCreationDesc.robustness == Robustness::OFF) {
+                robustness2Features.robustBufferAccess2 = 0;
+                robustness2Features.robustImageAccess2 = 0;
+                features.features.robustBufferAccess = 0;
+                features13.robustImageAccess = 0;
+            }
 
             // Create device
             const float priorities[2] = {0.5f, 1.0f};
@@ -702,17 +757,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         }
 
         m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevice, &props);
-
-        // Internal features
-        m_IsSupported.descriptorIndexing = features12.descriptorIndexing;
-        m_IsSupported.deviceAddress = features12.bufferDeviceAddress;
-        m_IsSupported.swapChainMutableFormat = IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, desiredDeviceExts);
-        m_IsSupported.presentId = presentIdFeatures.presentId;
-        m_IsSupported.presentWait = m_IsSupported.presentId != 0 && presentWaitFeatures.presentWait != 0;
-        m_IsSupported.memoryPriority = memoryPriorityFeatures.memoryPriority;
-        m_IsSupported.lowLatency = m_IsSupported.presentId != 0 && IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
-        m_IsSupported.imageSlicedView = slicedViewFeatures.imageSlicedViewOf3D != 0;
-        m_IsSupported.customBorderColor = borderColorFeatures.customBorderColors != 0 && borderColorFeatures.customBorderColorWithoutFormat != 0;
 
         // Fill desc
         const VkPhysicalDeviceLimits& limits = props.properties.limits;
@@ -842,26 +886,8 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.clipDistanceMaxNum = limits.maxClipDistances;
         m_Desc.cullDistanceMaxNum = limits.maxCullDistances;
         m_Desc.combinedClipAndCullDistanceMaxNum = limits.maxCombinedClipAndCullDistances;
+        m_Desc.viewMaxNum = features11.multiview ? props11.maxMultiviewViewCount : 1;
         m_Desc.shadingRateAttachmentTileSize = (uint8_t)shadingRateProps.minFragmentShadingRateAttachmentTexelSize.width;
-
-        // Based on https://docs.vulkan.org/guide/latest/hlsl.html#_shader_model_coverage // TODO: code below needs to be improved
-        m_Desc.shaderModel = 51;
-        if (m_Desc.isShaderNativeI64Supported)
-            m_Desc.shaderModel = 60;
-        if (features11.multiview)
-            m_Desc.shaderModel = 61;
-        if (m_Desc.isShaderNativeF16Supported || m_Desc.isShaderNativeI16Supported)
-            m_Desc.shaderModel = 62;
-        if (m_Desc.isRayTracingSupported)
-            m_Desc.shaderModel = 63;
-        if (m_Desc.shadingRateTier >= 2)
-            m_Desc.shaderModel = 64;
-        if (m_Desc.isMeshShaderSupported || m_Desc.rayTracingTier >= 2)
-            m_Desc.shaderModel = 65;
-        if (m_Desc.isShaderAtomicsI64Supported)
-            m_Desc.shaderModel = 66;
-        if (features.features.shaderStorageImageMultisample)
-            m_Desc.shaderModel = 67;
 
         if (m_Desc.conservativeRasterTier) {
             if (conservativeRasterProps.primitiveOverestimationSize < 1.0f / 2.0f && conservativeRasterProps.degenerateTrianglesRasterized)
@@ -903,6 +929,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isDynamicDepthBiasSupported = true;
         m_Desc.isViewportOriginBottomLeftSupported = true;
         m_Desc.isRegionResolveSupported = true;
+        m_Desc.isLayerBasedMultiviewSupported = features11.multiview;
 
         m_Desc.isShaderNativeI16Supported = features.features.shaderInt16;
         m_Desc.isShaderNativeF16Supported = features12.shaderFloat16;
@@ -915,9 +942,33 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isShaderAtomicsF32Supported = (shaderAtomicFloatFeatures.shaderBufferFloat32Atomics || shaderAtomicFloatFeatures.shaderSharedFloat32Atomics) ? true : false;
         m_Desc.isShaderAtomicsI64Supported = (features12.shaderBufferInt64Atomics || features12.shaderSharedInt64Atomics) ? true : false;
         m_Desc.isShaderAtomicsF64Supported = (shaderAtomicFloatFeatures.shaderBufferFloat64Atomics || shaderAtomicFloatFeatures.shaderSharedFloat64Atomics) ? true : false;
+        m_Desc.isRasterizedOrderedViewSupported = fragmentShaderInterlockFeatures.fragmentShaderPixelInterlock != 0 && fragmentShaderInterlockFeatures.fragmentShaderSampleInterlock != 0;
+        m_Desc.isBarycentricSupported = fragmentShaderBarycentricFeatures.fragmentShaderBarycentric;
+        m_Desc.isShaderViewportIndexSupported = features12.shaderOutputViewportIndex;
+        m_Desc.isShaderLayerSupported = features12.shaderOutputLayer;
 
         m_Desc.isSwapChainSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, desiredDeviceExts);
         m_Desc.isLowLatencySupported = IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
+
+        // Estimate shader model last since it depends on many "m_Desc" fields
+        // Based on https://docs.vulkan.org/guide/latest/hlsl.html#_shader_model_coverage // TODO: code below needs to be improved
+        m_Desc.shaderModel = 51;
+        if (m_Desc.isShaderNativeI64Supported)
+            m_Desc.shaderModel = 60;
+        if (m_Desc.viewMaxNum > 1 || m_Desc.isBarycentricSupported)
+            m_Desc.shaderModel = 61;
+        if (m_Desc.isShaderNativeF16Supported || m_Desc.isShaderNativeI16Supported)
+            m_Desc.shaderModel = 62;
+        if (m_Desc.isRayTracingSupported)
+            m_Desc.shaderModel = 63;
+        if (m_Desc.shadingRateTier >= 2)
+            m_Desc.shaderModel = 64;
+        if (m_Desc.isMeshShaderSupported || m_Desc.rayTracingTier >= 2)
+            m_Desc.shaderModel = 65;
+        if (m_Desc.isShaderAtomicsI64Supported)
+            m_Desc.shaderModel = 66;
+        if (features.features.shaderStorageImageMultisample)
+            m_Desc.shaderModel = 67;
     }
 
     ReportDeviceGroupInfo();

@@ -94,6 +94,7 @@ private:
     VkCommandBuffer m_Handle = VK_NULL_HANDLE;
     VkCommandPool m_CommandPool = VK_NULL_HANDLE;
     CommandQueueType m_Type = (CommandQueueType)0;
+    uint32_t m_ViewMask = 0;
     Dim_t m_RenderLayerNum = 0;
     Dim_t m_RenderWidth = 0;
     Dim_t m_RenderHeight = 0;

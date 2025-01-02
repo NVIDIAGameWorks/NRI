@@ -180,6 +180,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
             D3D12_MESSAGE_ID disableMessageIDs[] = {
                 // It's almost impossible to match. Doesn't hurt perf on modern HW
                 D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE,
+                D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
                 // Descriptor validation doesn't understand acceleration structures used outside of RAYGEN shaders
                 D3D12_MESSAGE_ID_COMMAND_LIST_STATIC_DESCRIPTOR_RESOURCE_DIMENSION_MISMATCH,
             };
@@ -512,6 +513,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.clipDistanceMaxNum = D3D12_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.cullDistanceMaxNum = D3D12_CLIP_OR_CULL_DISTANCE_COUNT;
     m_Desc.combinedClipAndCullDistanceMaxNum = D3D12_CLIP_OR_CULL_DISTANCE_COUNT;
+    m_Desc.viewMaxNum = options3.ViewInstancingTier != D3D12_VIEW_INSTANCING_TIER_NOT_SUPPORTED ? D3D12_MAX_VIEW_INSTANCE_COUNT : 1;
     m_Desc.shaderModel = (uint8_t)((shaderModel.HighestShaderModel / 0xF) * 10 + (shaderModel.HighestShaderModel & 0xF));
 
     m_Desc.conservativeRasterTier = (uint8_t)options.ConservativeRasterizationTier;
@@ -526,6 +528,9 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.isDrawIndirectCountSupported = true;
     m_Desc.isLineSmoothingSupported = true;
     m_Desc.isRegionResolveSupported = true;
+    m_Desc.isFlexibleMultiviewSupported = options3.ViewInstancingTier != D3D12_VIEW_INSTANCING_TIER_NOT_SUPPORTED;
+    m_Desc.isLayerBasedMultiviewSupported = options3.ViewInstancingTier != D3D12_VIEW_INSTANCING_TIER_NOT_SUPPORTED;
+    m_Desc.isViewportBasedMultiviewSupported = options3.ViewInstancingTier != D3D12_VIEW_INSTANCING_TIER_NOT_SUPPORTED;
 
     m_Desc.isShaderNativeI16Supported = options4.Native16BitShaderOpsSupported;
     m_Desc.isShaderNativeF16Supported = options4.Native16BitShaderOpsSupported;
@@ -549,6 +554,11 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
 #ifdef NRI_USE_AGILITY_SDK
     m_Desc.isShaderAtomicsI64Supported = m_Desc.isShaderAtomicsI64Supported || options9.AtomicInt64OnTypedResourceSupported || options9.AtomicInt64OnGroupSharedSupported || options11.AtomicInt64OnDescriptorHeapResourceSupported;
 #endif
+    
+    m_Desc.isRasterizedOrderedViewSupported = options.ROVsSupported;
+    m_Desc.isBarycentricSupported = options3.BarycentricsSupported;
+    m_Desc.isShaderViewportIndexSupported = options.VPAndRTArrayIndexFromAnyShaderFeedingRasterizerSupportedWithoutGSEmulation;
+    m_Desc.isShaderLayerSupported = options.VPAndRTArrayIndexFromAnyShaderFeedingRasterizerSupportedWithoutGSEmulation;
 
     m_Desc.isDrawParametersEmulationEnabled = deviceCreationDesc.enableD3D12DrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
 

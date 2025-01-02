@@ -42,7 +42,7 @@ Result DescriptorVK::CreateTextureView(const T& textureViewDesc) {
 
     VkImageViewCreateInfo createInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     createInfo.pNext = &usageInfo;
-    createInfo.viewType = GetImageViewType(textureViewDesc.viewType);
+    createInfo.viewType = GetImageViewType(textureViewDesc.viewType, subresource.layerCount);
     createInfo.format = GetVkFormat(textureViewDesc.format);
     createInfo.subresourceRange = subresource;
     createInfo.image = texture.GetHandle();
@@ -93,7 +93,7 @@ Result DescriptorVK::CreateTextureView(const Texture3DViewDesc& textureViewDesc)
 
     VkImageViewCreateInfo createInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     createInfo.pNext = &usageInfo;
-    createInfo.viewType = GetImageViewType(textureViewDesc.viewType);
+    createInfo.viewType = GetImageViewType(textureViewDesc.viewType, subresource.layerCount);
     createInfo.format = GetVkFormat(textureViewDesc.format);
     createInfo.subresourceRange = subresource;
     createInfo.image = texture.GetHandle();

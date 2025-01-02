@@ -425,6 +425,10 @@ NRI_INLINE void CommandBufferD3D12::BeginRendering(const AttachmentsDesc& attach
 
         m_GraphicsCommandList->RSSetShadingRateImage(shadingRateImage);
     }
+
+    // Multiview
+    if (m_Device.GetDesc().viewMaxNum > 1 && attachmentsDesc.viewMask)
+        m_GraphicsCommandList->SetViewInstanceMask(attachmentsDesc.viewMask);
 }
 
 NRI_INLINE void CommandBufferD3D12::SetVertexBuffers(uint32_t baseSlot, uint32_t bufferNum, const Buffer* const* buffers, const uint64_t* offsets) {

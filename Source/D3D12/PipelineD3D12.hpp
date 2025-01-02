@@ -38,6 +38,7 @@ typedef PipelineDescComponent<D3D12_BLEND_DESC, D3D12_PIPELINE_STATE_SUBOBJECT_T
 typedef PipelineDescComponent<DXGI_FORMAT, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT> PipelineDepthStencilFormat;
 typedef PipelineDescComponent<D3D12_RT_FORMAT_ARRAY, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS> PipelineRenderTargetFormats;
 typedef PipelineDescComponent<D3D12_PIPELINE_STATE_FLAGS, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_FLAGS> PipelineFlags;
+typedef PipelineDescComponent<D3D12_VIEW_INSTANCING_DESC, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_VIEW_INSTANCING> PipelineViewInstancing;
 
 static_assert((uint32_t)PrimitiveRestart::DISABLED == D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED, "Enum mismatch");
 static_assert((uint32_t)PrimitiveRestart::INDICES_UINT16 == D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFF, "Enum mismatch");
@@ -209,6 +210,7 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
         PipelineDepthStencilFormat depthStencilFormat;
         PipelineNodeMask nodeMask;
         PipelineFlags flags;
+        PipelineViewInstancing viewInstancing;
     };
 
     Stream stream = {};
@@ -238,11 +240,11 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
 
     // Vertex input
     uint32_t attributeNum = graphicsPipelineDesc.vertexInput ? graphicsPipelineDesc.vertexInput->attributeNum : 0;
-    Scratch<D3D12_INPUT_ELEMENT_DESC> scratch = AllocateScratch(m_Device, D3D12_INPUT_ELEMENT_DESC, attributeNum);
-    stream.inputLayout.desc.pInputElementDescs = scratch;
+    Scratch<D3D12_INPUT_ELEMENT_DESC> scratch1 = AllocateScratch(m_Device, D3D12_INPUT_ELEMENT_DESC, attributeNum);
     if (graphicsPipelineDesc.vertexInput) {
         const VertexInputDesc& vi = *graphicsPipelineDesc.vertexInput;
 
+        stream.inputLayout.desc.pInputElementDescs = scratch1;
         FillInputLayout(stream.inputLayout.desc, graphicsPipelineDesc);
 
         uint32_t maxBindingSlot = 0;
@@ -290,6 +292,27 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
     for (uint32_t i = 0; i < graphicsPipelineDesc.outputMerger.colorNum; i++)
         stream.renderTargetFormats.desc.RTFormats[i] = GetDxgiFormat(graphicsPipelineDesc.outputMerger.colors[i].format).typed;
 
+    // View instancing
+    uint32_t viewNum = 0;
+    uint32_t viewMask = graphicsPipelineDesc.outputMerger.viewMask;
+    while (viewMask) {
+        viewNum++;
+        viewMask >>= 1;
+    }
+
+    Scratch<D3D12_VIEW_INSTANCE_LOCATION> scratch2 = AllocateScratch(m_Device, D3D12_VIEW_INSTANCE_LOCATION, viewNum);
+    D3D12_VIEW_INSTANCE_LOCATION* pViewInstanceLocations = scratch2;
+    if (viewNum) {
+        for (uint32_t i = 0; i < viewNum; i++) {
+            pViewInstanceLocations[i].ViewportArrayIndex = graphicsPipelineDesc.outputMerger.multiview == Multiview::VIEWPORT_BASED ? i : 0;
+            pViewInstanceLocations[i].RenderTargetArrayIndex = graphicsPipelineDesc.outputMerger.multiview == Multiview::LAYER_BASED ? i : 0;
+        }
+
+        stream.viewInstancing.desc.ViewInstanceCount = viewNum;
+        stream.viewInstancing.desc.pViewInstanceLocations = pViewInstanceLocations;
+        stream.viewInstancing.desc.Flags = graphicsPipelineDesc.outputMerger.multiview == Multiview::FLEXIBLE ? D3D12_VIEW_INSTANCING_FLAG_ENABLE_VIEW_INSTANCE_MASKING : D3D12_VIEW_INSTANCING_FLAG_NONE;
+    }
+
     // Create
     D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {};
     pipelineStateStreamDesc.pPipelineStateSubobjectStream = &stream;
@@ -332,10 +355,10 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     // Vertex input
     uint32_t attributeNum = graphicsPipelineDesc.vertexInput ? graphicsPipelineDesc.vertexInput->attributeNum : 0;
     Scratch<D3D12_INPUT_ELEMENT_DESC> scratch = AllocateScratch(m_Device, D3D12_INPUT_ELEMENT_DESC, attributeNum);
-    graphicsPipleineStateDesc.InputLayout.pInputElementDescs = scratch;
     if (graphicsPipelineDesc.vertexInput) {
         const VertexInputDesc& vi = *graphicsPipelineDesc.vertexInput;
 
+        graphicsPipleineStateDesc.InputLayout.pInputElementDescs = scratch;
         FillInputLayout(graphicsPipleineStateDesc.InputLayout, graphicsPipelineDesc);
 
         uint32_t maxBindingSlot = 0;
