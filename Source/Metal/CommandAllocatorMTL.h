@@ -17,6 +17,7 @@ struct CommandAllocatorMTL {
     }
 
     ~CommandAllocatorMTL();
+    
 
 
     Result Create(const CommandQueue& commandQueue);

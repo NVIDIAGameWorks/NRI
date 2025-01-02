@@ -16,6 +16,14 @@ Result CommandAllocatorMTL::Create(const CommandQueue& commandQueue) {
     return Result::SUCCESS;
 }
 
+
+void CommandAllocatorMTL::SetDebugName(const char* name) {
+    
+}
+
+void CommandAllocatorMTL::Reset() {
+    
+}
 //================================================================================================================
 // NRI
 //================================================================================================================

@@ -326,36 +326,75 @@ void CommandBufferMTL::SetShadingRate(const ShadingRateDesc& shadingRateDesc) {
 void CommandBufferMTL::ClearAttachments(const ClearDesc* clearDescs, uint32_t clearDescNum, const Rect* rects, uint32_t rectNum) {
     MTLRenderPassDescriptor* renderPassDesc = [MTLRenderPassDescriptor alloc];
     id<MTLRenderCommandEncoder> rendererEncoder = [m_Handle renderCommandEncoderWithDescriptor: renderPassDesc];
-
+    
     simd::float4 vertices[6 * 16];
-//    simd::float4 clearColors[kMVKClearAttachmentCount];
-
+    size_t vtxIndex= 0;
+    simd::float4 clearColors[16];
+    
     for(size_t i = 0; i < clearDescNum; i++) {
         
         simd::float2 srcBL = simd_make_float2(rects[i].x / m_Viewports[i].width,
-                                              (m_Viewports[i].height - rects[i].y) / m_Viewports[i].height);
-        simd::float2 srcTR = simd_make_float2(rects[i].x / m_Viewports[i].width,
-                                              (m_Viewports[i].height - rects[i].y) / m_Viewports[i].height);
-//        simd::float2 dstBL = simd_make_float2((CGFloat)(do0.x) / (CGFloat)dstExtent.width,
-//                                    (CGFloat)(dstExtent.height - do1.y) / (CGFloat)dstExtent.height);
-//        simd::float2 dstTR = simd_make_float2((CGFloat)(do1.x) / (CGFloat)dstExtent.width,
-//                                    (CGFloat)(dstExtent.height - do0.y) / (CGFloat)dstExtent.height);
-
+                                              (rects[i].y + rects[i].height) / m_Viewports[i].height);
+        simd::float2 srcTR = simd_make_float2((rects[i].x + rects[i].width) / m_Viewports[i].width,
+                                              rects[i].y / m_Viewports[i].height);
         
+        float leftPos = rects[i].x / m_Viewports[i].width;
+        float rightPos = (rects[i].width / m_Viewports[i].width) + leftPos;
+        float bottomPos = rects[i].y / m_Viewports[i].height;
+        float topPos = (rects[i].height / m_Viewports[i].height) + bottomPos;
+        
+        clearColors[i] = simd_make_float4(
+                                          clearDescs[i].value.color.f.x,
+                                          clearDescs[i].value.color.f.y,
+                                          clearDescs[i].value.color.f.z,
+                                          clearDescs[i].value.color.f.w);
+        
+        simd::float4 vtx;
+        vtx.z = 0.0;
+        vtx.w = clearDescs[i].colorAttachmentIndex;
+        
+        // Top left vertex    - First triangle
+        vtx.y = topPos;
+        vtx.x = leftPos;
+        vertices[vtxIndex++] = vtx;
+        
+        // Bottom left vertex
+        vtx.y = bottomPos;
+        vtx.x = leftPos;
+        vertices[vtxIndex++] = vtx;
+        
+        // Bottom right vertex
+        vtx.y = bottomPos;
+        vtx.x = rightPos;
+        vertices[vtxIndex++] = vtx;
+        
+        // Bottom right vertex    - Second triangle
+        vertices[vtxIndex++] = vtx;
+        
+        // Top right vertex
+        vtx.y = topPos;
+        vtx.x = rightPos;
+        vertices[vtxIndex++] = vtx;
+        
+        // Top left vertex
+        vtx.y = topPos;
+        vtx.x = leftPos;
+        vertices[vtxIndex++] = vtx;
     }
     
     if(m_numViewports > 0)
         [rendererEncoder
          setViewports: m_Viewports
          count: m_numViewports];
+    
     [rendererEncoder setCullMode: MTLCullModeNone];
     [rendererEncoder setTriangleFillMode: MTLTriangleFillModeFill];
     [rendererEncoder setDepthBias: 0 slopeScale: 0 clamp: 0];
     [rendererEncoder setRenderPipelineState: m_Device.GetClearPipeline(clearDescs, clearDescNum)];
-
-    
+    [rendererEncoder setVertexBytes: vertices length: vtxIndex atIndex: 0];
+    [rendererEncoder drawPrimitives: MTLPrimitiveTypeTriangle vertexStart: 0 vertexCount: vtxIndex];
     [rendererEncoder endEncoding];
-   
+    
 }
 
 void CommandBufferMTL::EndCurrentEncoders() {

@@ -247,6 +247,7 @@ if (NRI_ENABLE_METAL_SUPPORT AND APPLE)
         "-framework MetalKit"
         "-framework AppKit"
         "-framework Foundation"
+        "-framework IOKit"
         "-framework QuartzCore"
     )
     target_include_directories (NRI_MTL PRIVATE "Include" "Source/Shared" "External")
@@ -321,7 +322,13 @@ file (GLOB NRI_EXTENSIONS "Include/Extensions/*.h" "Include/Extensions/*.hpp")
 source_group ("Include/Extensions" FILES ${NRI_EXTENSIONS})
 
 file (GLOB NRI_SOURCE "Source/Creation/*.cpp" "Source/Creation/*.h")
+if (NRI_ENABLE_METAL_SUPPORT)
+    file (GLOB MTL_SOURCE "Source/Creation/*.mm")
+    list (APPEND NRI_SOURCE ${MTL_SOURCE})
+endif()
 source_group ("Sources" FILES ${NRI_SOURCE})
+
+
 
 file (GLOB NRI_RESOURCES "Resources/*")
 source_group ("Resources" FILES ${NRI_RESOURCES})

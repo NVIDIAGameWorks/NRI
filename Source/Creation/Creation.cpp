@@ -221,6 +221,11 @@ NRI_API Result NRI_CALL nriCreateDevice(const DeviceCreationDesc& deviceCreation
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::D3D12)
         result = CreateDeviceD3D12(modifiedDeviceCreationDesc, deviceImpl);
 #endif
+    
+#if NRI_USE_MTL
+    if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::MTL)
+        result = CreateDeviceMTL(modifiedDeviceCreationDesc, deviceImpl);
+#endif
 
 #if NRI_USE_VK
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::VK)
