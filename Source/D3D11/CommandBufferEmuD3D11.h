@@ -24,16 +24,16 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
     // CommandBufferHelper
     //================================================================================================================
 
-    inline ID3D11DeviceContext* CommandBufferEmuD3D11::GetNativeObject() const {
+    inline ID3D11DeviceContext* CommandBufferEmuD3D11::GetNativeObject() const override {
         return m_Device.GetImmediateContext();
     }
 
-    inline StdAllocator<uint8_t>& CommandBufferEmuD3D11::GetStdAllocator() const {
+    inline StdAllocator<uint8_t>& CommandBufferEmuD3D11::GetStdAllocator() const override {
         return m_Device.GetStdAllocator();
     }
 
-    Result Create(ID3D11DeviceContext* precreatedContext);
-    void Submit();
+    Result Create(ID3D11DeviceContext* precreatedContext) override;
+    void Submit() override;
 
     //================================================================================================================
     // NRI

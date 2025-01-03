@@ -28,16 +28,16 @@ struct CommandBufferD3D11 final : public CommandBufferHelper {
     // CommandBufferHelper
     //================================================================================================================
 
-    inline ID3D11DeviceContext* GetNativeObject() const {
+    inline ID3D11DeviceContext* GetNativeObject() const override {
         return m_DeferredContext;
     }
 
-    inline StdAllocator<uint8_t>& CommandBufferD3D11::GetStdAllocator() const {
+    inline StdAllocator<uint8_t>& CommandBufferD3D11::GetStdAllocator() const override {
         return m_Device.GetStdAllocator();
     }
 
-    Result Create(ID3D11DeviceContext* precreatedContext);
-    void Submit();
+    Result Create(ID3D11DeviceContext* precreatedContext) override;
+    void Submit() override;
 
     //================================================================================================================
     // NRI
