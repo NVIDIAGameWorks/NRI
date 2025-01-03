@@ -792,6 +792,115 @@ nri::Format VKFormatToNRIFormat(uint32_t format) {
     return nri::Format::UNKNOWN;
 }
 
+
+nri::Format MTLFormatToNRIFormat(uint32_t format) {
+    switch (format) {
+        case 0: return nri::Format::UNKNOWN; // MTLPixelFormatInvalid  = 0
+        case 1: return nri::Format::UNKNOWN; // MTLPixelFormatA8Unorm  = 1
+            
+        case 10: return nri::Format::R8_UNORM;  // MTLPixelFormatR8Unorm      = 10,
+        case 11: return nri::Format::UNKNOWN;   // MTLPixelFormatR8Unorm_sRGB = 11,
+        case 12: return nri::Format::R8_SNORM;  // MTLPixelFormatR8Snorm      = 12,
+        case 13: return nri::Format::R8_UINT;   // MTLPixelFormatR8Uint       = 13,
+        case 14: return nri::Format::R8_SINT;   // MTLPixelFormatR8Sint       = 14,
+            
+        case 20: return nri::Format::R16_UNORM; // MTLPixelFormatR16Unorm     = 20,
+            
+        case 22: return nri::Format::R16_SNORM;// MTLPixelFormatR16Snorm        = 22
+        case 23: return nri::Format::R16_UINT; // MTLPixelFormatR16Uint      = 23
+        case 24: return nri::Format::R16_SINT; // MTLPixelFormatR16Sint      = 24
+        case 25: return nri::Format::R16_SFLOAT; //MTLPixelFormatR16Float    = 25
+            
+            
+        case 30: return nri::Format::RG8_UNORM;// MTLPixelFormatRG8Unorm = 30,
+        case 31: return nri::Format::UNKNOWN;  // MTLPixelFormatRG8Unorm_sRGB  = 31,
+        case 32: return nri::Format::RG8_SNORM;// MTLPixelFormatRG8Snorm = 32,
+        case 33: return nri::Format::RG8_UINT; // MTLPixelFormatRG8Uint = 33,
+        case 34: return nri::Format::RG8_SINT; // MTLPixelFormatRG8Sint = 34,
+            
+            
+        case 40: return nri::Format::B5_G6_R5_UNORM;    // MTLPixelFormatB5G6R5Unorm  = 40,
+        case 41: return nri::Format::B5_G5_R5_A1_UNORM; // MTLPixelFormatA1BGR5Unorm  = 41,
+        case 42: return nri::Format::UNKNOWN;           // MTLPixelFormatABGR4Unorm   = 42,
+        case 43: return nri::Format::B5_G5_R5_A1_UNORM; // MTLPixelFormatBGR5A1Unorm  = 43,
+            
+            
+        case 53: return nri::Format::R32_UINT;  // MTLPixelFormatR32Uint  = 53,
+        case 54: return nri::Format::R32_SINT;  // MTLPixelFormatR32Sint  = 54,
+        case 55: return nri::Format::R32_SFLOAT;// MTLPixelFormatR32Float = 55,
+            
+        case 60: return nri::Format::RG16_UNORM; //MTLPixelFormatRG16Unorm  = 60,
+        case 62: return nri::Format::RG16_SNORM; //    MTLPixelFormatRG16Snorm  = 62,
+        case 63: return nri::Format::RG16_UINT; //    MTLPixelFormatRG16Uint   = 63,
+        case 64: return nri::Format::RG16_SINT; //    MTLPixelFormatRG16Sint   = 64,
+        case 65: return nri::Format::RG16_SFLOAT; //    MTLPixelFormatRG16Float  = 65,
+            
+        case 70: return nri::Format::RGBA8_UNORM; //    MTLPixelFormatRGBA8Unorm      = 70,
+        case 71: return nri::Format::RGBA8_SRGB; //    MTLPixelFormatRGBA8Unorm_sRGB = 71,
+        case 72: return nri::Format::RGBA8_SNORM; //    MTLPixelFormatRGBA8Snorm      = 72,
+        case 73: return nri::Format::RGBA8_UINT; //    MTLPixelFormatRGBA8Uint       = 73,
+        case 74: return nri::Format::RGBA8_SINT; //    MTLPixelFormatRGBA8Sint       = 74,
+            
+        case 80: return nri::Format::BGRA8_UNORM;//    MTLPixelFormatBGRA8Unorm      = 80,
+        case 81: return nri::Format::BGRA8_SRGB; //    MTLPixelFormatBGRA8Unorm_sRGB = 81,
+            
+        case 90: return nri::Format::R10_G10_B10_A2_UNORM;//    MTLPixelFormatRGB10A2Unorm = 90,
+        case 91: return nri::Format::R10_G10_B10_A2_UINT;//    MTLPixelFormatRGB10A2Uint  = 91,
+            
+        case 92: return nri::Format::R11_G11_B10_UFLOAT; //    MTLPixelFormatRG11B10Float = 92,
+        case 93: return nri::Format::R9_G9_B9_E5_UFLOAT; //    MTLPixelFormatRGB9E5Float = 93,
+            
+        case 94: return nri::Format::UNKNOWN; //    MTLPixelFormatRGB9E5Float = 94
+        case 554: return nri::Format::UNKNOWN; //    MTLPixelFormatBGR10_XR = 544
+        case 555: return nri::Format::UNKNOWN; //    MTLPixelFormatBGR10_XR_sRGB = 555
+            
+        case 103: return nri::Format::RG32_UINT; //    MTLPixelFormatRG32Uint  = 103,
+        case 104: return nri::Format::RG32_SINT;//    MTLPixelFormatRG32Sint  = 104,
+            
+        case 105: return nri::Format::RG32_SFLOAT; //    MTLPixelFormatRG32Float = 105,
+            
+        case 110: return nri::Format::RGBA16_UNORM;//    MTLPixelFormatRGBA16Unorm  = 110,
+        case 112: return nri::Format::RGBA16_SNORM;//    MTLPixelFormatRGBA16Snorm  = 112,
+        case 113: return nri::Format::RGBA16_UINT;//    MTLPixelFormatRGBA16Uint   = 113,
+        case 114: return nri::Format::RGBA16_SINT;//    MTLPixelFormatRGBA16Sint   = 114,
+        case 115: return nri::Format::RGBA16_SFLOAT;//    MTLPixelFormatRGBA16Float  = 115,
+            
+        case 552: return nri::Format::UNKNOWN; // MTLPixelFormatBGRA10_XR       = 552,
+        case 553: return nri::Format::UNKNOWN; // MTLPixelFormatBGRA10_XR_sRGB  = 553,
+            
+            
+        case 123: return nri::Format::RGBA32_UINT; //MTLPixelFormatRGBA32Uint  = 123,
+        case 124: return nri::Format::RGBA32_SINT; //MTLPixelFormatRGBA32Sint  = 124,
+        case 125: return nri::Format::RGBA32_SFLOAT; //MTLPixelFormatRGBA32Float = 125,
+            
+        case 130: return nri::Format::BC1_RGBA_UNORM; // MTLPixelFormatBC1_RGBA   = 130,
+        case 131: return nri::Format::BC1_RGBA_SRGB; // MTLPixelFormatBC1_RGBA_sRGB = 131,
+        case 132: return nri::Format::BC2_RGBA_UNORM; // MTLPixelFormatBC2_RGBA  = 132,
+        case 133: return nri::Format::BC2_RGBA_SRGB; // MTLPixelFormatBC2_RGBA_sRGB  = 133,
+        case 134: return nri::Format::BC3_RGBA_UNORM; //MTLPixelFormatBC3_RGBA  = 134,
+        case 135: return nri::Format::BC3_RGBA_SRGB; // MTLPixelFormatBC3_RGB_sRGB  =135,
+            
+            
+        case 140: return nri::Format::BC4_R_UNORM; // MTLPixelFormatBC4_RUnorm = 140,
+        case 141: return nri::Format::BC4_R_SNORM; // MTLPixelFormatBC4_RSnorm = 141,
+        case 142: return nri::Format::BC5_RG_UNORM;// MTLPixelFormatBC5_RGUnorm = 142,
+        case 143: return nri::Format::BC5_RG_SNORM;// MTLPixelFormatBC5_RGSnorm = 143,
+            
+        case 150: return nri::Format::BC6H_RGB_SFLOAT; // MTLPixelFormatBC6H_RGBFloat = 150,
+        case 151: return nri::Format::BC6H_RGB_UFLOAT; // MTLPixelFormatBC6H_RGBUfloat = 151,
+        case 152: return nri::Format::BC7_RGBA_UNORM; // MTLPixelFormatBC7_RGBAUnorm = 152,
+        case 153: return nri::Format::BC7_RGBA_SRGB; // MTLPixelFormatBC7_RGBAUnorm_sRGB = 153,
+            
+        
+            
+        case 255: return nri::Format::D24_UNORM_S8_UINT;//  MTLPixelFormatDepth24Unorm_Stencil8   = 255,
+        case 262: return nri::Format::D32_SFLOAT_S8_UINT_X24;//  MTLPixelFormatX24_Stencil8  = 262,
+    
+            
+    }
+    return nri::Format::UNKNOWN;
+}
+
 constexpr std::array<const char*, (size_t)nri::Message::MAX_NUM> MESSAGE_TYPE_NAME = {
     "INFO",    // INFO,
     "WARNING", // WARNING,
