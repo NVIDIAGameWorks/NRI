@@ -5,7 +5,9 @@
 #define VULKAN_FUNCTION(name) PFN_vk##name name
 
 struct DispatchTable {
+    //==========================================================================
     // Instance
+    //==========================================================================
     VULKAN_FUNCTION(GetInstanceProcAddr);
     VULKAN_FUNCTION(CreateInstance);
     VULKAN_FUNCTION(EnumerateInstanceExtensionProperties);
@@ -14,22 +16,23 @@ struct DispatchTable {
     VULKAN_FUNCTION(GetDeviceProcAddr);
     VULKAN_FUNCTION(DestroyInstance);
     VULKAN_FUNCTION(DestroyDevice);
-    VULKAN_FUNCTION(GetPhysicalDeviceMemoryProperties);
     VULKAN_FUNCTION(GetPhysicalDeviceMemoryProperties2);
     VULKAN_FUNCTION(GetDeviceGroupPeerMemoryFeatures);
-    VULKAN_FUNCTION(GetPhysicalDeviceFormatProperties);
+    VULKAN_FUNCTION(GetPhysicalDeviceFormatProperties2);
     VULKAN_FUNCTION(CreateDevice);
-    VULKAN_FUNCTION(GetDeviceQueue);
+    VULKAN_FUNCTION(GetDeviceQueue2);
     VULKAN_FUNCTION(EnumeratePhysicalDeviceGroups);
     VULKAN_FUNCTION(GetPhysicalDeviceProperties2);
     VULKAN_FUNCTION(GetPhysicalDeviceFeatures2);
-    VULKAN_FUNCTION(GetPhysicalDeviceQueueFamilyProperties);
+    VULKAN_FUNCTION(GetPhysicalDeviceQueueFamilyProperties2);
     VULKAN_FUNCTION(EnumerateDeviceExtensionProperties);
 
-    // VK_KHR_surface
-    VULKAN_FUNCTION(GetPhysicalDeviceSurfaceFormatsKHR);
-    VULKAN_FUNCTION(GetPhysicalDeviceSurfaceSupportKHR);
+    // VK_KHR_get_surface_capabilities2
+    VULKAN_FUNCTION(GetPhysicalDeviceSurfaceFormats2KHR);
     VULKAN_FUNCTION(GetPhysicalDeviceSurfaceCapabilities2KHR);
+
+    // VK_KHR_surface
+    VULKAN_FUNCTION(GetPhysicalDeviceSurfaceSupportKHR);
     VULKAN_FUNCTION(GetPhysicalDeviceSurfacePresentModesKHR);
     VULKAN_FUNCTION(DestroySurfaceKHR);
 
@@ -56,13 +59,14 @@ struct DispatchTable {
     VULKAN_FUNCTION(QueueEndDebugUtilsLabelEXT);
     VULKAN_FUNCTION(QueueInsertDebugUtilsLabelEXT);
 
+    //==========================================================================
     // Device
+    //==========================================================================
     VULKAN_FUNCTION(CreateBuffer);
     VULKAN_FUNCTION(CreateImage);
     VULKAN_FUNCTION(CreateBufferView);
     VULKAN_FUNCTION(CreateImageView);
     VULKAN_FUNCTION(CreateSampler);
-    VULKAN_FUNCTION(CreateFramebuffer);
     VULKAN_FUNCTION(CreateQueryPool);
     VULKAN_FUNCTION(CreateCommandPool);
     VULKAN_FUNCTION(CreateSemaphore);
@@ -87,8 +91,8 @@ struct DispatchTable {
     VULKAN_FUNCTION(DestroyShaderModule);
     VULKAN_FUNCTION(DestroyPipeline);
     VULKAN_FUNCTION(AllocateMemory);
-    VULKAN_FUNCTION(MapMemory);
-    VULKAN_FUNCTION(UnmapMemory);
+    VULKAN_FUNCTION(MapMemory);                         // TODO: replace with 2 (VK_KHR_map_memory2 or VK 1.4)
+    VULKAN_FUNCTION(UnmapMemory);                       // TODO: replace with 2 (VK_KHR_map_memory2 or VK 1.4)
     VULKAN_FUNCTION(FreeMemory);
     VULKAN_FUNCTION(FlushMappedMemoryRanges);
     VULKAN_FUNCTION(QueueWaitIdle);
@@ -109,19 +113,19 @@ struct DispatchTable {
     VULKAN_FUNCTION(ResetQueryPool);
     VULKAN_FUNCTION(GetBufferDeviceAddress);
     VULKAN_FUNCTION(BeginCommandBuffer);
-    VULKAN_FUNCTION(CmdSetViewport);
-    VULKAN_FUNCTION(CmdSetScissor);
+    VULKAN_FUNCTION(CmdSetViewportWithCount);
+    VULKAN_FUNCTION(CmdSetScissorWithCount);
     VULKAN_FUNCTION(CmdSetDepthBounds);
     VULKAN_FUNCTION(CmdSetStencilReference);
     VULKAN_FUNCTION(CmdSetBlendConstants);
-    VULKAN_FUNCTION(CmdSetDepthBias);
+    VULKAN_FUNCTION(CmdSetDepthBias);                   // TODO: replace with 2 (VK_EXT_depth_bias_control)
     VULKAN_FUNCTION(CmdClearAttachments);
     VULKAN_FUNCTION(CmdClearColorImage);
-    VULKAN_FUNCTION(CmdBindVertexBuffers);
-    VULKAN_FUNCTION(CmdBindIndexBuffer);
+    VULKAN_FUNCTION(CmdBindVertexBuffers2);
+    VULKAN_FUNCTION(CmdBindIndexBuffer);                // TODO: remove after migration to v1.4
     VULKAN_FUNCTION(CmdBindPipeline);
-    VULKAN_FUNCTION(CmdBindDescriptorSets);
-    VULKAN_FUNCTION(CmdPushConstants);
+    VULKAN_FUNCTION(CmdBindDescriptorSets);             // TODO: replace with 2 (VK_KHR_maintenance6 or VK 1.4)
+    VULKAN_FUNCTION(CmdPushConstants);                  // TODO: replace with 2 (VK_KHR_maintenance6 or VK 1.4)
     VULKAN_FUNCTION(CmdDispatch);
     VULKAN_FUNCTION(CmdDispatchIndirect);
     VULKAN_FUNCTION(CmdDraw);
@@ -130,21 +134,24 @@ struct DispatchTable {
     VULKAN_FUNCTION(CmdDrawIndexedIndirect);
     VULKAN_FUNCTION(CmdDrawIndirectCount);
     VULKAN_FUNCTION(CmdDrawIndexedIndirectCount);
-    VULKAN_FUNCTION(CmdCopyBuffer);
-    VULKAN_FUNCTION(CmdCopyImage);
-    VULKAN_FUNCTION(CmdResolveImage);
-    VULKAN_FUNCTION(CmdCopyBufferToImage);
-    VULKAN_FUNCTION(CmdCopyImageToBuffer);
+    VULKAN_FUNCTION(CmdCopyBuffer2);
+    VULKAN_FUNCTION(CmdCopyImage2);
+    VULKAN_FUNCTION(CmdResolveImage2);
+    VULKAN_FUNCTION(CmdCopyBufferToImage2);
+    VULKAN_FUNCTION(CmdCopyImageToBuffer2);
     VULKAN_FUNCTION(CmdPipelineBarrier2);
     VULKAN_FUNCTION(CmdBeginQuery);
     VULKAN_FUNCTION(CmdEndQuery);
-    VULKAN_FUNCTION(CmdWriteTimestamp);
+    VULKAN_FUNCTION(CmdWriteTimestamp2);
     VULKAN_FUNCTION(CmdCopyQueryPoolResults);
     VULKAN_FUNCTION(CmdResetQueryPool);
     VULKAN_FUNCTION(CmdFillBuffer);
     VULKAN_FUNCTION(CmdBeginRendering);
     VULKAN_FUNCTION(CmdEndRendering);
     VULKAN_FUNCTION(EndCommandBuffer);
+
+    // VK_KHR_maintenance5
+    VULKAN_FUNCTION(CmdBindIndexBuffer2KHR);
 
     // VK_KHR_push_descriptor
     VULKAN_FUNCTION(CmdPushDescriptorSetKHR);

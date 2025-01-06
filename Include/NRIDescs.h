@@ -59,7 +59,6 @@ typedef uint32_t Nri(MemoryType);
 // Aliases
 static const uint32_t NriConstant(BGRA_UNUSED) = 0;         // only for "bgra" color for profiling
 static const uint32_t NriConstant(ALL_SAMPLES) = 0;         // only for "sampleMask"
-static const uint32_t NriConstant(ONE_VIEWPORT) = 0;        // only for "viewportNum"
 static const Nri(Dim_t) NriConstant(WHOLE_SIZE) = 0;        // only for "Dim_t" and "size"
 static const Nri(Mip_t) NriConstant(REMAINING_MIPS) = 0;    // only for "mipNum"
 static const Nri(Dim_t) NriConstant(REMAINING_LAYERS) = 0;  // only for "layerNum"
@@ -701,7 +700,7 @@ NriStruct(VertexAttributeDesc) {
 };
 
 NriStruct(VertexStreamDesc) {
-    uint16_t stride;
+    uint16_t stride; // TODO: the code is ready to accept "stride" as a dynamic parameter of "CmdSetVertexBuffers"
     uint16_t bindingSlot;
     Nri(VertexStreamStepRate) stepRate;
 };
@@ -769,7 +768,6 @@ NriStruct(DepthBiasDesc) {
 };
 
 NriStruct(RasterizationDesc) {
-    uint32_t viewportNum;
     Nri(DepthBiasDesc) depthBias;
     Nri(FillMode) fillMode;
     Nri(CullMode) cullMode;

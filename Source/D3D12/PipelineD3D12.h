@@ -14,7 +14,7 @@ struct PipelineD3D12 {
     inline PipelineD3D12(DeviceD3D12& device)
         : m_Device(device)
         , m_ShaderGroupNames(device.GetStdAllocator())
-        , m_InputAssemplyStrides(device.GetStdAllocator()) {
+        , m_VertexStreamStrides(device.GetStdAllocator()) {
     }
 
     inline ~PipelineD3D12() {
@@ -36,8 +36,8 @@ struct PipelineD3D12 {
         return *m_PipelineLayout;
     }
 
-    inline uint32_t GetIAStreamStride(uint32_t streamSlot) const {
-        return m_InputAssemplyStrides[streamSlot];
+    inline uint32_t GetVertexStreamStride(uint32_t streamSlot) const {
+        return m_VertexStreamStrides[streamSlot];
     }
 
     Result Create(const GraphicsPipelineDesc& graphicsPipelineDesc);
@@ -65,7 +65,7 @@ private:
     ComPtr<ID3D12StateObject> m_StateObject;
     ComPtr<ID3D12StateObjectProperties> m_StateObjectProperties;
     Vector<std::wstring> m_ShaderGroupNames;
-    Vector<uint32_t> m_InputAssemplyStrides;
+    Vector<uint32_t> m_VertexStreamStrides;
     const PipelineLayoutD3D12* m_PipelineLayout = nullptr;
     D3D_PRIMITIVE_TOPOLOGY m_PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
     bool m_IsGraphicsPipeline = false;

@@ -34,7 +34,7 @@ constexpr VkBufferUsageFlags GetBufferUsageFlags(BufferUsageBits bufferUsageBits
         flags |= structureStride ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
 
     if (bufferUsageBits & BufferUsageBits::SHADER_RESOURCE_STORAGE)
-        flags |= structureStride ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+        flags |= structureStride ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
 
     return flags;
 }
@@ -134,16 +134,16 @@ void DeviceVK::ProcessInstanceExtensions(Vector<const char*>& desiredInstanceExt
     for (const VkExtensionProperties& props : supportedExts)
         REPORT_INFO(this, "    %s (v%u)", props.extensionName, props.specVersion);
 
-    // Mandatory
-    if (IsExtensionSupported(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME, supportedExts))
-        desiredInstanceExts.push_back(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
-
 #ifdef __APPLE__
+    // Mandatory
     desiredInstanceExts.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
     desiredInstanceExts.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 #endif
 
     // Optional
+    if (IsExtensionSupported(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME, supportedExts))
+        desiredInstanceExts.push_back(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
+
     if (IsExtensionSupported(VK_KHR_SURFACE_EXTENSION_NAME, supportedExts)) {
         desiredInstanceExts.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 
@@ -185,6 +185,8 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
         desiredDeviceExts.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
         desiredDeviceExts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
         desiredDeviceExts.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+        desiredDeviceExts.push_back(VK_KHR_COPY_COMMANDS_2_EXTENSION_NAME);
+        desiredDeviceExts.push_back(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
     }
 
 #ifdef __APPLE__
@@ -196,17 +198,20 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
+    if (IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME);
+
     if (IsExtensionSupported(VK_KHR_PRESENT_ID_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_PRESENT_ID_EXTENSION_NAME);
 
     if (IsExtensionSupported(VK_KHR_PRESENT_WAIT_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_PRESENT_WAIT_EXTENSION_NAME);
 
-    if (IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, supportedExts))
-        desiredDeviceExts.push_back(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME);
-
     if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+
+    if (IsExtensionSupported(VK_KHR_MAINTENANCE_6_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_MAINTENANCE_6_EXTENSION_NAME);
 
     if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME);
@@ -465,7 +470,10 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             m_PhysicalDevice = deviceGroups[i].physicalDevices[0];
         }
 
-        m_VK.GetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &m_MemoryProps);
+        VkPhysicalDeviceMemoryProperties2 memoryProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2};
+        m_VK.GetPhysicalDeviceMemoryProperties2(m_PhysicalDevice, &memoryProps);
+
+        m_MemoryProps = memoryProps.memoryProperties;
 
         FillFamilyIndices(isWrapper, deviceCreationVKDesc);
     }
@@ -508,6 +516,28 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     }
 #endif
 
+    // Mandatory
+    VkPhysicalDeviceSynchronization2Features synchronization2features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES};
+    if (IsExtensionSupported(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(synchronization2features);
+    }
+
+    VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES};
+    if (IsExtensionSupported(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(dynamicRenderingFeatures);
+    }
+
+    VkPhysicalDeviceMaintenance4Features maintenance4Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES};
+    if (IsExtensionSupported(VK_KHR_MAINTENANCE_4_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(maintenance4Features);
+    }
+
+    VkPhysicalDeviceExtendedDynamicStateFeaturesEXT extendedDynamicStateFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT};
+    if (IsExtensionSupported(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(extendedDynamicStateFeatures);
+    }
+
+    // Optional
     VkPhysicalDevicePresentIdFeaturesKHR presentIdFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR};
     if (IsExtensionSupported(VK_KHR_PRESENT_ID_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(presentIdFeatures);
@@ -521,6 +551,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR};
     if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(maintenance5Features);
+    }
+
+    VkPhysicalDeviceMaintenance6FeaturesKHR maintenance6Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_MAINTENANCE_6_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(maintenance6Features);
     }
 
     VkPhysicalDeviceFragmentShadingRateFeaturesKHR shadingRateFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR};
@@ -621,6 +656,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     m_IsSupported.lowLatency = presentIdFeatures.presentId != 0 && IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
     m_IsSupported.memoryPriority = memoryPriorityFeatures.memoryPriority;
     m_IsSupported.maintenance5 = maintenance5Features.maintenance5;
+    m_IsSupported.maintenance6 = maintenance6Features.maintenance6;
     m_IsSupported.imageSlicedView = slicedViewFeatures.imageSlicedViewOf3D != 0;
     m_IsSupported.customBorderColor = borderColorFeatures.customBorderColors != 0 && borderColorFeatures.customBorderColorWithoutFormat != 0;
     m_IsSupported.robustness = features.features.robustBufferAccess != 0 && features13.robustImageAccess != 0;
@@ -710,21 +746,24 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             APPEND_EXT(props13);
         }
 
-        VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT};
-        if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
-            APPEND_EXT(conservativeRasterProps);
-            m_Desc.conservativeRasterTier = 1;
+        VkPhysicalDeviceMaintenance4PropertiesKHR maintenance4Props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_4_EXTENSION_NAME, desiredDeviceExts)) {
+            APPEND_EXT(maintenance4Props);
+        }
+
+        VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5Props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, desiredDeviceExts)) {
+            APPEND_EXT(maintenance5Props);
+        }
+
+        VkPhysicalDeviceMaintenance6PropertiesKHR maintenance6Props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_6_EXTENSION_NAME, desiredDeviceExts)) {
+            APPEND_EXT(maintenance6Props);
         }
 
         VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR};
         if (IsExtensionSupported(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(lineRasterizationProps);
-        }
-
-        VkPhysicalDeviceSampleLocationsPropertiesEXT sampleLocationsProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT};
-        if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, desiredDeviceExts)) {
-            APPEND_EXT(sampleLocationsProps);
-            m_Desc.sampleLocationsTier = 1;
         }
 
         VkPhysicalDeviceFragmentShadingRatePropertiesKHR shadingRateProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR};
@@ -748,6 +787,18 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             APPEND_EXT(accelerationStructureProps);
             m_Desc.rayTracingTier = 1;
             m_Desc.isRayTracingSupported = true;
+        }
+
+        VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT};
+        if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, desiredDeviceExts)) {
+            APPEND_EXT(conservativeRasterProps);
+            m_Desc.conservativeRasterTier = 1;
+        }
+
+        VkPhysicalDeviceSampleLocationsPropertiesEXT sampleLocationsProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT};
+        if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, desiredDeviceExts)) {
+            APPEND_EXT(sampleLocationsProps);
+            m_Desc.sampleLocationsTier = 1;
         }
 
         VkPhysicalDeviceMeshShaderPropertiesEXT meshShaderProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT};
@@ -797,7 +848,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.constantBufferMaxRange = limits.maxUniformBufferRange;
         m_Desc.storageBufferMaxRange = limits.maxStorageBufferRange;
         m_Desc.bufferTextureGranularity = (uint32_t)limits.bufferImageGranularity;
-        m_Desc.bufferMaxSize = props13.maxBufferSize;
+        m_Desc.bufferMaxSize = m_MinorVersion >= 3 ? props13.maxBufferSize : maintenance4Props.maxBufferSize;
 
         m_Desc.uploadBufferTextureRowAlignment = (uint32_t)limits.optimalBufferCopyRowPitchAlignment;
         m_Desc.uploadBufferTextureSliceAlignment = (uint32_t)limits.optimalBufferCopyOffsetAlignment; // TODO: ?
@@ -1357,15 +1408,18 @@ Result DeviceVK::CreateInstance(bool enableGraphicsAPIValidation, const Vector<c
 
 void DeviceVK::FillFamilyIndices(bool isWrapper, const DeviceCreationVKDesc& deviceCreationVKDesc) {
     uint32_t familyNum = 0;
-    m_VK.GetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &familyNum, nullptr);
+    m_VK.GetPhysicalDeviceQueueFamilyProperties2(m_PhysicalDevice, &familyNum, nullptr);
 
-    Vector<VkQueueFamilyProperties> familyProps(familyNum, GetStdAllocator());
-    m_VK.GetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &familyNum, familyProps.data());
+    Scratch<VkQueueFamilyProperties2> familyProps = AllocateScratch(*this, VkQueueFamilyProperties2, familyNum);
+    for (uint32_t i = 0; i < familyNum; i++)
+        familyProps[i] = {VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2};
+
+    m_VK.GetPhysicalDeviceQueueFamilyProperties2(m_PhysicalDevice, &familyNum, familyProps);
 
     memset(m_QueueFamilyIndices.data(), INVALID_FAMILY_INDEX, m_QueueFamilyIndices.size() * sizeof(m_QueueFamilyIndices[0]));
     std::array<uint32_t, (size_t)CommandQueueType::MAX_NUM> scores = {};
 
-    for (uint32_t i = 0; i < familyProps.size(); i++) {
+    for (uint32_t i = 0; i < familyNum; i++) {
         if (isWrapper) {
             bool isFamilyEnabled = false;
             for (uint32_t j = 0; j < deviceCreationVKDesc.queueFamilyIndexNum && !isFamilyEnabled; j++)
@@ -1375,7 +1429,7 @@ void DeviceVK::FillFamilyIndices(bool isWrapper, const DeviceCreationVKDesc& dev
                 continue;
         }
 
-        const VkQueueFamilyProperties& props = familyProps[i];
+        const VkQueueFamilyProperties& props = familyProps[i].queueFamilyProperties;
 
         bool graphics = props.queueFlags & VK_QUEUE_GRAPHICS_BIT;
         bool compute = props.queueFlags & VK_QUEUE_COMPUTE_BIT;
@@ -1488,14 +1542,18 @@ void DeviceVK::ReportDeviceGroupInfo() {
 #define MERGE_TOKENS2(a, b) a##b
 #define MERGE_TOKENS3(a, b, c) a##b##c
 
-#define GET_DEVICE_OPTIONAL_CORE_OR_KHR_PROC(name) \
+#define GET_DEVICE_OPTIONAL_CORE_PROC(name) \
+    /* Core */ \
     m_VK.name = (PFN_vk##name)m_VK.GetDeviceProcAddr(m_Device, NRI_STRINGIFY(MERGE_TOKENS2(vk, name))); \
-    if (!m_VK.name) { \
+    /* KHR */ \
+    if (!m_VK.name) \
         m_VK.name = (PFN_vk##name)m_VK.GetDeviceProcAddr(m_Device, NRI_STRINGIFY(MERGE_TOKENS3(vk, name, KHR))); \
-    }
+    /* EXT (some extensions were promoted to core from EXT bypassing KHR status) */ \
+    if (!m_VK.name) \
+    m_VK.name = (PFN_vk##name)m_VK.GetDeviceProcAddr(m_Device, NRI_STRINGIFY(MERGE_TOKENS3(vk, name, EXT)))
 
-#define GET_DEVICE_CORE_OR_KHR_PROC(name) \
-    GET_DEVICE_OPTIONAL_CORE_OR_KHR_PROC(name) \
+#define GET_DEVICE_CORE_PROC(name) \
+    GET_DEVICE_OPTIONAL_CORE_PROC(name); \
     if (!m_VK.name) { \
         REPORT_ERROR(this, "Failed to get device function: '%s'", NRI_STRINGIFY(MERGE_TOKENS2(vk, name))); \
         return Result::UNSUPPORTED; \
@@ -1535,16 +1593,15 @@ Result DeviceVK::ResolveInstanceDispatchTable(const Vector<const char*>& desired
     GET_INSTANCE_PROC(GetDeviceProcAddr);
     GET_INSTANCE_PROC(DestroyInstance);
     GET_INSTANCE_PROC(DestroyDevice);
-    GET_INSTANCE_PROC(GetPhysicalDeviceMemoryProperties);
     GET_INSTANCE_PROC(GetPhysicalDeviceMemoryProperties2);
     GET_INSTANCE_PROC(GetDeviceGroupPeerMemoryFeatures);
-    GET_INSTANCE_PROC(GetPhysicalDeviceFormatProperties);
+    GET_INSTANCE_PROC(GetPhysicalDeviceFormatProperties2);
     GET_INSTANCE_PROC(CreateDevice);
-    GET_INSTANCE_PROC(GetDeviceQueue);
+    GET_INSTANCE_PROC(GetDeviceQueue2);
     GET_INSTANCE_PROC(EnumeratePhysicalDeviceGroups);
     GET_INSTANCE_PROC(GetPhysicalDeviceProperties2);
     GET_INSTANCE_PROC(GetPhysicalDeviceFeatures2);
-    GET_INSTANCE_PROC(GetPhysicalDeviceQueueFamilyProperties);
+    GET_INSTANCE_PROC(GetPhysicalDeviceQueueFamilyProperties2);
     GET_INSTANCE_PROC(EnumerateDeviceExtensionProperties);
 
     if (IsExtensionSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, desiredInstanceExts)) {
@@ -1557,10 +1614,13 @@ Result DeviceVK::ResolveInstanceDispatchTable(const Vector<const char*>& desired
         GET_INSTANCE_PROC(QueueInsertDebugUtilsLabelEXT);
     }
 
-    if (IsExtensionSupported(VK_KHR_SURFACE_EXTENSION_NAME, desiredInstanceExts)) {
-        GET_INSTANCE_PROC(GetPhysicalDeviceSurfaceFormatsKHR);
-        GET_INSTANCE_PROC(GetPhysicalDeviceSurfaceSupportKHR);
+    if (IsExtensionSupported(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME, desiredInstanceExts)) {
+        GET_INSTANCE_PROC(GetPhysicalDeviceSurfaceFormats2KHR);
         GET_INSTANCE_PROC(GetPhysicalDeviceSurfaceCapabilities2KHR);
+    }
+
+    if (IsExtensionSupported(VK_KHR_SURFACE_EXTENSION_NAME, desiredInstanceExts)) {
+        GET_INSTANCE_PROC(GetPhysicalDeviceSurfaceSupportKHR);
         GET_INSTANCE_PROC(GetPhysicalDeviceSurfacePresentModesKHR);
         GET_INSTANCE_PROC(DestroySurfaceKHR);
 
@@ -1583,99 +1643,102 @@ Result DeviceVK::ResolveInstanceDispatchTable(const Vector<const char*>& desired
 }
 
 Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceExts) {
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateBuffer);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateImage);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateBufferView);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateImageView);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateSampler);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateFramebuffer);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateQueryPool);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateCommandPool);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateSemaphore);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateDescriptorPool);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreatePipelineLayout);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateDescriptorSetLayout);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateShaderModule);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateGraphicsPipelines);
-    GET_DEVICE_CORE_OR_KHR_PROC(CreateComputePipelines);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroyBuffer);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroyImage);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroyBufferView);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroyImageView);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroySampler);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroyFramebuffer);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroyQueryPool);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroyCommandPool);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroySemaphore);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroyDescriptorPool);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroyPipelineLayout);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroyDescriptorSetLayout);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroyShaderModule);
-    GET_DEVICE_CORE_OR_KHR_PROC(DestroyPipeline);
-    GET_DEVICE_CORE_OR_KHR_PROC(AllocateMemory);
-    GET_DEVICE_CORE_OR_KHR_PROC(MapMemory);
-    GET_DEVICE_CORE_OR_KHR_PROC(UnmapMemory);
-    GET_DEVICE_CORE_OR_KHR_PROC(FreeMemory);
-    GET_DEVICE_CORE_OR_KHR_PROC(FlushMappedMemoryRanges);
-    GET_DEVICE_CORE_OR_KHR_PROC(QueueWaitIdle);
-    GET_DEVICE_CORE_OR_KHR_PROC(QueueSubmit2);
-    GET_DEVICE_CORE_OR_KHR_PROC(GetSemaphoreCounterValue);
-    GET_DEVICE_CORE_OR_KHR_PROC(WaitSemaphores);
-    GET_DEVICE_CORE_OR_KHR_PROC(ResetCommandPool);
-    GET_DEVICE_CORE_OR_KHR_PROC(ResetDescriptorPool);
-    GET_DEVICE_CORE_OR_KHR_PROC(AllocateCommandBuffers);
-    GET_DEVICE_CORE_OR_KHR_PROC(AllocateDescriptorSets);
-    GET_DEVICE_CORE_OR_KHR_PROC(FreeCommandBuffers);
-    GET_DEVICE_CORE_OR_KHR_PROC(FreeDescriptorSets);
-    GET_DEVICE_CORE_OR_KHR_PROC(UpdateDescriptorSets);
-    GET_DEVICE_CORE_OR_KHR_PROC(BindBufferMemory2);
-    GET_DEVICE_CORE_OR_KHR_PROC(BindImageMemory2);
-    GET_DEVICE_CORE_OR_KHR_PROC(GetDeviceBufferMemoryRequirements);
-    GET_DEVICE_CORE_OR_KHR_PROC(GetDeviceImageMemoryRequirements);
-    GET_DEVICE_CORE_OR_KHR_PROC(ResetQueryPool);
-    GET_DEVICE_CORE_OR_KHR_PROC(BeginCommandBuffer);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdSetViewport);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdSetScissor);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdSetDepthBounds);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdSetStencilReference);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdSetBlendConstants);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdSetDepthBias);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdClearAttachments);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdClearColorImage);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdBindVertexBuffers);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdBindIndexBuffer);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdBindPipeline);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdBindDescriptorSets);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdPushConstants);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdDispatch);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdDispatchIndirect);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdDraw);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndexed);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndirect);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndirectCount);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndexedIndirect);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdDrawIndexedIndirectCount);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyBuffer);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyImage);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdResolveImage);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyBufferToImage);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyImageToBuffer);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdPipelineBarrier2);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdBeginQuery);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdEndQuery);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdWriteTimestamp);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdCopyQueryPoolResults);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdResetQueryPool);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdFillBuffer);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdBeginRendering);
-    GET_DEVICE_CORE_OR_KHR_PROC(CmdEndRendering);
-    GET_DEVICE_CORE_OR_KHR_PROC(EndCommandBuffer);
+    GET_DEVICE_CORE_PROC(CreateBuffer);
+    GET_DEVICE_CORE_PROC(CreateImage);
+    GET_DEVICE_CORE_PROC(CreateBufferView);
+    GET_DEVICE_CORE_PROC(CreateImageView);
+    GET_DEVICE_CORE_PROC(CreateSampler);
+    GET_DEVICE_CORE_PROC(CreateQueryPool);
+    GET_DEVICE_CORE_PROC(CreateCommandPool);
+    GET_DEVICE_CORE_PROC(CreateSemaphore);
+    GET_DEVICE_CORE_PROC(CreateDescriptorPool);
+    GET_DEVICE_CORE_PROC(CreatePipelineLayout);
+    GET_DEVICE_CORE_PROC(CreateDescriptorSetLayout);
+    GET_DEVICE_CORE_PROC(CreateShaderModule);
+    GET_DEVICE_CORE_PROC(CreateGraphicsPipelines);
+    GET_DEVICE_CORE_PROC(CreateComputePipelines);
+    GET_DEVICE_CORE_PROC(DestroyBuffer);
+    GET_DEVICE_CORE_PROC(DestroyImage);
+    GET_DEVICE_CORE_PROC(DestroyBufferView);
+    GET_DEVICE_CORE_PROC(DestroyImageView);
+    GET_DEVICE_CORE_PROC(DestroySampler);
+    GET_DEVICE_CORE_PROC(DestroyFramebuffer);
+    GET_DEVICE_CORE_PROC(DestroyQueryPool);
+    GET_DEVICE_CORE_PROC(DestroyCommandPool);
+    GET_DEVICE_CORE_PROC(DestroySemaphore);
+    GET_DEVICE_CORE_PROC(DestroyDescriptorPool);
+    GET_DEVICE_CORE_PROC(DestroyPipelineLayout);
+    GET_DEVICE_CORE_PROC(DestroyDescriptorSetLayout);
+    GET_DEVICE_CORE_PROC(DestroyShaderModule);
+    GET_DEVICE_CORE_PROC(DestroyPipeline);
+    GET_DEVICE_CORE_PROC(AllocateMemory);
+    GET_DEVICE_CORE_PROC(MapMemory);
+    GET_DEVICE_CORE_PROC(UnmapMemory);
+    GET_DEVICE_CORE_PROC(FreeMemory);
+    GET_DEVICE_CORE_PROC(FlushMappedMemoryRanges);
+    GET_DEVICE_CORE_PROC(QueueWaitIdle);
+    GET_DEVICE_CORE_PROC(QueueSubmit2);
+    GET_DEVICE_CORE_PROC(GetSemaphoreCounterValue);
+    GET_DEVICE_CORE_PROC(WaitSemaphores);
+    GET_DEVICE_CORE_PROC(ResetCommandPool);
+    GET_DEVICE_CORE_PROC(ResetDescriptorPool);
+    GET_DEVICE_CORE_PROC(AllocateCommandBuffers);
+    GET_DEVICE_CORE_PROC(AllocateDescriptorSets);
+    GET_DEVICE_CORE_PROC(FreeCommandBuffers);
+    GET_DEVICE_CORE_PROC(FreeDescriptorSets);
+    GET_DEVICE_CORE_PROC(UpdateDescriptorSets);
+    GET_DEVICE_CORE_PROC(BindBufferMemory2);
+    GET_DEVICE_CORE_PROC(BindImageMemory2);
+    GET_DEVICE_CORE_PROC(GetDeviceBufferMemoryRequirements);
+    GET_DEVICE_CORE_PROC(GetDeviceImageMemoryRequirements);
+    GET_DEVICE_CORE_PROC(ResetQueryPool);
+    GET_DEVICE_CORE_PROC(BeginCommandBuffer);
+    GET_DEVICE_CORE_PROC(CmdSetViewportWithCount);
+    GET_DEVICE_CORE_PROC(CmdSetScissorWithCount);
+    GET_DEVICE_CORE_PROC(CmdSetDepthBounds);
+    GET_DEVICE_CORE_PROC(CmdSetStencilReference);
+    GET_DEVICE_CORE_PROC(CmdSetBlendConstants);
+    GET_DEVICE_CORE_PROC(CmdSetDepthBias);
+    GET_DEVICE_CORE_PROC(CmdClearAttachments);
+    GET_DEVICE_CORE_PROC(CmdClearColorImage);
+    GET_DEVICE_CORE_PROC(CmdBindVertexBuffers2);
+    GET_DEVICE_CORE_PROC(CmdBindIndexBuffer);
+    GET_DEVICE_CORE_PROC(CmdBindPipeline);
+    GET_DEVICE_CORE_PROC(CmdBindDescriptorSets);
+    GET_DEVICE_CORE_PROC(CmdPushConstants);
+    GET_DEVICE_CORE_PROC(CmdDispatch);
+    GET_DEVICE_CORE_PROC(CmdDispatchIndirect);
+    GET_DEVICE_CORE_PROC(CmdDraw);
+    GET_DEVICE_CORE_PROC(CmdDrawIndexed);
+    GET_DEVICE_CORE_PROC(CmdDrawIndirect);
+    GET_DEVICE_CORE_PROC(CmdDrawIndirectCount);
+    GET_DEVICE_CORE_PROC(CmdDrawIndexedIndirect);
+    GET_DEVICE_CORE_PROC(CmdDrawIndexedIndirectCount);
+    GET_DEVICE_CORE_PROC(CmdCopyBuffer2);
+    GET_DEVICE_CORE_PROC(CmdCopyImage2);
+    GET_DEVICE_CORE_PROC(CmdResolveImage2);
+    GET_DEVICE_CORE_PROC(CmdCopyBufferToImage2);
+    GET_DEVICE_CORE_PROC(CmdCopyImageToBuffer2);
+    GET_DEVICE_CORE_PROC(CmdPipelineBarrier2);
+    GET_DEVICE_CORE_PROC(CmdBeginQuery);
+    GET_DEVICE_CORE_PROC(CmdEndQuery);
+    GET_DEVICE_CORE_PROC(CmdWriteTimestamp2);
+    GET_DEVICE_CORE_PROC(CmdCopyQueryPoolResults);
+    GET_DEVICE_CORE_PROC(CmdResetQueryPool);
+    GET_DEVICE_CORE_PROC(CmdFillBuffer);
+    GET_DEVICE_CORE_PROC(CmdBeginRendering);
+    GET_DEVICE_CORE_PROC(CmdEndRendering);
+    GET_DEVICE_CORE_PROC(EndCommandBuffer);
 
-    GET_DEVICE_OPTIONAL_CORE_OR_KHR_PROC(GetBufferDeviceAddress);
+    GET_DEVICE_OPTIONAL_CORE_PROC(GetBufferDeviceAddress);
     if (!m_VK.GetBufferDeviceAddress)
         m_IsSupported.deviceAddress = false;
 
     // IMPORTANT: {} is mandatory here!
+
+    if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, desiredDeviceExts)) {
+        GET_DEVICE_PROC(CmdBindIndexBuffer2KHR);
+    }
 
     if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, desiredDeviceExts)) {
         GET_DEVICE_PROC(CmdSetFragmentShadingRateKHR);
@@ -1760,8 +1823,12 @@ NRI_INLINE Result DeviceVK::GetCommandQueue(CommandQueueType commandQueueType, C
     }
 
     // Create
+    VkDeviceQueueInfo2 queueInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2};
+    queueInfo.queueFamilyIndex = queueFamilyIndex;
+    queueInfo.queueIndex = 0;
+
     VkQueue handle = VK_NULL_HANDLE;
-    m_VK.GetDeviceQueue(m_Device, queueFamilyIndex, 0, &handle);
+    m_VK.GetDeviceQueue2(m_Device, &queueInfo, &handle);
 
     Result result = CreateImplementation<CommandQueueVK>(commandQueue, commandQueueType, queueFamilyIndex, handle);
     if (result == Result::SUCCESS)
@@ -1924,11 +1991,11 @@ NRI_INLINE FormatSupportBits DeviceVK::GetFormatSupport(Format format) const {
 
     const VkFormat vkFormat = GetVkFormat(format);
 
-    VkFormatProperties formatProperties = {};
-    m_VK.GetPhysicalDeviceFormatProperties(m_PhysicalDevice, vkFormat, &formatProperties);
+    VkFormatProperties2 props = {VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2};
+    m_VK.GetPhysicalDeviceFormatProperties2(m_PhysicalDevice, vkFormat, &props);
 
 #define UPDATE_SUPPORT_BITS(required, bit) \
-    if ((formatProperties.optimalTilingFeatures & (required)) == (required)) \
+    if ((props.formatProperties.optimalTilingFeatures & (required)) == (required)) \
         mask |= bit;
 
     UPDATE_SUPPORT_BITS(VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT, FormatSupportBits::TEXTURE);
@@ -1941,7 +2008,7 @@ NRI_INLINE FormatSupportBits DeviceVK::GetFormatSupport(Format format) const {
 #undef UPDATE_SUPPORT_BITS
 
 #define UPDATE_SUPPORT_BITS(required, bit) \
-    if ((formatProperties.bufferFeatures & (required)) == (required)) \
+    if ((props.formatProperties.bufferFeatures & (required)) == (required)) \
         mask |= bit;
 
     UPDATE_SUPPORT_BITS(VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, FormatSupportBits::BUFFER);

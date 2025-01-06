@@ -9,7 +9,8 @@ struct PipelineLayoutVK;
 
 struct PipelineVK {
     inline PipelineVK(DeviceVK& device)
-        : m_Device(device) {
+        : m_Device(device)
+        , m_VertexStreamStrides(device.GetStdAllocator()) {
     }
 
     inline operator VkPipeline() const {
@@ -26,6 +27,10 @@ struct PipelineVK {
 
     inline const DepthBiasDesc& GetDepthBias() const {
         return m_DepthBias;
+    }
+
+    inline uint32_t GetVertexStreamStride(uint32_t streamSlot) const {
+        return m_VertexStreamStrides[streamSlot];
     }
 
     ~PipelineVK();
@@ -47,6 +52,7 @@ private:
 
 private:
     DeviceVK& m_Device;
+    Vector<uint32_t> m_VertexStreamStrides;
     VkPipeline m_Handle = VK_NULL_HANDLE;
     VkPipelineBindPoint m_BindPoint = (VkPipelineBindPoint)0;
     DepthBiasDesc m_DepthBias = {};

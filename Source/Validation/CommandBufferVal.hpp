@@ -197,7 +197,7 @@ NRI_INLINE void CommandBufferVal::BeginRendering(const AttachmentsDesc& attachme
     for (uint32_t i = 0; i < attachmentsDesc.colorNum; i++)
         colors[i] = NRI_GET_IMPL(Descriptor, attachmentsDesc.colors[i]);
 
-    AttachmentsDesc attachmentsDescImpl = {};
+    auto attachmentsDescImpl = attachmentsDesc;
     attachmentsDescImpl.depthStencil = NRI_GET_IMPL(Descriptor, attachmentsDesc.depthStencil);
     attachmentsDescImpl.shadingRate = NRI_GET_IMPL(Descriptor, attachmentsDesc.shadingRate);
     attachmentsDescImpl.colors = colors;
@@ -447,7 +447,7 @@ NRI_INLINE void CommandBufferVal::Barrier(const BarrierGroupDesc& barrierGroupDe
     for (uint32_t i = 0; i < barrierGroupDesc.textureNum; i++)
         textures[i].texture = NRI_GET_IMPL(Texture, barrierGroupDesc.textures[i].texture);
 
-    BarrierGroupDesc barrierGroupDescImpl = barrierGroupDesc;
+    auto barrierGroupDescImpl = barrierGroupDesc;
     barrierGroupDescImpl.buffers = buffers;
     barrierGroupDescImpl.textures = textures;
 

@@ -41,35 +41,39 @@ Result PipelineD3D11::Create(const GraphicsPipelineDesc& pipelineDesc) {
     if (pipelineDesc.vertexInput) {
         const VertexInputDesc& vi = *pipelineDesc.vertexInput;
 
+        Scratch<D3D11_INPUT_ELEMENT_DESC> inputElements = AllocateScratch(m_Device, D3D11_INPUT_ELEMENT_DESC, vi.attributeNum);
+        for (uint32_t i = 0; i < vi.attributeNum; i++) {
+            const VertexAttributeDesc& attribute = vi.attributes[i];
+            const VertexStreamDesc& stream = vi.streams[attribute.streamIndex];
+            D3D11_INPUT_ELEMENT_DESC& inputElementDesc = inputElements[i];
+            const DxgiFormat& dxgiFormat = GetDxgiFormat(attribute.format);
+
+            inputElementDesc.SemanticName = attribute.d3d.semanticName;
+            inputElementDesc.SemanticIndex = attribute.d3d.semanticIndex;
+            inputElementDesc.Format = dxgiFormat.typed;
+            inputElementDesc.InputSlot = stream.bindingSlot;
+            inputElementDesc.AlignedByteOffset = attribute.offset;
+            inputElementDesc.InstanceDataStepRate = stream.stepRate == VertexStreamStepRate::PER_VERTEX ? 0 : 1;
+            inputElementDesc.InputSlotClass = stream.stepRate == VertexStreamStepRate::PER_VERTEX ? D3D11_INPUT_PER_VERTEX_DATA : D3D11_INPUT_PER_INSTANCE_DATA;
+        };
+
+        CHECK(vertexShader != nullptr, "VS can't be NULL");
+        hr = m_Device->CreateInputLayout(&inputElements[0], vi.attributeNum, vertexShader->bytecode, (size_t)vertexShader->size, &m_InputLayout);
+        RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateInputLayout()");
+
+        // Strides
         uint32_t maxBindingSlot = 0;
         for (uint32_t i = 0; i < vi.streamNum; i++) {
             const VertexStreamDesc& stream = vi.streams[i];
             if (stream.bindingSlot > maxBindingSlot)
                 maxBindingSlot = stream.bindingSlot;
         }
-        m_InputAssemplyStrides.resize(maxBindingSlot + 1);
 
-        Scratch<D3D11_INPUT_ELEMENT_DESC> inputElements = AllocateScratch(m_Device, D3D11_INPUT_ELEMENT_DESC, vi.attributeNum);
-        for (uint32_t i = 0; i < vi.attributeNum; i++) {
-            const VertexAttributeDesc& attrIn = vi.attributes[i];
-            const VertexStreamDesc& stream = vi.streams[attrIn.streamIndex];
-            D3D11_INPUT_ELEMENT_DESC& attrOut = inputElements[i];
-            const DxgiFormat& dxgiFormat = GetDxgiFormat(attrIn.format);
-
-            attrOut.SemanticName = attrIn.d3d.semanticName;
-            attrOut.SemanticIndex = attrIn.d3d.semanticIndex;
-            attrOut.Format = dxgiFormat.typed;
-            attrOut.InputSlot = stream.bindingSlot;
-            attrOut.AlignedByteOffset = attrIn.offset;
-            attrOut.InstanceDataStepRate = stream.stepRate == VertexStreamStepRate::PER_VERTEX ? 0 : 1;
-            attrOut.InputSlotClass = stream.stepRate == VertexStreamStepRate::PER_VERTEX ? D3D11_INPUT_PER_VERTEX_DATA : D3D11_INPUT_PER_INSTANCE_DATA;
-
-            m_InputAssemplyStrides[stream.bindingSlot] = stream.stride;
-        };
-
-        CHECK(vertexShader != nullptr, "VS can't be NULL");
-        hr = m_Device->CreateInputLayout(&inputElements[0], vi.attributeNum, vertexShader->bytecode, (size_t)vertexShader->size, &m_InputLayout);
-        RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D11Device::CreateInputLayout()");
+        m_VertexStreamStrides.resize(maxBindingSlot + 1);
+        for (uint32_t i = 0; i < vi.streamNum; i++) {
+            const VertexStreamDesc& stream = vi.streams[i];
+            m_VertexStreamStrides[stream.bindingSlot] = stream.stride;
+        }
     }
 
     // Multisample

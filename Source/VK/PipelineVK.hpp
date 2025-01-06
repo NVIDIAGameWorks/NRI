@@ -89,8 +89,21 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
             VkVertexInputBindingDescription& vertexBindingDesc = vertexBindingDescs[i];
             vertexBindingDesc = {};
             vertexBindingDesc.binding = stream.bindingSlot;
-            vertexBindingDesc.stride = stream.stride;
             vertexBindingDesc.inputRate = stream.stepRate == VertexStreamStepRate::PER_VERTEX ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
+        }
+
+        // Strides
+        uint32_t maxBindingSlot = 0;
+        for (uint32_t i = 0; i < vi->streamNum; i++) {
+            const VertexStreamDesc& stream = vi->streams[i];
+            if (stream.bindingSlot > maxBindingSlot)
+                maxBindingSlot = stream.bindingSlot;
+        }
+
+        m_VertexStreamStrides.resize(maxBindingSlot + 1);
+        for (uint32_t i = 0; i < vi->streamNum; i++) {
+            const VertexStreamDesc& stream = vi->streams[i];
+            m_VertexStreamStrides[stream.bindingSlot] = stream.stride;
         }
     }
 
@@ -131,10 +144,6 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     // Rasterization
     const RasterizationDesc& r = graphicsPipelineDesc.rasterization;
 
-    VkPipelineViewportStateCreateInfo viewportState = {VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
-    viewportState.viewportCount = graphicsPipelineDesc.rasterization.viewportNum == ONE_VIEWPORT ? 1 : graphicsPipelineDesc.rasterization.viewportNum;
-    viewportState.scissorCount = viewportState.viewportCount;
-
     VkPipelineRasterizationStateCreateInfo rasterizationState = {VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     rasterizationState.depthClampEnable = r.depthClamp;
     rasterizationState.rasterizerDiscardEnable = VK_FALSE; // TODO: D3D doesn't have this
@@ -163,6 +172,8 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     }
 
     m_DepthBias = r.depthBias;
+
+    VkPipelineViewportStateCreateInfo viewportState = {VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
 
     // Depth-stencil
     const DepthAttachmentDesc& da = graphicsPipelineDesc.outputMerger.depth;
@@ -236,8 +247,9 @@ Result PipelineVK::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     // Dynamic state
     uint32_t dynamicStateNum = 0;
     std::array<VkDynamicState, 16> dynamicStates;
-    dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_VIEWPORT;
-    dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_SCISSOR;
+    dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT;
+    dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT;
+    dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE;
     if (rasterizationState.depthBiasEnable)
         dynamicStates[dynamicStateNum++] = VK_DYNAMIC_STATE_DEPTH_BIAS;
     if (depthStencilState.depthBoundsTestEnable)

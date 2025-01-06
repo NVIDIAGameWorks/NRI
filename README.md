@@ -18,7 +18,7 @@ Non-goals (exceptions apply to helper interfaces, where high-level abstraction a
 - hidden management of any kind
 
 Currently supported GAPIs:
-- VK (Vulkan 1.2+ with extensions, preferring core 1.3)
+- Vulkan (VK 1.3 or extended 1.2 + additional features)
 - D3D12
 - D3D11
 - Metal (through [MoltenVK](https://github.com/KhronosGroup/MoltenVK))
@@ -39,7 +39,7 @@ Key features:
  - supporting as much as possible VK-enabled platforms: Windows, Linux, MacOS, Android
  - can be used as a *shared* or *static* library
 
- Available interfaces:
+Available interfaces:
  - `NRI.h` - core functionality
  - `NRIDeviceCreation.h` - device creation and related functionality
  - `NRIHelper.h` - a collection of various helpers to ease use of the core interface
@@ -50,47 +50,58 @@ Key features:
  - `NRIStreamer.h` - a convenient way to stream data into resources
  - `NRISwapChain.h` - swap chain and related functionality
 
- Hooked up Vulkan extensions:
+Required Vulkan extensions:
+- for Vulkan 1.2:
+    - _VK_KHR_synchronization2_
+    - _VK_KHR_dynamic_rendering_
+    - _VK_KHR_maintenance4_
+    - _VK_KHR_copy_commands2_
+    - _VK_EXT_extended_dynamic_state_
+- for APPLE:
+    - _VK_KHR_portability_enumeration_ (instance extension)
+    - _VK_KHR_get_physical_device_properties2_ (instance extension)
+    - _VK_KHR_portability_subset_
 
- Required:
- - _VK_KHR_synchronization2_ (for Vulkan 1.2)
- - _VK_KHR_dynamic_rendering_ (for Vulkan 1.2)
- - _VK_KHR_maintenance4_ (for Vulkan 1.2)
- - _VK_KHR_portability_subset_ (for APPLE)
 
- Optional:
- - _VK_KHR_swapchain_
- - _VK_KHR_present_id_
- - _VK_KHR_present_wait_
- - _VK_KHR_swapchain_mutable_format_
- - _VK_KHR_maintenance5_
- - _VK_KHR_fragment_shading_rate_
- - _VK_KHR_push_descriptor_
- - _VK_KHR_pipeline_library_
- - _VK_KHR_ray_tracing_pipeline_
- - _VK_KHR_acceleration_structure_ (depends on _VK_KHR_deferred_host_operations_)
- - _VK_KHR_ray_query_
- - _VK_KHR_ray_tracing_maintenance1_
- - _VK_KHR_line_rasterization_
- - _VK_KHR_fragment_shader_barycentric_
- - _VK_EXT_opacity_micromap_
- - _VK_EXT_sample_locations_
- - _VK_EXT_conservative_rasterization_
- - _VK_EXT_mesh_shader_
- - _VK_EXT_shader_atomic_float_
- - _VK_EXT_shader_atomic_float2_
- - _VK_EXT_memory_budget_
- - _VK_EXT_memory_priority_
- - _VK_EXT_image_sliced_view_of_3d_
- - _VK_EXT_custom_border_color_
- - _VK_EXT_robustness2_
- - _VK_EXT_pipeline_robustness_
- - _VK_EXT_fragment_shader_interlock_
+Supported Vulkan extensions:
+- Instance:
+    - _VK_KHR_get_surface_capabilities2_
+    - _VK_KHR_surface_
+    - _VK_KHR_win32_surface_ (_VK_KHR_xlib_surface_, _VK_KHR_wayland_surface_, _VK_EXT_metal_surface_)
+    - _VK_EXT_swapchain_colorspace_
+    - _VK_EXT_debug_utils_
+- Device:
+    - _VK_KHR_swapchain_
+    - _VK_KHR_present_id_
+    - _VK_KHR_present_wait_
+    - _VK_KHR_swapchain_mutable_format_
+    - _VK_KHR_maintenance5_
+    - _VK_KHR_maintenance6_
+    - _VK_KHR_fragment_shading_rate_
+    - _VK_KHR_push_descriptor_
+    - _VK_KHR_pipeline_library_
+    - _VK_KHR_ray_tracing_pipeline_
+    - _VK_KHR_acceleration_structure_ (depends on _VK_KHR_deferred_host_operations_)
+    - _VK_KHR_ray_query_
+    - _VK_KHR_ray_tracing_maintenance1_
+    - _VK_KHR_line_rasterization_
+    - _VK_KHR_fragment_shader_barycentric_
+    - _VK_EXT_opacity_micromap_
+    - _VK_EXT_sample_locations_
+    - _VK_EXT_conservative_rasterization_
+    - _VK_EXT_mesh_shader_
+    - _VK_EXT_shader_atomic_float_
+    - _VK_EXT_shader_atomic_float2_
+    - _VK_EXT_memory_budget_
+    - _VK_EXT_memory_priority_
+    - _VK_EXT_image_sliced_view_of_3d_
+    - _VK_EXT_custom_border_color_
+    - _VK_EXT_robustness2_
+    - _VK_EXT_pipeline_robustness_
+    - _VK_EXT_fragment_shader_interlock_
+    - _VK_NV_low_latency2_
 
- Vendor specific:
- - _VK_NV_low_latency2_
-
- *NRI* sample code:
+*NRI* sample code:
  - [*NRI samples*](https://github.com/NVIDIAGameWorks/NRISamples)
  - [*NRD sample*](https://github.com/NVIDIAGameWorks/NRDSample)
 

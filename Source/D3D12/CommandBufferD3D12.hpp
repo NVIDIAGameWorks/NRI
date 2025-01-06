@@ -439,7 +439,7 @@ NRI_INLINE void CommandBufferD3D12::SetVertexBuffers(uint32_t baseSlot, uint32_t
             uint64_t offset = offsets ? offsets[i] : 0;
             vertexBufferViews[i].BufferLocation = buffer->GetPointerGPU() + offset;
             vertexBufferViews[i].SizeInBytes = (UINT)(buffer->GetDesc().size - offset);
-            vertexBufferViews[i].StrideInBytes = m_Pipeline->GetIAStreamStride(baseSlot + i);
+            vertexBufferViews[i].StrideInBytes = m_Pipeline->GetVertexStreamStride(baseSlot + i);
         } else {
             vertexBufferViews[i].BufferLocation = 0;
             vertexBufferViews[i].SizeInBytes = 0;

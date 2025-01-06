@@ -16,6 +16,7 @@ struct IsSupported {
     uint32_t memoryPriority : 1;
     uint32_t memoryBudget : 1;
     uint32_t maintenance5 : 1;
+    uint32_t maintenance6 : 1;
     uint32_t imageSlicedView : 1;
     uint32_t customBorderColor : 1;
     uint32_t robustness : 1;

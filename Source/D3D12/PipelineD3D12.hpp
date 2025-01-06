@@ -130,15 +130,15 @@ static void FillInputLayout(D3D12_INPUT_LAYOUT_DESC& inputLayoutDesc, const Grap
 
     D3D12_INPUT_ELEMENT_DESC* inputElementsDescs = (D3D12_INPUT_ELEMENT_DESC*)inputLayoutDesc.pInputElementDescs;
     for (uint32_t i = 0; i < vi.attributeNum; i++) {
-        const VertexAttributeDesc& vertexAttributeDesc = vi.attributes[i];
-        const VertexStreamDesc& vertexStreamDesc = vi.streams[vertexAttributeDesc.streamIndex];
-        bool isPerVertexData = vertexStreamDesc.stepRate == VertexStreamStepRate::PER_VERTEX;
+        const VertexAttributeDesc& attribute = vi.attributes[i];
+        const VertexStreamDesc& stream = vi.streams[attribute.streamIndex];
+        bool isPerVertexData = stream.stepRate == VertexStreamStepRate::PER_VERTEX;
 
-        inputElementsDescs[i].SemanticName = vertexAttributeDesc.d3d.semanticName;
-        inputElementsDescs[i].SemanticIndex = vertexAttributeDesc.d3d.semanticIndex;
-        inputElementsDescs[i].Format = GetDxgiFormat(vertexAttributeDesc.format).typed;
-        inputElementsDescs[i].InputSlot = vertexStreamDesc.bindingSlot;
-        inputElementsDescs[i].AlignedByteOffset = vertexAttributeDesc.offset;
+        inputElementsDescs[i].SemanticName = attribute.d3d.semanticName;
+        inputElementsDescs[i].SemanticIndex = attribute.d3d.semanticIndex;
+        inputElementsDescs[i].Format = GetDxgiFormat(attribute.format).typed;
+        inputElementsDescs[i].InputSlot = stream.bindingSlot;
+        inputElementsDescs[i].AlignedByteOffset = attribute.offset;
         inputElementsDescs[i].InputSlotClass = isPerVertexData ? D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA : D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
         inputElementsDescs[i].InstanceDataStepRate = isPerVertexData ? 0 : 1;
     }
@@ -189,7 +189,7 @@ static uint32_t FillSampleDesc(DXGI_SAMPLE_DESC& sampleDesc, const GraphicsPipel
 Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipelineDesc) {
     CHECK(m_Device.GetVersion() >= 2, "Newer interface needed");
 
-    struct Stream {
+    struct PipelineStateStream {
         PipelineRootSignature rootSignature;
         PipelinePrimitiveTopology primitiveTopology;
         PipelineInputLayout inputLayout;
@@ -213,27 +213,27 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
         PipelineViewInstancing viewInstancing;
     };
 
-    Stream stream = {};
-    stream.rootSignature = *m_PipelineLayout;
-    stream.nodeMask = NRI_NODE_MASK;
+    PipelineStateStream stateStream = {};
+    stateStream.rootSignature = *m_PipelineLayout;
+    stateStream.nodeMask = NRI_NODE_MASK;
 
     // Shaders
     for (uint32_t i = 0; i < graphicsPipelineDesc.shaderNum; i++) {
         const ShaderDesc& shader = graphicsPipelineDesc.shaders[i];
         if (shader.stage == StageBits::VERTEX_SHADER)
-            FillShaderBytecode(stream.vertexShader.desc, shader);
+            FillShaderBytecode(stateStream.vertexShader.desc, shader);
         else if (shader.stage == StageBits::TESS_CONTROL_SHADER)
-            FillShaderBytecode(stream.hullShader.desc, shader);
+            FillShaderBytecode(stateStream.hullShader.desc, shader);
         else if (shader.stage == StageBits::TESS_EVALUATION_SHADER)
-            FillShaderBytecode(stream.domainShader.desc, shader);
+            FillShaderBytecode(stateStream.domainShader.desc, shader);
         else if (shader.stage == StageBits::GEOMETRY_SHADER)
-            FillShaderBytecode(stream.geometryShader.desc, shader);
+            FillShaderBytecode(stateStream.geometryShader.desc, shader);
         else if (shader.stage == StageBits::MESH_CONTROL_SHADER)
-            FillShaderBytecode(stream.amplificationShader.desc, shader);
+            FillShaderBytecode(stateStream.amplificationShader.desc, shader);
         else if (shader.stage == StageBits::MESH_EVALUATION_SHADER)
-            FillShaderBytecode(stream.meshShader.desc, shader);
+            FillShaderBytecode(stateStream.meshShader.desc, shader);
         else if (shader.stage == StageBits::FRAGMENT_SHADER)
-            FillShaderBytecode(stream.pixelShader.desc, shader);
+            FillShaderBytecode(stateStream.pixelShader.desc, shader);
         else
             return Result::INVALID_ARGUMENT;
     }
@@ -244,53 +244,54 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
     if (graphicsPipelineDesc.vertexInput) {
         const VertexInputDesc& vi = *graphicsPipelineDesc.vertexInput;
 
-        stream.inputLayout.desc.pInputElementDescs = scratch1;
-        FillInputLayout(stream.inputLayout.desc, graphicsPipelineDesc);
+        stateStream.inputLayout.desc.pInputElementDescs = scratch1;
+        FillInputLayout(stateStream.inputLayout.desc, graphicsPipelineDesc);
 
+        // Strides
         uint32_t maxBindingSlot = 0;
         for (uint32_t i = 0; i < vi.streamNum; i++) {
-            const VertexStreamDesc& vertexStream = vi.streams[i];
-            if (vertexStream.bindingSlot > maxBindingSlot)
-                maxBindingSlot = vertexStream.bindingSlot;
+            const VertexStreamDesc& stream = vi.streams[i];
+            if (stream.bindingSlot > maxBindingSlot)
+                maxBindingSlot = stream.bindingSlot;
         }
-        m_InputAssemplyStrides.resize(maxBindingSlot + 1);
 
+        m_VertexStreamStrides.resize(maxBindingSlot + 1);
         for (uint32_t i = 0; i < graphicsPipelineDesc.vertexInput->streamNum; i++) {
-            const VertexStreamDesc& vertexStream = vi.streams[i];
-            m_InputAssemplyStrides[vertexStream.bindingSlot] = vertexStream.stride;
+            const VertexStreamDesc& stream = vi.streams[i];
+            m_VertexStreamStrides[stream.bindingSlot] = stream.stride;
         }
     }
 
     // Input assembly
     m_PrimitiveTopology = ::GetPrimitiveTopology(graphicsPipelineDesc.inputAssembly.topology, graphicsPipelineDesc.inputAssembly.tessControlPointNum);
-    stream.primitiveTopology = GetPrimitiveTopologyType(graphicsPipelineDesc.inputAssembly.topology);
-    stream.indexBufferStripCutValue = (D3D12_INDEX_BUFFER_STRIP_CUT_VALUE)graphicsPipelineDesc.inputAssembly.primitiveRestart;
+    stateStream.primitiveTopology = GetPrimitiveTopologyType(graphicsPipelineDesc.inputAssembly.topology);
+    stateStream.indexBufferStripCutValue = (D3D12_INDEX_BUFFER_STRIP_CUT_VALUE)graphicsPipelineDesc.inputAssembly.primitiveRestart;
 
     // Multisample
-    stream.sampleMask.desc = FillSampleDesc(stream.sampleDesc.desc, graphicsPipelineDesc);
+    stateStream.sampleMask.desc = FillSampleDesc(stateStream.sampleDesc.desc, graphicsPipelineDesc);
 
     // Rasterizer
-    FillRasterizerState(stream.rasterizer.desc, graphicsPipelineDesc);
+    FillRasterizerState(stateStream.rasterizer.desc, graphicsPipelineDesc);
 #ifdef NRI_USE_AGILITY_SDK
     if (IsDepthBiasEnabled(graphicsPipelineDesc.rasterization.depthBias))
-        stream.flags = D3D12_PIPELINE_STATE_FLAG_DYNAMIC_DEPTH_BIAS;
+        stateStream.flags = D3D12_PIPELINE_STATE_FLAG_DYNAMIC_DEPTH_BIAS;
 #endif
 
         // Depth stencil
 #ifdef NRI_USE_AGILITY_SDK
-    FillDepthStencilState(stream.depthStencil.desc, graphicsPipelineDesc.outputMerger);
+    FillDepthStencilState(stateStream.depthStencil.desc, graphicsPipelineDesc.outputMerger);
 #else
-    FillDepthStencilState((D3D12_DEPTH_STENCIL_DESC*)&stream.depthStencil.desc, graphicsPipelineDesc.outputMerger);
+    FillDepthStencilState((D3D12_DEPTH_STENCIL_DESC*)&stateStream.depthStencil.desc, graphicsPipelineDesc.outputMerger);
 #endif
-    stream.depthStencil.desc.DepthBoundsTestEnable = graphicsPipelineDesc.outputMerger.depth.boundsTest ? 1 : 0;
-    stream.depthStencilFormat = GetDxgiFormat(graphicsPipelineDesc.outputMerger.depthStencilFormat).typed;
+    stateStream.depthStencil.desc.DepthBoundsTestEnable = graphicsPipelineDesc.outputMerger.depth.boundsTest ? 1 : 0;
+    stateStream.depthStencilFormat = GetDxgiFormat(graphicsPipelineDesc.outputMerger.depthStencilFormat).typed;
 
     // Output merger
-    FillBlendState(stream.blend.desc, graphicsPipelineDesc);
+    FillBlendState(stateStream.blend.desc, graphicsPipelineDesc);
 
-    stream.renderTargetFormats.desc.NumRenderTargets = graphicsPipelineDesc.outputMerger.colorNum;
+    stateStream.renderTargetFormats.desc.NumRenderTargets = graphicsPipelineDesc.outputMerger.colorNum;
     for (uint32_t i = 0; i < graphicsPipelineDesc.outputMerger.colorNum; i++)
-        stream.renderTargetFormats.desc.RTFormats[i] = GetDxgiFormat(graphicsPipelineDesc.outputMerger.colors[i].format).typed;
+        stateStream.renderTargetFormats.desc.RTFormats[i] = GetDxgiFormat(graphicsPipelineDesc.outputMerger.colors[i].format).typed;
 
     // View instancing
     uint32_t viewNum = 0;
@@ -308,15 +309,15 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
             pViewInstanceLocations[i].RenderTargetArrayIndex = graphicsPipelineDesc.outputMerger.multiview == Multiview::LAYER_BASED ? i : 0;
         }
 
-        stream.viewInstancing.desc.ViewInstanceCount = viewNum;
-        stream.viewInstancing.desc.pViewInstanceLocations = pViewInstanceLocations;
-        stream.viewInstancing.desc.Flags = graphicsPipelineDesc.outputMerger.multiview == Multiview::FLEXIBLE ? D3D12_VIEW_INSTANCING_FLAG_ENABLE_VIEW_INSTANCE_MASKING : D3D12_VIEW_INSTANCING_FLAG_NONE;
+        stateStream.viewInstancing.desc.ViewInstanceCount = viewNum;
+        stateStream.viewInstancing.desc.pViewInstanceLocations = pViewInstanceLocations;
+        stateStream.viewInstancing.desc.Flags = graphicsPipelineDesc.outputMerger.multiview == Multiview::FLEXIBLE ? D3D12_VIEW_INSTANCING_FLAG_ENABLE_VIEW_INSTANCE_MASKING : D3D12_VIEW_INSTANCING_FLAG_NONE;
     }
 
     // Create
     D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {};
-    pipelineStateStreamDesc.pPipelineStateSubobjectStream = &stream;
-    pipelineStateStreamDesc.SizeInBytes = sizeof(stream);
+    pipelineStateStreamDesc.pPipelineStateSubobjectStream = &stateStream;
+    pipelineStateStreamDesc.SizeInBytes = sizeof(stateStream);
 
     HRESULT hr = m_Device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState));
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "ID3D12Device2::CreatePipelineState()");
@@ -361,17 +362,18 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
         graphicsPipleineStateDesc.InputLayout.pInputElementDescs = scratch;
         FillInputLayout(graphicsPipleineStateDesc.InputLayout, graphicsPipelineDesc);
 
+        // Strides
         uint32_t maxBindingSlot = 0;
         for (uint32_t i = 0; i < vi.streamNum; i++) {
-            const VertexStreamDesc& vertexStream = vi.streams[i];
-            if (vertexStream.bindingSlot > maxBindingSlot)
-                maxBindingSlot = vertexStream.bindingSlot;
+            const VertexStreamDesc& stream = vi.streams[i];
+            if (stream.bindingSlot > maxBindingSlot)
+                maxBindingSlot = stream.bindingSlot;
         }
-        m_InputAssemplyStrides.resize(maxBindingSlot + 1);
 
-        for (uint32_t i = 0; i < graphicsPipelineDesc.vertexInput->streamNum; i++) {
-            const VertexStreamDesc& vertexStream = vi.streams[i];
-            m_InputAssemplyStrides[vertexStream.bindingSlot] = vertexStream.stride;
+        m_VertexStreamStrides.resize(maxBindingSlot + 1);
+        for (uint32_t i = 0; i < vi.streamNum; i++) {
+            const VertexStreamDesc& stream = vi.streams[i];
+            m_VertexStreamStrides[stream.bindingSlot] = stream.stride;
         }
     }
 

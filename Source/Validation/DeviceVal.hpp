@@ -1004,7 +1004,7 @@ NRI_INLINE uint32_t DeviceVal::CalculateAllocationNumber(const ResourceGroupDesc
         texturesImpl[i] = textureVal.GetImpl();
     }
 
-    ResourceGroupDesc resourceGroupDescImpl = resourceGroupDesc;
+    auto resourceGroupDescImpl = resourceGroupDesc;
     resourceGroupDescImpl.buffers = buffersImpl;
     resourceGroupDescImpl.textures = texturesImpl;
 
@@ -1035,7 +1035,7 @@ NRI_INLINE Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& reso
 
     const size_t allocationNum = CalculateAllocationNumber(resourceGroupDesc);
 
-    ResourceGroupDesc resourceGroupDescImpl = resourceGroupDesc;
+    auto resourceGroupDescImpl = resourceGroupDesc;
     resourceGroupDescImpl.buffers = buffersImpl;
     resourceGroupDescImpl.textures = texturesImpl;
 
@@ -1095,7 +1095,7 @@ NRI_INLINE Result DeviceVal::CreatePipeline(const RayTracingPipelineDesc& pipeli
 NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
     RETURN_ON_FAILURE(this, accelerationStructureDesc.instanceOrGeometryObjectNum != 0, Result::INVALID_ARGUMENT, "'instanceOrGeometryObjectNum' is 0");
 
-    AccelerationStructureDesc accelerationStructureDescImpl = accelerationStructureDesc;
+    auto accelerationStructureDescImpl = accelerationStructureDesc;
 
     uint32_t geometryObjectNum = accelerationStructureDesc.type == AccelerationStructureType::BOTTOM_LEVEL ? accelerationStructureDesc.instanceOrGeometryObjectNum : 0;
     Scratch<GeometryObject> objectImplArray = AllocateScratch(*this, GeometryObject, geometryObjectNum);
@@ -1121,7 +1121,7 @@ NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStruc
 NRI_INLINE Result DeviceVal::AllocateAccelerationStructure(const AllocateAccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure) {
     RETURN_ON_FAILURE(this, accelerationStructureDesc.desc.instanceOrGeometryObjectNum != 0, Result::INVALID_ARGUMENT, "'instanceOrGeometryObjectNum' is 0");
 
-    AllocateAccelerationStructureDesc accelerationStructureDescImpl = accelerationStructureDesc;
+    auto accelerationStructureDescImpl = accelerationStructureDesc;
 
     uint32_t geometryObjectNum = accelerationStructureDesc.desc.type == AccelerationStructureType::BOTTOM_LEVEL ? accelerationStructureDesc.desc.instanceOrGeometryObjectNum : 0;
     Scratch<GeometryObject> objectImplArray = AllocateScratch(*this, GeometryObject, geometryObjectNum);

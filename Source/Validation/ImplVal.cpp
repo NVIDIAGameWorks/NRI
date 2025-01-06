@@ -847,7 +847,7 @@ static void NRI_CALL CmdDispatchRaysIndirect(CommandBuffer& commandBuffer, const
 static void NRI_CALL GetAccelerationStructureMemoryDesc(const Device& device, const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     DeviceVal& deviceVal = (DeviceVal&)device;
 
-    AccelerationStructureDesc accelerationStructureDescImpl = accelerationStructureDesc;
+    auto accelerationStructureDescImpl = accelerationStructureDesc;
 
     uint32_t geometryObjectNum = accelerationStructureDesc.type == AccelerationStructureType::BOTTOM_LEVEL ? accelerationStructureDesc.instanceOrGeometryObjectNum : 0;
     Scratch<GeometryObject> objectImplArray = AllocateScratch(deviceVal, GeometryObject, geometryObjectNum);
@@ -1007,7 +1007,7 @@ static uint64_t AddStreamerBufferUpdateRequest(Streamer& streamer, const BufferU
     if (!bufferUpdateRequestDesc.dataSize)
         REPORT_WARNING(&deviceVal, "'bufferUpdateRequestDesc.dataSize = 0'");
 
-    BufferUpdateRequestDesc bufferUpdateRequestDescImpl = bufferUpdateRequestDesc;
+    auto bufferUpdateRequestDescImpl = bufferUpdateRequestDesc;
     bufferUpdateRequestDescImpl.dstBuffer = NRI_GET_IMPL(Buffer, bufferUpdateRequestDesc.dstBuffer);
 
     return streamerVal.GetStreamerInterface().AddStreamerBufferUpdateRequest(*NRI_GET_IMPL(Streamer, &streamer), bufferUpdateRequestDescImpl);
@@ -1025,7 +1025,7 @@ static uint64_t AddStreamerTextureUpdateRequest(Streamer& streamer, const Textur
     if (!textureUpdateRequestDesc.dataSlicePitch)
         REPORT_WARNING(&deviceVal, "'textureUpdateRequestDesc.dataSlicePitch = 0'");
 
-    TextureUpdateRequestDesc textureUpdateRequestDescImpl = textureUpdateRequestDesc;
+    auto textureUpdateRequestDescImpl = textureUpdateRequestDesc;
     textureUpdateRequestDescImpl.dstTexture = NRI_GET_IMPL(Texture, textureUpdateRequestDesc.dstTexture);
 
     return streamerVal.GetStreamerInterface().AddStreamerTextureUpdateRequest(*NRI_GET_IMPL(Streamer, &streamer), textureUpdateRequestDescImpl);

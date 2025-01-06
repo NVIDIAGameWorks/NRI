@@ -25,8 +25,8 @@ Non-goals (exceptions apply to helper interfaces, where high-level abstraction a
 #pragma once
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 158
-#define NRI_VERSION_DATE "2 January 2024"
+#define NRI_VERSION_MINOR 159
+#define NRI_VERSION_DATE "6 January 2024"
 
 #include "NRIDescs.h"
 
@@ -121,7 +121,7 @@ NriStruct(CoreInterface) {
 
         // Input assembly
         void                (NRI_CALL *CmdSetIndexBuffer)           (NriRef(CommandBuffer) commandBuffer, const NriRef(Buffer) buffer, uint64_t offset, Nri(IndexType) indexType);
-        void                (NRI_CALL *CmdSetVertexBuffers)         (NriRef(CommandBuffer) commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const NriPtr(Buffer) const* buffers, const uint64_t* offsets); // expects "CmdSetPipeline"
+        void                (NRI_CALL *CmdSetVertexBuffers)         (NriRef(CommandBuffer) commandBuffer, uint32_t baseSlot, uint32_t bufferNum, const NriPtr(Buffer) const* buffers, NriOptional const uint64_t* offsets); // expects "CmdSetPipeline"
 
         // Initial state
         void                (NRI_CALL *CmdSetViewports)             (NriRef(CommandBuffer) commandBuffer, const NriPtr(Viewport) viewports, uint32_t viewportNum);
