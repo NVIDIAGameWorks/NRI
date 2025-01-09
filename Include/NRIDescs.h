@@ -1484,6 +1484,7 @@ NriStruct(DeviceDesc) {
     uint8_t bindlessTier;
 
     // Features
+    uint32_t isGetMemoryDesc2Supported : 1;             // D3D: always supported, VK: requires "maintenance4" support
     uint32_t isComputeQueueSupported : 1;
     uint32_t isCopyQueueSupported : 1;
     uint32_t isTextureFilterMinMaxSupported : 1;

@@ -145,6 +145,7 @@ struct DeviceNONE final : public DeviceBase {
         m_Desc.bindlessTier = 2;
         m_Desc.bindlessTier = 2;
 
+        m_Desc.isGetMemoryDesc2Supported = true;
         m_Desc.isComputeQueueSupported = true;
         m_Desc.isCopyQueueSupported = true;
         m_Desc.isTextureFilterMinMaxSupported = true;
@@ -254,11 +255,19 @@ static uint32_t NRI_CALL GetQuerySize(const QueryPool&) {
     return 0;
 }
 
-static void NRI_CALL GetBufferMemoryDesc(const Device&, const BufferDesc&, MemoryLocation, MemoryDesc& memoryDesc) {
+static void NRI_CALL GetBufferMemoryDesc(const Buffer&, MemoryLocation, MemoryDesc& memoryDesc) {
     memoryDesc = {};
 }
 
-static void NRI_CALL GetTextureMemoryDesc(const Device&, const TextureDesc&, MemoryLocation, MemoryDesc& memoryDesc) {
+static void NRI_CALL GetTextureMemoryDesc(const Texture&, MemoryLocation, MemoryDesc& memoryDesc) {
+    memoryDesc = {};
+}
+
+static void NRI_CALL GetBufferMemoryDesc2(const Device&, const BufferDesc&, MemoryLocation, MemoryDesc& memoryDesc) {
+    memoryDesc = {};
+}
+
+static void NRI_CALL GetTextureMemoryDesc2(const Device&, const TextureDesc&, MemoryLocation, MemoryDesc& memoryDesc) {
     memoryDesc = {};
 }
 
@@ -651,6 +660,8 @@ Result DeviceNONE::FillFunctionTable(CoreInterface& table) const {
     table.GetQuerySize = ::GetQuerySize;
     table.GetBufferMemoryDesc = ::GetBufferMemoryDesc;
     table.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
+    table.GetBufferMemoryDesc2 = ::GetBufferMemoryDesc2;
+    table.GetTextureMemoryDesc2 = ::GetTextureMemoryDesc2;
     table.GetCommandQueue = ::GetCommandQueue;
     table.CreateCommandAllocator = ::CreateCommandAllocator;
     table.CreateCommandBuffer = ::CreateCommandBuffer;
@@ -855,7 +866,10 @@ Result DeviceNONE::FillFunctionTable(MeshShaderInterface& table) const {
 //============================================================================================================================================================================================
 #pragma region[  RayTracing  ]
 
-static void NRI_CALL GetAccelerationStructureMemoryDesc(const Device&, const AccelerationStructureDesc&, MemoryLocation, MemoryDesc&) {
+static void NRI_CALL GetAccelerationStructureMemoryDesc(const AccelerationStructure&, MemoryLocation, MemoryDesc&) {
+}
+
+static void NRI_CALL GetAccelerationStructureMemoryDesc2(const Device&, const AccelerationStructureDesc&, MemoryLocation, MemoryDesc&) {
 }
 
 static uint64_t NRI_CALL GetAccelerationStructureUpdateScratchBufferSize(const AccelerationStructure&) {
@@ -932,6 +946,7 @@ static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const Acceleration
 
 Result DeviceNONE::FillFunctionTable(RayTracingInterface& table) const {
     table.GetAccelerationStructureMemoryDesc = ::GetAccelerationStructureMemoryDesc;
+    table.GetAccelerationStructureMemoryDesc2 = ::GetAccelerationStructureMemoryDesc2;
     table.GetAccelerationStructureUpdateScratchBufferSize = ::GetAccelerationStructureUpdateScratchBufferSize;
     table.GetAccelerationStructureBuildScratchBufferSize = ::GetAccelerationStructureBuildScratchBufferSize;
     table.GetAccelerationStructureHandle = ::GetAccelerationStructureHandle;

@@ -48,6 +48,30 @@ VkImageAspectFlags TextureVK::GetImageAspectFlags() const {
     return ::GetImageAspectFlags(m_Desc.format);
 }
 
+void TextureVK::GetMemoryDesc(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
+    VkMemoryDedicatedRequirements dedicatedRequirements = {VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS};
+
+    VkMemoryRequirements2 requirements = {VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
+    requirements.pNext = &dedicatedRequirements;
+
+    VkImageMemoryRequirementsInfo2 imageMemoryRequirements = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2};
+    imageMemoryRequirements.image = m_Handle;
+
+    const auto& vk = m_Device.GetDispatchTable();
+    vk.GetImageMemoryRequirements2(m_Device, &imageMemoryRequirements, &requirements);
+
+    MemoryTypeInfo memoryTypeInfo = {};
+    memoryTypeInfo.mustBeDedicated = dedicatedRequirements.prefersDedicatedAllocation;
+
+    memoryDesc = {};
+    if (m_Device.GetMemoryTypeInfo(memoryLocation, requirements.memoryRequirements.memoryTypeBits, memoryTypeInfo)) {
+        memoryDesc.size = requirements.memoryRequirements.size;
+        memoryDesc.alignment = (uint32_t)requirements.memoryRequirements.alignment;
+        memoryDesc.type = Pack(memoryTypeInfo);
+        memoryDesc.mustBeDedicated = memoryTypeInfo.mustBeDedicated;
+    }
+}
+
 NRI_INLINE void TextureVK::SetDebugName(const char* name) {
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_IMAGE, (uint64_t)m_Handle, name);
 }

@@ -5,7 +5,6 @@
 namespace nri {
 
 struct DeviceVK;
-struct DescriptorSetDesc;
 
 struct DescriptorSetVK {
     inline DescriptorSetVK(DeviceVK& device)

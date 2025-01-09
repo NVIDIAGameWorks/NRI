@@ -77,8 +77,7 @@ Result HelperDeviceMemoryAllocator::ProcessDedicatedResources(MemoryLocation mem
     MemoryDesc memoryDesc = {};
 
     for (size_t i = 0; i < m_DedicatedBuffers.size(); i++) {
-        const BufferDesc& bufferDesc = m_NRI.GetBufferDesc(*m_DedicatedBuffers[i]);
-        m_NRI.GetBufferMemoryDesc(m_Device, bufferDesc, memoryLocation, memoryDesc);
+        m_NRI.GetBufferMemoryDesc(*m_DedicatedBuffers[i], memoryLocation, memoryDesc);
 
         Memory*& memory = allocations[allocationNum];
 
@@ -96,8 +95,7 @@ Result HelperDeviceMemoryAllocator::ProcessDedicatedResources(MemoryLocation mem
     }
 
     for (size_t i = 0; i < m_DedicatedTextures.size(); i++) {
-        const TextureDesc& textureDesc = m_NRI.GetTextureDesc(*m_DedicatedTextures[i]);
-        m_NRI.GetTextureMemoryDesc(m_Device, textureDesc, memoryLocation, memoryDesc);
+        m_NRI.GetTextureMemoryDesc(*m_DedicatedTextures[i], memoryLocation, memoryDesc);
 
         Memory*& memory = allocations[allocationNum];
 
@@ -141,10 +139,9 @@ HelperDeviceMemoryAllocator::MemoryHeap& HelperDeviceMemoryAllocator::FindOrCrea
 void HelperDeviceMemoryAllocator::GroupByMemoryType(MemoryLocation memoryLocation, const nri::ResourceGroupDesc& resourceGroupDesc) {
     for (uint32_t i = 0; i < resourceGroupDesc.bufferNum; i++) {
         Buffer* buffer = resourceGroupDesc.buffers[i];
-        const BufferDesc& bufferDesc = m_NRI.GetBufferDesc(*buffer);
 
         MemoryDesc memoryDesc = {};
-        m_NRI.GetBufferMemoryDesc(m_Device, bufferDesc, memoryLocation, memoryDesc);
+        m_NRI.GetBufferMemoryDesc(*buffer, memoryLocation, memoryDesc);
 
         if (memoryDesc.mustBeDedicated)
             m_DedicatedBuffers.push_back(buffer);
@@ -161,10 +158,9 @@ void HelperDeviceMemoryAllocator::GroupByMemoryType(MemoryLocation memoryLocatio
 
     for (uint32_t i = 0; i < resourceGroupDesc.textureNum; i++) {
         Texture* texture = resourceGroupDesc.textures[i];
-        const TextureDesc& textureDesc = m_NRI.GetTextureDesc(*texture);
 
         MemoryDesc memoryDesc = {};
-        m_NRI.GetTextureMemoryDesc(m_Device, textureDesc, memoryLocation, memoryDesc);
+        m_NRI.GetTextureMemoryDesc(*texture, memoryLocation, memoryDesc);
 
         if (memoryDesc.mustBeDedicated)
             m_DedicatedTextures.push_back(texture);

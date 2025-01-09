@@ -39,6 +39,20 @@ Result AccelerationStructureD3D12::CreateDescriptor(Descriptor*& descriptor) con
     return m_Device.CreateImplementation<DescriptorD3D12>(descriptor, accelerationStructure);
 }
 
+void AccelerationStructureD3D12::GetMemoryDesc(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
+    D3D12_HEAP_TYPE heapType = GetHeapType(memoryLocation);
+    D3D12_HEAP_FLAGS heapFlags = m_Device.GetDesc().isMemoryTier2Supported ? D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES : D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+
+    MemoryTypeInfo memoryTypeInfo = {};
+    memoryTypeInfo.heapFlags = (uint16_t)heapFlags;
+    memoryTypeInfo.heapType = (uint8_t)heapType;
+
+    memoryDesc = {};
+    memoryDesc.size = m_PrebuildInfo.ResultDataMaxSizeInBytes;
+    memoryDesc.alignment = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT;
+    memoryDesc.type = Pack(memoryTypeInfo);
+}
+
 uint64_t AccelerationStructureD3D12::GetHandle() const {
     return m_Buffer->GetPointerGPU();
 }

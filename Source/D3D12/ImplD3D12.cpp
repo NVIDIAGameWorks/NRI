@@ -116,14 +116,32 @@ static uint32_t NRI_CALL GetQuerySize(const QueryPool& queryPool) {
     return ((QueryPoolD3D12&)queryPool).GetQuerySize();
 }
 
-static void NRI_CALL GetBufferMemoryDesc(const Device& device, const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+static void NRI_CALL GetBufferMemoryDesc(const Buffer& buffer, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    const BufferD3D12& bufferD3D12 = (BufferD3D12&)buffer;
+
+    D3D12_RESOURCE_DESC desc = {};
+    GetResourceDesc(&desc, bufferD3D12.GetDesc());
+
+    bufferD3D12.GetDevice().GetMemoryDesc(memoryLocation, desc, memoryDesc);
+}
+
+static void NRI_CALL GetTextureMemoryDesc(const Texture& texture, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    const TextureD3D12& textureD3D12 = (TextureD3D12&)texture;
+
+    D3D12_RESOURCE_DESC desc = {};
+    GetResourceDesc(&desc, textureD3D12.GetDesc());
+
+    textureD3D12.GetDevice().GetMemoryDesc(memoryLocation, desc, memoryDesc);
+}
+
+static void NRI_CALL GetBufferMemoryDesc2(const Device& device, const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     D3D12_RESOURCE_DESC desc = {};
     GetResourceDesc(&desc, bufferDesc);
 
     ((const DeviceD3D12&)device).GetMemoryDesc(memoryLocation, desc, memoryDesc);
 }
 
-static void NRI_CALL GetTextureMemoryDesc(const Device& device, const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+static void NRI_CALL GetTextureMemoryDesc2(const Device& device, const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     D3D12_RESOURCE_DESC desc = {};
     GetResourceDesc(&desc, textureDesc);
 
@@ -580,6 +598,8 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& table) const {
     table.GetQuerySize = ::GetQuerySize;
     table.GetBufferMemoryDesc = ::GetBufferMemoryDesc;
     table.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
+    table.GetBufferMemoryDesc2 = ::GetBufferMemoryDesc2;
+    table.GetTextureMemoryDesc2 = ::GetTextureMemoryDesc2;
     table.GetCommandQueue = ::GetCommandQueue;
     table.CreateCommandAllocator = ::CreateCommandAllocator;
     table.CreateCommandBuffer = ::CreateCommandBuffer;
@@ -858,8 +878,13 @@ static void NRI_CALL CmdDispatchRaysIndirect(CommandBuffer& commandBuffer, const
     ((CommandBufferD3D12&)commandBuffer).DispatchRaysIndirect(buffer, offset);
 }
 
-static void NRI_CALL GetAccelerationStructureMemoryDesc(const Device& device, const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
-    ((DeviceD3D12&)device).GetAccelerationStructureMemoryDesc(accelerationStructureDesc, memoryLocation, memoryDesc);
+static void NRI_CALL GetAccelerationStructureMemoryDesc(const AccelerationStructure& accelerationStructure, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    const AccelerationStructureD3D12& accelerationStructureD3D12 = (AccelerationStructureD3D12&)accelerationStructure;
+    accelerationStructureD3D12.GetMemoryDesc(memoryLocation, memoryDesc);
+}
+
+static void NRI_CALL GetAccelerationStructureMemoryDesc2(const Device& device, const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    ((DeviceD3D12&)device).GetMemoryDesc(accelerationStructureDesc, memoryLocation, memoryDesc);
 }
 
 static Result NRI_CALL CreateRayTracingPipeline(Device& device, const RayTracingPipelineDesc& rayTracingPipelineDesc, Pipeline*& pipeline) {
@@ -887,6 +912,7 @@ Result DeviceD3D12::FillFunctionTable(RayTracingInterface& table) const {
         return Result::UNSUPPORTED;
 
     table.GetAccelerationStructureMemoryDesc = ::GetAccelerationStructureMemoryDesc;
+    table.GetAccelerationStructureMemoryDesc2 = ::GetAccelerationStructureMemoryDesc2;
     table.GetAccelerationStructureUpdateScratchBufferSize = ::GetAccelerationStructureUpdateScratchBufferSize;
     table.GetAccelerationStructureBuildScratchBufferSize = ::GetAccelerationStructureBuildScratchBufferSize;
     table.GetAccelerationStructureHandle = ::GetAccelerationStructureHandle;

@@ -35,6 +35,7 @@ struct AccelerationStructureD3D12 {
     Result Create(const AllocateAccelerationStructureDesc& accelerationStructureDesc);
     Result BindMemory(Memory* memory, uint64_t offset);
     Result CreateDescriptor(Descriptor*& descriptor) const;
+    void GetMemoryDesc(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
     uint64_t GetHandle() const;
     operator ID3D12Resource*() const;

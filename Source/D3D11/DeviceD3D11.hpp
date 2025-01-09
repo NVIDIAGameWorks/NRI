@@ -376,6 +376,7 @@ void DeviceD3D11::FillDesc() {
     m_Desc.isAdditionalShadingRatesSupported = caps.bVariablePixelRateShadingSupported ? 1 : 0;
 #endif
 
+    m_Desc.isGetMemoryDesc2Supported = true;
     m_Desc.isComputeQueueSupported = true; // TODO: report fake COMPUTE and COPY queues support since multi-queue supporting code is NOP. Can it hurt?
     m_Desc.isCopyQueueSupported = true;
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;

@@ -520,6 +520,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.sampleLocationsTier = (uint8_t)options2.ProgrammableSamplePositionsTier;
     m_Desc.bindlessTier = (options.ResourceBindingTier == D3D12_RESOURCE_BINDING_TIER_3 && shaderModel.HighestShaderModel >= D3D_SHADER_MODEL_6_6) ? 2 : (levels.MaxSupportedFeatureLevel >= D3D_FEATURE_LEVEL_12_0 ? 1 : 0);
 
+    m_Desc.isGetMemoryDesc2Supported = true;
     m_Desc.isComputeQueueSupported = true;
     m_Desc.isCopyQueueSupported = true;
     m_Desc.isTextureFilterMinMaxSupported = levels.MaxSupportedFeatureLevel >= D3D_FEATURE_LEVEL_11_1 ? true : false;
@@ -649,7 +650,7 @@ void DeviceD3D12::GetMemoryDesc(MemoryLocation memoryLocation, const D3D12_RESOU
     memoryDesc.mustBeDedicated = mustBeDedicated;
 }
 
-void DeviceD3D12::GetAccelerationStructureMemoryDesc(const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+void DeviceD3D12::GetMemoryDesc(const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo = {};
     GetAccelerationStructurePrebuildInfo(accelerationStructureDesc, prebuildInfo);
 

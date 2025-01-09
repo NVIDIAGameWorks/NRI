@@ -38,6 +38,7 @@ struct TextureVK {
     Result Create(const AllocateTextureDesc& textureDesc);
     VkImageAspectFlags GetImageAspectFlags() const;
     void DestroyVma();
+    void GetMemoryDesc(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
     //================================================================================================================
     // NRI

@@ -624,7 +624,7 @@ NRI_INLINE Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* mem
             continue;
 
         MemoryDesc memoryDesc = {};
-        GetCoreInterface().GetBufferMemoryDesc(GetImpl(), buffer.GetDesc(), memory.GetMemoryLocation(), memoryDesc);
+        GetCoreInterface().GetBufferMemoryDesc(*buffer.GetImpl(), memory.GetMemoryLocation(), memoryDesc);
 
         RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT, "'[%u].offset' must be zero for dedicated allocation", i);
         RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT, "'[%u].alignment' is 0", i);
@@ -671,7 +671,7 @@ NRI_INLINE Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* m
             continue;
 
         MemoryDesc memoryDesc = {};
-        GetCoreInterface().GetTextureMemoryDesc(GetImpl(), texture.GetDesc(), memory.GetMemoryLocation(), memoryDesc);
+        GetCoreInterface().GetTextureMemoryDesc(*texture.GetImpl(), memory.GetMemoryLocation(), memoryDesc);
 
         RETURN_ON_FAILURE(this, !memoryDesc.mustBeDedicated || srcDesc.offset == 0, Result::INVALID_ARGUMENT, "'[%u].offset' must be zero for dedicated allocation", i);
         RETURN_ON_FAILURE(this, memoryDesc.alignment != 0, Result::INVALID_ARGUMENT, "'[%u].alignment' is 0", i);
@@ -1110,7 +1110,7 @@ NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStruc
 
     if (result == Result::SUCCESS) {
         MemoryDesc memoryDesc = {};
-        m_RayTracingAPI.GetAccelerationStructureMemoryDesc(GetImpl(), accelerationStructureDescImpl, MemoryLocation::DEVICE, memoryDesc);
+        m_RayTracingAPI.GetAccelerationStructureMemoryDesc(*accelerationStructureImpl, MemoryLocation::DEVICE, memoryDesc);
 
         accelerationStructure = (AccelerationStructure*)Allocate<AccelerationStructureVal>(GetStdAllocator(), *this, accelerationStructureImpl, false, memoryDesc);
     }
@@ -1136,7 +1136,7 @@ NRI_INLINE Result DeviceVal::AllocateAccelerationStructure(const AllocateAcceler
 
     if (result == Result::SUCCESS) {
         MemoryDesc memoryDesc = {};
-        m_RayTracingAPI.GetAccelerationStructureMemoryDesc(GetImpl(), accelerationStructureDescImpl.desc, MemoryLocation::DEVICE, memoryDesc);
+        m_RayTracingAPI.GetAccelerationStructureMemoryDesc(*accelerationStructureImpl, MemoryLocation::DEVICE, memoryDesc);
 
         accelerationStructure = (AccelerationStructure*)Allocate<AccelerationStructureVal>(GetStdAllocator(), *this, accelerationStructureImpl, true, memoryDesc);
     }

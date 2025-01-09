@@ -184,7 +184,6 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (m_MinorVersion < 3) {
         desiredDeviceExts.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
         desiredDeviceExts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-        desiredDeviceExts.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
         desiredDeviceExts.push_back(VK_KHR_COPY_COMMANDS_2_EXTENSION_NAME);
         desiredDeviceExts.push_back(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
     }
@@ -193,6 +192,13 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
 #endif
+
+    // Optional for Vulkan < 1.3
+    if (m_MinorVersion < 3 && IsExtensionSupported(VK_KHR_MAINTENANCE_4_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+
+    if (m_MinorVersion < 3 && IsExtensionSupported(VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME);
 
     // Optional (KHR)
     if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, supportedExts))
@@ -527,17 +533,23 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(dynamicRenderingFeatures);
     }
 
-    VkPhysicalDeviceMaintenance4Features maintenance4Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES};
-    if (IsExtensionSupported(VK_KHR_MAINTENANCE_4_EXTENSION_NAME, desiredDeviceExts)) {
-        APPEND_EXT(maintenance4Features);
-    }
-
     VkPhysicalDeviceExtendedDynamicStateFeaturesEXT extendedDynamicStateFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT};
     if (IsExtensionSupported(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(extendedDynamicStateFeatures);
     }
 
-    // Optional
+    // Optional (for Vulkan < 1.2)
+    VkPhysicalDeviceMaintenance4Features maintenance4Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES};
+    if (IsExtensionSupported(VK_KHR_MAINTENANCE_4_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(maintenance4Features);
+    }
+
+    VkPhysicalDeviceImageRobustnessFeatures imageRobustnessFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES};
+    if (IsExtensionSupported(VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(imageRobustnessFeatures);
+    }
+
+    // Optional (KHR)
     VkPhysicalDevicePresentIdFeaturesKHR presentIdFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR};
     if (IsExtensionSupported(VK_KHR_PRESENT_ID_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(presentIdFeatures);
@@ -593,6 +605,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         APPEND_EXT(fragmentShaderBarycentricFeatures);
     }
 
+    // Optional (EXT)
     VkPhysicalDeviceOpacityMicromapFeaturesEXT micromapFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_EXT};
     if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(micromapFeatures);
@@ -655,13 +668,21 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     m_IsSupported.presentWait = presentIdFeatures.presentId != 0 && presentWaitFeatures.presentWait != 0;
     m_IsSupported.lowLatency = presentIdFeatures.presentId != 0 && IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
     m_IsSupported.memoryPriority = memoryPriorityFeatures.memoryPriority;
+    m_IsSupported.maintenance4 = features13.maintenance4 != 0 || maintenance4Features.maintenance4 != 0;
     m_IsSupported.maintenance5 = maintenance5Features.maintenance5;
     m_IsSupported.maintenance6 = maintenance6Features.maintenance6;
     m_IsSupported.imageSlicedView = slicedViewFeatures.imageSlicedViewOf3D != 0;
     m_IsSupported.customBorderColor = borderColorFeatures.customBorderColors != 0 && borderColorFeatures.customBorderColorWithoutFormat != 0;
-    m_IsSupported.robustness = features.features.robustBufferAccess != 0 && features13.robustImageAccess != 0;
+    m_IsSupported.robustness = features.features.robustBufferAccess != 0 && (imageRobustnessFeatures.robustImageAccess != 0 || features13.robustImageAccess != 0);
     m_IsSupported.robustness2 = robustness2Features.robustBufferAccess2 != 0 && robustness2Features.robustImageAccess2 != 0;
     m_IsSupported.pipelineRobustness = pipelineRobustnessFeatures.pipelineRobustness;
+
+    { // Check hard requirements
+        bool hasDynamicRendering = features13.dynamicRendering != 0 || (dynamicRenderingFeatures.dynamicRendering != 0 && extendedDynamicStateFeatures.extendedDynamicState != 0);
+        bool hasSynchronization2 = features13.synchronization2 != 0 || synchronization2features.synchronization2 != 0;
+
+        RETURN_ON_FAILURE(this, hasDynamicRendering && hasSynchronization2, nri::Result::UNSUPPORTED, "'dynamicRendering' and 'synchronization2' are not supported by the device");
+    }
 
     { // Create device
         if (isWrapper)
@@ -769,7 +790,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         VkPhysicalDeviceFragmentShadingRatePropertiesKHR shadingRateProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR};
         if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(shadingRateProps);
-            m_Desc.shadingRateTier = 1;
         }
 
         VkPhysicalDevicePushDescriptorPropertiesKHR pushDescriptorProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR};
@@ -785,8 +805,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         VkPhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
         if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(accelerationStructureProps);
-            m_Desc.rayTracingTier = 1;
-            m_Desc.isRayTracingSupported = true;
         }
 
         VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT};
@@ -804,7 +822,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         VkPhysicalDeviceMeshShaderPropertiesEXT meshShaderProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT};
         if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, desiredDeviceExts)) {
             APPEND_EXT(meshShaderProps);
-            m_Desc.isMeshShaderSupported = true;
         }
 
         m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevice, &props);
@@ -952,19 +969,23 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
                 m_Desc.sampleLocationsTier = 2;
         }
 
+        m_Desc.rayTracingTier = accelerationStructureFeatures.accelerationStructure != 0;
         if (m_Desc.rayTracingTier) {
             if (rayTracingPipelineFeatures.rayTracingPipelineTraceRaysIndirect && rayQueryFeatures.rayQuery)
                 m_Desc.rayTracingTier = 2;
         }
 
+        m_Desc.shadingRateTier = shadingRateFeatures.pipelineFragmentShadingRate != 0;
         if (m_Desc.shadingRateTier) {
-            m_Desc.isAdditionalShadingRatesSupported = shadingRateProps.maxFragmentSize.height > 2 || shadingRateProps.maxFragmentSize.width > 2;
             if (shadingRateFeatures.primitiveFragmentShadingRate && shadingRateFeatures.attachmentFragmentShadingRate)
                 m_Desc.shadingRateTier = 2;
+
+            m_Desc.isAdditionalShadingRatesSupported = shadingRateProps.maxFragmentSize.height > 2 || shadingRateProps.maxFragmentSize.width > 2;
         }
 
         m_Desc.bindlessTier = m_IsSupported.descriptorIndexing ? 1 : 0;
 
+        m_Desc.isGetMemoryDesc2Supported = m_IsSupported.maintenance4;
         m_Desc.isComputeQueueSupported = m_QueueFamilyIndices[(uint32_t)CommandQueueType::COMPUTE] != INVALID_FAMILY_INDEX;
         m_Desc.isCopyQueueSupported = m_QueueFamilyIndices[(uint32_t)CommandQueueType::COPY] != INVALID_FAMILY_INDEX;
         m_Desc.isTextureFilterMinMaxSupported = features12.samplerFilterMinmax;
@@ -999,6 +1020,8 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isShaderLayerSupported = features12.shaderOutputLayer;
 
         m_Desc.isSwapChainSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, desiredDeviceExts);
+        m_Desc.isRayTracingSupported = m_Desc.rayTracingTier != 0;
+        m_Desc.isMeshShaderSupported = meshShaderFeatures.meshShader != 0 && meshShaderFeatures.taskShader != 0;
         m_Desc.isLowLatencySupported = IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
 
         // Estimate shader model last since it depends on many "m_Desc" fields
@@ -1066,7 +1089,7 @@ void DeviceVK::FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo&
     info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
-void DeviceVK::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
+void DeviceVK::GetMemoryDesc2(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
     VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     FillCreateInfo(bufferDesc, createInfo);
 
@@ -1093,7 +1116,7 @@ void DeviceVK::GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memory
     }
 }
 
-void DeviceVK::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
+void DeviceVK::GetMemoryDesc2(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const {
     VkImageCreateInfo createInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     FillCreateInfo(textureDesc, createInfo);
 
@@ -1120,7 +1143,7 @@ void DeviceVK::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memo
     }
 }
 
-void DeviceVK::GetMemoryDesc(const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+void DeviceVK::GetMemoryDesc2(const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     VkAccelerationStructureBuildSizesInfoKHR sizesInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
     GetAccelerationStructureBuildSizesInfo(accelerationStructureDesc, sizesInfo);
 
@@ -1128,7 +1151,7 @@ void DeviceVK::GetMemoryDesc(const AccelerationStructureDesc& accelerationStruct
     bufferDesc.size = sizesInfo.accelerationStructureSize;
     bufferDesc.usage = BufferUsageBits::ACCELERATION_STRUCTURE_STORAGE;
 
-    GetMemoryDesc(bufferDesc, memoryLocation, memoryDesc);
+    GetMemoryDesc2(bufferDesc, memoryLocation, memoryDesc);
 }
 
 bool DeviceVK::GetMemoryTypeInfo(MemoryLocation memoryLocation, uint32_t memoryTypeMask, MemoryTypeInfo& memoryTypeInfo) const {
@@ -1689,9 +1712,10 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
     GET_DEVICE_CORE_PROC(UpdateDescriptorSets);
     GET_DEVICE_CORE_PROC(BindBufferMemory2);
     GET_DEVICE_CORE_PROC(BindImageMemory2);
-    GET_DEVICE_CORE_PROC(GetDeviceBufferMemoryRequirements);
-    GET_DEVICE_CORE_PROC(GetDeviceImageMemoryRequirements);
+    GET_DEVICE_CORE_PROC(GetBufferMemoryRequirements2);
+    GET_DEVICE_CORE_PROC(GetImageMemoryRequirements2);
     GET_DEVICE_CORE_PROC(ResetQueryPool);
+    GET_DEVICE_CORE_PROC(GetBufferDeviceAddress);
     GET_DEVICE_CORE_PROC(BeginCommandBuffer);
     GET_DEVICE_CORE_PROC(CmdSetViewportWithCount);
     GET_DEVICE_CORE_PROC(CmdSetScissorWithCount);
@@ -1730,11 +1754,12 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
     GET_DEVICE_CORE_PROC(CmdEndRendering);
     GET_DEVICE_CORE_PROC(EndCommandBuffer);
 
-    GET_DEVICE_OPTIONAL_CORE_PROC(GetBufferDeviceAddress);
-    if (!m_VK.GetBufferDeviceAddress)
-        m_IsSupported.deviceAddress = false;
+    // IMPORTANT: { } are mandatory here!
 
-    // IMPORTANT: {} is mandatory here!
+    if (m_MinorVersion >= 3 || IsExtensionSupported(VK_KHR_MAINTENANCE_4_EXTENSION_NAME, desiredDeviceExts)) {
+        GET_DEVICE_CORE_PROC(GetDeviceBufferMemoryRequirements);
+        GET_DEVICE_CORE_PROC(GetDeviceImageMemoryRequirements);
+    }
 
     if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, desiredDeviceExts)) {
         GET_DEVICE_PROC(CmdBindIndexBuffer2KHR);

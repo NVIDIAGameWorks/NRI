@@ -35,6 +35,7 @@ struct BufferVK {
     Result Create(const AllocateBufferDesc& bufferDesc);
     void FinishMemoryBinding(MemoryVK& memory, uint64_t memoryOffset);
     void DestroyVma();
+    void GetMemoryDesc(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
     //================================================================================================================
     // NRI

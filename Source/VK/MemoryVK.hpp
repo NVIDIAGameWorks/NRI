@@ -67,7 +67,7 @@ Result MemoryVK::CreateDedicated(const BufferVK& buffer) {
     CHECK(m_Type != std::numeric_limits<MemoryType>::max() && memoryTypeInfo.mustBeDedicated, "Shouldn't be there");
 
     MemoryDesc memoryDesc = {};
-    m_Device.GetMemoryDesc(buffer.GetDesc(), memoryTypeInfo.location, memoryDesc);
+    buffer.GetMemoryDesc(memoryTypeInfo.location, memoryDesc);
 
     VkMemoryPriorityAllocateInfoEXT priorityInfo = {VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT};
     priorityInfo.priority = m_Priority;
@@ -102,7 +102,7 @@ Result MemoryVK::CreateDedicated(const TextureVK& texture) {
     CHECK(m_Type != std::numeric_limits<MemoryType>::max() && memoryTypeInfo.mustBeDedicated, "Shouldn't be there");
 
     MemoryDesc memoryDesc = {};
-    m_Device.GetMemoryDesc(texture.GetDesc(), memoryTypeInfo.location, memoryDesc);
+    texture.GetMemoryDesc(memoryTypeInfo.location, memoryDesc);
 
     VkMemoryPriorityAllocateInfoEXT priorityInfo = {VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT};
     priorityInfo.priority = m_Priority;

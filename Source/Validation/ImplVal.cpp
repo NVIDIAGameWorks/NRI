@@ -74,15 +74,31 @@ static uint32_t NRI_CALL GetQuerySize(const QueryPool& queryPool) {
     return ((QueryPoolVal&)queryPool).GetQuerySize();
 }
 
-static void NRI_CALL GetBufferMemoryDesc(const Device& device, const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
-    DeviceVal& deviceVal = (DeviceVal&)device;
-    deviceVal.GetCoreInterface().GetBufferMemoryDesc(deviceVal.GetImpl(), bufferDesc, memoryLocation, memoryDesc);
+static void NRI_CALL GetBufferMemoryDesc(const Buffer& buffer, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    const BufferVal& bufferVal = (BufferVal&)buffer;
+    DeviceVal& deviceVal = bufferVal.GetDevice();
+    
+    deviceVal.GetCoreInterface().GetBufferMemoryDesc(*bufferVal.GetImpl(), memoryLocation, memoryDesc);
     deviceVal.RegisterMemoryType(memoryDesc.type, memoryLocation);
 }
 
-static void NRI_CALL GetTextureMemoryDesc(const Device& device, const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+static void NRI_CALL GetTextureMemoryDesc(const Texture& texture, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    const TextureVal& bufferVal = (TextureVal&)texture;
+    DeviceVal& deviceVal = bufferVal.GetDevice();
+    
+    deviceVal.GetCoreInterface().GetTextureMemoryDesc(*bufferVal.GetImpl(), memoryLocation, memoryDesc);
+    deviceVal.RegisterMemoryType(memoryDesc.type, memoryLocation);
+}
+
+static void NRI_CALL GetBufferMemoryDesc2(const Device& device, const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     DeviceVal& deviceVal = (DeviceVal&)device;
-    deviceVal.GetCoreInterface().GetTextureMemoryDesc(deviceVal.GetImpl(), textureDesc, memoryLocation, memoryDesc);
+    deviceVal.GetCoreInterface().GetBufferMemoryDesc2(deviceVal.GetImpl(), bufferDesc, memoryLocation, memoryDesc);
+    deviceVal.RegisterMemoryType(memoryDesc.type, memoryLocation);
+}
+
+static void NRI_CALL GetTextureMemoryDesc2(const Device& device, const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    DeviceVal& deviceVal = (DeviceVal&)device;
+    deviceVal.GetCoreInterface().GetTextureMemoryDesc2(deviceVal.GetImpl(), textureDesc, memoryLocation, memoryDesc);
     deviceVal.RegisterMemoryType(memoryDesc.type, memoryLocation);
 }
 
@@ -574,6 +590,8 @@ Result DeviceVal::FillFunctionTable(CoreInterface& table) const {
     table.GetQuerySize = ::GetQuerySize;
     table.GetBufferMemoryDesc = ::GetBufferMemoryDesc;
     table.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
+    table.GetBufferMemoryDesc2 = ::GetBufferMemoryDesc2;
+    table.GetTextureMemoryDesc2 = ::GetTextureMemoryDesc2;
     table.GetCommandQueue = ::GetCommandQueue;
     table.CreateCommandAllocator = ::CreateCommandAllocator;
     table.CreateCommandBuffer = ::CreateCommandBuffer;
@@ -844,7 +862,15 @@ static void NRI_CALL CmdDispatchRaysIndirect(CommandBuffer& commandBuffer, const
     ((CommandBufferVal&)commandBuffer).DispatchRaysIndirect(buffer, offset);
 }
 
-static void NRI_CALL GetAccelerationStructureMemoryDesc(const Device& device, const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+static void NRI_CALL GetAccelerationStructureMemoryDesc(const AccelerationStructure& accelerationStructure, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
+    const AccelerationStructureVal& accelerationStructureVal = (AccelerationStructureVal&)accelerationStructure;
+    DeviceVal& deviceVal = (DeviceVal&)accelerationStructureVal.GetDevice();
+
+    deviceVal.GetRayTracingInterface().GetAccelerationStructureMemoryDesc(*accelerationStructureVal.GetImpl(), memoryLocation, memoryDesc);
+    deviceVal.RegisterMemoryType(memoryDesc.type, memoryLocation);
+}
+
+static void NRI_CALL GetAccelerationStructureMemoryDesc2(const Device& device, const AccelerationStructureDesc& accelerationStructureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     DeviceVal& deviceVal = (DeviceVal&)device;
 
     auto accelerationStructureDescImpl = accelerationStructureDesc;
@@ -857,7 +883,7 @@ static void NRI_CALL GetAccelerationStructureMemoryDesc(const Device& device, co
         accelerationStructureDescImpl.geometryObjects = objectImplArray;
     }
 
-    deviceVal.GetRayTracingInterface().GetAccelerationStructureMemoryDesc(deviceVal.GetImpl(), accelerationStructureDescImpl, memoryLocation, memoryDesc);
+    deviceVal.GetRayTracingInterface().GetAccelerationStructureMemoryDesc2(deviceVal.GetImpl(), accelerationStructureDescImpl, memoryLocation, memoryDesc);
     deviceVal.RegisterMemoryType(memoryDesc.type, memoryLocation);
 }
 
@@ -889,6 +915,7 @@ Result DeviceVal::FillFunctionTable(RayTracingInterface& table) const {
         return Result::UNSUPPORTED;
 
     table.GetAccelerationStructureMemoryDesc = ::GetAccelerationStructureMemoryDesc;
+    table.GetAccelerationStructureMemoryDesc2 = ::GetAccelerationStructureMemoryDesc2;
     table.GetAccelerationStructureUpdateScratchBufferSize = ::GetAccelerationStructureUpdateScratchBufferSize;
     table.GetAccelerationStructureBuildScratchBufferSize = ::GetAccelerationStructureBuildScratchBufferSize;
     table.GetAccelerationStructureHandle = ::GetAccelerationStructureHandle;

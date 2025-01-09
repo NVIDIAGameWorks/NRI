@@ -54,14 +54,12 @@ Required Vulkan extensions:
 - for Vulkan 1.2:
     - _VK_KHR_synchronization2_
     - _VK_KHR_dynamic_rendering_
-    - _VK_KHR_maintenance4_
     - _VK_KHR_copy_commands2_
     - _VK_EXT_extended_dynamic_state_
 - for APPLE:
     - _VK_KHR_portability_enumeration_ (instance extension)
     - _VK_KHR_get_physical_device_properties2_ (instance extension)
     - _VK_KHR_portability_subset_
-
 
 Supported Vulkan extensions:
 - Instance:
@@ -75,6 +73,7 @@ Supported Vulkan extensions:
     - _VK_KHR_present_id_
     - _VK_KHR_present_wait_
     - _VK_KHR_swapchain_mutable_format_
+    - _VK_KHR_maintenance4_ (for Vulkan 1.2)
     - _VK_KHR_maintenance5_
     - _VK_KHR_maintenance6_
     - _VK_KHR_fragment_shading_rate_
@@ -96,6 +95,7 @@ Supported Vulkan extensions:
     - _VK_EXT_memory_priority_
     - _VK_EXT_image_sliced_view_of_3d_
     - _VK_EXT_custom_border_color_
+    - _VK_EXT_image_robustness_ (for Vulkan 1.2)
     - _VK_EXT_robustness2_
     - _VK_EXT_pipeline_robustness_
     - _VK_EXT_fragment_shader_interlock_
@@ -118,22 +118,22 @@ Supported Vulkan extensions:
 
 ## ENTITIES
 
-| NRI                     | D3D11                              | D3D12                         | VK                           |
-|-------------------------|------------------------------------|-------------------------------|------------------------------|
-| `Device`                | `ID3D11Device`                     | `ID3D12Device`                | `VkDevice`                   |
-| `CommandBuffer`         | `ID3D11DeviceContext` (deferred)   | `ID3D12CommandList`           | `VkCommandBuffer`            |
-| `CommandQueue`          | `ID3D11DeviceContext` (immediate)  | `ID3D12CommandQueue`          | `VkQueue`                    |
-| `Fence`                 | `ID3D11Fence`                      | `ID3D12Fence`                 | `VkSemaphore` (timeline)     |
-| `CommandAllocator`      | N/A                                | `ID3D12CommandAllocator`      | `VkCommandPool`              |
-| `Buffer`                | `ID3D11Buffer`                     | `ID3D12Resource`              | `VkBuffer`                   |
-| `Texture`               | `ID3D11Texture`                    | `ID3D12Resource`              | `VkImage`                    |
-| `Memory`                | N/A                                | `ID3D12Heap`                  | `VkDeviceMemory`             |
-| `Descriptor`            | `ID3D11*View`                      | `D3D12_CPU_DESCRIPTOR_HANDLE` | `Vk*View` or `VkSampler`     |
-| `DescriptorSet`         | N/A                                | N/A                           | `VkDescriptorSet`            |
-| `DescriptorPool`        | N/A                                | `ID3D12DescriptorHeap`        | `VkDescriptorPool`           |
-| `PipelineLayout`        | N/A                                | `ID3D12RootSignature`         | `VkPipelineLayout`           |
-| `Pipeline`              | `ID3D11*Shader` and `ID3D11*State` | `ID3D12StateObject`           | `VkPipeline`                 |
-| `AccelerationStructure` | N/A                                | `ID3D12Resource`              | `VkAccelerationStructure`    |
+| NRI                     | D3D11                                 | D3D12                         | VK                           |
+|-------------------------|---------------------------------------|-------------------------------|------------------------------|
+| `Device`                | `ID3D11Device`                        | `ID3D12Device`                | `VkDevice`                   |
+| `CommandBuffer`         | `ID3D11DeviceContext` (deferred)      | `ID3D12CommandList`           | `VkCommandBuffer`            |
+| `CommandQueue`          | `ID3D11DeviceContext` (immediate)     | `ID3D12CommandQueue`          | `VkQueue`                    |
+| `Fence`                 | `ID3D11Fence`                         | `ID3D12Fence`                 | `VkSemaphore` (timeline)     |
+| `CommandAllocator`      | N/A                                   | `ID3D12CommandAllocator`      | `VkCommandPool`              |
+| `Buffer`                | `ID3D11Buffer`                        | `ID3D12Resource`              | `VkBuffer`                   |
+| `Texture`               | `ID3D11Texture`                       | `ID3D12Resource`              | `VkImage`                    |
+| `Memory`                | N/A                                   | `ID3D12Heap`                  | `VkDeviceMemory`             |
+| `Descriptor`            | `ID3D11*View` or `ID3D11SamplerState` | `D3D12_CPU_DESCRIPTOR_HANDLE` | `Vk*View` or `VkSampler`     |
+| `DescriptorSet`         | N/A                                   | N/A                           | `VkDescriptorSet`            |
+| `DescriptorPool`        | N/A                                   | `ID3D12DescriptorHeap`        | `VkDescriptorPool`           |
+| `PipelineLayout`        | N/A                                   | `ID3D12RootSignature`         | `VkPipelineLayout`           |
+| `Pipeline`              | `ID3D11*Shader` and `ID3D11*State`    | `ID3D12StateObject`           | `VkPipeline`                 |
+| `AccelerationStructure` | N/A                                   | `ID3D12Resource`              | `VkAccelerationStructure`    |
 
 ## BUILD INSTRUCTIONS
 
