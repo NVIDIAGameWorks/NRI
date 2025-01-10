@@ -4,7 +4,7 @@
 
 namespace nri {
 
-struct QueryPoolVal : public DeviceObjectVal<QueryPool> {
+struct QueryPoolVal final : public DeviceObjectVal<QueryPool> {
     QueryPoolVal(DeviceVal& device, QueryPool* queryPool, QueryType queryType, uint32_t queryNum);
 
     void ResetQueries(uint32_t offset, uint32_t num);
@@ -25,7 +25,6 @@ struct QueryPoolVal : public DeviceObjectVal<QueryPool> {
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     uint32_t GetQuerySize() const;
 
 private:

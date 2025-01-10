@@ -7,7 +7,7 @@ namespace nri {
 struct DeviceVK;
 struct CommandQueueVK;
 
-struct FenceVK {
+struct FenceVK final : public DebugNameBase {
     inline FenceVK(DeviceVK& device)
         : m_Device(device) {
     }
@@ -25,10 +25,15 @@ struct FenceVK {
     Result Create(uint64_t initialValue);
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     uint64_t GetFenceValue() const;
     void Wait(uint64_t value);
 

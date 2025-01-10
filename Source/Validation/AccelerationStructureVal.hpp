@@ -32,12 +32,7 @@ NRI_INLINE Result AccelerationStructureVal::CreateDescriptor(Descriptor*& descri
     const Result result = GetRayTracingInterface().CreateAccelerationStructureDescriptor(*GetImpl(), descriptorImpl);
 
     if (result == Result::SUCCESS)
-        descriptor = (Descriptor*)Allocate<DescriptorVal>(m_Device.GetStdAllocator(), m_Device, descriptorImpl, ResourceType::ACCELERATION_STRUCTURE);
+        descriptor = (Descriptor*)Allocate<DescriptorVal>(m_Device.GetAllocationCallbacks(), m_Device, descriptorImpl, ResourceType::ACCELERATION_STRUCTURE);
 
     return result;
-}
-
-NRI_INLINE void AccelerationStructureVal::SetDebugName(const char* name) {
-    m_Name = name;
-    GetRayTracingInterface().SetAccelerationStructureDebugName(*GetImpl(), name);
 }

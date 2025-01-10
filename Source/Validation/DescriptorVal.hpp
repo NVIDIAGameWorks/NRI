@@ -110,8 +110,3 @@ DescriptorVal::DescriptorVal(DeviceVal& device, Descriptor* descriptor)
     : DeviceObjectVal(device, descriptor)
     , m_ResourceType(ResourceType::SAMPLER) {
 }
-
-NRI_INLINE void DescriptorVal::SetDebugName(const char* name) {
-    m_Name = name;
-    GetCoreInterface().SetDescriptorDebugName(*GetImpl(), name);
-}

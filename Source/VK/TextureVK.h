@@ -6,7 +6,7 @@ namespace nri {
 
 struct DeviceVK;
 
-struct TextureVK {
+struct TextureVK final : public DebugNameBase {
     inline TextureVK(DeviceVK& device)
         : m_Device(device) {
     }
@@ -41,10 +41,10 @@ struct TextureVK {
     void GetMemoryDesc(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name);
+    void SetDebugName(const char* name) override;
 
 private:
     DeviceVK& m_Device;

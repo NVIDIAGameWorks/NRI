@@ -10,7 +10,7 @@ namespace nri {
 struct CommandQueueD3D11;
 
 struct DeviceD3D11 final : public DeviceBase {
-    DeviceD3D11(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator);
+    DeviceD3D11(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks);
     ~DeviceD3D11();
 
     inline ID3D11DeviceBest* GetNativeObject() const {
@@ -65,11 +65,11 @@ struct DeviceD3D11 final : public DeviceBase {
 
     template <typename Implementation, typename Interface, typename... Args>
     inline Result CreateImplementation(Interface*& entity, const Args&... args) {
-        Implementation* impl = Allocate<Implementation>(GetStdAllocator(), *this);
+        Implementation* impl = Allocate<Implementation>(GetAllocationCallbacks(), *this);
         Result result = impl->Create(args...);
 
         if (result != Result::SUCCESS) {
-            Destroy(GetStdAllocator(), impl);
+            Destroy(GetAllocationCallbacks(), impl);
             entity = nullptr;
         } else
             entity = (Interface*)impl;
@@ -80,6 +80,15 @@ struct DeviceD3D11 final : public DeviceBase {
     Result Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* precreatedDevice, AGSContext* agsContext, bool isNVAPILoadedInApp);
     void GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
     void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
+
+    //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override {
+        SET_D3D_DEBUG_OBJECT_NAME(m_Device, name);
+        SET_D3D_DEBUG_OBJECT_NAME(m_ImmediateContext, name);
+    }
 
     //================================================================================================================
     // DeviceBase
@@ -101,11 +110,6 @@ struct DeviceD3D11 final : public DeviceBase {
     //================================================================================================================
     // NRI
     //================================================================================================================
-
-    inline void SetDebugName(const char* name) {
-        SET_D3D_DEBUG_OBJECT_NAME(m_Device, name);
-        SET_D3D_DEBUG_OBJECT_NAME(m_ImmediateContext, name);
-    }
 
     Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
     Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);

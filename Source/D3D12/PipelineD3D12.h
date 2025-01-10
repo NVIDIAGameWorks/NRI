@@ -10,7 +10,7 @@ struct DeviceD3D12;
 struct PipelineLayoutD3D12;
 struct CommandBufferD3D12;
 
-struct PipelineD3D12 {
+struct PipelineD3D12 final : public DebugNameBase {
     inline PipelineD3D12(DeviceD3D12& device)
         : m_Device(device)
         , m_ShaderGroupNames(device.GetStdAllocator())
@@ -47,12 +47,16 @@ struct PipelineD3D12 {
     void Bind(ID3D12GraphicsCommandList* graphicsCommandList, D3D12_PRIMITIVE_TOPOLOGY& primitiveTopology) const;
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    inline void SetDebugName(const char* name) {
+    void SetDebugName(const char* name) override {
         SET_D3D_DEBUG_OBJECT_NAME(m_PipelineState, name);
     }
+
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
 
     Result WriteShaderGroupIdentifiers(uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer) const;
 

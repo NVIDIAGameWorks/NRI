@@ -47,11 +47,6 @@ static bool ValidateBufferUploadDesc(DeviceVal& device, uint32_t i, const Buffer
     return true;
 }
 
-NRI_INLINE void CommandQueueVal::SetDebugName(const char* name) {
-    m_Name = name;
-    GetCoreInterface().SetCommandQueueDebugName(*GetImpl(), name);
-}
-
 NRI_INLINE void CommandQueueVal::BeginAnnotation(const char* name, uint32_t bgra) {
     GetCoreInterface().QueueBeginAnnotation(*GetImpl(), name, bgra);
 }

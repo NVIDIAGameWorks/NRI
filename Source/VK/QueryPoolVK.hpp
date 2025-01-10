@@ -3,7 +3,7 @@
 QueryPoolVK::~QueryPoolVK() {
     if (m_OwnsNativeObjects) {
         const auto& vk = m_Device.GetDispatchTable();
-        vk.DestroyQueryPool(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+        vk.DestroyQueryPool(m_Device, m_Handle, m_Device.GetVkAllocationCallbacks());
     }
 }
 
@@ -27,7 +27,7 @@ Result QueryPoolVK::Create(const QueryPoolDesc& queryPoolDesc) {
     const VkQueryPoolCreateInfo poolInfo = {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, nullptr, (VkQueryPoolCreateFlags)0, m_Type, queryPoolDesc.capacity, pipelineStatistics};
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreateQueryPool(m_Device, &poolInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
+    VkResult result = vk.CreateQueryPool(m_Device, &poolInfo, m_Device.GetVkAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateQueryPool returned %d", (int32_t)result);
 
     m_QuerySize = (m_Type == VK_QUERY_TYPE_PIPELINE_STATISTICS ? (m_Device.GetDesc().isMeshShaderSupported ? 13 : 11) : 1) * sizeof(uint64_t);

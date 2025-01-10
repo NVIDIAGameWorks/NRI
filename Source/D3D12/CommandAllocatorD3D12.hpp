@@ -10,7 +10,7 @@ Result CommandAllocatorD3D12::Create(const CommandQueue& commandQueue) {
 }
 
 NRI_INLINE Result CommandAllocatorD3D12::CreateCommandBuffer(CommandBuffer*& commandBuffer) {
-    CommandBufferD3D12* commandBufferD3D12 = Allocate<CommandBufferD3D12>(m_Device.GetStdAllocator(), m_Device);
+    CommandBufferD3D12* commandBufferD3D12 = Allocate<CommandBufferD3D12>(m_Device.GetAllocationCallbacks(), m_Device);
     const Result result = commandBufferD3D12->Create(m_CommandListType, m_CommandAllocator);
 
     if (result == Result::SUCCESS) {
@@ -18,7 +18,7 @@ NRI_INLINE Result CommandAllocatorD3D12::CreateCommandBuffer(CommandBuffer*& com
         return Result::SUCCESS;
     }
 
-    Destroy(m_Device.GetStdAllocator(), commandBufferD3D12);
+    Destroy(m_Device.GetAllocationCallbacks(), commandBufferD3D12);
 
     return result;
 }

@@ -12,7 +12,7 @@ struct OffsetNum {
     uint32_t descriptorNum;
 };
 
-struct DescriptorSetD3D11 {
+struct DescriptorSetD3D11 final : public DebugNameBase {
     inline DescriptorSetD3D11(DeviceD3D11& device)
         : m_Ranges(device.GetStdAllocator()) {
     }
@@ -30,10 +30,6 @@ struct DescriptorSetD3D11 {
     //================================================================================================================
     // NRI
     //================================================================================================================
-
-    inline void SetDebugName(const char* name) {
-        MaybeUnused(name);
-    }
 
     void UpdateDescriptorRanges(uint32_t rangeOffset, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs);
     void UpdateDynamicConstantBuffers(uint32_t baseDynamicConstantBuffer, uint32_t dynamicConstantBufferNum, const Descriptor* const* descriptors);

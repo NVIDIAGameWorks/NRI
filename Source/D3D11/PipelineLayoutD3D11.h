@@ -28,7 +28,7 @@ struct ConstantBuffer {
     StageBits shaderStages;
 };
 
-struct PipelineLayoutD3D11 {
+struct PipelineLayoutD3D11 final : public DebugNameBase {
     inline PipelineLayoutD3D11(DeviceD3D11& device)
         : m_Device(device)
         , m_BindingSets(device.GetStdAllocator())
@@ -56,14 +56,6 @@ struct PipelineLayoutD3D11 {
     void SetRootConstants(ID3D11DeviceContextBest* deferredContext, uint32_t rootConstantIndex, const void* data, uint32_t size) const;
     void Bind(ID3D11DeviceContextBest* deferredContext);
     void BindDescriptorSet(BindingState& currentBindingState, ID3D11DeviceContextBest* deferredContext, uint32_t setIndex, const DescriptorSetD3D11* descriptorSet, const DescriptorD3D11* descriptor, const uint32_t* dynamicConstantBufferOffsets) const;
-
-    //================================================================================================================
-    // NRI
-    //================================================================================================================
-
-    inline void SetDebugName(const char* name) {
-        MaybeUnused(name);
-    }
 
 private:
     template <bool isGraphics>

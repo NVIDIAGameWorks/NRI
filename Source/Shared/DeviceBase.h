@@ -3,14 +3,19 @@
 #pragma once
 
 namespace nri {
-struct DeviceBase {
-    inline DeviceBase(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator)
+struct DeviceBase : public DebugNameBase {
+    inline DeviceBase(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks)
         : m_CallbackInterface(callbacks)
-        , m_StdAllocator(stdAllocator) {
+        , m_AllocationCallbacks(allocationCallbacks)
+        , m_StdAllocator(m_AllocationCallbacks) {
     }
 
     inline StdAllocator<uint8_t>& GetStdAllocator() {
         return m_StdAllocator;
+    }
+
+    inline const AllocationCallbacks& GetAllocationCallbacks() const {
+        return m_AllocationCallbacks;
     }
 
     void ReportMessage(Message messageType, const char* file, uint32_t line, const char* format, ...) const;
@@ -67,6 +72,7 @@ struct DeviceBase {
 
 protected:
     CallbackInterface m_CallbackInterface = {};
+    AllocationCallbacks m_AllocationCallbacks = {};
     StdAllocator<uint8_t> m_StdAllocator;
 };
 } // namespace nri

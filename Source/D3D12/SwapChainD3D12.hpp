@@ -39,7 +39,7 @@ SwapChainD3D12::~SwapChainD3D12() {
         CloseHandle(m_FrameLatencyWaitableObject);
 
     for (TextureD3D12* texture : m_Textures)
-        Destroy<TextureD3D12>(m_Device.GetStdAllocator(), texture);
+        Destroy<TextureD3D12>(m_Device.GetAllocationCallbacks(), texture);
 }
 
 Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc) {
@@ -150,7 +150,7 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc) {
         TextureD3D12Desc textureDesc = {};
         textureDesc.d3d12Resource = textureNative;
 
-        TextureD3D12* texture = Allocate<TextureD3D12>(m_Device.GetStdAllocator(), m_Device);
+        TextureD3D12* texture = Allocate<TextureD3D12>(m_Device.GetAllocationCallbacks(), m_Device);
         const Result res = texture->Create(textureDesc);
         if (res != Result::SUCCESS)
             return res;

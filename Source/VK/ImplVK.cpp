@@ -45,12 +45,11 @@ using namespace nri;
 #include "TextureVK.hpp"
 
 Result CreateDeviceVK(const DeviceCreationDesc& desc, DeviceBase*& device) {
-    StdAllocator<uint8_t> allocator(desc.allocationCallbacks);
-    DeviceVK* impl = Allocate<DeviceVK>(allocator, desc.callbackInterface, allocator);
+    DeviceVK* impl = Allocate<DeviceVK>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
     Result result = impl->Create(desc, {}, false);
 
     if (result != Result::SUCCESS) {
-        Destroy(allocator, impl);
+        Destroy(desc.allocationCallbacks, impl);
         device = nullptr;
     } else
         device = (DeviceBase*)impl;
@@ -59,12 +58,11 @@ Result CreateDeviceVK(const DeviceCreationDesc& desc, DeviceBase*& device) {
 }
 
 Result CreateDeviceVK(const DeviceCreationVKDesc& desc, DeviceBase*& device) {
-    StdAllocator<uint8_t> allocator(desc.allocationCallbacks);
-    DeviceVK* impl = Allocate<DeviceVK>(allocator, desc.callbackInterface, allocator);
+    DeviceVK* impl = Allocate<DeviceVK>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
     Result result = impl->Create({}, desc, true);
 
     if (result != Result::SUCCESS) {
-        Destroy(allocator, impl);
+        Destroy(desc.allocationCallbacks, impl);
         device = nullptr;
     } else
         device = (DeviceBase*)impl;
@@ -464,60 +462,9 @@ static void NRI_CALL UnmapBuffer(Buffer& buffer) {
     ((BufferVK&)buffer).Unmap();
 }
 
-static void NRI_CALL SetDeviceDebugName(Device& device, const char* name) {
-    ((DeviceVK&)device).SetDebugName(name);
-}
-
-static void NRI_CALL SetFenceDebugName(Fence& fence, const char* name) {
-    ((FenceVK&)fence).SetDebugName(name);
-}
-
-static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* name) {
-    ((DescriptorVK&)descriptor).SetDebugName(name);
-}
-
-static void NRI_CALL SetPipelineDebugName(Pipeline& pipeline, const char* name) {
-    ((PipelineVK&)pipeline).SetDebugName(name);
-}
-
-static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
-    ((CommandBufferVK&)commandBuffer).SetDebugName(name);
-}
-
-static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name) {
-    ((BufferVK&)buffer).SetDebugName(name);
-}
-
-static void NRI_CALL SetTextureDebugName(Texture& texture, const char* name) {
-    ((TextureVK&)texture).SetDebugName(name);
-}
-
-static void NRI_CALL SetCommandQueueDebugName(CommandQueue& commandQueue, const char* name) {
-    ((CommandQueueVK&)commandQueue).SetDebugName(name);
-}
-
-static void NRI_CALL SetCommandAllocatorDebugName(CommandAllocator& commandAllocator, const char* name) {
-    ((CommandAllocatorVK&)commandAllocator).SetDebugName(name);
-}
-
-static void NRI_CALL SetDescriptorPoolDebugName(DescriptorPool& descriptorPool, const char* name) {
-    ((DescriptorPoolVK&)descriptorPool).SetDebugName(name);
-}
-
-static void NRI_CALL SetPipelineLayoutDebugName(PipelineLayout& pipelineLayout, const char* name) {
-    ((PipelineLayoutVK&)pipelineLayout).SetDebugName(name);
-}
-
-static void NRI_CALL SetQueryPoolDebugName(QueryPool& queryPool, const char* name) {
-    ((QueryPoolVK&)queryPool).SetDebugName(name);
-}
-
-static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet& descriptorSet, const char* name) {
-    ((DescriptorSetVK&)descriptorSet).SetDebugName(name);
-}
-
-static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name) {
-    ((MemoryVK&)memory).SetDebugName(name);
+static void NRI_CALL SetDebugName(Object* object, const char* name) {
+    if (object)
+        ((DebugNameBase*)object)->SetDebugName(name);
 }
 
 static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
@@ -664,20 +611,7 @@ Result DeviceVK::FillFunctionTable(CoreInterface& table) const {
     table.ResetCommandAllocator = ::ResetCommandAllocator;
     table.MapBuffer = ::MapBuffer;
     table.UnmapBuffer = ::UnmapBuffer;
-    table.SetDeviceDebugName = ::SetDeviceDebugName;
-    table.SetFenceDebugName = ::SetFenceDebugName;
-    table.SetDescriptorDebugName = ::SetDescriptorDebugName;
-    table.SetPipelineDebugName = ::SetPipelineDebugName;
-    table.SetCommandBufferDebugName = ::SetCommandBufferDebugName;
-    table.SetBufferDebugName = ::SetBufferDebugName;
-    table.SetTextureDebugName = ::SetTextureDebugName;
-    table.SetCommandQueueDebugName = ::SetCommandQueueDebugName;
-    table.SetCommandAllocatorDebugName = ::SetCommandAllocatorDebugName;
-    table.SetDescriptorPoolDebugName = ::SetDescriptorPoolDebugName;
-    table.SetPipelineLayoutDebugName = ::SetPipelineLayoutDebugName;
-    table.SetQueryPoolDebugName = ::SetQueryPoolDebugName;
-    table.SetDescriptorSetDebugName = ::SetDescriptorSetDebugName;
-    table.SetMemoryDebugName = ::SetMemoryDebugName;
+    table.SetDebugName = ::SetDebugName;
     table.GetDeviceNativeObject = ::GetDeviceNativeObject;
     table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
@@ -810,10 +744,6 @@ static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStruct
     return (uint64_t)((AccelerationStructureVK&)accelerationStructure).GetDeviceAddress();
 }
 
-static void NRI_CALL SetAccelerationStructureDebugName(AccelerationStructure& accelerationStructure, const char* name) {
-    ((AccelerationStructureVK&)accelerationStructure).SetDebugName(name);
-}
-
 static Result NRI_CALL CreateAccelerationStructureDescriptor(const AccelerationStructure& accelerationStructure, Descriptor*& descriptor) {
     return ((AccelerationStructureVK&)accelerationStructure).CreateDescriptor(descriptor);
 }
@@ -905,7 +835,6 @@ Result DeviceVK::FillFunctionTable(RayTracingInterface& table) const {
     table.CmdDispatchRaysIndirect = ::CmdDispatchRaysIndirect;
     table.CmdCopyAccelerationStructure = ::CmdCopyAccelerationStructure;
     table.CmdWriteAccelerationStructureSize = ::CmdWriteAccelerationStructureSize;
-    table.SetAccelerationStructureDebugName = ::SetAccelerationStructureDebugName;
     table.GetAccelerationStructureNativeObject = ::GetAccelerationStructureNativeObject;
 
     return Result::SUCCESS;
@@ -943,11 +872,11 @@ Result DeviceVK::FillFunctionTable(ResourceAllocatorInterface& table) const {
 
 static Result CreateStreamer(Device& device, const StreamerDesc& streamerDesc, Streamer*& streamer) {
     DeviceVK& deviceVK = (DeviceVK&)device;
-    StreamerImpl* impl = Allocate<StreamerImpl>(deviceVK.GetStdAllocator(), device, deviceVK.GetCoreInterface());
+    StreamerImpl* impl = Allocate<StreamerImpl>(deviceVK.GetAllocationCallbacks(), device, deviceVK.GetCoreInterface());
     Result result = impl->Create(streamerDesc);
 
     if (result != Result::SUCCESS) {
-        Destroy(deviceVK.GetStdAllocator(), impl);
+        Destroy(deviceVK.GetAllocationCallbacks(), impl);
         streamer = nullptr;
     } else
         streamer = (Streamer*)impl;
@@ -956,7 +885,7 @@ static Result CreateStreamer(Device& device, const StreamerDesc& streamerDesc, S
 }
 
 static void DestroyStreamer(Streamer& streamer) {
-    Destroy(((DeviceBase&)((StreamerImpl&)streamer).GetDevice()).GetStdAllocator(), (StreamerImpl*)&streamer);
+    Destroy(((DeviceBase&)((StreamerImpl&)streamer).GetDevice()).GetAllocationCallbacks(), (StreamerImpl*)&streamer);
 }
 
 static Buffer* GetStreamerConstantBuffer(Streamer& streamer) {
@@ -1014,10 +943,6 @@ static void NRI_CALL DestroySwapChain(SwapChain& swapChain) {
     Destroy((SwapChainVK*)&swapChain);
 }
 
-static void NRI_CALL SetSwapChainDebugName(SwapChain& swapChain, const char* name) {
-    ((SwapChainVK&)swapChain).SetDebugName(name);
-}
-
 static Texture* const* NRI_CALL GetSwapChainTextures(const SwapChain& swapChain, uint32_t& textureNum) {
     return ((SwapChainVK&)swapChain).GetTextures(textureNum);
 }
@@ -1044,7 +969,6 @@ Result DeviceVK::FillFunctionTable(SwapChainInterface& table) const {
 
     table.CreateSwapChain = ::CreateSwapChain;
     table.DestroySwapChain = ::DestroySwapChain;
-    table.SetSwapChainDebugName = ::SetSwapChainDebugName;
     table.GetSwapChainTextures = ::GetSwapChainTextures;
     table.AcquireNextSwapChainTexture = ::AcquireNextSwapChainTexture;
     table.WaitForPresent = ::WaitForPresent;

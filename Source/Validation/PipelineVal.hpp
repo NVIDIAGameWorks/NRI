@@ -21,11 +21,6 @@ PipelineVal::PipelineVal(DeviceVal& device, Pipeline* pipeline, const RayTracing
     , m_PipelineLayout(rayTracingPipelineDesc.pipelineLayout) {
 }
 
-NRI_INLINE void PipelineVal::SetDebugName(const char* name) {
-    m_Name = name;
-    GetCoreInterface().SetPipelineDebugName(*GetImpl(), name);
-}
-
 NRI_INLINE Result PipelineVal::WriteShaderGroupIdentifiers(uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer) {
     return GetRayTracingInterface().WriteShaderGroupIdentifiers(*GetImpl(), baseShaderGroupIndex, shaderGroupNum, buffer);
 }

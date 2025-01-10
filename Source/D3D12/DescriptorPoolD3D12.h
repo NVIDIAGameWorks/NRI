@@ -8,7 +8,7 @@ namespace nri {
 
 struct DeviceD3D12;
 
-struct DescriptorPoolD3D12 {
+struct DescriptorPoolD3D12 final : public DebugNameBase {
     inline DescriptorPoolD3D12(DeviceD3D12& device)
         : m_Device(device)
         , m_DescriptorSets(device.GetStdAllocator()) {
@@ -32,10 +32,15 @@ struct DescriptorPoolD3D12 {
     DescriptorPointerGPU GetDescriptorPointerGPU(DescriptorHeapType descriptorHeapType, uint32_t offset) const;
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     Result AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
     void Reset();
 

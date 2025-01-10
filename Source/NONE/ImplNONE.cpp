@@ -10,8 +10,8 @@ constexpr T* DummyObject() {
 }
 
 struct DeviceNONE final : public DeviceBase {
-    inline DeviceNONE(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator)
-        : DeviceBase(callbacks, stdAllocator) {
+    inline DeviceNONE(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks)
+        : DeviceBase(callbacks, allocationCallbacks) {
         m_Desc.graphicsAPI = GraphicsAPI::NONE;
         m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
         m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
@@ -212,12 +212,11 @@ private:
     DeviceDesc m_Desc = {};
 };
 
-Result CreateDeviceNONE(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device) {
-    StdAllocator<uint8_t> allocator(deviceCreationDesc.allocationCallbacks);
-    DeviceNONE* impl = Allocate<DeviceNONE>(allocator, deviceCreationDesc.callbackInterface, allocator);
+Result CreateDeviceNONE(const DeviceCreationDesc& desc, DeviceBase*& device) {
+    DeviceNONE* impl = Allocate<DeviceNONE>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
 
     if (!impl) {
-        Destroy(allocator, impl);
+        Destroy(desc.allocationCallbacks, impl);
         device = DummyObject<DeviceBase>();
 
         return Result::FAILURE;
@@ -590,46 +589,7 @@ static void* NRI_CALL MapBuffer(Buffer&, uint64_t, uint64_t) {
 static void NRI_CALL UnmapBuffer(Buffer&) {
 }
 
-static void NRI_CALL SetDeviceDebugName(Device&, const char*) {
-}
-
-static void NRI_CALL SetFenceDebugName(Fence&, const char*) {
-}
-
-static void NRI_CALL SetDescriptorDebugName(Descriptor&, const char*) {
-}
-
-static void NRI_CALL SetPipelineDebugName(Pipeline&, const char*) {
-}
-
-static void NRI_CALL SetCommandBufferDebugName(CommandBuffer&, const char*) {
-}
-
-static void NRI_CALL SetBufferDebugName(Buffer&, const char*) {
-}
-
-static void NRI_CALL SetTextureDebugName(Texture&, const char*) {
-}
-
-static void NRI_CALL SetCommandQueueDebugName(CommandQueue&, const char*) {
-}
-
-static void NRI_CALL SetCommandAllocatorDebugName(CommandAllocator&, const char*) {
-}
-
-static void NRI_CALL SetDescriptorPoolDebugName(DescriptorPool&, const char*) {
-}
-
-static void NRI_CALL SetPipelineLayoutDebugName(PipelineLayout&, const char*) {
-}
-
-static void NRI_CALL SetQueryPoolDebugName(QueryPool&, const char*) {
-}
-
-static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet&, const char*) {
-}
-
-static void NRI_CALL SetMemoryDebugName(Memory&, const char*) {
+static void NRI_CALL SetDebugName(Object*, const char*) {
 }
 
 static void* NRI_CALL GetDeviceNativeObject(const Device&) {
@@ -749,20 +709,7 @@ Result DeviceNONE::FillFunctionTable(CoreInterface& table) const {
     table.ResetCommandAllocator = ::ResetCommandAllocator;
     table.MapBuffer = ::MapBuffer;
     table.UnmapBuffer = ::UnmapBuffer;
-    table.SetDeviceDebugName = ::SetDeviceDebugName;
-    table.SetFenceDebugName = ::SetFenceDebugName;
-    table.SetDescriptorDebugName = ::SetDescriptorDebugName;
-    table.SetPipelineDebugName = ::SetPipelineDebugName;
-    table.SetCommandBufferDebugName = ::SetCommandBufferDebugName;
-    table.SetBufferDebugName = ::SetBufferDebugName;
-    table.SetTextureDebugName = ::SetTextureDebugName;
-    table.SetCommandQueueDebugName = ::SetCommandQueueDebugName;
-    table.SetCommandAllocatorDebugName = ::SetCommandAllocatorDebugName;
-    table.SetDescriptorPoolDebugName = ::SetDescriptorPoolDebugName;
-    table.SetPipelineLayoutDebugName = ::SetPipelineLayoutDebugName;
-    table.SetQueryPoolDebugName = ::SetQueryPoolDebugName;
-    table.SetDescriptorSetDebugName = ::SetDescriptorSetDebugName;
-    table.SetMemoryDebugName = ::SetMemoryDebugName;
+    table.SetDebugName = ::SetDebugName;
     table.GetDeviceNativeObject = ::GetDeviceNativeObject;
     table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
@@ -937,9 +884,6 @@ static void NRI_CALL CmdCopyAccelerationStructure(CommandBuffer&, AccelerationSt
 static void NRI_CALL CmdWriteAccelerationStructureSize(CommandBuffer&, const AccelerationStructure* const*, uint32_t, QueryPool&, uint32_t) {
 }
 
-static void NRI_CALL SetAccelerationStructureDebugName(AccelerationStructure&, const char*) {
-}
-
 static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const AccelerationStructure&) {
     return 0;
 }
@@ -964,7 +908,6 @@ Result DeviceNONE::FillFunctionTable(RayTracingInterface& table) const {
     table.CmdDispatchRaysIndirect = ::CmdDispatchRaysIndirect;
     table.CmdCopyAccelerationStructure = ::CmdCopyAccelerationStructure;
     table.CmdWriteAccelerationStructureSize = ::CmdWriteAccelerationStructureSize;
-    table.SetAccelerationStructureDebugName = ::SetAccelerationStructureDebugName;
     table.GetAccelerationStructureNativeObject = ::GetAccelerationStructureNativeObject;
 
     return Result::SUCCESS;
@@ -1070,9 +1013,6 @@ static Result NRI_CALL CreateSwapChain(Device&, const SwapChainDesc&, SwapChain*
 static void NRI_CALL DestroySwapChain(SwapChain&) {
 }
 
-static void NRI_CALL SetSwapChainDebugName(SwapChain&, const char*) {
-}
-
 static Texture* const* NRI_CALL GetSwapChainTextures(const SwapChain&, uint32_t& textureNum) {
     static void* textures[1] = {};
     textureNum = 1;
@@ -1101,7 +1041,6 @@ static Result NRI_CALL GetDisplayDesc(SwapChain&, DisplayDesc& displayDesc) {
 Result DeviceNONE::FillFunctionTable(SwapChainInterface& table) const {
     table.CreateSwapChain = ::CreateSwapChain;
     table.DestroySwapChain = ::DestroySwapChain;
-    table.SetSwapChainDebugName = ::SetSwapChainDebugName;
     table.GetSwapChainTextures = ::GetSwapChainTextures;
     table.AcquireNextSwapChainTexture = ::AcquireNextSwapChainTexture;
     table.WaitForPresent = ::WaitForPresent;

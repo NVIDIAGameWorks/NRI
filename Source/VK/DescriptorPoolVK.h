@@ -7,7 +7,7 @@ namespace nri {
 struct DeviceVK;
 struct DescriptorSetVK;
 
-struct DescriptorPoolVK {
+struct DescriptorPoolVK final : public DebugNameBase {
     inline DescriptorPoolVK(DeviceVK& device)
         : m_Device(device)
         , m_AllocatedSets(device.GetStdAllocator()) {
@@ -28,10 +28,15 @@ struct DescriptorPoolVK {
     Result Create(const DescriptorPoolVKDesc& descriptorPoolVKDesc);
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     void Reset();
     Result AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
 

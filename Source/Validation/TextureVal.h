@@ -6,7 +6,7 @@ namespace nri {
 
 struct MemoryVal;
 
-struct TextureVal : public DeviceObjectVal<Texture> {
+struct TextureVal final : public DeviceObjectVal<Texture> {
     TextureVal(DeviceVal& device, Texture* texture, bool isBoundToMemory)
         : DeviceObjectVal(device, texture)
         , m_IsBoundToMemory(isBoundToMemory) {
@@ -30,12 +30,6 @@ struct TextureVal : public DeviceObjectVal<Texture> {
         m_Memory = memory;
         m_IsBoundToMemory = true;
     }
-
-    //================================================================================================================
-    // NRI
-    //================================================================================================================
-
-    void SetDebugName(const char* name);
 
 private:
     MemoryVal* m_Memory = nullptr;

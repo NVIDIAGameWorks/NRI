@@ -25,8 +25,8 @@ Non-goals (exceptions apply to helper interfaces, where high-level abstraction a
 #pragma once
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 160
-#define NRI_VERSION_DATE "9 January 2024"
+#define NRI_VERSION_MINOR 161
+#define NRI_VERSION_DATE "10 January 2024"
 
 #include "NRIDescs.h"
 
@@ -214,21 +214,8 @@ NriStruct(CoreInterface) {
     void*               (NRI_CALL *MapBuffer)                       (NriRef(Buffer) buffer, uint64_t offset, uint64_t size);
     void                (NRI_CALL *UnmapBuffer)                     (NriRef(Buffer) buffer);
 
-    // Debug name
-    void                (NRI_CALL *SetDeviceDebugName)              (NriRef(Device) device, const char* name);
-    void                (NRI_CALL *SetFenceDebugName)               (NriRef(Fence) fence, const char* name);
-    void                (NRI_CALL *SetDescriptorDebugName)          (NriRef(Descriptor) descriptor, const char* name);
-    void                (NRI_CALL *SetPipelineDebugName)            (NriRef(Pipeline) pipeline, const char* name);
-    void                (NRI_CALL *SetCommandBufferDebugName)       (NriRef(CommandBuffer) commandBuffer, const char* name);
-    void                (NRI_CALL *SetBufferDebugName)              (NriRef(Buffer) buffer, const char* name);                      // D3D11/D3D12: skipped if called *before* "Bind[X]Memory"
-    void                (NRI_CALL *SetTextureDebugName)             (NriRef(Texture) texture, const char* name);                    // D3D11/D3D12: skipped if called *before* "Bind[X]Memory"
-    void                (NRI_CALL *SetCommandQueueDebugName)        (NriRef(CommandQueue) commandQueue, const char* name);          // D3D11: NOP
-    void                (NRI_CALL *SetCommandAllocatorDebugName)    (NriRef(CommandAllocator) commandAllocator, const char* name);  // D3D11: NOP
-    void                (NRI_CALL *SetDescriptorPoolDebugName)      (NriRef(DescriptorPool) descriptorPool, const char* name);      // D3D11: NOP
-    void                (NRI_CALL *SetPipelineLayoutDebugName)      (NriRef(PipelineLayout) pipelineLayout, const char* name);      // D3D11: NOP
-    void                (NRI_CALL *SetQueryPoolDebugName)           (NriRef(QueryPool) queryPool, const char* name);                // D3D11: NOP
-    void                (NRI_CALL *SetDescriptorSetDebugName)       (NriRef(DescriptorSet) descriptorSet, const char* name);        // D3D11: NOP
-    void                (NRI_CALL *SetMemoryDebugName)              (NriRef(Memory) memory, const char* name);                      // D3D11: NOP
+    // Debug name (skipped for buffers/textures in D3D if they are not bound to memory)
+    void                (NRI_CALL *SetDebugName)                    (NriPtr(Object) object, const char* name);
 
     // Native objects                                                                                            ___D3D11___________________________|_D3D12_______________________|_VK_________________________________
     void*               (NRI_CALL *GetDeviceNativeObject)           (const NriRef(Device) device);               // ID3D11Device*                   | ID3D12Device*               | VkDevice

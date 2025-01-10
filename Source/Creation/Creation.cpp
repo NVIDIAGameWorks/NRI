@@ -167,8 +167,7 @@ NRI_API void NRI_CALL nriSetThreadName(const char* name) {
 
 #else
 
-NRI_API void NRI_CALL nriSetThreadName(const char* name) {
-    MaybeUnused(name);
+NRI_API void NRI_CALL nriSetThreadName(const char*) {
 }
 
 #endif

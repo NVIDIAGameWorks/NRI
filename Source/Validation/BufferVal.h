@@ -35,7 +35,6 @@ struct BufferVal final : public DeviceObjectVal<Buffer> {
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     void* Map(uint64_t offset, uint64_t size);
     void Unmap();
 

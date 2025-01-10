@@ -2,12 +2,7 @@
 
 SwapChainVal::~SwapChainVal() {
     for (size_t i = 0; i < m_Textures.size(); i++)
-        Destroy(m_Device.GetStdAllocator(), m_Textures[i]);
-}
-
-NRI_INLINE void SwapChainVal::SetDebugName(const char* name) {
-    m_Name = name;
-    GetSwapChainInterface().SetSwapChainDebugName(*GetImpl(), name);
+        Destroy(m_Device.GetAllocationCallbacks(), m_Textures[i]);
 }
 
 NRI_INLINE Texture* const* SwapChainVal::GetTextures(uint32_t& textureNum) {
@@ -15,7 +10,7 @@ NRI_INLINE Texture* const* SwapChainVal::GetTextures(uint32_t& textureNum) {
 
     if (m_Textures.empty()) {
         for (uint32_t i = 0; i < textureNum; i++) {
-            TextureVal* textureVal = Allocate<TextureVal>(m_Device.GetStdAllocator(), m_Device, textures[i], true);
+            TextureVal* textureVal = Allocate<TextureVal>(m_Device.GetAllocationCallbacks(), m_Device, textures[i], true);
             m_Textures.push_back(textureVal);
         }
     }

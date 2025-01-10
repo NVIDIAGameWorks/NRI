@@ -23,8 +23,8 @@ static uint8_t QueryLatestDevice(ComPtr<ID3D11DeviceBest>& in, ComPtr<ID3D11Devi
     return n - i - 1;
 }
 
-DeviceD3D11::DeviceD3D11(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator)
-    : DeviceBase(callbacks, stdAllocator) {
+DeviceD3D11::DeviceD3D11(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks)
+    : DeviceBase(callbacks, allocationCallbacks) {
     m_Desc.graphicsAPI = GraphicsAPI::D3D11;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
     m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
@@ -43,7 +43,7 @@ DeviceD3D11::~DeviceD3D11() {
 
     for (CommandQueueD3D11* commandQueue : m_CommandQueues) {
         if (commandQueue)
-            Destroy(GetStdAllocator(), commandQueue);
+            Destroy(GetAllocationCallbacks(), commandQueue);
     }
 }
 
@@ -192,7 +192,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
 
     // Create command queues (ignoring support, since there is no real support in any case)
     for (CommandQueueD3D11*& commandQueue : m_CommandQueues)
-        commandQueue = Allocate<CommandQueueD3D11>(GetStdAllocator(), *this);
+        commandQueue = Allocate<CommandQueueD3D11>(GetAllocationCallbacks(), *this);
 
     // Fill desc
     FillDesc();
@@ -431,7 +431,7 @@ void DeviceD3D11::GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation m
 }
 
 void DeviceD3D11::Destruct() {
-    Destroy(GetStdAllocator(), this);
+    Destroy(GetAllocationCallbacks(), this);
 }
 
 NRI_INLINE Result DeviceD3D11::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
@@ -440,9 +440,8 @@ NRI_INLINE Result DeviceD3D11::GetCommandQueue(CommandQueueType commandQueueType
     return commandQueue ? Result::SUCCESS : Result::UNSUPPORTED;
 }
 
-NRI_INLINE Result DeviceD3D11::CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
-    MaybeUnused(commandQueue);
-    commandAllocator = (CommandAllocator*)Allocate<CommandAllocatorD3D11>(GetStdAllocator(), *this);
+NRI_INLINE Result DeviceD3D11::CreateCommandAllocator(const CommandQueue&, CommandAllocator*& commandAllocator) {
+    commandAllocator = (CommandAllocator*)Allocate<CommandAllocatorD3D11>(GetAllocationCallbacks(), *this);
 
     return Result::SUCCESS;
 }

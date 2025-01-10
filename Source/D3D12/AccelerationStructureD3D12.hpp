@@ -1,7 +1,7 @@
 // © 2021 NVIDIA Corporation
 
 AccelerationStructureD3D12::~AccelerationStructureD3D12() {
-    Destroy(m_Device.GetStdAllocator(), m_Buffer);
+    Destroy(m_Device.GetAllocationCallbacks(), m_Buffer);
 }
 
 Result AccelerationStructureD3D12::Create(const AccelerationStructureD3D12Desc& accelerationStructureDesc) {

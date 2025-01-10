@@ -7,7 +7,7 @@ namespace nri {
 struct DeviceD3D12;
 struct BufferD3D12;
 
-struct AccelerationStructureD3D12 {
+struct AccelerationStructureD3D12 final : public DebugNameBase {
     inline AccelerationStructureD3D12(DeviceD3D12& device)
         : m_Device(device) {
     }
@@ -41,10 +41,10 @@ struct AccelerationStructureD3D12 {
     operator ID3D12Resource*() const;
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name);
+    void SetDebugName(const char* name) override;
 
 private:
     DeviceD3D12& m_Device;

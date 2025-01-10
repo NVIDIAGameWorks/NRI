@@ -35,7 +35,7 @@ struct DescriptorTexDesc {
     Mip_t mipNum;
 };
 
-struct DescriptorVK {
+struct DescriptorVK final : public DebugNameBase {
     inline DescriptorVK(DeviceVK& device)
         : m_Device(device) {
     }
@@ -122,10 +122,10 @@ struct DescriptorVK {
     Result Create(VkAccelerationStructureKHR accelerationStructure);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name);
+    void SetDebugName(const char* name) override;
 
 private:
     template <typename T>

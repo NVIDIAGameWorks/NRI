@@ -28,7 +28,7 @@ struct BindingInfo {
     Vector<PushDescriptorBindingDesc> pushDescriptorBindings;
 };
 
-struct PipelineLayoutVK {
+struct PipelineLayoutVK final : public DebugNameBase {
     inline PipelineLayoutVK(DeviceVK& device)
         : m_Device(device)
         , m_BindingInfo(device.GetStdAllocator())
@@ -60,10 +60,10 @@ struct PipelineLayoutVK {
     Result Create(const PipelineLayoutDesc& pipelineLayoutDesc);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name);
+    void SetDebugName(const char* name) override;
 
 private:
     VkDescriptorSetLayout CreateSetLayout(const DescriptorSetDesc& descriptorSetDesc, bool ignoreGlobalSPIRVOffsets, bool isPush);

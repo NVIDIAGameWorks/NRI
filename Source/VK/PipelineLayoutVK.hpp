@@ -11,7 +11,7 @@ BindingInfo::BindingInfo(StdAllocator<uint8_t>& allocator)
 
 PipelineLayoutVK::~PipelineLayoutVK() {
     const auto& vk = m_Device.GetDispatchTable();
-    const auto allocationCallbacks = m_Device.GetAllocationCallbacks();
+    const auto allocationCallbacks = m_Device.GetVkAllocationCallbacks();
 
     if (m_Handle)
         vk.DestroyPipelineLayout(m_Device, m_Handle, allocationCallbacks);
@@ -175,7 +175,7 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
     pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRanges;
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
+    VkResult result = vk.CreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, m_Device.GetVkAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, Result::FAILURE, "vkCreatePipelineLayout returned %d", (int32_t)result);
 
     return Result::SUCCESS;
@@ -270,7 +270,7 @@ VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc&
 
     VkDescriptorSetLayout handle = VK_NULL_HANDLE;
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreateDescriptorSetLayout(m_Device, &info, m_Device.GetAllocationCallbacks(), &handle);
+    VkResult result = vk.CreateDescriptorSetLayout(m_Device, &info, m_Device.GetVkAllocationCallbacks(), &handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, 0, "vkCreateDescriptorSetLayout returned %d", (int32_t)result);
 
     return handle;

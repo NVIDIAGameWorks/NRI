@@ -1,7 +1,7 @@
 // © 2021 NVIDIA Corporation
 
 DescriptorPoolVK::~DescriptorPoolVK() {
-    const auto& allocator = m_Device.GetStdAllocator().GetInterface();
+    const auto& allocator = m_Device.GetAllocationCallbacks();
     for (size_t i = 0; i < m_AllocatedSets.size(); i++) {
         m_AllocatedSets[i]->~DescriptorSetVK();
         allocator.Free(allocator.userArg, m_AllocatedSets[i]);
@@ -9,7 +9,7 @@ DescriptorPoolVK::~DescriptorPoolVK() {
 
     if (m_OwnsNativeObjects) {
         const auto& vk = m_Device.GetDispatchTable();
-        vk.DestroyDescriptorPool(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+        vk.DestroyDescriptorPool(m_Device, m_Handle, m_Device.GetVkAllocationCallbacks());
     }
 }
 
@@ -42,7 +42,7 @@ Result DescriptorPoolVK::Create(const DescriptorPoolDesc& descriptorPoolDesc) {
         descriptorPoolDesc.descriptorSetMaxNum, poolSizeCount, descriptorPoolSizeArray};
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreateDescriptorPool(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
+    VkResult result = vk.CreateDescriptorPool(m_Device, &info, m_Device.GetVkAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateDescriptorPool returned %d", (int32_t)result);
 
     return Result::SUCCESS;
@@ -72,9 +72,9 @@ NRI_INLINE Result DescriptorPoolVK::AllocateDescriptorSets(const PipelineLayout&
         uint32_t prevSetNum = (uint32_t)m_AllocatedSets.size();
         m_AllocatedSets.resize(prevSetNum + newSetNum);
 
-        const auto& lowLevelAllocator = m_Device.GetStdAllocator().GetInterface();
+        const auto& allocationCallbacks = m_Device.GetAllocationCallbacks();
         for (size_t i = 0; i < newSetNum; i++) {
-            m_AllocatedSets[prevSetNum + i] = (DescriptorSetVK*)lowLevelAllocator.Allocate(lowLevelAllocator.userArg, sizeof(DescriptorSetVK), alignof(DescriptorSetVK));
+            m_AllocatedSets[prevSetNum + i] = (DescriptorSetVK*)allocationCallbacks.Allocate(allocationCallbacks.userArg, sizeof(DescriptorSetVK), alignof(DescriptorSetVK));
             Construct(m_AllocatedSets[prevSetNum + i], 1, m_Device);
         }
     }

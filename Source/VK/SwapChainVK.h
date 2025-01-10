@@ -12,7 +12,7 @@ struct TextureVK;
 // Let's keep things simple and hide it under the hood
 constexpr uint32_t MAX_NUMBER_OF_FRAMES_IN_FLIGHT = 8;
 
-struct SwapChainVK : public DisplayDescHelper {
+struct SwapChainVK final : public DisplayDescHelper, DebugNameBase {
     SwapChainVK(DeviceVK& device);
     ~SwapChainVK();
 
@@ -27,6 +27,12 @@ struct SwapChainVK : public DisplayDescHelper {
     Result Create(const SwapChainDesc& swapChainDesc);
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
@@ -34,7 +40,6 @@ struct SwapChainVK : public DisplayDescHelper {
         return DisplayDescHelper::GetDisplayDesc(m_Desc.window.windows.hwnd, displayDesc);
     }
 
-    void SetDebugName(const char* name);
     Texture* const* GetTextures(uint32_t& textureNum) const;
     uint32_t AcquireNextTexture();
     Result WaitForPresent();

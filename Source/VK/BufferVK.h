@@ -7,7 +7,7 @@ namespace nri {
 struct DeviceVK;
 struct MemoryVK;
 
-struct BufferVK {
+struct BufferVK final : public DebugNameBase {
     inline BufferVK(DeviceVK& device)
         : m_Device(device) {
     }
@@ -38,10 +38,15 @@ struct BufferVK {
     void GetMemoryDesc(MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     void* Map(uint64_t offset, uint64_t size);
     void Unmap();
 

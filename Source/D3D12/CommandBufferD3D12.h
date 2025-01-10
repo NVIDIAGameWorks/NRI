@@ -21,7 +21,7 @@ struct PipelineLayoutD3D12;
 struct DescriptorPoolD3D12;
 struct DescriptorSetD3D12;
 
-struct CommandBufferD3D12 {
+struct CommandBufferD3D12 final : public DebugNameBase {
     inline CommandBufferD3D12(DeviceD3D12& device)
         : m_Device(device) {
     }
@@ -49,12 +49,16 @@ struct CommandBufferD3D12 {
     Result Create(const CommandBufferD3D12Desc& commandBufferDesc);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    inline void SetDebugName(const char* name) {
+    void SetDebugName(const char* name) override {
         SET_D3D_DEBUG_OBJECT_NAME(m_GraphicsCommandList, name);
     }
+
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
 
     Result Begin(const DescriptorPool* descriptorPool);
     Result End();
@@ -112,11 +116,11 @@ private:
     ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
     ComPtr<ID3D12GraphicsCommandListBest> m_GraphicsCommandList;
     std::array<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> m_RenderTargets = {};
+    std::array<DescriptorSetD3D12*, ROOT_SIGNATURE_DWORD_NUM> m_DescriptorSets = {};
     D3D12_CPU_DESCRIPTOR_HANDLE m_DepthStencil = {};
     const PipelineLayoutD3D12* m_PipelineLayout = nullptr;
     PipelineD3D12* m_Pipeline = nullptr;
     D3D12_PRIMITIVE_TOPOLOGY m_PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    std::array<DescriptorSetD3D12*, ROOT_SIGNATURE_DWORD_NUM> m_DescriptorSets = {};
     uint32_t m_RenderTargetNum = 0;
     uint8_t m_Version = 0;
     bool m_IsGraphicsPipelineLayout = false;

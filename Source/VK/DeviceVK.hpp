@@ -78,29 +78,22 @@ inline bool IsExtensionSupported(const char* ext, const Vector<const char*>& lis
     return false;
 }
 
-static void* VKAPI_PTR vkAllocateHostMemory(void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope) {
-    MaybeUnused(allocationScope);
+static void* VKAPI_PTR vkAllocateHostMemory(void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope) {
+    const auto& allocationCallbacks = *(AllocationCallbacks*)pUserData;
 
-    StdAllocator<uint8_t>& stdAllocator = *(StdAllocator<uint8_t>*)pUserData;
-    const auto& lowLevelAllocator = stdAllocator.GetInterface();
-
-    return lowLevelAllocator.Allocate(lowLevelAllocator.userArg, size, alignment);
+    return allocationCallbacks.Allocate(allocationCallbacks.userArg, size, alignment);
 }
 
-static void* VKAPI_PTR vkReallocateHostMemory(void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope) {
-    MaybeUnused(allocationScope);
+static void* VKAPI_PTR vkReallocateHostMemory(void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope) {
+    const auto& allocationCallbacks = *(AllocationCallbacks*)pUserData;
 
-    StdAllocator<uint8_t>& stdAllocator = *(StdAllocator<uint8_t>*)pUserData;
-    const auto& lowLevelAllocator = stdAllocator.GetInterface();
-
-    return lowLevelAllocator.Reallocate(lowLevelAllocator.userArg, pOriginal, size, alignment);
+    return allocationCallbacks.Reallocate(allocationCallbacks.userArg, pOriginal, size, alignment);
 }
 
 static void VKAPI_PTR vkFreeHostMemory(void* pUserData, void* pMemory) {
-    StdAllocator<uint8_t>& stdAllocator = *(StdAllocator<uint8_t>*)pUserData;
-    const auto& lowLevelAllocator = stdAllocator.GetInterface();
+    const auto& allocationCallbacks = *(AllocationCallbacks*)pUserData;
 
-    return lowLevelAllocator.Free(lowLevelAllocator.userArg, pMemory);
+    return allocationCallbacks.Free(allocationCallbacks.userArg, pMemory);
 }
 
 void DeviceVK::FilterInstanceLayers(Vector<const char*>& layers) {
@@ -295,9 +288,9 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
         desiredDeviceExts.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 }
 
-DeviceVK::DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator)
-    : DeviceBase(callbacks, stdAllocator) {
-    m_AllocationCallbacks.pUserData = &GetStdAllocator();
+DeviceVK::DeviceVK(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks)
+    : DeviceBase(callbacks, allocationCallbacks) {
+    m_AllocationCallbacks.pUserData = (void*)&GetAllocationCallbacks();
     m_AllocationCallbacks.pfnAllocation = vkAllocateHostMemory;
     m_AllocationCallbacks.pfnReallocation = vkReallocateHostMemory;
     m_AllocationCallbacks.pfnFree = vkFreeHostMemory;
@@ -314,7 +307,7 @@ DeviceVK::~DeviceVK() {
     DestroyVma();
 
     for (uint32_t i = 0; i < m_CommandQueues.size(); i++)
-        Destroy(GetStdAllocator(), m_CommandQueues[i]);
+        Destroy(GetAllocationCallbacks(), m_CommandQueues[i]);
 
     if (m_Messenger) {
         typedef PFN_vkDestroyDebugUtilsMessengerEXT Func;
@@ -1356,9 +1349,7 @@ const char* GetObjectTypeName(VkObjectType objectType) {
     }
 }
 
-VkBool32 VKAPI_PTR DebugUtilsMessenger(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData) {
-    MaybeUnused(messageType);
-
+VkBool32 VKAPI_PTR DebugUtilsMessenger(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData) {
     /*
     // TODO: some messages can be muted here
     if (callbackData->messageIdNumber == XXX)
@@ -1823,7 +1814,7 @@ Result DeviceVK::ResolveDispatchTable(const Vector<const char*>& desiredDeviceEx
 }
 
 void DeviceVK::Destruct() {
-    Destroy(GetStdAllocator(), this);
+    Destroy(GetAllocationCallbacks(), this);
 }
 
 NRI_INLINE void DeviceVK::SetDebugName(const char* name) {
@@ -1893,7 +1884,7 @@ NRI_INLINE Result DeviceVK::CreateCommandQueue(const CommandQueueVKDesc& command
     Result result = CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVKDesc.commandQueueType, commandQueueVKDesc.queueFamilyIndex, (VkQueue)commandQueueVKDesc.vkQueue);
     if (result == Result::SUCCESS) {
         // Replace old with new
-        Destroy(GetStdAllocator(), m_CommandQueues[index]);
+        Destroy(GetAllocationCallbacks(), m_CommandQueues[index]);
 
         m_CommandQueues[index] = (CommandQueueVK*)commandQueue;
         m_QueueFamilyIndices[index] = commandQueueVKDesc.queueFamilyIndex;

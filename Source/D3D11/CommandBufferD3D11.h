@@ -8,7 +8,7 @@ struct PipelineLayoutD3D11;
 struct PipelineD3D11;
 struct BufferD3D11;
 
-struct CommandBufferD3D11 final : public CommandBufferHelper {
+struct CommandBufferD3D11 final : public CommandBufferBase {
     CommandBufferD3D11(DeviceD3D11& device);
     ~CommandBufferD3D11();
 
@@ -25,15 +25,24 @@ struct CommandBufferD3D11 final : public CommandBufferHelper {
     }
 
     //================================================================================================================
-    // CommandBufferHelper
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override {
+        SET_D3D_DEBUG_OBJECT_NAME(m_DeferredContext, name);
+        SET_D3D_DEBUG_OBJECT_NAME(m_CommandList, name);
+    }
+
+    //================================================================================================================
+    // CommandBufferBase
     //================================================================================================================
 
     inline ID3D11DeviceContext* GetNativeObject() const override {
         return m_DeferredContext;
     }
 
-    inline StdAllocator<uint8_t>& CommandBufferD3D11::GetStdAllocator() const override {
-        return m_Device.GetStdAllocator();
+    inline const AllocationCallbacks& CommandBufferD3D11::GetAllocationCallbacks() const override {
+        return m_Device.GetAllocationCallbacks();
     }
 
     Result Create(ID3D11DeviceContext* precreatedContext) override;
@@ -42,11 +51,6 @@ struct CommandBufferD3D11 final : public CommandBufferHelper {
     //================================================================================================================
     // NRI
     //================================================================================================================
-
-    inline void SetDebugName(const char* name) {
-        SET_D3D_DEBUG_OBJECT_NAME(m_DeferredContext, name);
-        SET_D3D_DEBUG_OBJECT_NAME(m_CommandList, name);
-    }
 
     Result Begin(const DescriptorPool* descriptorPool);
     Result End();
@@ -97,7 +101,7 @@ private:
     PipelineLayoutD3D11* m_PipelineLayout = nullptr;
     PipelineD3D11* m_Pipeline = nullptr;
     const Buffer* m_IndexBuffer = nullptr;
-    BindingState m_BindingState = {};
+    BindingState m_BindingState;
     SamplePositionsState m_SamplePositionsState = {};
     Color32f m_BlendFactor = {};
     uint64_t m_IndexBufferOffset = 0;

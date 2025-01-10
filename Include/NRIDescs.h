@@ -55,6 +55,7 @@ typedef uint8_t Nri(Mip_t);
 typedef uint8_t Nri(Sample_t);
 typedef uint16_t Nri(Dim_t);
 typedef uint32_t Nri(MemoryType);
+typedef void Nri(Object);
 
 // Aliases
 static const uint32_t NriConstant(BGRA_UNUSED) = 0;         // only for "bgra" color for profiling

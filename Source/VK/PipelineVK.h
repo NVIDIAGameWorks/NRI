@@ -7,7 +7,7 @@ namespace nri {
 struct DeviceVK;
 struct PipelineLayoutVK;
 
-struct PipelineVK {
+struct PipelineVK final : public DebugNameBase {
     inline PipelineVK(DeviceVK& device)
         : m_Device(device)
         , m_VertexStreamStrides(device.GetStdAllocator()) {
@@ -41,10 +41,15 @@ struct PipelineVK {
     Result Create(VkPipelineBindPoint bindPoint, VKNonDispatchableHandle vkPipeline);
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     Result WriteShaderGroupIdentifiers(uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer) const;
 
 private:

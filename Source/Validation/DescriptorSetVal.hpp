@@ -1,10 +1,5 @@
 // © 2021 NVIDIA Corporation
 
-NRI_INLINE void DescriptorSetVal::SetDebugName(const char* name) {
-    m_Name = name;
-    GetCoreInterface().SetDescriptorSetDebugName(*GetImpl(), name);
-}
-
 NRI_INLINE void DescriptorSetVal::UpdateDescriptorRanges(uint32_t rangeOffset, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs) {
     RETURN_ON_FAILURE(&m_Device, rangeOffset < GetDesc().rangeNum, ReturnVoid(), "'rangeOffset=%u' is out of 'rangeNum=%u' in the set", rangeOffset, GetDesc().rangeNum);
     RETURN_ON_FAILURE(&m_Device, rangeOffset + rangeNum <= GetDesc().rangeNum, ReturnVoid(), "'rangeOffset=%u' + 'rangeNum=%u' is greater than 'rangeNum=%u' in the set", rangeOffset, rangeNum, GetDesc().rangeNum);

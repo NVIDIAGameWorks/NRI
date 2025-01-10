@@ -23,7 +23,7 @@ struct DynamicConstantBufferMapping {
     uint16_t rootOffset;
 };
 
-struct PipelineLayoutD3D12 {
+struct PipelineLayoutD3D12 final : public DebugNameBase {
     PipelineLayoutD3D12(DeviceD3D12& device);
 
     inline operator ID3D12RootSignature*() const {
@@ -62,10 +62,10 @@ struct PipelineLayoutD3D12 {
     void SetDescriptorSet(ID3D12GraphicsCommandList& graphicsCommandList, bool isGraphics, uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) const;
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    inline void SetDebugName(const char* name) {
+    void SetDebugName(const char* name) override {
         SET_D3D_DEBUG_OBJECT_NAME(m_RootSignature, name);
     }
 

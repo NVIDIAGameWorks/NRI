@@ -6,7 +6,7 @@ namespace nri {
 
 struct DeviceVK;
 
-struct CommandAllocatorVK {
+struct CommandAllocatorVK final : public DebugNameBase {
     inline CommandAllocatorVK(DeviceVK& device)
         : m_Device(device) {
     }
@@ -25,10 +25,15 @@ struct CommandAllocatorVK {
     Result Create(const CommandAllocatorVKDesc& commandAllocatorDesc);
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     Result CreateCommandBuffer(CommandBuffer*& commandBuffer);
     void Reset();
 

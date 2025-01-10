@@ -4,18 +4,12 @@
 
 namespace nri {
 
-struct PipelineLayoutVal : public DeviceObjectVal<PipelineLayout> {
+struct PipelineLayoutVal final : public DeviceObjectVal<PipelineLayout> {
     PipelineLayoutVal(DeviceVal& device, PipelineLayout* pipelineLayout, const PipelineLayoutDesc& pipelineLayoutDesc);
 
     inline const PipelineLayoutDesc& GetPipelineLayoutDesc() const {
         return m_PipelineLayoutDesc;
     }
-
-    //================================================================================================================
-    // NRI
-    //================================================================================================================
-
-    void SetDebugName(const char* name);
 
 private:
     PipelineLayoutDesc m_PipelineLayoutDesc;

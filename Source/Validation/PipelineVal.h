@@ -4,7 +4,7 @@
 
 namespace nri {
 
-struct PipelineVal : public DeviceObjectVal<Pipeline> {
+struct PipelineVal final : public DeviceObjectVal<Pipeline> {
     PipelineVal(DeviceVal& device, Pipeline* pipeline);
     PipelineVal(DeviceVal& device, Pipeline* pipeline, const GraphicsPipelineDesc& graphicsPipelineDesc);
     PipelineVal(DeviceVal& device, Pipeline* pipeline, const ComputePipelineDesc& computePipelineDesc);
@@ -26,7 +26,6 @@ struct PipelineVal : public DeviceObjectVal<Pipeline> {
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     Result WriteShaderGroupIdentifiers(uint32_t baseShaderGroupIndex, uint32_t shaderGroupNum, void* buffer);
 
 private:

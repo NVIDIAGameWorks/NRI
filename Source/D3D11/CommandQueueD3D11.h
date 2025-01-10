@@ -6,7 +6,7 @@ namespace nri {
 
 struct DeviceD3D11;
 
-struct CommandQueueD3D11 {
+struct CommandQueueD3D11 final : public DebugNameBase {
     inline CommandQueueD3D11(DeviceD3D11& device)
         : m_Device(device) {
     }
@@ -21,10 +21,6 @@ struct CommandQueueD3D11 {
     //================================================================================================================
     // NRI
     //================================================================================================================
-
-    inline void SetDebugName(const char* name) {
-        MaybeUnused(name);
-    }
 
     void Submit(const QueueSubmitDesc& queueSubmitDesc);
     Result UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum);

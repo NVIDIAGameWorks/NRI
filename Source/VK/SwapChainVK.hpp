@@ -7,25 +7,25 @@ SwapChainVK::SwapChainVK(DeviceVK& device)
 
 SwapChainVK::~SwapChainVK() {
     for (size_t i = 0; i < m_Textures.size(); i++)
-        Destroy(m_Device.GetStdAllocator(), m_Textures[i]);
+        Destroy(m_Device.GetAllocationCallbacks(), m_Textures[i]);
 
-    Destroy(m_Device.GetStdAllocator(), m_LatencyFence);
+    Destroy(m_Device.GetAllocationCallbacks(), m_LatencyFence);
 
     const auto& vk = m_Device.GetDispatchTable();
     if (m_Handle)
-        vk.DestroySwapchainKHR(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+        vk.DestroySwapchainKHR(m_Device, m_Handle, m_Device.GetVkAllocationCallbacks());
 
     if (m_Surface)
-        vk.DestroySurfaceKHR(m_Device, m_Surface, m_Device.GetAllocationCallbacks());
+        vk.DestroySurfaceKHR(m_Device, m_Surface, m_Device.GetVkAllocationCallbacks());
 
     for (VkSemaphore semaphore : m_ImageAcquiredSemaphores) {
         if (semaphore)
-            vk.DestroySemaphore(m_Device, semaphore, m_Device.GetAllocationCallbacks());
+            vk.DestroySemaphore(m_Device, semaphore, m_Device.GetVkAllocationCallbacks());
     }
 
     for (VkSemaphore semaphore : m_RenderingFinishedSemaphores) {
         if (semaphore)
-            vk.DestroySemaphore(m_Device, semaphore, m_Device.GetAllocationCallbacks());
+            vk.DestroySemaphore(m_Device, semaphore, m_Device.GetVkAllocationCallbacks());
     }
 }
 
@@ -40,7 +40,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         VkSemaphoreTypeCreateInfo timelineCreateInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, nullptr, VK_SEMAPHORE_TYPE_BINARY, 0};
         VkSemaphoreCreateInfo createInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &timelineCreateInfo, 0};
 
-        VkResult result = vk.CreateSemaphore((VkDevice)m_Device, &createInfo, m_Device.GetAllocationCallbacks(), &semaphore);
+        VkResult result = vk.CreateSemaphore((VkDevice)m_Device, &createInfo, m_Device.GetVkAllocationCallbacks(), &semaphore);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateSemaphore returned %d", (int32_t)result);
     }
 
@@ -48,7 +48,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         VkSemaphoreTypeCreateInfo timelineCreateInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, nullptr, VK_SEMAPHORE_TYPE_BINARY, 0};
         VkSemaphoreCreateInfo createInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &timelineCreateInfo, 0};
 
-        VkResult result = vk.CreateSemaphore((VkDevice)m_Device, &createInfo, m_Device.GetAllocationCallbacks(), &semaphore);
+        VkResult result = vk.CreateSemaphore((VkDevice)m_Device, &createInfo, m_Device.GetVkAllocationCallbacks(), &semaphore);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateSemaphore returned %d", (int32_t)result);
     }
 
@@ -58,7 +58,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         VkWin32SurfaceCreateInfoKHR win32SurfaceInfo = {VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
         win32SurfaceInfo.hwnd = (HWND)swapChainDesc.window.windows.hwnd;
 
-        VkResult result = vk.CreateWin32SurfaceKHR(m_Device, &win32SurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
+        VkResult result = vk.CreateWin32SurfaceKHR(m_Device, &win32SurfaceInfo, m_Device.GetVkAllocationCallbacks(), &m_Surface);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateWin32SurfaceKHR returned %d", (int32_t)result);
     }
 #endif
@@ -279,7 +279,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         }
 
         // Create
-        VkResult result = vk.CreateSwapchainKHR(m_Device, &swapchainInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
+        VkResult result = vk.CreateSwapchainKHR(m_Device, &swapchainInfo, m_Device.GetVkAllocationCallbacks(), &m_Handle);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateSwapchainKHR returned %d", (int32_t)result);
     }
 
@@ -303,7 +303,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
             desc.layerNum = 1;
             desc.sampleNum = 1;
 
-            TextureVK* texture = Allocate<TextureVK>(m_Device.GetStdAllocator(), m_Device);
+            TextureVK* texture = Allocate<TextureVK>(m_Device.GetAllocationCallbacks(), m_Device);
             texture->Create(desc);
 
             m_Textures[i] = texture;
@@ -312,7 +312,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
 
     // Latency fence
     if (allowLowLatency) {
-        m_LatencyFence = Allocate<FenceVK>(m_Device.GetStdAllocator(), m_Device);
+        m_LatencyFence = Allocate<FenceVK>(m_Device.GetAllocationCallbacks(), m_Device);
         m_LatencyFence->Create(0);
     }
 

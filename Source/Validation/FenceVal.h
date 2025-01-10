@@ -6,7 +6,7 @@ namespace nri {
 
 struct CommandQueueVal;
 
-struct FenceVal : public DeviceObjectVal<Fence> {
+struct FenceVal final : public DeviceObjectVal<Fence> {
     inline FenceVal(DeviceVal& device, Fence* fence)
         : DeviceObjectVal(device, fence) {
     }
@@ -20,7 +20,6 @@ struct FenceVal : public DeviceObjectVal<Fence> {
 
     uint64_t GetFenceValue() const;
     void Wait(uint64_t value);
-    void SetDebugName(const char* name);
 };
 
 } // namespace nri

@@ -6,7 +6,7 @@ namespace nri {
 
 struct DeviceD3D11;
 
-struct DescriptorD3D11 {
+struct DescriptorD3D11 final : public DebugNameBase {
     inline DescriptorD3D11(DeviceD3D11& device)
         : m_Device(device) {
     }
@@ -70,10 +70,10 @@ struct DescriptorD3D11 {
     DescriptorD3D11(DeviceD3D11& device, ID3D11SamplerState* sampler);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    inline void SetDebugName(const char* name) {
+    void SetDebugName(const char* name) override {
         SET_D3D_DEBUG_OBJECT_NAME(m_Descriptor, name);
     }
 

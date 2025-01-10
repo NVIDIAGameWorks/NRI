@@ -10,7 +10,7 @@ struct DeviceVK;
 struct BufferVK;
 struct TextureVK;
 
-struct MemoryVK {
+struct MemoryVK final : public DebugNameBase {
     inline MemoryVK(DeviceVK& device)
         : m_Device(device) {
     }
@@ -39,10 +39,10 @@ struct MemoryVK {
     Result CreateDedicated(const TextureVK& texture);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name);
+    void SetDebugName(const char* name) override;
 
 private:
     DeviceVK& m_Device;

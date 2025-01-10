@@ -200,9 +200,6 @@ NriStruct(RayTracingInterface) {
     void        (NRI_CALL *CmdWriteAccelerationStructureSize)                   (NriRef(CommandBuffer) commandBuffer, const NriPtr(AccelerationStructure) const* accelerationStructures,
                                                                                     uint32_t accelerationStructureNum, NriRef(QueryPool) queryPool, uint32_t queryPoolOffset);
 
-    // Debug name
-    void        (NRI_CALL *SetAccelerationStructureDebugName)                   (NriRef(AccelerationStructure) accelerationStructure, const char* name);
-
     // Native object
     uint64_t    (NRI_CALL* GetAccelerationStructureNativeObject)                (const NriRef(AccelerationStructure) accelerationStructure); // ID3D12Resource* or VkAccelerationStructureKHR
 };

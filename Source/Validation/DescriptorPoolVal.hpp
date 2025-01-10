@@ -1,10 +1,5 @@
 // © 2021 NVIDIA Corporation
 
-NRI_INLINE void DescriptorPoolVal::SetDebugName(const char* name) {
-    m_Name = name;
-    GetCoreInterface().SetDescriptorPoolDebugName(*GetImpl(), name);
-}
-
 NRI_INLINE void DescriptorPoolVal::Reset() {
     m_DescriptorSetsNum = 0;
     m_SamplerNum = 0;

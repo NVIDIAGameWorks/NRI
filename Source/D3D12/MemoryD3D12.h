@@ -6,7 +6,7 @@ namespace nri {
 
 struct DeviceD3D12;
 
-struct MemoryD3D12 {
+struct MemoryD3D12 final : public DebugNameBase {
     inline MemoryD3D12(DeviceD3D12& device)
         : m_Device(device) {
     }
@@ -38,10 +38,10 @@ struct MemoryD3D12 {
     Result Create(const MemoryD3D12Desc& memoryDesc);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    inline void SetDebugName(const char* name) {
+    void SetDebugName(const char* name) override {
         SET_D3D_DEBUG_OBJECT_NAME(m_Heap, name);
     }
 

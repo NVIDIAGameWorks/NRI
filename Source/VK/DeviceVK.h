@@ -43,7 +43,7 @@ struct DeviceVK final : public DeviceBase {
         return m_VK;
     }
 
-    inline const VkAllocationCallbacks* GetAllocationCallbacks() const {
+    inline const VkAllocationCallbacks* GetVkAllocationCallbacks() const {
         return m_AllocationCallbackPtr;
     }
 
@@ -65,11 +65,11 @@ struct DeviceVK final : public DeviceBase {
 
     template <typename Implementation, typename Interface, typename... Args>
     inline Result CreateImplementation(Interface*& entity, const Args&... args) {
-        Implementation* impl = Allocate<Implementation>(GetStdAllocator(), *this);
+        Implementation* impl = Allocate<Implementation>(GetAllocationCallbacks(), *this);
         Result result = impl->Create(args...);
 
         if (result != Result::SUCCESS) {
-            Destroy(GetStdAllocator(), impl);
+            Destroy(GetAllocationCallbacks(), impl);
             entity = nullptr;
         } else
             entity = (Interface*)impl;
@@ -77,7 +77,7 @@ struct DeviceVK final : public DeviceBase {
         return result;
     }
 
-    DeviceVK(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator);
+    DeviceVK(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks);
     ~DeviceVK();
 
     Result Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationVKDesc& deviceCreationVKDesc, bool isWrapper);
@@ -92,6 +92,12 @@ struct DeviceVK final : public DeviceBase {
     void SetDebugNameToTrivialObject(VkObjectType objectType, uint64_t handle, const char* name);
     Result CreateVma();
     void DestroyVma();
+
+    //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
 
     //================================================================================================================
     // DeviceBase
@@ -116,7 +122,6 @@ struct DeviceVK final : public DeviceBase {
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     Result CreateCommandQueue(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
     Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);

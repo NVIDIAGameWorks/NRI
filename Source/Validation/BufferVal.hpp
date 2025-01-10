@@ -5,11 +5,6 @@ BufferVal::~BufferVal() {
         m_Memory->UnbindBuffer(*this);
 }
 
-NRI_INLINE void BufferVal::SetDebugName(const char* name) {
-    m_Name = name;
-    GetCoreInterface().SetBufferDebugName(*GetImpl(), name);
-}
-
 NRI_INLINE void* BufferVal::Map(uint64_t offset, uint64_t size) {
     RETURN_ON_FAILURE(&m_Device, m_IsBoundToMemory, nullptr, "the buffer is not bound to memory");
     RETURN_ON_FAILURE(&m_Device, !m_IsMapped, nullptr, "the buffer is already mapped (D3D11 doesn't support nested calls)");

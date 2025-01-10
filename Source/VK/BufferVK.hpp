@@ -7,7 +7,7 @@ BufferVK::~BufferVK() {
         if (m_VmaAllocation)
             DestroyVma();
         else
-            vk.DestroyBuffer(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+            vk.DestroyBuffer(m_Device, m_Handle, m_Device.GetVkAllocationCallbacks());
     }
 }
 
@@ -18,7 +18,7 @@ Result BufferVK::Create(const BufferDesc& bufferDesc) {
     m_Device.FillCreateInfo(bufferDesc, info);
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreateBuffer(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
+    VkResult result = vk.CreateBuffer(m_Device, &info, m_Device.GetVkAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateBuffer returned %d", (int32_t)result);
 
     return Result::SUCCESS;

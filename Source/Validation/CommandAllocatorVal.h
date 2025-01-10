@@ -13,7 +13,6 @@ struct CommandAllocatorVal final : public DeviceObjectVal<CommandAllocator> {
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     Result CreateCommandBuffer(CommandBuffer*& commandBuffer);
     void Reset();
 };

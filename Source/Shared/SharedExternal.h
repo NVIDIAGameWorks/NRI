@@ -32,11 +32,22 @@ typedef uint32_t DXGI_FORMAT;
 
 #include "NRICompatibility.hlsli"
 
+#include "Lock.h"
+
+// Allocator
 typedef nri::AllocationCallbacks AllocationCallbacks;
 #include "StdAllocator.h"
 
+// Base classes
+struct DebugNameBase {
+    inline DebugNameBase() {
+    }
+
+    virtual void SetDebugName(const char*) {
+    }
+};
+
 #include "DeviceBase.h"
-#include "Lock.h"
 
 // Annotations for NVIDIA Nsight Systems
 #if NRI_USE_NVTX
@@ -65,11 +76,6 @@ constexpr uint32_t GetCountOf(T const (&)[N]) {
     return N;
 }
 
-template <typename T>
-constexpr uint32_t GetCountOf(const std::vector<T>& v) {
-    return (uint32_t)v.size();
-}
-
 template <typename T, size_t N>
 constexpr uint32_t GetCountOf(const std::array<T, N>& v) {
     return (uint32_t)v.size();
@@ -82,10 +88,8 @@ constexpr void Construct(T* objects, size_t number, Args&&... args) {
 }
 
 template <typename T, typename... Args>
-inline T* Allocate(StdAllocator<uint8_t>& allocator, Args&&... args) {
-    const auto& lowLevelAllocator = allocator.GetInterface();
-    T* object = (T*)lowLevelAllocator.Allocate(lowLevelAllocator.userArg, sizeof(T), alignof(T));
-
+inline T* Allocate(const AllocationCallbacks& allocationCallbacks, Args&&... args) {
+    T* object = (T*)allocationCallbacks.Allocate(allocationCallbacks.userArg, sizeof(T), alignof(T));
     if (object)
         new (object) T(std::forward<Args>(args)...);
 
@@ -93,12 +97,10 @@ inline T* Allocate(StdAllocator<uint8_t>& allocator, Args&&... args) {
 }
 
 template <typename T>
-inline void Destroy(StdAllocator<uint8_t>& allocator, T* object) {
+inline void Destroy(const AllocationCallbacks& allocationCallbacks, T* object) {
     if (object) {
         object->~T();
-
-        const auto& lowLevelAllocator = allocator.GetInterface();
-        lowLevelAllocator.Free(lowLevelAllocator.userArg, object);
+        allocationCallbacks.Free(allocationCallbacks.userArg, object);
     }
 }
 
@@ -107,8 +109,8 @@ inline void Destroy(T* object) {
     if (object) {
         object->~T();
 
-        const auto& lowLevelAllocator = ((nri::DeviceBase&)object->GetDevice()).GetStdAllocator().GetInterface();
-        lowLevelAllocator.Free(lowLevelAllocator.userArg, object);
+        const auto& allocationCallbacks = ((nri::DeviceBase&)object->GetDevice()).GetAllocationCallbacks();
+        allocationCallbacks.Free(allocationCallbacks.userArg, object);
     }
 }
 
@@ -348,10 +350,8 @@ bool HasOutput();
 nri::Result QueryVideoMemoryInfoDXGI(uint64_t luid, nri::MemoryLocation memoryLocation, nri::VideoMemoryInfo& videoMemoryInfo);
 
 struct DisplayDescHelper {
-public:
     nri::Result GetDisplayDesc(void* hwnd, nri::DisplayDesc& displayDesc);
 
-protected:
     ComPtr<IDXGIFactory2> m_DxgiFactory2;
     nri::DisplayDesc m_DisplayDesc = {};
     bool m_HasDisplayDesc = false;
@@ -360,9 +360,7 @@ protected:
 #else
 
 struct DisplayDescHelper {
-    inline nri::Result GetDisplayDesc(void* hwnd, nri::DisplayDesc& displayDesc) {
-        MaybeUnused(hwnd);
-
+    inline nri::Result GetDisplayDesc(void*, nri::DisplayDesc& displayDesc) {
         displayDesc = {};
         displayDesc.sdrLuminance = 80.0f;
         displayDesc.maxLuminance = 80.0f;

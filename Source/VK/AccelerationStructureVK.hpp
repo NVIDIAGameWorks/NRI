@@ -3,7 +3,7 @@
 AccelerationStructureVK::~AccelerationStructureVK() {
     if (m_OwnsNativeObjects) {
         const auto& vk = m_Device.GetDispatchTable();
-        vk.DestroyAccelerationStructureKHR(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+        vk.DestroyAccelerationStructureKHR(m_Device, m_Handle, m_Device.GetVkAllocationCallbacks());
 
         Destroy(m_Buffer);
     }
@@ -61,7 +61,7 @@ Result AccelerationStructureVK::FinishCreation() {
     accelerationStructureCreateInfo.buffer = m_Buffer->GetHandle();
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreateAccelerationStructureKHR(m_Device, &accelerationStructureCreateInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
+    VkResult result = vk.CreateAccelerationStructureKHR(m_Device, &accelerationStructureCreateInfo, m_Device.GetVkAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateAccelerationStructureKHR returned %d", (int32_t)result);
 
     // Device address
@@ -74,15 +74,15 @@ Result AccelerationStructureVK::FinishCreation() {
     return m_DeviceAddress ? Result::SUCCESS : Result::FAILURE;
 }
 
-inline void AccelerationStructureVK::SetDebugName(const char* name) {
+NRI_INLINE void AccelerationStructureVK::SetDebugName(const char* name) {
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, (uint64_t)m_Handle, name);
 
     if (m_Buffer)
         m_Buffer->SetDebugName(name);
 }
 
-inline Result AccelerationStructureVK::CreateDescriptor(Descriptor*& descriptor) const {
-    DescriptorVK* descriptorImpl = Allocate<DescriptorVK>(m_Device.GetStdAllocator(), m_Device);
+NRI_INLINE Result AccelerationStructureVK::CreateDescriptor(Descriptor*& descriptor) const {
+    DescriptorVK* descriptorImpl = Allocate<DescriptorVK>(m_Device.GetAllocationCallbacks(), m_Device);
 
     Result result = descriptorImpl->Create(m_Handle);
 
@@ -91,7 +91,7 @@ inline Result AccelerationStructureVK::CreateDescriptor(Descriptor*& descriptor)
         return Result::SUCCESS;
     }
 
-    Destroy(m_Device.GetStdAllocator(), descriptorImpl);
+    Destroy(m_Device.GetAllocationCallbacks(), descriptorImpl);
 
     return Result::SUCCESS;
 }

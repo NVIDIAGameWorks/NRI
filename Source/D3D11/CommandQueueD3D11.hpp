@@ -8,7 +8,7 @@ NRI_INLINE void CommandQueueD3D11::Submit(const QueueSubmitDesc& queueSubmitDesc
     }
 
     for (uint32_t i = 0; i < queueSubmitDesc.commandBufferNum; i++) {
-        CommandBufferHelper* commandBuffer = (CommandBufferHelper*)queueSubmitDesc.commandBuffers[i];
+        CommandBufferBase* commandBuffer = (CommandBufferBase*)queueSubmitDesc.commandBuffers[i];
         commandBuffer->Submit();
     }
 

@@ -9,7 +9,7 @@ namespace nri {
 
 struct DeviceD3D12;
 
-struct QueryPoolD3D12 {
+struct QueryPoolD3D12 final : public DebugNameBase {
     inline QueryPoolD3D12(DeviceD3D12& device)
         : m_Device(device) {
     }
@@ -36,12 +36,16 @@ struct QueryPoolD3D12 {
     Result Create(const QueryPoolDesc& queryPoolDesc);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    inline void SetDebugName(const char* name) {
+    void SetDebugName(const char* name) override {
         SET_D3D_DEBUG_OBJECT_NAME(m_QueryHeap, name);
     }
+
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
 
     inline uint32_t GetQuerySize() const {
         return m_QuerySize;

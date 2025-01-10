@@ -8,7 +8,7 @@ struct DescriptorVal;
 struct PipelineVal;
 struct PipelineLayoutVal;
 
-struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
+struct CommandBufferVal final : public DeviceObjectVal<CommandBuffer> {
     CommandBufferVal(DeviceVal& device, CommandBuffer* commandBuffer, bool isWrapped)
         : DeviceObjectVal(device, commandBuffer)
         , m_IsRecordingStarted(isWrapped)
@@ -31,7 +31,6 @@ struct CommandBufferVal : public DeviceObjectVal<CommandBuffer> {
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     Result Begin(const DescriptorPool* descriptorPool);
     Result End();
     void SetViewports(const Viewport* viewports, uint32_t viewportNum);

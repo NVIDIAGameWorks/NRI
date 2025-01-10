@@ -6,7 +6,7 @@ namespace nri {
 
 struct DeviceVK;
 
-struct QueryPoolVK {
+struct QueryPoolVK final : public DebugNameBase {
     inline QueryPoolVK(DeviceVK& device)
         : m_Device(device) {
     }
@@ -29,10 +29,15 @@ struct QueryPoolVK {
     Result Create(const QueryPoolVKDesc& queryPoolDesc);
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     void Reset(uint32_t offset, uint32_t num);
 
     inline uint32_t GetQuerySize() const {

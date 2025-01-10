@@ -6,7 +6,7 @@ namespace nri {
 
 struct CommandBufferVal;
 
-struct CommandQueueVal : public DeviceObjectVal<CommandQueue> {
+struct CommandQueueVal final : public DeviceObjectVal<CommandQueue> {
     inline CommandQueueVal(DeviceVal& device, CommandQueue* commandQueue)
         : DeviceObjectVal(device, commandQueue) {
     }
@@ -15,7 +15,6 @@ struct CommandQueueVal : public DeviceObjectVal<CommandQueue> {
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     void BeginAnnotation(const char* name, uint32_t bgra);
     void EndAnnotation();
     void Annotation(const char* name, uint32_t bgra);

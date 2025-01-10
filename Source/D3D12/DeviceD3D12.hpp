@@ -38,28 +38,26 @@ static inline uint64_t HashRootSignatureAndStride(ID3D12RootSignature* rootSigna
 }
 
 static void* vmaAllocate(size_t size, size_t alignment, void* pPrivateData) {
-    StdAllocator<uint8_t>& stdAllocator = *(StdAllocator<uint8_t>*)pPrivateData;
-    const auto& lowLevelAllocator = stdAllocator.GetInterface();
+    const auto& allocationCallbacks = *(AllocationCallbacks*)pPrivateData;
 
-    return lowLevelAllocator.Allocate(lowLevelAllocator.userArg, size, alignment);
+    return allocationCallbacks.Allocate(allocationCallbacks.userArg, size, alignment);
 }
 
 static void vmaFree(void* pMemory, void* pPrivateData) {
-    StdAllocator<uint8_t>& stdAllocator = *(StdAllocator<uint8_t>*)pPrivateData;
-    const auto& lowLevelAllocator = stdAllocator.GetInterface();
+    const auto& allocationCallbacks = *(AllocationCallbacks*)pPrivateData;
 
-    return lowLevelAllocator.Free(lowLevelAllocator.userArg, pMemory);
+    return allocationCallbacks.Free(allocationCallbacks.userArg, pMemory);
 }
 
-DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator)
-    : DeviceBase(callbacks, stdAllocator)
+DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks)
+    : DeviceBase(callbacks, allocationCallbacks)
     , m_DescriptorHeaps(GetStdAllocator())
     , m_FreeDescriptors(GetStdAllocator())
     , m_DrawCommandSignatures(GetStdAllocator())
     , m_DrawIndexedCommandSignatures(GetStdAllocator())
     , m_DrawMeshCommandSignatures(GetStdAllocator()) {
     m_FreeDescriptors.resize(D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES, Vector<DescriptorHandle>(GetStdAllocator()));
-    m_AllocationCallbacks.pPrivateData = &GetStdAllocator();
+    m_AllocationCallbacks.pPrivateData = (void*)&GetAllocationCallbacks();
     m_AllocationCallbacks.pAllocate = vmaAllocate;
     m_AllocationCallbacks.pFree = vmaFree;
 
@@ -71,7 +69,7 @@ DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_
 DeviceD3D12::~DeviceD3D12() {
     for (auto& commandQueueD3D12 : m_CommandQueues) {
         if (commandQueueD3D12)
-            Destroy(GetStdAllocator(), commandQueueD3D12);
+            Destroy(GetAllocationCallbacks(), commandQueueD3D12);
     }
 
 #if NRI_USE_EXT_LIBS
@@ -171,7 +169,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
         m_Device->QueryInterface(&pInfoQueue);
 
         if (pInfoQueue) {
-#ifdef _DEBUG
+#ifndef NDEBUG
             pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
             pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
 #endif
@@ -759,7 +757,7 @@ ID3D12CommandSignature* DeviceD3D12::GetDispatchCommandSignature() const {
 }
 
 void DeviceD3D12::Destruct() {
-    Destroy(GetStdAllocator(), this);
+    Destroy(GetAllocationCallbacks(), this);
 }
 
 NRI_INLINE Result DeviceD3D12::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {

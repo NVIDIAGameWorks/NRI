@@ -6,7 +6,7 @@ namespace nri {
 
 struct DeviceVK;
 
-struct CommandQueueVK {
+struct CommandQueueVK final : public DebugNameBase {
     inline CommandQueueVK(DeviceVK& device)
         : m_Device(device) {
     }
@@ -34,10 +34,15 @@ struct CommandQueueVK {
     Result Create(CommandQueueType type, uint32_t familyIndex, VkQueue handle);
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     void BeginAnnotation(const char* name, uint32_t bgra);
     void EndAnnotation();
     void Annotation(const char* name, uint32_t bgra);

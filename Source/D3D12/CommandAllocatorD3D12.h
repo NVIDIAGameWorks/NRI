@@ -9,7 +9,7 @@ namespace nri {
 
 struct DeviceD3D12;
 
-struct CommandAllocatorD3D12 {
+struct CommandAllocatorD3D12 final : public DebugNameBase {
     inline CommandAllocatorD3D12(DeviceD3D12& device)
         : m_Device(device) {
     }
@@ -28,12 +28,16 @@ struct CommandAllocatorD3D12 {
     Result Create(const CommandQueue& commandQueue);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    inline void SetDebugName(const char* name) {
+    void SetDebugName(const char* name) override {
         SET_D3D_DEBUG_OBJECT_NAME(m_CommandAllocator, name);
     }
+
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
 
     Result CreateCommandBuffer(CommandBuffer*& commandBuffer);
     void Reset();

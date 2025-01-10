@@ -48,15 +48,14 @@ namespace d3d12 {
 #include "D3DExt.hpp"
 }
 
-Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device) {
+Result CreateDeviceD3D12(const DeviceCreationDesc& desc, DeviceBase*& device) {
     DeviceCreationD3D12Desc deviceCreationD3D12Desc = {};
 
-    StdAllocator<uint8_t> allocator(deviceCreationDesc.allocationCallbacks);
-    DeviceD3D12* impl = Allocate<DeviceD3D12>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    Result result = impl->Create(deviceCreationDesc, deviceCreationD3D12Desc);
+    DeviceD3D12* impl = Allocate<DeviceD3D12>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
+    Result result = impl->Create(desc, deviceCreationD3D12Desc);
 
     if (result != Result::SUCCESS) {
-        Destroy(allocator, impl);
+        Destroy(desc.allocationCallbacks, impl);
         device = nullptr;
     } else
         device = (DeviceBase*)impl;
@@ -64,28 +63,27 @@ Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBas
     return result;
 }
 
-Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationD3D12Desc, DeviceBase*& device) {
-    if (!deviceCreationD3D12Desc.d3d12Device)
+Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& desc, DeviceBase*& device) {
+    if (!desc.d3d12Device)
         return Result::INVALID_ARGUMENT;
 
-    LUID luid = deviceCreationD3D12Desc.d3d12Device->GetAdapterLuid();
+    LUID luid = desc.d3d12Device->GetAdapterLuid();
 
     AdapterDesc adapterDesc = {};
     adapterDesc.luid = *(uint64_t*)&luid;
 
     DeviceCreationDesc deviceCreationDesc = {};
     deviceCreationDesc.adapterDesc = &adapterDesc;
-    deviceCreationDesc.callbackInterface = deviceCreationD3D12Desc.callbackInterface;
-    deviceCreationDesc.allocationCallbacks = deviceCreationD3D12Desc.allocationCallbacks;
-    deviceCreationDesc.enableD3D12DrawParametersEmulation = deviceCreationD3D12Desc.enableD3D12DrawParametersEmulation;
+    deviceCreationDesc.callbackInterface = desc.callbackInterface;
+    deviceCreationDesc.allocationCallbacks = desc.allocationCallbacks;
+    deviceCreationDesc.enableD3D12DrawParametersEmulation = desc.enableD3D12DrawParametersEmulation;
     deviceCreationDesc.graphicsAPI = GraphicsAPI::D3D12;
 
-    StdAllocator<uint8_t> allocator(deviceCreationD3D12Desc.allocationCallbacks);
-    DeviceD3D12* impl = Allocate<DeviceD3D12>(allocator, deviceCreationD3D12Desc.callbackInterface, allocator);
-    Result result = impl->Create(deviceCreationDesc, deviceCreationD3D12Desc);
+    DeviceD3D12* impl = Allocate<DeviceD3D12>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
+    Result result = impl->Create(deviceCreationDesc, desc);
 
     if (result != Result::SUCCESS) {
-        Destroy(allocator, impl);
+        Destroy(desc.allocationCallbacks, impl);
         device = nullptr;
     } else
         device = (DeviceBase*)impl;
@@ -499,60 +497,9 @@ static void NRI_CALL UnmapBuffer(Buffer& buffer) {
     ((BufferD3D12&)buffer).Unmap();
 }
 
-static void NRI_CALL SetDeviceDebugName(Device& device, const char* name) {
-    ((DeviceD3D12&)device).SetDebugName(name);
-}
-
-static void NRI_CALL SetFenceDebugName(Fence& fence, const char* name) {
-    ((FenceD3D12&)fence).SetDebugName(name);
-}
-
-static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* name) {
-    ((DescriptorD3D12&)descriptor).SetDebugName(name);
-}
-
-static void NRI_CALL SetPipelineDebugName(Pipeline& pipeline, const char* name) {
-    ((PipelineD3D12&)pipeline).SetDebugName(name);
-}
-
-static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
-    ((CommandBufferD3D12&)commandBuffer).SetDebugName(name);
-}
-
-static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name) {
-    ((BufferD3D12&)buffer).SetDebugName(name);
-}
-
-static void NRI_CALL SetTextureDebugName(Texture& texture, const char* name) {
-    ((TextureD3D12&)texture).SetDebugName(name);
-}
-
-static void NRI_CALL SetCommandQueueDebugName(CommandQueue& commandQueue, const char* name) {
-    ((CommandQueueD3D12&)commandQueue).SetDebugName(name);
-}
-
-static void NRI_CALL SetCommandAllocatorDebugName(CommandAllocator& commandAllocator, const char* name) {
-    ((CommandAllocatorD3D12&)commandAllocator).SetDebugName(name);
-}
-
-static void NRI_CALL SetDescriptorPoolDebugName(DescriptorPool& descriptorPool, const char* name) {
-    ((DescriptorPoolD3D12&)descriptorPool).SetDebugName(name);
-}
-
-static void NRI_CALL SetPipelineLayoutDebugName(PipelineLayout& pipelineLayout, const char* name) {
-    ((PipelineLayoutD3D12&)pipelineLayout).SetDebugName(name);
-}
-
-static void NRI_CALL SetQueryPoolDebugName(QueryPool& queryPool, const char* name) {
-    ((QueryPoolD3D12&)queryPool).SetDebugName(name);
-}
-
-static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet& descriptorSet, const char* name) {
-    ((DescriptorSetD3D12&)descriptorSet).SetDebugName(name);
-}
-
-static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name) {
-    ((MemoryD3D12&)memory).SetDebugName(name);
+static void NRI_CALL SetDebugName(Object* object, const char* name) {
+    if (object)
+        ((DebugNameBase*)object)->SetDebugName(name);
 }
 
 static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
@@ -687,20 +634,7 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& table) const {
     table.ResetCommandAllocator = ::ResetCommandAllocator;
     table.MapBuffer = ::MapBuffer;
     table.UnmapBuffer = ::UnmapBuffer;
-    table.SetDeviceDebugName = ::SetDeviceDebugName;
-    table.SetFenceDebugName = ::SetFenceDebugName;
-    table.SetDescriptorDebugName = ::SetDescriptorDebugName;
-    table.SetPipelineDebugName = ::SetPipelineDebugName;
-    table.SetCommandBufferDebugName = ::SetCommandBufferDebugName;
-    table.SetBufferDebugName = ::SetBufferDebugName;
-    table.SetTextureDebugName = ::SetTextureDebugName;
-    table.SetCommandQueueDebugName = ::SetCommandQueueDebugName;
-    table.SetCommandAllocatorDebugName = ::SetCommandAllocatorDebugName;
-    table.SetDescriptorPoolDebugName = ::SetDescriptorPoolDebugName;
-    table.SetPipelineLayoutDebugName = ::SetPipelineLayoutDebugName;
-    table.SetQueryPoolDebugName = ::SetQueryPoolDebugName;
-    table.SetDescriptorSetDebugName = ::SetDescriptorSetDebugName;
-    table.SetMemoryDebugName = ::SetMemoryDebugName;
+    table.SetDebugName = ::SetDebugName;
     table.GetDeviceNativeObject = ::GetDeviceNativeObject;
     table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
@@ -838,10 +772,6 @@ static uint64_t NRI_CALL GetAccelerationStructureHandle(const AccelerationStruct
     return ((AccelerationStructureD3D12&)accelerationStructure).GetHandle();
 }
 
-static void NRI_CALL SetAccelerationStructureDebugName(AccelerationStructure& accelerationStructure, const char* name) {
-    ((AccelerationStructureD3D12&)accelerationStructure).SetDebugName(name);
-}
-
 static uint64_t NRI_CALL GetAccelerationStructureNativeObject(const AccelerationStructure& accelerationStructure) {
     return uint64_t((ID3D12Resource*)((AccelerationStructureD3D12&)accelerationStructure));
 }
@@ -930,7 +860,6 @@ Result DeviceD3D12::FillFunctionTable(RayTracingInterface& table) const {
     table.CmdDispatchRaysIndirect = ::CmdDispatchRaysIndirect;
     table.CmdCopyAccelerationStructure = ::CmdCopyAccelerationStructure;
     table.CmdWriteAccelerationStructureSize = ::CmdWriteAccelerationStructureSize;
-    table.SetAccelerationStructureDebugName = ::SetAccelerationStructureDebugName;
     table.GetAccelerationStructureNativeObject = ::GetAccelerationStructureNativeObject;
 
     return Result::SUCCESS;
@@ -968,11 +897,11 @@ Result DeviceD3D12::FillFunctionTable(ResourceAllocatorInterface& table) const {
 
 static Result CreateStreamer(Device& device, const StreamerDesc& streamerDesc, Streamer*& streamer) {
     DeviceD3D12& deviceD3D12 = (DeviceD3D12&)device;
-    StreamerImpl* impl = Allocate<StreamerImpl>(deviceD3D12.GetStdAllocator(), device, deviceD3D12.GetCoreInterface());
+    StreamerImpl* impl = Allocate<StreamerImpl>(deviceD3D12.GetAllocationCallbacks(), device, deviceD3D12.GetCoreInterface());
     Result result = impl->Create(streamerDesc);
 
     if (result != Result::SUCCESS) {
-        Destroy(deviceD3D12.GetStdAllocator(), impl);
+        Destroy(deviceD3D12.GetAllocationCallbacks(), impl);
         streamer = nullptr;
     } else
         streamer = (Streamer*)impl;
@@ -981,7 +910,7 @@ static Result CreateStreamer(Device& device, const StreamerDesc& streamerDesc, S
 }
 
 static void DestroyStreamer(Streamer& streamer) {
-    Destroy(((DeviceBase&)((StreamerImpl&)streamer).GetDevice()).GetStdAllocator(), (StreamerImpl*)&streamer);
+    Destroy(((DeviceBase&)((StreamerImpl&)streamer).GetDevice()).GetAllocationCallbacks(), (StreamerImpl*)&streamer);
 }
 
 static Buffer* GetStreamerConstantBuffer(Streamer& streamer) {
@@ -1039,10 +968,6 @@ static void NRI_CALL DestroySwapChain(SwapChain& swapChain) {
     Destroy((SwapChainD3D12*)&swapChain);
 }
 
-static void NRI_CALL SetSwapChainDebugName(SwapChain& swapChain, const char* name) {
-    ((SwapChainD3D12&)swapChain).SetDebugName(name);
-}
-
 static Texture* const* NRI_CALL GetSwapChainTextures(const SwapChain& swapChain, uint32_t& textureNum) {
     return ((SwapChainD3D12&)swapChain).GetTextures(textureNum);
 }
@@ -1069,7 +994,6 @@ Result DeviceD3D12::FillFunctionTable(SwapChainInterface& table) const {
 
     table.CreateSwapChain = ::CreateSwapChain;
     table.DestroySwapChain = ::DestroySwapChain;
-    table.SetSwapChainDebugName = ::SetSwapChainDebugName;
     table.GetSwapChainTextures = ::GetSwapChainTextures;
     table.AcquireNextSwapChainTexture = ::AcquireNextSwapChainTexture;
     table.WaitForPresent = ::WaitForPresent;

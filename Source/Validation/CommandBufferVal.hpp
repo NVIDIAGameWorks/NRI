@@ -30,11 +30,6 @@ static bool ValidateTextureBarrierDesc(const DeviceVal& device, uint32_t i, cons
     return true;
 }
 
-NRI_INLINE void CommandBufferVal::SetDebugName(const char* name) {
-    m_Name = name;
-    GetCoreInterface().SetCommandBufferDebugName(*GetImpl(), name);
-}
-
 NRI_INLINE Result CommandBufferVal::Begin(const DescriptorPool* descriptorPool) {
     RETURN_ON_FAILURE(&m_Device, !m_IsRecordingStarted, Result::FAILURE, "already in the recording state");
 

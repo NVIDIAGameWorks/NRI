@@ -65,9 +65,10 @@ struct SubresourceAndSlot {
 };
 
 struct BindingState {
-    std::vector<SubresourceAndSlot> resources; // max expected size - D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT
-    std::vector<SubresourceAndSlot> storages;  // max expected size - D3D11_1_UAV_SLOT_COUNT
-    std::array<ID3D11UnorderedAccessView*, D3D11_1_UAV_SLOT_COUNT> graphicsStorageDescriptors = {};
+    inline BindingState(const StdAllocator<uint8_t>& stdAllocator)
+        : resources(stdAllocator)
+        , storages(stdAllocator) {
+    }
 
     inline void TrackSubresource_UnbindIfNeeded_PostponeGraphicsStorageBinding(ID3D11DeviceContextBest* deferredContext, const SubresourceInfo& subresource, void* descriptor, uint32_t slot, bool isGraphics, bool isStorage) {
         constexpr void* null = nullptr;
@@ -134,16 +135,23 @@ struct BindingState {
 
         memset(&graphicsStorageDescriptors, 0, sizeof(graphicsStorageDescriptors));
     }
+
+    Vector<SubresourceAndSlot> resources; // max expected size - D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT
+    Vector<SubresourceAndSlot> storages;  // max expected size - D3D11_1_UAV_SLOT_COUNT
+    std::array<ID3D11UnorderedAccessView*, D3D11_1_UAV_SLOT_COUNT> graphicsStorageDescriptors = {};
 };
 
-struct CommandBufferHelper {
-    virtual ~CommandBufferHelper() {
+struct CommandBufferBase : public DebugNameBase {
+    inline CommandBufferBase() {
+    }
+
+    virtual ~CommandBufferBase() {
     }
 
     virtual Result Create(ID3D11DeviceContext* precreatedContext) = 0;
     virtual void Submit() = 0;
     virtual ID3D11DeviceContext* GetNativeObject() const = 0;
-    virtual StdAllocator<uint8_t>& GetStdAllocator() const = 0;
+    virtual const AllocationCallbacks& GetAllocationCallbacks() const = 0;
 };
 
 static inline uint64_t ComputeHash(const void* key, uint32_t len) {

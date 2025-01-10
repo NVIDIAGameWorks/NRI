@@ -9,15 +9,15 @@ DescriptorVK::~DescriptorVK() {
             break;
         case DescriptorTypeVK::BUFFER_VIEW:
             if (m_BufferView)
-                vk.DestroyBufferView(m_Device, m_BufferView, m_Device.GetAllocationCallbacks());
+                vk.DestroyBufferView(m_Device, m_BufferView, m_Device.GetVkAllocationCallbacks());
             break;
         case DescriptorTypeVK::IMAGE_VIEW:
             if (m_ImageView)
-                vk.DestroyImageView(m_Device, m_ImageView, m_Device.GetAllocationCallbacks());
+                vk.DestroyImageView(m_Device, m_ImageView, m_Device.GetVkAllocationCallbacks());
             break;
         case DescriptorTypeVK::SAMPLER:
             if (m_Sampler)
-                vk.DestroySampler(m_Device, m_Sampler, m_Device.GetAllocationCallbacks());
+                vk.DestroySampler(m_Device, m_Sampler, m_Device.GetVkAllocationCallbacks());
             break;
     }
 }
@@ -48,7 +48,7 @@ Result DescriptorVK::CreateTextureView(const T& textureViewDesc) {
     createInfo.image = texture.GetHandle();
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreateImageView(m_Device, &createInfo, m_Device.GetAllocationCallbacks(), &m_ImageView);
+    VkResult result = vk.CreateImageView(m_Device, &createInfo, m_Device.GetVkAllocationCallbacks(), &m_ImageView);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateImageView returned %d", (int32_t)result);
 
     m_Type = DescriptorTypeVK::IMAGE_VIEW;
@@ -99,7 +99,7 @@ Result DescriptorVK::CreateTextureView(const Texture3DViewDesc& textureViewDesc)
     createInfo.image = texture.GetHandle();
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreateImageView(m_Device, &createInfo, m_Device.GetAllocationCallbacks(), &m_ImageView);
+    VkResult result = vk.CreateImageView(m_Device, &createInfo, m_Device.GetVkAllocationCallbacks(), &m_ImageView);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateImageView returned %d", (int32_t)result);
 
     m_Type = DescriptorTypeVK::IMAGE_VIEW;
@@ -137,7 +137,7 @@ Result DescriptorVK::Create(const BufferViewDesc& bufferViewDesc) {
     createInfo.range = m_BufferDesc.size;
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreateBufferView(m_Device, &createInfo, m_Device.GetAllocationCallbacks(), &m_BufferView);
+    VkResult result = vk.CreateBufferView(m_Device, &createInfo, m_Device.GetVkAllocationCallbacks(), &m_BufferView);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateBufferView returned %d", (int32_t)result);
 
     return Result::SUCCESS;
@@ -170,7 +170,7 @@ Result DescriptorVK::Create(const SamplerDesc& samplerDesc) {
     }
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreateSampler(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Sampler);
+    VkResult result = vk.CreateSampler(m_Device, &info, m_Device.GetVkAllocationCallbacks(), &m_Sampler);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateSampler returned %d", (int32_t)result);
 
     m_Type = DescriptorTypeVK::SAMPLER;

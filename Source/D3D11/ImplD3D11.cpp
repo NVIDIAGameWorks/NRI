@@ -47,13 +47,12 @@ namespace d3d11 {
 #include "D3DExt.hpp"
 }
 
-Result CreateDeviceD3D11(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device) {
-    StdAllocator<uint8_t> allocator(deviceCreationDesc.allocationCallbacks);
-    DeviceD3D11* impl = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    Result result = impl->Create(deviceCreationDesc, nullptr, nullptr, false);
+Result CreateDeviceD3D11(const DeviceCreationDesc& desc, DeviceBase*& device) {
+    DeviceD3D11* impl = Allocate<DeviceD3D11>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
+    Result result = impl->Create(desc, nullptr, nullptr, false);
 
     if (result != Result::SUCCESS) {
-        Destroy(allocator, impl);
+        Destroy(desc.allocationCallbacks, impl);
         device = nullptr;
     } else
         device = (DeviceBase*)impl;
@@ -61,22 +60,21 @@ Result CreateDeviceD3D11(const DeviceCreationDesc& deviceCreationDesc, DeviceBas
     return result;
 }
 
-Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceCreationD3D11Desc, DeviceBase*& device) {
-    if (!deviceCreationD3D11Desc.d3d11Device)
+Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& desc, DeviceBase*& device) {
+    if (!desc.d3d11Device)
         return Result::INVALID_ARGUMENT;
 
     DeviceCreationDesc deviceCreationDesc = {};
-    deviceCreationDesc.callbackInterface = deviceCreationD3D11Desc.callbackInterface;
-    deviceCreationDesc.allocationCallbacks = deviceCreationD3D11Desc.allocationCallbacks;
-    deviceCreationDesc.enableD3D11CommandBufferEmulation = deviceCreationD3D11Desc.enableD3D11CommandBufferEmulation;
+    deviceCreationDesc.callbackInterface = desc.callbackInterface;
+    deviceCreationDesc.allocationCallbacks = desc.allocationCallbacks;
+    deviceCreationDesc.enableD3D11CommandBufferEmulation = desc.enableD3D11CommandBufferEmulation;
     deviceCreationDesc.graphicsAPI = GraphicsAPI::D3D11;
 
-    StdAllocator<uint8_t> allocator(deviceCreationDesc.allocationCallbacks);
-    DeviceD3D11* impl = Allocate<DeviceD3D11>(allocator, deviceCreationDesc.callbackInterface, allocator);
-    Result result = impl->Create(deviceCreationDesc, deviceCreationD3D11Desc.d3d11Device, deviceCreationD3D11Desc.agsContext, deviceCreationD3D11Desc.isNVAPILoaded);
+    DeviceD3D11* impl = Allocate<DeviceD3D11>(desc.allocationCallbacks, deviceCreationDesc.callbackInterface, deviceCreationDesc.allocationCallbacks);
+    Result result = impl->Create(deviceCreationDesc, desc.d3d11Device, desc.agsContext, desc.isNVAPILoaded);
 
     if (result != Result::SUCCESS) {
-        Destroy(allocator, impl);
+        Destroy(desc.allocationCallbacks, impl);
         device = nullptr;
     } else
         device = (DeviceBase*)impl;
@@ -202,8 +200,8 @@ static void NRI_CALL DestroyCommandBuffer(CommandBuffer& commandBuffer) {
     if (!(&commandBuffer))
         return;
 
-    CommandBufferHelper& commandBufferHelper = (CommandBufferHelper&)commandBuffer;
-    Destroy(commandBufferHelper.GetStdAllocator(), &commandBufferHelper);
+    CommandBufferBase& commandBufferBase = (CommandBufferBase&)commandBuffer;
+    Destroy(commandBufferBase.GetAllocationCallbacks(), &commandBufferBase);
 }
 
 static void NRI_CALL DestroyDescriptorPool(DescriptorPool& descriptorPool) {
@@ -318,12 +316,10 @@ static void NRI_CALL CmdSetSampleLocations(CommandBuffer& commandBuffer, const S
     ((CommandBufferD3D11&)commandBuffer).SetSampleLocations(locations, locationNum, sampleNum);
 }
 
-static void NRI_CALL CmdSetShadingRate(CommandBuffer& commandBuffer, const ShadingRateDesc& shadingRateDesc) {
-    MaybeUnused(commandBuffer, shadingRateDesc);
+static void NRI_CALL CmdSetShadingRate(CommandBuffer&, const ShadingRateDesc&) {
 }
 
-static void NRI_CALL CmdSetDepthBias(CommandBuffer& commandBuffer, const DepthBiasDesc& depthBiasDesc) {
-    MaybeUnused(commandBuffer, depthBiasDesc);
+static void NRI_CALL CmdSetDepthBias(CommandBuffer&, const DepthBiasDesc&) {
 }
 
 static void NRI_CALL CmdBeginRendering(CommandBuffer& commandBuffer, const AttachmentsDesc& attachmentsDesc) {
@@ -469,8 +465,7 @@ static void NRI_CALL ResetCommandAllocator(CommandAllocator& commandAllocator) {
     ((CommandAllocatorD3D11&)commandAllocator).Reset();
 }
 
-static void* NRI_CALL MapBuffer(Buffer& buffer, uint64_t offset, uint64_t size) {
-    MaybeUnused(size);
+static void* NRI_CALL MapBuffer(Buffer& buffer, uint64_t offset, uint64_t) {
     return ((BufferD3D11&)buffer).Map(offset);
 }
 
@@ -478,60 +473,9 @@ static void NRI_CALL UnmapBuffer(Buffer& buffer) {
     ((BufferD3D11&)buffer).Unmap();
 }
 
-static void NRI_CALL SetDeviceDebugName(Device& device, const char* name) {
-    ((DeviceD3D11&)device).SetDebugName(name);
-}
-
-static void NRI_CALL SetFenceDebugName(Fence& fence, const char* name) {
-    ((FenceD3D11&)fence).SetDebugName(name);
-}
-
-static void NRI_CALL SetDescriptorDebugName(Descriptor& descriptor, const char* name) {
-    ((DescriptorD3D11&)descriptor).SetDebugName(name);
-}
-
-static void NRI_CALL SetPipelineDebugName(Pipeline& pipeline, const char* name) {
-    ((PipelineD3D11&)pipeline).SetDebugName(name);
-}
-
-static void NRI_CALL SetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
-    ((CommandBufferD3D11&)commandBuffer).SetDebugName(name);
-}
-
-static void NRI_CALL SetBufferDebugName(Buffer& buffer, const char* name) {
-    ((BufferD3D11&)buffer).SetDebugName(name);
-}
-
-static void NRI_CALL SetTextureDebugName(Texture& texture, const char* name) {
-    ((TextureD3D11&)texture).SetDebugName(name);
-}
-
-static void NRI_CALL SetCommandQueueDebugName(CommandQueue& commandQueue, const char* name) {
-    ((CommandQueueD3D11&)commandQueue).SetDebugName(name);
-}
-
-static void NRI_CALL SetCommandAllocatorDebugName(CommandAllocator& commandAllocator, const char* name) {
-    ((CommandAllocatorD3D11&)commandAllocator).SetDebugName(name);
-}
-
-static void NRI_CALL SetDescriptorPoolDebugName(DescriptorPool& descriptorPool, const char* name) {
-    ((DescriptorPoolD3D11&)descriptorPool).SetDebugName(name);
-}
-
-static void NRI_CALL SetPipelineLayoutDebugName(PipelineLayout& pipelineLayout, const char* name) {
-    ((PipelineLayoutD3D11&)pipelineLayout).SetDebugName(name);
-}
-
-static void NRI_CALL SetQueryPoolDebugName(QueryPool& queryPool, const char* name) {
-    ((QueryPoolD3D11&)queryPool).SetDebugName(name);
-}
-
-static void NRI_CALL SetDescriptorSetDebugName(DescriptorSet& descriptorSet, const char* name) {
-    ((DescriptorSetD3D11&)descriptorSet).SetDebugName(name);
-}
-
-static void NRI_CALL SetMemoryDebugName(Memory& memory, const char* name) {
-    ((MemoryD3D11&)memory).SetDebugName(name);
+static void NRI_CALL SetDebugName(Object* object, const char* name) {
+    if (object)
+        ((DebugNameBase*)object)->SetDebugName(name);
 }
 
 static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
@@ -575,8 +519,7 @@ static Result NRI_CALL EmuBeginCommandBuffer(CommandBuffer& commandBuffer, const
     return ((CommandBufferEmuD3D11&)commandBuffer).Begin(descriptorPool);
 }
 
-static void NRI_CALL EmuCmdSetDescriptorPool(CommandBuffer& commandBuffer, const DescriptorPool& descriptorPool) {
-    MaybeUnused(commandBuffer, descriptorPool);
+static void NRI_CALL EmuCmdSetDescriptorPool(CommandBuffer&, const DescriptorPool&) {
 }
 
 static void NRI_CALL EmuCmdSetPipelineLayout(CommandBuffer& commandBuffer, const PipelineLayout& pipelineLayout) {
@@ -635,12 +578,10 @@ static void NRI_CALL EmuCmdSetSampleLocations(CommandBuffer& commandBuffer, cons
     ((CommandBufferEmuD3D11&)commandBuffer).SetSampleLocations(locations, locationNum, sampleNum);
 }
 
-static void NRI_CALL EmuCmdSetShadingRate(CommandBuffer& commandBuffer, const ShadingRateDesc& shadingRateDesc) {
-    MaybeUnused(commandBuffer, shadingRateDesc);
+static void NRI_CALL EmuCmdSetShadingRate(CommandBuffer&, const ShadingRateDesc&) {
 }
 
-static void NRI_CALL EmuCmdSetDepthBias(CommandBuffer& commandBuffer, const DepthBiasDesc& depthBiasDesc) {
-    MaybeUnused(commandBuffer, depthBiasDesc);
+static void NRI_CALL EmuCmdSetDepthBias(CommandBuffer&, const DepthBiasDesc&) {
 }
 
 static void NRI_CALL EmuCmdBeginRendering(CommandBuffer& commandBuffer, const AttachmentsDesc& attachmentsDesc) {
@@ -738,16 +679,12 @@ static Result NRI_CALL EmuEndCommandBuffer(CommandBuffer& commandBuffer) {
     return ((CommandBufferEmuD3D11&)commandBuffer).End();
 }
 
-static void NRI_CALL EmuSetCommandBufferDebugName(CommandBuffer& commandBuffer, const char* name) {
-    MaybeUnused(commandBuffer, name);
-}
-
 static void* NRI_CALL EmuGetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
     if (!(&commandBuffer))
         return nullptr;
 
-    CommandBufferHelper& commandBufferHelper = (CommandBufferHelper&)commandBuffer;
-    return commandBufferHelper.GetNativeObject();
+    CommandBufferBase& commandBufferBase = (CommandBufferBase&)commandBuffer;
+    return commandBufferBase.GetNativeObject();
 }
 
 Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
@@ -805,19 +742,7 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
     table.ResetCommandAllocator = ::ResetCommandAllocator;
     table.MapBuffer = ::MapBuffer;
     table.UnmapBuffer = ::UnmapBuffer;
-    table.SetDeviceDebugName = ::SetDeviceDebugName;
-    table.SetFenceDebugName = ::SetFenceDebugName;
-    table.SetDescriptorDebugName = ::SetDescriptorDebugName;
-    table.SetPipelineDebugName = ::SetPipelineDebugName;
-    table.SetBufferDebugName = ::SetBufferDebugName;
-    table.SetTextureDebugName = ::SetTextureDebugName;
-    table.SetCommandQueueDebugName = ::SetCommandQueueDebugName;
-    table.SetCommandAllocatorDebugName = ::SetCommandAllocatorDebugName;
-    table.SetDescriptorPoolDebugName = ::SetDescriptorPoolDebugName;
-    table.SetPipelineLayoutDebugName = ::SetPipelineLayoutDebugName;
-    table.SetQueryPoolDebugName = ::SetQueryPoolDebugName;
-    table.SetDescriptorSetDebugName = ::SetDescriptorSetDebugName;
-    table.SetMemoryDebugName = ::SetMemoryDebugName;
+    table.SetDebugName = ::SetDebugName;
     table.GetDeviceNativeObject = ::GetDeviceNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
     table.GetTextureNativeObject = ::GetTextureNativeObject;
@@ -866,7 +791,6 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
         table.CmdEndAnnotation = ::EmuCmdEndAnnotation;
         table.CmdAnnotation = ::EmuCmdAnnotation;
         table.EndCommandBuffer = ::EmuEndCommandBuffer;
-        table.SetCommandBufferDebugName = ::EmuSetCommandBufferDebugName;
         table.GetCommandBufferNativeObject = ::EmuGetCommandBufferNativeObject;
     } else {
         table.BeginCommandBuffer = ::BeginCommandBuffer;
@@ -912,7 +836,6 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
         table.CmdAnnotation = ::CmdAnnotation;
         table.EndCommandBuffer = ::EndCommandBuffer;
         table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
-        table.SetCommandBufferDebugName = ::SetCommandBufferDebugName;
     }
 
     return Result::SUCCESS;
@@ -985,9 +908,7 @@ static Result GetLatencyReport(const SwapChain& swapChain, LatencyReport& latenc
     return ((SwapChainD3D11&)swapChain).GetLatencyReport(latencyReport);
 }
 
-static void NRI_CALL QueueSubmitTrackable(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc, const SwapChain& swapChain) {
-    MaybeUnused(swapChain);
-
+static void NRI_CALL QueueSubmitTrackable(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc, const SwapChain&) {
     ((CommandQueueD3D11&)commandQueue).Submit(workSubmissionDesc);
 }
 
@@ -1014,7 +935,7 @@ static Result AllocateBuffer(Device& device, const AllocateBufferDesc& bufferDes
     if (result == Result::SUCCESS) {
         result = ((BufferD3D11*)buffer)->Create(bufferDesc.memoryLocation, bufferDesc.memoryPriority);
         if (result != Result::SUCCESS) {
-            Destroy(((DeviceD3D11&)device).GetStdAllocator(), (BufferD3D11*)buffer);
+            Destroy(((DeviceD3D11&)device).GetAllocationCallbacks(), (BufferD3D11*)buffer);
             buffer = nullptr;
         }
     }
@@ -1027,7 +948,7 @@ static Result AllocateTexture(Device& device, const AllocateTextureDesc& texture
     if (result == Result::SUCCESS) {
         result = ((TextureD3D11*)texture)->Create(textureDesc.memoryLocation, textureDesc.memoryPriority);
         if (result != Result::SUCCESS) {
-            Destroy(((DeviceD3D11&)device).GetStdAllocator(), (TextureD3D11*)texture);
+            Destroy(((DeviceD3D11&)device).GetAllocationCallbacks(), (TextureD3D11*)texture);
             texture = nullptr;
         }
     }
@@ -1056,11 +977,11 @@ Result DeviceD3D11::FillFunctionTable(ResourceAllocatorInterface& table) const {
 
 static Result CreateStreamer(Device& device, const StreamerDesc& streamerDesc, Streamer*& streamer) {
     DeviceD3D11& deviceD3D11 = (DeviceD3D11&)device;
-    StreamerImpl* impl = Allocate<StreamerImpl>(deviceD3D11.GetStdAllocator(), device, deviceD3D11.GetCoreInterface());
+    StreamerImpl* impl = Allocate<StreamerImpl>(deviceD3D11.GetAllocationCallbacks(), device, deviceD3D11.GetCoreInterface());
     Result result = impl->Create(streamerDesc);
 
     if (result != Result::SUCCESS) {
-        Destroy(deviceD3D11.GetStdAllocator(), impl);
+        Destroy(deviceD3D11.GetAllocationCallbacks(), impl);
         streamer = nullptr;
     } else
         streamer = (Streamer*)impl;
@@ -1127,10 +1048,6 @@ static void NRI_CALL DestroySwapChain(SwapChain& swapChain) {
     Destroy((SwapChainD3D11*)&swapChain);
 }
 
-static void NRI_CALL SetSwapChainDebugName(SwapChain& swapChain, const char* name) {
-    ((SwapChainD3D11&)swapChain).SetDebugName(name);
-}
-
 static Texture* const* NRI_CALL GetSwapChainTextures(const SwapChain& swapChain, uint32_t& textureNum) {
     return ((SwapChainD3D11&)swapChain).GetTextures(textureNum);
 }
@@ -1157,7 +1074,6 @@ Result DeviceD3D11::FillFunctionTable(SwapChainInterface& table) const {
 
     table.CreateSwapChain = ::CreateSwapChain;
     table.DestroySwapChain = ::DestroySwapChain;
-    table.SetSwapChainDebugName = ::SetSwapChainDebugName;
     table.GetSwapChainTextures = ::GetSwapChainTextures;
     table.AcquireNextSwapChainTexture = ::AcquireNextSwapChainTexture;
     table.WaitForPresent = ::WaitForPresent;

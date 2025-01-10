@@ -10,7 +10,7 @@ namespace nri {
 
 struct DeviceD3D12;
 
-struct CommandQueueD3D12 {
+struct CommandQueueD3D12 final : public DebugNameBase {
     inline CommandQueueD3D12(DeviceD3D12& device)
         : m_Device(device) {
     }
@@ -34,12 +34,16 @@ struct CommandQueueD3D12 {
     Result Create(ID3D12CommandQueue* commandQueue);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    inline void SetDebugName(const char* name) {
+    void SetDebugName(const char* name) override {
         SET_D3D_DEBUG_OBJECT_NAME(m_CommandQueue, name);
     }
+
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
 
     void BeginAnnotation(const char* name, uint32_t bgra);
     void EndAnnotation();

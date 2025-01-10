@@ -17,7 +17,7 @@ struct IsExtSupported {
 };
 
 struct DeviceVal final : public DeviceBase {
-    DeviceVal(const CallbackInterface& callbacks, const StdAllocator<uint8_t>& stdAllocator, DeviceBase& device);
+    DeviceVal(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks, DeviceBase& device);
     ~DeviceVal();
 
     inline Device& GetImpl() const {
@@ -155,7 +155,6 @@ struct DeviceVal final : public DeviceBase {
     void DestroyAccelerationStructure(AccelerationStructure& accelerationStructure);
 
     void FreeMemory(Memory& memory);
-    void SetDebugName(const char* name);
     Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
     Result AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);

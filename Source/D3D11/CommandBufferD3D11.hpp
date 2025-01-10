@@ -24,6 +24,7 @@ uint8_t QueryLatestDeviceContext(ComPtr<ID3D11DeviceContextBest>& in, ComPtr<ID3
 
 CommandBufferD3D11::CommandBufferD3D11(DeviceD3D11& device)
     : m_Device(device)
+    , m_BindingState(device.GetStdAllocator())
     , m_DeferredContext(device.GetImmediateContext())
     , m_Version(device.GetImmediateContextVersion()) {
     m_DeferredContext->QueryInterface(IID_PPV_ARGS(&m_Annotation));
@@ -332,8 +333,7 @@ NRI_INLINE void CommandBufferD3D11::SetPipeline(const Pipeline& pipeline) {
     m_Pipeline = pipelineD3D11;
 }
 
-NRI_INLINE void CommandBufferD3D11::SetDescriptorPool(const DescriptorPool& descriptorPool) {
-    MaybeUnused(descriptorPool);
+NRI_INLINE void CommandBufferD3D11::SetDescriptorPool(const DescriptorPool&) {
 }
 
 NRI_INLINE void CommandBufferD3D11::SetDescriptorSet(uint32_t setIndex, const DescriptorSet& descriptorSet, const uint32_t* dynamicConstantBufferOffsets) {
@@ -361,8 +361,6 @@ NRI_INLINE void CommandBufferD3D11::DrawIndexed(const DrawIndexedDesc& drawIndex
 }
 
 NRI_INLINE void CommandBufferD3D11::DrawIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
-    MaybeUnused(countBuffer, countBufferOffset);
-
     if (countBuffer && m_Device.GetDesc().isDrawIndirectCountSupported)
         m_Device.GetExt()->DrawIndirect(m_DeferredContext, (BufferD3D11&)buffer, offset, drawNum, stride, *(BufferD3D11*)countBuffer, (uint32_t)countBufferOffset);
     else
@@ -370,8 +368,6 @@ NRI_INLINE void CommandBufferD3D11::DrawIndirect(const Buffer& buffer, uint64_t 
 }
 
 NRI_INLINE void CommandBufferD3D11::DrawIndexedIndirect(const Buffer& buffer, uint64_t offset, uint32_t drawNum, uint32_t stride, const Buffer* countBuffer, uint64_t countBufferOffset) {
-    MaybeUnused(countBuffer, countBufferOffset);
-
     if (countBuffer && m_Device.GetDesc().isDrawIndirectCountSupported)
         m_Device.GetExt()->DrawIndexedIndirect(m_DeferredContext, (BufferD3D11&)buffer, offset, drawNum, stride, *(BufferD3D11*)countBuffer, (uint32_t)countBufferOffset);
     else

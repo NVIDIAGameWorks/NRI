@@ -10,7 +10,7 @@ namespace nri {
 struct DeviceD3D12;
 struct TextureD3D12;
 
-struct SwapChainD3D12 : public DisplayDescHelper {
+struct SwapChainD3D12 final : public DisplayDescHelper, DebugNameBase {
     inline SwapChainD3D12(DeviceD3D12& device)
         : m_Device(device)
         , m_Textures(device.GetStdAllocator()) {
@@ -25,12 +25,16 @@ struct SwapChainD3D12 : public DisplayDescHelper {
     Result Create(const SwapChainDesc& swapChainDesc);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    inline void SetDebugName(const char* name) {
+    void SetDebugName(const char* name) override {
         SET_D3D_DEBUG_OBJECT_NAME(m_SwapChain, name);
     }
+
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
 
     inline Result GetDisplayDesc(DisplayDesc& displayDesc) {
         return DisplayDescHelper::GetDisplayDesc(m_Desc.window.windows.hwnd, displayDesc);

@@ -13,7 +13,7 @@ struct RasterizerState {
     uint64_t samplePositionHash = 0;
 };
 
-struct PipelineD3D11 {
+struct PipelineD3D11 final : public DebugNameBase {
     inline PipelineD3D11(DeviceD3D11& device)
         : m_Device(device)
         , m_VertexStreamStrides(device.GetStdAllocator())
@@ -33,8 +33,7 @@ struct PipelineD3D11 {
 
     Result Create(const GraphicsPipelineDesc& pipelineDesc);
     Result Create(const ComputePipelineDesc& pipelineDesc);
-    void Bind(ID3D11DeviceContextBest* deferredContext, const PipelineD3D11* currentPipeline, uint8_t stencilRef, const Color32f& blendFactor,
-        const SamplePositionsState& samplePositionState);
+    void Bind(ID3D11DeviceContextBest* deferredContext, const PipelineD3D11* currentPipeline, uint8_t stencilRef, const Color32f& blendFactor, const SamplePositionsState& samplePositionState);
 
     // Dynamic state
     void ChangeSamplePositions(ID3D11DeviceContextBest* deferredContext, const SamplePositionsState& samplePositionState);
@@ -42,10 +41,10 @@ struct PipelineD3D11 {
     void ChangeBlendConstants(ID3D11DeviceContextBest* deferredContext, const Color32f& color);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name);
+    void SetDebugName(const char* name) override;
 
 private:
     inline bool IsCompute() const {

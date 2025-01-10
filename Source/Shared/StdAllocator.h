@@ -89,13 +89,12 @@ inline void AlignedFree(void* userArg, void* memory) {
 
 #endif
 
-inline void CheckAndSetDefaultAllocator(AllocationCallbacks& allocationCallbacks) {
-    if (allocationCallbacks.Allocate)
-        return;
-
-    allocationCallbacks.Allocate = AlignedMalloc;
-    allocationCallbacks.Reallocate = AlignedRealloc;
-    allocationCallbacks.Free = AlignedFree;
+inline void CheckAndSetDefaultAllocator(AllocationCallbacks& callbacks) {
+    if (!callbacks.Allocate || !callbacks.Reallocate || !callbacks.Free) {
+        callbacks.Allocate = AlignedMalloc;
+        callbacks.Reallocate = AlignedRealloc;
+        callbacks.Free = AlignedFree;
+    }
 }
 
 template <typename T>
@@ -140,7 +139,7 @@ struct StdAllocator {
     using other = StdAllocator<U>;
 
 private:
-    AllocationCallbacks m_Interface = {};
+    const AllocationCallbacks& m_Interface = {}; // IMPORTANT: yes, it's a pointer to the real location (DeviceBase)
 };
 
 template <typename T>
@@ -199,8 +198,8 @@ private:
 };
 
 #define AllocateScratch(device, T, elementNum) \
-    {(device).GetStdAllocator().GetInterface(), \
+    {(device).GetAllocationCallbacks(), \
         ((elementNum) * sizeof(T) + alignof(T)) > MAX_STACK_ALLOC_SIZE \
-            ? (T*)(device).GetStdAllocator().GetInterface().Allocate((device).GetStdAllocator().GetInterface().userArg, (elementNum) * sizeof(T), alignof(T)) \
+            ? (T*)(device).GetAllocationCallbacks().Allocate((device).GetAllocationCallbacks().userArg, (elementNum) * sizeof(T), alignof(T)) \
             : (T*)Align((elementNum) ? (T*)alloca(((elementNum) * sizeof(T) + alignof(T))) : nullptr, alignof(T)), \
         (elementNum)}

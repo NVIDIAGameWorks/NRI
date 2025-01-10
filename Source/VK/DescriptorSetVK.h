@@ -6,7 +6,7 @@ namespace nri {
 
 struct DeviceVK;
 
-struct DescriptorSetVK {
+struct DescriptorSetVK final : public DebugNameBase {
     inline DescriptorSetVK(DeviceVK& device)
         : m_Device(device) {
     }
@@ -22,10 +22,15 @@ struct DescriptorSetVK {
     void Create(VkDescriptorSet handle, const DescriptorSetDesc& setDesc);
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     void UpdateDescriptorRanges(uint32_t rangeOffset, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs);
     void UpdateDynamicConstantBuffers(uint32_t bufferOffset, uint32_t descriptorNum, const Descriptor* const* descriptors);
     void Copy(const DescriptorSetCopyDesc& descriptorSetCopyDesc);

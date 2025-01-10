@@ -6,6 +6,8 @@
 
 #include "DeviceVal.h"
 
+#define NRI_OBJECT_SIGNATURE 0x1234567887654321ull
+
 namespace nri {
 
 template <typename T>
@@ -18,6 +20,11 @@ struct DeviceObjectVal {
 
     inline T* GetImpl() const {
         return m_Impl;
+    }
+
+    inline void SetDebugName(const char* name) {
+        m_Name = name;
+        m_Device.GetCoreInterface().SetDebugName(GetImpl(), name);
     }
 
     inline const char* GetDebugName() const {
@@ -69,6 +76,9 @@ struct DeviceObjectVal {
     }
 
 protected:
+#ifndef NDEBUG
+    const uint64_t m_Signature = NRI_OBJECT_SIGNATURE;
+#endif
     String m_Name;
     DeviceVal& m_Device;
     T* m_Impl = nullptr;

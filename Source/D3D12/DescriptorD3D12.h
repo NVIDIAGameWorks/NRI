@@ -8,7 +8,7 @@ namespace nri {
 
 struct DeviceD3D12;
 
-struct DescriptorD3D12 {
+struct DescriptorD3D12 final : public DebugNameBase {
     inline DescriptorD3D12(DeviceD3D12& device)
         : m_Device(device) {
     }
@@ -47,14 +47,6 @@ struct DescriptorD3D12 {
     Result Create(const Texture3DViewDesc& textureViewDesc);
     Result Create(const AccelerationStructure& accelerationStructure);
     Result Create(const SamplerDesc& samplerDesc);
-
-    //================================================================================================================
-    // NRI
-    //================================================================================================================
-
-    inline void SetDebugName(const char* name) {
-        MaybeUnused(name);
-    }
 
 private:
     Result CreateConstantBufferView(const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc);

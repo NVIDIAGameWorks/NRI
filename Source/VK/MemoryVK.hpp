@@ -3,7 +3,7 @@
 MemoryVK::~MemoryVK() {
     if (m_OwnsNativeObjects) {
         const auto& vk = m_Device.GetDispatchTable();
-        vk.FreeMemory(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+        vk.FreeMemory(m_Device, m_Handle, m_Device.GetVkAllocationCallbacks());
     }
 }
 
@@ -51,7 +51,7 @@ Result MemoryVK::Create(const AllocateMemoryDesc& allocateMemoryDesc) {
     memoryInfo.memoryTypeIndex = memoryTypeInfo.index;
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.AllocateMemory(m_Device, &memoryInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
+    VkResult result = vk.AllocateMemory(m_Device, &memoryInfo, m_Device.GetVkAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkAllocateMemory returned %d", (int32_t)result);
 
     if (IsHostVisibleMemory(memoryTypeInfo.location)) {
@@ -86,7 +86,7 @@ Result MemoryVK::CreateDedicated(const BufferVK& buffer) {
     memoryInfo.memoryTypeIndex = memoryTypeInfo.index;
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.AllocateMemory(m_Device, &memoryInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
+    VkResult result = vk.AllocateMemory(m_Device, &memoryInfo, m_Device.GetVkAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkAllocateMemory returned %d", (int32_t)result);
 
     if (IsHostVisibleMemory(memoryTypeInfo.location)) {
@@ -121,7 +121,7 @@ Result MemoryVK::CreateDedicated(const TextureVK& texture) {
     memoryInfo.memoryTypeIndex = memoryTypeInfo.index;
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.AllocateMemory(m_Device, &memoryInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
+    VkResult result = vk.AllocateMemory(m_Device, &memoryInfo, m_Device.GetVkAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkAllocateMemory returned %d", (int32_t)result);
 
     if (IsHostVisibleMemory(memoryTypeInfo.location)) {

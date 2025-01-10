@@ -22,7 +22,7 @@ enum class ResourceViewType {
     SHADING_RATE_ATTACHMENT
 };
 
-struct DescriptorVal : public DeviceObjectVal<Descriptor> {
+struct DescriptorVal final : public DeviceObjectVal<Descriptor> {
     DescriptorVal(DeviceVal& device, Descriptor* descriptor, ResourceType resourceType);
     DescriptorVal(DeviceVal& device, Descriptor* descriptor, const BufferViewDesc& bufferViewDesc);
     DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Texture1DViewDesc& textureViewDesc);
@@ -77,12 +77,6 @@ struct DescriptorVal : public DeviceObjectVal<Descriptor> {
     inline bool IsStencilReadonly() const {
         return m_IsStencilReadonly;
     }
-
-    //================================================================================================================
-    // NRI
-    //================================================================================================================
-
-    void SetDebugName(const char* name);
 
 private:
     ResourceType m_ResourceType = ResourceType::NONE;

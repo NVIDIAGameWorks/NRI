@@ -7,7 +7,7 @@ TextureVK::~TextureVK() {
         if (m_VmaAllocation)
             DestroyVma();
         else
-            vk.DestroyImage(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+            vk.DestroyImage(m_Device, m_Handle, m_Device.GetVkAllocationCallbacks());
     }
 }
 
@@ -18,7 +18,7 @@ Result TextureVK::Create(const TextureDesc& textureDesc) {
     m_Device.FillCreateInfo(m_Desc, info);
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreateImage(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
+    VkResult result = vk.CreateImage(m_Device, &info, m_Device.GetVkAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateImage returned %d", (int32_t)result);
 
     return Result::SUCCESS;

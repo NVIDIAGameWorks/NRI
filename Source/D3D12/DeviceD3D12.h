@@ -22,7 +22,7 @@ struct CommandQueueD3D12;
 constexpr uint32_t DESCRIPTORS_BATCH_SIZE = 1024;
 
 struct DeviceD3D12 final : public DeviceBase {
-    DeviceD3D12(const CallbackInterface& callbacks, StdAllocator<uint8_t>& stdAllocator);
+    DeviceD3D12(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks);
     ~DeviceD3D12();
 
     inline ID3D12DeviceBest* GetNativeObject() const {
@@ -61,11 +61,11 @@ struct DeviceD3D12 final : public DeviceBase {
 
     template <typename Implementation, typename Interface, typename... Args>
     inline Result CreateImplementation(Interface*& entity, const Args&... args) {
-        Implementation* impl = Allocate<Implementation>(GetStdAllocator(), *this);
+        Implementation* impl = Allocate<Implementation>(GetAllocationCallbacks(), *this);
         Result result = impl->Create(args...);
 
         if (result != Result::SUCCESS) {
-            Destroy(GetStdAllocator(), impl);
+            Destroy(GetAllocationCallbacks(), impl);
             entity = nullptr;
         } else
             entity = (Interface*)impl;
@@ -87,6 +87,14 @@ struct DeviceD3D12 final : public DeviceBase {
     ID3D12CommandSignature* GetDispatchRaysCommandSignature() const;
     ID3D12CommandSignature* GetDispatchCommandSignature() const;
     Result CreateVma();
+
+    //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override {
+        SET_D3D_DEBUG_OBJECT_NAME(m_Device, name);
+    }
 
     //================================================================================================================
     // DeviceBase
@@ -117,10 +125,6 @@ struct DeviceD3D12 final : public DeviceBase {
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     FormatSupportBits GetFormatSupport(Format format) const;
-
-    inline void SetDebugName(const char* name) {
-        SET_D3D_DEBUG_OBJECT_NAME(m_Device, name);
-    }
 
 private:
     void FillDesc(const DeviceCreationDesc& deviceCreationDesc);

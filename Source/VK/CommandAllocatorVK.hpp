@@ -3,7 +3,7 @@
 CommandAllocatorVK::~CommandAllocatorVK() {
     if (m_OwnsNativeObjects) {
         const auto& vk = m_Device.GetDispatchTable();
-        vk.DestroyCommandPool(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+        vk.DestroyCommandPool(m_Device, m_Handle, m_Device.GetVkAllocationCallbacks());
     }
 }
 
@@ -15,7 +15,7 @@ Result CommandAllocatorVK::Create(const CommandQueue& commandQueue) {
     const VkCommandPoolCreateInfo info = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, commandQueueImpl.GetFamilyIndex()};
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreateCommandPool(m_Device, &info, m_Device.GetAllocationCallbacks(), &m_Handle);
+    VkResult result = vk.CreateCommandPool(m_Device, &info, m_Device.GetVkAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateCommandPool returned %d", (int32_t)result);
 
     return Result::SUCCESS;
@@ -45,7 +45,7 @@ NRI_INLINE Result CommandAllocatorVK::CreateCommandBuffer(CommandBuffer*& comman
     VkResult result = vk.AllocateCommandBuffers(m_Device, &info, &commandBufferHandle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkAllocateCommandBuffers returned %d", (int32_t)result);
 
-    CommandBufferVK* commandBufferImpl = Allocate<CommandBufferVK>(m_Device.GetStdAllocator(), m_Device);
+    CommandBufferVK* commandBufferImpl = Allocate<CommandBufferVK>(m_Device.GetAllocationCallbacks(), m_Device);
     commandBufferImpl->Create(m_Handle, commandBufferHandle, m_Type);
 
     commandBuffer = (CommandBuffer*)commandBufferImpl;

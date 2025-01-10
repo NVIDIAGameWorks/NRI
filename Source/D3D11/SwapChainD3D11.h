@@ -10,7 +10,7 @@ namespace nri {
 struct DeviceD3D11;
 struct TextureD3D11;
 
-struct SwapChainD3D11 : public DisplayDescHelper {
+struct SwapChainD3D11 final : public DisplayDescHelper, DebugNameBase {
     inline SwapChainD3D11(DeviceD3D11& device)
         : m_Device(device)
         , m_Textures(device.GetStdAllocator()) {
@@ -25,12 +25,16 @@ struct SwapChainD3D11 : public DisplayDescHelper {
     Result Create(const SwapChainDesc& swapChainDesc);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    inline void SetDebugName(const char* name) {
+    void SetDebugName(const char* name) override {
         SET_D3D_DEBUG_OBJECT_NAME(m_SwapChain, name);
     }
+
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
 
     inline Result GetDisplayDesc(DisplayDesc& displayDesc) {
         return DisplayDescHelper::GetDisplayDesc(m_Desc.window.windows.hwnd, displayDesc);
@@ -51,6 +55,7 @@ private:
     ComPtr<IDXGISwapChainBest> m_SwapChain;
     Vector<TextureD3D11*> m_Textures;
     SwapChainDesc m_Desc = {};
+    DisplayDescHelper m_DisplayDescHelper;
     HANDLE m_FrameLatencyWaitableObject = nullptr;
     uint64_t m_PresentId = 0;
     UINT m_Flags = 0;

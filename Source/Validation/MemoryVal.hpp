@@ -4,13 +4,19 @@
 
 MemoryVal::MemoryVal(DeviceVal& device, Memory* memory, uint64_t size, MemoryLocation memoryLocation)
     : DeviceObjectVal(device, memory)
+    , m_Buffers(device.GetStdAllocator())
+    , m_Textures(device.GetStdAllocator())
+    , m_AccelerationStructures(device.GetStdAllocator())
     , m_Size(size)
     , m_MemoryLocation(memoryLocation) {
 }
 
 #if NRI_USE_D3D12
 MemoryVal::MemoryVal(DeviceVal& device, Memory* memory, const MemoryD3D12Desc& memoryD3D12Desc)
-    : DeviceObjectVal(device, memory) {
+    : DeviceObjectVal(device, memory)
+    , m_Buffers(device.GetStdAllocator())
+    , m_Textures(device.GetStdAllocator())
+    , m_AccelerationStructures(device.GetStdAllocator()) {
     m_Size = GetMemorySizeD3D12(memoryD3D12Desc);
 }
 #endif
@@ -91,9 +97,4 @@ void MemoryVal::BindAccelerationStructure(AccelerationStructureVal& acceleration
     ExclusiveScope lockScope(m_Lock);
     m_AccelerationStructures.push_back(&accelerationStructure);
     accelerationStructure.SetBoundToMemory(*this);
-}
-
-NRI_INLINE void MemoryVal::SetDebugName(const char* name) {
-    m_Name = name;
-    GetCoreInterface().SetMemoryDebugName(*GetImpl(), name);
 }

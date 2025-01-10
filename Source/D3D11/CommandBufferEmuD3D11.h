@@ -7,7 +7,7 @@ namespace nri {
 struct PipelineD3D11;
 typedef Vector<uint32_t> PushBuffer;
 
-struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
+struct CommandBufferEmuD3D11 final : public CommandBufferBase {
     inline CommandBufferEmuD3D11(DeviceD3D11& device)
         : m_Device(device)
         , m_PushBuffer(device.GetStdAllocator()) {
@@ -21,15 +21,15 @@ struct CommandBufferEmuD3D11 final : public CommandBufferHelper {
     }
 
     //================================================================================================================
-    // CommandBufferHelper
+    // CommandBufferBase
     //================================================================================================================
 
     inline ID3D11DeviceContext* CommandBufferEmuD3D11::GetNativeObject() const override {
         return m_Device.GetImmediateContext();
     }
 
-    inline StdAllocator<uint8_t>& CommandBufferEmuD3D11::GetStdAllocator() const override {
-        return m_Device.GetStdAllocator();
+    inline const AllocationCallbacks& CommandBufferEmuD3D11::GetAllocationCallbacks() const override {
+        return m_Device.GetAllocationCallbacks();
     }
 
     Result Create(ID3D11DeviceContext* precreatedContext) override;

@@ -3,7 +3,7 @@
 FenceVK::~FenceVK() {
     const auto& vk = m_Device.GetDispatchTable();
     if (m_Handle != VK_NULL_HANDLE)
-        vk.DestroySemaphore(m_Device, m_Handle, m_Device.GetAllocationCallbacks());
+        vk.DestroySemaphore(m_Device, m_Handle, m_Device.GetVkAllocationCallbacks());
 }
 
 Result FenceVK::Create(uint64_t initialValue) {
@@ -15,7 +15,7 @@ Result FenceVK::Create(uint64_t initialValue) {
     semaphoreCreateInfo.pNext = &semaphoreTypeCreateInfo;
 
     const auto& vk = m_Device.GetDispatchTable();
-    VkResult result = vk.CreateSemaphore((VkDevice)m_Device, &semaphoreCreateInfo, m_Device.GetAllocationCallbacks(), &m_Handle);
+    VkResult result = vk.CreateSemaphore((VkDevice)m_Device, &semaphoreCreateInfo, m_Device.GetVkAllocationCallbacks(), &m_Handle);
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateSemaphore returned %d", (int32_t)result);
 
     return Result::SUCCESS;

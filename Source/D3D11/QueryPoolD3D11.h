@@ -6,7 +6,7 @@ namespace nri {
 
 struct DeviceD3D11;
 
-struct QueryPoolD3D11 {
+struct QueryPoolD3D11 final : public DebugNameBase {
     inline QueryPoolD3D11(DeviceD3D11& device)
         : m_Device(device)
         , m_QueryPool(device.GetStdAllocator()) {
@@ -25,10 +25,14 @@ struct QueryPoolD3D11 {
     void GetData(uint8_t* dstMemory, uint32_t offset, uint32_t num) const;
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name);
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
 
     inline uint32_t GetQuerySize() const {
         return m_Type == QueryType::PIPELINE_STATISTICS ? sizeof(D3D11_QUERY_DATA_PIPELINE_STATISTICS) : sizeof(uint64_t);

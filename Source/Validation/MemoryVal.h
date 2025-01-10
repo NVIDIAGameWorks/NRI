@@ -8,7 +8,7 @@ struct BufferVal;
 struct TextureVal;
 struct AccelerationStructureVal;
 
-struct MemoryVal : public DeviceObjectVal<Memory> {
+struct MemoryVal final : public DeviceObjectVal<Memory> {
     MemoryVal(DeviceVal& device, Memory* memory, uint64_t size, MemoryLocation memoryLocation);
     MemoryVal(DeviceVal& device, Memory* memory, const MemoryD3D12Desc& memoryD3D12Desc);
 
@@ -29,16 +29,10 @@ struct MemoryVal : public DeviceObjectVal<Memory> {
     void BindTexture(TextureVal& texture);
     void BindAccelerationStructure(AccelerationStructureVal& accelerationStructure);
 
-    //================================================================================================================
-    // NRI
-    //================================================================================================================
-
-    void SetDebugName(const char* name);
-
 private:
-    std::vector<BufferVal*> m_Buffers;
-    std::vector<TextureVal*> m_Textures;
-    std::vector<AccelerationStructureVal*> m_AccelerationStructures;
+    Vector<BufferVal*> m_Buffers;
+    Vector<TextureVal*> m_Textures;
+    Vector<AccelerationStructureVal*> m_AccelerationStructures;
     uint64_t m_Size = 0;
     MemoryLocation m_MemoryLocation = MemoryLocation::MAX_NUM; // wrapped object
     Lock m_Lock;

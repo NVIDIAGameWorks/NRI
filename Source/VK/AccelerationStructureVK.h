@@ -7,7 +7,7 @@ namespace nri {
 struct DeviceVK;
 struct BufferVK;
 
-struct AccelerationStructureVK {
+struct AccelerationStructureVK final : public DebugNameBase {
     inline AccelerationStructureVK(DeviceVK& device)
         : m_Device(device) {
     }
@@ -32,6 +32,12 @@ struct AccelerationStructureVK {
     Result FinishCreation();
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
@@ -47,7 +53,6 @@ struct AccelerationStructureVK {
         return m_DeviceAddress;
     }
 
-    void SetDebugName(const char* name);
     Result CreateDescriptor(Descriptor*& descriptor) const;
 
 private:

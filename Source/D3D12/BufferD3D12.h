@@ -15,7 +15,7 @@ namespace nri {
 struct DeviceD3D12;
 struct MemoryD3D12;
 
-struct BufferD3D12 {
+struct BufferD3D12 final : public DebugNameBase {
     inline BufferD3D12(DeviceD3D12& device)
         : m_Device(device) {
     }
@@ -45,12 +45,16 @@ struct BufferD3D12 {
     Result BindMemory(const MemoryD3D12* memory, uint64_t offset);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    inline void SetDebugName(const char* name) {
+    void SetDebugName(const char* name) override {
         SET_D3D_DEBUG_OBJECT_NAME(m_Buffer, name);
     }
+
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
 
     void* Map(uint64_t offset, uint64_t size);
     void Unmap();

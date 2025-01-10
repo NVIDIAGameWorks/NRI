@@ -37,7 +37,6 @@ struct AccelerationStructureVal final : public DeviceObjectVal<AccelerationStruc
     uint64_t GetHandle() const;
     uint64_t GetNativeObject() const;
     Result CreateDescriptor(Descriptor*& descriptor);
-    void SetDebugName(const char* name);
 
 private:
     MemoryVal* m_Memory = nullptr;

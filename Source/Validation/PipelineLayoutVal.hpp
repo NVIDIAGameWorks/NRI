@@ -34,8 +34,3 @@ PipelineLayoutVal::PipelineLayoutVal(DeviceVal& device, PipelineLayout* pipeline
     m_PipelineLayoutDesc.descriptorSets = m_DescriptorSetDescs.data();
     m_PipelineLayoutDesc.rootConstants = m_RootConstantDescs.data();
 }
-
-NRI_INLINE void PipelineLayoutVal::SetDebugName(const char* name) {
-    m_Name = name;
-    GetCoreInterface().SetPipelineLayoutDebugName(*GetImpl(), name);
-}

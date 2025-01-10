@@ -22,7 +22,7 @@ struct DescriptorSetMapping {
     Vector<DescriptorRangeMapping> descriptorRangeMappings;
 };
 
-struct DescriptorSetD3D12 {
+struct DescriptorSetD3D12 final : public DebugNameBase {
     DescriptorSetD3D12(DescriptorPoolD3D12& desriptorPoolD3D12);
 
     void Initialize(const DescriptorSetMapping* descriptorSetMapping, uint16_t dynamicConstantBufferNum);
@@ -36,10 +36,6 @@ struct DescriptorSetD3D12 {
     //================================================================================================================
     // NRI
     //================================================================================================================
-
-    inline void SetDebugName(const char* name) {
-        MaybeUnused(name);
-    }
 
     void UpdateDescriptorRanges(uint32_t rangeOffset, uint32_t rangeNum, const DescriptorRangeUpdateDesc* rangeUpdateDescs);
     void UpdateDynamicConstantBuffers(uint32_t baseDynamicConstantBuffer, uint32_t dynamicConstantBufferNum, const Descriptor* const* descriptors);

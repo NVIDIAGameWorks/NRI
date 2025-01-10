@@ -10,7 +10,7 @@ struct PipelineLayoutVK;
 struct TextureVK;
 struct DescriptorVK;
 
-struct CommandBufferVK {
+struct CommandBufferVK final : public DebugNameBase {
     inline CommandBufferVK(DeviceVK& device)
         : m_Device(device) {
     }
@@ -29,10 +29,15 @@ struct CommandBufferVK {
     Result Create(const CommandBufferVKDesc& commandBufferDesc);
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override;
+
+    //================================================================================================================
     // NRI
     //================================================================================================================
 
-    void SetDebugName(const char* name);
     Result Begin(const DescriptorPool* descriptorPool);
     Result End();
     void SetPipeline(const Pipeline& pipeline);

@@ -7,7 +7,7 @@ namespace nri {
 struct DeviceD3D11;
 struct CommandQueueD3D11;
 
-struct FenceD3D11 {
+struct FenceD3D11 final : public DebugNameBase {
     inline FenceD3D11(DeviceD3D11& device)
         : m_Device(device) {
     }
@@ -25,13 +25,17 @@ struct FenceD3D11 {
     Result Create(uint64_t initialValue);
 
     //================================================================================================================
-    // NRI
+    // DebugNameBase
     //================================================================================================================
 
-    inline void FenceD3D11::SetDebugName(const char* name) {
+    void SetDebugName(const char* name) override {
         SET_D3D_DEBUG_OBJECT_NAME(m_Fence, name);
         SET_D3D_DEBUG_OBJECT_NAME(m_Query, name);
     }
+
+    //================================================================================================================
+    // NRI
+    //================================================================================================================
 
     uint64_t GetFenceValue() const;
     void QueueSignal(uint64_t value);

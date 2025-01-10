@@ -10,11 +10,6 @@ void QueryPoolVal::ResetQueries(uint32_t offset, uint32_t num) {
     GetCoreInterface().ResetQueries(*GetImpl(), offset, num);
 }
 
-NRI_INLINE void QueryPoolVal::SetDebugName(const char* name) {
-    m_Name = name;
-    GetCoreInterface().SetQueryPoolDebugName(*GetImpl(), name);
-}
-
 NRI_INLINE uint32_t QueryPoolVal::GetQuerySize() const {
     return GetCoreInterface().GetQuerySize(*GetImpl());
 }
