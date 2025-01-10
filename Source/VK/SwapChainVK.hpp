@@ -67,7 +67,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         VkMetalSurfaceCreateInfoEXT metalSurfaceCreateInfo = {VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT};
         metalSurfaceCreateInfo.pLayer = (CAMetalLayer*)swapChainDesc.window.metal.caMetalLayer;
 
-        VkResult result = vk.CreateMetalSurfaceEXT(m_Device, &metalSurfaceCreateInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
+        VkResult result = vk.CreateMetalSurfaceEXT(m_Device, &metalSurfaceCreateInfo, m_Device.GetVkAllocationCallbacks(), &m_Surface);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateMetalSurfaceEXT returned %d", (int32_t)result);
     }
 #endif
@@ -77,7 +77,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         xlibSurfaceInfo.dpy = (::Display*)swapChainDesc.window.x11.dpy;
         xlibSurfaceInfo.window = (::Window)swapChainDesc.window.x11.window;
 
-        VkResult result = vk.CreateXlibSurfaceKHR(m_Device, &xlibSurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
+        VkResult result = vk.CreateXlibSurfaceKHR(m_Device, &xlibSurfaceInfo, m_Device.GetVkAllocationCallbacks(), &m_Surface);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateXlibSurfaceKHR returned %d", (int32_t)result);
     }
 #endif
@@ -87,7 +87,7 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
         waylandSurfaceInfo.display = (wl_display*)swapChainDesc.window.wayland.display;
         waylandSurfaceInfo.surface = (wl_surface*)swapChainDesc.window.wayland.surface;
 
-        VkResult result = vk.CreateWaylandSurfaceKHR(m_Device, &waylandSurfaceInfo, m_Device.GetAllocationCallbacks(), &m_Surface);
+        VkResult result = vk.CreateWaylandSurfaceKHR(m_Device, &waylandSurfaceInfo, m_Device.GetVkAllocationCallbacks(), &m_Surface);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkCreateWaylandSurfaceKHR returned %d", (int32_t)result);
     }
 #endif
@@ -227,7 +227,8 @@ Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
 
     { // Swap chain
         VkSwapchainCreateInfoKHR swapchainInfo = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
-        swapchainInfo.flags = m_Device.m_IsSupported.swapChainMutableFormat ? VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR : (VkSwapchainCreateFlagsKHR)0;
+        if (m_Device.m_IsSupported.swapChainMutableFormat)
+            swapchainInfo.flags = VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR;
         swapchainInfo.surface = m_Surface;
         swapchainInfo.minImageCount = textureNum;
         swapchainInfo.imageFormat = surfaceFormat.surfaceFormat.format;
