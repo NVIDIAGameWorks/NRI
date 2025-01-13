@@ -15,7 +15,6 @@
 #include "PipelineD3D11.h"
 #include "PipelineLayoutD3D11.h"
 #include "QueryPoolD3D11.h"
-#include "SharedD3D11.h"
 #include "SwapChainD3D11.h"
 #include "TextureD3D11.h"
 
