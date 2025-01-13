@@ -26,7 +26,7 @@ Result BufferD3D12::Create(const AllocateBufferDesc& bufferDesc) {
     allocationDesc.HeapType = GetHeapType(bufferDesc.memoryLocation);
     allocationDesc.Flags = (D3D12MA::ALLOCATION_FLAGS)(D3D12MA::ALLOCATION_FLAG_CAN_ALIAS | D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_MEMORY);
 
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
     if (m_Device.GetVersion() >= 10) {
         D3D12_RESOURCE_DESC1 desc1 = {};
         GetResourceDesc((D3D12_RESOURCE_DESC*)&desc1, bufferDesc.desc);
@@ -81,7 +81,7 @@ Result TextureD3D12::Create(const AllocateTextureDesc& textureDesc) {
     allocationDesc.HeapType = GetHeapType(textureDesc.memoryLocation);
     allocationDesc.Flags = (D3D12MA::ALLOCATION_FLAGS)(D3D12MA::ALLOCATION_FLAG_CAN_ALIAS | D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_MEMORY);
 
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
     if (m_Device.GetVersion() >= 10) {
         D3D12_RESOURCE_DESC1 desc1 = {};
         GetResourceDesc((D3D12_RESOURCE_DESC*)&desc1, textureDesc.desc);

@@ -2,7 +2,7 @@
 
 static uint8_t QueryLatestGraphicsCommandList(ComPtr<ID3D12GraphicsCommandListBest>& in, ComPtr<ID3D12GraphicsCommandListBest>& out) {
     static const IID versions[] = {
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
         __uuidof(ID3D12GraphicsCommandList9),
         __uuidof(ID3D12GraphicsCommandList8),
         __uuidof(ID3D12GraphicsCommandList7),
@@ -27,7 +27,7 @@ static uint8_t QueryLatestGraphicsCommandList(ComPtr<ID3D12GraphicsCommandListBe
     return n - i - 1;
 }
 
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
 static inline D3D12_BARRIER_SYNC GetBarrierSyncFlags(StageBits stageBits) {
     // Check non-mask values first
     if (stageBits == StageBits::ALL)
@@ -320,7 +320,7 @@ NRI_INLINE void CommandBufferD3D12::SetDepthBounds(float boundsMin, float bounds
 
 NRI_INLINE void CommandBufferD3D12::SetStencilReference(uint8_t frontRef, uint8_t backRef) {
     MaybeUnused(backRef);
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
     if (m_Device.GetDesc().isIndependentFrontAndBackStencilReferenceAndMasksSupported)
         m_GraphicsCommandList->OMSetFrontAndBackStencilRef(frontRef, backRef);
     else
@@ -352,7 +352,7 @@ NRI_INLINE void CommandBufferD3D12::SetShadingRate(const ShadingRateDesc& shadin
 
 NRI_INLINE void CommandBufferD3D12::SetDepthBias(const DepthBiasDesc& depthBiasDesc) {
     MaybeUnused(depthBiasDesc);
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
     m_GraphicsCommandList->RSSetDepthBias(depthBiasDesc.constant, depthBiasDesc.clamp, depthBiasDesc.slope);
 #endif
 }
@@ -747,7 +747,7 @@ NRI_INLINE void CommandBufferD3D12::DispatchIndirect(const Buffer& buffer, uint6
 }
 
 NRI_INLINE void CommandBufferD3D12::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
     if (m_Device.GetDesc().isEnchancedBarrierSupported) { // Enhanced barriers
         // Count
         uint32_t barrierNum = barrierGroupDesc.globalNum + barrierGroupDesc.bufferNum + barrierGroupDesc.textureNum;

@@ -76,7 +76,7 @@ static uint32_t NRI_CALL GetQuerySize(const QueryPool& queryPool) {
 static void NRI_CALL GetBufferMemoryDesc(const Buffer& buffer, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     const BufferVal& bufferVal = (BufferVal&)buffer;
     DeviceVal& deviceVal = bufferVal.GetDevice();
-    
+
     deviceVal.GetCoreInterface().GetBufferMemoryDesc(*bufferVal.GetImpl(), memoryLocation, memoryDesc);
     deviceVal.RegisterMemoryType(memoryDesc.type, memoryLocation);
 }
@@ -84,7 +84,7 @@ static void NRI_CALL GetBufferMemoryDesc(const Buffer& buffer, MemoryLocation me
 static void NRI_CALL GetTextureMemoryDesc(const Texture& texture, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) {
     const TextureVal& bufferVal = (TextureVal&)texture;
     DeviceVal& deviceVal = bufferVal.GetDevice();
-    
+
     deviceVal.GetCoreInterface().GetTextureMemoryDesc(*bufferVal.GetImpl(), memoryLocation, memoryDesc);
     deviceVal.RegisterMemoryType(memoryDesc.type, memoryLocation);
 }
@@ -1097,7 +1097,7 @@ Result DeviceVal::FillFunctionTable(SwapChainInterface& table) const {
 //============================================================================================================================================================================================
 #pragma region[  WrapperD3D11  ]
 
-#if NRI_USE_D3D11
+#if NRI_ENABLE_D3D11_SUPPORT
 
 static Result NRI_CALL CreateCommandBufferD3D11(Device& device, const CommandBufferD3D11Desc& commandBufferD3D11Desc, CommandBuffer*& commandBuffer) {
     return ((DeviceVal&)device).CreateCommandBuffer(commandBufferD3D11Desc, commandBuffer);
@@ -1114,7 +1114,7 @@ static Result NRI_CALL CreateTextureD3D11(Device& device, const TextureD3D11Desc
 #endif
 
 Result DeviceVal::FillFunctionTable(WrapperD3D11Interface& table) const {
-#if NRI_USE_D3D11
+#if NRI_ENABLE_D3D11_SUPPORT
     if (!m_IsExtSupported.wrapperD3D11)
         return Result::UNSUPPORTED;
 
@@ -1135,7 +1135,7 @@ Result DeviceVal::FillFunctionTable(WrapperD3D11Interface& table) const {
 //============================================================================================================================================================================================
 #pragma region[  WrapperD3D12  ]
 
-#if NRI_USE_D3D12
+#if NRI_ENABLE_D3D12_SUPPORT
 
 static Result NRI_CALL CreateCommandBufferD3D12(Device& device, const CommandBufferD3D12Desc& commandBufferD3D12Desc, CommandBuffer*& commandBuffer) {
     return ((DeviceVal&)device).CreateCommandBuffer(commandBufferD3D12Desc, commandBuffer);
@@ -1164,7 +1164,7 @@ static Result NRI_CALL CreateAccelerationStructureD3D12(Device& device, const Ac
 #endif
 
 Result DeviceVal::FillFunctionTable(WrapperD3D12Interface& table) const {
-#if NRI_USE_D3D12
+#if NRI_ENABLE_D3D12_SUPPORT
     if (!m_IsExtSupported.wrapperD3D12)
         return Result::UNSUPPORTED;
 
@@ -1188,7 +1188,7 @@ Result DeviceVal::FillFunctionTable(WrapperD3D12Interface& table) const {
 //============================================================================================================================================================================================
 #pragma region[  WrapperVK  ]
 
-#if NRI_USE_VK
+#if NRI_ENABLE_VK_SUPPORT
 
 static Result NRI_CALL CreateCommandQueueVK(Device& device, const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue) {
     return ((DeviceVal&)device).CreateCommandQueue(commandQueueVKDesc, commandQueue);
@@ -1253,7 +1253,7 @@ static void* NRI_CALL GetDeviceProcAddrVK(const Device& device) {
 #endif
 
 Result DeviceVal::FillFunctionTable(WrapperVKInterface& table) const {
-#if NRI_USE_VK
+#if NRI_ENABLE_VK_SUPPORT
     if (!m_IsExtSupported.wrapperVK)
         return Result::UNSUPPORTED;
 

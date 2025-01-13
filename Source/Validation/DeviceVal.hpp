@@ -712,7 +712,7 @@ NRI_INLINE FormatSupportBits DeviceVal::GetFormatSupport(Format format) const {
     return m_CoreAPI.GetFormatSupport(m_Impl, format);
 }
 
-#if NRI_USE_VK
+#if NRI_ENABLE_VK_SUPPORT
 
 NRI_INLINE Result DeviceVal::CreateCommandQueue(const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue) {
     RETURN_ON_FAILURE(this, commandQueueVKDesc.vkQueue != 0, Result::INVALID_ARGUMENT, "'vkQueue' is NULL");
@@ -862,7 +862,7 @@ NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStruc
 
 #endif
 
-#if NRI_USE_D3D11
+#if NRI_ENABLE_D3D11_SUPPORT
 
 NRI_INLINE Result DeviceVal::CreateCommandBuffer(const CommandBufferD3D11Desc& commandBufferDesc, CommandBuffer*& commandBuffer) {
     RETURN_ON_FAILURE(this, commandBufferDesc.d3d11DeviceContext != nullptr, Result::INVALID_ARGUMENT, "'d3d11DeviceContext' is NULL");
@@ -902,7 +902,7 @@ NRI_INLINE Result DeviceVal::CreateTexture(const TextureD3D11Desc& textureDesc, 
 
 #endif
 
-#if NRI_USE_D3D12
+#if NRI_ENABLE_D3D12_SUPPORT
 
 NRI_INLINE Result DeviceVal::CreateCommandBuffer(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer) {
     RETURN_ON_FAILURE(this, commandBufferDesc.d3d12CommandAllocator != nullptr, Result::INVALID_ARGUMENT, "'d3d12CommandAllocator' is NULL");

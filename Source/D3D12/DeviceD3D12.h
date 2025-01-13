@@ -7,7 +7,7 @@ struct ID3D12DescriptorHeap;
 struct ID3D12CommandSignature;
 struct D3D12_CPU_DESCRIPTOR_HANDLE;
 
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
 struct ID3D12Device14;
 typedef ID3D12Device14 ID3D12DeviceBest;
 #else

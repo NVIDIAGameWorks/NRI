@@ -11,7 +11,7 @@ MemoryVal::MemoryVal(DeviceVal& device, Memory* memory, uint64_t size, MemoryLoc
     , m_MemoryLocation(memoryLocation) {
 }
 
-#if NRI_USE_D3D12
+#if NRI_ENABLE_D3D12_SUPPORT
 MemoryVal::MemoryVal(DeviceVal& device, Memory* memory, const MemoryD3D12Desc& memoryD3D12Desc)
     : ObjectVal(device, memory)
     , m_Buffers(device.GetStdAllocator())

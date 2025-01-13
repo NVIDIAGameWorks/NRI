@@ -2,7 +2,7 @@
 
 static uint8_t QueryLatestDevice(ComPtr<ID3D12DeviceBest>& in, ComPtr<ID3D12DeviceBest>& out) {
     static const IID versions[] = {
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
         __uuidof(ID3D12Device14),
         __uuidof(ID3D12Device13),
         __uuidof(ID3D12Device12),
@@ -265,7 +265,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options7) failed, result = 0x%08X!", hr);
     m_Desc.isMeshShaderSupported = options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
 
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
     // Minimum supported client: Windows 10 Build 20348 (or Agility SDK)
     D3D12_FEATURE_DATA_D3D12_OPTIONS8 options8 = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS8, &options8, sizeof(options8));
@@ -550,7 +550,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;
     m_Desc.isShaderAtomicsI32Supported = true;
     m_Desc.isShaderAtomicsF32Supported = isShaderAtomicsF32Supported;
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
     m_Desc.isShaderAtomicsI64Supported = m_Desc.isShaderAtomicsI64Supported || options9.AtomicInt64OnTypedResourceSupported || options9.AtomicInt64OnGroupSharedSupported || options11.AtomicInt64OnDescriptorHeapResourceSupported;
 #endif
 

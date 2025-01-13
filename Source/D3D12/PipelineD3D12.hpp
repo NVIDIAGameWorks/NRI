@@ -12,7 +12,7 @@ struct alignas(void*) PipelineDescComponent {
     DescComponent desc = {};
 };
 
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
 typedef PipelineDescComponent<D3D12_RASTERIZER_DESC1, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER> PipelineRasterizer;
 typedef PipelineDescComponent<D3D12_DEPTH_STENCIL_DESC2, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL2> PipelineDepthStencil;
 #else
@@ -80,7 +80,7 @@ static void FillDepthStencilState(D3D12_DEPTH_STENCIL_DESC* depthStencilDesc, co
     depthStencilDesc->BackFace.StencilFunc = GetComparisonFunc(om.stencil.back.compareFunc);
 }
 
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
 static void FillRasterizerState(D3D12_RASTERIZER_DESC1& rasterizerDesc, const GraphicsPipelineDesc& graphicsPipelineDesc) {
     const RasterizationDesc& r = graphicsPipelineDesc.rasterization;
 
@@ -272,13 +272,13 @@ Result PipelineD3D12::CreateFromStream(const GraphicsPipelineDesc& graphicsPipel
 
     // Rasterizer
     FillRasterizerState(stateStream.rasterizer.desc, graphicsPipelineDesc);
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
     if (IsDepthBiasEnabled(graphicsPipelineDesc.rasterization.depthBias))
         stateStream.flags = D3D12_PIPELINE_STATE_FLAG_DYNAMIC_DEPTH_BIAS;
 #endif
 
         // Depth stencil
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
     FillDepthStencilState(stateStream.depthStencil.desc, graphicsPipelineDesc.outputMerger);
 #else
     FillDepthStencilState((D3D12_DEPTH_STENCIL_DESC*)&stateStream.depthStencil.desc, graphicsPipelineDesc.outputMerger);
@@ -387,7 +387,7 @@ Result PipelineD3D12::Create(const GraphicsPipelineDesc& graphicsPipelineDesc) {
 
     // Rasterizer
     FillRasterizerState(graphicsPipleineStateDesc.RasterizerState, graphicsPipelineDesc);
-#ifdef NRI_USE_AGILITY_SDK
+#ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
     if (IsDepthBiasEnabled(graphicsPipelineDesc.rasterization.depthBias))
         graphicsPipleineStateDesc.Flags = D3D12_PIPELINE_STATE_FLAG_DYNAMIC_DEPTH_BIAS;
 #endif

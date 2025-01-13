@@ -4,21 +4,21 @@
 
 using namespace nri;
 
-#if NRI_USE_NONE
+#if NRI_ENABLE_NONE_SUPPORT
 Result CreateDeviceNONE(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
 #endif
 
-#if NRI_USE_D3D11
+#if NRI_ENABLE_D3D11_SUPPORT
 Result CreateDeviceD3D11(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
 Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& deviceDesc, DeviceBase*& device);
 #endif
 
-#if NRI_USE_D3D12
+#if NRI_ENABLE_D3D12_SUPPORT
 Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
 Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, DeviceBase*& device);
 #endif
 
-#if NRI_USE_VK
+#if NRI_ENABLE_VK_SUPPORT
 Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
 Result CreateDeviceVK(const DeviceCreationVKDesc& deviceDesc, DeviceBase*& device);
 #endif
@@ -165,7 +165,6 @@ NRI_API void NRI_CALL nriAnnotation(const char* name, uint32_t bgra) {
 }
 
 #if NRI_ENABLE_NVTX_SUPPORT
-
 #    if (defined __linux__)
 #        include <sys/syscall.h>
 #    elif (defined __APPLE__)
@@ -173,7 +172,7 @@ NRI_API void NRI_CALL nriAnnotation(const char* name, uint32_t bgra) {
 #    elif (defined __ANDROID__)
 #        include <unistd.h>
 #    elif (defined _WIN64)
-#        include <windows.h>
+#        include <processthreadsapi.h>
 #    endif
 
 NRI_API void NRI_CALL nriSetThreadName(const char* name) {
@@ -224,22 +223,22 @@ NRI_API Result NRI_CALL nriCreateDevice(const DeviceCreationDesc& deviceCreation
     CheckAndSetDefaultCallbacks(modifiedDeviceCreationDesc.callbackInterface);
     CheckAndSetDefaultAllocator(modifiedDeviceCreationDesc.allocationCallbacks);
 
-#if NRI_USE_NONE
+#if NRI_ENABLE_NONE_SUPPORT
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::NONE)
         result = CreateDeviceNONE(modifiedDeviceCreationDesc, deviceImpl);
 #endif
 
-#if NRI_USE_D3D11
+#if NRI_ENABLE_D3D11_SUPPORT
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::D3D11)
         result = CreateDeviceD3D11(modifiedDeviceCreationDesc, deviceImpl);
 #endif
 
-#if NRI_USE_D3D12
+#if NRI_ENABLE_D3D12_SUPPORT
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::D3D12)
         result = CreateDeviceD3D12(modifiedDeviceCreationDesc, deviceImpl);
 #endif
 
-#if NRI_USE_VK
+#if NRI_ENABLE_VK_SUPPORT
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::VK)
         result = CreateDeviceVK(modifiedDeviceCreationDesc, deviceImpl);
 #endif
@@ -268,7 +267,7 @@ NRI_API Result NRI_CALL nriCreateDeviceFromD3D11Device(const DeviceCreationD3D11
     Result result = Result::UNSUPPORTED;
     DeviceBase* deviceImpl = nullptr;
 
-#if NRI_USE_D3D11
+#if NRI_ENABLE_D3D11_SUPPORT
     result = CreateDeviceD3D11(tempDeviceCreationD3D11Desc, deviceImpl);
 #endif
 
@@ -296,7 +295,7 @@ NRI_API Result NRI_CALL nriCreateDeviceFromD3D12Device(const DeviceCreationD3D12
     Result result = Result::UNSUPPORTED;
     DeviceBase* deviceImpl = nullptr;
 
-#if NRI_USE_D3D12
+#if NRI_ENABLE_D3D12_SUPPORT
     result = CreateDeviceD3D12(tempDeviceCreationD3D12Desc, deviceImpl);
 #endif
 
@@ -325,7 +324,7 @@ NRI_API Result NRI_CALL nriCreateDeviceFromVkDevice(const DeviceCreationVKDesc& 
     Result result = Result::UNSUPPORTED;
     DeviceBase* deviceImpl = nullptr;
 
-#if NRI_USE_VK
+#if NRI_ENABLE_VK_SUPPORT
     result = CreateDeviceVK(tempDeviceCreationVKDesc, deviceImpl);
 #endif
 
@@ -350,7 +349,7 @@ NRI_API Format NRI_CALL nriConvertDXGIFormatToNRI(uint32_t dxgiFormat) {
 NRI_API uint32_t NRI_CALL nriConvertNRIFormatToVK(Format format) {
     MaybeUnused(format);
 
-#if NRI_USE_VK
+#if NRI_ENABLE_VK_SUPPORT
     return NRIFormatToVKFormat(format);
 #else
     return 0;
@@ -360,7 +359,7 @@ NRI_API uint32_t NRI_CALL nriConvertNRIFormatToVK(Format format) {
 NRI_API uint32_t NRI_CALL nriConvertNRIFormatToDXGI(Format format) {
     MaybeUnused(format);
 
-#if (NRI_USE_D3D11 || NRI_USE_D3D12)
+#if (NRI_ENABLE_D3D11_SUPPORT || NRI_ENABLE_D3D12_SUPPORT)
     return NRIFormatToDXGIFormat(format);
 #else
     return 0;

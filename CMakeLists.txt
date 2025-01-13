@@ -159,7 +159,7 @@ endif ()
 # NONE
 if (NRI_ENABLE_NONE_SUPPORT)
     message ("NRI adding backend: NONE")
-    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_NONE=1)
+    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_ENABLE_NONE_SUPPORT=1)
 
     file (GLOB NONE_SOURCE "Source/NONE/*")
     source_group ("" FILES ${NONE_SOURCE})
@@ -174,7 +174,7 @@ endif ()
 if (WIN32 AND NRI_ENABLE_D3D11_SUPPORT)
     message ("NRI adding backend: D3D11")
 
-    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_D3D11=1)
+    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_ENABLE_D3D11_SUPPORT=1)
     set (INPUT_LIBS_D3D11 ${INPUT_LIB_D3D11} ${INPUT_LIB_DXGI})
 
     file (GLOB D3D11_SOURCE "Source/D3D11/*")
@@ -198,7 +198,7 @@ endif ()
 if (WIN32 AND NRI_ENABLE_D3D12_SUPPORT)
     message ("NRI adding backend: D3D12")
 
-    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_D3D12=1)
+    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_ENABLE_D3D12_SUPPORT=1)
     set (INPUT_LIBS_D3D12 ${INPUT_LIB_D3D12} ${INPUT_LIB_DXGI})
 
     file (GLOB D3D12_SOURCE "Source/D3D12/*" "External/memalloc/D3D12*.*")
@@ -219,7 +219,7 @@ if (WIN32 AND NRI_ENABLE_D3D12_SUPPORT)
 
     if (NRI_ENABLE_AGILITY_SDK_SUPPORT)
         target_include_directories (NRI_D3D12 PRIVATE "${NRI_AGILITY_SDK_PATH}/include")
-        target_compile_definitions (NRI_D3D12 PRIVATE NRI_USE_AGILITY_SDK)
+        target_compile_definitions (NRI_D3D12 PRIVATE NRI_ENABLE_AGILITY_SDK_SUPPORT)
 
         # Copy Agility SDK binaries
         message (STATUS "Copying Agility SDK binaries to '${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NRI_AGILITY_SDK_DIR}'")
@@ -243,7 +243,7 @@ endif ()
 # VK
 if (NRI_ENABLE_VK_SUPPORT)
     message ("NRI adding backend: VK")
-    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_VK=1)
+    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_ENABLE_VK_SUPPORT=1)
 
     file (GLOB VK_SOURCE "Source/VK/*" "External/memalloc/vk_mem_alloc.h")
     source_group ("" FILES ${VK_SOURCE})
@@ -263,7 +263,7 @@ if (NRI_ENABLE_VK_SUPPORT)
             find_path (XLIB_HEADERS NAMES "X11/Xlib.h")
 
             if (NOT XLIB_HEADERS)
-                message (FATAL_ERROR "Can't find 'X11/xlib.h'.(libx11-dev is not installed?)")
+                message (FATAL_ERROR "Can't find 'X11/xlib.h'. 'libx11-dev' is not installed?")
             endif ()
 
             target_compile_definitions (NRI_VK PRIVATE VK_USE_PLATFORM_XLIB_KHR)
@@ -273,7 +273,7 @@ if (NRI_ENABLE_VK_SUPPORT)
             find_path (WAYLAND_HEADERS NAMES "wayland-client.h")
 
             if (NOT WAYLAND_HEADERS)
-                message (FATAL_ERROR "Can't find 'wayland-client.h'.(libwayland-dev is not installed?)")
+                message (FATAL_ERROR "Can't find 'wayland-client.h'. 'libwayland-dev' is not installed?")
             endif ()
 
             target_compile_definitions (NRI_VK PRIVATE VK_USE_PLATFORM_WAYLAND_KHR)
