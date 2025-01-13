@@ -1,3 +1,6 @@
+# apple
+.DS_Store
+
 # cmake
 CMakeFiles/
 .cmake/

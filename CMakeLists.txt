@@ -7,6 +7,8 @@ option (NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS "Enable debug names, host and dev
 
 # Options: backends
 option (NRI_ENABLE_NONE_SUPPORT "Enable NONE backend" ON)
+option (NRI_ENABLE_VK_SUPPORT "Enable VULKAN backend" ON)
+option (NRI_ENABLE_METAL_SUPPORT "Enable METAL backend" ON)
 option (NRI_ENABLE_D3D11_SUPPORT "Enable D3D11 backend" ON)
 option (NRI_ENABLE_D3D12_SUPPORT "Enable D3D12 backend" ON)
 option (NRI_ENABLE_VK_SUPPORT "Enable VULKAN backend" ON)
@@ -240,6 +242,25 @@ if (WIN32 AND NRI_ENABLE_D3D12_SUPPORT)
     endif ()
 endif ()
 
+# METAL
+if (NRI_ENABLE_METAL_SUPPORT AND APPLE) 
+    message ("NRI adding backend: METAL")
+    set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_USE_MTL=1)
+    file (GLOB MTL_SOURCE "Source/Metal/*.cpp" "Source/Metal/*.mm" "Source/Metal/*.h" "Source/Metal/*.hpp" )
+    source_group ("" FILES ${MTL_SOURCE})
+    add_library (NRI_MTL STATIC ${MTL_SOURCE})
+    target_link_libraries(NRI_MTL        
+        "-framework Metal"
+        "-framework MetalKit"
+        "-framework AppKit"
+        "-framework Foundation"
+        "-framework IOKit"
+        "-framework QuartzCore"
+    )
+    target_include_directories (NRI_MTL PRIVATE "Include" "Source/Shared" "External")
+    target_compile_definitions (NRI_MTL PRIVATE ${COMPILE_DEFINITIONS})
+endif()
+
 # VK
 if (NRI_ENABLE_VK_SUPPORT)
     message ("NRI adding backend: VK")
@@ -308,7 +329,13 @@ file (GLOB NRI_EXTENSIONS "Include/Extensions/*.h" "Include/Extensions/*.hpp")
 source_group ("Include/Extensions" FILES ${NRI_EXTENSIONS})
 
 file (GLOB NRI_SOURCE "Source/Creation/*.cpp" "Source/Creation/*.h")
+if (NRI_ENABLE_METAL_SUPPORT)
+    file (GLOB MTL_SOURCE "Source/Creation/*.mm")
+    list (APPEND NRI_SOURCE ${MTL_SOURCE})
+endif()
 source_group ("Sources" FILES ${NRI_SOURCE})
+
+
 
 file (GLOB NRI_RESOURCES "Resources/*")
 source_group ("Resources" FILES ${NRI_RESOURCES})
@@ -348,6 +375,9 @@ if (WIN32 AND NRI_ENABLE_D3D12_SUPPORT)
 endif ()
 if (NRI_ENABLE_VK_SUPPORT)
     target_link_libraries (${PROJECT_NAME} PRIVATE NRI_VK)
+endif ()
+if (NRI_ENABLE_METAL_SUPPORT)
+    target_link_libraries (${PROJECT_NAME} PRIVATE NRI_MTL)
 endif ()
 
 set_property (TARGET ${PROJECT_NAME} PROPERTY FOLDER ${PROJECT_FOLDER})

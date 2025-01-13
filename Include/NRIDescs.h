@@ -1,4 +1,4 @@
-﻿// © 2021 NVIDIA Corporation
+// © 2021 NVIDIA Corporation
 
 #pragma once
 
@@ -76,7 +76,8 @@ NriEnum(GraphicsAPI, uint8_t,
     NONE,   // Supports everything, does nothing, returns dummy non-NULL objects and ~0-filled descs, available if "NRI_ENABLE_NONE_SUPPORT = ON" in CMake
     D3D11,  // Direct3D 11 (feature set 11.1), available if "NRI_ENABLE_D3D11_SUPPORT = ON" in CMake
     D3D12,  // Direct3D 12 (feature set 11.1+), available if "NRI_ENABLE_D3D12_SUPPORT = ON" in CMake
-    VK      // Vulkan 1.3 or 1.2+ (can be used on MacOS via MoltenVK), available if "NRI_ENABLE_VK_SUPPORT = ON" in CMake
+    VK,      // Vulkan 1.3 or 1.2+ (can be used on MacOS via MoltenVK), available if "NRI_ENABLE_VK_SUPPORT = ON" in CMake
+    MTL
 );
 
 NriEnum(Result, uint8_t,
@@ -692,9 +693,14 @@ NriStruct(VertexAttributeVK) {
     uint32_t location;
 };
 
+NriStruct(VertexAttributeMTL) {
+    uint32_t location;
+};
+
 NriStruct(VertexAttributeDesc) {
     Nri(VertexAttributeD3D) d3d;
     Nri(VertexAttributeVK) vk;
+    Nri(VertexAttributeMTL) mtl;
     uint32_t offset;
     Nri(Format) format;
     uint16_t streamIndex;
@@ -1301,12 +1307,17 @@ NriStruct(PipelineStatisticsDesc) {
 #pragma region [ Device desc ]
 //============================================================================================================================================================================================
 
+// defined in apple framework
+#undef INTEL
+#undef AMD
+
 NriEnum(Vendor, uint8_t,
     UNKNOWN,
     NVIDIA,
     AMD,
-    INTEL
-);
+    INTEL,
+    APPLE
+); 
 
 NriStruct(AdapterDesc) {
     char name[256];

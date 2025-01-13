@@ -18,6 +18,11 @@ Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, DeviceBas
 Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& deviceCreationDesc, DeviceBase*& device);
 #endif
 
+#if NRI_USE_MTL
+Result CreateDeviceMTL(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
+Result CreateDeviceMTL(const DeviceCreationMTLDesc& deviceCreationDesc, DeviceBase*& device);
+#endif
+
 #if NRI_USE_VK
 Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, DeviceBase*& device);
 Result CreateDeviceVK(const DeviceCreationVKDesc& deviceDesc, DeviceBase*& device);
@@ -238,6 +243,11 @@ NRI_API Result NRI_CALL nriCreateDevice(const DeviceCreationDesc& deviceCreation
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::D3D12)
         result = CreateDeviceD3D12(modifiedDeviceCreationDesc, deviceImpl);
 #endif
+    
+#if NRI_USE_MTL
+    if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::MTL)
+        result = CreateDeviceMTL(modifiedDeviceCreationDesc, deviceImpl);
+#endif
 
 #if NRI_USE_VK
     if (modifiedDeviceCreationDesc.graphicsAPI == GraphicsAPI::VK)
@@ -306,6 +316,24 @@ NRI_API Result NRI_CALL nriCreateDeviceFromD3D12Device(const DeviceCreationD3D12
     return FinalizeDeviceCreation(deviceCreationDesc, *deviceImpl, device);
 }
 
+NRI_API Result NRI_CALL nriCreateDeviceFromMtlDevice(const DeviceCreationMTLDesc& deviceCreationMtlDesc, Device*& device) {
+    DeviceCreationDesc deviceCreationDesc = {};
+    deviceCreationDesc.graphicsAPI = GraphicsAPI::MTL;
+    deviceCreationDesc.enableNRIValidation = deviceCreationMtlDesc.enableNRIValidation;
+    
+    Result result = Result::UNSUPPORTED;
+    DeviceBase* deviceImpl = nullptr;
+
+#if NRI_USE_MTL
+    //result = CreateDeviceD3D12(tempDeviceCreationD3D12Desc, deviceImpl);
+#endif
+
+    if (result != Result::SUCCESS)
+        return result;
+
+    return FinalizeDeviceCreation(deviceCreationDesc, *deviceImpl, device);
+}
+
 NRI_API Result NRI_CALL nriCreateDeviceFromVkDevice(const DeviceCreationVKDesc& deviceCreationVKDesc, Device*& device) {
     DeviceCreationDesc deviceCreationDesc = {};
     deviceCreationDesc.callbackInterface = deviceCreationVKDesc.callbackInterface;
@@ -346,6 +374,17 @@ NRI_API Format NRI_CALL nriConvertVKFormatToNRI(uint32_t vkFormat) {
 NRI_API Format NRI_CALL nriConvertDXGIFormatToNRI(uint32_t dxgiFormat) {
     return DXGIFormatToNRIFormat(dxgiFormat);
 }
+
+NRI_API uint32_t NRI_CALL nriConvertNRIFormatToMTL(Format format) {
+    MaybeUnused(format);
+
+#if NRI_USE_VK
+    return NRIFormatToMTLFormat(format);
+#else
+    return 0;
+#endif
+}
+
 
 NRI_API uint32_t NRI_CALL nriConvertNRIFormatToVK(Format format) {
     MaybeUnused(format);
@@ -464,6 +503,8 @@ NRI_API void NRI_CALL nriReportLiveObjects() {
     if (SUCCEEDED(hr))
         pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, (DXGI_DEBUG_RLO_FLAGS)((uint32_t)DXGI_DEBUG_RLO_DETAIL | (uint32_t)DXGI_DEBUG_RLO_IGNORE_INTERNAL));
 }
+
+#elif __APPLE__
 
 #else
 #    include <vulkan/vulkan.h>
