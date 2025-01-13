@@ -37,10 +37,6 @@ struct DeviceD3D12 final : public DeviceBase {
         return m_Version;
     }
 
-    inline const d3d12::Ext* GetExt() const {
-        return &m_Ext;
-    }
-
     inline IDXGIAdapter* GetAdapter() const {
         return m_Adapter;
     }
@@ -58,6 +54,33 @@ struct DeviceD3D12 final : public DeviceBase {
         auto& freeDescriptors = m_FreeDescriptors[type];
         freeDescriptors.push_back(descriptorHandle);
     }
+
+    inline bool HasPix() const {
+        return m_Pix.library != nullptr;
+    }
+
+    inline const PixExt& GetPix() const {
+        return m_Pix;
+    }
+
+#if NRI_USE_EXT_LIBS
+    inline bool HasNvExt() const {
+        return m_NvExt.available;
+    }
+
+    inline bool HasAmdExt() const {
+        return m_AmdExt.context != nullptr;
+    }
+
+#else
+    inline bool HasNvExt() const {
+        return false;
+    }
+
+    inline bool HasAmdExt() const {
+        return false;
+    }
+#endif
 
     template <typename Implementation, typename Interface, typename... Args>
     inline Result CreateImplementation(Interface*& entity, const Args&... args) {
@@ -128,10 +151,18 @@ struct DeviceD3D12 final : public DeviceBase {
 
 private:
     void FillDesc(const DeviceCreationDesc& deviceCreationDesc);
+    void InitializeNvExt(bool isNVAPILoadedInApp, bool isImported);
+    void InitializeAmdExt(AGSContext* agsContext, bool isImported);
+    void InitializePixExt();
     ComPtr<ID3D12CommandSignature> CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE type, uint32_t stride, ID3D12RootSignature* rootSignature, bool enableDrawParametersEmulation = false);
 
 private:
-    d3d12::Ext m_Ext = {}; // don't sort: destructor must be called last!
+    // Order of destructors is important
+    PixExt m_Pix = {};
+#if NRI_USE_EXT_LIBS
+    NvExt m_NvExt = {};
+    AmdExt m_AmdExt = {};
+#endif
     ComPtr<ID3D12DeviceBest> m_Device;
     ComPtr<IDXGIAdapter> m_Adapter;
     ComPtr<ID3D12CommandSignature> m_DispatchCommandSignature;
@@ -149,6 +180,7 @@ private:
     DeviceDesc m_Desc = {};
     uint8_t m_Version = 0;
     bool m_IsWrapped = false;
+
     std::array<Lock, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> m_FreeDescriptorLocks;
     Lock m_DescriptorHeapLock;
     Lock m_QueueLock;

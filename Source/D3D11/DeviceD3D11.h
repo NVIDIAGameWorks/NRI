@@ -25,10 +25,6 @@ struct DeviceD3D11 final : public DeviceBase {
         return m_Version;
     }
 
-    inline const d3d11::Ext* GetExt() const {
-        return &m_Ext;
-    }
-
     inline IDXGIAdapter* GetAdapter() const {
         return m_Adapter;
     }
@@ -62,6 +58,28 @@ struct DeviceD3D11 final : public DeviceBase {
         else
             ::LeaveCriticalSection(&m_CriticalSection);
     }
+
+#if NRI_USE_EXT_LIBS
+    inline bool HasNvExt() const {
+        return m_NvExt.available;
+    }
+
+    inline bool HasAmdExt() const {
+        return m_AmdExt.context != nullptr;
+    }
+
+    inline const AmdExt& GetAmdExt() const {
+        return m_AmdExt;
+    }
+#else
+    inline bool HasNvExt() const {
+        return false;
+    }
+
+    inline bool HasAmdExt() const {
+        return false;
+    }
+#endif
 
     template <typename Implementation, typename Interface, typename... Args>
     inline Result CreateImplementation(Interface*& entity, const Args&... args) {
@@ -119,9 +137,15 @@ struct DeviceD3D11 final : public DeviceBase {
 
 private:
     void FillDesc();
+    void InitializeNvExt(bool isNVAPILoadedInApp, bool isImported);
+    void InitializeAmdExt(AGSContext* agsContext, bool isImported);
 
 private:
-    d3d11::Ext m_Ext = {}; // don't sort: destructor must be called last!
+    // Order of destructors is important
+#if NRI_USE_EXT_LIBS
+    NvExt m_NvExt = {};
+    AmdExt m_AmdExt = {};
+#endif
     ComPtr<ID3D11DeviceBest> m_Device;
     ComPtr<IDXGIAdapter> m_Adapter;
     ComPtr<ID3D11DeviceContextBest> m_ImmediateContext;

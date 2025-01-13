@@ -138,7 +138,7 @@ Result SwapChainD3D11::Create(const SwapChainDesc& swapChainDesc) {
     m_Flags = desc.Flags;
     m_Desc = swapChainDesc;
     m_Desc.textureNum = 1; // IMPORTANT: only 1 texture is available in D3D11
-    m_Desc.allowLowLatency = swapChainDesc.allowLowLatency && m_Device.GetExt()->HasNvapi();
+    m_Desc.allowLowLatency = swapChainDesc.allowLowLatency && m_Device.HasNvExt();
 
     m_Textures.reserve(m_Desc.textureNum);
     for (uint32_t i = 0; i < m_Desc.textureNum; i++) {

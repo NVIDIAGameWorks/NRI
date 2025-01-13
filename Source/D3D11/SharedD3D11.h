@@ -191,10 +191,41 @@ struct SamplePositionsState {
 #    include "amdags/ags_lib/inc/amd_ags.h"
 #    include "nvapi/nvShaderExtnEnums.h"
 #    include "nvapi/nvapi.h"
-#endif
 
-namespace d3d11 {
-#include "D3DExt.h"
-}
+struct AmdExt {
+    Library* library;
+    AGSContext* context;
+    AGS_INITIALIZE Initialize;
+    AGS_DEINITIALIZE Deinitialize;
+    AGS_DRIVEREXTENSIONSDX11_CREATEDEVICE CreateDeviceD3D11;
+    AGS_DRIVEREXTENSIONSDX11_DESTROYDEVICE DestroyDeviceD3D11;
+    AGS_DRIVEREXTENSIONSDX11_BEGINUAVOVERLAP BeginUAVOverlap;
+    AGS_DRIVEREXTENSIONSDX11_ENDUAVOVERLAP EndUAVOverlap;
+    AGS_DRIVEREXTENSIONSDX11_SETDEPTHBOUNDS SetDepthBounds;
+    AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINSTANCEDINDIRECT DrawIndirect;
+    AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECT DrawIndexedIndirect;
+    AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINSTANCEDINDIRECTCOUNTINDIRECT DrawIndirectCount;
+    AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECTCOUNTINDIRECT DrawIndexedIndirectCount;
+    AGS_DRIVEREXTENSIONSDX11_SETVIEWBROADCASTMASKS SetViewBroadcastMasks;
+    bool isWrapped;
+
+    ~AmdExt() {
+        if (context && !isWrapped)
+            Deinitialize(context);
+
+        if (library)
+            UnloadSharedLibrary(*library);
+    }
+};
+
+struct NvExt {
+    bool available;
+
+    ~NvExt() {
+        if (available)
+            NvAPI_Unload();
+    }
+};
+#endif
 
 #include "DeviceD3D11.h"

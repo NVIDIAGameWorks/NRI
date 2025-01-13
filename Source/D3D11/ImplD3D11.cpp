@@ -42,10 +42,6 @@ using namespace nri;
 #include "SwapChainD3D11.hpp"
 #include "TextureD3D11.hpp"
 
-namespace d3d11 {
-#include "D3DExt.hpp"
-}
-
 Result CreateDeviceD3D11(const DeviceCreationDesc& desc, DeviceBase*& device) {
     DeviceD3D11* impl = Allocate<DeviceD3D11>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
     Result result = impl->Create(desc, nullptr, nullptr, false);

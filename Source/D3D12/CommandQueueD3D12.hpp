@@ -25,22 +25,22 @@ Result CommandQueueD3D12::Create(ID3D12CommandQueue* commandQueue) {
 }
 
 NRI_INLINE void CommandQueueD3D12::BeginAnnotation(const char* name, uint32_t bgra) {
-    if (m_Device.GetExt()->HasPix())
-        m_Device.GetExt()->m_Pix.BeginEventOnCommandQueue(m_CommandQueue, bgra, name);
+    if (m_Device.HasPix())
+        m_Device.GetPix().BeginEventOnCommandQueue(m_CommandQueue, bgra, name);
     else
         PIXBeginEvent(m_CommandQueue, bgra, name);
 }
 
 NRI_INLINE void CommandQueueD3D12::EndAnnotation() {
-    if (m_Device.GetExt()->HasPix())
-        m_Device.GetExt()->m_Pix.EndEventOnCommandQueue(m_CommandQueue);
+    if (m_Device.HasPix())
+        m_Device.GetPix().EndEventOnCommandQueue(m_CommandQueue);
     else
         PIXEndEvent(m_CommandQueue);
 }
 
 NRI_INLINE void CommandQueueD3D12::Annotation(const char* name, uint32_t bgra) {
-    if (m_Device.GetExt()->HasPix())
-        m_Device.GetExt()->m_Pix.SetMarkerOnCommandQueue(m_CommandQueue, bgra, name);
+    if (m_Device.HasPix())
+        m_Device.GetPix().SetMarkerOnCommandQueue(m_CommandQueue, bgra, name);
     else
         PIXSetMarker(m_CommandQueue, bgra, name);
 }

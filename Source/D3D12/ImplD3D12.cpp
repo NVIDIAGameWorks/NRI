@@ -44,10 +44,6 @@ using namespace nri;
 #include "SwapChainD3D12.hpp"
 #include "TextureD3D12.hpp"
 
-namespace d3d12 {
-#include "D3DExt.hpp"
-}
-
 Result CreateDeviceD3D12(const DeviceCreationDesc& desc, DeviceBase*& device) {
     DeviceCreationD3D12Desc deviceCreationD3D12Desc = {};
 

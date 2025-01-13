@@ -73,8 +73,8 @@ DeviceD3D12::~DeviceD3D12() {
     }
 
 #if NRI_USE_EXT_LIBS
-    if (m_Ext.HasAgs() && !m_IsWrapped)
-        m_Ext.m_Ags.DestroyDeviceD3D12(m_Ext.m_AgsContext, m_Device, nullptr);
+    if (HasAmdExt() && !m_IsWrapped)
+        m_AmdExt.DestroyDeviceD3D12(m_AmdExt.context, m_Device, nullptr);
 #endif
 }
 
@@ -116,11 +116,11 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
     m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
 
     // Extensions
-    m_Ext.InitializePixExt();
+    InitializePixExt();
     if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA)
-        m_Ext.InitializeNvExt(this, deviceCreationD3D12Desc.isNVAPILoaded, deviceCreationD3D12Desc.d3d12Device != nullptr);
+        InitializeNvExt(deviceCreationD3D12Desc.isNVAPILoaded, deviceCreationD3D12Desc.d3d12Device != nullptr);
     else if (m_Desc.adapterDesc.vendor == Vendor::AMD)
-        m_Ext.InitializeAmdExt(this, deviceCreationD3D12Desc.agsContext, deviceCreationD3D12Desc.d3d12Device != nullptr);
+        InitializeAmdExt(deviceCreationD3D12Desc.agsContext, deviceCreationD3D12Desc.d3d12Device != nullptr);
 
     // Device
     ComPtr<ID3D12DeviceBest> deviceTemp = (ID3D12DeviceBest*)deviceCreationD3D12Desc.d3d12Device;
@@ -128,7 +128,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
 #if NRI_USE_EXT_LIBS
         bool isShaderAtomicsI64Supported = false;
         uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : 63;
-        if (m_Ext.HasAgs()) {
+        if (HasAmdExt()) {
             AGSDX12DeviceCreationParams deviceCreationParams = {};
             deviceCreationParams.pAdapter = m_Adapter;
             deviceCreationParams.iid = __uuidof(ID3D12DeviceBest);
@@ -138,7 +138,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
             extensionsParams.uavSlot = shaderExtRegister;
 
             AGSDX12ReturnedParams agsParams = {};
-            AGSReturnCode result = m_Ext.m_Ags.CreateDeviceD3D12(m_Ext.m_AgsContext, &deviceCreationParams, &extensionsParams, &agsParams);
+            AGSReturnCode result = m_AmdExt.CreateDeviceD3D12(m_AmdExt.context, &deviceCreationParams, &extensionsParams, &agsParams);
             RETURN_ON_FAILURE(this, result == AGS_SUCCESS, Result::FAILURE, "agsDriverExtensionsDX11_CreateDevice() failed: %d", (int32_t)result);
 
             deviceTemp = (ID3D12DeviceBest*)agsParams.pDevice;
@@ -149,7 +149,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
             RETURN_ON_BAD_HRESULT(this, hr, "D3D12CreateDevice()");
 
 #if NRI_USE_EXT_LIBS
-            if (m_Ext.HasNvapi()) {
+            if (HasNvExt()) {
                 REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_SetNvShaderExtnSlotSpace(deviceTemp, shaderExtRegister, deviceCreationDesc.shaderExtSpace));
                 REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(deviceTemp, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported));
             }
@@ -541,7 +541,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     bool isShaderAtomicsF16Supported = false;
     bool isShaderAtomicsF32Supported = false;
 #if NRI_USE_EXT_LIBS
-    if (m_Ext.HasNvapi()) {
+    if (HasNvExt()) {
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported));
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported));
     }
@@ -562,7 +562,110 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.isDrawParametersEmulationEnabled = deviceCreationDesc.enableD3D12DrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
 
     m_Desc.isSwapChainSupported = HasOutput();
-    m_Desc.isLowLatencySupported = m_Ext.HasNvapi();
+    m_Desc.isLowLatencySupported = HasNvExt();
+}
+
+void DeviceD3D12::InitializeNvExt(bool isNVAPILoadedInApp, bool isImported) {
+    MaybeUnused(isNVAPILoadedInApp, isImported);
+#if NRI_USE_EXT_LIBS
+    if (GetModuleHandleA("renderdoc.dll") != nullptr) {
+        REPORT_WARNING(this, "NVAPI is disabled, because RenderDoc library has been loaded");
+        return;
+    }
+
+    if (isImported && !isNVAPILoadedInApp)
+        REPORT_WARNING(this, "NVAPI is disabled, because it's not loaded on the application side");
+    else {
+        const NvAPI_Status status = NvAPI_Initialize();
+        if (status != NVAPI_OK)
+            REPORT_ERROR(this, "Failed to initialize NVAPI: %d", (int32_t)status);
+        m_NvExt.available = (status == NVAPI_OK);
+    }
+#endif
+}
+
+void DeviceD3D12::InitializeAmdExt(AGSContext* agsContext, bool isImported) {
+    MaybeUnused(agsContext, isImported);
+#if NRI_USE_EXT_LIBS
+    if (isImported && !agsContext) {
+        REPORT_WARNING(this, "AMDAGS is disabled, because 'agsContext' is not provided");
+        return;
+    }
+
+    // Load library
+    Library* agsLibrary = LoadSharedLibrary("amd_ags_x64.dll");
+    if (!agsLibrary) {
+        REPORT_WARNING(this, "AMDAGS is disabled, because 'amd_ags_x64' is not found");
+        return;
+    }
+
+    // Get functions
+    m_AmdExt.Initialize = (AGS_INITIALIZE)GetSharedLibraryFunction(*agsLibrary, "agsInitialize");
+    m_AmdExt.Deinitialize = (AGS_DEINITIALIZE)GetSharedLibraryFunction(*agsLibrary, "agsDeInitialize");
+    m_AmdExt.CreateDeviceD3D12 = (AGS_DRIVEREXTENSIONSDX12_CREATEDEVICE)GetSharedLibraryFunction(*agsLibrary, "agsDriverExtensionsDX12_CreateDevice");
+    m_AmdExt.DestroyDeviceD3D12 = (AGS_DRIVEREXTENSIONSDX12_DESTROYDEVICE)GetSharedLibraryFunction(*agsLibrary, "agsDriverExtensionsDX12_DestroyDevice");
+
+    // Verify
+    const void** functionArray = (const void**)&m_AmdExt;
+    const size_t functionArraySize = sizeof(m_AmdExt) / sizeof(void*);
+    size_t i = 0;
+    for (; i < functionArraySize && functionArray[i] != nullptr; i++)
+        ;
+
+    if (i != functionArraySize) {
+        REPORT_WARNING(this, "AMDAGS is disabled, because not all functions are found in the DLL");
+        UnloadSharedLibrary(*agsLibrary);
+
+        return;
+    }
+
+    // Initialize
+    AGSGPUInfo gpuInfo = {};
+    AGSConfiguration config = {};
+    if (!agsContext) {
+        const AGSReturnCode result = m_AmdExt.Initialize(AGS_CURRENT_VERSION, &config, &agsContext, &gpuInfo);
+        if (result != AGS_SUCCESS || !agsContext) {
+            REPORT_ERROR(this, "Failed to initialize AMDAGS: %d", (int32_t)result);
+            UnloadSharedLibrary(*agsLibrary);
+
+            return;
+        }
+    }
+
+    m_AmdExt.library = agsLibrary;
+    m_AmdExt.context = agsContext;
+#endif
+}
+
+void DeviceD3D12::InitializePixExt() {
+    // Load library
+    Library* pixLibrary = LoadSharedLibrary("WinPixEventRuntime.dll");
+    if (!pixLibrary)
+        return;
+
+    // Get functions
+    m_Pix.BeginEventOnCommandList = (PIX_BEGINEVENTONCOMMANDLIST)GetSharedLibraryFunction(*pixLibrary, "PIXBeginEventOnCommandList");
+    m_Pix.EndEventOnCommandList = (PIX_ENDEVENTONCOMMANDLIST)GetSharedLibraryFunction(*pixLibrary, "PIXEndEventOnCommandList");
+    m_Pix.SetMarkerOnCommandList = (PIX_SETMARKERONCOMMANDLIST)GetSharedLibraryFunction(*pixLibrary, "PIXSetMarkerOnCommandList");
+    m_Pix.BeginEventOnCommandQueue = (PIX_BEGINEVENTONCOMMANDQUEUE)GetSharedLibraryFunction(*pixLibrary, "PIXBeginEventOnCommandQueue");
+    m_Pix.EndEventOnCommandQueue = (PIX_ENDEVENTONCOMMANDQUEUE)GetSharedLibraryFunction(*pixLibrary, "PIXEndEventOnCommandQueue");
+    m_Pix.SetMarkerOnCommandQueue = (PIX_SETMARKERONCOMMANDQUEUE)GetSharedLibraryFunction(*pixLibrary, "PIXSetMarkerOnCommandQueue");
+
+    // Verify
+    const void** functionArray = (const void**)&m_Pix;
+    const size_t functionArraySize = sizeof(m_Pix) / sizeof(void*);
+    size_t i = 0;
+    for (; i < functionArraySize && functionArray[i] != nullptr; i++)
+        ;
+
+    if (i != functionArraySize) {
+        REPORT_WARNING(this, "PIX is disabled, because not all functions are found in the DLL");
+        UnloadSharedLibrary(*pixLibrary);
+
+        return;
+    }
+
+    m_Pix.library = pixLibrary;
 }
 
 Result DeviceD3D12::CreateCpuOnlyVisibleDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type) {

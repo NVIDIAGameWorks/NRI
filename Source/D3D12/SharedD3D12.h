@@ -89,11 +89,56 @@ D3D12_SHADING_RATE_COMBINER GetShadingRateCombiner(ShadingRateCombiner shadingRa
 #    include "amdags/ags_lib/inc/amd_ags.h"
 #    include "nvapi/nvShaderExtnEnums.h"
 #    include "nvapi/nvapi.h"
+
+struct AmdExt {
+    Library* library;
+    AGSContext* context;
+    AGS_INITIALIZE Initialize;
+    AGS_DEINITIALIZE Deinitialize;
+    AGS_DRIVEREXTENSIONSDX12_CREATEDEVICE CreateDeviceD3D12;
+    AGS_DRIVEREXTENSIONSDX12_DESTROYDEVICE DestroyDeviceD3D12;
+    bool isWrapped;
+
+    ~AmdExt() {
+        if (context && !isWrapped)
+            Deinitialize(context);
+
+        if (library)
+            UnloadSharedLibrary(*library);
+    }
+};
+
+struct NvExt {
+    bool available;
+
+    ~NvExt() {
+        if (available)
+            NvAPI_Unload();
+    }
+};
 #endif
 
-namespace d3d12 {
-#include "D3DExt.h"
-}
+typedef HRESULT(WINAPI* PIX_BEGINEVENTONCOMMANDLIST)(ID3D12GraphicsCommandList* commandList, UINT64 color, _In_ PCSTR formatString);
+typedef HRESULT(WINAPI* PIX_ENDEVENTONCOMMANDLIST)(ID3D12GraphicsCommandList* commandList);
+typedef HRESULT(WINAPI* PIX_SETMARKERONCOMMANDLIST)(ID3D12GraphicsCommandList* commandList, UINT64 color, _In_ PCSTR formatString);
+typedef HRESULT(WINAPI* PIX_BEGINEVENTONCOMMANDQUEUE)(ID3D12CommandQueue* commandQueue, UINT64 color, _In_ PCSTR formatString);
+typedef HRESULT(WINAPI* PIX_ENDEVENTONCOMMANDQUEUE)(ID3D12CommandQueue* commandQueue);
+typedef HRESULT(WINAPI* PIX_SETMARKERONCOMMANDQUEUE)(ID3D12CommandQueue* commandQueue, UINT64 color, _In_ PCSTR formatString);
+
+struct PixExt {
+    Library* library;
+    PIX_BEGINEVENTONCOMMANDLIST BeginEventOnCommandList;
+    PIX_ENDEVENTONCOMMANDLIST EndEventOnCommandList;
+    PIX_SETMARKERONCOMMANDLIST SetMarkerOnCommandList;
+    PIX_BEGINEVENTONCOMMANDQUEUE BeginEventOnCommandQueue;
+    PIX_ENDEVENTONCOMMANDQUEUE EndEventOnCommandQueue;
+    PIX_SETMARKERONCOMMANDQUEUE SetMarkerOnCommandQueue;
+
+    ~PixExt() {
+        if (library)
+            UnloadSharedLibrary(*library);
+    }
+};
 
 // VMA
 #if defined(__GNUC__)
