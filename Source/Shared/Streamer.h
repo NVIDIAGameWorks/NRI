@@ -16,7 +16,7 @@ struct GarbageInFlight {
     uint32_t frameNum;
 };
 
-struct StreamerImpl {
+struct StreamerImpl : public nri::DebugNameBase {
     inline StreamerImpl(nri::Device& device, const nri::CoreInterface& NRI)
         : m_Device(device)
         , m_NRI(NRI)
@@ -47,6 +47,17 @@ struct StreamerImpl {
     uint64_t AddStreamerTextureUpdateRequest(const nri::TextureUpdateRequestDesc& textureUpdateRequestDesc);
     nri::Result CopyStreamerUpdateRequests();
     void CmdUploadStreamerUpdateRequests(nri::CommandBuffer& commandBuffer);
+
+    //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override {
+        m_NRI.SetDebugName(m_ConstantBuffer, name);
+        m_NRI.SetDebugName(m_ConstantBufferMemory, name);
+        m_NRI.SetDebugName(m_DynamicBuffer, name);
+        m_NRI.SetDebugName(m_DynamicBufferMemory, name);
+    }
 
 private:
     nri::Device& m_Device;

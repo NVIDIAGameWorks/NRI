@@ -56,6 +56,9 @@
     <Type Name="NriQueryPool">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
     </Type>
+    <Type Name="NriStreamer">
+        <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
+    </Type>
     <Type Name="NriSwapChain">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
@@ -121,6 +124,9 @@
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
     </Type>
     <Type Name="nri::QueryPool">
+        <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
+    </Type>
+    <Type Name="nri::Streamer">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
     </Type>
     <Type Name="nri::SwapChain">
