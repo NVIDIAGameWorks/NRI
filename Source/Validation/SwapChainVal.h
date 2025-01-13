@@ -6,14 +6,18 @@ namespace nri {
 
 struct TextureVal;
 
-struct SwapChainVal final : public DeviceObjectVal<SwapChain> {
+struct SwapChainVal final : public ObjectVal {
     SwapChainVal(DeviceVal& device, SwapChain* swapChain, const SwapChainDesc& swapChainDesc)
-        : DeviceObjectVal(device, swapChain)
+        : ObjectVal(device, swapChain)
         , m_Textures(device.GetStdAllocator())
         , m_SwapChainDesc(swapChainDesc) {
     }
 
     ~SwapChainVal();
+
+    inline SwapChain* GetImpl() const {
+        return (SwapChain*)m_Impl;
+    }
 
     //================================================================================================================
     // NRI
@@ -31,8 +35,8 @@ struct SwapChainVal final : public DeviceObjectVal<SwapChain> {
     Result GetLatencyReport(LatencyReport& latencyReport);
 
 private:
+    SwapChainDesc m_SwapChainDesc = {}; // .natvis
     Vector<TextureVal*> m_Textures;
-    SwapChainDesc m_SwapChainDesc = {};
 };
 
 } // namespace nri

@@ -1,23 +1,23 @@
 // © 2021 NVIDIA Corporation
 
 PipelineVal::PipelineVal(DeviceVal& device, Pipeline* pipeline)
-    : DeviceObjectVal(device, pipeline) {
+    : ObjectVal(device, pipeline) {
 }
 
 PipelineVal::PipelineVal(DeviceVal& device, Pipeline* pipeline, const GraphicsPipelineDesc& graphicsPipelineDesc)
-    : DeviceObjectVal(device, pipeline)
+    : ObjectVal(device, pipeline)
     , m_PipelineLayout(graphicsPipelineDesc.pipelineLayout) {
     m_WritesToDepth = graphicsPipelineDesc.outputMerger.depth.write;
     m_WritesToStencil = graphicsPipelineDesc.outputMerger.stencil.front.writeMask != 0 || graphicsPipelineDesc.outputMerger.stencil.back.writeMask != 0;
 }
 
 PipelineVal::PipelineVal(DeviceVal& device, Pipeline* pipeline, const ComputePipelineDesc& computePipelineDesc)
-    : DeviceObjectVal(device, pipeline)
+    : ObjectVal(device, pipeline)
     , m_PipelineLayout(computePipelineDesc.pipelineLayout) {
 }
 
 PipelineVal::PipelineVal(DeviceVal& device, Pipeline* pipeline, const RayTracingPipelineDesc& rayTracingPipelineDesc)
-    : DeviceObjectVal(device, pipeline)
+    : ObjectVal(device, pipeline)
     , m_PipelineLayout(rayTracingPipelineDesc.pipelineLayout) {
 }
 

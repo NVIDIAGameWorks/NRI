@@ -26,7 +26,7 @@ Non-goals (exceptions apply to helper interfaces, where high-level abstraction a
 
 #define NRI_VERSION_MAJOR 1
 #define NRI_VERSION_MINOR 161
-#define NRI_VERSION_DATE "10 January 2025"
+#define NRI_VERSION_DATE "13 January 2025"
 
 #include "NRIDescs.h"
 

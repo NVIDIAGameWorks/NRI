@@ -8,9 +8,13 @@ struct BufferVal;
 struct TextureVal;
 struct AccelerationStructureVal;
 
-struct MemoryVal final : public DeviceObjectVal<Memory> {
+struct MemoryVal final : public ObjectVal {
     MemoryVal(DeviceVal& device, Memory* memory, uint64_t size, MemoryLocation memoryLocation);
     MemoryVal(DeviceVal& device, Memory* memory, const MemoryD3D12Desc& memoryD3D12Desc);
+
+    inline Memory* GetImpl() const {
+        return (Memory*)m_Impl;
+    }
 
     inline uint64_t GetSize() const {
         return m_Size;

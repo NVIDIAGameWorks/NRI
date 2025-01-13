@@ -8,11 +8,15 @@ struct DescriptorVal;
 struct PipelineVal;
 struct PipelineLayoutVal;
 
-struct CommandBufferVal final : public DeviceObjectVal<CommandBuffer> {
+struct CommandBufferVal final : public ObjectVal {
     CommandBufferVal(DeviceVal& device, CommandBuffer* commandBuffer, bool isWrapped)
-        : DeviceObjectVal(device, commandBuffer)
+        : ObjectVal(device, commandBuffer)
         , m_IsRecordingStarted(isWrapped)
         , m_IsWrapped(isWrapped) {
+    }
+
+    inline CommandBuffer* GetImpl() const {
+        return (CommandBuffer*)m_Impl;
     }
 
     inline void* GetNativeObject() const {

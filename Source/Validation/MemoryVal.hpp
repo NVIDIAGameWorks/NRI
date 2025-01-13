@@ -3,7 +3,7 @@
 #include <algorithm>
 
 MemoryVal::MemoryVal(DeviceVal& device, Memory* memory, uint64_t size, MemoryLocation memoryLocation)
-    : DeviceObjectVal(device, memory)
+    : ObjectVal(device, memory)
     , m_Buffers(device.GetStdAllocator())
     , m_Textures(device.GetStdAllocator())
     , m_AccelerationStructures(device.GetStdAllocator())
@@ -13,7 +13,7 @@ MemoryVal::MemoryVal(DeviceVal& device, Memory* memory, uint64_t size, MemoryLoc
 
 #if NRI_USE_D3D12
 MemoryVal::MemoryVal(DeviceVal& device, Memory* memory, const MemoryD3D12Desc& memoryD3D12Desc)
-    : DeviceObjectVal(device, memory)
+    : ObjectVal(device, memory)
     , m_Buffers(device.GetStdAllocator())
     , m_Textures(device.GetStdAllocator())
     , m_AccelerationStructures(device.GetStdAllocator()) {

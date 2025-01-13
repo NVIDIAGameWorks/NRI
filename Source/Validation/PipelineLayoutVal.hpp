@@ -1,7 +1,7 @@
 // © 2021 NVIDIA Corporation
 
 PipelineLayoutVal::PipelineLayoutVal(DeviceVal& device, PipelineLayout* pipelineLayout, const PipelineLayoutDesc& pipelineLayoutDesc)
-    : DeviceObjectVal(device, pipelineLayout)
+    : ObjectVal(device, pipelineLayout)
     , m_DescriptorSetDescs(device.GetStdAllocator())
     , m_RootConstantDescs(device.GetStdAllocator())
     , m_DescriptorRangeDescs(device.GetStdAllocator())

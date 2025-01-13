@@ -21,7 +21,7 @@ struct DeviceVal final : public DeviceBase {
     ~DeviceVal();
 
     inline Device& GetImpl() const {
-        return m_Device;
+        return m_Impl;
     }
 
     inline const CoreInterface& GetCoreInterface() const {
@@ -65,7 +65,7 @@ struct DeviceVal final : public DeviceBase {
     }
 
     inline void* GetNativeObject() const {
-        return m_CoreAPI.GetDeviceNativeObject(m_Device);
+        return m_CoreAPI.GetDeviceNativeObject(m_Impl);
     }
 
     inline Lock& GetLock() {
@@ -76,11 +76,27 @@ struct DeviceVal final : public DeviceBase {
     void RegisterMemoryType(MemoryType memoryType, MemoryLocation memoryLocation);
 
     //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override {
+        const auto& allocationCallbacks = GetAllocationCallbacks();
+        if (m_Name)
+            allocationCallbacks.Free(allocationCallbacks.userArg, m_Name);
+
+        size_t len = strlen(name);
+        m_Name = (char*)allocationCallbacks.Allocate(allocationCallbacks.userArg, len + 1, sizeof(size_t));
+        strcpy(m_Name, name);
+
+        GetCoreInterface().SetDebugName(&m_Impl, name);
+    }
+
+    //================================================================================================================
     // DeviceBase
     //================================================================================================================
 
     const DeviceDesc& GetDesc() const override {
-        return ((DeviceBase&)m_Device).GetDesc();
+        return ((DeviceBase&)m_Impl).GetDesc();
     }
 
     void Destruct() override;
@@ -166,8 +182,8 @@ struct DeviceVal final : public DeviceBase {
     FormatSupportBits GetFormatSupport(Format format) const;
 
 private:
-    Device& m_Device;
-    String m_Name;
+    char* m_Name = nullptr; // .natvis
+    Device& m_Impl;
     CoreInterface m_CoreAPI = {};
     HelperInterface m_HelperAPI = {};
     StreamerInterface m_StreamerAPI = {};

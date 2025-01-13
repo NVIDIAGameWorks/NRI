@@ -6,9 +6,9 @@
 
 namespace nri {
 
-struct DescriptorPoolVal final : public DeviceObjectVal<DescriptorPool> {
+struct DescriptorPoolVal final : public ObjectVal {
     DescriptorPoolVal(DeviceVal& device, DescriptorPool* descriptorPool, uint32_t descriptorSetMaxNum)
-        : DeviceObjectVal(device, descriptorPool)
+        : ObjectVal(device, descriptorPool)
         , m_DescriptorSets(device.GetStdAllocator())
         , m_SkipValidation(true) // TODO: we have to request "DescriptorPoolDesc" in "DescriptorPoolVKDesc"
     {
@@ -19,12 +19,16 @@ struct DescriptorPoolVal final : public DeviceObjectVal<DescriptorPool> {
     }
 
     DescriptorPoolVal(DeviceVal& device, DescriptorPool* descriptorPool, const DescriptorPoolDesc& descriptorPoolDesc)
-        : DeviceObjectVal(device, descriptorPool)
+        : ObjectVal(device, descriptorPool)
         , m_DescriptorSets(device.GetStdAllocator())
         , m_Desc(descriptorPoolDesc) {
         m_DescriptorSets.reserve(m_Desc.descriptorSetMaxNum);
         for (uint32_t i = 0; i < m_Desc.descriptorSetMaxNum; i++)
             m_DescriptorSets.emplace_back(DescriptorSetVal(device));
+    }
+
+    inline DescriptorPool* GetImpl() const {
+        return (DescriptorPool*)m_Impl;
     }
 
     //================================================================================================================
@@ -35,8 +39,8 @@ struct DescriptorPoolVal final : public DeviceObjectVal<DescriptorPool> {
     Result AllocateDescriptorSets(const PipelineLayout& pipelineLayout, uint32_t setIndex, DescriptorSet** descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
 
 private:
+    DescriptorPoolDesc m_Desc = {}; // .natvis
     Vector<DescriptorSetVal> m_DescriptorSets;
-    DescriptorPoolDesc m_Desc = {};
     uint32_t m_DescriptorSetsNum = 0;
     uint32_t m_SamplerNum = 0;
     uint32_t m_ConstantBufferNum = 0;

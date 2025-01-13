@@ -1,7 +1,7 @@
 // © 2021 NVIDIA Corporation
 
 QueryPoolVal::QueryPoolVal(DeviceVal& device, QueryPool* queryPool, QueryType queryType, uint32_t queryNum)
-    : DeviceObjectVal(device, queryPool)
+    : ObjectVal(device, queryPool)
     , m_QueryType(queryType) {
     m_QueryNum = queryNum;
 }

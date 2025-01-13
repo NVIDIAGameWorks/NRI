@@ -6,29 +6,23 @@
 
 #include "DeviceVal.h"
 
-#define NRI_OBJECT_SIGNATURE 0x1234567887654321ull
-
 namespace nri {
 
-template <typename T>
-struct DeviceObjectVal {
-    DeviceObjectVal(DeviceVal& device, T* object = nullptr)
-        : m_Name(device.GetStdAllocator())
-        , m_Device(device)
+struct ObjectVal : public DebugNameBase {
+    inline ObjectVal(DeviceVal& device, Object* object = nullptr)
+        : m_Device(device)
         , m_Impl(object) {
     }
 
-    inline T* GetImpl() const {
-        return m_Impl;
-    }
-
-    inline void SetDebugName(const char* name) {
-        m_Name = name;
-        m_Device.GetCoreInterface().SetDebugName(GetImpl(), name);
+    inline ~ObjectVal() {
+        if (m_Name) {
+            const auto& allocationCallbacks = m_Device.GetAllocationCallbacks();
+            allocationCallbacks.Free(allocationCallbacks.userArg, m_Name);
+        }
     }
 
     inline const char* GetDebugName() const {
-        return m_Name.c_str();
+        return m_Name;
     }
 
     inline DeviceVal& GetDevice() const {
@@ -75,20 +69,36 @@ struct DeviceObjectVal {
         return m_Device.GetLowLatencyInterface();
     }
 
+    //================================================================================================================
+    // DebugNameBase
+    //================================================================================================================
+
+    void SetDebugName(const char* name) override {
+        const auto& allocationCallbacks = m_Device.GetAllocationCallbacks();
+        if (m_Name)
+            allocationCallbacks.Free(allocationCallbacks.userArg, m_Name);
+
+        size_t len = strlen(name);
+        m_Name = (char*)allocationCallbacks.Allocate(allocationCallbacks.userArg, len + 1, sizeof(size_t));
+        strcpy(m_Name, name);
+
+        m_Device.GetCoreInterface().SetDebugName(m_Impl, name);
+    }
+
 protected:
 #ifndef NDEBUG
-    const uint64_t m_Signature = NRI_OBJECT_SIGNATURE;
+    uint64_t m_Signature = NRI_OBJECT_SIGNATURE; // .natvis
 #endif
-    String m_Name;
+    char* m_Name = nullptr; // .natvis
+    Object* m_Impl = nullptr;
     DeviceVal& m_Device;
-    T* m_Impl = nullptr;
 };
 
 #define NRI_GET_IMPL(className, object) (object ? ((className##Val*)object)->GetImpl() : nullptr)
 
 template <typename T>
 inline DeviceVal& GetDeviceVal(T& object) {
-    return ((DeviceObjectVal<T>&)object).GetDevice();
+    return ((ObjectVal&)object).GetDevice();
 }
 
 uint64_t GetMemorySizeD3D12(const MemoryD3D12Desc& memoryD3D12Desc);

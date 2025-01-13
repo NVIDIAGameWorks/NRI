@@ -4,11 +4,15 @@
 
 namespace nri {
 
-struct PipelineVal final : public DeviceObjectVal<Pipeline> {
+struct PipelineVal final : public ObjectVal {
     PipelineVal(DeviceVal& device, Pipeline* pipeline);
     PipelineVal(DeviceVal& device, Pipeline* pipeline, const GraphicsPipelineDesc& graphicsPipelineDesc);
     PipelineVal(DeviceVal& device, Pipeline* pipeline, const ComputePipelineDesc& computePipelineDesc);
     PipelineVal(DeviceVal& device, Pipeline* pipeline, const RayTracingPipelineDesc& rayTracingPipelineDesc);
+
+    inline Pipeline* GetImpl() const {
+        return (Pipeline*)m_Impl;
+    }
 
     inline const PipelineLayout* GetPipelineLayout() const {
         return m_PipelineLayout;

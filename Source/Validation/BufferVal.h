@@ -6,16 +6,21 @@ namespace nri {
 
 struct MemoryVal;
 
-struct BufferVal final : public DeviceObjectVal<Buffer> {
+struct BufferVal final : public ObjectVal {
     BufferVal(DeviceVal& device, Buffer* buffer, bool isBoundToMemory)
-        : DeviceObjectVal(device, buffer)
+        : ObjectVal(device, buffer)
         , m_IsBoundToMemory(isBoundToMemory) {
+        m_Desc = GetCoreInterface().GetBufferDesc(*buffer);
     }
 
     ~BufferVal();
 
+    inline Buffer* GetImpl() const {
+        return (Buffer*)m_Impl;
+    }
+
     inline const BufferDesc& GetDesc() const {
-        return GetCoreInterface().GetBufferDesc(*GetImpl());
+        return m_Desc;
     }
 
     inline uint64_t GetNativeObject() const {
@@ -39,6 +44,7 @@ struct BufferVal final : public DeviceObjectVal<Buffer> {
     void Unmap();
 
 private:
+    BufferDesc m_Desc = {}; // (only for) .natvis
     MemoryVal* m_Memory = nullptr;
     bool m_IsBoundToMemory = false;
     bool m_IsMapped = false;

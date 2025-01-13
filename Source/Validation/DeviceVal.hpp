@@ -39,19 +39,24 @@ QueryType GetQueryTypeVK(uint32_t queryTypeVK);
 
 DeviceVal::DeviceVal(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks, DeviceBase& device)
     : DeviceBase(callbacks, allocationCallbacks)
-    , m_Device(*(Device*)&device)
-    , m_Name(GetStdAllocator())
+    , m_Impl(*(Device*)&device)
     , m_MemoryTypeMap(GetStdAllocator()) {
 }
 
 DeviceVal::~DeviceVal() {
     for (size_t i = 0; i < m_CommandQueues.size(); i++)
         Destroy(GetAllocationCallbacks(), m_CommandQueues[i]);
-    ((DeviceBase*)&m_Device)->Destruct();
+
+    if (m_Name) {
+        const auto& allocationCallbacks = GetAllocationCallbacks();
+        allocationCallbacks.Free(allocationCallbacks.userArg, m_Name);
+    }
+
+    ((DeviceBase*)&m_Impl)->Destruct();
 }
 
 bool DeviceVal::Create() {
-    const DeviceBase& deviceBase = (DeviceBase&)m_Device;
+    const DeviceBase& deviceBase = (DeviceBase&)m_Impl;
 
     if (deviceBase.FillFunctionTable(m_CoreAPI) != Result::SUCCESS) {
         REPORT_ERROR(this, "Failed to get 'CoreInterface' interface");
@@ -104,7 +109,7 @@ NRI_INLINE Result DeviceVal::CreateSwapChain(const SwapChainDesc& swapChainDesc,
     swapChainDescImpl.commandQueue = NRI_GET_IMPL(CommandQueue, swapChainDesc.commandQueue);
 
     SwapChain* swapChainImpl;
-    Result result = m_SwapChainAPI.CreateSwapChain(m_Device, swapChainDescImpl, swapChainImpl);
+    Result result = m_SwapChainAPI.CreateSwapChain(m_Impl, swapChainDescImpl, swapChainImpl);
 
     if (result == Result::SUCCESS)
         swapChain = (SwapChain*)Allocate<SwapChainVal>(GetAllocationCallbacks(), *this, swapChainImpl, swapChainDesc);
@@ -121,7 +126,7 @@ NRI_INLINE Result DeviceVal::GetCommandQueue(CommandQueueType commandQueueType, 
     RETURN_ON_FAILURE(this, commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandQueueType' is invalid");
 
     CommandQueue* commandQueueImpl;
-    Result result = m_CoreAPI.GetCommandQueue(m_Device, commandQueueType, commandQueueImpl);
+    Result result = m_CoreAPI.GetCommandQueue(m_Impl, commandQueueType, commandQueueImpl);
 
     if (result == Result::SUCCESS) {
         const uint32_t index = (uint32_t)commandQueueType;
@@ -148,7 +153,7 @@ NRI_INLINE Result DeviceVal::CreateCommandAllocator(const CommandQueue& commandQ
 
 NRI_INLINE Result DeviceVal::CreateDescriptorPool(const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
     DescriptorPool* descriptorPoolImpl = nullptr;
-    Result result = m_CoreAPI.CreateDescriptorPool(m_Device, descriptorPoolDesc, descriptorPoolImpl);
+    Result result = m_CoreAPI.CreateDescriptorPool(m_Impl, descriptorPoolDesc, descriptorPoolImpl);
 
     if (result == Result::SUCCESS)
         descriptorPool = (DescriptorPool*)Allocate<DescriptorPoolVal>(GetAllocationCallbacks(), *this, descriptorPoolImpl, descriptorPoolDesc);
@@ -160,7 +165,7 @@ NRI_INLINE Result DeviceVal::CreateBuffer(const BufferDesc& bufferDesc, Buffer*&
     RETURN_ON_FAILURE(this, bufferDesc.size != 0, Result::INVALID_ARGUMENT, "'size' is 0");
 
     Buffer* bufferImpl = nullptr;
-    Result result = m_CoreAPI.CreateBuffer(m_Device, bufferDesc, bufferImpl);
+    Result result = m_CoreAPI.CreateBuffer(m_Impl, bufferDesc, bufferImpl);
 
     if (result == Result::SUCCESS)
         buffer = (Buffer*)Allocate<BufferVal>(GetAllocationCallbacks(), *this, bufferImpl, false);
@@ -172,7 +177,7 @@ NRI_INLINE Result DeviceVal::AllocateBuffer(const AllocateBufferDesc& bufferDesc
     RETURN_ON_FAILURE(this, bufferDesc.desc.size != 0, Result::INVALID_ARGUMENT, "'size' is 0");
 
     Buffer* bufferImpl = nullptr;
-    Result result = m_ResourceAllocatorAPI.AllocateBuffer(m_Device, bufferDesc, bufferImpl);
+    Result result = m_ResourceAllocatorAPI.AllocateBuffer(m_Impl, bufferDesc, bufferImpl);
 
     if (result == Result::SUCCESS)
         buffer = (Buffer*)Allocate<BufferVal>(GetAllocationCallbacks(), *this, bufferImpl, true);
@@ -188,7 +193,7 @@ NRI_INLINE Result DeviceVal::CreateTexture(const TextureDesc& textureDesc, Textu
     RETURN_ON_FAILURE(this, textureDesc.mipNum <= maxMipNum, Result::INVALID_ARGUMENT, "'mipNum=%u' can't be > %u", textureDesc.mipNum, maxMipNum);
 
     Texture* textureImpl = nullptr;
-    Result result = m_CoreAPI.CreateTexture(m_Device, textureDesc, textureImpl);
+    Result result = m_CoreAPI.CreateTexture(m_Impl, textureDesc, textureImpl);
 
     if (result == Result::SUCCESS)
         texture = (Texture*)Allocate<TextureVal>(GetAllocationCallbacks(), *this, textureImpl, false);
@@ -204,7 +209,7 @@ NRI_INLINE Result DeviceVal::AllocateTexture(const AllocateTextureDesc& textureD
     RETURN_ON_FAILURE(this, textureDesc.desc.mipNum <= maxMipNum, Result::INVALID_ARGUMENT, "'desc.mipNum=%u' can't be > %u", textureDesc.desc.mipNum, maxMipNum);
 
     Texture* textureImpl = nullptr;
-    Result result = m_ResourceAllocatorAPI.AllocateTexture(m_Device, textureDesc, textureImpl);
+    Result result = m_ResourceAllocatorAPI.AllocateTexture(m_Impl, textureDesc, textureImpl);
 
     if (result == Result::SUCCESS)
         texture = (Texture*)Allocate<TextureVal>(GetAllocationCallbacks(), *this, textureImpl, true);
@@ -324,7 +329,7 @@ NRI_INLINE Result DeviceVal::CreateDescriptor(const SamplerDesc& samplerDesc, De
         REPORT_WARNING(this, "'borderColor' is provided, but 'CLAMP_TO_BORDER' is not requested");
 
     Descriptor* samplerImpl = nullptr;
-    Result result = m_CoreAPI.CreateSampler(m_Device, samplerDesc, samplerImpl);
+    Result result = m_CoreAPI.CreateSampler(m_Impl, samplerDesc, samplerImpl);
 
     if (result == Result::SUCCESS)
         sampler = (Descriptor*)Allocate<DescriptorVal>(GetAllocationCallbacks(), *this, samplerImpl);
@@ -405,7 +410,7 @@ NRI_INLINE Result DeviceVal::CreatePipelineLayout(const PipelineLayoutDesc& pipe
     RETURN_ON_FAILURE(this, origSettings.rootDescriptorNum == fittedSettings.rootDescriptorNum, Result::UNSUPPORTED, "total number of root descriptors (=%u) exceeds device limits", origSettings.rootDescriptorNum);
 
     PipelineLayout* pipelineLayoutImpl = nullptr;
-    Result result = m_CoreAPI.CreatePipelineLayout(m_Device, pipelineLayoutDesc, pipelineLayoutImpl);
+    Result result = m_CoreAPI.CreatePipelineLayout(m_Impl, pipelineLayoutDesc, pipelineLayoutImpl);
 
     if (result == Result::SUCCESS)
         pipelineLayout = (PipelineLayout*)Allocate<PipelineLayoutVal>(GetAllocationCallbacks(), *this, pipelineLayoutImpl, pipelineLayoutDesc);
@@ -471,7 +476,7 @@ NRI_INLINE Result DeviceVal::CreatePipeline(const GraphicsPipelineDesc& graphics
     graphicsPipelineDescImpl.pipelineLayout = NRI_GET_IMPL(PipelineLayout, graphicsPipelineDesc.pipelineLayout);
 
     Pipeline* pipelineImpl = nullptr;
-    Result result = m_CoreAPI.CreateGraphicsPipeline(m_Device, graphicsPipelineDescImpl, pipelineImpl);
+    Result result = m_CoreAPI.CreateGraphicsPipeline(m_Impl, graphicsPipelineDescImpl, pipelineImpl);
 
     if (result == Result::SUCCESS)
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetAllocationCallbacks(), *this, pipelineImpl, graphicsPipelineDesc);
@@ -489,7 +494,7 @@ NRI_INLINE Result DeviceVal::CreatePipeline(const ComputePipelineDesc& computePi
     computePipelineDescImpl.pipelineLayout = NRI_GET_IMPL(PipelineLayout, computePipelineDesc.pipelineLayout);
 
     Pipeline* pipelineImpl = nullptr;
-    Result result = m_CoreAPI.CreateComputePipeline(m_Device, computePipelineDescImpl, pipelineImpl);
+    Result result = m_CoreAPI.CreateComputePipeline(m_Impl, computePipelineDescImpl, pipelineImpl);
 
     if (result == Result::SUCCESS)
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetAllocationCallbacks(), *this, pipelineImpl, computePipelineDesc);
@@ -505,7 +510,7 @@ NRI_INLINE Result DeviceVal::CreateQueryPool(const QueryPoolDesc& queryPoolDesc,
         RETURN_ON_FAILURE(this, GetDesc().isCopyQueueTimestampSupported, Result::UNSUPPORTED, "'isCopyQueueTimestampSupported' is false");
 
     QueryPool* queryPoolImpl = nullptr;
-    Result result = m_CoreAPI.CreateQueryPool(m_Device, queryPoolDesc, queryPoolImpl);
+    Result result = m_CoreAPI.CreateQueryPool(m_Impl, queryPoolDesc, queryPoolImpl);
 
     if (result == Result::SUCCESS)
         queryPool = (QueryPool*)Allocate<QueryPoolVal>(GetAllocationCallbacks(), *this, queryPoolImpl, queryPoolDesc.queryType, queryPoolDesc.capacity);
@@ -515,7 +520,7 @@ NRI_INLINE Result DeviceVal::CreateQueryPool(const QueryPoolDesc& queryPoolDesc,
 
 NRI_INLINE Result DeviceVal::CreateFence(uint64_t initialValue, Fence*& fence) {
     Fence* fenceImpl;
-    Result result = m_CoreAPI.CreateFence(m_Device, initialValue, fenceImpl);
+    Result result = m_CoreAPI.CreateFence(m_Impl, initialValue, fenceImpl);
 
     if (result == Result::SUCCESS)
         fence = (Fence*)Allocate<FenceVal>(GetAllocationCallbacks(), *this, fenceImpl);
@@ -588,7 +593,7 @@ NRI_INLINE Result DeviceVal::AllocateMemory(const AllocateMemoryDesc& allocateMe
     RETURN_ON_FAILURE(this, it != end, Result::FAILURE, "'memoryType' is invalid");
 
     Memory* memoryImpl;
-    Result result = m_CoreAPI.AllocateMemory(m_Device, allocateMemoryDesc, memoryImpl);
+    Result result = m_CoreAPI.AllocateMemory(m_Impl, allocateMemoryDesc, memoryImpl);
 
     if (result == Result::SUCCESS)
         memory = (Memory*)Allocate<MemoryVal>(GetAllocationCallbacks(), *this, memoryImpl, allocateMemoryDesc.size, it->second);
@@ -631,7 +636,7 @@ NRI_INLINE Result DeviceVal::BindBufferMemory(const BufferMemoryBindingDesc* mem
         RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "'[%u].offset' is invalid", i);
     }
 
-    Result result = m_CoreAPI.BindBufferMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
+    Result result = m_CoreAPI.BindBufferMemory(m_Impl, memoryBindingDescsImpl, memoryBindingDescNum);
 
     if (result == Result::SUCCESS) {
         for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
@@ -678,7 +683,7 @@ NRI_INLINE Result DeviceVal::BindTextureMemory(const TextureMemoryBindingDesc* m
         RETURN_ON_FAILURE(this, memorySizeIsUnknown || rangeMax <= memory.GetSize(), Result::INVALID_ARGUMENT, "'[%u].offset' is invalid", i);
     }
 
-    Result result = m_CoreAPI.BindTextureMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
+    Result result = m_CoreAPI.BindTextureMemory(m_Impl, memoryBindingDescsImpl, memoryBindingDescNum);
 
     if (result == Result::SUCCESS) {
         for (uint32_t i = 0; i < memoryBindingDescNum; i++) {
@@ -704,7 +709,7 @@ NRI_INLINE void DeviceVal::FreeMemory(Memory& memory) {
 }
 
 NRI_INLINE FormatSupportBits DeviceVal::GetFormatSupport(Format format) const {
-    return m_CoreAPI.GetFormatSupport(m_Device, format);
+    return m_CoreAPI.GetFormatSupport(m_Impl, format);
 }
 
 #if NRI_USE_VK
@@ -714,7 +719,7 @@ NRI_INLINE Result DeviceVal::CreateCommandQueue(const CommandQueueVKDesc& comman
     RETURN_ON_FAILURE(this, commandQueueVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandQueueType' is invalid");
 
     CommandQueue* commandQueueImpl = nullptr;
-    Result result = m_WrapperVKAPI.CreateCommandQueueVK(m_Device, commandQueueVKDesc, commandQueueImpl);
+    Result result = m_WrapperVKAPI.CreateCommandQueueVK(m_Impl, commandQueueVKDesc, commandQueueImpl);
 
     if (result == Result::SUCCESS)
         commandQueue = (CommandQueue*)Allocate<CommandQueueVal>(GetAllocationCallbacks(), *this, commandQueueImpl);
@@ -727,7 +732,7 @@ NRI_INLINE Result DeviceVal::CreateCommandAllocator(const CommandAllocatorVKDesc
     RETURN_ON_FAILURE(this, commandAllocatorVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandQueueType' is invalid");
 
     CommandAllocator* commandAllocatorImpl = nullptr;
-    Result result = m_WrapperVKAPI.CreateCommandAllocatorVK(m_Device, commandAllocatorVKDesc, commandAllocatorImpl);
+    Result result = m_WrapperVKAPI.CreateCommandAllocatorVK(m_Impl, commandAllocatorVKDesc, commandAllocatorImpl);
 
     if (result == Result::SUCCESS)
         commandAllocator = (CommandAllocator*)Allocate<CommandAllocatorVal>(GetAllocationCallbacks(), *this, commandAllocatorImpl);
@@ -740,7 +745,7 @@ NRI_INLINE Result DeviceVal::CreateCommandBuffer(const CommandBufferVKDesc& comm
     RETURN_ON_FAILURE(this, commandBufferVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandQueueType' is invalid");
 
     CommandBuffer* commandBufferImpl = nullptr;
-    Result result = m_WrapperVKAPI.CreateCommandBufferVK(m_Device, commandBufferVKDesc, commandBufferImpl);
+    Result result = m_WrapperVKAPI.CreateCommandBufferVK(m_Impl, commandBufferVKDesc, commandBufferImpl);
 
     if (result == Result::SUCCESS)
         commandBuffer = (CommandBuffer*)Allocate<CommandBufferVal>(GetAllocationCallbacks(), *this, commandBufferImpl, true);
@@ -753,7 +758,7 @@ NRI_INLINE Result DeviceVal::CreateDescriptorPool(const DescriptorPoolVKDesc& de
     RETURN_ON_FAILURE(this, descriptorPoolVKDesc.descriptorSetMaxNum != 0, Result::INVALID_ARGUMENT, "'descriptorSetMaxNum' is 0");
 
     DescriptorPool* descriptorPoolImpl = nullptr;
-    Result result = m_WrapperVKAPI.CreateDescriptorPoolVK(m_Device, descriptorPoolVKDesc, descriptorPoolImpl);
+    Result result = m_WrapperVKAPI.CreateDescriptorPoolVK(m_Impl, descriptorPoolVKDesc, descriptorPoolImpl);
 
     if (result == Result::SUCCESS)
         descriptorPool = (DescriptorPool*)Allocate<DescriptorPoolVal>(GetAllocationCallbacks(), *this, descriptorPoolImpl, descriptorPoolVKDesc.descriptorSetMaxNum);
@@ -766,7 +771,7 @@ NRI_INLINE Result DeviceVal::CreateBuffer(const BufferVKDesc& bufferDesc, Buffer
     RETURN_ON_FAILURE(this, bufferDesc.size > 0, Result::INVALID_ARGUMENT, "'bufferSize' is 0");
 
     Buffer* bufferImpl = nullptr;
-    Result result = m_WrapperVKAPI.CreateBufferVK(m_Device, bufferDesc, bufferImpl);
+    Result result = m_WrapperVKAPI.CreateBufferVK(m_Impl, bufferDesc, bufferImpl);
 
     if (result == Result::SUCCESS)
         buffer = (Buffer*)Allocate<BufferVal>(GetAllocationCallbacks(), *this, bufferImpl, true);
@@ -782,7 +787,7 @@ NRI_INLINE Result DeviceVal::CreateTexture(const TextureVKDesc& textureVKDesc, T
     RETURN_ON_FAILURE(this, textureVKDesc.mipNum > 0, Result::INVALID_ARGUMENT, "'mipNum' is 0");
 
     Texture* textureImpl = nullptr;
-    Result result = m_WrapperVKAPI.CreateTextureVK(m_Device, textureVKDesc, textureImpl);
+    Result result = m_WrapperVKAPI.CreateTextureVK(m_Impl, textureVKDesc, textureImpl);
 
     if (result == Result::SUCCESS)
         texture = (Texture*)Allocate<TextureVal>(GetAllocationCallbacks(), *this, textureImpl, true);
@@ -795,7 +800,7 @@ NRI_INLINE Result DeviceVal::CreateMemory(const MemoryVKDesc& memoryVKDesc, Memo
     RETURN_ON_FAILURE(this, memoryVKDesc.size > 0, Result::INVALID_ARGUMENT, "'size' is 0");
 
     Memory* memoryImpl = nullptr;
-    Result result = m_WrapperVKAPI.CreateMemoryVK(m_Device, memoryVKDesc, memoryImpl);
+    Result result = m_WrapperVKAPI.CreateMemoryVK(m_Impl, memoryVKDesc, memoryImpl);
 
     if (result == Result::SUCCESS)
         memory = (Memory*)Allocate<MemoryVal>(GetAllocationCallbacks(), *this, memoryImpl, memoryVKDesc.size, MemoryLocation::MAX_NUM);
@@ -807,7 +812,7 @@ NRI_INLINE Result DeviceVal::CreateGraphicsPipeline(VKNonDispatchableHandle vkPi
     RETURN_ON_FAILURE(this, vkPipeline != 0, Result::INVALID_ARGUMENT, "'vkPipeline' is NULL");
 
     Pipeline* pipelineImpl = nullptr;
-    Result result = m_WrapperVKAPI.CreateGraphicsPipelineVK(m_Device, vkPipeline, pipelineImpl);
+    Result result = m_WrapperVKAPI.CreateGraphicsPipelineVK(m_Impl, vkPipeline, pipelineImpl);
 
     if (result == Result::SUCCESS)
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetAllocationCallbacks(), *this, pipelineImpl);
@@ -819,7 +824,7 @@ NRI_INLINE Result DeviceVal::CreateComputePipeline(VKNonDispatchableHandle vkPip
     RETURN_ON_FAILURE(this, vkPipeline != 0, Result::INVALID_ARGUMENT, "'vkPipeline' is NULL");
 
     Pipeline* pipelineImpl = nullptr;
-    Result result = m_WrapperVKAPI.CreateComputePipelineVK(m_Device, vkPipeline, pipelineImpl);
+    Result result = m_WrapperVKAPI.CreateComputePipelineVK(m_Impl, vkPipeline, pipelineImpl);
 
     if (result == Result::SUCCESS)
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetAllocationCallbacks(), *this, pipelineImpl);
@@ -831,7 +836,7 @@ NRI_INLINE Result DeviceVal::CreateQueryPool(const QueryPoolVKDesc& queryPoolVKD
     RETURN_ON_FAILURE(this, queryPoolVKDesc.vkQueryPool != 0, Result::INVALID_ARGUMENT, "'vkQueryPool' is NULL");
 
     QueryPool* queryPoolImpl = nullptr;
-    Result result = m_WrapperVKAPI.CreateQueryPoolVK(m_Device, queryPoolVKDesc, queryPoolImpl);
+    Result result = m_WrapperVKAPI.CreateQueryPoolVK(m_Impl, queryPoolVKDesc, queryPoolImpl);
 
     if (result == Result::SUCCESS) {
         QueryType queryType = GetQueryTypeVK(queryPoolVKDesc.vkQueryType);
@@ -845,7 +850,7 @@ NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStruc
     RETURN_ON_FAILURE(this, accelerationStructureDesc.vkAccelerationStructure != 0, Result::INVALID_ARGUMENT, "'vkAccelerationStructure' is NULL");
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
-    Result result = m_WrapperVKAPI.CreateAccelerationStructureVK(m_Device, accelerationStructureDesc, accelerationStructureImpl);
+    Result result = m_WrapperVKAPI.CreateAccelerationStructureVK(m_Impl, accelerationStructureDesc, accelerationStructureImpl);
 
     if (result == Result::SUCCESS) {
         MemoryDesc memoryDesc = {};
@@ -863,7 +868,7 @@ NRI_INLINE Result DeviceVal::CreateCommandBuffer(const CommandBufferD3D11Desc& c
     RETURN_ON_FAILURE(this, commandBufferDesc.d3d11DeviceContext != nullptr, Result::INVALID_ARGUMENT, "'d3d11DeviceContext' is NULL");
 
     CommandBuffer* commandBufferImpl = nullptr;
-    Result result = m_WrapperD3D11API.CreateCommandBufferD3D11(m_Device, commandBufferDesc, commandBufferImpl);
+    Result result = m_WrapperD3D11API.CreateCommandBufferD3D11(m_Impl, commandBufferDesc, commandBufferImpl);
 
     if (result == Result::SUCCESS)
         commandBuffer = (CommandBuffer*)Allocate<CommandBufferVal>(GetAllocationCallbacks(), *this, commandBufferImpl, true);
@@ -875,7 +880,7 @@ NRI_INLINE Result DeviceVal::CreateBuffer(const BufferD3D11Desc& bufferDesc, Buf
     RETURN_ON_FAILURE(this, bufferDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT, "'d3d11Resource' is NULL");
 
     Buffer* bufferImpl = nullptr;
-    Result result = m_WrapperD3D11API.CreateBufferD3D11(m_Device, bufferDesc, bufferImpl);
+    Result result = m_WrapperD3D11API.CreateBufferD3D11(m_Impl, bufferDesc, bufferImpl);
 
     if (result == Result::SUCCESS)
         buffer = (Buffer*)Allocate<BufferVal>(GetAllocationCallbacks(), *this, bufferImpl, true);
@@ -887,7 +892,7 @@ NRI_INLINE Result DeviceVal::CreateTexture(const TextureD3D11Desc& textureDesc, 
     RETURN_ON_FAILURE(this, textureDesc.d3d11Resource != nullptr, Result::INVALID_ARGUMENT, "'d3d11Resource' is NULL");
 
     Texture* textureImpl = nullptr;
-    Result result = m_WrapperD3D11API.CreateTextureD3D11(m_Device, textureDesc, textureImpl);
+    Result result = m_WrapperD3D11API.CreateTextureD3D11(m_Impl, textureDesc, textureImpl);
 
     if (result == Result::SUCCESS)
         texture = (Texture*)Allocate<TextureVal>(GetAllocationCallbacks(), *this, textureImpl, true);
@@ -904,7 +909,7 @@ NRI_INLINE Result DeviceVal::CreateCommandBuffer(const CommandBufferD3D12Desc& c
     RETURN_ON_FAILURE(this, commandBufferDesc.d3d12CommandList != nullptr, Result::INVALID_ARGUMENT, "'d3d12CommandList' is NULL");
 
     CommandBuffer* commandBufferImpl = nullptr;
-    Result result = m_WrapperD3D12API.CreateCommandBufferD3D12(m_Device, commandBufferDesc, commandBufferImpl);
+    Result result = m_WrapperD3D12API.CreateCommandBufferD3D12(m_Impl, commandBufferDesc, commandBufferImpl);
 
     if (result == Result::SUCCESS)
         commandBuffer = (CommandBuffer*)Allocate<CommandBufferVal>(GetAllocationCallbacks(), *this, commandBufferImpl, true);
@@ -916,7 +921,7 @@ NRI_INLINE Result DeviceVal::CreateDescriptorPool(const DescriptorPoolD3D12Desc&
     RETURN_ON_FAILURE(this, descriptorPoolD3D12Desc.d3d12ResourceDescriptorHeap || descriptorPoolD3D12Desc.d3d12SamplerDescriptorHeap, Result::INVALID_ARGUMENT, "'d3d12ResourceDescriptorHeap' and 'd3d12ResourceDescriptorHeap' are both NULL");
 
     DescriptorPool* descriptorPoolImpl = nullptr;
-    Result result = m_WrapperD3D12API.CreateDescriptorPoolD3D12(m_Device, descriptorPoolD3D12Desc, descriptorPoolImpl);
+    Result result = m_WrapperD3D12API.CreateDescriptorPoolD3D12(m_Impl, descriptorPoolD3D12Desc, descriptorPoolImpl);
 
     if (result == Result::SUCCESS)
         descriptorPool = (DescriptorPool*)Allocate<DescriptorPoolVal>(GetAllocationCallbacks(), *this, descriptorPoolImpl, descriptorPoolD3D12Desc.descriptorSetMaxNum);
@@ -928,7 +933,7 @@ NRI_INLINE Result DeviceVal::CreateBuffer(const BufferD3D12Desc& bufferDesc, Buf
     RETURN_ON_FAILURE(this, bufferDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "'d3d12Resource' is NULL");
 
     Buffer* bufferImpl = nullptr;
-    Result result = m_WrapperD3D12API.CreateBufferD3D12(m_Device, bufferDesc, bufferImpl);
+    Result result = m_WrapperD3D12API.CreateBufferD3D12(m_Impl, bufferDesc, bufferImpl);
 
     if (result == Result::SUCCESS)
         buffer = (Buffer*)Allocate<BufferVal>(GetAllocationCallbacks(), *this, bufferImpl, true);
@@ -940,7 +945,7 @@ NRI_INLINE Result DeviceVal::CreateTexture(const TextureD3D12Desc& textureDesc, 
     RETURN_ON_FAILURE(this, textureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "'d3d12Resource' is NULL");
 
     Texture* textureImpl = nullptr;
-    Result result = m_WrapperD3D12API.CreateTextureD3D12(m_Device, textureDesc, textureImpl);
+    Result result = m_WrapperD3D12API.CreateTextureD3D12(m_Impl, textureDesc, textureImpl);
 
     if (result == Result::SUCCESS)
         texture = (Texture*)Allocate<TextureVal>(GetAllocationCallbacks(), *this, textureImpl, true);
@@ -952,7 +957,7 @@ NRI_INLINE Result DeviceVal::CreateMemory(const MemoryD3D12Desc& memoryDesc, Mem
     RETURN_ON_FAILURE(this, memoryDesc.d3d12Heap != nullptr, Result::INVALID_ARGUMENT, "'d3d12Heap' is NULL");
 
     Memory* memoryImpl = nullptr;
-    Result result = m_WrapperD3D12API.CreateMemoryD3D12(m_Device, memoryDesc, memoryImpl);
+    Result result = m_WrapperD3D12API.CreateMemoryD3D12(m_Impl, memoryDesc, memoryImpl);
 
     const uint64_t size = GetMemorySizeD3D12(memoryDesc);
 
@@ -966,7 +971,7 @@ NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStruc
     RETURN_ON_FAILURE(this, accelerationStructureDesc.d3d12Resource != nullptr, Result::INVALID_ARGUMENT, "'d3d12Resource' is NULL");
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
-    Result result = m_WrapperD3D12API.CreateAccelerationStructureD3D12(m_Device, accelerationStructureDesc, accelerationStructureImpl);
+    Result result = m_WrapperD3D12API.CreateAccelerationStructureD3D12(m_Impl, accelerationStructureDesc, accelerationStructureImpl);
 
     if (result == Result::SUCCESS) {
         MemoryDesc memoryDesc = {};
@@ -1003,7 +1008,7 @@ NRI_INLINE uint32_t DeviceVal::CalculateAllocationNumber(const ResourceGroupDesc
     resourceGroupDescImpl.buffers = buffersImpl;
     resourceGroupDescImpl.textures = texturesImpl;
 
-    return m_HelperAPI.CalculateAllocationNumber(m_Device, resourceGroupDescImpl);
+    return m_HelperAPI.CalculateAllocationNumber(m_Impl, resourceGroupDescImpl);
 }
 
 NRI_INLINE Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& resourceGroupDesc, Memory** allocations) {
@@ -1034,7 +1039,7 @@ NRI_INLINE Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& reso
     resourceGroupDescImpl.buffers = buffersImpl;
     resourceGroupDescImpl.textures = texturesImpl;
 
-    Result result = m_HelperAPI.AllocateAndBindMemory(m_Device, resourceGroupDescImpl, allocations);
+    Result result = m_HelperAPI.AllocateAndBindMemory(m_Impl, resourceGroupDescImpl, allocations);
 
     if (result == Result::SUCCESS) {
         for (uint32_t i = 0; i < resourceGroupDesc.bufferNum; i++) {
@@ -1055,7 +1060,7 @@ NRI_INLINE Result DeviceVal::AllocateAndBindMemory(const ResourceGroupDesc& reso
 }
 
 NRI_INLINE Result DeviceVal::QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const {
-    return m_HelperAPI.QueryVideoMemoryInfo(m_Device, memoryLocation, videoMemoryInfo);
+    return m_HelperAPI.QueryVideoMemoryInfo(m_Impl, memoryLocation, videoMemoryInfo);
 }
 
 NRI_INLINE Result DeviceVal::CreatePipeline(const RayTracingPipelineDesc& pipelineDesc, Pipeline*& pipeline) {
@@ -1079,7 +1084,7 @@ NRI_INLINE Result DeviceVal::CreatePipeline(const RayTracingPipelineDesc& pipeli
     pipelineDescImpl.pipelineLayout = NRI_GET_IMPL(PipelineLayout, pipelineDesc.pipelineLayout);
 
     Pipeline* pipelineImpl = nullptr;
-    Result result = m_RayTracingAPI.CreateRayTracingPipeline(m_Device, pipelineDescImpl, pipelineImpl);
+    Result result = m_RayTracingAPI.CreateRayTracingPipeline(m_Impl, pipelineDescImpl, pipelineImpl);
 
     if (result == Result::SUCCESS)
         pipeline = (Pipeline*)Allocate<PipelineVal>(GetAllocationCallbacks(), *this, pipelineImpl);
@@ -1101,7 +1106,7 @@ NRI_INLINE Result DeviceVal::CreateAccelerationStructure(const AccelerationStruc
     }
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
-    Result result = m_RayTracingAPI.CreateAccelerationStructure(m_Device, accelerationStructureDescImpl, accelerationStructureImpl);
+    Result result = m_RayTracingAPI.CreateAccelerationStructure(m_Impl, accelerationStructureDescImpl, accelerationStructureImpl);
 
     if (result == Result::SUCCESS) {
         MemoryDesc memoryDesc = {};
@@ -1127,7 +1132,7 @@ NRI_INLINE Result DeviceVal::AllocateAccelerationStructure(const AllocateAcceler
     }
 
     AccelerationStructure* accelerationStructureImpl = nullptr;
-    Result result = m_ResourceAllocatorAPI.AllocateAccelerationStructure(m_Device, accelerationStructureDescImpl, accelerationStructureImpl);
+    Result result = m_ResourceAllocatorAPI.AllocateAccelerationStructure(m_Impl, accelerationStructureDescImpl, accelerationStructureImpl);
 
     if (result == Result::SUCCESS) {
         MemoryDesc memoryDesc = {};
@@ -1166,7 +1171,7 @@ NRI_INLINE Result DeviceVal::BindAccelerationStructureMemory(const AccelerationS
         destDesc.accelerationStructure = accelerationStructure.GetImpl();
     }
 
-    Result result = m_RayTracingAPI.BindAccelerationStructureMemory(m_Device, memoryBindingDescsImpl, memoryBindingDescNum);
+    Result result = m_RayTracingAPI.BindAccelerationStructureMemory(m_Impl, memoryBindingDescsImpl, memoryBindingDescNum);
 
     if (result == Result::SUCCESS) {
         for (uint32_t i = 0; i < memoryBindingDescNum; i++) {

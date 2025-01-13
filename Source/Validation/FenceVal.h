@@ -6,12 +6,16 @@ namespace nri {
 
 struct CommandQueueVal;
 
-struct FenceVal final : public DeviceObjectVal<Fence> {
+struct FenceVal final : public ObjectVal {
     inline FenceVal(DeviceVal& device, Fence* fence)
-        : DeviceObjectVal(device, fence) {
+        : ObjectVal(device, fence) {
     }
 
     inline ~FenceVal() {
+    }
+
+    inline Fence* GetImpl() const {
+        return (Fence*)m_Impl;
     }
 
     //================================================================================================================

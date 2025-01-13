@@ -40,7 +40,10 @@ endif ()
 if (MSVC)
     set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
     set (CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
-endif ()
+    set (NRI_NATVIS "nri.natvis")
+else ()
+    set (NRI_NATVIS "")
+endif()
 
 # Create project
 file (READ "${CMAKE_CURRENT_SOURCE_DIR}/Include/NRI.h" ver_h)
@@ -308,9 +311,9 @@ source_group ("Resources" FILES ${NRI_RESOURCES})
 
 if (NRI_STATIC_LIBRARY)
     set (COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_STATIC_LIBRARY)
-    add_library (${PROJECT_NAME} STATIC ${NRI_SOURCE} ${NRI_HEADERS} ${NRI_RESOURCES} ${NRI_EXTENSIONS})
+    add_library (${PROJECT_NAME} STATIC ${NRI_SOURCE} ${NRI_HEADERS} ${NRI_RESOURCES} ${NRI_EXTENSIONS} ${NRI_NATVIS})
 else ()
-    add_library (${PROJECT_NAME} SHARED ${NRI_SOURCE} ${NRI_HEADERS} ${NRI_RESOURCES} ${NRI_EXTENSIONS})
+    add_library (${PROJECT_NAME} SHARED ${NRI_SOURCE} ${NRI_HEADERS} ${NRI_RESOURCES} ${NRI_EXTENSIONS} ${NRI_NATVIS})
 
     if (WIN32)
         target_compile_definitions (${PROJECT_NAME} PRIVATE "NRI_API=extern \"C\" __declspec(dllexport)")

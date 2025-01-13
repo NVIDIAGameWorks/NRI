@@ -6,16 +6,21 @@ namespace nri {
 
 struct MemoryVal;
 
-struct TextureVal final : public DeviceObjectVal<Texture> {
+struct TextureVal final : public ObjectVal {
     TextureVal(DeviceVal& device, Texture* texture, bool isBoundToMemory)
-        : DeviceObjectVal(device, texture)
+        : ObjectVal(device, texture)
         , m_IsBoundToMemory(isBoundToMemory) {
+        m_Desc = GetCoreInterface().GetTextureDesc(*texture);
     }
 
     ~TextureVal();
 
+    inline Texture* GetImpl() const {
+        return (Texture*)m_Impl;
+    }
+
     inline const TextureDesc& GetDesc() const {
-        return GetCoreInterface().GetTextureDesc(*GetImpl());
+        return m_Desc;
     }
 
     inline uint64_t GetNativeObject() const {
@@ -32,6 +37,7 @@ struct TextureVal final : public DeviceObjectVal<Texture> {
     }
 
 private:
+    TextureDesc m_Desc = {}; // (only for) .natvis
     MemoryVal* m_Memory = nullptr;
     bool m_IsBoundToMemory = false;
 };

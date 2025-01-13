@@ -4,10 +4,12 @@
 
 namespace nri {
 
-struct QueryPoolVal final : public DeviceObjectVal<QueryPool> {
+struct QueryPoolVal final : public ObjectVal {
     QueryPoolVal(DeviceVal& device, QueryPool* queryPool, QueryType queryType, uint32_t queryNum);
 
-    void ResetQueries(uint32_t offset, uint32_t num);
+    inline QueryPool* GetImpl() const {
+        return (QueryPool*)m_Impl;
+    }
 
     inline uint32_t GetQueryNum() const {
         return m_QueryNum;
@@ -20,6 +22,8 @@ struct QueryPoolVal final : public DeviceObjectVal<QueryPool> {
     inline bool IsImported() const {
         return m_QueryNum == 0;
     }
+
+    void ResetQueries(uint32_t offset, uint32_t num);
 
     //================================================================================================================
     // NRI

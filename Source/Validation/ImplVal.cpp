@@ -491,10 +491,10 @@ static void NRI_CALL UnmapBuffer(Buffer& buffer) {
 }
 
 static void NRI_CALL SetDebugName(Object* object, const char* name) {
-    CHECK(*(uint64_t*)object == NRI_OBJECT_SIGNATURE, "Invalid NRI object!");
-
-    if (object)
-        ((DeviceObjectVal<DeviceVal>*)object)->SetDebugName(name);
+    if (object) {
+        CHECK(((uint64_t*)object)[1] == NRI_OBJECT_SIGNATURE, "Invalid NRI object!");
+        ((DebugNameBase*)object)->SetDebugName(name);
+    }
 }
 
 static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
@@ -901,9 +901,13 @@ Result DeviceVal::FillFunctionTable(ResourceAllocatorInterface& table) const {
 //============================================================================================================================================================================================
 #pragma region[  Streamer  ]
 
-struct StreamerVal : DeviceObjectVal<Streamer> {
+struct StreamerVal : public ObjectVal {
     inline StreamerVal(DeviceVal& device, Streamer* impl)
-        : DeviceObjectVal(device, impl) {
+        : ObjectVal(device, impl) {
+    }
+
+    inline Streamer* GetImpl() const {
+        return (Streamer*)m_Impl;
     }
 
     BufferVal* constantBuffer = nullptr;

@@ -6,9 +6,13 @@ namespace nri {
 
 struct CommandBufferVal;
 
-struct CommandQueueVal final : public DeviceObjectVal<CommandQueue> {
+struct CommandQueueVal final : public ObjectVal {
     inline CommandQueueVal(DeviceVal& device, CommandQueue* commandQueue)
-        : DeviceObjectVal(device, commandQueue) {
+        : ObjectVal(device, commandQueue) {
+    }
+
+    inline CommandQueue* GetImpl() const {
+        return (CommandQueue*)m_Impl;
     }
 
     //================================================================================================================

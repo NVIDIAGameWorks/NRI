@@ -22,13 +22,17 @@ enum class ResourceViewType {
     SHADING_RATE_ATTACHMENT
 };
 
-struct DescriptorVal final : public DeviceObjectVal<Descriptor> {
+struct DescriptorVal final : public ObjectVal {
     DescriptorVal(DeviceVal& device, Descriptor* descriptor, ResourceType resourceType);
     DescriptorVal(DeviceVal& device, Descriptor* descriptor, const BufferViewDesc& bufferViewDesc);
     DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Texture1DViewDesc& textureViewDesc);
     DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Texture2DViewDesc& textureViewDesc);
     DescriptorVal(DeviceVal& device, Descriptor* descriptor, const Texture3DViewDesc& textureViewDesc);
     DescriptorVal(DeviceVal& device, Descriptor* descriptor);
+
+    inline Descriptor* GetImpl() const {
+        return (Descriptor*)m_Impl;
+    }
 
     inline uint64_t GetNativeObject() const {
         return GetCoreInterface().GetDescriptorNativeObject(*GetImpl());

@@ -4,9 +4,13 @@
 
 namespace nri {
 
-struct CommandAllocatorVal final : public DeviceObjectVal<CommandAllocator> {
+struct CommandAllocatorVal final : public ObjectVal {
     CommandAllocatorVal(DeviceVal& device, CommandAllocator* commandAllocator)
-        : DeviceObjectVal(device, commandAllocator) {
+        : ObjectVal(device, commandAllocator) {
+    }
+
+    inline CommandAllocator* GetImpl() const {
+        return (CommandAllocator*)m_Impl;
     }
 
     //================================================================================================================

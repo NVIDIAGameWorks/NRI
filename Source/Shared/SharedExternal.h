@@ -39,14 +39,6 @@ typedef nri::AllocationCallbacks AllocationCallbacks;
 #include "StdAllocator.h"
 
 // Base classes
-struct DebugNameBase {
-    inline DebugNameBase() {
-    }
-
-    virtual void SetDebugName(const char*) {
-    }
-};
-
 #include "DeviceBase.h"
 
 // Annotations for NVIDIA Nsight Systems
