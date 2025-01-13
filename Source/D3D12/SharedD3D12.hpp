@@ -341,13 +341,24 @@ D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE nri::GetAccelerationStructureType(A
 }
 
 D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS nri::GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits accelerationStructureBuildFlags) {
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE == (uint32_t)AccelerationStructureBuildBits::ALLOW_UPDATE, "Enum mismatch");
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION == (uint32_t)AccelerationStructureBuildBits::ALLOW_COMPACTION, "Enum mismatch");
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_TRACE, "Enum mismatch");
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_BUILD, "Enum mismatch");
-    static_assert(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY == (uint32_t)AccelerationStructureBuildBits::MINIMIZE_MEMORY, "Enum mismatch");
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
 
-    return (D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS)accelerationStructureBuildFlags;
+    if (accelerationStructureBuildFlags & AccelerationStructureBuildBits::ALLOW_UPDATE)
+        flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
+
+    if (accelerationStructureBuildFlags & AccelerationStructureBuildBits::ALLOW_COMPACTION)
+        flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION;
+
+    if (accelerationStructureBuildFlags & AccelerationStructureBuildBits::PREFER_FAST_TRACE)
+        flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+
+    if (accelerationStructureBuildFlags & AccelerationStructureBuildBits::PREFER_FAST_BUILD)
+        flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD;
+
+    if (accelerationStructureBuildFlags & AccelerationStructureBuildBits::MINIMIZE_MEMORY)
+        flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY;
+
+    return flags;
 }
 
 D3D12_RAYTRACING_GEOMETRY_TYPE GetGeometryType(GeometryType geometryType) {

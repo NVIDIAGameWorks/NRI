@@ -41,7 +41,8 @@ NriBits(AccelerationStructureBuildBits, uint8_t,
     ALLOW_COMPACTION                    = NriBit(1),
     PREFER_FAST_TRACE                   = NriBit(2),
     PREFER_FAST_BUILD                   = NriBit(3),
-    MINIMIZE_MEMORY                     = NriBit(4)
+    MINIMIZE_MEMORY                     = NriBit(4),
+    ALLOW_DATA_ACCESS                   = NriBit(5)     // requires "isRayTracingPositionFetchSupported"
 );
 
 NriStruct(ShaderLibrary) {

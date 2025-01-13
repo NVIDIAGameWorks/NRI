@@ -82,6 +82,7 @@ Supported Vulkan extensions:
     - _VK_KHR_ray_tracing_pipeline_
     - _VK_KHR_acceleration_structure_ (depends on _VK_KHR_deferred_host_operations_)
     - _VK_KHR_ray_query_
+    - _VK_KHR_ray_tracing_position_fetch_
     - _VK_KHR_ray_tracing_maintenance1_
     - _VK_KHR_line_rasterization_
     - _VK_KHR_fragment_shader_barycentric_

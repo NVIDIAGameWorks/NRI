@@ -230,6 +230,9 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_KHR_RAY_QUERY_EXTENSION_NAME, supportedExts) && !disableRayTracing)
         desiredDeviceExts.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
 
+    if (IsExtensionSupported(VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME, supportedExts) && !disableRayTracing)
+        desiredDeviceExts.push_back(VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME);
+
     if (IsExtensionSupported(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME, supportedExts) && !disableRayTracing)
         desiredDeviceExts.push_back(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
 
@@ -581,6 +584,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR};
     if (IsExtensionSupported(VK_KHR_RAY_QUERY_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(rayQueryFeatures);
+    }
+
+    VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR rayTracingPositionFetchFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(rayTracingPositionFetchFeatures);
     }
 
     VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR rayTracingMaintenanceFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR};
@@ -1011,6 +1019,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isBarycentricSupported = fragmentShaderBarycentricFeatures.fragmentShaderBarycentric;
         m_Desc.isShaderViewportIndexSupported = features12.shaderOutputViewportIndex;
         m_Desc.isShaderLayerSupported = features12.shaderOutputLayer;
+        m_Desc.isRayTracingPositionFetchSupported = rayTracingPositionFetchFeatures.rayTracingPositionFetch;
 
         m_Desc.isSwapChainSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, desiredDeviceExts);
         m_Desc.isRayTracingSupported = m_Desc.rayTracingTier != 0;

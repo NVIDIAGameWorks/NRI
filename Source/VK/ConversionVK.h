@@ -552,14 +552,28 @@ constexpr VkAccelerationStructureTypeKHR GetAccelerationStructureType(Accelerati
     return (VkAccelerationStructureTypeKHR)type;
 }
 
-constexpr VkBuildAccelerationStructureFlagsKHR GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits flags) {
-    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::ALLOW_UPDATE, "Enum mismatch");
-    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::ALLOW_COMPACTION, "Enum mismatch");
-    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_TRACE, "Enum mismatch");
-    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::PREFER_FAST_BUILD, "Enum mismatch");
-    static_assert(VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR == (uint32_t)AccelerationStructureBuildBits::MINIMIZE_MEMORY, "Enum mismatch");
+constexpr VkBuildAccelerationStructureFlagsKHR GetAccelerationStructureBuildFlags(AccelerationStructureBuildBits accelerationStructureBuildFlags) {
+    VkBuildAccelerationStructureFlagsKHR flags = 0;
 
-    return (VkBuildAccelerationStructureFlagsKHR)flags;
+    if (accelerationStructureBuildFlags & AccelerationStructureBuildBits::ALLOW_UPDATE)
+        flags |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+
+    if (accelerationStructureBuildFlags & AccelerationStructureBuildBits::ALLOW_COMPACTION)
+        flags |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
+
+    if (accelerationStructureBuildFlags & AccelerationStructureBuildBits::PREFER_FAST_TRACE)
+        flags |= VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+
+    if (accelerationStructureBuildFlags & AccelerationStructureBuildBits::PREFER_FAST_BUILD)
+        flags |= VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR;
+
+    if (accelerationStructureBuildFlags & AccelerationStructureBuildBits::MINIMIZE_MEMORY)
+        flags |= VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR;
+
+    if (accelerationStructureBuildFlags & AccelerationStructureBuildBits::ALLOW_DATA_ACCESS)
+        flags |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR;
+
+    return flags;
 }
 
 constexpr VkGeometryFlagsKHR GetGeometryFlags(BottomLevelGeometryBits geometryFlags) {

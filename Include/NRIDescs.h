@@ -1523,6 +1523,7 @@ NriStruct(DeviceDesc) {
     uint32_t isBarycentricSupported : 1;
     uint32_t isShaderViewportIndexSupported : 1;        // always can be used from geometry shaders
     uint32_t isShaderLayerSupported : 1;                // always can be used from geometry shaders
+    uint32_t isRayTracingPositionFetchSupported : 1;    // currently VK only
 
     // Emulated features
     uint32_t isDrawParametersEmulationEnabled : 1;
