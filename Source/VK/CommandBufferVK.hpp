@@ -222,6 +222,8 @@ NRI_INLINE void CommandBufferVK::ClearStorageTexture(const ClearStorageTextureDe
 
 NRI_INLINE void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmentsDesc) {
     const DeviceDesc& deviceDesc = m_Device.GetDesc();
+
+    // TODO: if there are no attachments, render area has max dimensions. It can be suboptimal even on desktop. It's a no-go on tiled architectures
     m_RenderLayerNum = deviceDesc.attachmentLayerMaxNum;
     m_RenderWidth = deviceDesc.attachmentMaxDim;
     m_RenderHeight = deviceDesc.attachmentMaxDim;
@@ -291,13 +293,9 @@ NRI_INLINE void CommandBufferVK::BeginRendering(const AttachmentsDesc& attachmen
         shadingRate.shadingRateAttachmentTexelSize = {tileSize, tileSize};
     }
 
-    // TODO: matches D3D behavior?
     bool hasAttachment = attachmentsDesc.depthStencil || attachmentsDesc.colors;
-    if (!hasAttachment) {
-        m_RenderLayerNum = 0;
-        m_RenderWidth = 0;
-        m_RenderHeight = 0;
-    }
+    if (!hasAttachment)
+        m_RenderLayerNum = 1;
 
     VkRenderingInfo renderingInfo = {VK_STRUCTURE_TYPE_RENDERING_INFO};
     renderingInfo.flags = 0;
