@@ -63,7 +63,7 @@ struct DeviceD3D12 final : public DeviceBase {
         return m_Pix;
     }
 
-#if NRI_USE_EXT_LIBS
+#if NRI_ENABLE_EXTERNAL_LIBRARIES
     inline bool HasNvExt() const {
         return m_NvExt.available;
     }
@@ -115,7 +115,7 @@ struct DeviceD3D12 final : public DeviceBase {
     // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name) override {
+    void SetDebugName(const char* name) DEBUG_NAME_OVERRIDE {
         SET_D3D_DEBUG_OBJECT_NAME(m_Device, name);
     }
 
@@ -159,7 +159,7 @@ private:
 private:
     // Order of destructors is important
     PixExt m_Pix = {};
-#if NRI_USE_EXT_LIBS
+#if NRI_ENABLE_EXTERNAL_LIBRARIES
     NvExt m_NvExt = {};
     AmdExt m_AmdExt = {};
 #endif

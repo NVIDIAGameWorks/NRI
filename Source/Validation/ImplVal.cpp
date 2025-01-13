@@ -493,7 +493,7 @@ static void NRI_CALL UnmapBuffer(Buffer& buffer) {
 static void NRI_CALL SetDebugName(Object* object, const char* name) {
     if (object) {
         CHECK(((uint64_t*)object)[1] == NRI_OBJECT_SIGNATURE, "Invalid NRI object!");
-        ((DebugNameBase*)object)->SetDebugName(name);
+        ((DebugNameBaseVal*)object)->SetDebugName(name);
     }
 }
 

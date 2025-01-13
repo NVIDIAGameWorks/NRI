@@ -6,12 +6,42 @@
 
 namespace nri {
 
+/*
+TODO: inheritance is a bit tricky:
+- "Objects => DebugNameBase"
+- "Device => DeviceBase => DebugNameBaseVal"
+- "ObjectVal => DebugNameBaseVal"
+Why?
+- validation objects should always have names (they ignore "NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS" state)
+- non-validation objects should get "-8" bytes to their sizes if "NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS = 0" (-1 virtual function)
+Notes:
+- "DebugNameBaseVal" is used only inside validation
+- "DebugNameBase" is used only inside implementations (gets transformed to NOP if "NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS = 0")
+- implementations don't call "SetDebugName" from base classes if "NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS = 0"
+- "DebugNameBaseVal" can be cast to "DebugNameBase" if "NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS = 1" (it happens for device in implementations)
+*/
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
+#    define DEBUG_NAME_OVERRIDE override
+
 struct DebugNameBase {
     virtual void SetDebugName(const char*) {
     }
 };
 
-struct DeviceBase : public DebugNameBase {
+#else
+#    define DEBUG_NAME_OVERRIDE
+
+struct DebugNameBase {
+};
+
+#endif
+
+struct DebugNameBaseVal {
+    virtual void SetDebugName(const char*) {
+    }
+};
+
+struct DeviceBase : public DebugNameBaseVal {
     inline DeviceBase(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks)
         : m_CallbackInterface(callbacks)
         , m_AllocationCallbacks(allocationCallbacks)

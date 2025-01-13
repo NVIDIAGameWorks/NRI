@@ -42,7 +42,7 @@ typedef nri::AllocationCallbacks AllocationCallbacks;
 #include "DeviceBase.h"
 
 // Annotations for NVIDIA Nsight Systems
-#if NRI_USE_NVTX
+#if NRI_ENABLE_NVTX_SUPPORT
 #    include "NVTX/c/include/nvtx3/nvToolsExt.h"
 #endif
 

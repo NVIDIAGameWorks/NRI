@@ -97,7 +97,7 @@ struct DeviceVK final : public DeviceBase {
     // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name) override;
+    void SetDebugName(const char* name) DEBUG_NAME_OVERRIDE;
 
     //================================================================================================================
     // DeviceBase

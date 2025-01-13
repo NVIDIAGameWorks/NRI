@@ -44,7 +44,7 @@ struct TextureVK final : public DebugNameBase {
     // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name) override;
+    void SetDebugName(const char* name) DEBUG_NAME_OVERRIDE;
 
 private:
     DeviceVK& m_Device;

@@ -50,7 +50,7 @@ struct PipelineD3D12 final : public DebugNameBase {
     // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name) override {
+    void SetDebugName(const char* name) DEBUG_NAME_OVERRIDE {
         SET_D3D_DEBUG_OBJECT_NAME(m_PipelineState, name);
     }
 

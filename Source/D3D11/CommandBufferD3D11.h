@@ -28,7 +28,7 @@ struct CommandBufferD3D11 final : public CommandBufferBase {
     // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name) override {
+    void SetDebugName(const char* name) DEBUG_NAME_OVERRIDE {
         SET_D3D_DEBUG_OBJECT_NAME(m_DeferredContext, name);
         SET_D3D_DEBUG_OBJECT_NAME(m_CommandList, name);
     }

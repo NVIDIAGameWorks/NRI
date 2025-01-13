@@ -44,7 +44,7 @@ struct PipelineD3D11 final : public DebugNameBase {
     // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name) override;
+    void SetDebugName(const char* name) DEBUG_NAME_OVERRIDE;
 
 private:
     inline bool IsCompute() const {
@@ -65,7 +65,7 @@ private:
     ComPtr<ID3D11InputLayout> m_InputLayout;
     ComPtr<ID3D11DepthStencilState> m_DepthStencilState;
     ComPtr<ID3D11BlendState1> m_BlendState;
-#if NRI_USE_EXT_LIBS
+#if NRI_ENABLE_EXTERNAL_LIBRARIES
     NvAPI_D3D11_RASTERIZER_DESC_EX m_RasterizerDesc = {};
 #else
     D3D11_RASTERIZER_DESC m_RasterizerDesc = {};

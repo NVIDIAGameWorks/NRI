@@ -34,7 +34,7 @@ struct DescriptorD3D11 final : public DebugNameBase {
         return (ID3D11UnorderedAccessView*)m_Descriptor.GetInterface();
     }
 
-#if NRI_USE_EXT_LIBS
+#if NRI_ENABLE_EXTERNAL_LIBRARIES
     inline operator ID3D11NvShadingRateResourceView*() const {
         return (ID3D11NvShadingRateResourceView*)m_Descriptor.GetInterface();
     }
@@ -73,7 +73,7 @@ struct DescriptorD3D11 final : public DebugNameBase {
     // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name) override {
+    void SetDebugName(const char* name) DEBUG_NAME_OVERRIDE {
         SET_D3D_DEBUG_OBJECT_NAME(m_Descriptor, name);
     }
 

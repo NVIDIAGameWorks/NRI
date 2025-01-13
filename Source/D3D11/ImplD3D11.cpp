@@ -397,15 +397,24 @@ static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPoo
 }
 
 static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    MaybeUnused(commandBuffer, name, bgra);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     ((CommandBufferD3D11&)commandBuffer).BeginAnnotation(name, bgra);
+#endif
 }
 
 static void NRI_CALL CmdEndAnnotation(CommandBuffer& commandBuffer) {
+    MaybeUnused(commandBuffer);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     ((CommandBufferD3D11&)commandBuffer).EndAnnotation();
+#endif
 }
 
 static void NRI_CALL CmdAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    MaybeUnused(commandBuffer, name, bgra);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     ((CommandBufferD3D11&)commandBuffer).Annotation(name, bgra);
+#endif
 }
 
 static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
@@ -469,8 +478,11 @@ static void NRI_CALL UnmapBuffer(Buffer& buffer) {
 }
 
 static void NRI_CALL SetDebugName(Object* object, const char* name) {
+    MaybeUnused(object, name);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     if (object)
         ((DebugNameBase*)object)->SetDebugName(name);
+#endif
 }
 
 static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
@@ -659,15 +671,24 @@ static void NRI_CALL EmuCmdCopyQueries(CommandBuffer& commandBuffer, const Query
 }
 
 static void NRI_CALL EmuCmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    MaybeUnused(commandBuffer, name, bgra);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     ((CommandBufferEmuD3D11&)commandBuffer).BeginAnnotation(name, bgra);
+#endif
 }
 
 static void NRI_CALL EmuCmdEndAnnotation(CommandBuffer& commandBuffer) {
+    MaybeUnused(commandBuffer);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     ((CommandBufferEmuD3D11&)commandBuffer).EndAnnotation();
+#endif
 }
 
 static void NRI_CALL EmuCmdAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    MaybeUnused(commandBuffer, name, bgra);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     ((CommandBufferEmuD3D11&)commandBuffer).Annotation(name, bgra);
+#endif
 }
 
 static Result NRI_CALL EmuEndCommandBuffer(CommandBuffer& commandBuffer) {

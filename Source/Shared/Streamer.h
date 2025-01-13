@@ -52,7 +52,7 @@ struct StreamerImpl : public nri::DebugNameBase {
     // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name) override {
+    void SetDebugName(const char* name) DEBUG_NAME_OVERRIDE {
         m_NRI.SetDebugName(m_ConstantBuffer, name);
         m_NRI.SetDebugName(m_ConstantBufferMemory, name);
         m_NRI.SetDebugName(m_DynamicBuffer, name);

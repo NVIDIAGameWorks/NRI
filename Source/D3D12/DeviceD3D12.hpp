@@ -72,7 +72,7 @@ DeviceD3D12::~DeviceD3D12() {
             Destroy(GetAllocationCallbacks(), commandQueueD3D12);
     }
 
-#if NRI_USE_EXT_LIBS
+#if NRI_ENABLE_EXTERNAL_LIBRARIES
     if (HasAmdExt() && !m_IsWrapped)
         m_AmdExt.DestroyDeviceD3D12(m_AmdExt.context, m_Device, nullptr);
 #endif
@@ -125,7 +125,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
     // Device
     ComPtr<ID3D12DeviceBest> deviceTemp = (ID3D12DeviceBest*)deviceCreationD3D12Desc.d3d12Device;
     if (!deviceTemp) {
-#if NRI_USE_EXT_LIBS
+#if NRI_ENABLE_EXTERNAL_LIBRARIES
         bool isShaderAtomicsI64Supported = false;
         uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : 63;
         if (HasAmdExt()) {
@@ -148,7 +148,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
             hr = D3D12CreateDevice(m_Adapter, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), (void**)&deviceTemp);
             RETURN_ON_BAD_HRESULT(this, hr, "D3D12CreateDevice()");
 
-#if NRI_USE_EXT_LIBS
+#if NRI_ENABLE_EXTERNAL_LIBRARIES
             if (HasNvExt()) {
                 REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_SetNvShaderExtnSlotSpace(deviceTemp, shaderExtRegister, deviceCreationDesc.shaderExtSpace));
                 REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(deviceTemp, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported));
@@ -540,7 +540,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
 
     bool isShaderAtomicsF16Supported = false;
     bool isShaderAtomicsF32Supported = false;
-#if NRI_USE_EXT_LIBS
+#if NRI_ENABLE_EXTERNAL_LIBRARIES
     if (HasNvExt()) {
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported));
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported));
@@ -553,7 +553,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
 #ifdef NRI_USE_AGILITY_SDK
     m_Desc.isShaderAtomicsI64Supported = m_Desc.isShaderAtomicsI64Supported || options9.AtomicInt64OnTypedResourceSupported || options9.AtomicInt64OnGroupSharedSupported || options11.AtomicInt64OnDescriptorHeapResourceSupported;
 #endif
-    
+
     m_Desc.isRasterizedOrderedViewSupported = options.ROVsSupported;
     m_Desc.isBarycentricSupported = options3.BarycentricsSupported;
     m_Desc.isShaderViewportIndexSupported = options.VPAndRTArrayIndexFromAnyShaderFeedingRasterizerSupportedWithoutGSEmulation;
@@ -567,7 +567,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
 
 void DeviceD3D12::InitializeNvExt(bool isNVAPILoadedInApp, bool isImported) {
     MaybeUnused(isNVAPILoadedInApp, isImported);
-#if NRI_USE_EXT_LIBS
+#if NRI_ENABLE_EXTERNAL_LIBRARIES
     if (GetModuleHandleA("renderdoc.dll") != nullptr) {
         REPORT_WARNING(this, "NVAPI is disabled, because RenderDoc library has been loaded");
         return;
@@ -586,7 +586,7 @@ void DeviceD3D12::InitializeNvExt(bool isNVAPILoadedInApp, bool isImported) {
 
 void DeviceD3D12::InitializeAmdExt(AGSContext* agsContext, bool isImported) {
     MaybeUnused(agsContext, isImported);
-#if NRI_USE_EXT_LIBS
+#if NRI_ENABLE_EXTERNAL_LIBRARIES
     if (isImported && !agsContext) {
         REPORT_WARNING(this, "AMDAGS is disabled, because 'agsContext' is not provided");
         return;

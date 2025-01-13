@@ -387,15 +387,24 @@ static void NRI_CALL CmdCopyQueries(CommandBuffer& commandBuffer, const QueryPoo
 }
 
 static void NRI_CALL CmdBeginAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    MaybeUnused(commandBuffer, name, bgra);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     ((CommandBufferVK&)commandBuffer).BeginAnnotation(name, bgra);
+#endif
 }
 
 static void NRI_CALL CmdEndAnnotation(CommandBuffer& commandBuffer) {
+    MaybeUnused(commandBuffer);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     ((CommandBufferVK&)commandBuffer).EndAnnotation();
+#endif
 }
 
 static void NRI_CALL CmdAnnotation(CommandBuffer& commandBuffer, const char* name, uint32_t bgra) {
+    MaybeUnused(commandBuffer, name, bgra);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     ((CommandBufferVK&)commandBuffer).Annotation(name, bgra);
+#endif
 }
 
 static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
@@ -403,15 +412,24 @@ static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
 }
 
 static void NRI_CALL QueueBeginAnnotation(CommandQueue& commandQueue, const char* name, uint32_t bgra) {
+    MaybeUnused(commandQueue, name, bgra);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     ((CommandQueueVK&)commandQueue).BeginAnnotation(name, bgra);
+#endif
 }
 
 static void NRI_CALL QueueEndAnnotation(CommandQueue& commandQueue) {
+    MaybeUnused(commandQueue);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     ((CommandQueueVK&)commandQueue).EndAnnotation();
+#endif
 }
 
 static void NRI_CALL QueueAnnotation(CommandQueue& commandQueue, const char* name, uint32_t bgra) {
+    MaybeUnused(commandQueue, name, bgra);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     ((CommandQueueVK&)commandQueue).Annotation(name, bgra);
+#endif
 }
 
 static void NRI_CALL ResetQueries(QueryPool& queryPool, uint32_t offset, uint32_t num) {
@@ -463,8 +481,11 @@ static void NRI_CALL UnmapBuffer(Buffer& buffer) {
 }
 
 static void NRI_CALL SetDebugName(Object* object, const char* name) {
+    MaybeUnused(object, name);
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
     if (object)
         ((DebugNameBase*)object)->SetDebugName(name);
+#endif
 }
 
 static void* NRI_CALL GetDeviceNativeObject(const Device& device) {

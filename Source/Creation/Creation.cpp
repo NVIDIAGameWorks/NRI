@@ -106,7 +106,9 @@ NRI_API Result NRI_CALL nriGetInterface(const Device& device, const char* interf
 NRI_API void NRI_CALL nriBeginAnnotation(const char* name, uint32_t bgra) {
     MaybeUnused(name, bgra);
 
-#if NRI_USE_NVTX
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
+#    if NRI_ENABLE_NVTX_SUPPORT
+
     nvtxEventAttributes_t eventAttrib = {};
     eventAttrib.version = NVTX_VERSION;
     eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
@@ -116,19 +118,35 @@ NRI_API void NRI_CALL nriBeginAnnotation(const char* name, uint32_t bgra) {
     eventAttrib.message.ascii = name;
 
     nvtxRangePushEx(&eventAttrib);
+
+#    else
+
+    // TODO: add PIX
+
+#    endif
 #endif
 }
 
 NRI_API void NRI_CALL nriEndAnnotation() {
-#if NRI_USE_NVTX
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
+#    if NRI_ENABLE_NVTX_SUPPORT
+
     nvtxRangePop();
+
+#    else
+
+    // TODO: add PIX
+
+#    endif
 #endif
 }
 
 NRI_API void NRI_CALL nriAnnotation(const char* name, uint32_t bgra) {
     MaybeUnused(name, bgra);
 
-#if NRI_USE_NVTX
+#if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
+#    if NRI_ENABLE_NVTX_SUPPORT
+
     nvtxEventAttributes_t eventAttrib = {};
     eventAttrib.version = NVTX_VERSION;
     eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
@@ -138,10 +156,15 @@ NRI_API void NRI_CALL nriAnnotation(const char* name, uint32_t bgra) {
     eventAttrib.message.ascii = name;
 
     nvtxMarkEx(&eventAttrib);
+#    else
+
+    // TODO: add PIX
+
+#    endif
 #endif
 }
 
-#if NRI_USE_NVTX
+#if NRI_ENABLE_NVTX_SUPPORT
 
 #    if (defined __linux__)
 #        include <sys/syscall.h>
@@ -185,7 +208,7 @@ Result FinalizeDeviceCreation(const T& deviceCreationDesc, DeviceBase& deviceImp
     } else {
         device = (Device*)&deviceImpl;
 
-#if NRI_USE_NVTX
+#if NRI_ENABLE_NVTX_SUPPORT
         nvtxInitialize(nullptr); // needed only to avoid stalls on the first use
 #endif
     }

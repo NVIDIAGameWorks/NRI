@@ -59,7 +59,7 @@ struct DeviceD3D11 final : public DeviceBase {
             ::LeaveCriticalSection(&m_CriticalSection);
     }
 
-#if NRI_USE_EXT_LIBS
+#if NRI_ENABLE_EXTERNAL_LIBRARIES
     inline bool HasNvExt() const {
         return m_NvExt.available;
     }
@@ -103,7 +103,7 @@ struct DeviceD3D11 final : public DeviceBase {
     // DebugNameBase
     //================================================================================================================
 
-    void SetDebugName(const char* name) override {
+    void SetDebugName(const char* name) DEBUG_NAME_OVERRIDE {
         SET_D3D_DEBUG_OBJECT_NAME(m_Device, name);
         SET_D3D_DEBUG_OBJECT_NAME(m_ImmediateContext, name);
     }
@@ -142,7 +142,7 @@ private:
 
 private:
     // Order of destructors is important
-#if NRI_USE_EXT_LIBS
+#if NRI_ENABLE_EXTERNAL_LIBRARIES
     NvExt m_NvExt = {};
     AmdExt m_AmdExt = {};
 #endif

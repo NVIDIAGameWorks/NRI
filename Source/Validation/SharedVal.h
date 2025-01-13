@@ -8,7 +8,7 @@
 
 namespace nri {
 
-struct ObjectVal : public DebugNameBase {
+struct ObjectVal : public DebugNameBaseVal {
     inline ObjectVal(DeviceVal& device, Object* object = nullptr)
         : m_Device(device)
         , m_Impl(object) {
