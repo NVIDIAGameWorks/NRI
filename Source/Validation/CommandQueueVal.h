@@ -15,6 +15,10 @@ struct CommandQueueVal final : public ObjectVal {
         return (CommandQueue*)m_Impl;
     }
 
+    inline void* GetNativeObject() const {
+        return m_Device.GetCoreInterface().GetCommandQueueNativeObject(*GetImpl());
+    }
+
     //================================================================================================================
     // NRI
     //================================================================================================================

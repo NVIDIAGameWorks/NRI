@@ -219,6 +219,7 @@ NriStruct(CoreInterface) {
 
     // Native objects                                                                                            ___D3D11___________________________|_D3D12_______________________|_VK_________________________________
     void*               (NRI_CALL *GetDeviceNativeObject)           (const NriRef(Device) device);               // ID3D11Device*                   | ID3D12Device*               | VkDevice
+    void*               (NRI_CALL *GetCommandQueueNativeObject)     (const NriRef(CommandQueue) queue);          // -                               | ID3D12CommandQueue*         | VkQueue
     void*               (NRI_CALL *GetCommandBufferNativeObject)    (const NriRef(CommandBuffer) commandBuffer); // ID3D11DeviceContext*            | ID3D12GraphicsCommandList*  | VkCommandBuffer
     uint64_t            (NRI_CALL *GetBufferNativeObject)           (const NriRef(Buffer) buffer);               // ID3D11Buffer*                   | ID3D12Resource*             | VkBuffer
     uint64_t            (NRI_CALL *GetTextureNativeObject)          (const NriRef(Texture) texture);             // ID3D11Resource*                 | ID3D12Resource*             | VkImage

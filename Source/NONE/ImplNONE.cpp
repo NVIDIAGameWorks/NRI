@@ -596,6 +596,10 @@ static void* NRI_CALL GetDeviceNativeObject(const Device&) {
     return nullptr;
 }
 
+static void* NRI_CALL GetCommandQueueNativeObject(const CommandQueue&) {
+    return nullptr;
+}
+
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer&) {
     return nullptr;
 }
@@ -711,6 +715,7 @@ Result DeviceNONE::FillFunctionTable(CoreInterface& table) const {
     table.UnmapBuffer = ::UnmapBuffer;
     table.SetDebugName = ::SetDebugName;
     table.GetDeviceNativeObject = ::GetDeviceNativeObject;
+    table.GetCommandQueueNativeObject = ::GetCommandQueueNativeObject;
     table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
     table.GetTextureNativeObject = ::GetTextureNativeObject;

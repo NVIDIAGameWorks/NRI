@@ -504,6 +504,13 @@ static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
     return ((DeviceVal&)device).GetNativeObject();
 }
 
+static void* NRI_CALL GetCommandQueueNativeObject(const CommandQueue& commandQueue) {
+    if (!(&commandQueue))
+        return nullptr;
+
+    return ((CommandQueueVal&)commandQueue).GetNativeObject();
+}
+
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
     if (!(&commandBuffer))
         return nullptr;
@@ -631,6 +638,7 @@ Result DeviceVal::FillFunctionTable(CoreInterface& table) const {
     table.UnmapBuffer = ::UnmapBuffer;
     table.SetDebugName = ::SetDebugName;
     table.GetDeviceNativeObject = ::GetDeviceNativeObject;
+    table.GetCommandQueueNativeObject = ::GetCommandQueueNativeObject;
     table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
     table.GetTextureNativeObject = ::GetTextureNativeObject;
@@ -1238,6 +1246,11 @@ static VKHandle NRI_CALL GetPhysicalDeviceVK(const Device& device) {
     return ((DeviceVal&)device).GetWrapperVKInterface().GetPhysicalDeviceVK(((DeviceVal&)device).GetImpl());
 }
 
+static uint32_t NRI_CALL GetCommandQueueFamilyIndexVK(const CommandQueue& commandQueue) {
+    const CommandQueueVal& commandQueueVal = (CommandQueueVal&)commandQueue;
+    return commandQueueVal.GetWrapperVKInterface().GetCommandQueueFamilyIndexVK(*commandQueueVal.GetImpl());
+}
+
 static VKHandle NRI_CALL GetInstanceVK(const Device& device) {
     return ((DeviceVal&)device).GetWrapperVKInterface().GetInstanceVK(((DeviceVal&)device).GetImpl());
 }
@@ -1269,6 +1282,7 @@ Result DeviceVal::FillFunctionTable(WrapperVKInterface& table) const {
     table.CreateQueryPoolVK = ::CreateQueryPoolVK;
     table.CreateAccelerationStructureVK = ::CreateAccelerationStructureVK;
     table.GetPhysicalDeviceVK = ::GetPhysicalDeviceVK;
+    table.GetCommandQueueFamilyIndexVK = ::GetCommandQueueFamilyIndexVK;
     table.GetInstanceVK = ::GetInstanceVK;
     table.GetDeviceProcAddrVK = ::GetDeviceProcAddrVK;
     table.GetInstanceProcAddrVK = ::GetInstanceProcAddrVK;

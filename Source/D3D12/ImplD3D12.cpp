@@ -526,11 +526,18 @@ static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
     return ((DeviceD3D12&)device).GetNativeObject();
 }
 
+static void* NRI_CALL GetCommandQueueNativeObject(const CommandQueue& commandQueue) {
+    if (!(&commandQueue))
+        return nullptr;
+
+    return (ID3D12CommandQueue*)((CommandQueueD3D12&)commandQueue);
+}
+
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
     if (!(&commandBuffer))
         return nullptr;
 
-    return (CommandBufferD3D12&)commandBuffer;
+    return (ID3D12GraphicsCommandList*)(CommandBufferD3D12&)commandBuffer;
 }
 
 static uint64_t NRI_CALL GetBufferNativeObject(const Buffer& buffer) {
@@ -653,6 +660,7 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& table) const {
     table.UnmapBuffer = ::UnmapBuffer;
     table.SetDebugName = ::SetDebugName;
     table.GetDeviceNativeObject = ::GetDeviceNativeObject;
+    table.GetCommandQueueNativeObject = ::GetCommandQueueNativeObject;
     table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
     table.GetTextureNativeObject = ::GetTextureNativeObject;

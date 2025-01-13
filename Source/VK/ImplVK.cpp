@@ -495,6 +495,13 @@ static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
     return (VkDevice)((DeviceVK&)device);
 }
 
+static void* NRI_CALL GetCommandQueueNativeObject(const CommandQueue& commandQueue) {
+    if (!(&commandQueue))
+        return nullptr;
+
+    return (VkQueue)((CommandQueueVK&)commandQueue);
+}
+
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
     if (!(&commandBuffer))
         return nullptr;
@@ -634,6 +641,7 @@ Result DeviceVK::FillFunctionTable(CoreInterface& table) const {
     table.UnmapBuffer = ::UnmapBuffer;
     table.SetDebugName = ::SetDebugName;
     table.GetDeviceNativeObject = ::GetDeviceNativeObject;
+    table.GetCommandQueueNativeObject = ::GetCommandQueueNativeObject;
     table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
     table.GetTextureNativeObject = ::GetTextureNativeObject;
@@ -1048,6 +1056,10 @@ static Result NRI_CALL CreateAccelerationStructureVK(Device& device, const Accel
     return ((DeviceVK&)device).CreateImplementation<AccelerationStructureVK>(accelerationStructure, accelerationStructureDesc);
 }
 
+static uint32_t NRI_CALL GetCommandQueueFamilyIndexVK(const CommandQueue& commandQueue) {
+    return ((CommandQueueVK&)commandQueue).GetFamilyIndex();
+}
+
 static VKHandle NRI_CALL GetPhysicalDeviceVK(const Device& device) {
     return (VkPhysicalDevice)((DeviceVK&)device);
 }
@@ -1076,6 +1088,7 @@ Result DeviceVK::FillFunctionTable(WrapperVKInterface& table) const {
     table.CreateComputePipelineVK = ::CreateComputePipelineVK;
     table.CreateQueryPoolVK = ::CreateQueryPoolVK;
     table.CreateAccelerationStructureVK = ::CreateAccelerationStructureVK;
+    table.GetCommandQueueFamilyIndexVK = ::GetCommandQueueFamilyIndexVK;
     table.GetPhysicalDeviceVK = ::GetPhysicalDeviceVK;
     table.GetInstanceVK = ::GetInstanceVK;
     table.GetDeviceProcAddrVK = ::GetDeviceProcAddrVK;

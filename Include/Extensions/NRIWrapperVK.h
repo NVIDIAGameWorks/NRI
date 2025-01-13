@@ -102,6 +102,7 @@ NriStruct(WrapperVKInterface) {
     Nri(Result) (NRI_CALL *CreateComputePipelineVK)         (NriRef(Device) device, VKNonDispatchableHandle vkPipeline, NriOut NriRef(Pipeline*) pipeline);
     Nri(Result) (NRI_CALL *CreateQueryPoolVK)               (NriRef(Device) device, const NriRef(QueryPoolVKDesc) queryPoolVKDesc, NriOut NriRef(QueryPool*) queryPool);
     Nri(Result) (NRI_CALL *CreateAccelerationStructureVK)   (NriRef(Device) device, const NriRef(AccelerationStructureVKDesc) accelerationStructureVKDesc, NriOut NriRef(AccelerationStructure*) accelerationStructure);
+    uint32_t    (NRI_CALL *GetCommandQueueFamilyIndexVK)    (const NriRef(CommandQueue) commandQueue);
     VKHandle    (NRI_CALL *GetPhysicalDeviceVK)             (const NriRef(Device) device);
     VKHandle    (NRI_CALL *GetInstanceVK)                   (const NriRef(Device) device);
     void*       (NRI_CALL *GetInstanceProcAddrVK)           (const NriRef(Device) device);
