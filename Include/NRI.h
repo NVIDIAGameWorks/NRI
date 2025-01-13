@@ -105,6 +105,15 @@ NriStruct(CoreInterface) {
     Nri(Result)         (NRI_CALL *BindTextureMemory)               (NriRef(Device) device, const NriPtr(TextureMemoryBindingDesc) memoryBindingDescs, uint32_t memoryBindingDescNum);
     void                (NRI_CALL *FreeMemory)                      (NriRef(Memory) memory);
 
+    // Descriptor pool ("DescriptorSet" entities don't require destroying)
+    Nri(Result)         (NRI_CALL *AllocateDescriptorSets)          (NriRef(DescriptorPool) descriptorPool, const NriRef(PipelineLayout) pipelineLayout, uint32_t setIndex, NriOut NriPtr(DescriptorSet)* descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
+    void                (NRI_CALL *ResetDescriptorPool)             (NriRef(DescriptorPool) descriptorPool);
+
+    // Descriptor set
+    void                (NRI_CALL *UpdateDescriptorRanges)          (NriRef(DescriptorSet) descriptorSet, uint32_t baseRange, uint32_t rangeNum, const NriPtr(DescriptorRangeUpdateDesc) rangeUpdateDescs);
+    void                (NRI_CALL *UpdateDynamicConstantBuffers)    (NriRef(DescriptorSet) descriptorSet, uint32_t baseDynamicConstantBuffer, uint32_t dynamicConstantBufferNum, const NriPtr(Descriptor) const* descriptors);
+    void                (NRI_CALL *CopyDescriptorSet)               (NriRef(DescriptorSet) descriptorSet, const NriRef(DescriptorSetCopyDesc) descriptorSetCopyDesc);
+
     // Command buffer
     Nri(Result)         (NRI_CALL *BeginCommandBuffer)              (NriRef(CommandBuffer) commandBuffer, const NriPtr(DescriptorPool) descriptorPool);
     // {                {
@@ -197,15 +206,6 @@ NriStruct(CoreInterface) {
     void                (NRI_CALL *QueueSubmit)                     (NriRef(CommandQueue) commandQueue, const NriRef(QueueSubmitDesc) queueSubmitDesc); // to device
     void                (NRI_CALL *Wait)                            (NriRef(Fence) fence, uint64_t value); // on host
     uint64_t            (NRI_CALL *GetFenceValue)                   (NriRef(Fence) fence);
-
-    // Descriptor set
-    void                (NRI_CALL *UpdateDescriptorRanges)          (NriRef(DescriptorSet) descriptorSet, uint32_t baseRange, uint32_t rangeNum, const NriPtr(DescriptorRangeUpdateDesc) rangeUpdateDescs);
-    void                (NRI_CALL *UpdateDynamicConstantBuffers)    (NriRef(DescriptorSet) descriptorSet, uint32_t baseDynamicConstantBuffer, uint32_t dynamicConstantBufferNum, const NriPtr(Descriptor) const* descriptors);
-    void                (NRI_CALL *CopyDescriptorSet)               (NriRef(DescriptorSet) descriptorSet, const NriRef(DescriptorSetCopyDesc) descriptorSetCopyDesc);
-
-    // Descriptor pool ("DescriptorSet" entities don't require destroying)
-    Nri(Result)         (NRI_CALL *AllocateDescriptorSets)          (NriRef(DescriptorPool) descriptorPool, const NriRef(PipelineLayout) pipelineLayout, uint32_t setIndex, NriOut NriPtr(DescriptorSet)* descriptorSets, uint32_t instanceNum, uint32_t variableDescriptorNum);
-    void                (NRI_CALL *ResetDescriptorPool)             (NriRef(DescriptorPool) descriptorPool);
 
     // Command allocator
     void                (NRI_CALL *ResetCommandAllocator)           (NriRef(CommandAllocator) commandAllocator);
