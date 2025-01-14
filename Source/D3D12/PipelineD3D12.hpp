@@ -497,11 +497,12 @@ Result PipelineD3D12::Create(const RayTracingPipelineDesc& rayTracingPipelineDes
         const ShaderDesc& shader = rayTracingPipelineDesc.shaderLibrary->shaders[i];
         const size_t entryPointNameLength = shader.entryPointName != nullptr ? strlen(shader.entryPointName) + 1 : 0;
         wEntryPointNames[i].resize(entryPointNameLength);
-        ConvertCharToWchar(shader.entryPointName, (wchar_t*)wEntryPointNames[i].data(), entryPointNameLength);
+        ConvertCharToWchar(shader.entryPointName, wEntryPointNames[i].data(), entryPointNameLength);
     }
 
     uint32_t hitGroupNum = 0;
     Scratch<D3D12_HIT_GROUP_DESC> hitGroups = AllocateScratch(m_Device, D3D12_HIT_GROUP_DESC, rayTracingPipelineDesc.shaderGroupDescNum);
+    memset(&hitGroups[0], 0, rayTracingPipelineDesc.shaderGroupDescNum * sizeof(D3D12_HIT_GROUP_DESC)); // some fields can stay untouched
     m_ShaderGroupNames.reserve(rayTracingPipelineDesc.shaderGroupDescNum);
     for (uint32_t i = 0; i < rayTracingPipelineDesc.shaderGroupDescNum; i++) {
         bool isHitGroup = true;
