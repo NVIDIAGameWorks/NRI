@@ -168,13 +168,10 @@ struct DeviceNONE final : public DeviceBase {
 
         m_Desc.isShaderNativeI16Supported = true;
         m_Desc.isShaderNativeF16Supported = true;
-        m_Desc.isShaderNativeI32Supported = true;
-        m_Desc.isShaderNativeF32Supported = true;
         m_Desc.isShaderNativeI64Supported = true;
         m_Desc.isShaderNativeF64Supported = true;
         m_Desc.isShaderAtomicsI16Supported = true;
         m_Desc.isShaderAtomicsF16Supported = true;
-        m_Desc.isShaderAtomicsI32Supported = true;
         m_Desc.isShaderAtomicsF32Supported = true;
         m_Desc.isShaderAtomicsI64Supported = true;
         m_Desc.isShaderAtomicsF64Supported = true;

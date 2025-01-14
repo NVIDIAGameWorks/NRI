@@ -79,6 +79,39 @@ Draw parameters:
     #define NRI_SHADER_MODEL (__SHADER_TARGET_MAJOR * 10 + __SHADER_TARGET_MINOR)
 #endif
 
+// Extensions
+#ifndef NRI_SHADER_EXT_REGISTER
+    #define NRI_SHADER_EXT_REGISTER 63
+#else
+    // Must match "DeviceCreationDesc::shaderExtRegister"
+#endif
+
+// Expected usage:
+/*
+// NVIDIA
+#if defined(NRI_DXBC) || defined(NRI_DXIL)
+    #define NV_SHADER_EXTN_SLOT NRI_MERGE_TOKENS(u, NRI_SHADER_EXT_REGISTER)
+    #ifdef NRI_DXIL
+        #define NV_SHADER_EXTN_REGISTER_SPACE space0
+    #endif
+
+    #include "../External/nvapi/nvHLSLExtns.h"
+#endif
+
+// AMD
+#ifdef NRI_DXIL
+    #define AMD_EXT_SHADER_INTRINSIC_UAV_OVERRIDE NRI_MERGE_TOKENS(u, NRI_SHADER_EXT_REGISTER)
+
+    #include "../External/amdags/ags_lib/hlsl/ags_shader_intrinsics_dx12.hlsl"
+#endif
+
+#ifdef NRI_DXBC
+    #define AmdDxExtShaderIntrinsicsUAVSlot NRI_MERGE_TOKENS(u, NRI_SHADER_EXT_REGISTER)
+
+    #include "../External/amdags/ags_lib/hlsl/ags_shader_intrinsics_dx11.hlsl"
+#endif
+*/
+
 // Indirect commands filling // TODO: change to StructuredBuffers?
 #ifdef NRI_USE_BYTE_ADDRESS_BUFFER
     #define NRI_BUFFER_WRITE(buffer, offset, index, value) buffer.Store(offset * 4 + index * 4, value)

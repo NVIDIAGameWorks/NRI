@@ -111,7 +111,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         bool isShaderAtomicsI64Supported = false;
 
 #if NRI_ENABLE_EXTERNAL_LIBRARIES
-        uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : 63;
+        uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : NRI_SHADER_EXT_REGISTER;
         if (HasAmdExt()) {
             AGSDX11DeviceCreationParams deviceCreationParams = {};
             deviceCreationParams.pAdapter = m_Adapter;
@@ -379,6 +379,7 @@ void DeviceD3D11::FillDesc() {
 
     bool isShaderAtomicsF16Supported = false;
     bool isShaderAtomicsF32Supported = false;
+    bool isGetSpecialSupported = false;
 #if NRI_ENABLE_EXTERNAL_LIBRARIES
     NV_D3D11_FEATURE_DATA_RASTERIZER_SUPPORT rasterizerFeatures = {};
     NV_D3D1x_GRAPHICS_CAPS caps = {};
@@ -386,6 +387,7 @@ void DeviceD3D11::FillDesc() {
     if (HasNvExt()) {
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP16_ATOMIC, &isShaderAtomicsF16Supported));
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_FP32_ATOMIC, &isShaderAtomicsF32Supported));
+        REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_IsNvShaderExtnOpCodeSupported(m_Device, NV_EXTN_OP_GET_SPECIAL, &isGetSpecialSupported));
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_CheckFeatureSupport(m_Device, NV_D3D11_FEATURE_RASTERIZER, &rasterizerFeatures, sizeof(rasterizerFeatures)));
         REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D1x_GetGraphicsCapabilities(m_Device, NV_D3D1x_GRAPHICS_CAPS_VER, &caps));
     }
@@ -404,15 +406,13 @@ void DeviceD3D11::FillDesc() {
     m_Desc.isLogicFuncSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isLineSmoothingSupported = true;
 
-    m_Desc.isShaderNativeI32Supported = true;
-    m_Desc.isShaderNativeF32Supported = true;
     m_Desc.isShaderNativeF64Supported = options.ExtendedDoublesShaderInstructions;
     m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;
-    m_Desc.isShaderAtomicsI32Supported = true;
     m_Desc.isShaderAtomicsF32Supported = isShaderAtomicsF32Supported;
-    m_Desc.isRasterizedOrderedViewSupported = options2.ROVsSupported != 0;
     m_Desc.isShaderViewportIndexSupported = options3.VPAndRTArrayIndexFromAnyShaderFeedingRasterizer;
     m_Desc.isShaderLayerSupported = options3.VPAndRTArrayIndexFromAnyShaderFeedingRasterizer;
+    m_Desc.isShaderClockSupported = isGetSpecialSupported;
+    m_Desc.isRasterizedOrderedViewSupported = options2.ROVsSupported != 0;
 
     m_Desc.isSwapChainSupported = HasOutput();
     m_Desc.isLowLatencySupported = HasNvExt();

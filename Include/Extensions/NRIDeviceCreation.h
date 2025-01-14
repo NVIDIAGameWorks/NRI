@@ -46,8 +46,7 @@ NriStruct(DeviceCreationDesc) {
     NriOptional Nri(VKExtensions) vkExtensions;
     Nri(GraphicsAPI) graphicsAPI;
     NriOptional Nri(Robustness) robustness;
-    NriOptional uint32_t shaderExtRegister;                 // D3D12/D3D11 only
-    NriOptional uint32_t shaderExtSpace;                    // D3D12 only
+    NriOptional uint32_t shaderExtRegister;     // vendor specific shader extensions (default is NRI_SHADER_EXT_REGISTER, space is always "0")
 
     // Switches (disabled by default)
     bool enableNRIValidation;

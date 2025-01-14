@@ -127,7 +127,8 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
     if (!deviceTemp) {
 #if NRI_ENABLE_EXTERNAL_LIBRARIES
         bool isShaderAtomicsI64Supported = false;
-        uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : 63;
+        bool isShaderClockSupported = false;
+        uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : NRI_SHADER_EXT_REGISTER;
         if (HasAmdExt()) {
             AGSDX12DeviceCreationParams deviceCreationParams = {};
             deviceCreationParams.pAdapter = m_Adapter;
@@ -143,6 +144,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
 
             deviceTemp = (ID3D12DeviceBest*)agsParams.pDevice;
             isShaderAtomicsI64Supported = agsParams.extensionsSupported.intrinsics19;
+            isShaderClockSupported = agsParams.extensionsSupported.shaderClock;
         } else {
 #endif
             hr = D3D12CreateDevice(m_Adapter, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), (void**)&deviceTemp);
@@ -150,13 +152,14 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
 
 #if NRI_ENABLE_EXTERNAL_LIBRARIES
             if (HasNvExt()) {
-                REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_SetNvShaderExtnSlotSpace(deviceTemp, shaderExtRegister, deviceCreationDesc.shaderExtSpace));
+                REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_SetNvShaderExtnSlotSpace(deviceTemp, shaderExtRegister, 0));
                 REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D12_IsNvShaderExtnOpCodeSupported(deviceTemp, NV_EXTN_OP_UINT64_ATOMIC, &isShaderAtomicsI64Supported));
             }
         }
 
         // Start filling here to avoid passing additional arguments into "FillDesc"
         m_Desc.isShaderAtomicsI64Supported = isShaderAtomicsI64Supported;
+        m_Desc.isShaderClockSupported = isShaderClockSupported;
 #endif
     } else
         m_IsWrapped = true;
@@ -533,8 +536,6 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
 
     m_Desc.isShaderNativeI16Supported = options4.Native16BitShaderOpsSupported;
     m_Desc.isShaderNativeF16Supported = options4.Native16BitShaderOpsSupported;
-    m_Desc.isShaderNativeI32Supported = true;
-    m_Desc.isShaderNativeF32Supported = true;
     m_Desc.isShaderNativeI64Supported = options1.Int64ShaderOps;
     m_Desc.isShaderNativeF64Supported = options.DoublePrecisionFloatShaderOps;
 
@@ -548,7 +549,6 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
 #endif
 
     m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;
-    m_Desc.isShaderAtomicsI32Supported = true;
     m_Desc.isShaderAtomicsF32Supported = isShaderAtomicsF32Supported;
 #ifdef NRI_ENABLE_AGILITY_SDK_SUPPORT
     m_Desc.isShaderAtomicsI64Supported = m_Desc.isShaderAtomicsI64Supported || options9.AtomicInt64OnTypedResourceSupported || options9.AtomicInt64OnGroupSharedSupported || options11.AtomicInt64OnDescriptorHeapResourceSupported;

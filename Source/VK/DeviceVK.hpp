@@ -242,6 +242,9 @@ void DeviceVK::ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, b
     if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME, supportedExts))
         desiredDeviceExts.push_back(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
 
+    if (IsExtensionSupported(VK_KHR_SHADER_CLOCK_EXTENSION_NAME, supportedExts))
+        desiredDeviceExts.push_back(VK_KHR_SHADER_CLOCK_EXTENSION_NAME);
+
     // Optional (EXT)
     if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, supportedExts) && !disableRayTracing)
         desiredDeviceExts.push_back(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME);
@@ -604,6 +607,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
     VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR fragmentShaderBarycentricFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR};
     if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME, desiredDeviceExts)) {
         APPEND_EXT(fragmentShaderBarycentricFeatures);
+    }
+
+    VkPhysicalDeviceShaderClockFeaturesKHR shaderClockFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR};
+    if (IsExtensionSupported(VK_KHR_SHADER_CLOCK_EXTENSION_NAME, desiredDeviceExts)) {
+        APPEND_EXT(shaderClockFeatures);
     }
 
     // Optional (EXT)
@@ -1006,19 +1014,17 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
 
         m_Desc.isShaderNativeI16Supported = features.features.shaderInt16;
         m_Desc.isShaderNativeF16Supported = features12.shaderFloat16;
-        m_Desc.isShaderNativeI32Supported = true;
-        m_Desc.isShaderNativeF32Supported = true;
         m_Desc.isShaderNativeI64Supported = features.features.shaderInt64;
         m_Desc.isShaderNativeF64Supported = features.features.shaderFloat64;
         m_Desc.isShaderAtomicsF16Supported = (shaderAtomicFloat2Features.shaderBufferFloat16Atomics || shaderAtomicFloat2Features.shaderSharedFloat16Atomics) ? true : false;
-        m_Desc.isShaderAtomicsI32Supported = true;
         m_Desc.isShaderAtomicsF32Supported = (shaderAtomicFloatFeatures.shaderBufferFloat32Atomics || shaderAtomicFloatFeatures.shaderSharedFloat32Atomics) ? true : false;
         m_Desc.isShaderAtomicsI64Supported = (features12.shaderBufferInt64Atomics || features12.shaderSharedInt64Atomics) ? true : false;
         m_Desc.isShaderAtomicsF64Supported = (shaderAtomicFloatFeatures.shaderBufferFloat64Atomics || shaderAtomicFloatFeatures.shaderSharedFloat64Atomics) ? true : false;
-        m_Desc.isRasterizedOrderedViewSupported = fragmentShaderInterlockFeatures.fragmentShaderPixelInterlock != 0 && fragmentShaderInterlockFeatures.fragmentShaderSampleInterlock != 0;
-        m_Desc.isBarycentricSupported = fragmentShaderBarycentricFeatures.fragmentShaderBarycentric;
         m_Desc.isShaderViewportIndexSupported = features12.shaderOutputViewportIndex;
         m_Desc.isShaderLayerSupported = features12.shaderOutputLayer;
+        m_Desc.isShaderClockSupported = (shaderClockFeatures.shaderDeviceClock || shaderClockFeatures.shaderSubgroupClock) ? true : false;
+        m_Desc.isRasterizedOrderedViewSupported = fragmentShaderInterlockFeatures.fragmentShaderPixelInterlock != 0 && fragmentShaderInterlockFeatures.fragmentShaderSampleInterlock != 0;
+        m_Desc.isBarycentricSupported = fragmentShaderBarycentricFeatures.fragmentShaderBarycentric;
         m_Desc.isRayTracingPositionFetchSupported = rayTracingPositionFetchFeatures.rayTracingPositionFetch;
 
         m_Desc.isSwapChainSupported = IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, desiredDeviceExts);

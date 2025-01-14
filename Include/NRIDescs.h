@@ -1506,23 +1506,21 @@ NriStruct(DeviceDesc) {
     uint32_t isLayerBasedMultiviewSupported : 1;        // see LAYRED_BASED multiview
     uint32_t isViewportBasedMultiviewSupported : 1;     // see VIEWPORT_BASED multiview
 
-    // Shader features
+    // Shader features (I32 + atomics and F32 are always supported)
     uint32_t isShaderNativeI16Supported : 1;
     uint32_t isShaderNativeF16Supported : 1;
-    uint32_t isShaderNativeI32Supported : 1;
-    uint32_t isShaderNativeF32Supported : 1;
     uint32_t isShaderNativeI64Supported : 1;
     uint32_t isShaderNativeF64Supported : 1;
     uint32_t isShaderAtomicsI16Supported : 1;
     uint32_t isShaderAtomicsF16Supported : 1;
-    uint32_t isShaderAtomicsI32Supported : 1;
     uint32_t isShaderAtomicsF32Supported : 1;
     uint32_t isShaderAtomicsI64Supported : 1;
     uint32_t isShaderAtomicsF64Supported : 1;
-    uint32_t isRasterizedOrderedViewSupported : 1;      // ROV, aka fragment shader interlock
-    uint32_t isBarycentricSupported : 1;
     uint32_t isShaderViewportIndexSupported : 1;        // always can be used from geometry shaders
     uint32_t isShaderLayerSupported : 1;                // always can be used from geometry shaders
+    uint32_t isShaderClockSupported : 1;
+    uint32_t isRasterizedOrderedViewSupported : 1;      // ROV, aka fragment shader interlock
+    uint32_t isBarycentricSupported : 1;
     uint32_t isRayTracingPositionFetchSupported : 1;    // currently VK only
 
     // Emulated features

@@ -86,6 +86,7 @@ Supported Vulkan extensions:
     - _VK_KHR_ray_tracing_maintenance1_
     - _VK_KHR_line_rasterization_
     - _VK_KHR_fragment_shader_barycentric_
+    - _VK_KHR_shader_clock_
     - _VK_EXT_opacity_micromap_
     - _VK_EXT_sample_locations_
     - _VK_EXT_conservative_rasterization_
