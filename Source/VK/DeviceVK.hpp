@@ -838,6 +838,13 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         // Fill desc
         const VkPhysicalDeviceLimits& limits = props.properties.limits;
 
+        if (props.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+            m_Desc.architecture = Architecture::DESCRETE;
+        else if (props.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+            m_Desc.architecture = Architecture::INTEGRATED;
+        else
+            m_Desc.architecture = Architecture::UNKNOWN;
+
         m_Desc.viewportMaxNum = limits.maxViewports;
         m_Desc.viewportBoundsRange[0] = int32_t(limits.viewportBoundsRange[0]);
         m_Desc.viewportBoundsRange[1] = int32_t(limits.viewportBoundsRange[1]);
@@ -1011,7 +1018,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isViewportOriginBottomLeftSupported = true;
         m_Desc.isRegionResolveSupported = true;
         m_Desc.isLayerBasedMultiviewSupported = features11.multiview;
-        m_Desc.isUnifiedMemoryArchitecture = props.properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 
         m_Desc.isShaderNativeI16Supported = features.features.shaderInt16;
         m_Desc.isShaderNativeF16Supported = features12.shaderFloat16;

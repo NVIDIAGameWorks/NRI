@@ -271,6 +271,8 @@ void DeviceD3D11::FillDesc() {
         }
     }
 
+    m_Desc.architecture = options2.UnifiedMemoryArchitecture ? Architecture::INTEGRATED : Architecture::DESCRETE;
+
     m_Desc.viewportMaxNum = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
     m_Desc.viewportBoundsRange[0] = D3D11_VIEWPORT_BOUNDS_MIN;
     m_Desc.viewportBoundsRange[1] = D3D11_VIEWPORT_BOUNDS_MAX;
@@ -405,7 +407,6 @@ void DeviceD3D11::FillDesc() {
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicFuncSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isLineSmoothingSupported = true;
-    m_Desc.isUnifiedMemoryArchitecture = options2.UnifiedMemoryArchitecture;
 
     m_Desc.isShaderNativeF64Supported = options.ExtendedDoublesShaderInstructions;
     m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;

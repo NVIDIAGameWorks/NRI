@@ -1308,6 +1308,12 @@ NriEnum(Vendor, uint8_t,
     INTEL
 );
 
+NriEnum(Architecture, uint8_t,
+    UNKNOWN,
+    DESCRETE,
+    INTEGRATED // UMA
+);
+
 NriStruct(AdapterDesc) {
     char name[256];
     uint64_t luid;
@@ -1320,6 +1326,7 @@ NriStruct(AdapterDesc) {
 NriStruct(DeviceDesc) {
     // Common
     Nri(AdapterDesc) adapterDesc;
+    Nri(Architecture) architecture;
     Nri(GraphicsAPI) graphicsAPI;
     uint16_t nriVersionMajor;
     uint16_t nriVersionMinor;
@@ -1505,7 +1512,6 @@ NriStruct(DeviceDesc) {
     uint32_t isFlexibleMultiviewSupported : 1;          // see FLEXIBLE multiview
     uint32_t isLayerBasedMultiviewSupported : 1;        // see LAYRED_BASED multiview
     uint32_t isViewportBasedMultiviewSupported : 1;     // see VIEWPORT_BASED multiview
-    uint32_t isUnifiedMemoryArchitecture : 1;           // "false" also means "unknown"
 
     // Shader features (I32 + atomics and F32 are always supported)
     uint32_t isShaderNativeI16Supported : 1;

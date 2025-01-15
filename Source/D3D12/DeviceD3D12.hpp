@@ -223,7 +223,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1, &architecture, sizeof(architecture));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(architecture) failed, result = 0x%08X!", hr);
-    m_Desc.isUnifiedMemoryArchitecture = architecture.UMA;
+    m_Desc.architecture = architecture.UMA ? Architecture::INTEGRATED : Architecture::DESCRETE;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
     hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
