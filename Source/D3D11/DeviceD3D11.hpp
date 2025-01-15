@@ -405,6 +405,7 @@ void DeviceD3D11::FillDesc() {
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicFuncSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isLineSmoothingSupported = true;
+    m_Desc.isUnifiedMemoryArchitecture = options2.UnifiedMemoryArchitecture;
 
     m_Desc.isShaderNativeF64Supported = options.ExtendedDoublesShaderInstructions;
     m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;
