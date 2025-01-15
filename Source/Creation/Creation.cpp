@@ -443,8 +443,8 @@ NRI_API Result NRI_CALL nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t
             memset(&adapterDesc, 0, sizeof(adapterDesc));
             wcstombs(adapterDesc.name, desc.Description, GetCountOf(adapterDesc.name) - 1);
             adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
-            adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
-            adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
+            adapterDesc.videoMemorySize = desc.DedicatedVideoMemory; // TODO: add "desc.DedicatedSystemMemory"?
+            adapterDesc.sharedSystemMemorySize = desc.SharedSystemMemory;
             adapterDesc.deviceId = desc.DeviceId;
             adapterDesc.vendor = GetVendorFromID(desc.VendorId);
         }
@@ -564,7 +564,7 @@ NRI_API Result NRI_CALL nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t
                         if (memoryProperties.memoryHeaps[k].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
                             adapterDesc.videoMemorySize += memoryProperties.memoryHeaps[k].size;
                         else
-                            adapterDesc.systemMemorySize += memoryProperties.memoryHeaps[k].size;
+                            adapterDesc.sharedSystemMemorySize += memoryProperties.memoryHeaps[k].size;
                     }
                 }
 

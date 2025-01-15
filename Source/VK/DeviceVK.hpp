@@ -357,8 +357,8 @@ void DeviceVK::GetAdapterDesc() {
     else {
         wcstombs(m_Desc.adapterDesc.name, desc.Description, GetCountOf(m_Desc.adapterDesc.name) - 1);
         m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
-        m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
-        m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
+        m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory; // TODO: add "desc.DedicatedSystemMemory"?
+        m_Desc.adapterDesc.sharedSystemMemorySize = desc.SharedSystemMemory;
         m_Desc.adapterDesc.deviceId = desc.DeviceId;
         m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
     }
@@ -376,7 +376,7 @@ void DeviceVK::GetAdapterDesc() {
         if (m_MemoryProps.memoryHeaps[k].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
             m_Desc.adapterDesc.videoMemorySize += m_MemoryProps.memoryHeaps[k].size;
         else
-            m_Desc.adapterDesc.systemMemorySize += m_MemoryProps.memoryHeaps[k].size;
+            m_Desc.adapterDesc.sharedSystemMemorySize += m_MemoryProps.memoryHeaps[k].size;
     }
 #endif
 }
@@ -1011,6 +1011,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.isViewportOriginBottomLeftSupported = true;
         m_Desc.isRegionResolveSupported = true;
         m_Desc.isLayerBasedMultiviewSupported = features11.multiview;
+        m_Desc.isUnifiedMemoryArchitecture = props.properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 
         m_Desc.isShaderNativeI16Supported = features.features.shaderInt16;
         m_Desc.isShaderNativeF16Supported = features12.shaderFloat16;

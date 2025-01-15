@@ -89,8 +89,8 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
 
     wcstombs(m_Desc.adapterDesc.name, desc.Description, GetCountOf(m_Desc.adapterDesc.name) - 1);
     m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
-    m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
-    m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
+    m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory; // TODO: add "desc.DedicatedSystemMemory"?
+    m_Desc.adapterDesc.sharedSystemMemorySize = desc.SharedSystemMemory;
     m_Desc.adapterDesc.deviceId = desc.DeviceId;
     m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
 

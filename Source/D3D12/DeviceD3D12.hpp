@@ -110,8 +110,8 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
 
     wcstombs(m_Desc.adapterDesc.name, desc.Description, GetCountOf(m_Desc.adapterDesc.name) - 1);
     m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
-    m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory;
-    m_Desc.adapterDesc.systemMemorySize = desc.DedicatedSystemMemory + desc.SharedSystemMemory;
+    m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory; // TODO: add "desc.DedicatedSystemMemory"?
+    m_Desc.adapterDesc.sharedSystemMemorySize = desc.SharedSystemMemory;
     m_Desc.adapterDesc.deviceId = desc.DeviceId;
     m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
 
@@ -219,8 +219,14 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
 }
 
 void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
+    D3D12_FEATURE_DATA_ARCHITECTURE1 architecture = {};
+    HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1, &architecture, sizeof(architecture));
+    if (FAILED(hr))
+        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(architecture) failed, result = 0x%08X!", hr);
+    m_Desc.isUnifiedMemoryArchitecture = architecture.UMA;
+
     D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
-    HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
+    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options) failed, result = 0x%08X!", hr);
     m_Desc.isMemoryTier2Supported = options.ResourceHeapTier == D3D12_RESOURCE_HEAP_TIER_2 ? true : false;
