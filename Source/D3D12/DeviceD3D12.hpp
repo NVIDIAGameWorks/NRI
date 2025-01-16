@@ -613,7 +613,7 @@ void DeviceD3D12::InitializeAmdExt(AGSContext* agsContext, bool isImported) {
 
     // Verify
     const void** functionArray = (const void**)&m_AmdExt;
-    const size_t functionArraySize = sizeof(m_AmdExt) / sizeof(void*);
+    const size_t functionArraySize = 4;
     size_t i = 0;
     for (; i < functionArraySize && functionArray[i] != nullptr; i++)
         ;
@@ -659,7 +659,7 @@ void DeviceD3D12::InitializePixExt() {
 
     // Verify
     const void** functionArray = (const void**)&m_Pix;
-    const size_t functionArraySize = sizeof(m_Pix) / sizeof(void*);
+    const size_t functionArraySize = 6;
     size_t i = 0;
     for (; i < functionArraySize && functionArray[i] != nullptr; i++)
         ;

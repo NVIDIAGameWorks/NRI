@@ -91,12 +91,13 @@ D3D12_SHADING_RATE_COMBINER GetShadingRateCombiner(ShadingRateCombiner shadingRa
 #    include "nvapi/nvapi.h"
 
 struct AmdExt {
-    Library* library;
-    AGSContext* context;
+    // Funcs first
     AGS_INITIALIZE Initialize;
     AGS_DEINITIALIZE Deinitialize;
     AGS_DRIVEREXTENSIONSDX12_CREATEDEVICE CreateDeviceD3D12;
     AGS_DRIVEREXTENSIONSDX12_DESTROYDEVICE DestroyDeviceD3D12;
+    Library* library;
+    AGSContext* context;
     bool isWrapped;
 
     ~AmdExt() {
@@ -126,13 +127,14 @@ typedef HRESULT(WINAPI* PIX_ENDEVENTONCOMMANDQUEUE)(ID3D12CommandQueue* commandQ
 typedef HRESULT(WINAPI* PIX_SETMARKERONCOMMANDQUEUE)(ID3D12CommandQueue* commandQueue, UINT64 color, _In_ PCSTR formatString);
 
 struct PixExt {
-    Library* library;
+    // Funcs first
     PIX_BEGINEVENTONCOMMANDLIST BeginEventOnCommandList;
     PIX_ENDEVENTONCOMMANDLIST EndEventOnCommandList;
     PIX_SETMARKERONCOMMANDLIST SetMarkerOnCommandList;
     PIX_BEGINEVENTONCOMMANDQUEUE BeginEventOnCommandQueue;
     PIX_ENDEVENTONCOMMANDQUEUE EndEventOnCommandQueue;
     PIX_SETMARKERONCOMMANDQUEUE SetMarkerOnCommandQueue;
+    Library* library;
 
     ~PixExt() {
         if (library)

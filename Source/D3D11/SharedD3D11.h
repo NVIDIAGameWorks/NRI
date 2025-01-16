@@ -193,8 +193,7 @@ struct SamplePositionsState {
 #    include "nvapi/nvapi.h"
 
 struct AmdExt {
-    Library* library;
-    AGSContext* context;
+    // Funcs first
     AGS_INITIALIZE Initialize;
     AGS_DEINITIALIZE Deinitialize;
     AGS_DRIVEREXTENSIONSDX11_CREATEDEVICE CreateDeviceD3D11;
@@ -207,6 +206,8 @@ struct AmdExt {
     AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINSTANCEDINDIRECTCOUNTINDIRECT DrawIndirectCount;
     AGS_DRIVEREXTENSIONSDX11_MULTIDRAWINDEXEDINSTANCEDINDIRECTCOUNTINDIRECT DrawIndexedIndirectCount;
     AGS_DRIVEREXTENSIONSDX11_SETVIEWBROADCASTMASKS SetViewBroadcastMasks;
+    Library* library;
+    AGSContext* context;
     bool isWrapped;
 
     ~AmdExt() {

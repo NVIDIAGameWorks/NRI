@@ -470,7 +470,7 @@ void DeviceD3D11::InitializeAmdExt(AGSContext* agsContext, bool isImported) {
 
     // Verify
     const void** functionArray = (const void**)&m_AmdExt;
-    const size_t functionArraySize = sizeof(m_AmdExt) / sizeof(void*);
+    const size_t functionArraySize = 12;
     size_t i = 0;
     for (; i < functionArraySize && functionArray[i] != nullptr; i++)
         ;
