@@ -182,6 +182,7 @@ struct DeviceVal final : public DeviceBase {
 
 private:
     char* m_Name = nullptr; // .natvis
+    DeviceDesc m_Desc = {}; // .natvis
     Device& m_Impl;
     CoreInterface m_CoreAPI = {};
     HelperInterface m_HelperAPI = {};

@@ -2,8 +2,6 @@
 
 #pragma once
 
-#define NRI_OBJECT_SIGNATURE 0x1234567887654321ull // TODO: 32-bit platform support? not needed, I believe
-
 namespace nri {
 
 /*
@@ -42,8 +40,9 @@ struct DebugNameBaseVal {
 };
 
 struct DeviceBase : public DebugNameBaseVal {
-    inline DeviceBase(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks)
-        : m_CallbackInterface(callbacks)
+    inline DeviceBase(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks, uint64_t signature = 0)
+        : m_Signature(signature)
+        , m_CallbackInterface(callbacks)
         , m_AllocationCallbacks(allocationCallbacks)
         , m_StdAllocator(m_AllocationCallbacks) {
     }
@@ -110,7 +109,7 @@ struct DeviceBase : public DebugNameBaseVal {
 
 protected:
 #ifndef NDEBUG
-    uint64_t m_Signature = NRI_OBJECT_SIGNATURE; // .natvis
+    uint64_t m_Signature = 0; // .natvis
 #endif
     CallbackInterface m_CallbackInterface = {};
     AllocationCallbacks m_AllocationCallbacks = {};

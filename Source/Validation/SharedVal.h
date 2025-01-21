@@ -6,6 +6,8 @@
 
 #include "DeviceVal.h"
 
+#define NRI_OBJECT_SIGNATURE 0x1234567887654321ull // TODO: 32-bit platform support? not needed, I believe
+
 namespace nri {
 
 struct ObjectVal : public DebugNameBaseVal {

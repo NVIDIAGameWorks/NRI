@@ -149,6 +149,7 @@ constexpr void MaybeUnused([[maybe_unused]] const Args&... args) {
 #define REPORT_WARNING(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::WARNING, __FILE__, __LINE__, "%s(): " format, __FUNCTION__, ##__VA_ARGS__)
 #define REPORT_ERROR(deviceBase, format, ...) (deviceBase)->ReportMessage(nri::Message::ERROR, __FILE__, __LINE__, "%s(): " format, __FUNCTION__, ##__VA_ARGS__)
 
+// TODO: improve queue scores (at least the code is not duplicated)
 #define GRAPHICS_QUEUE_SCORE ((graphics ? 100 : 0) + (compute ? 10 : 0) + (copy ? 10 : 0) + (sparse ? 5 : 0) + (videoDecode ? 2 : 0) + (videoEncode ? 2 : 0) + (protect ? 1 : 0) + (opticalFlow ? 1 : 0))
 #define COMPUTE_QUEUE_SCORE ((!graphics ? 10 : 0) + (compute ? 100 : 0) + (!copy ? 10 : 0) + (sparse ? 5 : 0) + (!videoDecode ? 2 : 0) + (!videoEncode ? 2 : 0) + (protect ? 1 : 0) + (!opticalFlow ? 1 : 0))
 #define COPY_QUEUE_SCORE ((!graphics ? 10 : 0) + (!compute ? 10 : 0) + (copy ? 100 * familyProps.queueCount : 0) + (sparse ? 5 : 0) + (!videoDecode ? 2 : 0) + (!videoEncode ? 2 : 0) + (protect ? 1 : 0) + (!opticalFlow ? 1 : 0))

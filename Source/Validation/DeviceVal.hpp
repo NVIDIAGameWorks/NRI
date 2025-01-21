@@ -38,7 +38,7 @@ void ConvertGeometryObjectsVal(GeometryObject* destObjects, const GeometryObject
 QueryType GetQueryTypeVK(uint32_t queryTypeVK);
 
 DeviceVal::DeviceVal(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks, DeviceBase& device)
-    : DeviceBase(callbacks, allocationCallbacks)
+    : DeviceBase(callbacks, allocationCallbacks, NRI_OBJECT_SIGNATURE)
     , m_Impl(*(Device*)&device)
     , m_MemoryTypeMap(GetStdAllocator()) {
 }
@@ -85,6 +85,8 @@ bool DeviceVal::Create() {
     m_IsExtSupported.wrapperD3D11 = deviceBase.FillFunctionTable(m_WrapperD3D11API) == Result::SUCCESS;
     m_IsExtSupported.wrapperD3D12 = deviceBase.FillFunctionTable(m_WrapperD3D12API) == Result::SUCCESS;
     m_IsExtSupported.wrapperVK = deviceBase.FillFunctionTable(m_WrapperVKAPI) == Result::SUCCESS;
+    
+    m_Desc = GetDesc();
 
     return true;
 }

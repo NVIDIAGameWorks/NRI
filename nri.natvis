@@ -37,6 +37,9 @@
     </Type>
     <Type Name="NriDevice">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 80)} }}</DisplayString>
+        <Expand>
+            <Item Name="desc">*(NriDeviceDesc*)((uint8_t*)this + 88)</Item>
+        </Expand>
     </Type>
     <Type Name="NriFence">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
@@ -107,6 +110,9 @@
     </Type>
     <Type Name="nri::Device">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 80)} }}</DisplayString>
+        <Expand>
+            <Item Name="desc">*(NriDeviceDesc*)((uint8_t*)this + 88)</Item>
+        </Expand>
     </Type>
     <Type Name="nri::Fence">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
