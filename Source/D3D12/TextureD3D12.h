@@ -12,7 +12,6 @@ typedef ID3D12Resource ID3D12ResourceBest;
 
 namespace nri {
 
-struct DeviceD3D12;
 struct MemoryD3D12;
 
 struct TextureD3D12 final : public DebugNameBase {

@@ -91,8 +91,8 @@ struct DispatchTable {
     VULKAN_FUNCTION(DestroyShaderModule);
     VULKAN_FUNCTION(DestroyPipeline);
     VULKAN_FUNCTION(AllocateMemory);
-    VULKAN_FUNCTION(MapMemory);                         // TODO: replace with 2 (VK_KHR_map_memory2 or VK 1.4)
-    VULKAN_FUNCTION(UnmapMemory);                       // TODO: replace with 2 (VK_KHR_map_memory2 or VK 1.4)
+    VULKAN_FUNCTION(MapMemory);   // TODO: replace with 2 (VK_KHR_map_memory2 or VK 1.4)
+    VULKAN_FUNCTION(UnmapMemory); // TODO: replace with 2 (VK_KHR_map_memory2 or VK 1.4)
     VULKAN_FUNCTION(FreeMemory);
     VULKAN_FUNCTION(FlushMappedMemoryRanges);
     VULKAN_FUNCTION(QueueWaitIdle);
@@ -120,14 +120,14 @@ struct DispatchTable {
     VULKAN_FUNCTION(CmdSetDepthBounds);
     VULKAN_FUNCTION(CmdSetStencilReference);
     VULKAN_FUNCTION(CmdSetBlendConstants);
-    VULKAN_FUNCTION(CmdSetDepthBias);                   // TODO: replace with 2 (VK_EXT_depth_bias_control)
+    VULKAN_FUNCTION(CmdSetDepthBias); // TODO: replace with 2 (VK_EXT_depth_bias_control)
     VULKAN_FUNCTION(CmdClearAttachments);
     VULKAN_FUNCTION(CmdClearColorImage);
     VULKAN_FUNCTION(CmdBindVertexBuffers2);
-    VULKAN_FUNCTION(CmdBindIndexBuffer);                // TODO: remove after migration to v1.4
+    VULKAN_FUNCTION(CmdBindIndexBuffer); // TODO: remove after migration to v1.4
     VULKAN_FUNCTION(CmdBindPipeline);
-    VULKAN_FUNCTION(CmdBindDescriptorSets);             // TODO: replace with 2 (VK_KHR_maintenance6 or VK 1.4)
-    VULKAN_FUNCTION(CmdPushConstants);                  // TODO: replace with 2 (VK_KHR_maintenance6 or VK 1.4)
+    VULKAN_FUNCTION(CmdBindDescriptorSets); // TODO: replace with 2 (VK_KHR_maintenance6 or VK 1.4)
+    VULKAN_FUNCTION(CmdPushConstants);      // TODO: replace with 2 (VK_KHR_maintenance6 or VK 1.4)
     VULKAN_FUNCTION(CmdDispatch);
     VULKAN_FUNCTION(CmdDispatchIndirect);
     VULKAN_FUNCTION(CmdDraw);

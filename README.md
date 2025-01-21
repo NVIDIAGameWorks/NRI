@@ -35,6 +35,7 @@ Key features:
  - D3D12 Ultimate features support, including enhanced barriers
  - VK [printf](https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md) support
  - validation layers (GAPI- and NRI- provided)
+ - user provided memory allocator support
  - default D3D11 behavior is changed to match D3D12/VK using *NVAPI* or *AMD AGS* libraries, where applicable
  - supporting as much as possible VK-enabled platforms: Windows, Linux, MacOS, Android
  - can be used as a *shared* or *static* library
@@ -102,6 +103,11 @@ Supported Vulkan extensions:
     - _VK_EXT_pipeline_robustness_
     - _VK_EXT_fragment_shader_interlock_
     - _VK_NV_low_latency2_
+
+Repository organization:
+- there is only one branch `main` used for development
+- stable versions are in `Releases` section
+- it's recommended to use the latest release
 
 *NRI* sample code:
  - [*NRI samples*](https://github.com/NVIDIAGameWorks/NRISamples)

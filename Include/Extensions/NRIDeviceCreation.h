@@ -24,7 +24,7 @@ NriStruct(CallbackInterface) {
 };
 
 // Use largest offset for the resource type planned to be used as an unbounded array
-NriStruct(SPIRVBindingOffsets) {
+NriStruct(VKBindingOffsets) {
     uint32_t samplerOffset;
     uint32_t textureOffset;
     uint32_t constantBufferOffset;
@@ -38,15 +38,29 @@ NriStruct(VKExtensions) {
     uint32_t deviceExtensionNum;
 };
 
+NriStruct(QueueFamilyDesc) {
+    NriOptional const float* queuePriorities;   // [-1; 1]: low < 0, normal = 0, high > 0 ("queueNum" entries expected)
+    uint32_t queueNum;
+    Nri(QueueType) queueType;
+};
+
 NriStruct(DeviceCreationDesc) {
+    Nri(GraphicsAPI) graphicsAPI;
+    NriOptional Nri(Robustness) robustness;
     NriOptional const NriPtr(AdapterDesc) adapterDesc;
     NriOptional Nri(CallbackInterface) callbackInterface;
     NriOptional Nri(AllocationCallbacks) allocationCallbacks;
-    Nri(SPIRVBindingOffsets) spirvBindingOffsets;
-    NriOptional Nri(VKExtensions) vkExtensions;
-    Nri(GraphicsAPI) graphicsAPI;
-    NriOptional Nri(Robustness) robustness;
+
+    // 1 GRAPHICS queue is created by default
+    NriOptional const NriPtr(QueueFamilyDesc) queueFamilies;
+    NriOptional uint32_t queueFamilyNum;
+
+    // D3D specific
     NriOptional uint32_t shaderExtRegister;     // vendor specific shader extensions (default is NRI_SHADER_EXT_REGISTER, space is always "0")
+
+    // Vulkan specific
+    Nri(VKBindingOffsets) vkBindingOffsets;
+    NriOptional Nri(VKExtensions) vkExtensions;
 
     // Switches (disabled by default)
     bool enableNRIValidation;
@@ -59,7 +73,7 @@ NriStruct(DeviceCreationDesc) {
     bool disable3rdPartyAllocationCallbacks;    // to use "allocationCallbacks" only for NRI needs
 };
 
-// if "adapterDescs == NULL", then "adapterDescNum" gets set to the number of adapters
+// if "adapterDescs == NULL", then "adapterDescNum" is set to the number of adapters
 // else "adapterDescNum" must be set to number of elements in "adapterDescs"
 NRI_API Nri(Result) NRI_CALL nriEnumerateAdapters(NriPtr(AdapterDesc) adapterDescs, NonNriRef(uint32_t) adapterDescNum);
 

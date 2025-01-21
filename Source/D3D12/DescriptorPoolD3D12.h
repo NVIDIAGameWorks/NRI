@@ -6,8 +6,6 @@
 
 namespace nri {
 
-struct DeviceD3D12;
-
 struct DescriptorPoolD3D12 final : public DebugNameBase {
     inline DescriptorPoolD3D12(DeviceD3D12& device)
         : m_Device(device)

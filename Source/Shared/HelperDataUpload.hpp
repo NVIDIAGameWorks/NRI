@@ -124,7 +124,7 @@ Result HelperDataUpload::Create() {
     if (result != Result::SUCCESS)
         return result;
 
-    result = NRI.CreateCommandAllocator(m_CommandQueue, m_CommandAllocators);
+    result = NRI.CreateCommandAllocator(m_Queue, m_CommandAllocators);
     if (result != Result::SUCCESS)
         return result;
 
@@ -228,7 +228,7 @@ Result HelperDataUpload::EndCommandBuffersAndSubmit() {
     queueSubmitDesc.signalFences = &fenceSubmitDesc;
     queueSubmitDesc.signalFenceNum = 1;
 
-    NRI.QueueSubmit(m_CommandQueue, queueSubmitDesc);
+    NRI.QueueSubmit(m_Queue, queueSubmitDesc);
     NRI.Wait(*m_Fence, m_FenceValue);
 
     m_FenceValue++;

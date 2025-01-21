@@ -55,7 +55,7 @@ NriStruct(Window) {
 // queuedFrameNum = 2 - recommended if the GPU frame time is less than the desired frame time, but the sum of 2 frames is greater
 NriStruct(SwapChainDesc) {
     Nri(Window) window;
-    const NriPtr(CommandQueue) commandQueue;
+    const NriPtr(Queue) queue;
     Nri(Dim_t) width;
     Nri(Dim_t) height;
     uint8_t textureNum;

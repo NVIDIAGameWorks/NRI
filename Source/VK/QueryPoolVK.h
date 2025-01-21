@@ -4,8 +4,6 @@
 
 namespace nri {
 
-struct DeviceVK;
-
 struct QueryPoolVK final : public DebugNameBase {
     inline QueryPoolVK(DeviceVK& device)
         : m_Device(device) {

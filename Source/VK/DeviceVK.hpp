@@ -307,13 +307,12 @@ DeviceVK::DeviceVK(const CallbackInterface& callbacks, const AllocationCallbacks
 }
 
 DeviceVK::~DeviceVK() {
-    if (m_Device == VK_NULL_HANDLE)
-        return;
-
     DestroyVma();
 
-    for (uint32_t i = 0; i < m_CommandQueues.size(); i++)
-        Destroy(GetAllocationCallbacks(), m_CommandQueues[i]);
+    for (auto& queueFamily : m_QueueFamilies) {
+        for (uint32_t i = 0; i < queueFamily.size(); i++)
+            Destroy<QueueVK>(queueFamily[i]);
+    }
 
     if (m_Messenger) {
         typedef PFN_vkDestroyDebugUtilsMessengerEXT Func;
@@ -322,74 +321,30 @@ DeviceVK::~DeviceVK() {
     }
 
     if (m_OwnsNativeObjects) {
-        m_VK.DestroyDevice(m_Device, m_AllocationCallbackPtr);
-        m_VK.DestroyInstance(m_Instance, m_AllocationCallbackPtr);
+        if (m_Device)
+            m_VK.DestroyDevice(m_Device, m_AllocationCallbackPtr);
+
+        if (m_Instance)
+            m_VK.DestroyInstance(m_Instance, m_AllocationCallbackPtr);
     }
 
     if (m_Loader)
         UnloadSharedLibrary(*m_Loader);
 }
 
-void DeviceVK::GetAdapterDesc() {
-    VkPhysicalDeviceIDProperties deviceIDProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
-    VkPhysicalDeviceProperties2 props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &deviceIDProps};
-    m_VK.GetPhysicalDeviceProperties2(m_PhysicalDevice, &props);
-
-    static_assert(VK_LUID_SIZE == sizeof(uint64_t), "unexpected sizeof");
-#ifdef _WIN32
-    static_assert(VK_LUID_SIZE == sizeof(LUID), "unexpected sizeof");
-
-    ComPtr<IDXGIFactory4> dxgiFactory;
-    HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
-    if (FAILED(hr))
-        REPORT_WARNING(this, "CreateDXGIFactory2() failed, result = 0x%08X!", hr);
-
-    ComPtr<IDXGIAdapter> adapter;
-    LUID luid = *(LUID*)&deviceIDProps.deviceLUID[0];
-    hr = dxgiFactory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&adapter));
-    if (FAILED(hr))
-        REPORT_WARNING(this, "IDXGIFactory4::EnumAdapterByLuid() failed, result = 0x%08X!", hr);
-
-    DXGI_ADAPTER_DESC desc = {};
-    hr = adapter->GetDesc(&desc);
-    if (FAILED(hr))
-        REPORT_WARNING(this, "IDXGIAdapter::GetDesc() failed, result = 0x%08X!", hr);
-    else {
-        wcstombs(m_Desc.adapterDesc.name, desc.Description, GetCountOf(m_Desc.adapterDesc.name) - 1);
-        m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
-        m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory; // TODO: add "desc.DedicatedSystemMemory"?
-        m_Desc.adapterDesc.sharedSystemMemorySize = desc.SharedSystemMemory;
-        m_Desc.adapterDesc.deviceId = desc.DeviceId;
-        m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
-    }
-#else
-    strncpy(m_Desc.adapterDesc.name, props.properties.deviceName, sizeof(m_Desc.adapterDesc.name));
-    m_Desc.adapterDesc.luid = *(uint64_t*)&deviceIDProps.deviceLUID[0];
-    m_Desc.adapterDesc.deviceId = props.properties.deviceID;
-    m_Desc.adapterDesc.vendor = GetVendorFromID(props.properties.vendorID);
-
-    /* THIS IS AWFUL!
-    https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkPhysicalDeviceMemoryProperties.html
-    In a unified memory architecture (UMA) system there is often only a single memory heap which is considered to
-    be equally "local" to the host and to the device, and such an implementation must advertise the heap as device-local. */
-    for (uint32_t k = 0; k < m_MemoryProps.memoryHeapCount; k++) {
-        if (m_MemoryProps.memoryHeaps[k].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
-            m_Desc.adapterDesc.videoMemorySize += m_MemoryProps.memoryHeaps[k].size;
-        else
-            m_Desc.adapterDesc.sharedSystemMemorySize += m_MemoryProps.memoryHeaps[k].size;
-    }
-#endif
-}
-
-Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationVKDesc& deviceCreationVKDesc, bool isWrapper) {
+Result DeviceVK::Create(const DeviceCreationDesc& desc, const DeviceCreationVKDesc& descVK) {
+    bool isWrapper = descVK.vkDevice != nullptr;
     m_OwnsNativeObjects = !isWrapper;
-    m_SPIRVBindingOffsets = isWrapper ? deviceCreationVKDesc.spirvBindingOffsets : deviceCreationDesc.spirvBindingOffsets;
+    m_BindingOffsets = desc.vkBindingOffsets;
 
-    if (!isWrapper && !deviceCreationDesc.disable3rdPartyAllocationCallbacks)
+    if (!isWrapper && !desc.disable3rdPartyAllocationCallbacks)
         m_AllocationCallbackPtr = &m_AllocationCallbacks;
 
+    // Get adapter description as early as possible for meaningful error reporting
+    m_Desc.adapterDesc = *desc.adapterDesc;
+
     { // Loader
-        const char* loaderPath = deviceCreationVKDesc.libraryPath ? deviceCreationVKDesc.libraryPath : VULKAN_LOADER_NAME;
+        const char* loaderPath = descVK.libraryPath ? descVK.libraryPath : VULKAN_LOADER_NAME;
         m_Loader = LoadSharedLibrary(loaderPath);
         if (!m_Loader) {
             REPORT_ERROR(this, "Failed to load Vulkan loader: '%s'", loaderPath);
@@ -404,18 +359,15 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         if (res != Result::SUCCESS)
             return res;
 
-        if (isWrapper) {
-            for (uint32_t i = 0; i < deviceCreationVKDesc.enabledExtensions.instanceExtensionNum; i++)
-                desiredInstanceExts.push_back(deviceCreationVKDesc.enabledExtensions.instanceExtensions[i]);
+        for (uint32_t i = 0; i < desc.vkExtensions.instanceExtensionNum; i++)
+            desiredInstanceExts.push_back(desc.vkExtensions.instanceExtensions[i]);
 
-            m_Instance = (VkInstance)deviceCreationVKDesc.vkInstance;
-        } else {
+        m_Instance = (VkInstance)descVK.vkInstance;
+
+        if (!isWrapper) {
             ProcessInstanceExtensions(desiredInstanceExts);
 
-            for (uint32_t i = 0; i < deviceCreationDesc.vkExtensions.instanceExtensionNum; i++)
-                desiredInstanceExts.push_back(deviceCreationDesc.vkExtensions.instanceExtensions[i]);
-
-            res = CreateInstance(deviceCreationDesc.enableGraphicsAPIValidation, desiredInstanceExts);
+            res = CreateInstance(desc.enableGraphicsAPIValidation, desiredInstanceExts);
             if (res != Result::SUCCESS)
                 return res;
         }
@@ -425,12 +377,11 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             return res;
     }
 
-    m_MinorVersion = 0;
-    { // Group
-        if (isWrapper) {
-            m_PhysicalDevice = (VkPhysicalDevice)deviceCreationVKDesc.vkPhysicalDevice;
-            m_MinorVersion = deviceCreationVKDesc.minorVersion;
-        } else {
+    { // Physical device
+        m_MinorVersion = descVK.minorVersion;
+        m_PhysicalDevice = (VkPhysicalDevice)descVK.vkPhysicalDevice;
+
+        if (!isWrapper) {
             uint32_t deviceGroupNum = 0;
             VkResult result = m_VK.EnumeratePhysicalDeviceGroups(m_Instance, &deviceGroupNum, nullptr);
             RETURN_ON_FAILURE(this, result == VK_SUCCESS, GetReturnCode(result), "vkEnumeratePhysicalDeviceGroups returned %d", (int32_t)result);
@@ -457,9 +408,9 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
                 m_MinorVersion = VK_VERSION_MINOR(props.properties.apiVersion);
 
                 bool isSupported = (majorVersion * 10 + m_MinorVersion) >= 12;
-                if (deviceCreationDesc.adapterDesc) {
+                if (desc.adapterDesc) {
                     const uint64_t luid = *(uint64_t*)idProps.deviceLUID;
-                    if (luid == deviceCreationDesc.adapterDesc->luid) {
+                    if (luid == desc.adapterDesc->luid) {
                         RETURN_ON_FAILURE(this, isSupported, Result::UNSUPPORTED, "Can't create a device: the specified physical device does not support Vulkan 1.2+!");
                         break;
                     }
@@ -474,30 +425,89 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
 
             m_PhysicalDevice = deviceGroups[i].physicalDevices[0];
         }
+    }
 
+    // Queue family indices
+    std::array<uint32_t, (size_t)QueueType::MAX_NUM> queueFamilyIndices = {};
+    queueFamilyIndices.fill(INVALID_FAMILY_INDEX);
+    if (isWrapper) {
+        for (uint32_t i = 0; i < descVK.queueFamilyNum; i++) {
+            const QueueFamilyVKDesc& queueFamily = descVK.queueFamilies[i];
+            queueFamilyIndices[(size_t)queueFamily.queueType] = queueFamily.familyIndex;
+        }
+    } else {
+        uint32_t familyNum = 0;
+        m_VK.GetPhysicalDeviceQueueFamilyProperties2(m_PhysicalDevice, &familyNum, nullptr);
+
+        Scratch<VkQueueFamilyProperties2> familyProps2 = AllocateScratch(*this, VkQueueFamilyProperties2, familyNum);
+        for (uint32_t i = 0; i < familyNum; i++)
+            familyProps2[i] = {VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2};
+
+        m_VK.GetPhysicalDeviceQueueFamilyProperties2(m_PhysicalDevice, &familyNum, familyProps2);
+
+        std::array<uint32_t, (size_t)QueueType::MAX_NUM> scores = {};
+        for (uint32_t i = 0; i < familyNum; i++) { // TODO: same code is used in "Creation.cpp"
+            const VkQueueFamilyProperties& familyProps = familyProps2[i].queueFamilyProperties;
+
+            bool graphics = familyProps.queueFlags & VK_QUEUE_GRAPHICS_BIT;
+            bool compute = familyProps.queueFlags & VK_QUEUE_COMPUTE_BIT;
+            bool copy = familyProps.queueFlags & VK_QUEUE_TRANSFER_BIT;
+            bool sparse = familyProps.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT;
+            bool videoDecode = familyProps.queueFlags & VK_QUEUE_VIDEO_DECODE_BIT_KHR;
+            bool videoEncode = familyProps.queueFlags & VK_QUEUE_VIDEO_ENCODE_BIT_KHR;
+            bool protect = familyProps.queueFlags & VK_QUEUE_PROTECTED_BIT;
+            bool opticalFlow = familyProps.queueFlags & VK_QUEUE_OPTICAL_FLOW_BIT_NV;
+            bool taken = false;
+
+            { // Prefer as much features as possible
+                size_t index = (size_t)QueueType::GRAPHICS;
+                uint32_t score = GRAPHICS_QUEUE_SCORE;
+
+                if (!taken && graphics && score > scores[index]) {
+                    queueFamilyIndices[index] = i;
+                    scores[index] = score;
+                    taken = true;
+                }
+            }
+
+            { // Prefer compute-only
+                size_t index = (size_t)QueueType::COMPUTE;
+                uint32_t score = COMPUTE_QUEUE_SCORE;
+
+                if (!taken && compute && score > scores[index]) {
+                    queueFamilyIndices[index] = i;
+                    scores[index] = score;
+                    taken = true;
+                }
+            }
+
+            { // Prefer copy-only
+                size_t index = (size_t)QueueType::COPY;
+                uint32_t score = COPY_QUEUE_SCORE;
+
+                if (!taken && copy && score > scores[index]) {
+                    queueFamilyIndices[index] = i;
+                    scores[index] = score;
+                    taken = true;
+                }
+            }
+        }
+    }
+
+    { // Memory props
         VkPhysicalDeviceMemoryProperties2 memoryProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2};
         m_VK.GetPhysicalDeviceMemoryProperties2(m_PhysicalDevice, &memoryProps);
 
         m_MemoryProps = memoryProps.memoryProperties;
-
-        FillFamilyIndices(isWrapper, deviceCreationVKDesc);
     }
-
-    // Get adapter description as early as possible for meaningful error reporting
-    GetAdapterDesc();
 
     // Device extensions
     Vector<const char*> desiredDeviceExts(GetStdAllocator());
+    if (!isWrapper)
+        ProcessDeviceExtensions(desiredDeviceExts, desc.disableVKRayTracing);
 
-    if (isWrapper) {
-        for (uint32_t i = 0; i < deviceCreationVKDesc.enabledExtensions.deviceExtensionNum; i++)
-            desiredDeviceExts.push_back(deviceCreationVKDesc.enabledExtensions.deviceExtensions[i]);
-    } else {
-        ProcessDeviceExtensions(desiredDeviceExts, deviceCreationDesc.disableVKRayTracing);
-
-        for (uint32_t i = 0; i < deviceCreationDesc.vkExtensions.deviceExtensionNum; i++)
-            desiredDeviceExts.push_back(deviceCreationDesc.vkExtensions.deviceExtensions[i]);
-    }
+    for (uint32_t i = 0; i < desc.vkExtensions.deviceExtensionNum; i++)
+        desiredDeviceExts.push_back(desc.vkExtensions.deviceExtensions[i]);
 
     // Device features
     VkPhysicalDeviceFeatures2 features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
@@ -695,13 +705,13 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
 
     { // Create device
         if (isWrapper)
-            m_Device = (VkDevice)deviceCreationVKDesc.vkDevice;
+            m_Device = (VkDevice)descVK.vkDevice;
         else {
             // Disable undesired features
-            if (deviceCreationDesc.robustness == Robustness::DEFAULT || deviceCreationDesc.robustness == Robustness::VK) {
+            if (desc.robustness == Robustness::DEFAULT || desc.robustness == Robustness::VK) {
                 robustness2Features.robustBufferAccess2 = 0;
                 robustness2Features.robustImageAccess2 = 0;
-            } else if (deviceCreationDesc.robustness == Robustness::OFF) {
+            } else if (desc.robustness == Robustness::OFF) {
                 robustness2Features.robustBufferAccess2 = 0;
                 robustness2Features.robustImageAccess2 = 0;
                 features.features.robustBufferAccess = 0;
@@ -709,8 +719,7 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             }
 
             // Create device
-            const float priorities[2] = {0.5f, 1.0f};
-            std::array<VkDeviceQueueCreateInfo, (size_t)CommandQueueType::MAX_NUM> queueCreateInfos = {};
+            std::array<VkDeviceQueueCreateInfo, (size_t)QueueType::MAX_NUM> queueCreateInfos = {};
 
             VkDeviceCreateInfo deviceCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
             deviceCreateInfo.pNext = &features;
@@ -718,30 +727,18 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             deviceCreateInfo.enabledExtensionCount = (uint32_t)desiredDeviceExts.size();
             deviceCreateInfo.ppEnabledExtensionNames = desiredDeviceExts.data();
 
-            for (uint32_t queueFamilyIndex : m_QueueFamilyIndices) {
-                // Skip invalid
-                if (queueFamilyIndex == INVALID_FAMILY_INDEX)
-                    continue;
+            std::array<float, 256> zeroPriorities = {};
 
-                // Find in existing
-                uint32_t j = 0;
-                for (; j < deviceCreateInfo.queueCreateInfoCount; j++) {
-                    if (queueFamilyIndex == queueCreateInfos[j].queueFamilyIndex) {
-                        queueCreateInfos[j].queueCount++;
-                        break;
-                    }
-                }
+            for (uint32_t i = 0; i < desc.queueFamilyNum; i++) {
+                const QueueFamilyDesc& queueFamily = desc.queueFamilies[i];
 
-                // Add new one
-                if (j == deviceCreateInfo.queueCreateInfoCount) {
-                    VkDeviceQueueCreateInfo& queueInfo = queueCreateInfos[j];
+                if (queueFamily.queueNum) {
+                    VkDeviceQueueCreateInfo& queueCreateInfo = queueCreateInfos[deviceCreateInfo.queueCreateInfoCount++];
 
-                    queueInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
-                    queueInfo.queueCount = 1;
-                    queueInfo.queueFamilyIndex = queueFamilyIndex;
-                    queueInfo.pQueuePriorities = priorities;
-
-                    deviceCreateInfo.queueCreateInfoCount++;
+                    queueCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
+                    queueCreateInfo.queueCount = queueFamily.queueNum;
+                    queueCreateInfo.queueFamilyIndex = queueFamilyIndices[(size_t)queueFamily.queueType];
+                    queueCreateInfo.pQueuePriorities = queueFamily.queuePriorities ? queueFamily.queuePriorities : zeroPriorities.data();
                 }
             }
 
@@ -754,11 +751,55 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
             return res;
     }
 
-    // Check GRAPHICS queue availability
-    CommandQueue* commandQueue;
-    Result result = GetCommandQueue(CommandQueueType::GRAPHICS, commandQueue);
-    if (result != Result::SUCCESS)
-        return result;
+    // Create queues
+    memset(m_Desc.adapterDesc.queueNum, 0, sizeof(m_Desc.adapterDesc.queueNum)); // patch to reflect available queues
+    if (isWrapper) {
+        for (uint32_t i = 0; i < descVK.queueFamilyNum; i++) {
+            const QueueFamilyVKDesc& queueFamilyDesc = descVK.queueFamilies[i];
+            auto& queueFamily = m_QueueFamilies[(size_t)queueFamilyDesc.queueType];
+
+            for (uint32_t j = 0; j < queueFamilyDesc.queueNum; j++) {
+                VkQueue handle = nullptr;
+                if (queueFamilyDesc.vkQueues)
+                    handle = (VkQueue)queueFamilyDesc.vkQueues[j];
+                if (!handle) {
+                    VkDeviceQueueInfo2 queueInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2};
+                    queueInfo.queueFamilyIndex = queueFamilyIndices[(size_t)queueFamilyDesc.queueType];
+                    queueInfo.queueIndex = j;
+
+                    m_VK.GetDeviceQueue2(m_Device, &queueInfo, &handle);
+                }
+
+                QueueVK* queue;
+                Result result = CreateImplementation<QueueVK>(queue, queueFamilyDesc.queueType, queueFamilyDesc.familyIndex, handle);
+                if (result == Result::SUCCESS)
+                    queueFamily.push_back(queue);
+            }
+
+            m_Desc.adapterDesc.queueNum[(size_t)queueFamilyDesc.queueType] = queueFamilyDesc.queueNum;
+        }
+    } else {
+        for (uint32_t i = 0; i < desc.queueFamilyNum; i++) {
+            const QueueFamilyDesc& queueFamilyDesc = desc.queueFamilies[i];
+            auto& queueFamily = m_QueueFamilies[(size_t)queueFamilyDesc.queueType];
+
+            for (uint32_t j = 0; j < queueFamilyDesc.queueNum; j++) {
+                VkDeviceQueueInfo2 queueInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2};
+                queueInfo.queueFamilyIndex = queueFamilyIndices[(size_t)queueFamilyDesc.queueType];
+                queueInfo.queueIndex = j;
+
+                VkQueue handle = VK_NULL_HANDLE;
+                m_VK.GetDeviceQueue2(m_Device, &queueInfo, &handle);
+
+                QueueVK* queue;
+                Result result = CreateImplementation<QueueVK>(queue, queueFamilyDesc.queueType, queueInfo.queueFamilyIndex, handle);
+                if (result == Result::SUCCESS)
+                    queueFamily.push_back(queue);
+            }
+
+            m_Desc.adapterDesc.queueNum[(size_t)queueFamilyDesc.queueType] = queueFamilyDesc.queueNum;
+        }
+    }
 
     { // Desc
         // Device properties
@@ -837,13 +878,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
 
         // Fill desc
         const VkPhysicalDeviceLimits& limits = props.properties.limits;
-
-        if (props.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
-            m_Desc.architecture = Architecture::DESCRETE;
-        else if (props.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
-            m_Desc.architecture = Architecture::INTEGRATED;
-        else
-            m_Desc.architecture = Architecture::UNKNOWN;
 
         m_Desc.viewportMaxNum = limits.maxViewports;
         m_Desc.viewportBoundsRange[0] = int32_t(limits.viewportBoundsRange[0]);
@@ -1002,8 +1036,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& deviceCreationDesc, const Devi
         m_Desc.bindlessTier = m_IsSupported.descriptorIndexing ? 1 : 0;
 
         m_Desc.isGetMemoryDesc2Supported = m_IsSupported.maintenance4;
-        m_Desc.isComputeQueueSupported = m_QueueFamilyIndices[(uint32_t)CommandQueueType::COMPUTE] != INVALID_FAMILY_INDEX;
-        m_Desc.isCopyQueueSupported = m_QueueFamilyIndices[(uint32_t)CommandQueueType::COPY] != INVALID_FAMILY_INDEX;
         m_Desc.isTextureFilterMinMaxSupported = features12.samplerFilterMinmax;
         m_Desc.isLogicFuncSupported = features.features.logicOp;
         m_Desc.isDepthBoundsTestSupported = features.features.depthBounds;
@@ -1442,79 +1474,6 @@ Result DeviceVK::CreateInstance(bool enableGraphicsAPIValidation, const Vector<c
     return Result::SUCCESS;
 }
 
-void DeviceVK::FillFamilyIndices(bool isWrapper, const DeviceCreationVKDesc& deviceCreationVKDesc) {
-    uint32_t familyNum = 0;
-    m_VK.GetPhysicalDeviceQueueFamilyProperties2(m_PhysicalDevice, &familyNum, nullptr);
-
-    Scratch<VkQueueFamilyProperties2> familyProps = AllocateScratch(*this, VkQueueFamilyProperties2, familyNum);
-    for (uint32_t i = 0; i < familyNum; i++)
-        familyProps[i] = {VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2};
-
-    m_VK.GetPhysicalDeviceQueueFamilyProperties2(m_PhysicalDevice, &familyNum, familyProps);
-
-    memset(m_QueueFamilyIndices.data(), INVALID_FAMILY_INDEX, m_QueueFamilyIndices.size() * sizeof(m_QueueFamilyIndices[0]));
-    std::array<uint32_t, (size_t)CommandQueueType::MAX_NUM> scores = {};
-
-    for (uint32_t i = 0; i < familyNum; i++) {
-        if (isWrapper) {
-            bool isFamilyEnabled = false;
-            for (uint32_t j = 0; j < deviceCreationVKDesc.queueFamilyIndexNum && !isFamilyEnabled; j++)
-                isFamilyEnabled = deviceCreationVKDesc.queueFamilyIndices[j] == i;
-
-            if (!isFamilyEnabled)
-                continue;
-        }
-
-        const VkQueueFamilyProperties& props = familyProps[i].queueFamilyProperties;
-
-        bool graphics = props.queueFlags & VK_QUEUE_GRAPHICS_BIT;
-        bool compute = props.queueFlags & VK_QUEUE_COMPUTE_BIT;
-        bool copy = props.queueFlags & VK_QUEUE_TRANSFER_BIT;
-        bool sparse = props.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT;
-        bool videoDecode = props.queueFlags & VK_QUEUE_VIDEO_DECODE_BIT_KHR;
-        bool videoEncode = props.queueFlags & VK_QUEUE_VIDEO_ENCODE_BIT_KHR;
-        bool protect = props.queueFlags & VK_QUEUE_PROTECTED_BIT;
-        bool opticalFlow = props.queueFlags & VK_QUEUE_OPTICAL_FLOW_BIT_NV;
-        bool taken = false;
-
-        { // Prefer as much features as possible
-            size_t index = (size_t)CommandQueueType::GRAPHICS;
-            uint32_t score = (graphics ? 100 : 0) + (compute ? 10 : 0) + (copy ? 10 : 0) + (sparse ? 5 : 0) + (videoDecode ? 2 : 0) + (videoEncode ? 2 : 0) + (protect ? 1 : 0) + (opticalFlow ? 1 : 0);
-
-            if (!taken && graphics && score > scores[index]) {
-                m_QueueFamilyIndices[index] = i;
-                scores[index] = score;
-                taken = true;
-            }
-        }
-
-        { // Prefer compute-only
-            size_t index = (size_t)CommandQueueType::COMPUTE;
-            uint32_t score = (!graphics ? 10 : 0) + (compute ? 100 : 0) + (!copy ? 10 : 0) + (sparse ? 5 : 0) + (!videoDecode ? 2 : 0) + (!videoEncode ? 2 : 0) + (protect ? 1 : 0) + (!opticalFlow ? 1 : 0);
-
-            if (!taken && compute && score > scores[index]) {
-                m_QueueFamilyIndices[index] = i;
-                scores[index] = score;
-                taken = true;
-            }
-        }
-
-        { // Prefer copy-only
-            size_t index = (size_t)CommandQueueType::COPY;
-            uint32_t score = (!graphics ? 10 : 0) + (!compute ? 10 : 0) + (copy ? 100 * props.queueCount : 0) + (sparse ? 5 : 0) + (!videoDecode ? 2 : 0) + (!videoEncode ? 2 : 0) + (protect ? 1 : 0) + (!opticalFlow ? 1 : 0);
-
-            if (!taken && copy && score > scores[index]) {
-                m_QueueFamilyIndices[index] = i;
-                scores[index] = score;
-                taken = true;
-
-                if (props.queueCount > 1)
-                    m_QueueFamilyIndices[(size_t)CommandQueueType::HIGH_PRIORITY_COPY] = i;
-            }
-        }
-    }
-}
-
 void DeviceVK::SetDebugNameToTrivialObject(VkObjectType objectType, uint64_t handle, const char* name) {
     if (!m_VK.SetDebugUtilsObjectNameEXT)
         return;
@@ -1843,91 +1802,32 @@ NRI_INLINE void DeviceVK::SetDebugName(const char* name) {
     SetDebugNameToTrivialObject(VK_OBJECT_TYPE_DEVICE, (uint64_t)m_Device, name);
 }
 
-NRI_INLINE Result DeviceVK::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
-    ExclusiveScope lock(m_Lock);
-
-    // Check if already created (or wrapped)
-    uint32_t index = (uint32_t)commandQueueType;
-    if (m_CommandQueues[index]) {
-        commandQueue = (CommandQueue*)m_CommandQueues[index];
-        return Result::SUCCESS;
-    }
-
-    // Check if supported
-    uint32_t queueFamilyIndex = m_QueueFamilyIndices[index];
-    if (queueFamilyIndex == INVALID_FAMILY_INDEX) {
-        commandQueue = nullptr;
+NRI_INLINE Result DeviceVK::GetQueue(QueueType queueType, uint32_t queueIndex, Queue*& queue) {
+    const auto& queueFamily = m_QueueFamilies[(uint32_t)queueType];
+    if (queueFamily.empty())
         return Result::UNSUPPORTED;
-    }
 
-    // Create
-    VkDeviceQueueInfo2 queueInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2};
-    queueInfo.queueFamilyIndex = queueFamilyIndex;
-    queueInfo.queueIndex = 0;
+    if (queueIndex < queueFamily.size()) {
+        QueueVK* queueVK = m_QueueFamilies[(uint32_t)queueType].at(queueIndex);
+        queue = (Queue*)queueVK;
 
-    VkQueue handle = VK_NULL_HANDLE;
-    m_VK.GetDeviceQueue2(m_Device, &queueInfo, &handle);
+        { // Update active family indices
+            ExclusiveScope lock(m_Lock);
 
-    Result result = CreateImplementation<CommandQueueVK>(commandQueue, commandQueueType, queueFamilyIndex, handle);
-    if (result == Result::SUCCESS)
-        m_CommandQueues[index] = (CommandQueueVK*)commandQueue;
-
-    // Update active family indices
-    m_NumActiveFamilyIndices = 0;
-    for (const CommandQueueVK* queue : m_CommandQueues) {
-        if (queue) {
             uint32_t i = 0;
             for (; i < m_NumActiveFamilyIndices; i++) {
-                if (m_ActiveQueueFamilyIndices[i] == queue->GetFamilyIndex())
+                if (m_ActiveQueueFamilyIndices[i] == queueVK->GetFamilyIndex())
                     break;
             }
 
             if (i == m_NumActiveFamilyIndices)
-                m_ActiveQueueFamilyIndices[m_NumActiveFamilyIndices++] = queue->GetFamilyIndex();
+                m_ActiveQueueFamilyIndices[m_NumActiveFamilyIndices++] = queueVK->GetFamilyIndex();
         }
-    }
 
-    return result;
-}
-
-NRI_INLINE Result DeviceVK::CreateCommandQueue(const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue) {
-    ExclusiveScope lock(m_Lock);
-
-    // Check if already created
-    uint32_t index = (uint32_t)commandQueueVKDesc.commandQueueType;
-    bool isQueueFamilyIndexSame = m_QueueFamilyIndices[index] == commandQueueVKDesc.queueFamilyIndex;
-    bool isQueueSame = (VkQueue)m_CommandQueues[index] == (VkQueue)commandQueueVKDesc.vkQueue;
-    if (isQueueFamilyIndexSame && isQueueSame) {
-        commandQueue = (CommandQueue*)m_CommandQueues[index];
         return Result::SUCCESS;
     }
 
-    // Create
-    Result result = CreateImplementation<CommandQueueVK>(commandQueue, commandQueueVKDesc.commandQueueType, commandQueueVKDesc.queueFamilyIndex, (VkQueue)commandQueueVKDesc.vkQueue);
-    if (result == Result::SUCCESS) {
-        // Replace old with new
-        Destroy(GetAllocationCallbacks(), m_CommandQueues[index]);
-
-        m_CommandQueues[index] = (CommandQueueVK*)commandQueue;
-        m_QueueFamilyIndices[index] = commandQueueVKDesc.queueFamilyIndex;
-    }
-
-    // Update active family indices
-    m_NumActiveFamilyIndices = 0;
-    for (const CommandQueueVK* queue : m_CommandQueues) {
-        if (queue) {
-            uint32_t i = 0;
-            for (; i < m_NumActiveFamilyIndices; i++) {
-                if (m_ActiveQueueFamilyIndices[i] == queue->GetFamilyIndex())
-                    break;
-            }
-
-            if (i == m_NumActiveFamilyIndices)
-                m_ActiveQueueFamilyIndices[m_NumActiveFamilyIndices++] = queue->GetFamilyIndex();
-        }
-    }
-
-    return result;
+    return Result::FAILURE;
 }
 
 NRI_INLINE Result DeviceVK::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {

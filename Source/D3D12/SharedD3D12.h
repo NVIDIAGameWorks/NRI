@@ -66,7 +66,7 @@ D3D12_FILTER GetFilterIsotropic(Filter mip, Filter magnification, Filter minific
 D3D12_FILTER GetFilterAnisotropic(FilterExt filterExt, bool useComparison);
 D3D12_TEXTURE_ADDRESS_MODE GetAddressMode(AddressMode addressMode);
 D3D12_COMPARISON_FUNC GetComparisonFunc(CompareFunc compareFunc);
-D3D12_COMMAND_LIST_TYPE GetCommandListType(CommandQueueType commandQueueType);
+D3D12_COMMAND_LIST_TYPE GetCommandListType(QueueType queueType);
 D3D12_DESCRIPTOR_HEAP_TYPE GetDescriptorHeapType(DescriptorType descriptorType);
 D3D12_HEAP_FLAGS GetHeapFlags(MemoryType memoryType);
 D3D12_PRIMITIVE_TOPOLOGY_TYPE GetPrimitiveTopologyType(Topology topology);
@@ -122,18 +122,18 @@ struct NvExt {
 typedef HRESULT(WINAPI* PIX_BEGINEVENTONCOMMANDLIST)(ID3D12GraphicsCommandList* commandList, UINT64 color, _In_ PCSTR formatString);
 typedef HRESULT(WINAPI* PIX_ENDEVENTONCOMMANDLIST)(ID3D12GraphicsCommandList* commandList);
 typedef HRESULT(WINAPI* PIX_SETMARKERONCOMMANDLIST)(ID3D12GraphicsCommandList* commandList, UINT64 color, _In_ PCSTR formatString);
-typedef HRESULT(WINAPI* PIX_BEGINEVENTONCOMMANDQUEUE)(ID3D12CommandQueue* commandQueue, UINT64 color, _In_ PCSTR formatString);
-typedef HRESULT(WINAPI* PIX_ENDEVENTONCOMMANDQUEUE)(ID3D12CommandQueue* commandQueue);
-typedef HRESULT(WINAPI* PIX_SETMARKERONCOMMANDQUEUE)(ID3D12CommandQueue* commandQueue, UINT64 color, _In_ PCSTR formatString);
+typedef HRESULT(WINAPI* PIX_BEGINEVENTONCOMMANDQUEUE)(ID3D12CommandQueue* queue, UINT64 color, _In_ PCSTR formatString);
+typedef HRESULT(WINAPI* PIX_ENDEVENTONCOMMANDQUEUE)(ID3D12CommandQueue* queue);
+typedef HRESULT(WINAPI* PIX_SETMARKERONCOMMANDQUEUE)(ID3D12CommandQueue* queue, UINT64 color, _In_ PCSTR formatString);
 
 struct PixExt {
     // Funcs first
     PIX_BEGINEVENTONCOMMANDLIST BeginEventOnCommandList;
     PIX_ENDEVENTONCOMMANDLIST EndEventOnCommandList;
     PIX_SETMARKERONCOMMANDLIST SetMarkerOnCommandList;
-    PIX_BEGINEVENTONCOMMANDQUEUE BeginEventOnCommandQueue;
-    PIX_ENDEVENTONCOMMANDQUEUE EndEventOnCommandQueue;
-    PIX_SETMARKERONCOMMANDQUEUE SetMarkerOnCommandQueue;
+    PIX_BEGINEVENTONCOMMANDQUEUE BeginEventOnQueue;
+    PIX_ENDEVENTONCOMMANDQUEUE EndEventOnQueue;
+    PIX_SETMARKERONCOMMANDQUEUE SetMarkerOnQueue;
     Library* library;
 
     ~PixExt() {

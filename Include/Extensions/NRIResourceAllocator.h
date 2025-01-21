@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "NRIRayTracing.h" // AccelerationStructureDesc
+#include "NRIRayTracing.h"
 
 // Convenient creation of resources, which get returned already bound to memory.
 // AMD Virtual Memory Allocator is used for memory allocations management:

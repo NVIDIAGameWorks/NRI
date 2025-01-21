@@ -4,9 +4,6 @@
 
 namespace nri {
 
-struct DeviceVK;
-struct PipelineLayoutVK;
-
 struct PipelineVK final : public DebugNameBase {
     inline PipelineVK(DeviceVK& device)
         : m_Device(device)

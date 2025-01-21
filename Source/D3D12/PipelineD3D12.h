@@ -6,9 +6,7 @@
 
 namespace nri {
 
-struct DeviceD3D12;
 struct PipelineLayoutD3D12;
-struct CommandBufferD3D12;
 
 struct PipelineD3D12 final : public DebugNameBase {
     inline PipelineD3D12(DeviceD3D12& device)

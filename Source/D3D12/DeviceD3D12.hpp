@@ -67,9 +67,9 @@ DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, const AllocationCal
 }
 
 DeviceD3D12::~DeviceD3D12() {
-    for (auto& commandQueueD3D12 : m_CommandQueues) {
-        if (commandQueueD3D12)
-            Destroy(GetAllocationCallbacks(), commandQueueD3D12);
+    for (auto& queueFamily : m_QueueFamilies) {
+        for (uint32_t i = 0; i < queueFamily.size(); i++)
+            Destroy<QueueD3D12>(queueFamily[i]);
     }
 
 #if NRI_ENABLE_EXTERNAL_LIBRARIES
@@ -78,57 +78,46 @@ DeviceD3D12::~DeviceD3D12() {
 #endif
 }
 
-Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationD3D12Desc& deviceCreationD3D12Desc) {
-    if (!deviceCreationD3D12Desc.d3d12Device && !deviceCreationDesc.disable3rdPartyAllocationCallbacks)
+Result DeviceD3D12::Create(const DeviceCreationDesc& desc, const DeviceCreationD3D12Desc& descD3D12) {
+    m_IsWrapped = descD3D12.d3d12Device != nullptr;
+
+    if (!descD3D12.d3d12Device && !desc.disable3rdPartyAllocationCallbacks)
         m_AllocationCallbackPtr = &m_AllocationCallbacks;
 
+    // Get adapter description as early as possible for meaningful error reporting
+    m_Desc.adapterDesc = *desc.adapterDesc;
+
     // IMPORTANT: Must be called before the D3D12 device is created, or the D3D12 runtime removes the device
-    if (deviceCreationDesc.enableGraphicsAPIValidation) {
+    if (desc.enableGraphicsAPIValidation) {
         ComPtr<ID3D12Debug> debugController;
         if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
             debugController->EnableDebugLayer();
     }
 
-    // Get adapter
-    ComPtr<IDXGIFactory4> dxgiFactory;
-    HRESULT hr = CreateDXGIFactory2(deviceCreationDesc.enableGraphicsAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
-    RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
+    { // Get adapter
+        ComPtr<IDXGIFactory4> dxgiFactory;
+        HRESULT hr = CreateDXGIFactory2(desc.enableGraphicsAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
+        RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
 
-    if (deviceCreationDesc.adapterDesc) {
-        LUID luid = *(LUID*)&deviceCreationDesc.adapterDesc->luid;
+        LUID luid = *(LUID*)&desc.adapterDesc->luid;
         hr = dxgiFactory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&m_Adapter));
         RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
-    } else {
-        hr = dxgiFactory->EnumAdapters(0, &m_Adapter);
-        RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapters()");
     }
-
-    // Get adapter description as early as possible for meaningful error reporting
-    DXGI_ADAPTER_DESC desc = {};
-    hr = m_Adapter->GetDesc(&desc);
-    RETURN_ON_BAD_HRESULT(this, hr, "IDXGIAdapter::GetDesc()");
-
-    wcstombs(m_Desc.adapterDesc.name, desc.Description, GetCountOf(m_Desc.adapterDesc.name) - 1);
-    m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
-    m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory; // TODO: add "desc.DedicatedSystemMemory"?
-    m_Desc.adapterDesc.sharedSystemMemorySize = desc.SharedSystemMemory;
-    m_Desc.adapterDesc.deviceId = desc.DeviceId;
-    m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
 
     // Extensions
     InitializePixExt();
     if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA)
-        InitializeNvExt(deviceCreationD3D12Desc.isNVAPILoaded, deviceCreationD3D12Desc.d3d12Device != nullptr);
+        InitializeNvExt(descD3D12.isNVAPILoaded, descD3D12.d3d12Device != nullptr);
     else if (m_Desc.adapterDesc.vendor == Vendor::AMD)
-        InitializeAmdExt(deviceCreationD3D12Desc.agsContext, deviceCreationD3D12Desc.d3d12Device != nullptr);
+        InitializeAmdExt(descD3D12.agsContext, descD3D12.d3d12Device != nullptr);
 
     // Device
-    ComPtr<ID3D12DeviceBest> deviceTemp = (ID3D12DeviceBest*)deviceCreationD3D12Desc.d3d12Device;
-    if (!deviceTemp) {
+    ComPtr<ID3D12DeviceBest> deviceTemp = (ID3D12DeviceBest*)descD3D12.d3d12Device;
+    if (!m_IsWrapped) {
 #if NRI_ENABLE_EXTERNAL_LIBRARIES
         bool isShaderAtomicsI64Supported = false;
         bool isShaderClockSupported = false;
-        uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : NRI_SHADER_EXT_REGISTER;
+        uint32_t shaderExtRegister = desc.shaderExtRegister ? desc.shaderExtRegister : NRI_SHADER_EXT_REGISTER;
         if (HasAmdExt()) {
             AGSDX12DeviceCreationParams deviceCreationParams = {};
             deviceCreationParams.pAdapter = m_Adapter;
@@ -147,7 +136,7 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
             isShaderClockSupported = agsParams.extensionsSupported.shaderClock;
         } else {
 #endif
-            hr = D3D12CreateDevice(m_Adapter, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), (void**)&deviceTemp);
+            HRESULT hr = D3D12CreateDevice(m_Adapter, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), (void**)&deviceTemp);
             RETURN_ON_BAD_HRESULT(this, hr, "D3D12CreateDevice()");
 
 #if NRI_ENABLE_EXTERNAL_LIBRARIES
@@ -161,13 +150,12 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
         m_Desc.isShaderAtomicsI64Supported = isShaderAtomicsI64Supported;
         m_Desc.isShaderClockSupported = isShaderClockSupported;
 #endif
-    } else
-        m_IsWrapped = true;
+    }
 
     m_Version = QueryLatestDevice(deviceTemp, m_Device);
     REPORT_INFO(this, "Using ID3D12Device%u", m_Version);
 
-    if (deviceCreationDesc.enableGraphicsAPIValidation) {
+    if (desc.enableGraphicsAPIValidation) {
         ComPtr<ID3D12InfoQueue> pInfoQueue;
         m_Device->QueryInterface(&pInfoQueue);
 
@@ -193,22 +181,49 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
         }
     }
 
-    // Wrap user-provided command queues
-    if (deviceCreationD3D12Desc.d3d12GraphicsQueue)
-        CreateCommandQueue(deviceCreationD3D12Desc.d3d12GraphicsQueue, m_CommandQueues[(uint32_t)CommandQueueType::GRAPHICS]);
-    if (deviceCreationD3D12Desc.d3d12ComputeQueue)
-        CreateCommandQueue(deviceCreationD3D12Desc.d3d12ComputeQueue, m_CommandQueues[(uint32_t)CommandQueueType::COMPUTE]);
-    if (deviceCreationD3D12Desc.d3d12CopyQueue)
-        CreateCommandQueue(deviceCreationD3D12Desc.d3d12CopyQueue, m_CommandQueues[(uint32_t)CommandQueueType::COPY]);
+    // Create queues
+    memset(m_Desc.adapterDesc.queueNum, 0, sizeof(m_Desc.adapterDesc.queueNum)); // patch to reflect available queues
+    if (m_IsWrapped) {
+        for (uint32_t i = 0; i < descD3D12.queueFamilyNum; i++) {
+            const QueueFamilyD3D12Desc& queueFamilyDesc = descD3D12.queueFamilies[i];
+            auto& queueFamily = m_QueueFamilies[(size_t)queueFamilyDesc.queueType];
 
-    // Check GRAPHICS queue availability
-    CommandQueue* commandQueue;
-    Result result = GetCommandQueue(CommandQueueType::GRAPHICS, commandQueue);
-    if (result != Result::SUCCESS)
-        return result;
+            for (uint32_t j = 0; j < queueFamilyDesc.queueNum; j++) {
+                QueueD3D12* queue = nullptr;
+                Result result = Result::FAILURE;
+                if (queueFamilyDesc.d3d12Queues) {
+                    ID3D12CommandQueue* commandQueue = queueFamilyDesc.d3d12Queues[j];
+                    result = CreateImplementation<QueueD3D12>(queue, commandQueue);
+                } else
+                    result = CreateImplementation<QueueD3D12>(queue, queueFamilyDesc.queueType, 0.0f);
+
+                if (result == Result::SUCCESS)
+                    queueFamily.push_back(queue);
+            }
+
+            
+            m_Desc.adapterDesc.queueNum[(size_t)queueFamilyDesc.queueType] = queueFamilyDesc.queueNum;
+        }
+    } else {
+        for (uint32_t i = 0; i < desc.queueFamilyNum; i++) {
+            const QueueFamilyDesc& queueFamilyDesc = desc.queueFamilies[i];
+            auto& queueFamily = m_QueueFamilies[(size_t)queueFamilyDesc.queueType];
+
+            for (uint32_t j = 0; j < queueFamilyDesc.queueNum; j++) {
+                float priority = queueFamilyDesc.queuePriorities ? queueFamilyDesc.queuePriorities[j] : 0.0f;
+
+                QueueD3D12* queue = nullptr;
+                Result result = CreateImplementation<QueueD3D12>(queue, queueFamilyDesc.queueType, priority);
+                if (result == Result::SUCCESS)
+                    queueFamily.push_back(queue);
+            }
+
+            m_Desc.adapterDesc.queueNum[(size_t)queueFamilyDesc.queueType] = queueFamilyDesc.queueNum;
+        }
+    }
 
     // Fill desc
-    FillDesc(deviceCreationDesc);
+    FillDesc(desc);
 
     // Create indirect command signatures
     m_DispatchCommandSignature = CreateCommandSignature(D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(DispatchDesc), nullptr);
@@ -218,15 +233,9 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& deviceCreationDesc, const D
     return FillFunctionTable(m_CoreInterface);
 }
 
-void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
-    D3D12_FEATURE_DATA_ARCHITECTURE1 architecture = {};
-    HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1, &architecture, sizeof(architecture));
-    if (FAILED(hr))
-        REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(architecture) failed, result = 0x%08X!", hr);
-    m_Desc.architecture = architecture.UMA ? Architecture::INTEGRATED : Architecture::DESCRETE;
-
+void DeviceD3D12::FillDesc(const DeviceCreationDesc& desc) {
     D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
-    hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
+    HRESULT hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
     if (FAILED(hr))
         REPORT_WARNING(this, "ID3D12Device::CheckFeatureSupport(options) failed, result = 0x%08X!", hr);
     m_Desc.isMemoryTier2Supported = options.ResourceHeapTier == D3D12_RESOURCE_HEAP_TIER_2 ? true : false;
@@ -380,11 +389,11 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     // Timestamp frequency
     uint64_t timestampFrequency = 0;
     {
-        CommandQueue* commandQueue = nullptr;
-        Result result = GetCommandQueue(CommandQueueType::GRAPHICS, commandQueue);
+        Queue* queue = nullptr;
+        Result result = GetQueue(QueueType::GRAPHICS, 0, queue);
         if (result == Result::SUCCESS) {
-            ID3D12CommandQueue* commandQueueD3D12 = *(CommandQueueD3D12*)commandQueue;
-            commandQueueD3D12->GetTimestampFrequency(&timestampFrequency);
+            ID3D12CommandQueue* queueD3D12 = *(QueueD3D12*)queue;
+            queueD3D12->GetTimestampFrequency(&timestampFrequency);
         }
     }
 
@@ -528,8 +537,6 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.bindlessTier = (options.ResourceBindingTier == D3D12_RESOURCE_BINDING_TIER_3 && shaderModel.HighestShaderModel >= D3D_SHADER_MODEL_6_6) ? 2 : (levels.MaxSupportedFeatureLevel >= D3D_FEATURE_LEVEL_12_0 ? 1 : 0);
 
     m_Desc.isGetMemoryDesc2Supported = true;
-    m_Desc.isComputeQueueSupported = true;
-    m_Desc.isCopyQueueSupported = true;
     m_Desc.isTextureFilterMinMaxSupported = levels.MaxSupportedFeatureLevel >= D3D_FEATURE_LEVEL_11_1 ? true : false;
     m_Desc.isLogicFuncSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isDepthBoundsTestSupported = options2.DepthBoundsTestSupported != 0;
@@ -565,7 +572,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& deviceCreationDesc) {
     m_Desc.isShaderViewportIndexSupported = options.VPAndRTArrayIndexFromAnyShaderFeedingRasterizerSupportedWithoutGSEmulation;
     m_Desc.isShaderLayerSupported = options.VPAndRTArrayIndexFromAnyShaderFeedingRasterizerSupportedWithoutGSEmulation;
 
-    m_Desc.isDrawParametersEmulationEnabled = deviceCreationDesc.enableD3D12DrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
+    m_Desc.isDrawParametersEmulationEnabled = desc.enableD3D12DrawParametersEmulation && shaderModel.HighestShaderModel <= D3D_SHADER_MODEL_6_7;
 
     m_Desc.isSwapChainSupported = HasOutput();
     m_Desc.isLowLatencySupported = HasNvExt();
@@ -653,9 +660,9 @@ void DeviceD3D12::InitializePixExt() {
     m_Pix.BeginEventOnCommandList = (PIX_BEGINEVENTONCOMMANDLIST)GetSharedLibraryFunction(*pixLibrary, "PIXBeginEventOnCommandList");
     m_Pix.EndEventOnCommandList = (PIX_ENDEVENTONCOMMANDLIST)GetSharedLibraryFunction(*pixLibrary, "PIXEndEventOnCommandList");
     m_Pix.SetMarkerOnCommandList = (PIX_SETMARKERONCOMMANDLIST)GetSharedLibraryFunction(*pixLibrary, "PIXSetMarkerOnCommandList");
-    m_Pix.BeginEventOnCommandQueue = (PIX_BEGINEVENTONCOMMANDQUEUE)GetSharedLibraryFunction(*pixLibrary, "PIXBeginEventOnCommandQueue");
-    m_Pix.EndEventOnCommandQueue = (PIX_ENDEVENTONCOMMANDQUEUE)GetSharedLibraryFunction(*pixLibrary, "PIXEndEventOnCommandQueue");
-    m_Pix.SetMarkerOnCommandQueue = (PIX_SETMARKERONCOMMANDQUEUE)GetSharedLibraryFunction(*pixLibrary, "PIXSetMarkerOnCommandQueue");
+    m_Pix.BeginEventOnQueue = (PIX_BEGINEVENTONCOMMANDQUEUE)GetSharedLibraryFunction(*pixLibrary, "PIXBeginEventOnQueue");
+    m_Pix.EndEventOnQueue = (PIX_ENDEVENTONCOMMANDQUEUE)GetSharedLibraryFunction(*pixLibrary, "PIXEndEventOnQueue");
+    m_Pix.SetMarkerOnQueue = (PIX_SETMARKERONCOMMANDQUEUE)GetSharedLibraryFunction(*pixLibrary, "PIXSetMarkerOnQueue");
 
     // Verify
     const void** functionArray = (const void**)&m_Pix;
@@ -869,33 +876,17 @@ void DeviceD3D12::Destruct() {
     Destroy(GetAllocationCallbacks(), this);
 }
 
-NRI_INLINE Result DeviceD3D12::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
-    ExclusiveScope lock(m_QueueLock);
-
-    // Check if supported
-    commandQueue = nullptr;
-    if (commandQueueType == CommandQueueType::COMPUTE && !m_Desc.isComputeQueueSupported)
-        return Result::UNSUPPORTED;
-    if (commandQueueType == CommandQueueType::COPY && !m_Desc.isCopyQueueSupported)
+NRI_INLINE Result DeviceD3D12::GetQueue(QueueType queueType, uint32_t queueIndex, Queue*& queue) {
+    const auto& queueFamily = m_QueueFamilies[(uint32_t)queueType];
+    if (queueFamily.empty())
         return Result::UNSUPPORTED;
 
-    // Check if already created (or wrapped)
-    uint32_t queueIndex = (uint32_t)commandQueueType;
-    if (m_CommandQueues[queueIndex]) {
-        commandQueue = (CommandQueue*)m_CommandQueues[queueIndex];
+    if (queueIndex < queueFamily.size()) {
+        queue = (Queue*)m_QueueFamilies[(uint32_t)queueType].at(queueIndex);
         return Result::SUCCESS;
     }
 
-    // Create
-    Result result = CreateImplementation<CommandQueueD3D12>(commandQueue, commandQueueType);
-    if (result == Result::SUCCESS) // TODO: "m_Desc" reports queue support as "true", so we shouldn't fail there, but we could... is it a big problem?
-        m_CommandQueues[queueIndex] = (CommandQueueD3D12*)commandQueue;
-
-    return result;
-}
-
-NRI_INLINE Result DeviceD3D12::CreateCommandQueue(void* d3d12commandQueue, CommandQueueD3D12*& commandQueue) {
-    return CreateImplementation<CommandQueueD3D12>(commandQueue, (ID3D12CommandQueue*)d3d12commandQueue);
+    return Result::FAILURE;
 }
 
 NRI_INLINE Result DeviceD3D12::BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum) {

@@ -25,8 +25,8 @@ Non-goals (exceptions apply to helper interfaces, where high-level abstraction a
 #pragma once
 
 #define NRI_VERSION_MAJOR 1
-#define NRI_VERSION_MINOR 161
-#define NRI_VERSION_DATE "13 January 2025"
+#define NRI_VERSION_MINOR 162
+#define NRI_VERSION_DATE "21 January 2025"
 
 #include "NRIDescs.h"
 
@@ -56,14 +56,15 @@ NriStruct(CoreInterface) {
     void                        (NRI_CALL *GetBufferMemoryDesc2)    (const NriRef(Device) device, const NriRef(BufferDesc) bufferDesc, Nri(MemoryLocation) memoryLocation, NriOut NriRef(MemoryDesc) memoryDesc); // requires "isGetMemoryDesc2Supported"
     void                        (NRI_CALL *GetTextureMemoryDesc2)   (const NriRef(Device) device, const NriRef(TextureDesc) textureDesc, Nri(MemoryLocation) memoryLocation, NriOut NriRef(MemoryDesc) memoryDesc); // requires "isGetMemoryDesc2Supported"
 
+    // Returns one of the pre-created queues (see "DeviceCreationDesc" or wrapper extensions). Return codes: UNSUPPORTED (no queues of "queueType") or INVALID_ARGUMENT (if "queueIndex" is out of bounds).
     // Getting COMPUTE and/or COPY queues switches VK "sharing mode" to "VK_SHARING_MODE_CONCURRENT", which can be slower on some HW. This approach is used to avoid
     // dealing with "queue ownership transitions", but also adds a requirement to "get" all async queues before resources creation participating into multi-queue activity
-    Nri(Result)         (NRI_CALL *GetCommandQueue)                 (NriRef(Device) device, Nri(CommandQueueType) commandQueueType, NriOut NriRef(CommandQueue*) commandQueue);
+    Nri(Result)         (NRI_CALL *GetQueue)                        (NriRef(Device) device, Nri(QueueType) queueType, uint32_t queueIndex, NriOut NriRef(Queue*) queue);
 
     // Create
     // "Creation" doesn't assume allocation of big chunks of memory on the device, but it happens for some entities implicitly
     // "Allocation" emphasizes the fact that there is a chunk of memory allocated under the hood
-    Nri(Result)         (NRI_CALL *CreateCommandAllocator)          (const NriRef(CommandQueue) commandQueue, NriOut NriRef(CommandAllocator*) commandAllocator);
+    Nri(Result)         (NRI_CALL *CreateCommandAllocator)          (const NriRef(Queue) queue, NriOut NriRef(CommandAllocator*) commandAllocator);
     Nri(Result)         (NRI_CALL *CreateCommandBuffer)             (NriRef(CommandAllocator) commandAllocator, NriOut NriRef(CommandBuffer*) commandBuffer);
     Nri(Result)         (NRI_CALL *CreateDescriptorPool)            (NriRef(Device) device, const NriRef(DescriptorPoolDesc) descriptorPoolDesc, NriOut NriRef(DescriptorPool*) descriptorPool);
     Nri(Result)         (NRI_CALL *CreateBuffer)                    (NriRef(Device) device, const NriRef(BufferDesc) bufferDesc, NriOut NriRef(Buffer*) buffer); // requires "BindBufferMemory"
@@ -195,15 +196,15 @@ NriStruct(CoreInterface) {
     Nri(Result)         (NRI_CALL *EndCommandBuffer)                (NriRef(CommandBuffer) commandBuffer);
 
     // Annotations for profiling tools: command queue - D3D11: NOP
-    void                (NRI_CALL *QueueBeginAnnotation)            (NriRef(CommandQueue) commandQueue, const char* name, uint32_t bgra);
-    void                (NRI_CALL *QueueEndAnnotation)              (NriRef(CommandQueue) commandQueue);
-    void                (NRI_CALL *QueueAnnotation)                 (NriRef(CommandQueue) commandQueue, const char* name, uint32_t bgra);
+    void                (NRI_CALL *QueueBeginAnnotation)            (NriRef(Queue) queue, const char* name, uint32_t bgra);
+    void                (NRI_CALL *QueueEndAnnotation)              (NriRef(Queue) queue);
+    void                (NRI_CALL *QueueAnnotation)                 (NriRef(Queue) queue, const char* name, uint32_t bgra);
 
     // Query
     void                (NRI_CALL *ResetQueries)                    (NriRef(QueryPool) queryPool, uint32_t offset, uint32_t num); // on host
 
     // Work submission and synchronization
-    void                (NRI_CALL *QueueSubmit)                     (NriRef(CommandQueue) commandQueue, const NriRef(QueueSubmitDesc) queueSubmitDesc); // to device
+    void                (NRI_CALL *QueueSubmit)                     (NriRef(Queue) queue, const NriRef(QueueSubmitDesc) queueSubmitDesc); // to device
     void                (NRI_CALL *Wait)                            (NriRef(Fence) fence, uint64_t value); // on host
     uint64_t            (NRI_CALL *GetFenceValue)                   (NriRef(Fence) fence);
 
@@ -219,7 +220,7 @@ NriStruct(CoreInterface) {
 
     // Native objects                                                                                            ___D3D11___________________________|_D3D12_______________________|_VK_________________________________
     void*               (NRI_CALL *GetDeviceNativeObject)           (const NriRef(Device) device);               // ID3D11Device*                   | ID3D12Device*               | VkDevice
-    void*               (NRI_CALL *GetCommandQueueNativeObject)     (const NriRef(CommandQueue) queue);          // -                               | ID3D12CommandQueue*         | VkQueue
+    void*               (NRI_CALL *GetQueueNativeObject)            (const NriRef(Queue) queue);                 // -                               | ID3D12CommandQueue*         | VkQueue
     void*               (NRI_CALL *GetCommandBufferNativeObject)    (const NriRef(CommandBuffer) commandBuffer); // ID3D11DeviceContext*            | ID3D12GraphicsCommandList*  | VkCommandBuffer
     uint64_t            (NRI_CALL *GetBufferNativeObject)           (const NriRef(Buffer) buffer);               // ID3D11Buffer*                   | ID3D12Resource*             | VkBuffer
     uint64_t            (NRI_CALL *GetTextureNativeObject)          (const NriRef(Texture) texture);             // ID3D11Resource*                 | ID3D12Resource*             | VkImage

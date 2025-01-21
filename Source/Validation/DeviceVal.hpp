@@ -44,8 +44,8 @@ DeviceVal::DeviceVal(const CallbackInterface& callbacks, const AllocationCallbac
 }
 
 DeviceVal::~DeviceVal() {
-    for (size_t i = 0; i < m_CommandQueues.size(); i++)
-        Destroy(GetAllocationCallbacks(), m_CommandQueues[i]);
+    for (size_t i = 0; i < m_Queues.size(); i++)
+        Destroy(GetAllocationCallbacks(), m_Queues[i]);
 
     if (m_Name) {
         const auto& allocationCallbacks = GetAllocationCallbacks();
@@ -99,14 +99,14 @@ void DeviceVal::Destruct() {
 }
 
 NRI_INLINE Result DeviceVal::CreateSwapChain(const SwapChainDesc& swapChainDesc, SwapChain*& swapChain) {
-    RETURN_ON_FAILURE(this, swapChainDesc.commandQueue != nullptr, Result::INVALID_ARGUMENT, "'commandQueue' is NULL");
+    RETURN_ON_FAILURE(this, swapChainDesc.queue != nullptr, Result::INVALID_ARGUMENT, "'queue' is NULL");
     RETURN_ON_FAILURE(this, swapChainDesc.width != 0, Result::INVALID_ARGUMENT, "'width' is 0");
     RETURN_ON_FAILURE(this, swapChainDesc.height != 0, Result::INVALID_ARGUMENT, "'height' is 0");
     RETURN_ON_FAILURE(this, swapChainDesc.textureNum > 0, Result::INVALID_ARGUMENT, "'textureNum' is invalid");
     RETURN_ON_FAILURE(this, swapChainDesc.format < SwapChainFormat::MAX_NUM, Result::INVALID_ARGUMENT, "'format' is invalid");
 
     auto swapChainDescImpl = swapChainDesc;
-    swapChainDescImpl.commandQueue = NRI_GET_IMPL(CommandQueue, swapChainDesc.commandQueue);
+    swapChainDescImpl.queue = NRI_GET_IMPL(Queue, swapChainDesc.queue);
 
     SwapChain* swapChainImpl;
     Result result = m_SwapChainAPI.CreateSwapChain(m_Impl, swapChainDescImpl, swapChainImpl);
@@ -122,28 +122,28 @@ NRI_INLINE void DeviceVal::DestroySwapChain(SwapChain& swapChain) {
     Destroy(GetAllocationCallbacks(), (SwapChainVal*)&swapChain);
 }
 
-NRI_INLINE Result DeviceVal::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
-    RETURN_ON_FAILURE(this, commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandQueueType' is invalid");
+NRI_INLINE Result DeviceVal::GetQueue(QueueType queueType, uint32_t queueIndex, Queue*& queue) {
+    RETURN_ON_FAILURE(this, queueType < QueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'queueType' is invalid");
 
-    CommandQueue* commandQueueImpl;
-    Result result = m_CoreAPI.GetCommandQueue(m_Impl, commandQueueType, commandQueueImpl);
+    Queue* queueImpl;
+    Result result = m_CoreAPI.GetQueue(m_Impl, queueType, queueIndex, queueImpl);
 
     if (result == Result::SUCCESS) {
-        const uint32_t index = (uint32_t)commandQueueType;
-        if (!m_CommandQueues[index])
-            m_CommandQueues[index] = Allocate<CommandQueueVal>(GetAllocationCallbacks(), *this, commandQueueImpl);
+        const uint32_t index = (uint32_t)queueType;
+        if (!m_Queues[index])
+            m_Queues[index] = Allocate<QueueVal>(GetAllocationCallbacks(), *this, queueImpl);
 
-        commandQueue = (CommandQueue*)m_CommandQueues[index];
+        queue = (Queue*)m_Queues[index];
     }
 
     return result;
 }
 
-NRI_INLINE Result DeviceVal::CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
-    auto commandQueueImpl = NRI_GET_IMPL(CommandQueue, &commandQueue);
+NRI_INLINE Result DeviceVal::CreateCommandAllocator(const Queue& queue, CommandAllocator*& commandAllocator) {
+    auto queueImpl = NRI_GET_IMPL(Queue, &queue);
 
     CommandAllocator* commandAllocatorImpl = nullptr;
-    Result result = m_CoreAPI.CreateCommandAllocator(*commandQueueImpl, commandAllocatorImpl);
+    Result result = m_CoreAPI.CreateCommandAllocator(*queueImpl, commandAllocatorImpl);
 
     if (result == Result::SUCCESS)
         commandAllocator = (CommandAllocator*)Allocate<CommandAllocatorVal>(GetAllocationCallbacks(), *this, commandAllocatorImpl);
@@ -714,22 +714,9 @@ NRI_INLINE FormatSupportBits DeviceVal::GetFormatSupport(Format format) const {
 
 #if NRI_ENABLE_VK_SUPPORT
 
-NRI_INLINE Result DeviceVal::CreateCommandQueue(const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue) {
-    RETURN_ON_FAILURE(this, commandQueueVKDesc.vkQueue != 0, Result::INVALID_ARGUMENT, "'vkQueue' is NULL");
-    RETURN_ON_FAILURE(this, commandQueueVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandQueueType' is invalid");
-
-    CommandQueue* commandQueueImpl = nullptr;
-    Result result = m_WrapperVKAPI.CreateCommandQueueVK(m_Impl, commandQueueVKDesc, commandQueueImpl);
-
-    if (result == Result::SUCCESS)
-        commandQueue = (CommandQueue*)Allocate<CommandQueueVal>(GetAllocationCallbacks(), *this, commandQueueImpl);
-
-    return result;
-}
-
 NRI_INLINE Result DeviceVal::CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorVKDesc, CommandAllocator*& commandAllocator) {
     RETURN_ON_FAILURE(this, commandAllocatorVKDesc.vkCommandPool != 0, Result::INVALID_ARGUMENT, "'vkCommandPool' is NULL");
-    RETURN_ON_FAILURE(this, commandAllocatorVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandQueueType' is invalid");
+    RETURN_ON_FAILURE(this, commandAllocatorVKDesc.queueType < QueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'queueType' is invalid");
 
     CommandAllocator* commandAllocatorImpl = nullptr;
     Result result = m_WrapperVKAPI.CreateCommandAllocatorVK(m_Impl, commandAllocatorVKDesc, commandAllocatorImpl);
@@ -742,7 +729,7 @@ NRI_INLINE Result DeviceVal::CreateCommandAllocator(const CommandAllocatorVKDesc
 
 NRI_INLINE Result DeviceVal::CreateCommandBuffer(const CommandBufferVKDesc& commandBufferVKDesc, CommandBuffer*& commandBuffer) {
     RETURN_ON_FAILURE(this, commandBufferVKDesc.vkCommandBuffer != 0, Result::INVALID_ARGUMENT, "'vkCommandBuffer' is NULL");
-    RETURN_ON_FAILURE(this, commandBufferVKDesc.commandQueueType < CommandQueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'commandQueueType' is invalid");
+    RETURN_ON_FAILURE(this, commandBufferVKDesc.queueType < QueueType::MAX_NUM, Result::INVALID_ARGUMENT, "'queueType' is invalid");
 
     CommandBuffer* commandBufferImpl = nullptr;
     Result result = m_WrapperVKAPI.CreateCommandBufferVK(m_Impl, commandBufferVKDesc, commandBufferImpl);

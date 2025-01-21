@@ -6,7 +6,6 @@ namespace nri {
 
 struct PipelineLayoutD3D11;
 struct PipelineD3D11;
-struct BufferD3D11;
 
 struct CommandBufferD3D11 final : public CommandBufferBase {
     CommandBufferD3D11(DeviceD3D11& device);

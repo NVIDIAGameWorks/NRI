@@ -4,7 +4,6 @@
 
 namespace nri {
 
-struct DeviceD3D12;
 struct DescriptorPoolD3D12;
 
 struct DescriptorRangeMapping {

@@ -4,8 +4,6 @@
 
 namespace nri {
 
-struct DeviceD3D11;
-struct DescriptorSetD3D11;
 struct PipelineLayoutD3D11;
 
 struct RasterizerState {

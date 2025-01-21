@@ -4,9 +4,6 @@
 
 namespace nri {
 
-struct DeviceVK;
-struct CommandQueueVK;
-
 struct FenceVK final : public DebugNameBase {
     inline FenceVK(DeviceVK& device)
         : m_Device(device) {

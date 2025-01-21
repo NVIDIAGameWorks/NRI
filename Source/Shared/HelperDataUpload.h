@@ -3,10 +3,10 @@
 constexpr size_t BASE_UPLOAD_BUFFER_SIZE = 1 * 1024 * 1024;
 
 struct HelperDataUpload {
-    inline HelperDataUpload(const nri::CoreInterface& NRI, nri::Device& device, nri::CommandQueue& commandQueue)
+    inline HelperDataUpload(const nri::CoreInterface& NRI, nri::Device& device, nri::Queue& queue)
         : NRI(NRI)
         , m_Device(device)
-        , m_CommandQueue(commandQueue)
+        , m_Queue(queue)
         , m_UploadBufferSize(BASE_UPLOAD_BUFFER_SIZE) {
     }
 
@@ -23,7 +23,7 @@ private:
 
     const nri::CoreInterface& NRI;
     nri::Device& m_Device;
-    nri::CommandQueue& m_CommandQueue;
+    nri::Queue& m_Queue;
     nri::CommandBuffer* m_CommandBuffer = nullptr;
     nri::Fence* m_Fence = nullptr;
     nri::CommandAllocator* m_CommandAllocators = nullptr;

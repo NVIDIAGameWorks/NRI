@@ -10,7 +10,7 @@ CommandBufferVK::~CommandBufferVK() {
     vk.FreeCommandBuffers(m_Device, m_CommandPool, 1, &m_Handle);
 }
 
-void CommandBufferVK::Create(VkCommandPool commandPool, VkCommandBuffer commandBuffer, CommandQueueType type) {
+void CommandBufferVK::Create(VkCommandPool commandPool, VkCommandBuffer commandBuffer, QueueType type) {
     m_CommandPool = commandPool;
     m_Handle = commandBuffer;
     m_Type = type;
@@ -19,7 +19,7 @@ void CommandBufferVK::Create(VkCommandPool commandPool, VkCommandBuffer commandB
 Result CommandBufferVK::Create(const CommandBufferVKDesc& commandBufferDesc) {
     m_CommandPool = VK_NULL_HANDLE;
     m_Handle = (VkCommandBuffer)commandBufferDesc.vkCommandBuffer;
-    m_Type = commandBufferDesc.commandQueueType;
+    m_Type = commandBufferDesc.queueType;
 
     return Result::SUCCESS;
 }

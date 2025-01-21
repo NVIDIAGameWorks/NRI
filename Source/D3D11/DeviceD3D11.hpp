@@ -45,12 +45,12 @@ DeviceD3D11::~DeviceD3D11() {
     }
 #endif
 
-    DeleteCriticalSection(&m_CriticalSection);
-
-    for (CommandQueueD3D11* commandQueue : m_CommandQueues) {
-        if (commandQueue)
-            Destroy(GetAllocationCallbacks(), commandQueue);
+    for (auto& queueFamily : m_QueueFamilies) {
+        for (uint32_t i = 0; i < queueFamily.size(); i++)
+            Destroy<QueueD3D11>(queueFamily[i]);
     }
+
+    DeleteCriticalSection(&m_CriticalSection);
 
 #if NRI_ENABLE_EXTERNAL_LIBRARIES
     if (HasAmdExt() && !m_IsWrapped)
@@ -58,60 +58,48 @@ DeviceD3D11::~DeviceD3D11() {
 #endif
 }
 
-Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* device, AGSContext* agsContext, bool isNVAPILoadedInApp) {
-    // Get adapter
-    if (!device) {
-        ComPtr<IDXGIFactory4> dxgiFactory;
-        HRESULT hr = CreateDXGIFactory2(deviceCreationDesc.enableGraphicsAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
-        RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
+Result DeviceD3D11::Create(const DeviceCreationDesc& desc, const DeviceCreationD3D11Desc& descD3D11) {
+    m_IsWrapped = descD3D11.d3d11Device != nullptr;
 
-        if (deviceCreationDesc.adapterDesc) {
-            LUID luid = *(LUID*)&deviceCreationDesc.adapterDesc->luid;
-            hr = dxgiFactory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&m_Adapter));
-            RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
-        } else {
-            hr = dxgiFactory->EnumAdapters(0, &m_Adapter);
-            RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapters()");
-        }
-    } else {
+    // Get adapter description as early as possible for meaningful error reporting
+    m_Desc.adapterDesc = *desc.adapterDesc;
+
+    // Get adapter
+    if (m_IsWrapped) {
         ComPtr<IDXGIDevice> dxgiDevice;
-        HRESULT hr = device->QueryInterface(IID_PPV_ARGS(&dxgiDevice));
+        HRESULT hr = descD3D11.d3d11Device->QueryInterface(IID_PPV_ARGS(&dxgiDevice));
         RETURN_ON_BAD_HRESULT(this, hr, "QueryInterface(IDXGIDevice)");
 
         hr = dxgiDevice->GetAdapter(&m_Adapter);
         RETURN_ON_BAD_HRESULT(this, hr, "IDXGIDevice::GetAdapter()");
+    } else {
+        ComPtr<IDXGIFactory4> dxgiFactory;
+        HRESULT hr = CreateDXGIFactory2(desc.enableGraphicsAPIValidation ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&dxgiFactory));
+        RETURN_ON_BAD_HRESULT(this, hr, "CreateDXGIFactory2()");
+
+        LUID luid = *(LUID*)&m_Desc.adapterDesc.luid;
+        hr = dxgiFactory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&m_Adapter));
+        RETURN_ON_BAD_HRESULT(this, hr, "IDXGIFactory4::EnumAdapterByLuid()");
     }
-
-    // Get adapter description as early as possible for meaningful error reporting
-    DXGI_ADAPTER_DESC desc = {};
-    HRESULT hr = m_Adapter->GetDesc(&desc);
-    RETURN_ON_BAD_HRESULT(this, hr, "IDXGIAdapter::GetDesc()");
-
-    wcstombs(m_Desc.adapterDesc.name, desc.Description, GetCountOf(m_Desc.adapterDesc.name) - 1);
-    m_Desc.adapterDesc.luid = *(uint64_t*)&desc.AdapterLuid;
-    m_Desc.adapterDesc.videoMemorySize = desc.DedicatedVideoMemory; // TODO: add "desc.DedicatedSystemMemory"?
-    m_Desc.adapterDesc.sharedSystemMemorySize = desc.SharedSystemMemory;
-    m_Desc.adapterDesc.deviceId = desc.DeviceId;
-    m_Desc.adapterDesc.vendor = GetVendorFromID(desc.VendorId);
 
     // Extensions
     if (m_Desc.adapterDesc.vendor == Vendor::NVIDIA)
-        InitializeNvExt(isNVAPILoadedInApp, device != nullptr);
+        InitializeNvExt(descD3D11.isNVAPILoaded, m_IsWrapped);
     else if (m_Desc.adapterDesc.vendor == Vendor::AMD)
-        InitializeAmdExt(agsContext, device != nullptr);
+        InitializeAmdExt(descD3D11.agsContext, m_IsWrapped);
 
     // Device
-    ComPtr<ID3D11DeviceBest> deviceTemp = (ID3D11DeviceBest*)device;
-    if (!deviceTemp) {
-        const UINT flags = deviceCreationDesc.enableGraphicsAPIValidation ? D3D11_CREATE_DEVICE_DEBUG : 0;
+    ComPtr<ID3D11DeviceBest> deviceTemp = (ID3D11DeviceBest*)descD3D11.d3d11Device;
+    if (!m_IsWrapped) {
+        UINT flags = desc.enableGraphicsAPIValidation ? D3D11_CREATE_DEVICE_DEBUG : 0;
         D3D_FEATURE_LEVEL levels[2] = {D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
-        const uint32_t levelNum = GetCountOf(levels);
+        uint32_t levelNum = GetCountOf(levels);
         bool isDepthBoundsTestSupported = false;
         bool isDrawIndirectCountSupported = false;
         bool isShaderAtomicsI64Supported = false;
 
 #if NRI_ENABLE_EXTERNAL_LIBRARIES
-        uint32_t shaderExtRegister = deviceCreationDesc.shaderExtRegister ? deviceCreationDesc.shaderExtRegister : NRI_SHADER_EXT_REGISTER;
+        uint32_t shaderExtRegister = desc.shaderExtRegister ? desc.shaderExtRegister : NRI_SHADER_EXT_REGISTER;
         if (HasAmdExt()) {
             AGSDX11DeviceCreationParams deviceCreationParams = {};
             deviceCreationParams.pAdapter = m_Adapter;
@@ -144,7 +132,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
             m_Desc.isViewportBasedMultiviewSupported = agsParams.extensionsSupported.multiView;
         } else {
 #endif
-            hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels, levelNum, D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
+            HRESULT hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, levels, levelNum, D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
             if (flags && (uint32_t)hr == 0x887a002d) {
                 // If Debug Layer is not available, try without D3D11_CREATE_DEVICE_DEBUG
                 hr = D3D11CreateDevice(m_Adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, levels, levelNum, D3D11_SDK_VERSION, (ID3D11Device**)&deviceTemp, nullptr, nullptr);
@@ -166,8 +154,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
         m_Desc.isDepthBoundsTestSupported = isDepthBoundsTestSupported;
         m_Desc.isDrawIndirectCountSupported = isDrawIndirectCountSupported;
         m_Desc.isShaderAtomicsI64Supported = isShaderAtomicsI64Supported;
-    } else
-        m_IsWrapped = true;
+    }
 
     m_Version = QueryLatestDevice(deviceTemp, m_Device);
     REPORT_INFO(this, "Using ID3D11Device%u", m_Version);
@@ -194,11 +181,11 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
 
     // Threading
     D3D11_FEATURE_DATA_THREADING threadingCaps = {};
-    hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_THREADING, &threadingCaps, sizeof(threadingCaps));
+    HRESULT hr = m_Device->CheckFeatureSupport(D3D11_FEATURE_THREADING, &threadingCaps, sizeof(threadingCaps));
     if (FAILED(hr) || !threadingCaps.DriverConcurrentCreates)
         REPORT_WARNING(this, "Concurrent resource creation is not supported by the driver!");
 
-    m_IsDeferredContextEmulated = !HasNvExt() || deviceCreationDesc.enableD3D11CommandBufferEmulation;
+    m_IsDeferredContextEmulated = !HasNvExt() || desc.enableD3D11CommandBufferEmulation;
     if (!threadingCaps.DriverCommandLists) {
         REPORT_WARNING(this, "Deferred Contexts are not supported by the driver and will be emulated!");
         m_IsDeferredContextEmulated = true;
@@ -211,9 +198,19 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11D
     } else
         m_Multithread->SetMultithreadProtected(true);
 
-    // Create command queues (ignoring support, since there is no real support in any case)
-    for (CommandQueueD3D11*& commandQueue : m_CommandQueues)
-        commandQueue = Allocate<CommandQueueD3D11>(GetAllocationCallbacks(), *this);
+    // Create queues
+    memset(m_Desc.adapterDesc.queueNum, 0, sizeof(m_Desc.adapterDesc.queueNum)); // patch to reflect available queues
+    for (uint32_t i = 0; i < desc.queueFamilyNum; i++) {
+        const QueueFamilyDesc& queueFamilyDesc = desc.queueFamilies[i];
+        auto& queueFamily = m_QueueFamilies[(size_t)queueFamilyDesc.queueType];
+
+        for (uint32_t j = 0; j < queueFamilyDesc.queueNum; j++) {
+            QueueD3D11* queue = Allocate<QueueD3D11>(GetAllocationCallbacks(), *this);
+            queueFamily.push_back(queue);
+        }
+
+        m_Desc.adapterDesc.queueNum[(size_t)queueFamilyDesc.queueType] = queueFamilyDesc.queueNum;
+    }
 
     // Fill desc
     FillDesc();
@@ -270,8 +267,6 @@ void DeviceD3D11::FillDesc() {
             timestampFrequency = data.Frequency;
         }
     }
-
-    m_Desc.architecture = options2.UnifiedMemoryArchitecture ? Architecture::INTEGRATED : Architecture::DESCRETE;
 
     m_Desc.viewportMaxNum = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
     m_Desc.viewportBoundsRange[0] = D3D11_VIEWPORT_BOUNDS_MIN;
@@ -402,11 +397,10 @@ void DeviceD3D11::FillDesc() {
 #endif
 
     m_Desc.isGetMemoryDesc2Supported = true;
-    m_Desc.isComputeQueueSupported = true; // TODO: report fake COMPUTE and COPY queues support since multi-queue supporting code is NOP. Can it hurt?
-    m_Desc.isCopyQueueSupported = true;
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicFuncSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isLineSmoothingSupported = true;
+    m_Desc.isEnchancedBarrierSupported = true; // don't care, but advertise support
 
     m_Desc.isShaderNativeF64Supported = options.ExtendedDoublesShaderInstructions;
     m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;
@@ -537,13 +531,20 @@ void DeviceD3D11::Destruct() {
     Destroy(GetAllocationCallbacks(), this);
 }
 
-NRI_INLINE Result DeviceD3D11::GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
-    commandQueue = (CommandQueue*)m_CommandQueues[(uint32_t)commandQueueType];
+NRI_INLINE Result DeviceD3D11::GetQueue(QueueType queueType, uint32_t queueIndex, Queue*& queue) {
+    const auto& queueFamily = m_QueueFamilies[(uint32_t)queueType];
+    if (queueFamily.empty())
+        return Result::UNSUPPORTED;
 
-    return commandQueue ? Result::SUCCESS : Result::UNSUPPORTED;
+    if (queueIndex < queueFamily.size()) {
+        queue = (Queue*)m_QueueFamilies[(uint32_t)queueType].at(queueIndex);
+        return Result::SUCCESS;
+    }
+
+    return Result::INVALID_ARGUMENT;
 }
 
-NRI_INLINE Result DeviceD3D11::CreateCommandAllocator(const CommandQueue&, CommandAllocator*& commandAllocator) {
+NRI_INLINE Result DeviceD3D11::CreateCommandAllocator(const Queue&, CommandAllocator*& commandAllocator) {
     commandAllocator = (CommandAllocator*)Allocate<CommandAllocatorD3D11>(GetAllocationCallbacks(), *this);
 
     return Result::SUCCESS;

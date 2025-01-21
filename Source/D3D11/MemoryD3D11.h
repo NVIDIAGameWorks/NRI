@@ -4,8 +4,6 @@
 
 namespace nri {
 
-struct DeviceD3D11;
-
 enum class MemoryResidencyPriority {
     DEFAULT,
     MINIMUM,

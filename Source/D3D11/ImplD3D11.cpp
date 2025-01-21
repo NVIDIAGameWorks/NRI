@@ -6,7 +6,6 @@
 #include "CommandAllocatorD3D11.h"
 #include "CommandBufferD3D11.h"
 #include "CommandBufferEmuD3D11.h"
-#include "CommandQueueD3D11.h"
 #include "DescriptorD3D11.h"
 #include "DescriptorPoolD3D11.h"
 #include "DescriptorSetD3D11.h"
@@ -15,6 +14,7 @@
 #include "PipelineD3D11.h"
 #include "PipelineLayoutD3D11.h"
 #include "QueryPoolD3D11.h"
+#include "QueueD3D11.h"
 #include "SwapChainD3D11.h"
 #include "TextureD3D11.h"
 
@@ -29,7 +29,6 @@ using namespace nri;
 #include "CommandAllocatorD3D11.hpp"
 #include "CommandBufferD3D11.hpp"
 #include "CommandBufferEmuD3D11.hpp"
-#include "CommandQueueD3D11.hpp"
 #include "DescriptorD3D11.hpp"
 #include "DescriptorPoolD3D11.hpp"
 #include "DescriptorSetD3D11.hpp"
@@ -38,35 +37,14 @@ using namespace nri;
 #include "PipelineD3D11.hpp"
 #include "PipelineLayoutD3D11.hpp"
 #include "QueryPoolD3D11.hpp"
+#include "QueueD3D11.hpp"
 #include "SharedD3D11.hpp"
 #include "SwapChainD3D11.hpp"
 #include "TextureD3D11.hpp"
 
-Result CreateDeviceD3D11(const DeviceCreationDesc& desc, DeviceBase*& device) {
+Result CreateDeviceD3D11(const DeviceCreationDesc& desc, const DeviceCreationD3D11Desc& descD3D11, DeviceBase*& device) {
     DeviceD3D11* impl = Allocate<DeviceD3D11>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
-    Result result = impl->Create(desc, nullptr, nullptr, false);
-
-    if (result != Result::SUCCESS) {
-        Destroy(desc.allocationCallbacks, impl);
-        device = nullptr;
-    } else
-        device = (DeviceBase*)impl;
-
-    return result;
-}
-
-Result CreateDeviceD3D11(const DeviceCreationD3D11Desc& desc, DeviceBase*& device) {
-    if (!desc.d3d11Device)
-        return Result::INVALID_ARGUMENT;
-
-    DeviceCreationDesc deviceCreationDesc = {};
-    deviceCreationDesc.callbackInterface = desc.callbackInterface;
-    deviceCreationDesc.allocationCallbacks = desc.allocationCallbacks;
-    deviceCreationDesc.enableD3D11CommandBufferEmulation = desc.enableD3D11CommandBufferEmulation;
-    deviceCreationDesc.graphicsAPI = GraphicsAPI::D3D11;
-
-    DeviceD3D11* impl = Allocate<DeviceD3D11>(desc.allocationCallbacks, deviceCreationDesc.callbackInterface, deviceCreationDesc.allocationCallbacks);
-    Result result = impl->Create(deviceCreationDesc, desc.d3d11Device, desc.agsContext, desc.isNVAPILoaded);
+    Result result = impl->Create(desc, descD3D11);
 
     if (result != Result::SUCCESS) {
         Destroy(desc.allocationCallbacks, impl);
@@ -118,13 +96,13 @@ static void NRI_CALL GetTextureMemoryDesc2(const Device& device, const TextureDe
     ((const DeviceD3D11&)device).GetMemoryDesc(textureDesc, memoryLocation, memoryDesc);
 }
 
-static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
-    return ((DeviceD3D11&)device).GetCommandQueue(commandQueueType, commandQueue);
+static Result NRI_CALL GetQueue(Device& device, QueueType queueType, uint32_t queueIndex, Queue*& queue) {
+    return ((DeviceD3D11&)device).GetQueue(queueType, queueIndex, queue);
 }
 
-static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
-    DeviceD3D11& device = ((CommandQueueD3D11&)commandQueue).GetDevice();
-    return device.CreateCommandAllocator(commandQueue, commandAllocator);
+static Result NRI_CALL CreateCommandAllocator(const Queue& queue, CommandAllocator*& commandAllocator) {
+    DeviceD3D11& device = ((QueueD3D11&)queue).GetDevice();
+    return device.CreateCommandAllocator(queue, commandAllocator);
 }
 
 static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, CommandBuffer*& commandBuffer) {
@@ -421,20 +399,20 @@ static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
     return ((CommandBufferD3D11&)commandBuffer).End();
 }
 
-static void NRI_CALL QueueBeginAnnotation(CommandQueue&, const char*, uint32_t) {
+static void NRI_CALL QueueBeginAnnotation(Queue&, const char*, uint32_t) {
 }
 
-static void NRI_CALL QueueEndAnnotation(CommandQueue&) {
+static void NRI_CALL QueueEndAnnotation(Queue&) {
 }
 
-static void NRI_CALL QueueAnnotation(CommandQueue&, const char*, uint32_t) {
+static void NRI_CALL QueueAnnotation(Queue&, const char*, uint32_t) {
 }
 
 static void NRI_CALL ResetQueries(QueryPool&, uint32_t, uint32_t) {
 }
 
-static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& queueSubmitDesc) {
-    ((CommandQueueD3D11&)commandQueue).Submit(queueSubmitDesc);
+static void NRI_CALL QueueSubmit(Queue& queue, const QueueSubmitDesc& queueSubmitDesc) {
+    ((QueueD3D11&)queue).Submit(queueSubmitDesc);
 }
 
 static void NRI_CALL Wait(Fence& fence, uint64_t value) {
@@ -492,7 +470,7 @@ static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
     return ((DeviceD3D11&)device).GetNativeObject();
 }
 
-static void* NRI_CALL GetCommandQueueNativeObject(const CommandQueue&) {
+static void* NRI_CALL GetQueueNativeObject(const Queue&) {
     return nullptr;
 }
 
@@ -717,7 +695,7 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
     table.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
     table.GetBufferMemoryDesc2 = ::GetBufferMemoryDesc2;
     table.GetTextureMemoryDesc2 = ::GetTextureMemoryDesc2;
-    table.GetCommandQueue = ::GetCommandQueue;
+    table.GetQueue = ::GetQueue;
     table.CreateCommandAllocator = ::CreateCommandAllocator;
     table.CreateCommandBuffer = ::CreateCommandBuffer;
     table.CreateDescriptorPool = ::CreateDescriptorPool;
@@ -764,7 +742,7 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
     table.UnmapBuffer = ::UnmapBuffer;
     table.SetDebugName = ::SetDebugName;
     table.GetDeviceNativeObject = ::GetDeviceNativeObject;
-    table.GetCommandQueueNativeObject = ::GetCommandQueueNativeObject;
+    table.GetQueueNativeObject = ::GetQueueNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
     table.GetTextureNativeObject = ::GetTextureNativeObject;
     table.GetDescriptorNativeObject = ::GetDescriptorNativeObject;
@@ -867,15 +845,15 @@ Result DeviceD3D11::FillFunctionTable(CoreInterface& table) const {
 //============================================================================================================================================================================================
 #pragma region[  Helper  ]
 
-static Result NRI_CALL UploadData(CommandQueue& commandQueue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
-    return ((CommandQueueD3D11&)commandQueue).UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
+static Result NRI_CALL UploadData(Queue& queue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
+    return ((QueueD3D11&)queue).UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
 }
 
-static Result NRI_CALL WaitForIdle(CommandQueue& commandQueue) {
-    if (!(&commandQueue))
+static Result NRI_CALL WaitForIdle(Queue& queue) {
+    if (!(&queue))
         return Result::SUCCESS;
 
-    return ((CommandQueueD3D11&)commandQueue).WaitForIdle();
+    return ((QueueD3D11&)queue).WaitForIdle();
 }
 
 static uint32_t NRI_CALL CalculateAllocationNumber(const Device& device, const ResourceGroupDesc& resourceGroupDesc) {
@@ -929,8 +907,8 @@ static Result GetLatencyReport(const SwapChain& swapChain, LatencyReport& latenc
     return ((SwapChainD3D11&)swapChain).GetLatencyReport(latencyReport);
 }
 
-static void NRI_CALL QueueSubmitTrackable(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc, const SwapChain&) {
-    ((CommandQueueD3D11&)commandQueue).Submit(workSubmissionDesc);
+static void NRI_CALL QueueSubmitTrackable(Queue& queue, const QueueSubmitDesc& workSubmissionDesc, const SwapChain&) {
+    ((QueueD3D11&)queue).Submit(workSubmissionDesc);
 }
 
 Result DeviceD3D11::FillFunctionTable(LowLatencyInterface& table) const {

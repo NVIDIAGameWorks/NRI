@@ -1,6 +1,6 @@
 // © 2021 NVIDIA Corporation
 
-NRI_INLINE void CommandQueueD3D11::Submit(const QueueSubmitDesc& queueSubmitDesc) {
+NRI_INLINE void QueueD3D11::Submit(const QueueSubmitDesc& queueSubmitDesc) {
     for (uint32_t i = 0; i < queueSubmitDesc.waitFenceNum; i++) {
         const FenceSubmitDesc& fenceSubmitDesc = queueSubmitDesc.waitFences[i];
         FenceD3D11* fence = (FenceD3D11*)fenceSubmitDesc.fence;
@@ -19,12 +19,12 @@ NRI_INLINE void CommandQueueD3D11::Submit(const QueueSubmitDesc& queueSubmitDesc
     }
 }
 
-NRI_INLINE Result CommandQueueD3D11::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
-    HelperDataUpload helperDataUpload(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
+NRI_INLINE Result QueueD3D11::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
+    HelperDataUpload helperDataUpload(m_Device.GetCoreInterface(), (Device&)m_Device, (Queue&)*this);
 
     return helperDataUpload.UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
 }
 
-NRI_INLINE Result CommandQueueD3D11::WaitForIdle() {
-    return WaitIdle(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
+NRI_INLINE Result QueueD3D11::WaitForIdle() {
+    return WaitIdle(m_Device.GetCoreInterface(), (Device&)m_Device, (Queue&)*this);
 }

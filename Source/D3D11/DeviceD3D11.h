@@ -7,7 +7,7 @@ typedef ID3D11Device5 ID3D11DeviceBest;
 
 namespace nri {
 
-struct CommandQueueD3D11;
+struct QueueD3D11;
 
 struct DeviceD3D11 final : public DeviceBase {
     DeviceD3D11(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks);
@@ -95,7 +95,7 @@ struct DeviceD3D11 final : public DeviceBase {
         return result;
     }
 
-    Result Create(const DeviceCreationDesc& deviceCreationDesc, ID3D11Device* precreatedDevice, AGSContext* agsContext, bool isNVAPILoadedInApp);
+    Result Create(const DeviceCreationDesc& desc, const DeviceCreationD3D11Desc& descD3D11);
     void GetMemoryDesc(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
     void GetMemoryDesc(const TextureDesc& textureDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
 
@@ -129,8 +129,8 @@ struct DeviceD3D11 final : public DeviceBase {
     // NRI
     //================================================================================================================
 
-    Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
-    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
+    Result CreateCommandAllocator(const Queue& queue, CommandAllocator*& commandAllocator);
+    Result GetQueue(QueueType queueType, uint32_t queueIndex, Queue*& queue);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     FormatSupportBits GetFormatSupport(Format format) const;
@@ -150,8 +150,8 @@ private:
     ComPtr<IDXGIAdapter> m_Adapter;
     ComPtr<ID3D11DeviceContextBest> m_ImmediateContext;
     ComPtr<ID3D11Multithread> m_Multithread;
-    std::array<CommandQueueD3D11*, (size_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
-    CRITICAL_SECTION m_CriticalSection = {}; // TODO: Lock?
+    std::array<std::vector<QueueD3D11*>, (size_t)QueueType::MAX_NUM> m_QueueFamilies = {}; // TODO: use Vector!
+    CRITICAL_SECTION m_CriticalSection = {};                                               // TODO: Lock?
     CoreInterface m_CoreInterface = {};
     DeviceDesc m_Desc = {};
     uint8_t m_Version = 0;

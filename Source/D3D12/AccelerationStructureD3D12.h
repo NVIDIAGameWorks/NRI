@@ -4,7 +4,6 @@
 
 namespace nri {
 
-struct DeviceD3D12;
 struct BufferD3D12;
 
 struct AccelerationStructureD3D12 final : public DebugNameBase {

@@ -6,7 +6,6 @@
 #include "BufferVK.h"
 #include "CommandAllocatorVK.h"
 #include "CommandBufferVK.h"
-#include "CommandQueueVK.h"
 #include "ConversionVK.h"
 #include "DescriptorPoolVK.h"
 #include "DescriptorSetVK.h"
@@ -16,6 +15,7 @@
 #include "PipelineLayoutVK.h"
 #include "PipelineVK.h"
 #include "QueryPoolVK.h"
+#include "QueueVK.h"
 #include "SwapChainVK.h"
 #include "TextureVK.h"
 
@@ -29,7 +29,6 @@ using namespace nri;
 #include "BufferVK.hpp"
 #include "CommandAllocatorVK.hpp"
 #include "CommandBufferVK.hpp"
-#include "CommandQueueVK.hpp"
 #include "ConversionVK.hpp"
 #include "DescriptorPoolVK.hpp"
 #include "DescriptorSetVK.hpp"
@@ -40,26 +39,14 @@ using namespace nri;
 #include "PipelineLayoutVK.hpp"
 #include "PipelineVK.hpp"
 #include "QueryPoolVK.hpp"
+#include "QueueVK.hpp"
 #include "ResourceAllocatorVK.hpp"
 #include "SwapChainVK.hpp"
 #include "TextureVK.hpp"
 
-Result CreateDeviceVK(const DeviceCreationDesc& desc, DeviceBase*& device) {
+Result CreateDeviceVK(const DeviceCreationDesc& desc, const DeviceCreationVKDesc& descVK, DeviceBase*& device) {
     DeviceVK* impl = Allocate<DeviceVK>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
-    Result result = impl->Create(desc, {}, false);
-
-    if (result != Result::SUCCESS) {
-        Destroy(desc.allocationCallbacks, impl);
-        device = nullptr;
-    } else
-        device = (DeviceBase*)impl;
-
-    return result;
-}
-
-Result CreateDeviceVK(const DeviceCreationVKDesc& desc, DeviceBase*& device) {
-    DeviceVK* impl = Allocate<DeviceVK>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
-    Result result = impl->Create({}, desc, true);
+    Result result = impl->Create(desc, descVK);
 
     if (result != Result::SUCCESS) {
         Destroy(desc.allocationCallbacks, impl);
@@ -109,13 +96,13 @@ static void NRI_CALL GetTextureMemoryDesc2(const Device& device, const TextureDe
     ((const DeviceVK&)device).GetMemoryDesc2(textureDesc, memoryLocation, memoryDesc);
 }
 
-static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
-    return ((DeviceVK&)device).GetCommandQueue(commandQueueType, commandQueue);
+static Result NRI_CALL GetQueue(Device& device, QueueType queueType, uint32_t queueIndex, Queue*& queue) {
+    return ((DeviceVK&)device).GetQueue(queueType, queueIndex, queue);
 }
 
-static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
-    DeviceVK& device = ((CommandQueueVK&)commandQueue).GetDevice();
-    return device.CreateImplementation<CommandAllocatorVK>(commandAllocator, commandQueue);
+static Result NRI_CALL CreateCommandAllocator(const Queue& queue, CommandAllocator*& commandAllocator) {
+    DeviceVK& device = ((QueueVK&)queue).GetDevice();
+    return device.CreateImplementation<CommandAllocatorVK>(commandAllocator, queue);
 }
 
 static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, CommandBuffer*& commandBuffer) {
@@ -411,24 +398,24 @@ static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
     return ((CommandBufferVK&)commandBuffer).End();
 }
 
-static void NRI_CALL QueueBeginAnnotation(CommandQueue& commandQueue, const char* name, uint32_t bgra) {
-    MaybeUnused(commandQueue, name, bgra);
+static void NRI_CALL QueueBeginAnnotation(Queue& queue, const char* name, uint32_t bgra) {
+    MaybeUnused(queue, name, bgra);
 #if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
-    ((CommandQueueVK&)commandQueue).BeginAnnotation(name, bgra);
+    ((QueueVK&)queue).BeginAnnotation(name, bgra);
 #endif
 }
 
-static void NRI_CALL QueueEndAnnotation(CommandQueue& commandQueue) {
-    MaybeUnused(commandQueue);
+static void NRI_CALL QueueEndAnnotation(Queue& queue) {
+    MaybeUnused(queue);
 #if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
-    ((CommandQueueVK&)commandQueue).EndAnnotation();
+    ((QueueVK&)queue).EndAnnotation();
 #endif
 }
 
-static void NRI_CALL QueueAnnotation(CommandQueue& commandQueue, const char* name, uint32_t bgra) {
-    MaybeUnused(commandQueue, name, bgra);
+static void NRI_CALL QueueAnnotation(Queue& queue, const char* name, uint32_t bgra) {
+    MaybeUnused(queue, name, bgra);
 #if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
-    ((CommandQueueVK&)commandQueue).Annotation(name, bgra);
+    ((QueueVK&)queue).Annotation(name, bgra);
 #endif
 }
 
@@ -436,8 +423,8 @@ static void NRI_CALL ResetQueries(QueryPool& queryPool, uint32_t offset, uint32_
     ((QueryPoolVK&)queryPool).Reset(offset, num);
 }
 
-static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc) {
-    ((CommandQueueVK&)commandQueue).Submit(workSubmissionDesc, nullptr);
+static void NRI_CALL QueueSubmit(Queue& queue, const QueueSubmitDesc& workSubmissionDesc) {
+    ((QueueVK&)queue).Submit(workSubmissionDesc, nullptr);
 }
 
 static void NRI_CALL Wait(Fence& fence, uint64_t value) {
@@ -495,11 +482,11 @@ static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
     return (VkDevice)((DeviceVK&)device);
 }
 
-static void* NRI_CALL GetCommandQueueNativeObject(const CommandQueue& commandQueue) {
-    if (!(&commandQueue))
+static void* NRI_CALL GetQueueNativeObject(const Queue& queue) {
+    if (!(&queue))
         return nullptr;
 
-    return (VkQueue)((CommandQueueVK&)commandQueue);
+    return (VkQueue)((QueueVK&)queue);
 }
 
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
@@ -552,7 +539,7 @@ Result DeviceVK::FillFunctionTable(CoreInterface& table) const {
     table.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
     table.GetBufferMemoryDesc2 = ::GetBufferMemoryDesc2;
     table.GetTextureMemoryDesc2 = ::GetTextureMemoryDesc2;
-    table.GetCommandQueue = ::GetCommandQueue;
+    table.GetQueue = ::GetQueue;
     table.CreateCommandAllocator = ::CreateCommandAllocator;
     table.CreateCommandBuffer = ::CreateCommandBuffer;
     table.CreateDescriptorPool = ::CreateDescriptorPool;
@@ -641,7 +628,7 @@ Result DeviceVK::FillFunctionTable(CoreInterface& table) const {
     table.UnmapBuffer = ::UnmapBuffer;
     table.SetDebugName = ::SetDebugName;
     table.GetDeviceNativeObject = ::GetDeviceNativeObject;
-    table.GetCommandQueueNativeObject = ::GetCommandQueueNativeObject;
+    table.GetQueueNativeObject = ::GetQueueNativeObject;
     table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
     table.GetTextureNativeObject = ::GetTextureNativeObject;
@@ -655,15 +642,15 @@ Result DeviceVK::FillFunctionTable(CoreInterface& table) const {
 //============================================================================================================================================================================================
 #pragma region[  Helper  ]
 
-static Result NRI_CALL UploadData(CommandQueue& commandQueue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
-    return ((CommandQueueVK&)commandQueue).UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
+static Result NRI_CALL UploadData(Queue& queue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
+    return ((QueueVK&)queue).UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
 }
 
-static Result NRI_CALL WaitForIdle(CommandQueue& commandQueue) {
-    if (!(&commandQueue))
+static Result NRI_CALL WaitForIdle(Queue& queue) {
+    if (!(&queue))
         return Result::SUCCESS;
 
-    return ((CommandQueueVK&)commandQueue).WaitForIdle();
+    return ((QueueVK&)queue).WaitForIdle();
 }
 
 static uint32_t NRI_CALL CalculateAllocationNumber(const Device& device, const ResourceGroupDesc& resourceGroupDesc) {
@@ -699,8 +686,8 @@ Result DeviceVK::FillFunctionTable(HelperInterface& table) const {
 //============================================================================================================================================================================================
 #pragma region[  Low latency  ]
 
-static void NRI_CALL QueueSubmitTrackable(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc, const SwapChain& swapChain) {
-    ((CommandQueueVK&)commandQueue).Submit(workSubmissionDesc, &swapChain);
+static void NRI_CALL QueueSubmitTrackable(Queue& queue, const QueueSubmitDesc& workSubmissionDesc, const SwapChain& swapChain) {
+    ((QueueVK&)queue).Submit(workSubmissionDesc, &swapChain);
 }
 
 static Result SetLatencySleepMode(SwapChain& swapChain, const LatencySleepMode& latencySleepMode) {
@@ -1012,10 +999,6 @@ Result DeviceVK::FillFunctionTable(SwapChainInterface& table) const {
 //============================================================================================================================================================================================
 #pragma region[  WrapperVK  ]
 
-static Result NRI_CALL CreateCommandQueueVK(Device& device, const CommandQueueVKDesc& commandQueueVKDesc, CommandQueue*& commandQueue) {
-    return ((DeviceVK&)device).CreateCommandQueue(commandQueueVKDesc, commandQueue);
-}
-
 static Result NRI_CALL CreateCommandAllocatorVK(Device& device, const CommandAllocatorVKDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator) {
     return ((DeviceVK&)device).CreateImplementation<CommandAllocatorVK>(commandAllocator, commandAllocatorDesc);
 }
@@ -1056,8 +1039,8 @@ static Result NRI_CALL CreateAccelerationStructureVK(Device& device, const Accel
     return ((DeviceVK&)device).CreateImplementation<AccelerationStructureVK>(accelerationStructure, accelerationStructureDesc);
 }
 
-static uint32_t NRI_CALL GetCommandQueueFamilyIndexVK(const CommandQueue& commandQueue) {
-    return ((CommandQueueVK&)commandQueue).GetFamilyIndex();
+static uint32_t NRI_CALL GetQueueFamilyIndexVK(const Queue& queue) {
+    return ((QueueVK&)queue).GetFamilyIndex();
 }
 
 static VKHandle NRI_CALL GetPhysicalDeviceVK(const Device& device) {
@@ -1077,7 +1060,6 @@ static void* NRI_CALL GetDeviceProcAddrVK(const Device& device) {
 }
 
 Result DeviceVK::FillFunctionTable(WrapperVKInterface& table) const {
-    table.CreateCommandQueueVK = ::CreateCommandQueueVK;
     table.CreateCommandAllocatorVK = ::CreateCommandAllocatorVK;
     table.CreateCommandBufferVK = ::CreateCommandBufferVK;
     table.CreateDescriptorPoolVK = ::CreateDescriptorPoolVK;
@@ -1088,7 +1070,7 @@ Result DeviceVK::FillFunctionTable(WrapperVKInterface& table) const {
     table.CreateComputePipelineVK = ::CreateComputePipelineVK;
     table.CreateQueryPoolVK = ::CreateQueryPoolVK;
     table.CreateAccelerationStructureVK = ::CreateAccelerationStructureVK;
-    table.GetCommandQueueFamilyIndexVK = ::GetCommandQueueFamilyIndexVK;
+    table.GetQueueFamilyIndexVK = ::GetQueueFamilyIndexVK;
     table.GetPhysicalDeviceVK = ::GetPhysicalDeviceVK;
     table.GetInstanceVK = ::GetInstanceVK;
     table.GetDeviceProcAddrVK = ::GetDeviceProcAddrVK;

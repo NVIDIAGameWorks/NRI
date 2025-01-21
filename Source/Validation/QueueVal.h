@@ -4,19 +4,17 @@
 
 namespace nri {
 
-struct CommandBufferVal;
-
-struct CommandQueueVal final : public ObjectVal {
-    inline CommandQueueVal(DeviceVal& device, CommandQueue* commandQueue)
-        : ObjectVal(device, commandQueue) {
+struct QueueVal final : public ObjectVal {
+    inline QueueVal(DeviceVal& device, Queue* queue)
+        : ObjectVal(device, queue) {
     }
 
-    inline CommandQueue* GetImpl() const {
-        return (CommandQueue*)m_Impl;
+    inline Queue* GetImpl() const {
+        return (Queue*)m_Impl;
     }
 
     inline void* GetNativeObject() const {
-        return m_Device.GetCoreInterface().GetCommandQueueNativeObject(*GetImpl());
+        return m_Device.GetCoreInterface().GetQueueNativeObject(*GetImpl());
     }
 
     //================================================================================================================

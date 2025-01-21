@@ -17,7 +17,7 @@ typedef ID3D12Device5 ID3D12DeviceBest;
 
 namespace nri {
 
-struct CommandQueueD3D12;
+struct QueueD3D12;
 
 constexpr uint32_t DESCRIPTORS_BATCH_SIZE = 1024;
 
@@ -142,8 +142,7 @@ struct DeviceD3D12 final : public DeviceBase {
     // NRI
     //================================================================================================================
 
-    Result CreateCommandQueue(void* d3d12commandQueue, CommandQueueD3D12*& commandQueue);
-    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
+    Result GetQueue(QueueType queueType, uint32_t queueIndex, Queue*& queue);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindAccelerationStructureMemory(const AccelerationStructureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
@@ -173,7 +172,7 @@ private:
     UnorderedMap<uint64_t, ComPtr<ID3D12CommandSignature>> m_DrawCommandSignatures;
     UnorderedMap<uint64_t, ComPtr<ID3D12CommandSignature>> m_DrawIndexedCommandSignatures;
     UnorderedMap<uint32_t, ComPtr<ID3D12CommandSignature>> m_DrawMeshCommandSignatures;
-    std::array<CommandQueueD3D12*, (size_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
+    std::array<std::vector<QueueD3D12*>, (size_t)QueueType::MAX_NUM> m_QueueFamilies = {}; // TODO: use Vector!
     D3D12MA::ALLOCATION_CALLBACKS m_AllocationCallbacks = {};
     D3D12MA::ALLOCATION_CALLBACKS* m_AllocationCallbackPtr = nullptr;
     CoreInterface m_CoreInterface = {};
@@ -183,7 +182,6 @@ private:
 
     std::array<Lock, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> m_FreeDescriptorLocks;
     Lock m_DescriptorHeapLock;
-    Lock m_QueueLock;
 };
 
 } // namespace nri

@@ -1,14 +1,13 @@
 // © 2021 NVIDIA Corporation
 
-constexpr std::array<D3D12_COMMAND_LIST_TYPE, (size_t)CommandQueueType::MAX_NUM> COMMAND_LIST_TYPES = {
+constexpr std::array<D3D12_COMMAND_LIST_TYPE, (size_t)QueueType::MAX_NUM> COMMAND_LIST_TYPES = {
     D3D12_COMMAND_LIST_TYPE_DIRECT,  // GRAPHICS,
     D3D12_COMMAND_LIST_TYPE_COMPUTE, // COMPUTE,
     D3D12_COMMAND_LIST_TYPE_COPY,    // COPY,
-    D3D12_COMMAND_LIST_TYPE_COPY,    // HIGH_PRIORITY_COPY,
 };
 
-D3D12_COMMAND_LIST_TYPE nri::GetCommandListType(CommandQueueType commandQueueType) {
-    return COMMAND_LIST_TYPES[(size_t)commandQueueType];
+D3D12_COMMAND_LIST_TYPE nri::GetCommandListType(QueueType queueType) {
+    return COMMAND_LIST_TYPES[(size_t)queueType];
 }
 
 constexpr std::array<D3D12_RESOURCE_DIMENSION, (size_t)TextureType::MAX_NUM> RESOURCE_DIMENSIONS = {

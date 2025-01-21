@@ -30,20 +30,20 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
         m_PipelineBindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
 
     // Binding offsets
-    SPIRVBindingOffsets spirvBindingOffsets = {};
+    VKBindingOffsets vkBindingOffsets = {};
     if (!pipelineLayoutDesc.ignoreGlobalSPIRVOffsets)
-        spirvBindingOffsets = m_Device.GetSPIRVBindingOffsets();
+        vkBindingOffsets = m_Device.GetBindingOffsets();
 
     std::array<uint32_t, (size_t)DescriptorType::MAX_NUM> bindingOffsets = {};
-    bindingOffsets[(size_t)DescriptorType::SAMPLER] = spirvBindingOffsets.samplerOffset;
-    bindingOffsets[(size_t)DescriptorType::CONSTANT_BUFFER] = spirvBindingOffsets.constantBufferOffset;
-    bindingOffsets[(size_t)DescriptorType::TEXTURE] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(size_t)DescriptorType::STORAGE_TEXTURE] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(size_t)DescriptorType::BUFFER] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(size_t)DescriptorType::STORAGE_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(size_t)DescriptorType::STRUCTURED_BUFFER] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(size_t)DescriptorType::STORAGE_STRUCTURED_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(size_t)DescriptorType::ACCELERATION_STRUCTURE] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::SAMPLER] = vkBindingOffsets.samplerOffset;
+    bindingOffsets[(size_t)DescriptorType::CONSTANT_BUFFER] = vkBindingOffsets.constantBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::TEXTURE] = vkBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::STORAGE_TEXTURE] = vkBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::BUFFER] = vkBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::STORAGE_BUFFER] = vkBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::STRUCTURED_BUFFER] = vkBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::STORAGE_STRUCTURED_BUFFER] = vkBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::ACCELERATION_STRUCTURE] = vkBindingOffsets.textureOffset;
 
     // Binding info
     size_t rangeNum = 0;
@@ -183,20 +183,20 @@ Result PipelineLayoutVK::Create(const PipelineLayoutDesc& pipelineLayoutDesc) {
 
 VkDescriptorSetLayout PipelineLayoutVK::CreateSetLayout(const DescriptorSetDesc& descriptorSetDesc, bool ignoreGlobalSPIRVOffsets, bool isPush) {
     // Binding offsets
-    SPIRVBindingOffsets spirvBindingOffsets = {};
+    VKBindingOffsets vkBindingOffsets = {};
     if (!ignoreGlobalSPIRVOffsets)
-        spirvBindingOffsets = m_Device.GetSPIRVBindingOffsets();
+        vkBindingOffsets = m_Device.GetBindingOffsets();
 
     std::array<uint32_t, (size_t)DescriptorType::MAX_NUM> bindingOffsets = {};
-    bindingOffsets[(size_t)DescriptorType::SAMPLER] = spirvBindingOffsets.samplerOffset;
-    bindingOffsets[(size_t)DescriptorType::CONSTANT_BUFFER] = spirvBindingOffsets.constantBufferOffset;
-    bindingOffsets[(size_t)DescriptorType::TEXTURE] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(size_t)DescriptorType::STORAGE_TEXTURE] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(size_t)DescriptorType::BUFFER] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(size_t)DescriptorType::STORAGE_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(size_t)DescriptorType::STRUCTURED_BUFFER] = spirvBindingOffsets.textureOffset;
-    bindingOffsets[(size_t)DescriptorType::STORAGE_STRUCTURED_BUFFER] = spirvBindingOffsets.storageTextureAndBufferOffset;
-    bindingOffsets[(size_t)DescriptorType::ACCELERATION_STRUCTURE] = spirvBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::SAMPLER] = vkBindingOffsets.samplerOffset;
+    bindingOffsets[(size_t)DescriptorType::CONSTANT_BUFFER] = vkBindingOffsets.constantBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::TEXTURE] = vkBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::STORAGE_TEXTURE] = vkBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::BUFFER] = vkBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::STORAGE_BUFFER] = vkBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::STRUCTURED_BUFFER] = vkBindingOffsets.textureOffset;
+    bindingOffsets[(size_t)DescriptorType::STORAGE_STRUCTURED_BUFFER] = vkBindingOffsets.storageTextureAndBufferOffset;
+    bindingOffsets[(size_t)DescriptorType::ACCELERATION_STRUCTURE] = vkBindingOffsets.textureOffset;
 
     // Count
     uint32_t bindingMaxNum = descriptorSetDesc.dynamicConstantBufferNum;

@@ -4,7 +4,6 @@
 
 namespace nri {
 
-struct DeviceVK;
 struct TextureVK;
 
 enum class DescriptorTypeVK {

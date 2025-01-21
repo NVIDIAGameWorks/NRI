@@ -5,7 +5,7 @@
 NriNamespaceBegin
 
 NriForwardStruct(SwapChain);
-NriForwardStruct(CommandQueue);
+NriForwardStruct(Queue);
 
 // us = microseconds
 
@@ -50,7 +50,7 @@ NriStruct(LowLatencyInterface) {
     Nri(Result) (NRI_CALL   *GetLatencyReport)      (const NriRef(SwapChain) swapChain, NriOut NriRef(LatencyReport) latencyReport);
 
     // This function must be used in "low latency" mode instead of "QueueSubmit"
-    void        (NRI_CALL   *QueueSubmitTrackable)  (NriRef(CommandQueue) commandQueue, const NriRef(QueueSubmitDesc) queueSubmitDesc, const NriRef(SwapChain) swapChain);
+    void        (NRI_CALL   *QueueSubmitTrackable)  (NriRef(Queue) queue, const NriRef(QueueSubmitDesc) queueSubmitDesc, const NriRef(SwapChain) swapChain);
 };
 
 NriNamespaceEnd

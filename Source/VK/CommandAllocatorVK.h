@@ -4,8 +4,6 @@
 
 namespace nri {
 
-struct DeviceVK;
-
 struct CommandAllocatorVK final : public DebugNameBase {
     inline CommandAllocatorVK(DeviceVK& device)
         : m_Device(device) {
@@ -21,7 +19,7 @@ struct CommandAllocatorVK final : public DebugNameBase {
 
     ~CommandAllocatorVK();
 
-    Result Create(const CommandQueue& commandQueue);
+    Result Create(const Queue& queue);
     Result Create(const CommandAllocatorVKDesc& commandAllocatorDesc);
 
     //================================================================================================================
@@ -40,7 +38,7 @@ struct CommandAllocatorVK final : public DebugNameBase {
 private:
     DeviceVK& m_Device;
     VkCommandPool m_Handle = VK_NULL_HANDLE;
-    CommandQueueType m_Type = (CommandQueueType)0;
+    QueueType m_Type = (QueueType)0;
     bool m_OwnsNativeObjects = true;
 };
 

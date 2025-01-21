@@ -7,8 +7,6 @@ constexpr D3D12_QUERY_TYPE QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE = D3
 
 namespace nri {
 
-struct DeviceD3D12;
-
 struct QueryPoolD3D12 final : public DebugNameBase {
     inline QueryPoolD3D12(DeviceD3D12& device)
         : m_Device(device) {

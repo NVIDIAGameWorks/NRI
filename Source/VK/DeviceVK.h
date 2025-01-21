@@ -4,7 +4,7 @@
 
 namespace nri {
 
-struct CommandQueueVK;
+struct QueueVK;
 
 struct IsSupported {
     uint32_t descriptorIndexing : 1;
@@ -24,6 +24,7 @@ struct IsSupported {
     uint32_t robustness2 : 1;
     uint32_t pipelineRobustness : 1;
 };
+
 static_assert(sizeof(IsSupported) == sizeof(uint32_t), "4 bytes expected");
 
 struct DeviceVK final : public DeviceBase {
@@ -47,8 +48,8 @@ struct DeviceVK final : public DeviceBase {
         return m_AllocationCallbackPtr;
     }
 
-    inline const SPIRVBindingOffsets& GetSPIRVBindingOffsets() const {
-        return m_SPIRVBindingOffsets;
+    inline const VKBindingOffsets& GetBindingOffsets() const {
+        return m_BindingOffsets;
     }
 
     inline const CoreInterface& GetCoreInterface() const {
@@ -80,7 +81,7 @@ struct DeviceVK final : public DeviceBase {
     DeviceVK(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks);
     ~DeviceVK();
 
-    Result Create(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationVKDesc& deviceCreationVKDesc, bool isWrapper);
+    Result Create(const DeviceCreationDesc& desc, const DeviceCreationVKDesc& descVK);
     void FillCreateInfo(const BufferDesc& bufferDesc, VkBufferCreateInfo& info) const;
     void FillCreateInfo(const TextureDesc& bufferDesc, VkImageCreateInfo& info) const;
     void GetMemoryDesc2(const BufferDesc& bufferDesc, MemoryLocation memoryLocation, MemoryDesc& memoryDesc) const;
@@ -122,8 +123,7 @@ struct DeviceVK final : public DeviceBase {
     // NRI
     //================================================================================================================
 
-    Result CreateCommandQueue(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
-    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
+    Result GetQueue(QueueType queueType, uint32_t queueIndex, Queue*& queue);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result QueryVideoMemoryInfo(MemoryLocation memoryLocation, VideoMemoryInfo& videoMemoryInfo) const;
@@ -134,9 +134,7 @@ private:
     void FilterInstanceLayers(Vector<const char*>& layers);
     void ProcessInstanceExtensions(Vector<const char*>& desiredInstanceExts);
     void ProcessDeviceExtensions(Vector<const char*>& desiredDeviceExts, bool disableRayTracing);
-    void FillFamilyIndices(bool isWrapper, const DeviceCreationVKDesc& deviceCreationVKDesc);
     void ReportDeviceGroupInfo();
-    void GetAdapterDesc();
     Result CreateInstance(bool enableGraphicsAPIValidation, const Vector<const char*>& desiredInstanceExts);
     Result ResolvePreInstanceDispatchTable();
     Result ResolveInstanceDispatchTable(const Vector<const char*>& desiredInstanceExts);
@@ -150,13 +148,12 @@ public:
 
 private:
     VkPhysicalDevice m_PhysicalDevice = nullptr;
-    std::array<uint32_t, (size_t)CommandQueueType::MAX_NUM> m_ActiveQueueFamilyIndices = {};
-    std::array<uint32_t, (size_t)CommandQueueType::MAX_NUM> m_QueueFamilyIndices = {};
-    std::array<CommandQueueVK*, (size_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
+    std::array<uint32_t, (size_t)QueueType::MAX_NUM> m_ActiveQueueFamilyIndices = {};
+    std::array<std::vector<QueueVK*>, (size_t)QueueType::MAX_NUM> m_QueueFamilies = {}; // TODO: use Vector!
     DispatchTable m_VK = {};
     VkPhysicalDeviceMemoryProperties m_MemoryProps = {};
     VkAllocationCallbacks m_AllocationCallbacks = {};
-    SPIRVBindingOffsets m_SPIRVBindingOffsets = {};
+    VKBindingOffsets m_BindingOffsets = {};
     CoreInterface m_CoreInterface = {};
     DeviceDesc m_Desc = {};
     Library* m_Loader = nullptr;

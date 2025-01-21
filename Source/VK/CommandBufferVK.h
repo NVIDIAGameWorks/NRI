@@ -4,10 +4,8 @@
 
 namespace nri {
 
-struct DeviceVK;
 struct PipelineVK;
 struct PipelineLayoutVK;
-struct TextureVK;
 struct DescriptorVK;
 
 struct CommandBufferVK final : public DebugNameBase {
@@ -25,7 +23,7 @@ struct CommandBufferVK final : public DebugNameBase {
 
     ~CommandBufferVK();
 
-    void Create(VkCommandPool commandPool, VkCommandBuffer commandBuffer, CommandQueueType type);
+    void Create(VkCommandPool commandPool, VkCommandBuffer commandBuffer, QueueType type);
     Result Create(const CommandBufferVKDesc& commandBufferDesc);
 
     //================================================================================================================
@@ -98,7 +96,7 @@ private:
     const DescriptorVK* m_DepthStencil = nullptr;
     VkCommandBuffer m_Handle = VK_NULL_HANDLE;
     VkCommandPool m_CommandPool = VK_NULL_HANDLE;
-    CommandQueueType m_Type = (CommandQueueType)0;
+    QueueType m_Type = (QueueType)0;
     uint32_t m_ViewMask = 0;
     Dim_t m_RenderLayerNum = 0;
     Dim_t m_RenderWidth = 0;

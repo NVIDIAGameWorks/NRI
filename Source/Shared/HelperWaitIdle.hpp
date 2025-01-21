@@ -1,4 +1,4 @@
-Result WaitIdle(const CoreInterface& NRI, Device& device, CommandQueue& commandQueue) {
+Result WaitIdle(const CoreInterface& NRI, Device& device, Queue& queue) {
     Fence* fence = nullptr;
     Result result = NRI.CreateFence(device, 0, fence);
     if (result != Result::SUCCESS)
@@ -12,7 +12,7 @@ Result WaitIdle(const CoreInterface& NRI, Device& device, CommandQueue& commandQ
     queueSubmitDesc.signalFences = &fenceSubmitDesc;
     queueSubmitDesc.signalFenceNum = 1;
 
-    NRI.QueueSubmit(commandQueue, queueSubmitDesc);
+    NRI.QueueSubmit(queue, queueSubmitDesc);
     NRI.Wait(*fence, 1);
     NRI.DestroyFence(*fence);
 

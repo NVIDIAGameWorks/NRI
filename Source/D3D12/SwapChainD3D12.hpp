@@ -47,7 +47,7 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc) {
     if (!hwnd)
         return Result::INVALID_ARGUMENT;
 
-    CommandQueueD3D12& commandQueue = *(CommandQueueD3D12*)swapChainDesc.commandQueue;
+    QueueD3D12& queue = *(QueueD3D12*)swapChainDesc.queue;
 
     // Query DXGIFactory2
     HRESULT hr = m_Device.GetAdapter()->GetParent(IID_PPV_ARGS(&m_DxgiFactory2));
@@ -84,7 +84,7 @@ Result SwapChainD3D12::Create(const SwapChainDesc& swapChainDesc) {
         desc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
     ComPtr<IDXGISwapChainBest> swapChain;
-    hr = m_DxgiFactory2->CreateSwapChainForHwnd((ID3D12CommandQueue*)commandQueue, hwnd, &desc, nullptr, nullptr, (IDXGISwapChain1**)&swapChain);
+    hr = m_DxgiFactory2->CreateSwapChainForHwnd((ID3D12CommandQueue*)queue, hwnd, &desc, nullptr, nullptr, (IDXGISwapChain1**)&swapChain);
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "IDXGIFactory2::CreateSwapChainForHwnd()");
 
     m_Version = QueryLatestSwapChain(swapChain, m_SwapChain);

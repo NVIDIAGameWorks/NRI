@@ -4,10 +4,8 @@
 
 namespace nri {
 
-struct DeviceVK;
-
-struct CommandQueueVK final : public DebugNameBase {
-    inline CommandQueueVK(DeviceVK& device)
+struct QueueVK final : public DebugNameBase {
+    inline QueueVK(DeviceVK& device)
         : m_Device(device) {
     }
 
@@ -23,7 +21,7 @@ struct CommandQueueVK final : public DebugNameBase {
         return m_FamilyIndex;
     }
 
-    inline CommandQueueType GetType() const {
+    inline QueueType GetType() const {
         return m_Type;
     }
 
@@ -31,7 +29,7 @@ struct CommandQueueVK final : public DebugNameBase {
         return m_Lock;
     }
 
-    Result Create(CommandQueueType type, uint32_t familyIndex, VkQueue handle);
+    Result Create(QueueType type, uint32_t familyIndex, VkQueue handle);
 
     //================================================================================================================
     // DebugNameBase
@@ -54,7 +52,7 @@ private:
     DeviceVK& m_Device;
     VkQueue m_Handle = VK_NULL_HANDLE;
     uint32_t m_FamilyIndex = INVALID_FAMILY_INDEX;
-    CommandQueueType m_Type = CommandQueueType(-1);
+    QueueType m_Type = QueueType(-1);
     Lock m_Lock;
 };
 

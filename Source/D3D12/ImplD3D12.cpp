@@ -6,7 +6,6 @@
 #include "BufferD3D12.h"
 #include "CommandAllocatorD3D12.h"
 #include "CommandBufferD3D12.h"
-#include "CommandQueueD3D12.h"
 #include "DescriptorD3D12.h"
 #include "DescriptorPoolD3D12.h"
 #include "DescriptorSetD3D12.h"
@@ -15,6 +14,7 @@
 #include "PipelineD3D12.h"
 #include "PipelineLayoutD3D12.h"
 #include "QueryPoolD3D12.h"
+#include "QueueD3D12.h"
 #include "SwapChainD3D12.h"
 #include "TextureD3D12.h"
 
@@ -29,7 +29,6 @@ using namespace nri;
 #include "BufferD3D12.hpp"
 #include "CommandAllocatorD3D12.hpp"
 #include "CommandBufferD3D12.hpp"
-#include "CommandQueueD3D12.hpp"
 #include "DescriptorD3D12.hpp"
 #include "DescriptorPoolD3D12.hpp"
 #include "DescriptorSetD3D12.hpp"
@@ -39,44 +38,15 @@ using namespace nri;
 #include "PipelineD3D12.hpp"
 #include "PipelineLayoutD3D12.hpp"
 #include "QueryPoolD3D12.hpp"
+#include "QueueD3D12.hpp"
 #include "ResourceAllocatorD3D12.hpp"
 #include "SharedD3D12.hpp"
 #include "SwapChainD3D12.hpp"
 #include "TextureD3D12.hpp"
 
-Result CreateDeviceD3D12(const DeviceCreationDesc& desc, DeviceBase*& device) {
-    DeviceCreationD3D12Desc deviceCreationD3D12Desc = {};
-
+Result CreateDeviceD3D12(const DeviceCreationDesc& desc, const DeviceCreationD3D12Desc& descD3D12, DeviceBase*& device) {
     DeviceD3D12* impl = Allocate<DeviceD3D12>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
-    Result result = impl->Create(desc, deviceCreationD3D12Desc);
-
-    if (result != Result::SUCCESS) {
-        Destroy(desc.allocationCallbacks, impl);
-        device = nullptr;
-    } else
-        device = (DeviceBase*)impl;
-
-    return result;
-}
-
-Result CreateDeviceD3D12(const DeviceCreationD3D12Desc& desc, DeviceBase*& device) {
-    if (!desc.d3d12Device)
-        return Result::INVALID_ARGUMENT;
-
-    LUID luid = desc.d3d12Device->GetAdapterLuid();
-
-    AdapterDesc adapterDesc = {};
-    adapterDesc.luid = *(uint64_t*)&luid;
-
-    DeviceCreationDesc deviceCreationDesc = {};
-    deviceCreationDesc.adapterDesc = &adapterDesc;
-    deviceCreationDesc.callbackInterface = desc.callbackInterface;
-    deviceCreationDesc.allocationCallbacks = desc.allocationCallbacks;
-    deviceCreationDesc.enableD3D12DrawParametersEmulation = desc.enableD3D12DrawParametersEmulation;
-    deviceCreationDesc.graphicsAPI = GraphicsAPI::D3D12;
-
-    DeviceD3D12* impl = Allocate<DeviceD3D12>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
-    Result result = impl->Create(deviceCreationDesc, desc);
+    Result result = impl->Create(desc, descD3D12);
 
     if (result != Result::SUCCESS) {
         Destroy(desc.allocationCallbacks, impl);
@@ -142,13 +112,13 @@ static void NRI_CALL GetTextureMemoryDesc2(const Device& device, const TextureDe
     ((const DeviceD3D12&)device).GetMemoryDesc(memoryLocation, desc, memoryDesc);
 }
 
-static Result NRI_CALL GetCommandQueue(Device& device, CommandQueueType commandQueueType, CommandQueue*& commandQueue) {
-    return ((DeviceD3D12&)device).GetCommandQueue(commandQueueType, commandQueue);
+static Result NRI_CALL GetQueue(Device& device, QueueType queueType, uint32_t queueIndex, Queue*& queue) {
+    return ((DeviceD3D12&)device).GetQueue(queueType, queueIndex, queue);
 }
 
-static Result NRI_CALL CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator) {
-    DeviceD3D12& device = ((CommandQueueD3D12&)commandQueue).GetDevice();
-    return device.CreateImplementation<CommandAllocatorD3D12>(commandAllocator, commandQueue);
+static Result NRI_CALL CreateCommandAllocator(const Queue& queue, CommandAllocator*& commandAllocator) {
+    DeviceD3D12& device = ((QueueD3D12&)queue).GetDevice();
+    return device.CreateImplementation<CommandAllocatorD3D12>(commandAllocator, queue);
 }
 
 static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, CommandBuffer*& commandBuffer) {
@@ -443,32 +413,32 @@ static Result NRI_CALL EndCommandBuffer(CommandBuffer& commandBuffer) {
     return ((CommandBufferD3D12&)commandBuffer).End();
 }
 
-static void NRI_CALL QueueBeginAnnotation(CommandQueue& commandQueue, const char* name, uint32_t bgra) {
-    MaybeUnused(commandQueue, name, bgra);
+static void NRI_CALL QueueBeginAnnotation(Queue& queue, const char* name, uint32_t bgra) {
+    MaybeUnused(queue, name, bgra);
 #if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
-    ((CommandQueueD3D12&)commandQueue).BeginAnnotation(name, bgra);
+    ((QueueD3D12&)queue).BeginAnnotation(name, bgra);
 #endif
 }
 
-static void NRI_CALL QueueEndAnnotation(CommandQueue& commandQueue) {
-    MaybeUnused(commandQueue);
+static void NRI_CALL QueueEndAnnotation(Queue& queue) {
+    MaybeUnused(queue);
 #if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
-    ((CommandQueueD3D12&)commandQueue).EndAnnotation();
+    ((QueueD3D12&)queue).EndAnnotation();
 #endif
 }
 
-static void NRI_CALL QueueAnnotation(CommandQueue& commandQueue, const char* name, uint32_t bgra) {
-    MaybeUnused(commandQueue, name, bgra);
+static void NRI_CALL QueueAnnotation(Queue& queue, const char* name, uint32_t bgra) {
+    MaybeUnused(queue, name, bgra);
 #if NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS
-    ((CommandQueueD3D12&)commandQueue).Annotation(name, bgra);
+    ((QueueD3D12&)queue).Annotation(name, bgra);
 #endif
 }
 
 static void NRI_CALL ResetQueries(QueryPool&, uint32_t, uint32_t) {
 }
 
-static void NRI_CALL QueueSubmit(CommandQueue& commandQueue, const QueueSubmitDesc& queueSubmitDesc) {
-    ((CommandQueueD3D12&)commandQueue).Submit(queueSubmitDesc);
+static void NRI_CALL QueueSubmit(Queue& queue, const QueueSubmitDesc& queueSubmitDesc) {
+    ((QueueD3D12&)queue).Submit(queueSubmitDesc);
 }
 
 static void NRI_CALL Wait(Fence& fence, uint64_t value) {
@@ -526,11 +496,11 @@ static void* NRI_CALL GetDeviceNativeObject(const Device& device) {
     return ((DeviceD3D12&)device).GetNativeObject();
 }
 
-static void* NRI_CALL GetCommandQueueNativeObject(const CommandQueue& commandQueue) {
-    if (!(&commandQueue))
+static void* NRI_CALL GetQueueNativeObject(const Queue& queue) {
+    if (!(&queue))
         return nullptr;
 
-    return (ID3D12CommandQueue*)((CommandQueueD3D12&)commandQueue);
+    return (ID3D12CommandQueue*)((QueueD3D12&)queue);
 }
 
 static void* NRI_CALL GetCommandBufferNativeObject(const CommandBuffer& commandBuffer) {
@@ -571,7 +541,7 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& table) const {
     table.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
     table.GetBufferMemoryDesc2 = ::GetBufferMemoryDesc2;
     table.GetTextureMemoryDesc2 = ::GetTextureMemoryDesc2;
-    table.GetCommandQueue = ::GetCommandQueue;
+    table.GetQueue = ::GetQueue;
     table.CreateCommandAllocator = ::CreateCommandAllocator;
     table.CreateCommandBuffer = ::CreateCommandBuffer;
     table.CreateDescriptorPool = ::CreateDescriptorPool;
@@ -660,7 +630,7 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& table) const {
     table.UnmapBuffer = ::UnmapBuffer;
     table.SetDebugName = ::SetDebugName;
     table.GetDeviceNativeObject = ::GetDeviceNativeObject;
-    table.GetCommandQueueNativeObject = ::GetCommandQueueNativeObject;
+    table.GetQueueNativeObject = ::GetQueueNativeObject;
     table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
     table.GetTextureNativeObject = ::GetTextureNativeObject;
@@ -674,15 +644,15 @@ Result DeviceD3D12::FillFunctionTable(CoreInterface& table) const {
 //============================================================================================================================================================================================
 #pragma region[  Helper  ]
 
-static Result NRI_CALL UploadData(CommandQueue& commandQueue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
-    return ((CommandQueueD3D12&)commandQueue).UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
+static Result NRI_CALL UploadData(Queue& queue, const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
+    return ((QueueD3D12&)queue).UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
 }
 
-static Result NRI_CALL WaitForIdle(CommandQueue& commandQueue) {
-    if (!(&commandQueue))
+static Result NRI_CALL WaitForIdle(Queue& queue) {
+    if (!(&queue))
         return Result::SUCCESS;
 
-    return ((CommandQueueD3D12&)commandQueue).WaitForIdle();
+    return ((QueueD3D12&)queue).WaitForIdle();
 }
 
 static uint32_t NRI_CALL CalculateAllocationNumber(const Device& device, const ResourceGroupDesc& resourceGroupDesc) {
@@ -736,8 +706,8 @@ static Result GetLatencyReport(const SwapChain& swapChain, LatencyReport& latenc
     return ((SwapChainD3D12&)swapChain).GetLatencyReport(latencyReport);
 }
 
-static void NRI_CALL QueueSubmitTrackable(CommandQueue& commandQueue, const QueueSubmitDesc& workSubmissionDesc, const SwapChain&) {
-    ((CommandQueueD3D12&)commandQueue).Submit(workSubmissionDesc);
+static void NRI_CALL QueueSubmitTrackable(Queue& queue, const QueueSubmitDesc& workSubmissionDesc, const SwapChain&) {
+    ((QueueD3D12&)queue).Submit(workSubmissionDesc);
 }
 
 Result DeviceD3D12::FillFunctionTable(LowLatencyInterface& table) const {

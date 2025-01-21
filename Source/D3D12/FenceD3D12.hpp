@@ -12,13 +12,13 @@ NRI_INLINE uint64_t FenceD3D12::GetFenceValue() const {
     return m_Fence->GetCompletedValue();
 }
 
-NRI_INLINE void FenceD3D12::QueueSignal(CommandQueueD3D12& commandQueue, uint64_t value) {
-    HRESULT hr = ((ID3D12CommandQueue*)commandQueue)->Signal(m_Fence, value);
+NRI_INLINE void FenceD3D12::QueueSignal(QueueD3D12& queue, uint64_t value) {
+    HRESULT hr = ((ID3D12CommandQueue*)queue)->Signal(m_Fence, value);
     RETURN_ON_FAILURE(&m_Device, hr == S_OK, ReturnVoid(), "ID3D12CommandQueue::Signal()  failed!");
 }
 
-NRI_INLINE void FenceD3D12::QueueWait(CommandQueueD3D12& commandQueue, uint64_t value) {
-    HRESULT hr = ((ID3D12CommandQueue*)commandQueue)->Wait(m_Fence, value);
+NRI_INLINE void FenceD3D12::QueueWait(QueueD3D12& queue, uint64_t value) {
+    HRESULT hr = ((ID3D12CommandQueue*)queue)->Wait(m_Fence, value);
     RETURN_ON_FAILURE(&m_Device, hr == S_OK, ReturnVoid(), "ID3D12CommandQueue::Wait()  failed!");
 }
 

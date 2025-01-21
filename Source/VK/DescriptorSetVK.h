@@ -4,8 +4,6 @@
 
 namespace nri {
 
-struct DeviceVK;
-
 struct DescriptorSetVK final : public DebugNameBase {
     inline DescriptorSetVK(DeviceVK& device)
         : m_Device(device) {

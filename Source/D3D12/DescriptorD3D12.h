@@ -6,8 +6,6 @@ struct ID3D12Resource;
 
 namespace nri {
 
-struct DeviceD3D12;
-
 struct DescriptorD3D12 final : public DebugNameBase {
     inline DescriptorD3D12(DeviceD3D12& device)
         : m_Device(device) {

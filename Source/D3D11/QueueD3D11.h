@@ -4,14 +4,12 @@
 
 namespace nri {
 
-struct DeviceD3D11;
-
-struct CommandQueueD3D11 final : public DebugNameBase {
-    inline CommandQueueD3D11(DeviceD3D11& device)
+struct QueueD3D11 final : public DebugNameBase {
+    inline QueueD3D11(DeviceD3D11& device)
         : m_Device(device) {
     }
 
-    inline ~CommandQueueD3D11() {
+    inline ~QueueD3D11() {
     }
 
     inline DeviceD3D11& GetDevice() const {

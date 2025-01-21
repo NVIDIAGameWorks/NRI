@@ -4,9 +4,6 @@
 
 namespace nri {
 
-struct DeviceD3D11;
-struct CommandQueueD3D11;
-
 struct FenceD3D11 final : public DebugNameBase {
     inline FenceD3D11(DeviceD3D11& device)
         : m_Device(device) {

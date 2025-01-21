@@ -4,7 +4,6 @@
 
 namespace nri {
 
-struct DeviceVK;
 struct BufferVK;
 
 struct AccelerationStructureVK final : public DebugNameBase {

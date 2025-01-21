@@ -15,10 +15,8 @@ typedef ID3D12GraphicsCommandList6 ID3D12GraphicsCommandListBest;
 
 namespace nri {
 
-struct DeviceD3D12;
 struct PipelineD3D12;
 struct PipelineLayoutD3D12;
-struct DescriptorPoolD3D12;
 struct DescriptorSetD3D12;
 
 struct CommandBufferD3D12 final : public DebugNameBase {

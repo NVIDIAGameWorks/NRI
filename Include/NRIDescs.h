@@ -36,6 +36,7 @@ NriNamespaceBegin
 
 // Entities
 NriForwardStruct(Fence);
+NriForwardStruct(Queue);
 NriForwardStruct(Memory); // heap
 NriForwardStruct(Buffer);
 NriForwardStruct(Device);
@@ -43,7 +44,6 @@ NriForwardStruct(Texture);
 NriForwardStruct(Pipeline);
 NriForwardStruct(QueryPool);
 NriForwardStruct(Descriptor);
-NriForwardStruct(CommandQueue);
 NriForwardStruct(CommandBuffer); // command list
 NriForwardStruct(DescriptorSet); // continuous set of descriptors in a descriptor heap
 NriForwardStruct(DescriptorPool); // descriptor heap
@@ -355,13 +355,6 @@ NriEnum(Robustness, uint8_t,
     OFF,        // no overhead, no robust access (out-of-bounds access is not allowed)
     VK,         // minimal overhead, partial robust access
     D3D12       // moderate overhead, D3D12-level robust access (requires "VK_EXT_robustness2", soft fallback to VK mode)
-);
-
-NriEnum(CommandQueueType, uint8_t,
-    GRAPHICS,
-    COMPUTE,
-    COPY,
-    HIGH_PRIORITY_COPY
 );
 
 NriEnum(MemoryLocation, uint8_t,
@@ -1048,6 +1041,7 @@ NriStruct(ComputePipelineDesc) {
 #pragma region [ Barrier ]
 //============================================================================================================================================================================================
 
+// If AgilitySDK is not available, "UNKNOWN" will be silently mapped to "COMMON", leading to discrepancies with VK
 NriBits(AccessBits, uint16_t,                       // Compatible "StageBits" (including ALL):
     UNKNOWN                         = 0,
     INDEX_BUFFER                    = NriBit(0),    // INDEX_INPUT
@@ -1068,6 +1062,7 @@ NriBits(AccessBits, uint16_t,                       // Compatible "StageBits" (i
     SHADING_RATE_ATTACHMENT         = NriBit(15)    // FRAGMENT_SHADER
 );
 
+// Not used if "isEnchancedBarrierSupported" is "false", i.e. no AgilitySDK
 NriEnum(Layout, uint8_t,        // Compatible "AccessBits":
     UNKNOWN,
     COLOR_ATTACHMENT,           // COLOR_ATTACHMENT
@@ -1314,19 +1309,26 @@ NriEnum(Architecture, uint8_t,
     INTEGRATED // UMA
 );
 
+NriEnum(QueueType, uint8_t,
+    GRAPHICS,
+    COMPUTE,
+    COPY
+);
+
 NriStruct(AdapterDesc) {
     char name[256];
     uint64_t luid;
     uint64_t videoMemorySize;
     uint64_t sharedSystemMemorySize;
     uint32_t deviceId;
+    uint32_t queueNum[(uint32_t)NriScopedMember(QueueType, MAX_NUM)];
     Nri(Vendor) vendor;
+    Nri(Architecture) architecture;
 };
 
 NriStruct(DeviceDesc) {
     // Common
-    Nri(AdapterDesc) adapterDesc;
-    Nri(Architecture) architecture;
+    Nri(AdapterDesc) adapterDesc; // "queueNum" reflects available number of queues
     Nri(GraphicsAPI) graphicsAPI;
     uint16_t nriVersionMajor;
     uint16_t nriVersionMinor;
@@ -1493,8 +1495,6 @@ NriStruct(DeviceDesc) {
 
     // Features
     uint32_t isGetMemoryDesc2Supported : 1;             // D3D: always supported, VK: requires "maintenance4" support
-    uint32_t isComputeQueueSupported : 1;
-    uint32_t isCopyQueueSupported : 1;
     uint32_t isTextureFilterMinMaxSupported : 1;
     uint32_t isLogicFuncSupported : 1;
     uint32_t isDepthBoundsTestSupported : 1;

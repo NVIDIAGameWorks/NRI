@@ -7,8 +7,6 @@ enum D3D12_COMMAND_LIST_TYPE;
 
 namespace nri {
 
-struct DeviceD3D12;
-
 struct CommandAllocatorD3D12 final : public DebugNameBase {
     inline CommandAllocatorD3D12(DeviceD3D12& device)
         : m_Device(device) {
@@ -25,7 +23,7 @@ struct CommandAllocatorD3D12 final : public DebugNameBase {
         return m_Device;
     }
 
-    Result Create(const CommandQueue& commandQueue);
+    Result Create(const Queue& queue);
 
     //================================================================================================================
     // DebugNameBase

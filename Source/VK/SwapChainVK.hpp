@@ -32,8 +32,8 @@ SwapChainVK::~SwapChainVK() {
 Result SwapChainVK::Create(const SwapChainDesc& swapChainDesc) {
     const auto& vk = m_Device.GetDispatchTable();
 
-    m_CommandQueue = (CommandQueueVK*)swapChainDesc.commandQueue;
-    uint32_t familyIndex = m_CommandQueue->GetFamilyIndex();
+    m_Queue = (QueueVK*)swapChainDesc.queue;
+    uint32_t familyIndex = m_Queue->GetFamilyIndex();
 
     // Create semaphores
     for (VkSemaphore& semaphore : m_ImageAcquiredSemaphores) {
@@ -337,7 +337,7 @@ NRI_INLINE Texture* const* SwapChainVK::GetTextures(uint32_t& textureNum) const 
 }
 
 NRI_INLINE uint32_t SwapChainVK::AcquireNextTexture() {
-    ExclusiveScope lock(m_CommandQueue->GetLock());
+    ExclusiveScope lock(m_Queue->GetLock());
     const auto& vk = m_Device.GetDispatchTable();
 
     // Acquire next image (signal)
@@ -364,7 +364,7 @@ NRI_INLINE Result SwapChainVK::WaitForPresent() {
 }
 
 NRI_INLINE Result SwapChainVK::Present() {
-    ExclusiveScope lock(m_CommandQueue->GetLock());
+    ExclusiveScope lock(m_Queue->GetLock());
 
     if (m_TextureIndex == OUT_OF_DATE)
         return Result::OUT_OF_DATE;
@@ -393,7 +393,7 @@ NRI_INLINE Result SwapChainVK::Present() {
         if (m_Desc.allowLowLatency)
             submitInfo.pNext = &presentId;
 
-        VkResult result = vk.QueueSubmit2(*m_CommandQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        VkResult result = vk.QueueSubmit2(*m_Queue, 1, &submitInfo, VK_NULL_HANDLE);
         RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, GetReturnCode(result), "vkQueueSubmit2 returned %d", (int32_t)result);
     }
 
@@ -417,7 +417,7 @@ NRI_INLINE Result SwapChainVK::Present() {
         if (m_Desc.allowLowLatency)
             SetLatencyMarker((LatencyMarker)VK_LATENCY_MARKER_PRESENT_START_NV);
 
-        result = vk.QueuePresentKHR(*m_CommandQueue, &presentInfo);
+        result = vk.QueuePresentKHR(*m_Queue, &presentInfo);
         if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_ERROR_OUT_OF_DATE_KHR && result != VK_ERROR_SURFACE_LOST_KHR)
             REPORT_ERROR(&m_Device, "vkQueuePresentKHR returned %d", (int32_t)result);
 

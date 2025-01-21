@@ -4,8 +4,6 @@
 
 namespace nri {
 
-struct DeviceD3D11;
-struct MemoryD3D11;
 struct QueryPoolD3D11;
 struct TextureD3D11;
 

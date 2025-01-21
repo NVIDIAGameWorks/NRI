@@ -4,8 +4,6 @@
 
 namespace nri {
 
-struct CommandQueueVal;
-
 struct FenceVal final : public ObjectVal {
     inline FenceVal(DeviceVal& device, Fence* fence)
         : ObjectVal(device, fence) {

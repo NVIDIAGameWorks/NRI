@@ -6,7 +6,6 @@
 
 namespace nri {
 
-struct DeviceVK;
 struct BufferVK;
 struct TextureVK;
 

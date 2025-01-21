@@ -2,13 +2,12 @@
 
 #pragma once
 
-#include "NRIDeviceCreation.h" // CallbackInterface, AllocationCallbacks
+#include "NRIDeviceCreation.h"
 
 NonNriForwardStruct(AGSContext);
 NonNriForwardStruct(ID3D12Heap);
 NonNriForwardStruct(ID3D12Device);
 NonNriForwardStruct(ID3D12Resource);
-NonNriForwardStruct(D3D12_HEAP_DESC);
 NonNriForwardStruct(ID3D12CommandQueue);
 NonNriForwardStruct(ID3D12DescriptorHeap);
 NonNriForwardStruct(ID3D12CommandAllocator);
@@ -18,14 +17,20 @@ NriNamespaceBegin
 
 NriForwardStruct(AccelerationStructure);
 
+// A collection of queues of the same type
+NriStruct(QueueFamilyD3D12Desc) {
+    NriOptional ID3D12CommandQueue* const* d3d12Queues; // if not provided, will be created
+    uint32_t queueNum;
+    Nri(QueueType) queueType;
+};
+
 NriStruct(DeviceCreationD3D12Desc) {
     ID3D12Device* d3d12Device;
-    ID3D12CommandQueue* d3d12GraphicsQueue;
-    ID3D12CommandQueue* d3d12ComputeQueue;
-    ID3D12CommandQueue* d3d12CopyQueue;
+    const NriPtr(QueueFamilyD3D12Desc) queueFamilies;
+    uint32_t queueFamilyNum;
     NriOptional AGSContext* agsContext;
-    Nri(CallbackInterface) callbackInterface;
-    Nri(AllocationCallbacks) allocationCallbacks;
+    NriOptional Nri(CallbackInterface) callbackInterface;
+    NriOptional Nri(AllocationCallbacks) allocationCallbacks;
     bool isNVAPILoaded; // at least NVAPI requires calling "NvAPI_Initialize" in DLL/EXE where the device is created in addition to NRI
 
     // Switches (disabled by default)

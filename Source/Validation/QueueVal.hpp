@@ -47,19 +47,19 @@ static bool ValidateBufferUploadDesc(DeviceVal& device, uint32_t i, const Buffer
     return true;
 }
 
-NRI_INLINE void CommandQueueVal::BeginAnnotation(const char* name, uint32_t bgra) {
+NRI_INLINE void QueueVal::BeginAnnotation(const char* name, uint32_t bgra) {
     GetCoreInterface().QueueBeginAnnotation(*GetImpl(), name, bgra);
 }
 
-NRI_INLINE void CommandQueueVal::EndAnnotation() {
+NRI_INLINE void QueueVal::EndAnnotation() {
     GetCoreInterface().QueueEndAnnotation(*GetImpl());
 }
 
-NRI_INLINE void CommandQueueVal::Annotation(const char* name, uint32_t bgra) {
+NRI_INLINE void QueueVal::Annotation(const char* name, uint32_t bgra) {
     GetCoreInterface().QueueAnnotation(*GetImpl(), name, bgra);
 }
 
-NRI_INLINE void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
+NRI_INLINE void QueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
     auto queueSubmitDescImpl = queueSubmitDesc;
 
     Scratch<FenceSubmitDesc> waitFences = AllocateScratch(m_Device, FenceSubmitDesc, queueSubmitDesc.waitFenceNum);
@@ -88,7 +88,7 @@ NRI_INLINE void CommandQueueVal::Submit(const QueueSubmitDesc& queueSubmitDesc, 
         GetCoreInterface().QueueSubmit(*GetImpl(), queueSubmitDescImpl);
 }
 
-NRI_INLINE Result CommandQueueVal::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
+NRI_INLINE Result QueueVal::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
     RETURN_ON_FAILURE(&m_Device, textureUploadDescNum == 0 || textureUploadDescs != nullptr, Result::INVALID_ARGUMENT, "'textureUploadDescs' is NULL");
     RETURN_ON_FAILURE(&m_Device, bufferUploadDescNum == 0 || bufferUploadDescs != nullptr, Result::INVALID_ARGUMENT, "'bufferUploadDescs' is NULL");
 
@@ -117,6 +117,6 @@ NRI_INLINE Result CommandQueueVal::UploadData(const TextureUploadDesc* textureUp
     return GetHelperInterface().UploadData(*GetImpl(), textureUploadDescsImpl, textureUploadDescNum, bufferUploadDescsImpl, bufferUploadDescNum);
 }
 
-NRI_INLINE Result CommandQueueVal::WaitForIdle() {
+NRI_INLINE Result QueueVal::WaitForIdle() {
     return GetHelperInterface().WaitForIdle(*GetImpl());
 }

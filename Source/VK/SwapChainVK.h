@@ -4,8 +4,7 @@
 
 namespace nri {
 
-struct CommandQueueVK;
-struct DeviceVK;
+struct QueueVK;
 struct FenceVK;
 struct TextureVK;
 
@@ -59,7 +58,7 @@ private:
     SwapChainDesc m_Desc = {};
     VkSwapchainKHR m_Handle = VK_NULL_HANDLE;
     VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
-    CommandQueueVK* m_CommandQueue = nullptr;
+    QueueVK* m_Queue = nullptr;
     uint64_t m_PresentId = 0;
     uint32_t m_TextureIndex = 0;
     uint8_t m_FrameIndex = 0; // in flight, not global

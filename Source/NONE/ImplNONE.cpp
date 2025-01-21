@@ -10,8 +10,14 @@ constexpr T* DummyObject() {
 }
 
 struct DeviceNONE final : public DeviceBase {
-    inline DeviceNONE(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks)
+    inline DeviceNONE(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks, const AdapterDesc* adapterDesc)
         : DeviceBase(callbacks, allocationCallbacks) {
+        if (adapterDesc)
+            m_Desc.adapterDesc = *adapterDesc;
+
+        for (uint32_t i = 0; i < (uint32_t)QueueType::MAX_NUM; i++)
+            m_Desc.adapterDesc.queueNum[i] = 4;
+
         m_Desc.graphicsAPI = GraphicsAPI::NONE;
         m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
         m_Desc.nriVersionMinor = NRI_VERSION_MINOR;
@@ -146,8 +152,6 @@ struct DeviceNONE final : public DeviceBase {
         m_Desc.bindlessTier = 2;
 
         m_Desc.isGetMemoryDesc2Supported = true;
-        m_Desc.isComputeQueueSupported = true;
-        m_Desc.isCopyQueueSupported = true;
         m_Desc.isTextureFilterMinMaxSupported = true;
         m_Desc.isLogicFuncSupported = true;
         m_Desc.isDepthBoundsTestSupported = true;
@@ -189,32 +193,37 @@ struct DeviceNONE final : public DeviceBase {
     inline ~DeviceNONE() {
     }
 
-    inline const DeviceDesc& GetDesc() const {
+    //================================================================================================================
+    // DeviceBase
+    //================================================================================================================
+
+    inline const DeviceDesc& GetDesc() const override {
         return m_Desc;
     }
 
-    inline void Destruct() {
+    inline void Destruct() override {
+        Destroy(GetAllocationCallbacks(), this);
     }
 
-    Result FillFunctionTable(CoreInterface& table) const;
-    Result FillFunctionTable(HelperInterface& table) const;
-    Result FillFunctionTable(LowLatencyInterface& table) const;
-    Result FillFunctionTable(MeshShaderInterface& table) const;
-    Result FillFunctionTable(RayTracingInterface& table) const;
-    Result FillFunctionTable(StreamerInterface& table) const;
-    Result FillFunctionTable(SwapChainInterface& table) const;
-    Result FillFunctionTable(ResourceAllocatorInterface& table) const;
+    Result FillFunctionTable(CoreInterface& table) const override;
+    Result FillFunctionTable(HelperInterface& table) const override;
+    Result FillFunctionTable(LowLatencyInterface& table) const override;
+    Result FillFunctionTable(MeshShaderInterface& table) const override;
+    Result FillFunctionTable(RayTracingInterface& table) const override;
+    Result FillFunctionTable(StreamerInterface& table) const override;
+    Result FillFunctionTable(SwapChainInterface& table) const override;
+    Result FillFunctionTable(ResourceAllocatorInterface& table) const override;
 
 private:
     DeviceDesc m_Desc = {};
 };
 
 Result CreateDeviceNONE(const DeviceCreationDesc& desc, DeviceBase*& device) {
-    DeviceNONE* impl = Allocate<DeviceNONE>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks);
+    DeviceNONE* impl = Allocate<DeviceNONE>(desc.allocationCallbacks, desc.callbackInterface, desc.allocationCallbacks, desc.adapterDesc);
 
     if (!impl) {
         Destroy(desc.allocationCallbacks, impl);
-        device = DummyObject<DeviceBase>();
+        device = nullptr;
 
         return Result::FAILURE;
     }
@@ -267,13 +276,13 @@ static void NRI_CALL GetTextureMemoryDesc2(const Device&, const TextureDesc&, Me
     memoryDesc = {};
 }
 
-static Result NRI_CALL GetCommandQueue(Device&, CommandQueueType, CommandQueue*& commandQueue) {
-    commandQueue = DummyObject<CommandQueue>();
+static Result NRI_CALL GetQueue(Device&, QueueType, uint32_t, Queue*& queue) {
+    queue = DummyObject<Queue>();
 
     return Result::SUCCESS;
 }
 
-static Result NRI_CALL CreateCommandAllocator(const CommandQueue&, CommandAllocator*& commandAllocator) {
+static Result NRI_CALL CreateCommandAllocator(const Queue&, CommandAllocator*& commandAllocator) {
     commandAllocator = DummyObject<CommandAllocator>();
 
     return Result::SUCCESS;
@@ -538,19 +547,19 @@ static Result NRI_CALL EndCommandBuffer(CommandBuffer&) {
     return Result::SUCCESS;
 }
 
-static void NRI_CALL QueueBeginAnnotation(CommandQueue&, const char*, uint32_t) {
+static void NRI_CALL QueueBeginAnnotation(Queue&, const char*, uint32_t) {
 }
 
-static void NRI_CALL QueueEndAnnotation(CommandQueue&) {
+static void NRI_CALL QueueEndAnnotation(Queue&) {
 }
 
-static void NRI_CALL QueueAnnotation(CommandQueue&, const char*, uint32_t) {
+static void NRI_CALL QueueAnnotation(Queue&, const char*, uint32_t) {
 }
 
 static void NRI_CALL ResetQueries(QueryPool&, uint32_t, uint32_t) {
 }
 
-static void NRI_CALL QueueSubmit(CommandQueue&, const QueueSubmitDesc&) {
+static void NRI_CALL QueueSubmit(Queue&, const QueueSubmitDesc&) {
 }
 
 static void NRI_CALL Wait(Fence&, uint64_t) {
@@ -593,7 +602,7 @@ static void* NRI_CALL GetDeviceNativeObject(const Device&) {
     return nullptr;
 }
 
-static void* NRI_CALL GetCommandQueueNativeObject(const CommandQueue&) {
+static void* NRI_CALL GetQueueNativeObject(const Queue&) {
     return nullptr;
 }
 
@@ -623,7 +632,7 @@ Result DeviceNONE::FillFunctionTable(CoreInterface& table) const {
     table.GetTextureMemoryDesc = ::GetTextureMemoryDesc;
     table.GetBufferMemoryDesc2 = ::GetBufferMemoryDesc2;
     table.GetTextureMemoryDesc2 = ::GetTextureMemoryDesc2;
-    table.GetCommandQueue = ::GetCommandQueue;
+    table.GetQueue = ::GetQueue;
     table.CreateCommandAllocator = ::CreateCommandAllocator;
     table.CreateCommandBuffer = ::CreateCommandBuffer;
     table.CreateDescriptorPool = ::CreateDescriptorPool;
@@ -712,7 +721,7 @@ Result DeviceNONE::FillFunctionTable(CoreInterface& table) const {
     table.UnmapBuffer = ::UnmapBuffer;
     table.SetDebugName = ::SetDebugName;
     table.GetDeviceNativeObject = ::GetDeviceNativeObject;
-    table.GetCommandQueueNativeObject = ::GetCommandQueueNativeObject;
+    table.GetQueueNativeObject = ::GetQueueNativeObject;
     table.GetCommandBufferNativeObject = ::GetCommandBufferNativeObject;
     table.GetBufferNativeObject = ::GetBufferNativeObject;
     table.GetTextureNativeObject = ::GetTextureNativeObject;
@@ -734,11 +743,11 @@ static Result NRI_CALL AllocateAndBindMemory(Device&, const ResourceGroupDesc&, 
     return Result::SUCCESS;
 }
 
-static Result NRI_CALL UploadData(CommandQueue&, const TextureUploadDesc*, uint32_t, const BufferUploadDesc*, uint32_t) {
+static Result NRI_CALL UploadData(Queue&, const TextureUploadDesc*, uint32_t, const BufferUploadDesc*, uint32_t) {
     return Result::SUCCESS;
 }
 
-static Result NRI_CALL WaitForIdle(CommandQueue&) {
+static Result NRI_CALL WaitForIdle(Queue&) {
     return Result::SUCCESS;
 }
 
@@ -779,7 +788,7 @@ static Result GetLatencyReport(const SwapChain&, LatencyReport&) {
     return Result::SUCCESS;
 }
 
-static void NRI_CALL QueueSubmitTrackable(CommandQueue&, const QueueSubmitDesc&, const SwapChain&) {
+static void NRI_CALL QueueSubmitTrackable(Queue&, const QueueSubmitDesc&, const SwapChain&) {
 }
 
 Result DeviceNONE::FillFunctionTable(LowLatencyInterface& table) const {

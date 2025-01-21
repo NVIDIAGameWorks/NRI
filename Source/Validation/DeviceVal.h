@@ -4,7 +4,7 @@
 
 namespace nri {
 
-struct CommandQueueVal;
+struct QueueVal;
 
 struct IsExtSupported {
     uint32_t lowLatency : 1;
@@ -140,7 +140,6 @@ struct DeviceVal final : public DeviceBase {
     Result CreateDescriptor(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView);
     Result CreateDescriptor(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView);
     Result CreateDescriptor(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView);
-    Result CreateCommandQueue(const CommandQueueVKDesc& commandQueueDesc, CommandQueue*& commandQueue);
     Result CreateCommandBuffer(const CommandBufferVKDesc& commandBufferDesc, CommandBuffer*& commandBuffer);
     Result CreateCommandBuffer(const CommandBufferD3D11Desc& commandBufferDesc, CommandBuffer*& commandBuffer);
     Result CreateCommandBuffer(const CommandBufferD3D12Desc& commandBufferDesc, CommandBuffer*& commandBuffer);
@@ -150,7 +149,7 @@ struct DeviceVal final : public DeviceBase {
     Result CreateDescriptorPool(const DescriptorPoolD3D12Desc& descriptorPoolD3D12Desc, DescriptorPool*& descriptorPool);
     Result CreateComputePipeline(VKNonDispatchableHandle vkPipeline, Pipeline*& pipeline);
     Result CreateGraphicsPipeline(VKNonDispatchableHandle vkPipeline, Pipeline*& pipeline);
-    Result CreateCommandAllocator(const CommandQueue& commandQueue, CommandAllocator*& commandAllocator);
+    Result CreateCommandAllocator(const Queue& queue, CommandAllocator*& commandAllocator);
     Result CreateCommandAllocator(const CommandAllocatorVKDesc& commandAllocatorDesc, CommandAllocator*& commandAllocator);
     Result CreateAccelerationStructure(const AccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
     Result AllocateAccelerationStructure(const AllocateAccelerationStructureDesc& accelerationStructureDesc, AccelerationStructure*& accelerationStructure);
@@ -171,7 +170,7 @@ struct DeviceVal final : public DeviceBase {
     void DestroyAccelerationStructure(AccelerationStructure& accelerationStructure);
 
     void FreeMemory(Memory& memory);
-    Result GetCommandQueue(CommandQueueType commandQueueType, CommandQueue*& commandQueue);
+    Result GetQueue(QueueType queueType, uint32_t queueIndex, Queue*& queue);
     Result AllocateMemory(const AllocateMemoryDesc& allocateMemoryDesc, Memory*& memory);
     Result BindBufferMemory(const BufferMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
     Result BindTextureMemory(const TextureMemoryBindingDesc* memoryBindingDescs, uint32_t memoryBindingDescNum);
@@ -195,7 +194,7 @@ private:
     WrapperD3D11Interface m_WrapperD3D11API = {};
     WrapperD3D12Interface m_WrapperD3D12API = {};
     WrapperVKInterface m_WrapperVKAPI = {};
-    std::array<CommandQueueVal*, (size_t)CommandQueueType::MAX_NUM> m_CommandQueues = {};
+    std::array<QueueVal*, (size_t)QueueType::MAX_NUM> m_Queues = {};
     UnorderedMap<MemoryType, MemoryLocation> m_MemoryTypeMap;
 
     union {

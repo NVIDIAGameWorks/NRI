@@ -4,8 +4,7 @@
 
 namespace nri {
 
-struct DeviceD3D12;
-struct CommandQueueD3D12;
+struct QueueD3D12;
 
 struct FenceD3D12 final : public DebugNameBase {
     inline FenceD3D12(DeviceD3D12& device)
@@ -37,8 +36,8 @@ struct FenceD3D12 final : public DebugNameBase {
     //================================================================================================================
 
     uint64_t GetFenceValue() const;
-    void QueueSignal(CommandQueueD3D12& commandQueue, uint64_t value);
-    void QueueWait(CommandQueueD3D12& commandQueue, uint64_t value);
+    void QueueSignal(QueueD3D12& queue, uint64_t value);
+    void QueueWait(QueueD3D12& queue, uint64_t value);
     void Wait(uint64_t value);
 
 private:

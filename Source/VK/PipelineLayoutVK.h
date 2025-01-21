@@ -4,9 +4,6 @@
 
 namespace nri {
 
-struct DeviceVK;
-struct DescriptorVK;
-
 struct PushConstantBindingDesc {
     VkShaderStageFlags stages;
     uint32_t offset;

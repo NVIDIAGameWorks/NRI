@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "NRIDeviceCreation.h" // CallbackInterface, AllocationCallbacks
+#include "NRIDeviceCreation.h"
 
 NonNriForwardStruct(AGSContext);
 NonNriForwardStruct(ID3D11Device);
@@ -14,8 +14,8 @@ NriNamespaceBegin
 NriStruct(DeviceCreationD3D11Desc) {
     ID3D11Device* d3d11Device;
     NriOptional AGSContext* agsContext;
-    Nri(CallbackInterface) callbackInterface;
-    Nri(AllocationCallbacks) allocationCallbacks;
+    NriOptional Nri(CallbackInterface) callbackInterface;
+    NriOptional Nri(AllocationCallbacks) allocationCallbacks;
     bool isNVAPILoaded; // at least NVAPI requires calling "NvAPI_Initialize" in DLL/EXE where the device is created in addition to NRI
 
     // Switches (disabled by default)

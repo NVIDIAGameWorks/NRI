@@ -1,6 +1,6 @@
 // © 2021 NVIDIA Corporation
 
-Result CommandQueueVK::Create(CommandQueueType type, uint32_t familyIndex, VkQueue handle) {
+Result QueueVK::Create(QueueType type, uint32_t familyIndex, VkQueue handle) {
     m_Type = type;
     m_FamilyIndex = familyIndex;
     m_Handle = handle;
@@ -8,11 +8,11 @@ Result CommandQueueVK::Create(CommandQueueType type, uint32_t familyIndex, VkQue
     return Result::SUCCESS;
 }
 
-NRI_INLINE void CommandQueueVK::SetDebugName(const char* name) {
+NRI_INLINE void QueueVK::SetDebugName(const char* name) {
     m_Device.SetDebugNameToTrivialObject(VK_OBJECT_TYPE_QUEUE, (uint64_t)m_Handle, name);
 }
 
-NRI_INLINE void CommandQueueVK::BeginAnnotation(const char* name, uint32_t bgra) {
+NRI_INLINE void QueueVK::BeginAnnotation(const char* name, uint32_t bgra) {
     VkDebugUtilsLabelEXT info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
     info.pLabelName = name;
     info.color[0] = ((bgra >> 16) & 0xFF) / 255.0f;
@@ -25,13 +25,13 @@ NRI_INLINE void CommandQueueVK::BeginAnnotation(const char* name, uint32_t bgra)
         vk.QueueBeginDebugUtilsLabelEXT(m_Handle, &info);
 }
 
-NRI_INLINE void CommandQueueVK::EndAnnotation() {
+NRI_INLINE void QueueVK::EndAnnotation() {
     const auto& vk = m_Device.GetDispatchTable();
     if (vk.QueueEndDebugUtilsLabelEXT)
         vk.QueueEndDebugUtilsLabelEXT(m_Handle);
 }
 
-NRI_INLINE void CommandQueueVK::Annotation(const char* name, uint32_t bgra) {
+NRI_INLINE void QueueVK::Annotation(const char* name, uint32_t bgra) {
     VkDebugUtilsLabelEXT info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
     info.pLabelName = name;
     info.color[0] = ((bgra >> 16) & 0xFF) / 255.0f;
@@ -44,7 +44,7 @@ NRI_INLINE void CommandQueueVK::Annotation(const char* name, uint32_t bgra) {
         vk.QueueInsertDebugUtilsLabelEXT(m_Handle, &info);
 }
 
-NRI_INLINE void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
+NRI_INLINE void QueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc, const SwapChain* swapChain) {
     ExclusiveScope lock(m_Lock);
 
     Scratch<VkSemaphoreSubmitInfo> waitSemaphores = AllocateScratch(m_Device, VkSemaphoreSubmitInfo, queueSubmitDesc.waitFenceNum);
@@ -88,13 +88,13 @@ NRI_INLINE void CommandQueueVK::Submit(const QueueSubmitDesc& queueSubmitDesc, c
     RETURN_ON_FAILURE(&m_Device, result == VK_SUCCESS, ReturnVoid(), "vkQueueSubmit returned %d", (int32_t)result);
 }
 
-NRI_INLINE Result CommandQueueVK::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
-    HelperDataUpload helperDataUpload(m_Device.GetCoreInterface(), (Device&)m_Device, (CommandQueue&)*this);
+NRI_INLINE Result QueueVK::UploadData(const TextureUploadDesc* textureUploadDescs, uint32_t textureUploadDescNum, const BufferUploadDesc* bufferUploadDescs, uint32_t bufferUploadDescNum) {
+    HelperDataUpload helperDataUpload(m_Device.GetCoreInterface(), (Device&)m_Device, (Queue&)*this);
 
     return helperDataUpload.UploadData(textureUploadDescs, textureUploadDescNum, bufferUploadDescs, bufferUploadDescNum);
 }
 
-NRI_INLINE Result CommandQueueVK::WaitForIdle() {
+NRI_INLINE Result QueueVK::WaitForIdle() {
     ExclusiveScope lock(m_Lock);
 
     const auto& vk = m_Device.GetDispatchTable();

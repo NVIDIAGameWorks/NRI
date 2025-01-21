@@ -4,7 +4,6 @@
 
 namespace nri {
 
-struct DeviceD3D11;
 struct DescriptorD3D11;
 struct DescriptorSetD3D11;
 
