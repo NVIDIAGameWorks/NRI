@@ -38,6 +38,7 @@ NriStruct(VKExtensions) {
     uint32_t deviceExtensionNum;
 };
 
+// A collection of queues of the same type
 NriStruct(QueueFamilyDesc) {
     NriOptional const float* queuePriorities;   // [-1; 1]: low < 0, normal = 0, high > 0 ("queueNum" entries expected)
     uint32_t queueNum;
