@@ -1404,11 +1404,11 @@ const char* GetObjectTypeName(VkObjectType objectType) {
 }
 
 VkBool32 VKAPI_PTR DebugUtilsMessenger(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData) {
-    /*
     // TODO: some messages can be muted here
-    if (callbackData->messageIdNumber == XXX)
+    if (callbackData->messageIdNumber == 0) // loader info message
         return VK_FALSE;
-    */
+    if (callbackData->messageIdNumber == 0x76589099) // Validation Warning: [ WARNING-DEBUG-PRINTF ] Internal Warning: Setting VkPhysicalDeviceVulkan12Properties::maxUpdateAfterBindDescriptorsInAllPools to 32
+        return VK_FALSE;
 
     Message severity = Message::INFO;
     if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
