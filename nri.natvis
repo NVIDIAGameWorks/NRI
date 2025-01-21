@@ -8,7 +8,7 @@
     <Type Name="NriBuffer">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">*(NriBufferDesc*)((uint8_t*)this + 40)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">*(NriBufferDesc*)((uint8_t*)this + 40)</Item>
         </Expand>
     </Type>
     <Type Name="NriCommandAllocator">
@@ -23,13 +23,13 @@
     <Type Name="NriDescriptorPool">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">*(NriDescriptorPoolDesc*)((uint8_t*)this + 40)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">*(NriDescriptorPoolDesc*)((uint8_t*)this + 40)</Item>
         </Expand>
     </Type>
     <Type Name="NriDescriptorSet">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">**(NriDescriptorSetDesc**)((uint8_t*)this + 40)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">**(NriDescriptorSetDesc**)((uint8_t*)this + 40)</Item>
         </Expand>
     </Type>
     <Type Name="NriDescriptor">
@@ -38,7 +38,7 @@
     <Type Name="NriDevice">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 80)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">*(NriDeviceDesc*)((uint8_t*)this + 88)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">*(NriDeviceDesc*)((uint8_t*)this + 88)</Item>
         </Expand>
     </Type>
     <Type Name="NriFence">
@@ -50,7 +50,7 @@
     <Type Name="NriPipelineLayout">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">*(NriPipelineLayoutDesc*)((uint8_t*)this + 40)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">*(NriPipelineLayoutDesc*)((uint8_t*)this + 40)</Item>
         </Expand>
     </Type>
     <Type Name="NriPipeline">
@@ -65,13 +65,13 @@
     <Type Name="NriSwapChain">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">*(NriSwapChainDesc*)((uint8_t*)this + 40)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">*(NriSwapChainDesc*)((uint8_t*)this + 40)</Item>
         </Expand>
     </Type>
     <Type Name="NriTexture">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">*(NriTextureDesc*)((uint8_t*)this + 40)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">*(NriTextureDesc*)((uint8_t*)this + 40)</Item>
         </Expand>
     </Type>
 <!-- C++ -->
@@ -81,7 +81,7 @@
     <Type Name="nri::Buffer">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">*(nri::BufferDesc*)((uint8_t*)this + 40)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">*(nri::BufferDesc*)((uint8_t*)this + 40)</Item>
         </Expand>
     </Type>
     <Type Name="nri::CommandAllocator">
@@ -96,13 +96,13 @@
     <Type Name="nri::DescriptorPool">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">*(nri::DescriptorPoolDesc*)((uint8_t*)this + 40)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">*(nri::DescriptorPoolDesc*)((uint8_t*)this + 40)</Item>
         </Expand>
     </Type>
     <Type Name="nri::DescriptorSet">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">**(nri::DescriptorSetDesc**)((uint8_t*)this + 40)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">**(nri::DescriptorSetDesc**)((uint8_t*)this + 40)</Item>
         </Expand>
     </Type>
     <Type Name="nri::Descriptor">
@@ -111,7 +111,7 @@
     <Type Name="nri::Device">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 80)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">*(NriDeviceDesc*)((uint8_t*)this + 88)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">*(NriDeviceDesc*)((uint8_t*)this + 88)</Item>
         </Expand>
     </Type>
     <Type Name="nri::Fence">
@@ -123,7 +123,7 @@
     <Type Name="nri::PipelineLayout">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">*(nri::PipelineLayoutDesc*)((uint8_t*)this + 40)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">*(nri::PipelineLayoutDesc*)((uint8_t*)this + 40)</Item>
         </Expand>
     </Type>
     <Type Name="nri::Pipeline">
@@ -138,13 +138,13 @@
     <Type Name="nri::SwapChain">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">*(nri::SwapChainDesc*)((uint8_t*)this + 40)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">*(nri::SwapChainDesc*)((uint8_t*)this + 40)</Item>
         </Expand>
     </Type>
     <Type Name="nri::Texture">
         <DisplayString Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">{{ name = {*(char**)((uint8_t*)this + 16)} }}</DisplayString>
         <Expand>
-            <Item Name="desc">*(nri::TextureDesc*)((uint8_t*)this + 40)</Item>
+            <Item Name="desc" Condition = "((uint64_t*)this)[1] == 0x1234567887654321ull">*(nri::TextureDesc*)((uint8_t*)this + 40)</Item>
         </Expand>
     </Type>
 </AutoVisualizer>
