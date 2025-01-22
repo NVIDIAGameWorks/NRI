@@ -125,6 +125,10 @@ static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, C
     return ((CommandAllocatorD3D12&)commandAllocator).CreateCommandBuffer(commandBuffer);
 }
 
+static Result NRI_CALL CreateFence(Device& device, uint64_t initialValue, Fence*& fence) {
+    return ((DeviceD3D12&)device).CreateImplementation<FenceD3D12>(fence, initialValue);
+}
+
 static Result NRI_CALL CreateDescriptorPool(Device& device, const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
     return ((DeviceD3D12&)device).CreateImplementation<DescriptorPoolD3D12>(descriptorPool, descriptorPoolDesc);
 }
@@ -135,10 +139,6 @@ static Result NRI_CALL CreateBuffer(Device& device, const BufferDesc& bufferDesc
 
 static Result NRI_CALL CreateTexture(Device& device, const TextureDesc& textureDesc, Texture*& texture) {
     return ((DeviceD3D12&)device).CreateImplementation<TextureD3D12>(texture, textureDesc);
-}
-
-static Result NRI_CALL CreateSampler(Device& device, const SamplerDesc& samplerDesc, Descriptor*& sampler) {
-    return ((DeviceD3D12&)device).CreateImplementation<DescriptorD3D12>(sampler, samplerDesc);
 }
 
 static Result NRI_CALL CreatePipelineLayout(Device& device, const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout) {
@@ -157,8 +157,8 @@ static Result NRI_CALL CreateQueryPool(Device& device, const QueryPoolDesc& quer
     return ((DeviceD3D12&)device).CreateImplementation<QueryPoolD3D12>(queryPool, queryPoolDesc);
 }
 
-static Result NRI_CALL CreateFence(Device& device, uint64_t initialValue, Fence*& fence) {
-    return ((DeviceD3D12&)device).CreateImplementation<FenceD3D12>(fence, initialValue);
+static Result NRI_CALL CreateSampler(Device& device, const SamplerDesc& samplerDesc, Descriptor*& sampler) {
+    return ((DeviceD3D12&)device).CreateImplementation<DescriptorD3D12>(sampler, samplerDesc);
 }
 
 static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {

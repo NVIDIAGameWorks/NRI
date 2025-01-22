@@ -113,6 +113,10 @@ static Result NRI_CALL CreateCommandBuffer(CommandAllocator& commandAllocator, C
     return ((CommandAllocatorVal&)commandAllocator).CreateCommandBuffer(commandBuffer);
 }
 
+static Result NRI_CALL CreateFence(Device& device, uint64_t initialValue, Fence*& fence) {
+    return ((DeviceVal&)device).CreateFence(initialValue, fence);
+}
+
 static Result NRI_CALL CreateDescriptorPool(Device& device, const DescriptorPoolDesc& descriptorPoolDesc, DescriptorPool*& descriptorPool) {
     return ((DeviceVal&)device).CreateDescriptorPool(descriptorPoolDesc, descriptorPool);
 }
@@ -123,10 +127,6 @@ static Result NRI_CALL CreateBuffer(Device& device, const BufferDesc& bufferDesc
 
 static Result NRI_CALL CreateTexture(Device& device, const TextureDesc& textureDesc, Texture*& texture) {
     return ((DeviceVal&)device).CreateTexture(textureDesc, texture);
-}
-
-static Result NRI_CALL CreateSampler(Device& device, const SamplerDesc& samplerDesc, Descriptor*& sampler) {
-    return ((DeviceVal&)device).CreateDescriptor(samplerDesc, sampler);
 }
 
 static Result NRI_CALL CreatePipelineLayout(Device& device, const PipelineLayoutDesc& pipelineLayoutDesc, PipelineLayout*& pipelineLayout) {
@@ -145,8 +145,8 @@ static Result NRI_CALL CreateQueryPool(Device& device, const QueryPoolDesc& quer
     return ((DeviceVal&)device).CreateQueryPool(queryPoolDesc, queryPool);
 }
 
-static Result NRI_CALL CreateFence(Device& device, uint64_t initialValue, Fence*& fence) {
-    return ((DeviceVal&)device).CreateFence(initialValue, fence);
+static Result NRI_CALL CreateSampler(Device& device, const SamplerDesc& samplerDesc, Descriptor*& sampler) {
+    return ((DeviceVal&)device).CreateDescriptor(samplerDesc, sampler);
 }
 
 static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {

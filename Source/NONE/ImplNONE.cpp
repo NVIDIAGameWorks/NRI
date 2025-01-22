@@ -294,6 +294,12 @@ static Result NRI_CALL CreateCommandBuffer(CommandAllocator&, CommandBuffer*& co
     return Result::SUCCESS;
 }
 
+static Result NRI_CALL CreateFence(Device&, uint64_t, Fence*& fence) {
+    fence = DummyObject<Fence>();
+
+    return Result::SUCCESS;
+}
+
 static Result NRI_CALL CreateDescriptorPool(Device&, const DescriptorPoolDesc&, DescriptorPool*& descriptorPool) {
     descriptorPool = DummyObject<DescriptorPool>();
 
@@ -308,12 +314,6 @@ static Result NRI_CALL CreateBuffer(Device&, const BufferDesc&, Buffer*& buffer)
 
 static Result NRI_CALL CreateTexture(Device&, const TextureDesc&, Texture*& texture) {
     texture = DummyObject<Texture>();
-
-    return Result::SUCCESS;
-}
-
-static Result NRI_CALL CreateSampler(Device&, const SamplerDesc&, Descriptor*& sampler) {
-    sampler = DummyObject<Descriptor>();
 
     return Result::SUCCESS;
 }
@@ -342,8 +342,8 @@ static Result NRI_CALL CreateQueryPool(Device&, const QueryPoolDesc&, QueryPool*
     return Result::SUCCESS;
 }
 
-static Result NRI_CALL CreateFence(Device&, uint64_t, Fence*& fence) {
-    fence = DummyObject<Fence>();
+static Result NRI_CALL CreateSampler(Device&, const SamplerDesc&, Descriptor*& sampler) {
+    sampler = DummyObject<Descriptor>();
 
     return Result::SUCCESS;
 }
