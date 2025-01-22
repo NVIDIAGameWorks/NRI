@@ -201,7 +201,6 @@ Result DeviceD3D12::Create(const DeviceCreationDesc& desc, const DeviceCreationD
                     queueFamily.push_back(queue);
             }
 
-
             m_Desc.adapterDesc.queueNum[(size_t)queueFamilyDesc.queueType] = queueFamilyDesc.queueNum;
         }
     } else {
