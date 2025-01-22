@@ -15,7 +15,6 @@ NriForwardStruct(AccelerationStructure);
 
 // A collection of queues of the same type
 NriStruct(QueueFamilyVKDesc) {
-    NriOptional VKHandle* vkQueues; // if not provided, will be queried
     uint32_t queueNum;
     Nri(QueueType) queueType;
     uint32_t familyIndex;

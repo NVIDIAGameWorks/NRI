@@ -759,16 +759,12 @@ Result DeviceVK::Create(const DeviceCreationDesc& desc, const DeviceCreationVKDe
             auto& queueFamily = m_QueueFamilies[(size_t)queueFamilyDesc.queueType];
 
             for (uint32_t j = 0; j < queueFamilyDesc.queueNum; j++) {
-                VkQueue handle = nullptr;
-                if (queueFamilyDesc.vkQueues)
-                    handle = (VkQueue)queueFamilyDesc.vkQueues[j];
-                if (!handle) {
-                    VkDeviceQueueInfo2 queueInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2};
-                    queueInfo.queueFamilyIndex = queueFamilyIndices[(size_t)queueFamilyDesc.queueType];
-                    queueInfo.queueIndex = j;
+                VkDeviceQueueInfo2 queueInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2};
+                queueInfo.queueFamilyIndex = queueFamilyIndices[(size_t)queueFamilyDesc.queueType];
+                queueInfo.queueIndex = j;
 
-                    m_VK.GetDeviceQueue2(m_Device, &queueInfo, &handle);
-                }
+                VkQueue handle = VK_NULL_HANDLE;
+                m_VK.GetDeviceQueue2(m_Device, &queueInfo, &handle);
 
                 QueueVK* queue;
                 Result result = CreateImplementation<QueueVK>(queue, queueFamilyDesc.queueType, queueFamilyDesc.familyIndex, handle);
