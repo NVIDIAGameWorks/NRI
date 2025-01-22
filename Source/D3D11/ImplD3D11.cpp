@@ -100,7 +100,7 @@ static Result NRI_CALL GetQueue(Device& device, QueueType queueType, uint32_t qu
     return ((DeviceD3D11&)device).GetQueue(queueType, queueIndex, queue);
 }
 
-static Result NRI_CALL CreateCommandAllocator(const Queue& queue, CommandAllocator*& commandAllocator) {
+static Result NRI_CALL CreateCommandAllocator(Queue& queue, CommandAllocator*& commandAllocator) {
     DeviceD3D11& device = ((QueueD3D11&)queue).GetDevice();
     return device.CreateCommandAllocator(queue, commandAllocator);
 }
@@ -119,26 +119,6 @@ static Result NRI_CALL CreateBuffer(Device& device, const BufferDesc& bufferDesc
 
 static Result NRI_CALL CreateTexture(Device& device, const TextureDesc& textureDesc, Texture*& texture) {
     return ((DeviceD3D11&)device).CreateImplementation<TextureD3D11>(texture, textureDesc);
-}
-
-static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
-    DeviceD3D11& device = ((const BufferD3D11*)bufferViewDesc.buffer)->GetDevice();
-    return device.CreateImplementation<DescriptorD3D11>(bufferView, bufferViewDesc);
-}
-
-static Result NRI_CALL CreateTexture1DView(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    DeviceD3D11& device = ((const TextureD3D11*)textureViewDesc.texture)->GetDevice();
-    return device.CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
-}
-
-static Result NRI_CALL CreateTexture2DView(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    DeviceD3D11& device = ((const TextureD3D11*)textureViewDesc.texture)->GetDevice();
-    return device.CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
-}
-
-static Result NRI_CALL CreateTexture3DView(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    DeviceD3D11& device = ((const TextureD3D11*)textureViewDesc.texture)->GetDevice();
-    return device.CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
 }
 
 static Result NRI_CALL CreateSampler(Device& device, const SamplerDesc& samplerDesc, Descriptor*& sampler) {
@@ -163,6 +143,26 @@ static Result NRI_CALL CreateQueryPool(Device& device, const QueryPoolDesc& quer
 
 static Result NRI_CALL CreateFence(Device& device, uint64_t initialValue, Fence*& fence) {
     return ((DeviceD3D11&)device).CreateImplementation<FenceD3D11>(fence, initialValue);
+}
+
+static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
+    DeviceD3D11& device = ((const BufferD3D11*)bufferViewDesc.buffer)->GetDevice();
+    return device.CreateImplementation<DescriptorD3D11>(bufferView, bufferViewDesc);
+}
+
+static Result NRI_CALL CreateTexture1DView(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
+    DeviceD3D11& device = ((const TextureD3D11*)textureViewDesc.texture)->GetDevice();
+    return device.CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
+}
+
+static Result NRI_CALL CreateTexture2DView(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView) {
+    DeviceD3D11& device = ((const TextureD3D11*)textureViewDesc.texture)->GetDevice();
+    return device.CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
+}
+
+static Result NRI_CALL CreateTexture3DView(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView) {
+    DeviceD3D11& device = ((const TextureD3D11*)textureViewDesc.texture)->GetDevice();
+    return device.CreateImplementation<DescriptorD3D11>(textureView, textureViewDesc);
 }
 
 static void NRI_CALL DestroyCommandAllocator(CommandAllocator& commandAllocator) {

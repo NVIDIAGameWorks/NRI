@@ -105,7 +105,7 @@ static Result NRI_CALL GetQueue(Device& device, QueueType queueType, uint32_t qu
     return ((DeviceVal&)device).GetQueue(queueType, queueIndex, queue);
 }
 
-static Result NRI_CALL CreateCommandAllocator(const Queue& queue, CommandAllocator*& commandAllocator) {
+static Result NRI_CALL CreateCommandAllocator(Queue& queue, CommandAllocator*& commandAllocator) {
     return GetDeviceVal(queue).CreateCommandAllocator(queue, commandAllocator);
 }
 
@@ -123,30 +123,6 @@ static Result NRI_CALL CreateBuffer(Device& device, const BufferDesc& bufferDesc
 
 static Result NRI_CALL CreateTexture(Device& device, const TextureDesc& textureDesc, Texture*& texture) {
     return ((DeviceVal&)device).CreateTexture(textureDesc, texture);
-}
-
-static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
-    DeviceVal& device = GetDeviceVal(*bufferViewDesc.buffer);
-
-    return device.CreateDescriptor(bufferViewDesc, bufferView);
-}
-
-static Result NRI_CALL CreateTexture1DView(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    DeviceVal& device = GetDeviceVal(*textureViewDesc.texture);
-
-    return device.CreateDescriptor(textureViewDesc, textureView);
-}
-
-static Result NRI_CALL CreateTexture2DView(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    DeviceVal& device = GetDeviceVal(*textureViewDesc.texture);
-
-    return device.CreateDescriptor(textureViewDesc, textureView);
-}
-
-static Result NRI_CALL CreateTexture3DView(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView) {
-    DeviceVal& device = GetDeviceVal(*textureViewDesc.texture);
-
-    return device.CreateDescriptor(textureViewDesc, textureView);
 }
 
 static Result NRI_CALL CreateSampler(Device& device, const SamplerDesc& samplerDesc, Descriptor*& sampler) {
@@ -171,6 +147,30 @@ static Result NRI_CALL CreateQueryPool(Device& device, const QueryPoolDesc& quer
 
 static Result NRI_CALL CreateFence(Device& device, uint64_t initialValue, Fence*& fence) {
     return ((DeviceVal&)device).CreateFence(initialValue, fence);
+}
+
+static Result NRI_CALL CreateBufferView(const BufferViewDesc& bufferViewDesc, Descriptor*& bufferView) {
+    DeviceVal& device = GetDeviceVal(*bufferViewDesc.buffer);
+
+    return device.CreateDescriptor(bufferViewDesc, bufferView);
+}
+
+static Result NRI_CALL CreateTexture1DView(const Texture1DViewDesc& textureViewDesc, Descriptor*& textureView) {
+    DeviceVal& device = GetDeviceVal(*textureViewDesc.texture);
+
+    return device.CreateDescriptor(textureViewDesc, textureView);
+}
+
+static Result NRI_CALL CreateTexture2DView(const Texture2DViewDesc& textureViewDesc, Descriptor*& textureView) {
+    DeviceVal& device = GetDeviceVal(*textureViewDesc.texture);
+
+    return device.CreateDescriptor(textureViewDesc, textureView);
+}
+
+static Result NRI_CALL CreateTexture3DView(const Texture3DViewDesc& textureViewDesc, Descriptor*& textureView) {
+    DeviceVal& device = GetDeviceVal(*textureViewDesc.texture);
+
+    return device.CreateDescriptor(textureViewDesc, textureView);
 }
 
 static void NRI_CALL DestroyCommandAllocator(CommandAllocator& commandAllocator) {

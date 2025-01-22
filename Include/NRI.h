@@ -64,21 +64,21 @@ NriStruct(CoreInterface) {
     // Create
     // "Creation" doesn't assume allocation of big chunks of memory on the device, but it happens for some entities implicitly
     // "Allocation" emphasizes the fact that there is a chunk of memory allocated under the hood
-    Nri(Result)         (NRI_CALL *CreateCommandAllocator)          (const NriRef(Queue) queue, NriOut NriRef(CommandAllocator*) commandAllocator);
+    Nri(Result)         (NRI_CALL *CreateCommandAllocator)          (NriRef(Queue) queue, NriOut NriRef(CommandAllocator*) commandAllocator);
     Nri(Result)         (NRI_CALL *CreateCommandBuffer)             (NriRef(CommandAllocator) commandAllocator, NriOut NriRef(CommandBuffer*) commandBuffer);
     Nri(Result)         (NRI_CALL *CreateDescriptorPool)            (NriRef(Device) device, const NriRef(DescriptorPoolDesc) descriptorPoolDesc, NriOut NriRef(DescriptorPool*) descriptorPool);
     Nri(Result)         (NRI_CALL *CreateBuffer)                    (NriRef(Device) device, const NriRef(BufferDesc) bufferDesc, NriOut NriRef(Buffer*) buffer); // requires "BindBufferMemory"
     Nri(Result)         (NRI_CALL *CreateTexture)                   (NriRef(Device) device, const NriRef(TextureDesc) textureDesc, NriOut NriRef(Texture*) texture); // requires "BindTextureMemory"
-    Nri(Result)         (NRI_CALL *CreateBufferView)                (const NriRef(BufferViewDesc) bufferViewDesc, NriOut NriRef(Descriptor*) bufferView);
-    Nri(Result)         (NRI_CALL *CreateTexture1DView)             (const NriRef(Texture1DViewDesc) textureViewDesc, NriOut NriRef(Descriptor*) textureView);
-    Nri(Result)         (NRI_CALL *CreateTexture2DView)             (const NriRef(Texture2DViewDesc) textureViewDesc, NriOut NriRef(Descriptor*) textureView);
-    Nri(Result)         (NRI_CALL *CreateTexture3DView)             (const NriRef(Texture3DViewDesc) textureViewDesc, NriOut NriRef(Descriptor*) textureView);
     Nri(Result)         (NRI_CALL *CreateSampler)                   (NriRef(Device) device, const NriRef(SamplerDesc) samplerDesc, NriOut NriRef(Descriptor*) sampler);
     Nri(Result)         (NRI_CALL *CreatePipelineLayout)            (NriRef(Device) device, const NriRef(PipelineLayoutDesc) pipelineLayoutDesc, NriOut NriRef(PipelineLayout*) pipelineLayout);
     Nri(Result)         (NRI_CALL *CreateGraphicsPipeline)          (NriRef(Device) device, const NriRef(GraphicsPipelineDesc) graphicsPipelineDesc, NriOut NriRef(Pipeline*) pipeline);
     Nri(Result)         (NRI_CALL *CreateComputePipeline)           (NriRef(Device) device, const NriRef(ComputePipelineDesc) computePipelineDesc, NriOut NriRef(Pipeline*) pipeline);
     Nri(Result)         (NRI_CALL *CreateQueryPool)                 (NriRef(Device) device, const NriRef(QueryPoolDesc) queryPoolDesc, NriOut NriRef(QueryPool*) queryPool);
     Nri(Result)         (NRI_CALL *CreateFence)                     (NriRef(Device) device, uint64_t initialValue, NriOut NriRef(Fence*) fence);
+    Nri(Result)         (NRI_CALL *CreateBufferView)                (const NriRef(BufferViewDesc) bufferViewDesc, NriOut NriRef(Descriptor*) bufferView);
+    Nri(Result)         (NRI_CALL *CreateTexture1DView)             (const NriRef(Texture1DViewDesc) textureViewDesc, NriOut NriRef(Descriptor*) textureView);
+    Nri(Result)         (NRI_CALL *CreateTexture2DView)             (const NriRef(Texture2DViewDesc) textureViewDesc, NriOut NriRef(Descriptor*) textureView);
+    Nri(Result)         (NRI_CALL *CreateTexture3DView)             (const NriRef(Texture3DViewDesc) textureViewDesc, NriOut NriRef(Descriptor*) textureView);
 
     // Destroy
     void                (NRI_CALL *DestroyCommandAllocator)         (NriRef(CommandAllocator) commandAllocator);
@@ -115,7 +115,7 @@ NriStruct(CoreInterface) {
     void                (NRI_CALL *UpdateDynamicConstantBuffers)    (NriRef(DescriptorSet) descriptorSet, uint32_t baseDynamicConstantBuffer, uint32_t dynamicConstantBufferNum, const NriPtr(Descriptor) const* descriptors);
     void                (NRI_CALL *CopyDescriptorSet)               (NriRef(DescriptorSet) descriptorSet, const NriRef(DescriptorSetCopyDesc) descriptorSetCopyDesc);
 
-    // Command buffer
+    // Command buffer (one time submit)
     Nri(Result)         (NRI_CALL *BeginCommandBuffer)              (NriRef(CommandBuffer) commandBuffer, const NriPtr(DescriptorPool) descriptorPool);
     // {                {
         // Change descriptor pool (initially can be set via "BeginCommandBuffer")

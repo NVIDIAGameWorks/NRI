@@ -282,7 +282,7 @@ static Result NRI_CALL GetQueue(Device&, QueueType, uint32_t, Queue*& queue) {
     return Result::SUCCESS;
 }
 
-static Result NRI_CALL CreateCommandAllocator(const Queue&, CommandAllocator*& commandAllocator) {
+static Result NRI_CALL CreateCommandAllocator(Queue&, CommandAllocator*& commandAllocator) {
     commandAllocator = DummyObject<CommandAllocator>();
 
     return Result::SUCCESS;
@@ -308,30 +308,6 @@ static Result NRI_CALL CreateBuffer(Device&, const BufferDesc&, Buffer*& buffer)
 
 static Result NRI_CALL CreateTexture(Device&, const TextureDesc&, Texture*& texture) {
     texture = DummyObject<Texture>();
-
-    return Result::SUCCESS;
-}
-
-static Result NRI_CALL CreateBufferView(const BufferViewDesc&, Descriptor*& bufferView) {
-    bufferView = DummyObject<Descriptor>();
-
-    return Result::SUCCESS;
-}
-
-static Result NRI_CALL CreateTexture1DView(const Texture1DViewDesc&, Descriptor*& textureView) {
-    textureView = DummyObject<Descriptor>();
-
-    return Result::SUCCESS;
-}
-
-static Result NRI_CALL CreateTexture2DView(const Texture2DViewDesc&, Descriptor*& textureView) {
-    textureView = DummyObject<Descriptor>();
-
-    return Result::SUCCESS;
-}
-
-static Result NRI_CALL CreateTexture3DView(const Texture3DViewDesc&, Descriptor*& textureView) {
-    textureView = DummyObject<Descriptor>();
 
     return Result::SUCCESS;
 }
@@ -368,6 +344,30 @@ static Result NRI_CALL CreateQueryPool(Device&, const QueryPoolDesc&, QueryPool*
 
 static Result NRI_CALL CreateFence(Device&, uint64_t, Fence*& fence) {
     fence = DummyObject<Fence>();
+
+    return Result::SUCCESS;
+}
+
+static Result NRI_CALL CreateBufferView(const BufferViewDesc&, Descriptor*& bufferView) {
+    bufferView = DummyObject<Descriptor>();
+
+    return Result::SUCCESS;
+}
+
+static Result NRI_CALL CreateTexture1DView(const Texture1DViewDesc&, Descriptor*& textureView) {
+    textureView = DummyObject<Descriptor>();
+
+    return Result::SUCCESS;
+}
+
+static Result NRI_CALL CreateTexture2DView(const Texture2DViewDesc&, Descriptor*& textureView) {
+    textureView = DummyObject<Descriptor>();
+
+    return Result::SUCCESS;
+}
+
+static Result NRI_CALL CreateTexture3DView(const Texture3DViewDesc&, Descriptor*& textureView) {
+    textureView = DummyObject<Descriptor>();
 
     return Result::SUCCESS;
 }
