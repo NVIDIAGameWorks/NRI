@@ -31,7 +31,7 @@ CommandBufferD3D11::CommandBufferD3D11(DeviceD3D11& device)
 }
 
 CommandBufferD3D11::~CommandBufferD3D11() {
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     if (m_DeferredContext && m_DeferredContext->GetType() == D3D11_DEVICE_CONTEXT_DEFERRED) {
         if (m_Device.HasNvExt()) {
             NvAPI_Status status = NvAPI_D3D11_EndUAVOverlap(m_DeferredContext);
@@ -65,7 +65,7 @@ Result CommandBufferD3D11::Create(ID3D11DeviceContext* precreatedContext) {
     RETURN_ON_BAD_HRESULT(&m_Device, hr, "QueryInterface(ID3DUserDefinedAnnotation)");
 
     // Skip UAV barriers by default on the deferred context
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     if (m_DeferredContext && m_DeferredContext->GetType() == D3D11_DEVICE_CONTEXT_DEFERRED) {
         if (m_Device.HasNvExt()) {
             NvAPI_Status res = NvAPI_D3D11_BeginUAVOverlap(m_DeferredContext);
@@ -143,7 +143,7 @@ NRI_INLINE void CommandBufferD3D11::SetScissors(const Rect* rects, uint32_t rect
 
 NRI_INLINE void CommandBufferD3D11::SetDepthBounds(float boundsMin, float boundsMax) {
     if (m_DepthBounds[0] != boundsMin || m_DepthBounds[1] != boundsMax) {
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
         bool isEnabled = boundsMin != 0.0f || boundsMax != 1.0f;
         if (m_Device.HasNvExt()) {
             NvAPI_Status status = NvAPI_D3D11_SetDepthBoundsTest(m_DeferredContext, isEnabled, boundsMin, boundsMax);
@@ -267,7 +267,7 @@ NRI_INLINE void CommandBufferD3D11::BeginRendering(const AttachmentsDesc& attach
 
     m_DeferredContext->OMSetRenderTargets(m_RenderTargetNum, m_RenderTargets.data(), m_DepthStencil);
 
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     // Shading rate
     if (m_Device.HasNvExt() && m_Device.GetDesc().shadingRateTier >= 2) {
         ID3D11NvShadingRateResourceView* shadingRateImage = nullptr;
@@ -399,7 +399,7 @@ NRI_INLINE void CommandBufferD3D11::DrawIndirect(const Buffer& buffer, uint64_t 
     MaybeUnused(countBuffer, countBufferOffset);
 
     const BufferD3D11& bufferD3D11 = (BufferD3D11&)buffer;
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     if (countBuffer && m_Device.HasAmdExt()) {
         const BufferD3D11* countBufferD3D11 = (BufferD3D11*)countBuffer;
         const AmdExt& amdExt = m_Device.GetAmdExt();
@@ -428,7 +428,7 @@ NRI_INLINE void CommandBufferD3D11::DrawIndexedIndirect(const Buffer& buffer, ui
     MaybeUnused(countBuffer, countBufferOffset);
 
     const BufferD3D11& bufferD3D11 = (BufferD3D11&)buffer;
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     if (countBuffer && m_Device.HasAmdExt()) {
         const BufferD3D11* countBufferD3D11 = (BufferD3D11*)countBuffer;
         const AmdExt& amdExt = m_Device.GetAmdExt();
@@ -587,7 +587,7 @@ NRI_INLINE void CommandBufferD3D11::DispatchIndirect(const Buffer& buffer, uint6
 
 NRI_INLINE void CommandBufferD3D11::Barrier(const BarrierGroupDesc& barrierGroupDesc) {
     MaybeUnused(barrierGroupDesc);
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     if (barrierGroupDesc.textureNum == 0 && barrierGroupDesc.bufferNum == 0)
         return;
 

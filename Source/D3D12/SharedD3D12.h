@@ -85,7 +85,7 @@ D3D12_SHADING_RATE GetShadingRate(ShadingRate shadingRate);
 D3D12_SHADING_RATE_COMBINER GetShadingRateCombiner(ShadingRateCombiner shadingRateCombiner);
 } // namespace nri
 
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
 #    include "amdags/ags_lib/inc/amd_ags.h"
 #    include "nvapi/nvShaderExtnEnums.h"
 #    include "nvapi/nvapi.h"

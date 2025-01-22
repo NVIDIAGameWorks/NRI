@@ -31,7 +31,7 @@ DeviceD3D11::DeviceD3D11(const CallbackInterface& callbacks, const AllocationCal
 }
 
 DeviceD3D11::~DeviceD3D11() {
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     if (m_ImmediateContext) {
         if (HasNvExt()) {
             NvAPI_Status status = NvAPI_D3D11_EndUAVOverlap(m_ImmediateContext);
@@ -52,7 +52,7 @@ DeviceD3D11::~DeviceD3D11() {
 
     DeleteCriticalSection(&m_CriticalSection);
 
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     if (HasAmdExt() && !m_IsWrapped)
         m_AmdExt.DestroyDeviceD3D11(m_AmdExt.context, m_Device, nullptr, m_ImmediateContext, nullptr);
 #endif
@@ -98,7 +98,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& desc, const DeviceCreationD
         bool isDrawIndirectCountSupported = false;
         bool isShaderAtomicsI64Supported = false;
 
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
         uint32_t shaderExtRegister = desc.shaderExtRegister ? desc.shaderExtRegister : NRI_SHADER_EXT_REGISTER;
         if (HasAmdExt()) {
             AGSDX11DeviceCreationParams deviceCreationParams = {};
@@ -140,7 +140,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& desc, const DeviceCreationD
 
             RETURN_ON_BAD_HRESULT(this, hr, "D3D11CreateDevice()");
 
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
             if (HasNvExt()) {
                 REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D_RegisterDevice(deviceTemp));
                 REPORT_ERROR_ON_BAD_STATUS(this, NvAPI_D3D11_SetNvShaderExtnSlot(deviceTemp, shaderExtRegister));
@@ -167,7 +167,7 @@ Result DeviceD3D11::Create(const DeviceCreationDesc& desc, const DeviceCreationD
     REPORT_INFO(this, "Using ID3D11DeviceContext%u", m_ImmediateContextVersion);
 
     // Skip UAV barriers by default on the immediate context
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     if (HasNvExt()) {
         NvAPI_Status status = NvAPI_D3D11_BeginUAVOverlap(m_ImmediateContext);
         if (status != NVAPI_OK)
@@ -377,7 +377,7 @@ void DeviceD3D11::FillDesc() {
     bool isShaderAtomicsF16Supported = false;
     bool isShaderAtomicsF32Supported = false;
     bool isGetSpecialSupported = false;
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     NV_D3D11_FEATURE_DATA_RASTERIZER_SUPPORT rasterizerFeatures = {};
     NV_D3D1x_GRAPHICS_CAPS caps = {};
 
@@ -416,7 +416,7 @@ void DeviceD3D11::FillDesc() {
 
 void DeviceD3D11::InitializeNvExt(bool isNVAPILoadedInApp, bool isImported) {
     MaybeUnused(isNVAPILoadedInApp, isImported);
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     if (GetModuleHandleA("renderdoc.dll") != nullptr) {
         REPORT_WARNING(this, "NVAPI is disabled, because RenderDoc library has been loaded");
         return;
@@ -435,7 +435,7 @@ void DeviceD3D11::InitializeNvExt(bool isNVAPILoadedInApp, bool isImported) {
 
 void DeviceD3D11::InitializeAmdExt(AGSContext* agsContext, bool isImported) {
     MaybeUnused(agsContext, isImported);
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     if (isImported && !agsContext) {
         REPORT_WARNING(this, "AMDAGS is disabled, because 'agsContext' is not provided");
         return;

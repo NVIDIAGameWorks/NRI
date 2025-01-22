@@ -63,7 +63,7 @@ struct DeviceD3D12 final : public DeviceBase {
         return m_Pix;
     }
 
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     inline bool HasNvExt() const {
         return m_NvExt.available;
     }
@@ -158,7 +158,7 @@ private:
 private:
     // Order of destructors is important
     PixExt m_Pix = {};
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     NvExt m_NvExt = {};
     AmdExt m_AmdExt = {};
 #endif

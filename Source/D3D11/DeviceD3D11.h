@@ -59,7 +59,7 @@ struct DeviceD3D11 final : public DeviceBase {
             ::LeaveCriticalSection(&m_CriticalSection);
     }
 
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     inline bool HasNvExt() const {
         return m_NvExt.available;
     }
@@ -142,7 +142,7 @@ private:
 
 private:
     // Order of destructors is important
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     NvExt m_NvExt = {};
     AmdExt m_AmdExt = {};
 #endif

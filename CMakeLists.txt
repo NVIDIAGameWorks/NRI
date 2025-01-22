@@ -1,14 +1,20 @@
 cmake_minimum_required(VERSION 3.15)
 
 # Options
+if(WIN32)
+    set(IS_WIN ON)
+else()
+    set(IS_WIN OFF)
+endif()
+
 option(NRI_STATIC_LIBRARY "Build static library" OFF)
 option(NRI_ENABLE_NVTX_SUPPORT "Annotations for NVIDIA Nsight Systems" OFF)
 option(NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS "Enable debug names, host and device annotations" ON)
 
 # Options: backends
 option(NRI_ENABLE_NONE_SUPPORT "Enable NONE backend" ON)
-option(NRI_ENABLE_D3D11_SUPPORT "Enable D3D11 backend" ON)
-option(NRI_ENABLE_D3D12_SUPPORT "Enable D3D12 backend" ON)
+option(NRI_ENABLE_D3D11_SUPPORT "Enable D3D11 backend" ${IS_WIN})
+option(NRI_ENABLE_D3D12_SUPPORT "Enable D3D12 backend" ${IS_WIN})
 option(NRI_ENABLE_VK_SUPPORT "Enable VULKAN backend" ON)
 
 # Options: VK specific
@@ -22,7 +28,13 @@ set(NRI_AGILITY_SDK_VERSION "614" CACHE STRING "Agility SDK version")
 set(NRI_AGILITY_SDK_DIR "AgilitySDK" CACHE STRING "Directory where Agility SDK binaries will be copied to relative to 'CMAKE_RUNTIME_OUTPUT_DIRECTORY'")
 
 # Options: D3D11/D3D12 specific (PIX events are always enabled if "WinPixEventRuntime.dll" is nearby)
-option(NRI_ENABLE_EXTERNAL_LIBRARIES "Enable vendor specific extension libraries (NVAPI and AMD AGS)" ON)
+if(NRI_ENABLE_D3D11_SUPPORT OR NRI_ENABLE_D3D12_SUPPORT)
+    set(HAS_D3D ON)
+else()
+    set(HAS_D3D OFF)
+endif()
+
+option(NRI_ENABLE_D3D_EXTENSIONS "Enable vendor specific extension libraries for D3D (NVAPI and AMD AGS)" ${HAS_D3D})
 
 # Is submodule?
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
@@ -140,8 +152,8 @@ if(NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS)
     set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS=1)
 endif()
 
-if(NRI_ENABLE_EXTERNAL_LIBRARIES)
-    set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_ENABLE_EXTERNAL_LIBRARIES=1)
+if(NRI_ENABLE_D3D_EXTENSIONS)
+    set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_ENABLE_D3D_EXTENSIONS=1)
 endif()
 
 if(NRI_ENABLE_NVTX_SUPPORT)
@@ -149,7 +161,7 @@ if(NRI_ENABLE_NVTX_SUPPORT)
 endif()
 
 # External libs
-if(WIN32 AND NRI_ENABLE_EXTERNAL_LIBRARIES AND(NRI_ENABLE_D3D11_SUPPORT OR NRI_ENABLE_D3D12_SUPPORT))
+if(NRI_ENABLE_D3D_EXTENSIONS)
     find_library(NVAPI_LIB NAMES nvapi64 nvapi PATHS "External/nvapi/${NVAPI_BIN_ARCHITECTURE}" REQUIRED) # statically linked
     find_library(AGS_LIB NAMES amd_ags_${BIN_ARCHITECTURE} PATHS "External/amdags/ags_lib/lib" REQUIRED) # dynamically loaded
 
@@ -174,7 +186,7 @@ if(NRI_ENABLE_NONE_SUPPORT)
 endif()
 
 # D3D11
-if(WIN32 AND NRI_ENABLE_D3D11_SUPPORT)
+if(NRI_ENABLE_D3D11_SUPPORT)
     message("NRI adding backend: D3D11")
 
     set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_ENABLE_D3D11_SUPPORT=1)
@@ -183,7 +195,7 @@ if(WIN32 AND NRI_ENABLE_D3D11_SUPPORT)
     file(GLOB D3D11_SOURCE "Source/D3D11/*")
     source_group("" FILES ${D3D11_SOURCE})
 
-    if(NRI_ENABLE_EXTERNAL_LIBRARIES)
+    if(NRI_ENABLE_D3D_EXTENSIONS)
         add_library(NRI_D3D11 STATIC ${D3D11_SOURCE} ${NVAPI_HEADERS} ${AMDAGS_HEADERS})
         target_link_libraries(NRI_D3D11 PRIVATE ${NVAPI_LIB})
     else()
@@ -198,7 +210,7 @@ if(WIN32 AND NRI_ENABLE_D3D11_SUPPORT)
 endif()
 
 # D3D12
-if(WIN32 AND NRI_ENABLE_D3D12_SUPPORT)
+if(NRI_ENABLE_D3D12_SUPPORT)
     message("NRI adding backend: D3D12")
 
     set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRI_ENABLE_D3D12_SUPPORT=1)
@@ -207,7 +219,7 @@ if(WIN32 AND NRI_ENABLE_D3D12_SUPPORT)
     file(GLOB D3D12_SOURCE "Source/D3D12/*" "External/memalloc/D3D12*.*")
     source_group("" FILES ${D3D12_SOURCE})
 
-    if(NRI_ENABLE_EXTERNAL_LIBRARIES)
+    if(NRI_ENABLE_D3D_EXTENSIONS)
         add_library(NRI_D3D12 STATIC ${D3D12_SOURCE} ${NVAPI_HEADERS} ${AMDAGS_HEADERS})
         target_link_libraries(NRI_D3D12 PRIVATE ${NVAPI_LIB})
     else()
@@ -345,11 +357,11 @@ if(NRI_ENABLE_NONE_SUPPORT)
     target_link_libraries(${PROJECT_NAME} PRIVATE NRI_NONE)
 endif()
 
-if(WIN32 AND NRI_ENABLE_D3D11_SUPPORT)
+if(NRI_ENABLE_D3D11_SUPPORT)
     target_link_libraries(${PROJECT_NAME} PRIVATE NRI_D3D11)
 endif()
 
-if(WIN32 AND NRI_ENABLE_D3D12_SUPPORT)
+if(NRI_ENABLE_D3D12_SUPPORT)
     target_link_libraries(${PROJECT_NAME} PRIVATE NRI_D3D12)
 endif()
 
@@ -362,17 +374,15 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY FOLDER ${PROJECT_FOLDER})
 set_target_properties(${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 message("NRI output path: '${CMAKE_RUNTIME_OUTPUT_DIRECTORY}'")
 
-if(WIN32 AND NRI_ENABLE_EXTERNAL_LIBRARIES)
-    if(NRI_ENABLE_D3D11_SUPPORT OR NRI_ENABLE_D3D12_SUPPORT)
-        # Function - copy a library to the output folder of a project
-        function(copy_library PROJECT LIBRARY_NAME)
-            add_custom_command(TARGET ${PROJECT} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIBRARY_NAME} $<TARGET_FILE_DIR:${PROJECT}>
-                COMMAND_EXPAND_LISTS)
-        endfunction()
+if(NRI_ENABLE_D3D_EXTENSIONS)
+    # Function - copy a library to the output folder of a project
+    function(copy_library PROJECT LIBRARY_NAME)
+        add_custom_command(TARGET ${PROJECT} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIBRARY_NAME} $<TARGET_FILE_DIR:${PROJECT}>
+            COMMAND_EXPAND_LISTS)
+    endfunction()
 
-        # Copy AMD AGS into the output folder
-        find_file(AMD_AGS_DLL NAMES amd_ags_x64.dll PATHS "External/amdags/ags_lib/lib")
-        copy_library(${PROJECT_NAME} ${AMD_AGS_DLL})
-    endif()
+    # Copy AMD AGS into the output folder
+    find_file(AMD_AGS_DLL NAMES amd_ags_x64.dll PATHS "External/amdags/ags_lib/lib")
+    copy_library(${PROJECT_NAME} ${AMD_AGS_DLL})
 endif()

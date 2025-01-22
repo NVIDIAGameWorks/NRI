@@ -32,7 +32,7 @@ struct DescriptorD3D11 final : public DebugNameBase {
         return (ID3D11UnorderedAccessView*)m_Descriptor.GetInterface();
     }
 
-#if NRI_ENABLE_EXTERNAL_LIBRARIES
+#if NRI_ENABLE_D3D_EXTENSIONS
     inline operator ID3D11NvShadingRateResourceView*() const {
         return (ID3D11NvShadingRateResourceView*)m_Descriptor.GetInterface();
     }
