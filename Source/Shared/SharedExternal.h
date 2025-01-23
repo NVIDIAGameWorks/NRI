@@ -34,6 +34,10 @@ typedef uint32_t DXGI_FORMAT;
 
 #include "Lock.h"
 
+template <typename... Args>
+constexpr void MaybeUnused([[maybe_unused]] const Args&... args) {
+}
+
 // Allocator
 typedef nri::AllocationCallbacks AllocationCallbacks;
 #include "StdAllocator.h"
@@ -111,10 +115,6 @@ constexpr uint64_t MsToUs(uint32_t x) {
 }
 
 constexpr void ReturnVoid() {
-}
-
-template <typename... Args>
-constexpr void MaybeUnused([[maybe_unused]] const Args&... args) {
 }
 
 // Macro stuff
