@@ -19,5 +19,6 @@ copy "..\_Bin\Release\NRI.dll" "Lib\Release"
 copy "..\_Bin\Release\NRI.lib" "Lib\Release"
 copy "..\_Bin\Release\NRI.pdb" "Lib\Release"
 copy "..\%NRI_DIR%\LICENSE.txt" "."
+copy "..\%NRI_DIR%\nri.natvis" "."
 
 cd ..

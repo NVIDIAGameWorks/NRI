@@ -86,9 +86,9 @@ D3D12_SHADING_RATE_COMBINER GetShadingRateCombiner(ShadingRateCombiner shadingRa
 } // namespace nri
 
 #if NRI_ENABLE_D3D_EXTENSIONS
-#    include "amdags/ags_lib/inc/amd_ags.h"
-#    include "nvapi/nvShaderExtnEnums.h"
-#    include "nvapi/nvapi.h"
+#    include "amd_ags.h"
+#    include "nvShaderExtnEnums.h"
+#    include "nvapi.h"
 
 struct AmdExt {
     // Funcs first
@@ -142,27 +142,9 @@ struct PixExt {
     }
 };
 
-// VMA
-#if defined(__GNUC__)
-#    pragma GCC diagnostic push
-#    pragma GCC diagnostic ignored "-Wunused-parameter"
-#elif defined(__clang__)
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wunused-parameter"
-#else
-#    pragma warning(push)
-#    pragma warning(disable : 4100) // unreferenced formal parameter
-#endif
-
-#define D3D12MA_D3D12_HEADERS_ALREADY_INCLUDED
-#include "memalloc/D3D12MemAlloc.h"
-
-#if defined(__GNUC__)
-#    pragma GCC diagnostic pop
-#elif defined(__clang__)
-#    pragma clang diagnostic pop
-#elif defined(MSVC)
-#    pragma warning(pop)
-#endif
+namespace D3D12MA {
+    class Allocator;
+    class Allocation;
+}
 
 #include "DeviceD3D12.h"

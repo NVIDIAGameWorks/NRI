@@ -173,12 +173,11 @@ private:
     UnorderedMap<uint64_t, ComPtr<ID3D12CommandSignature>> m_DrawIndexedCommandSignatures;
     UnorderedMap<uint32_t, ComPtr<ID3D12CommandSignature>> m_DrawMeshCommandSignatures;
     std::array<std::vector<QueueD3D12*>, (size_t)QueueType::MAX_NUM> m_QueueFamilies = {}; // TODO: use Vector!
-    D3D12MA::ALLOCATION_CALLBACKS m_AllocationCallbacks = {};
-    D3D12MA::ALLOCATION_CALLBACKS* m_AllocationCallbackPtr = nullptr;
     CoreInterface m_CoreInterface = {};
     DeviceDesc m_Desc = {};
     uint8_t m_Version = 0;
     bool m_IsWrapped = false;
+    bool m_Disable3rdPartyAllocationCallbacks = false;
 
     std::array<Lock, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> m_FreeDescriptorLocks;
     Lock m_DescriptorHeapLock;

@@ -4,6 +4,10 @@
 
 #define ADAPTER_MAX_NUM 32
 
+#if NRI_ENABLE_NVTX_SUPPORT
+#    include "nvtx3/nvToolsExt.h"
+#endif
+
 #if (NRI_ENABLE_D3D11_SUPPORT || NRI_ENABLE_D3D12_SUPPORT)
 #    include <d3d11.h>
 #    include <dxgidebug.h>
@@ -35,7 +39,9 @@ Result CreateDeviceD3D12(const DeviceCreationDesc& deviceCreationDesc, const Dev
 Result CreateDeviceVK(const DeviceCreationDesc& deviceCreationDesc, const DeviceCreationVKDesc& deviceCreationDescVK, DeviceBase*& device);
 #endif
 
+#if NRI_ENABLE_VALIDATION_SUPPORT
 DeviceBase* CreateDeviceValidation(const DeviceCreationDesc& deviceCreationDesc, DeviceBase& device);
+#endif
 
 constexpr uint64_t Hash(const char* name) {
     return *name != 0 ? *name ^ (33 * Hash(name + 1)) : 5381;
@@ -374,6 +380,8 @@ static Result EnumerateAdaptersVK(AdapterDesc* adapterDescs, uint32_t&, VkPhysic
 #endif
 
 static Result FinalizeDeviceCreation(const DeviceCreationDesc& deviceCreationDesc, DeviceBase& deviceImpl, Device*& device) {
+    MaybeUnused(deviceCreationDesc);
+#if NRI_ENABLE_VALIDATION_SUPPORT
     if (deviceCreationDesc.enableNRIValidation && deviceCreationDesc.graphicsAPI != GraphicsAPI::NONE) {
         Device* deviceVal = (Device*)CreateDeviceValidation(deviceCreationDesc, deviceImpl);
         if (!deviceVal) {
@@ -382,13 +390,13 @@ static Result FinalizeDeviceCreation(const DeviceCreationDesc& deviceCreationDes
         }
 
         device = deviceVal;
-    } else {
+    } else
+#endif
         device = (Device*)&deviceImpl;
 
 #if NRI_ENABLE_NVTX_SUPPORT
-        nvtxInitialize(nullptr); // needed only to avoid stalls on the first use
+    nvtxInitialize(nullptr); // needed only to avoid stalls on the first use
 #endif
-    }
 
     return Result::SUCCESS;
 }

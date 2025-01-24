@@ -1,15 +1,60 @@
 // © 2021 NVIDIA Corporation
 
+#if defined(__GNUC__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wunused-parameter"
+#elif defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wunused-parameter"
+#else
+#    pragma warning(push)
+#    pragma warning(disable : 4100) // unreferenced formal parameter
+#    pragma warning(disable : 4189) // local variable is initialized but not referenced
+#    pragma warning(disable : 4505) // unreferenced function with internal linkage has been removed
+#endif
+
+#define D3D12MA_D3D12_HEADERS_ALREADY_INCLUDED
+
+#include "D3D12MemAlloc.h"
+#include "D3D12MemAlloc.cpp"
+
+#if defined(__GNUC__)
+#    pragma GCC diagnostic pop
+#elif defined(__clang__)
+#    pragma clang diagnostic pop
+#else
+#    pragma warning(pop)
+#endif
+
+static void* vmaAllocate(size_t size, size_t alignment, void* pPrivateData) {
+    const auto& allocationCallbacks = *(AllocationCallbacks*)pPrivateData;
+
+    return allocationCallbacks.Allocate(allocationCallbacks.userArg, size, alignment);
+}
+
+static void vmaFree(void* pMemory, void* pPrivateData) {
+    const auto& allocationCallbacks = *(AllocationCallbacks*)pPrivateData;
+
+    return allocationCallbacks.Free(allocationCallbacks.userArg, pMemory);
+}
+
 Result DeviceD3D12::CreateVma() {
     if (m_Vma)
         return Result::SUCCESS;
 
+    D3D12MA::ALLOCATION_CALLBACKS allocationCallbacks = {};
+    allocationCallbacks.pPrivateData = (void*)&GetAllocationCallbacks();
+    allocationCallbacks.pAllocate = vmaAllocate;
+    allocationCallbacks.pFree = vmaFree;
+
     D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
     allocatorDesc.pDevice = m_Device;
     allocatorDesc.pAdapter = m_Adapter;
-    allocatorDesc.pAllocationCallbacks = m_AllocationCallbackPtr;
     allocatorDesc.Flags = (D3D12MA::ALLOCATOR_FLAGS)(D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED | D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED);
     allocatorDesc.PreferredBlockSize = VMA_PREFERRED_BLOCK_SIZE;
+
+    if (!m_Disable3rdPartyAllocationCallbacks)
+        allocatorDesc.pAllocationCallbacks = &allocationCallbacks;
 
     HRESULT hr = D3D12MA::CreateAllocator(&allocatorDesc, &m_Vma);
     RETURN_ON_BAD_HRESULT(this, hr, "D3D12MA::CreateAllocator");

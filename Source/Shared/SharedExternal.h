@@ -45,11 +45,6 @@ typedef nri::AllocationCallbacks AllocationCallbacks;
 // Base classes
 #include "DeviceBase.h"
 
-// Annotations for NVIDIA Nsight Systems
-#if NRI_ENABLE_NVTX_SUPPORT
-#    include "NVTX/c/include/nvtx3/nvToolsExt.h"
-#endif
-
 // Consts
 constexpr uint32_t NRI_NODE_MASK = 0x1;    // mGPU is not planned
 constexpr uint32_t TIMEOUT_PRESENT = 1000; // 1 sec

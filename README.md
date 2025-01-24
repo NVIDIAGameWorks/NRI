@@ -145,7 +145,7 @@ Repository organization:
 
 ## BUILD INSTRUCTIONS
 
-- Install [*Cmake*](https://cmake.org/download/) 3.15+
+- Install [*Cmake*](https://cmake.org/download/) 3.18+
 - Install on
     - Windows: latest *WindowsSDK* and *VulkanSDK*
     - Linux (x86-64): latest *VulkanSDK* and optional *libx11-dev* and *libwayland-dev*
@@ -164,36 +164,33 @@ Notes:
 ## CMAKE OPTIONS
 
 - `NRI_STATIC_LIBRARY` - build NRI as a static library (`off` by default)
-- `NRI_ENABLE_NVTX_SUPPORT` - annotations for NVIDIA Nsight Systems (`off` by default)
+- `NRI_ENABLE_NVTX_SUPPORT` - annotations for NVIDIA Nsight Systems (`on` by default)
+- `NRI_ENABLE_DEBUG_NAMES_AND_ANNOTATIONS` - enable debug names, host and device annotations (`on` by default)
 - `NRI_ENABLE_NONE_SUPPORT` - enable NONE backend (`on` by default)
-- `NRI_ENABLE_VK_SUPPORT` - enable VULKAN backend (`on` by default)
 - `NRI_ENABLE_D3D11_SUPPORT` - enable D3D11 backend (`on` by default on Windows)
 - `NRI_ENABLE_D3D12_SUPPORT` - enable D3D12 backend (`on` by default on Windows)
+- `NRI_ENABLE_VK_SUPPORT` - enable VULKAN backend (`on` by default)
+- `NRI_ENABLE_VALIDATION_SUPPORT` - enable Validation backend (otherwise `enableNRIValidation` is ignored, `on` by default)
+
+D3D11/D3D12:
+- `NRI_ENABLE_D3D_EXTENSIONS` - enable vendor specific extension libraries for D3D (NVAPI and AMD AGS) (`on` by default if there is a D3D backend)
+
+D3D12 only:
+- `NRI_ENABLE_AGILITY_SDK_SUPPORT` - enable Agility SDK (`on` by default)
+- `NRI_AGILITY_SDK_DIR` - directory where Agility SDK binaries will be copied to relative to `CMAKE_RUNTIME_OUTPUT_DIRECTORY` (`AgilitySDK` by default)
+- `NRI_AGILITY_SDK_VERSION` - Agility SDK version
 
 VK only:
 - `NRI_ENABLE_XLIB_SUPPORT` - enable *Xlib* support (`on` by default)
 - `NRI_ENABLE_WAYLAND_SUPPORT` - enable *Wayland* support (`on` by default)
 
-D3D12 only:
-- `NRI_ENABLE_AGILITY_SDK_SUPPORT` - enable Agility SDK (`off` by default)
-- `NRI_AGILITY_SDK_PATH` - path to a directory containing Agility SDK: contents of `.nupkg/build/native/` (`C:/AgilitySDK` by default)
-- `NRI_AGILITY_SDK_VERSION` - Agility SDK version (`614` or newer)
-- `NRI_AGILITY_SDK_DIR` - directory where Agility SDK binaries will be copied to relative to `CMAKE_RUNTIME_OUTPUT_DIRECTORY` (`AgilitySDK` by default)
-
 ## AGILITY SDK
 
 *Overview* and *Download* sections can be found [*here*](https://devblogs.microsoft.com/directx/directx12agility/).
 
-D3D12 backend uses Agility SDK to get access to most recent D3D12 features. As soon as these features become available in the OS, installation of Agility SDK will be deprecated.
+D3D12 backend uses Agility SDK to get access to most recent D3D12 features.
 
 Installation steps:
-- download Agility SDK package
-    - `preview` versions require enabling Developer Mode in Windows
-- rename `.nupkg` into `.zip`
-- extract contents of `.nupkg/build/native` into `NRI_AGILITY_SDK_PATH` folder
-    - can be located anywhere
-- set `NRI_AGILITY_SDK_DIR` to a path, where `bin` folder needs to be copied
-    - most likely closer to the executable
 - set `NRI_AGILITY_SDK_VERSION` to the version of the package
 - enable `NRI_ENABLE_AGILITY_SDK_SUPPORT`
 - re-deploy project

@@ -5,7 +5,6 @@
 #include "SharedExternal.h"
 
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_beta.h>
 
 #undef CreateSemaphore
 

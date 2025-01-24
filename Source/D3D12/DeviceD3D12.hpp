@@ -37,18 +37,6 @@ static inline uint64_t HashRootSignatureAndStride(ID3D12RootSignature* rootSigna
     return ((uint64_t)stride << 52ull) | ((uint64_t)rootSignature & ((1ull << 52) - 1));
 }
 
-static void* vmaAllocate(size_t size, size_t alignment, void* pPrivateData) {
-    const auto& allocationCallbacks = *(AllocationCallbacks*)pPrivateData;
-
-    return allocationCallbacks.Allocate(allocationCallbacks.userArg, size, alignment);
-}
-
-static void vmaFree(void* pMemory, void* pPrivateData) {
-    const auto& allocationCallbacks = *(AllocationCallbacks*)pPrivateData;
-
-    return allocationCallbacks.Free(allocationCallbacks.userArg, pMemory);
-}
-
 DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, const AllocationCallbacks& allocationCallbacks)
     : DeviceBase(callbacks, allocationCallbacks)
     , m_DescriptorHeaps(GetStdAllocator())
@@ -57,9 +45,6 @@ DeviceD3D12::DeviceD3D12(const CallbackInterface& callbacks, const AllocationCal
     , m_DrawIndexedCommandSignatures(GetStdAllocator())
     , m_DrawMeshCommandSignatures(GetStdAllocator()) {
     m_FreeDescriptors.resize(D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES, Vector<DescriptorHandle>(GetStdAllocator()));
-    m_AllocationCallbacks.pPrivateData = (void*)&GetAllocationCallbacks();
-    m_AllocationCallbacks.pAllocate = vmaAllocate;
-    m_AllocationCallbacks.pFree = vmaFree;
 
     m_Desc.graphicsAPI = GraphicsAPI::D3D12;
     m_Desc.nriVersionMajor = NRI_VERSION_MAJOR;
@@ -80,9 +65,7 @@ DeviceD3D12::~DeviceD3D12() {
 
 Result DeviceD3D12::Create(const DeviceCreationDesc& desc, const DeviceCreationD3D12Desc& descD3D12) {
     m_IsWrapped = descD3D12.d3d12Device != nullptr;
-
-    if (!descD3D12.d3d12Device && !desc.disable3rdPartyAllocationCallbacks)
-        m_AllocationCallbackPtr = &m_AllocationCallbacks;
+    m_Disable3rdPartyAllocationCallbacks = desc.disable3rdPartyAllocationCallbacks;
 
     // Get adapter description as early as possible for meaningful error reporting
     m_Desc.adapterDesc = *desc.adapterDesc;
