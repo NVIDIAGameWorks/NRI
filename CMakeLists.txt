@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.16)
 
 # Options
 option(NRI_STATIC_LIBRARY "Build static library" OFF)
