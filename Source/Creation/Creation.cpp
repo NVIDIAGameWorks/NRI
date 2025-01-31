@@ -8,13 +8,14 @@
 #    include "nvtx3/nvToolsExt.h"
 #endif
 
-#if (NRI_ENABLE_D3D11_SUPPORT || NRI_ENABLE_D3D12_SUPPORT)
+#if (NRI_ENABLE_D3D11_SUPPORT)
 #    include <d3d11.h>
 #    include <dxgidebug.h>
 #endif
 
 #if NRI_ENABLE_D3D12_SUPPORT
 #    include <d3d12.h>
+#    include <dxgidebug.h>
 #endif
 
 #if NRI_ENABLE_VK_SUPPORT
@@ -109,6 +110,7 @@ static Result EnumerateAdaptersD3D(AdapterDesc* adapterDescs, uint32_t& adapterD
             wcstombs(adapterDesc.name, desc.Description, GetCountOf(adapterDesc.name) - 1);
 
             { // Architecture (a device is needed)
+#    if (NRI_ENABLE_D3D11_SUPPORT)
                 D3D_FEATURE_LEVEL levels[2] = {D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
                 uint32_t levelNum = GetCountOf(levels);
                 ComPtr<ID3D11Device> device;
@@ -119,6 +121,16 @@ static Result EnumerateAdaptersD3D(AdapterDesc* adapterDescs, uint32_t& adapterD
                     if (SUCCEEDED(hr))
                         adapterDesc.architecture = options2.UnifiedMemoryArchitecture ? Architecture::INTEGRATED : Architecture::DESCRETE;
                 }
+#    else
+                ComPtr<ID3D12Device> device;
+                HRESULT hr = D3D12CreateDevice(adapters[i], D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), (void**)&device);
+                if (SUCCEEDED(hr)) {
+                    D3D12_FEATURE_DATA_ARCHITECTURE architecture = {};
+                    hr = device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, &architecture, sizeof(architecture));
+                    if (SUCCEEDED(hr))
+                        adapterDesc.architecture = architecture.UMA ? Architecture::INTEGRATED : Architecture::DESCRETE;
+                }
+#    endif
             }
 
             // Let's advertise reasonable values (can't be queried in D3D)
@@ -842,7 +854,7 @@ NRI_API Result NRI_CALL nriEnumerateAdapters(AdapterDesc* adapterDescs, uint32_t
     if (result != Result::SUCCESS)
         result = EnumerateAdaptersD3D(adapterDescs, adapterDescNum, 0, nullptr);
 
-#if !(NRI_ENABLE_D3D11_SUPPORT || NRI_ENABLE_D3D12_SUPPORT || NRI_ENABLE_VK_SUPPORT)
+#if !(NRI_ENABLE_D3D11_SUPPORT || NRI_ENABLE_D3D12_SUPPORT || NRI_ENABLE_VK_SUPPORT) && NRI_ENABLE_NONE_SUPPORT
     // Patch the results, if NONE is the only avaiable implementation
     adapterDescNum = 1;
     result = Result::SUCCESS;
