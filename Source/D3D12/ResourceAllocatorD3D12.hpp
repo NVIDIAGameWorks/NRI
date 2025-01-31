@@ -2,15 +2,16 @@
 
 #if defined(__GNUC__)
 #    pragma GCC diagnostic push
-#    pragma GCC diagnostic ignored "-Wunused-parameter"
+#    pragma GCC diagnostic ignored "-Wunused-parameter -Wunused-variable -Wswitch"
 #elif defined(__clang__)
 #    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wunused-parameter"
+#    pragma clang diagnostic ignored "-Wunused-parameter -Wunused-variable -Wswitch"
 #else
 #    pragma warning(push)
 #    pragma warning(disable : 4100) // unreferenced formal parameter
 #    pragma warning(disable : 4189) // local variable is initialized but not referenced
 #    pragma warning(disable : 4505) // unreferenced function with internal linkage has been removed
+#    pragma warning(disable : 4063) // case 'identifier' is not a valid value for switch of enum 'enumeration'
 #endif
 
 #define D3D12MA_D3D12_HEADERS_ALREADY_INCLUDED
