@@ -397,10 +397,12 @@ void DeviceD3D11::FillDesc() {
 #endif
 
     m_Desc.isGetMemoryDesc2Supported = true;
+
     m_Desc.isTextureFilterMinMaxSupported = options1.MinMaxFiltering != 0;
     m_Desc.isLogicFuncSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isLineSmoothingSupported = true;
     m_Desc.isEnchancedBarrierSupported = true; // don't care, but advertise support
+    m_Desc.isWaitableSwapChainSupported = true; // TODO: swap chain version >= 2?
 
     m_Desc.isShaderNativeF64Supported = options.ExtendedDoublesShaderInstructions;
     m_Desc.isShaderAtomicsF16Supported = isShaderAtomicsF16Supported;

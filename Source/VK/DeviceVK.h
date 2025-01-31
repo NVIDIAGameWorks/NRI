@@ -11,7 +11,6 @@ struct IsSupported {
     uint32_t deviceAddress : 1;
     uint32_t swapChainMutableFormat : 1;
     uint32_t presentId : 1;
-    uint32_t presentWait : 1;
     uint32_t lowLatency : 1;
     uint32_t memoryPriority : 1;
     uint32_t memoryBudget : 1;

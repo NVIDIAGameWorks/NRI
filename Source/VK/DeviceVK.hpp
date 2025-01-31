@@ -684,7 +684,6 @@ Result DeviceVK::Create(const DeviceCreationDesc& desc, const DeviceCreationVKDe
     m_IsSupported.deviceAddress = features12.bufferDeviceAddress;
     m_IsSupported.swapChainMutableFormat = IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, desiredDeviceExts);
     m_IsSupported.presentId = presentIdFeatures.presentId;
-    m_IsSupported.presentWait = presentIdFeatures.presentId != 0 && presentWaitFeatures.presentWait != 0;
     m_IsSupported.lowLatency = presentIdFeatures.presentId != 0 && IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExts);
     m_IsSupported.memoryPriority = memoryPriorityFeatures.memoryPriority;
     m_IsSupported.maintenance4 = features13.maintenance4 != 0 || maintenance4Features.maintenance4 != 0;
@@ -1032,20 +1031,23 @@ Result DeviceVK::Create(const DeviceCreationDesc& desc, const DeviceCreationVKDe
         m_Desc.bindlessTier = m_IsSupported.descriptorIndexing ? 1 : 0;
 
         m_Desc.isGetMemoryDesc2Supported = m_IsSupported.maintenance4;
+        m_Desc.isEnchancedBarrierSupported = true;
+        m_Desc.isMemoryTier2Supported = true; // TODO: seems to be the best match
+
+        m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = true;
         m_Desc.isTextureFilterMinMaxSupported = features12.samplerFilterMinmax;
         m_Desc.isLogicFuncSupported = features.features.logicOp;
         m_Desc.isDepthBoundsTestSupported = features.features.depthBounds;
         m_Desc.isDrawIndirectCountSupported = features12.drawIndirectCount;
-        m_Desc.isIndependentFrontAndBackStencilReferenceAndMasksSupported = true;
         m_Desc.isLineSmoothingSupported = lineRasterizationFeatures.smoothLines;
         m_Desc.isCopyQueueTimestampSupported = limits.timestampComputeAndGraphics;
         m_Desc.isMeshShaderPipelineStatsSupported = meshShaderFeatures.meshShaderQueries == VK_TRUE;
-        m_Desc.isEnchancedBarrierSupported = true;
-        m_Desc.isMemoryTier2Supported = true; // TODO: seems to be the best match
         m_Desc.isDynamicDepthBiasSupported = true;
         m_Desc.isViewportOriginBottomLeftSupported = true;
         m_Desc.isRegionResolveSupported = true;
         m_Desc.isLayerBasedMultiviewSupported = features11.multiview;
+        m_Desc.isPresentFromComputeSupported = true;
+        m_Desc.isWaitableSwapChainSupported = presentIdFeatures.presentId != 0 && presentWaitFeatures.presentWait != 0;;
 
         m_Desc.isShaderNativeI16Supported = features.features.shaderInt16;
         m_Desc.isShaderNativeF16Supported = features12.shaderFloat16;

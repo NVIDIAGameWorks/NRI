@@ -1495,23 +1495,26 @@ NriStruct(DeviceDesc) {
 
     // Features
     uint32_t isGetMemoryDesc2Supported : 1;             // D3D: always supported, VK: requires "maintenance4" support
-    uint32_t isTextureFilterMinMaxSupported : 1;
-    uint32_t isLogicFuncSupported : 1;
-    uint32_t isDepthBoundsTestSupported : 1;
-    uint32_t isDrawIndirectCountSupported : 1;
-    uint32_t isIndependentFrontAndBackStencilReferenceAndMasksSupported : 1;
-    uint32_t isLineSmoothingSupported : 1;
-    uint32_t isCopyQueueTimestampSupported : 1;
-    uint32_t isMeshShaderPipelineStatsSupported : 1;
     uint32_t isEnchancedBarrierSupported : 1;           // aka can "Layout" be ignored?
     uint32_t isMemoryTier2Supported : 1;                // a memory object can support resources from all 3 categories (buffers, attachments, all other textures)
+
+    uint32_t isIndependentFrontAndBackStencilReferenceAndMasksSupported : 1; // see "StencilAttachmentDesc::back"
+    uint32_t isTextureFilterMinMaxSupported : 1;        // see "FilterExt"
+    uint32_t isLogicFuncSupported : 1;                  // see "LogicFunc"
+    uint32_t isDepthBoundsTestSupported : 1;            // see "DepthAttachmentDesc::boundsTest"
+    uint32_t isDrawIndirectCountSupported : 1;          // see "countBuffer" and "countBufferOffset"
+    uint32_t isLineSmoothingSupported : 1;              // see "RasterizationDesc::lineSmoothing"
+    uint32_t isCopyQueueTimestampSupported : 1;         // see "QueryType::TIMESTAMP_COPY_QUEUE"
+    uint32_t isMeshShaderPipelineStatsSupported : 1;    // see "PipelineStatisticsDesc"
     uint32_t isDynamicDepthBiasSupported : 1;           // see "CmdSetDepthBias"
-    uint32_t isAdditionalShadingRatesSupported : 1;
-    uint32_t isViewportOriginBottomLeftSupported : 1;
+    uint32_t isAdditionalShadingRatesSupported : 1;     // see "ShadingRate"
+    uint32_t isViewportOriginBottomLeftSupported : 1;   // see "Viewport"
     uint32_t isRegionResolveSupported : 1;              // see "CmdResolveTexture"
-    uint32_t isFlexibleMultiviewSupported : 1;          // see FLEXIBLE multiview
-    uint32_t isLayerBasedMultiviewSupported : 1;        // see LAYRED_BASED multiview
-    uint32_t isViewportBasedMultiviewSupported : 1;     // see VIEWPORT_BASED multiview
+    uint32_t isFlexibleMultiviewSupported : 1;          // see "Multiview::FLEXIBLE"
+    uint32_t isLayerBasedMultiviewSupported : 1;        // see "Multiview::LAYRED_BASED"
+    uint32_t isViewportBasedMultiviewSupported : 1;     // see "Multiview::VIEWPORT_BASED"
+    uint32_t isPresentFromComputeSupported : 1;         // see "SwapChainDesc::queue"
+    uint32_t isWaitableSwapChainSupported : 1;          // see "SwapChainDesc::waitable"
 
     // Shader features (I32 + atomics and F32 are always supported)
     uint32_t isShaderNativeI16Supported : 1;

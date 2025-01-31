@@ -519,6 +519,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& desc) {
     m_Desc.bindlessTier = (options.ResourceBindingTier == D3D12_RESOURCE_BINDING_TIER_3 && shaderModel.HighestShaderModel >= D3D_SHADER_MODEL_6_6) ? 2 : (levels.MaxSupportedFeatureLevel >= D3D_FEATURE_LEVEL_12_0 ? 1 : 0);
 
     m_Desc.isGetMemoryDesc2Supported = true;
+
     m_Desc.isTextureFilterMinMaxSupported = levels.MaxSupportedFeatureLevel >= D3D_FEATURE_LEVEL_11_1 ? true : false;
     m_Desc.isLogicFuncSupported = options.OutputMergerLogicOp != 0;
     m_Desc.isDepthBoundsTestSupported = options2.DepthBoundsTestSupported != 0;
@@ -528,6 +529,7 @@ void DeviceD3D12::FillDesc(const DeviceCreationDesc& desc) {
     m_Desc.isFlexibleMultiviewSupported = options3.ViewInstancingTier != D3D12_VIEW_INSTANCING_TIER_NOT_SUPPORTED;
     m_Desc.isLayerBasedMultiviewSupported = options3.ViewInstancingTier != D3D12_VIEW_INSTANCING_TIER_NOT_SUPPORTED;
     m_Desc.isViewportBasedMultiviewSupported = options3.ViewInstancingTier != D3D12_VIEW_INSTANCING_TIER_NOT_SUPPORTED;
+    m_Desc.isWaitableSwapChainSupported = true; // TODO: swap chain version >= 2?
 
     m_Desc.isShaderNativeI16Supported = options4.Native16BitShaderOpsSupported;
     m_Desc.isShaderNativeF16Supported = options4.Native16BitShaderOpsSupported;
