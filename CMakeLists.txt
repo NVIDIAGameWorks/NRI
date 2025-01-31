@@ -115,7 +115,8 @@ if(NRI_ENABLE_VK_SUPPORT)
 endif()
 
 if(DEPS)
-    message("NRI: fetching ${DEPS} ...")
+    message("NRI: downloading dependencies:")
+    message(STATUS "${DEPS} ...")
     FetchContent_MakeAvailable(${DEPS})
 endif()
 
